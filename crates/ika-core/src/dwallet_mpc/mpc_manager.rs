@@ -39,7 +39,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, StartPresignFirstRoundEvent,
+    MaliciousReport, SessionInfo, SessionType, StartPresignFirstRoundEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -317,6 +317,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, &self).await?;
         let mpc_event_data = Some(MPCEventData {
+            session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
             private_input,
@@ -335,7 +336,6 @@ impl DWalletMPCManager {
                 }
                 _ => HashMap::new(),
             },
-            is_immediate: session_info.is_immediate,
         });
         if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -346,11 +346,7 @@ impl DWalletMPCManager {
                 session.mpc_event_data = mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(
-                &session_info.session_id,
-                mpc_event_data,
-                session_info.sequence_number,
-            );
+            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
         }
         Ok(())
     }
@@ -520,19 +516,21 @@ impl DWalletMPCManager {
                 // This should never happen
                 error!(
                     session_id=?oldest_pending_session.session_id,
-                    session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "session does not have event data, skipping"
                 );
                 continue;
             };
-            if oldest_pending_session.sequence_number
-                > self.last_session_to_complete_in_current_epoch
-                && !mpc_event_data.is_immediate
-            {
+
+            let should_advance = match mpc_event_data.session_type {
+                SessionType::User { sequence_number } => {
+                    sequence_number <= self.last_session_to_complete_in_current_epoch
+                }
+                SessionType::System => true,
+            };
+            if !should_advance {
                 info!(
                     session_id=?oldest_pending_session.session_id,
-                    session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"
                 );
@@ -546,7 +544,6 @@ impl DWalletMPCManager {
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,
-                    session_sequence_number=?oldest_pending_session.sequence_number,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     error=?err,
@@ -603,11 +600,7 @@ impl DWalletMPCManager {
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.push_new_mpc_session(
-                    &message.session_id,
-                    None,
-                    message.session_sequence_number,
-                );
+                self.push_new_mpc_session(&message.session_id, None);
                 self.mpc_sessions.get_mut(&message.session_id).unwrap()
             }
         };
@@ -658,7 +651,6 @@ impl DWalletMPCManager {
         &mut self,
         session_id: &ObjectID,
         mpc_event_data: Option<MPCEventData>,
-        session_sequence_number: u64,
     ) {
         info!(
             "Received start MPC flow event for session ID {:?}",
@@ -674,10 +666,8 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
-            session_sequence_number,
         );
         info!(
-            session_sequence_number=?session_sequence_number,
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );

@@ -88,7 +88,7 @@ use ika_types::messages_consensus::{
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
-    StartPresignFirstRoundEvent,
+    SessionType, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
@@ -1609,14 +1609,20 @@ impl AuthorityPerEpochStore {
                     );
                     return Ok(ConsensusCertificateResult::Ignored);
                 }
+                let SessionType::User { sequence_number } = event_data.session_type else {
+                    unreachable!("DKGFirst round should be a user session");
+                };
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
-                    session_sequence_number: event_data.session_sequence_number,
+                    session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::DKGSecond(init_event_data) => {
+                let SessionType::User { sequence_number } = init_event_data.session_type else {
+                    unreachable!("DKGSecond round should be a user session");
+                };
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
@@ -1631,22 +1637,28 @@ impl AuthorityPerEpochStore {
                         .encryption_key_address
                         .to_vec(),
                     rejected,
-                    session_sequence_number: init_event_data.session_sequence_number,
+                    session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::Presign(init_event_data) => {
+                let SessionType::User { sequence_number } = init_event_data.session_type else {
+                    unreachable!("Presign round should be a user session");
+                };
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
                     rejected,
-                    session_sequence_number: init_event_data.session_sequence_number,
+                    session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::Sign(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!("Sign round should be a user session");
+                };
                 let tx = MessageKind::DwalletSign(SignOutput {
                     session_id: session_info.session_id.to_vec(),
                     signature: output,
@@ -1654,11 +1666,14 @@ impl AuthorityPerEpochStore {
                     is_future_sign: init_event.event_data.is_future_sign,
                     sign_id: init_event.event_data.sign_id.to_vec(),
                     rejected,
-                    session_sequence_number: init_event.session_sequence_number,
+                    session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
+                let SessionType::User { sequence_number } = init_event_data.session_type else {
+                    unreachable!("EncryptedShareVerification round should be a user session");
+                };
                 let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_user_secret_key_share_id: init_event_data
@@ -1666,11 +1681,14 @@ impl AuthorityPerEpochStore {
                         .encrypted_user_secret_key_share_id
                         .to_vec(),
                     rejected,
-                    session_sequence_number: init_event_data.session_sequence_number,
+                    session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
+                let SessionType::User { sequence_number } = init_event_data.session_type else {
+                    unreachable!("PartialSignatureVerification round should be a user session");
+                };
                 let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
@@ -1680,7 +1698,7 @@ impl AuthorityPerEpochStore {
                             .partial_centralized_signed_message_id
                             .to_vec(),
                         rejected,
-                        session_sequence_number: init_event_data.session_sequence_number,
+                        session_sequence_number: sequence_number,
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))

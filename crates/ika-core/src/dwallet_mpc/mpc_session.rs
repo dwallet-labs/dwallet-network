@@ -31,7 +31,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -56,7 +56,7 @@ pub struct MPCEventData {
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
-    pub(crate) is_immediate: bool,
+    pub(crate) session_type: SessionType,
 }
 
 /// A dWallet MPC session.
@@ -82,7 +82,6 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
-    pub(crate) sequence_number: u64,
 }
 
 impl DWalletMPCSession {
@@ -95,7 +94,6 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
-        sequence_number: u64,
     ) -> Self {
         Self {
             status,
@@ -108,7 +106,6 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
-            sequence_number,
         }
     }
 
@@ -190,8 +187,8 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message = self
-                    .new_dwallet_mpc_output_message(public_output.clone(), self.sequence_number)?;
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(public_output.clone())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -217,10 +214,8 @@ impl DWalletMPCSession {
                 error!("failed to advance the MPC session: {:?}", e);
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
-                let consensus_message = self.new_dwallet_mpc_output_message(
-                    FAILED_SESSION_OUTPUT.to_vec(),
-                    self.sequence_number,
-                )?;
+                let consensus_message =
+                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -240,7 +235,6 @@ impl DWalletMPCSession {
     fn new_dwallet_mpc_output_message(
         &self,
         output: Vec<u8>,
-        sequence_number: u64,
     ) -> DwalletMPCResult<ConsensusTransaction> {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
@@ -249,10 +243,9 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             output,
             SessionInfo {
-                sequence_number,
+                session_type: mpc_event_data.session_type.clone(),
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
-                is_immediate: false,
                 epoch: self.epoch_id,
             },
         ))
@@ -471,7 +464,6 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
-            self.sequence_number,
         ))
     }
 
