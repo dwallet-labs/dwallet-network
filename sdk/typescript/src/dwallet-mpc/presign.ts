@@ -1,6 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
@@ -84,41 +83,4 @@ function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
 
 function isStartSessionEvent(event: any): event is StartSessionEvent {
 	return event.session_id !== undefined;
-}
-
-/**
- * Creates a valid mock output of the first DKG blockchain round.
- */
-export async function mockCreatePresign(
-	conf: Config,
-	mockPresign: Uint8Array,
-	dwalletID: string,
-): Promise<CompletedPresignEvent> {
-	const tx = new Transaction();
-	const dwalletStateObjData = await getDWalletSecpState(conf);
-	const stateArg = tx.sharedObjectRef({
-		objectId: dwalletStateObjData.object_id,
-		initialSharedVersion: dwalletStateObjData.initial_shared_version,
-		mutable: true,
-	});
-
-	const firstRoundOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(mockPresign));
-	const presignCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::mock_create_presign`,
-		arguments: [stateArg, firstRoundOutputArg, tx.pure.id(dwalletID)],
-	});
-	tx.transferObjects([presignCap], conf.suiClientKeypair.toSuiAddress());
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
-	});
-	console.log(result);
-	const completedPresignEvent = result.events?.at(0)?.parsedJson;
-	if (!isCompletedPresignEvent(completedPresignEvent)) {
-		throw new Error('invalid completed presign event');
-	}
-	return completedPresignEvent;
 }
