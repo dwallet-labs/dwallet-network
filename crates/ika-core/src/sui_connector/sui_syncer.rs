@@ -33,6 +33,7 @@ use tokio::{
     task::JoinHandle,
     time::{self, Duration},
 };
+use tokio::sync::watch::Sender;
 use tracing::{debug, error, info, warn};
 
 /// Map from contract address to their start cursor (exclusive)
@@ -68,7 +69,7 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee_sender: watch::Sender<Committee>,
         network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
@@ -76,7 +77,7 @@ where
         let sui_client_clone = self.sui_client.clone();
         tokio::spawn(Self::sync_next_committee(
             sui_client_clone.clone(),
-            next_epoch_committee,
+            next_epoch_committee_sender,
         ));
         // Todo (#810): Check the usage adding the task handle to the task_handles vector.
         tokio::spawn(Self::sync_dwallet_network_keys(
@@ -103,7 +104,7 @@ where
 
     async fn sync_next_committee(
         sui_client: Arc<SuiClient<C>>,
-        next_epoch_committee: Arc<RwLock<Option<Committee>>>,
+        next_epoch_committee_sender: Sender<Committee>,
     ) {
         loop {
             time::sleep(Duration::from_secs(2)).await;
@@ -130,9 +131,11 @@ where
                     continue;
                 }
             };
-
-            let mut committee_lock = next_epoch_committee.write().await;
-            *committee_lock = Some(committee);
+            if let Err(err) = next_epoch_committee_sender.send(committee) {
+                error!(?err, committee_epoch=?committee.epoch, "failed to send next epoch committee to the channel");
+            } else {
+                info!(committee_epoch=?committee.epoch, "next epoch committee sent successfully");
+            }
         }
     }
 

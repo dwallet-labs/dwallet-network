@@ -386,6 +386,7 @@ impl IkaNode {
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
 
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+        let (next_epoch_committee_sender, next_epoch_committee_receiver) = watch::channel(Default::default());
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -393,8 +394,8 @@ impl IkaNode {
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                epoch_store.next_epoch_committee.clone(),
                 network_keys_sender,
+                next_epoch_committee_sender,
             )
             .await?,
         );
