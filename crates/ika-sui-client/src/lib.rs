@@ -621,8 +621,8 @@ where
                     .with_label_values(&["must_get_system_inner_object"])
                     .inc();
                 error!(
-                    "failed to get system inner object: {:?}",
-                    self.ika_system_object_id
+                    system_object_id=%self.ika_system_object_id,
+                    "failed to get system inner object",
                 );
                 continue;
             };
