@@ -144,8 +144,17 @@ pub enum DwalletMPCError {
     #[error("{0}")]
     IkaError(#[from] crate::error::IkaError),
 
-    #[error("failed to get the network decryption key shares: {0}")]
+    #[error("waiting for network key with ID: {0}")]
     WaitingForNetworkKey(ObjectID),
+
+    #[error(
+        "decryption key epoch out of sync: {key_id:?} expected epoch: {expected_epoch} but got: {actual_epoch}"
+    )]
+    DecryptionKeyEpochMismatch {
+        key_id: ObjectID,
+        expected_epoch: u64,
+        actual_epoch: u64,
+    },
 }
 
 /// A wrapper type for the result of a runtime operation.
