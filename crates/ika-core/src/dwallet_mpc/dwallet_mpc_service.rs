@@ -47,7 +47,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiBridgeClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
 }
 
 impl DWalletMPCService {
@@ -57,7 +57,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
@@ -153,15 +153,16 @@ impl DWalletMPCService {
             Ok(has_changed) => {
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
-                    for (key_id, key_data) in (*new_keys).iter() {
+                    for (key_id, key_data) in new_keys.iter() {
                         info!("Updating network key for key_id: {:?}", key_id);
-                        if let Err(err) = self.dwallet_mpc_manager.network_keys.update_network_key(
-                            key_id.clone(),
-                            key_data.clone(),
-                            &self.dwallet_mpc_manager.weighted_threshold_access_structure,
-                        ) {
-                            error!(?err, "failed to store network keys");
-                        };
+                        self.dwallet_mpc_manager
+                            .network_keys
+                            .update_network_key(
+                                *key_id,
+                                &key_data,
+                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+                            )
+                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
                     }
                 }
             }

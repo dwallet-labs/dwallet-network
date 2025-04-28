@@ -664,7 +664,7 @@ where
             )
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("Can't get_network_decryption_keys: {e}"))
+                IkaError::SuiClientInternalError(format!("can't get_network_decryption_keys: {e}"))
             })?)
     }
 
