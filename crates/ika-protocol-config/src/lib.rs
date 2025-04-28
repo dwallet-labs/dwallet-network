@@ -23,30 +23,6 @@ const MAX_PROTOCOL_VERSION: u64 = 1;
 //
 // Version 1: Original version.
 
-self.feature_flags.consensus_round_prober
-self.feature_flags.consensus_median_based_commit_timestamp;
-{
-    if let Some(enabled) = is_mysticeti_fpc_enabled_in_env() {
-    return enabled;
-    }
-    self.feature_flags.mysticeti_fastpath
-}
-self.feature_flags.consensus_batched_block_sync
-self.feature_flags.consensus_median_based_commit_timestamp = val;
-self.feature_flags.consensus_batched_block_sync = val;
-self.feature_flags.enforce_checkpoint_timestamp_monotonicity
-
-pub fn consensus_median_based_commit_timestamp(&self) -> bool {
-    let res = self.feature_flags.consensus_median_based_commit_timestamp;
-    assert!(
-        !res || self.gc_depth() > 0,
-        "The consensus median based commit timestamp requires GC to be enabled"
-    );
-    res
-}
-
-
-
 #[derive(Copy, Clone, Debug, Hash, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ProtocolVersion(u64);
 
@@ -133,6 +109,34 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
+    // Probe rounds received by peers from every authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_round_prober: bool,
+
+    // Enables Mysticeti fastpath.
+    #[serde(skip_serializing_if = "is_false")]
+    mysticeti_fastpath: bool,
+
+    // If true, enabled batched block sync in consensus.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_batched_block_sync: bool,
+
+    // If true, enforces checkpoint timestamps are non-decreasing.
+    #[serde(skip_serializing_if = "is_false")]
+    enforce_checkpoint_timestamp_monotonicity: bool,
+
+    // Set number of leaders per round for Mysticeti commits.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mysticeti_num_leaders_per_round: Option<usize>,
+
+    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
+    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_linearize_subdag_v2: bool,
+
+    // If true, enable zstd compression for consensus tonic network.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_zstd_compression: bool,
 }
 
 fn is_false(b: &bool) -> bool {
@@ -215,11 +219,6 @@ pub struct ProtocolConfig {
     /// 3f+1 must vote), while 0bps would indicate that 2f+1 is sufficient.
     buffer_stake_for_protocol_upgrade_bps: Option<u64>,
 
-    // Dictates the threshold (percentage of stake) that is used to calculate the "bad" nodes to be
-    // swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
-    // above 33 (f) will not be allowed.
-    consensus_bad_nodes_stake_threshold: Option<u64>,
-
     /// Minimum interval of commit timestamps between consecutive checkpoints.
     min_checkpoint_interval_ms: Option<u64>,
 
@@ -229,6 +228,20 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+
+    /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
+    /// `max_tx_size_bytes` with some additional headroom.
+    consensus_max_transaction_size_bytes: Option<u64>,
+
+    /// The maximum number of transactions included in a consensus block.
+    consensus_max_num_transactions_in_block: Option<u64>,
+
+    /// The maximum size of transactions included in a consensus block.
+    consensus_max_transactions_in_block_bytes: Option<u64>,
+
+    /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
+    /// is disabled.
+    consensus_gc_depth: Option<u32>,
 }
 
 // feature flags
