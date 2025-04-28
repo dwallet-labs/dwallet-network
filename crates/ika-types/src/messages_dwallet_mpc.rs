@@ -194,6 +194,10 @@ pub trait DWalletMPCEventTrait {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag;
 }
 
+/// The DWallet MPC session type
+/// User initiated sessions have a sequence number, which is used to determine in which epoch the session will get
+/// completed.
+/// System sessions are guaranteed to always get completed in the epoch they were created in.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub enum SessionType {
     User { sequence_number: u64 },

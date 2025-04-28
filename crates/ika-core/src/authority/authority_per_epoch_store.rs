@@ -1593,7 +1593,7 @@ impl AuthorityPerEpochStore {
                     return Ok(ConsensusCertificateResult::Ignored);
                 }
                 let SessionType::User { sequence_number } = event_data.session_type else {
-                    panic!("DKGFirst round should be a user session");
+                    unreachable!("DKGFirst round should be a user session");
                 };
                 let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
@@ -1604,7 +1604,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::DKGSecond(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    panic!("DKGSecond round should be a user session");
+                    unreachable!("DKGSecond round should be a user session");
                 };
                 let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
@@ -1626,7 +1626,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Presign(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    panic!("Presign round should be a user session");
+                    unreachable!("Presign round should be a user session");
                 };
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
@@ -1640,7 +1640,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::Sign(init_event) => {
                 let SessionType::User { sequence_number } = init_event.session_type else {
-                    panic!("Sign round should be a user session");
+                    unreachable!("Sign round should be a user session");
                 };
                 let tx = MessageKind::DwalletSign(SignOutput {
                     session_id: session_info.session_id.to_vec(),
@@ -1655,7 +1655,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::EncryptedShareVerification(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    panic!("EncryptedShareVerification round should be a user session");
+                    unreachable!("EncryptedShareVerification round should be a user session");
                 };
                 let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
@@ -1670,7 +1670,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
-                    panic!("PartialSignatureVerification round should be a user session");
+                    unreachable!("PartialSignatureVerification round should be a user session");
                 };
                 let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
