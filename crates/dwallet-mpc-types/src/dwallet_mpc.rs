@@ -32,8 +32,9 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
 pub type MPCMessage = Vec<u8>;
 
 /// Alias for an MPC public output wrapped with version.
-pub type SerializedWrappedPublicOutput = Vec<u8>;
+pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
+/// MPC Public Output for different protocols.
 #[derive(
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
 )]
@@ -41,10 +42,12 @@ pub enum MPCPublicOutput {
     ClassGroups(MPCPublicOutputClassGroups),
 }
 
+/// The MPC Public Output for Class Groups based protocols.
 #[derive(
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
 )]
 pub enum MPCPublicOutputClassGroups {
+    /// Searailized Public Output.
     V1(Vec<u8>),
 }
 

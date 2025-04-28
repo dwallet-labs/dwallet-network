@@ -3,7 +3,7 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
+    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
@@ -39,8 +39,8 @@ pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
     /// Generates the public input required for the second round of the DKG protocol.
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        first_round_output: SerializedWrappedPublicOutput,
-        centralized_party_public_key_share: SerializedWrappedPublicOutput,
+        first_round_output: SerializedWrappedMPCPublicOutput,
+        centralized_party_public_key_share: SerializedWrappedMPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
@@ -56,8 +56,8 @@ impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
 impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        first_round_output_buf: SerializedWrappedPublicOutput,
-        centralized_party_public_key_share_buf: SerializedWrappedPublicOutput,
+        first_round_output_buf: SerializedWrappedMPCPublicOutput,
+        centralized_party_public_key_share_buf: SerializedWrappedMPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let first_round_output_buf: MPCPublicOutput =
             bcs::from_bytes(&first_round_output_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
@@ -74,9 +74,6 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
                         centralized_party_public_key_share,
                     )) => bcs::from_bytes(&centralized_party_public_key_share)
                         .map_err(|e| DwalletMPCError::BcsError(e))?,
-                    _ => {
-                        return Err(DwalletMPCError::InvalidMPCPublicOutput);
-                    }
                 };
 
                 let input: Self::PublicInput = (

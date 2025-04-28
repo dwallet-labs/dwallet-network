@@ -6,7 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::stake_aggregator::StakeAggregator;
-use dwallet_mpc_types::dwallet_mpc::SerializedWrappedPublicOutput;
+use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -52,7 +52,7 @@ struct SessionOutputsData {
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
     session_output_to_voting_authorities:
-        HashMap<(SerializedWrappedPublicOutput, SessionInfo), StakeAggregator<(), true>>,
+        HashMap<(SerializedWrappedMPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     authorities_that_sent_output: HashSet<AuthorityName>,
     current_result: OutputVerificationStatus,
@@ -70,7 +70,7 @@ impl SessionOutputsData {
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq, Clone)]
 pub enum OutputVerificationStatus {
-    FirstQuorumReached(SerializedWrappedPublicOutput),
+    FirstQuorumReached(SerializedWrappedMPCPublicOutput),
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,

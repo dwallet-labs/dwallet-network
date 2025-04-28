@@ -143,9 +143,6 @@ pub enum DwalletMPCError {
 
     #[error("{0}")]
     IkaError(#[from] crate::error::IkaError),
-
-    #[error("invalid MPC public output")]
-    InvalidMPCPublicOutput,
 }
 
 /// A wrapper type for the result of a runtime operation.

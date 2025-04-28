@@ -3,7 +3,7 @@ use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionStatus, SerializedWrappedPublicOutput,
+    MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use itertools::Itertools;
@@ -297,7 +297,7 @@ impl DWalletMPCSession {
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<
-        AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedPublicOutput>,
+        AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
     > {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);

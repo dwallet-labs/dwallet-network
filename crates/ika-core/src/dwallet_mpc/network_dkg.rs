@@ -19,7 +19,7 @@ use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionK
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput,
     MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
-    NetworkDecryptionKeyPublicOutputType, SerializedWrappedPublicOutput,
+    NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
 };
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -327,7 +327,7 @@ pub(crate) fn advance_network_dkg(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<
-    AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedPublicOutput>,
+    AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
@@ -455,7 +455,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
 fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
     epoch: u64,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output_bytes: &SerializedWrappedPublicOutput,
+    public_output_bytes: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     let mpc_public_output: MPCPublicOutput =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
@@ -485,7 +485,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    public_output_bytes: &SerializedWrappedPublicOutput,
+    public_output_bytes: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     let mpc_public_output: MPCPublicOutput =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;

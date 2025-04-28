@@ -3,7 +3,7 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
+    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
@@ -38,7 +38,7 @@ pub(crate) fn verify_encrypted_share(
 /// encryption is the encryption of the given dWallet's secret share.
 fn verify_centralized_secret_key_share_proof(
     encrypted_centralized_secret_share_and_proof: &Vec<u8>,
-    serialized_dkg_public_output: &SerializedWrappedPublicOutput,
+    serialized_dkg_public_output: &SerializedWrappedMPCPublicOutput,
     encryption_key: &Vec<u8>,
     protocol_public_parameters: &Vec<u8>,
 ) -> anyhow::Result<()> {

@@ -4,7 +4,7 @@
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedPublicOutput,
+    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -36,9 +36,9 @@ pub(super) type SignPublicInput =
 pub(super) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: SerializedWrappedPublicOutput,
+        dkg_output: SerializedWrappedMPCPublicOutput,
         message: Vec<u8>,
-        presign: SerializedWrappedPublicOutput,
+        presign: SerializedWrappedMPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
@@ -48,10 +48,10 @@ pub(super) trait SignPartyPublicInputGenerator: Party {
 impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         protocol_public_parameters: Vec<u8>,
-        dkg_output: SerializedWrappedPublicOutput,
+        dkg_output: SerializedWrappedMPCPublicOutput,
         message: Vec<u8>,
-        presign: SerializedWrappedPublicOutput,
-        centralized_signed_message: SerializedWrappedPublicOutput,
+        presign: SerializedWrappedMPCPublicOutput,
+        centralized_signed_message: SerializedWrappedMPCPublicOutput,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<MPCPublicInput> {
@@ -62,15 +62,9 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
                 let presign = match presign {
                     MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                    _ => {
-                        return Err(DwalletMPCError::InvalidMPCPublicOutput);
-                    }
                 };
                 let centralized_signed_message = match centralized_signed_message {
                     MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                    _ => {
-                        return Err(DwalletMPCError::InvalidMPCPublicOutput);
-                    }
                 };
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
@@ -101,9 +95,9 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 /// Returns Ok if the message is valid, Err otherwise.
 pub(crate) fn verify_partial_signature(
     hashed_message: &[u8],
-    dwallet_decentralized_output: &SerializedWrappedPublicOutput,
-    presign: &SerializedWrappedPublicOutput,
-    partially_signed_message: &SerializedWrappedPublicOutput,
+    dwallet_decentralized_output: &SerializedWrappedMPCPublicOutput,
+    presign: &SerializedWrappedMPCPublicOutput,
+    partially_signed_message: &SerializedWrappedMPCPublicOutput,
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
     let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
@@ -113,15 +107,9 @@ pub(crate) fn verify_partial_signature(
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
             let presign = match presign {
                 MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                _ => {
-                    return Err(DwalletMPCError::InvalidMPCPublicOutput);
-                }
             };
             let partially_signed_message = match partially_signed_message {
                 MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                _ => {
-                    return Err(DwalletMPCError::InvalidMPCPublicOutput);
-                }
             };
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<
