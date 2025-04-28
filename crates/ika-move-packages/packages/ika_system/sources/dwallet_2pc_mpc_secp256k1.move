@@ -143,14 +143,6 @@ public fun create_first_round_dwallet_mock(self: &mut DWalletCoordinator, first_
     self.inner_mut().create_first_round_dwallet_mock(first_round_output, dwallet_network_decryption_key_id, ctx)
 }
 
-public fun mock_create_dwallet(self: &mut DWalletCoordinator, output: vector<u8>, dwallet_network_decryption_key_id: ID, ctx: &mut TxContext): DWalletCap {
-    self.inner_mut().mock_create_dwallet(output, dwallet_network_decryption_key_id, ctx)
-}
-
-public fun mock_create_presign(self: &mut DWalletCoordinator, presign: vector<u8>, dwallet_id: ID, ctx: &mut TxContext): ECDSAPresignCap {
-    self.inner_mut().mock_create_presign(dwallet_id, presign, ctx)
-}
-
 public fun request_re_encrypt_user_share_for(
     self: &mut DWalletCoordinator,
     dwallet_id: ID,
