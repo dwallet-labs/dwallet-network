@@ -225,7 +225,7 @@ impl DWalletMPCManager {
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
             }
-            error!("failed to handle event with error: {:?}", err);
+            error!(?err, "failed to handle event with error");
         }
     }
 
