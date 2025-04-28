@@ -337,7 +337,6 @@ impl IkaNode {
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
         };
 
-        let next_epoch_committee = Arc::new(tokio::sync::RwLock::new(None));
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee.clone(),
@@ -348,7 +347,6 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
-            next_epoch_committee,
         );
 
         info!("created epoch store");
@@ -387,7 +385,7 @@ impl IkaNode {
 
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
-            watch::channel(Default::default());
+            watch::channel(committee.clone());
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -1154,6 +1152,7 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
+                            next_epoch_committee_receiver.clone(),
                             sui_client_clone2.clone(),
                         )
                         .await?,
