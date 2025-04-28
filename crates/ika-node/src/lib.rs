@@ -301,13 +301,14 @@ impl IkaNode {
         let previous_epoch_last_checkpoint_sequence_number =
             dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
-        let committee = Arc::new(epoch_start_system_state.get_ika_committee());
+        let committee = epoch_start_system_state.get_ika_committee();
+        let committee_arc = Arc::new(committee.clone());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
         //let genesis_committee = genesis.committee()?;
         let committee_store = Arc::new(CommitteeStore::new(
             config.db_path().join("epochs"),
-            &committee,
+            &committee_arc,
             None,
         ));
         let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
@@ -339,7 +340,7 @@ impl IkaNode {
 
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
-            committee.clone(),
+            committee_arc.clone(),
             &config.db_path().join("store"),
             Some(epoch_options.options),
             EpochMetrics::new(&registry_service.default_registry()),
@@ -385,7 +386,7 @@ impl IkaNode {
 
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
-            watch::channel(committee.clone());
+            watch::channel::<Committee>(committee);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -485,7 +486,7 @@ impl IkaNode {
             let components = Self::construct_validator_components(
                 config.clone(),
                 state.clone(),
-                committee,
+                committee_arc,
                 epoch_store.clone(),
                 checkpoint_store.clone(),
                 state_sync_handle.clone(),
