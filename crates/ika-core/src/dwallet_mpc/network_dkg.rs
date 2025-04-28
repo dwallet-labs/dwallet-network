@@ -40,6 +40,8 @@ use twopc_mpc::ProtocolPublicParameters;
 
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {
+    /// Holds all network (decryption) keys for the current network in encrypted form.
+    /// This data is identical for all the Validator nodes.
     pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
     pub(crate) validator_private_dec_key_data: ValidatorPrivateDecryptionKeyData,
 }
@@ -178,12 +180,12 @@ impl DwalletMPCNetworkKeys {
     pub fn update_network_key(
         &mut self,
         key_id: ObjectID,
-        key: NetworkDecryptionKeyPublicData,
+        key: &NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         self.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key, weighted_threshold_access_structure)
+            .store_decryption_secret_shares(key_id, key.clone(), weighted_threshold_access_structure)
     }
 
     /// Returns all the decryption key shares for any specified key ID.

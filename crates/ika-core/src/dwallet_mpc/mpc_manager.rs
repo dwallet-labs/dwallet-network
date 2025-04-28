@@ -98,6 +98,8 @@ pub struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
+    /// Events that wait for the network key to update,
+    /// once we get the network key, these evetns will continue.
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
@@ -219,7 +221,7 @@ impl DWalletMPCManager {
             .await
         {
             if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
-                error!(?key_id, "waiting for network key");
+                error!(?err, session_info=?event.session_info, type=?event.event.type_);
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
             }
@@ -453,7 +455,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        for ((event, session_info)) in self
+        for (event, session_info) in self
             .events_pending_for_network_key
             .drain(..)
             .collect::<Vec<_>>()

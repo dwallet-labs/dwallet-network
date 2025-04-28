@@ -150,11 +150,11 @@ impl DWalletMPCService {
             Ok(has_changed) => {
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
-                    for (key_id, key_data) in (*new_keys).iter() {
+                    for (key_id, key_data) in new_keys.iter() {
                         info!("Updating network key for key_id: {:?}", key_id);
                         if let Err(err) = self.dwallet_mpc_manager.network_keys.update_network_key(
-                            key_id.clone(),
-                            key_data.clone(),
+                            *key_id,
+                            &key_data,
                             &self.dwallet_mpc_manager.weighted_threshold_access_structure,
                         ) {
                             error!(?err, "failed to store network keys");

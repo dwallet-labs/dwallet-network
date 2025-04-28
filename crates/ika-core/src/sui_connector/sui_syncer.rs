@@ -181,7 +181,8 @@ where
         sui_client: Arc<SuiClient<C>>,
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) {
-        let mut fetched_network_keys: HashSet<(ObjectID, u64)> = HashSet::new();
+        // (Key Obj ID, Epoch)
+        let mut network_keys_cache: HashSet<(ObjectID, u64)> = HashSet::new();
         loop {
             time::sleep(Duration::from_secs(5)).await;
 
@@ -189,7 +190,7 @@ where
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
-                    error!("failed to fetch dwallet MPC network keys: {e}");
+                    warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
             let active_committee = sui_client.get_epoch_active_committee().await;
@@ -197,7 +198,7 @@ where
             let system_inner = system_inner.into_init_version_for_tooling();
             let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
-                !fetched_network_keys
+                !network_keys_cache
                     .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
             });
             if !should_fetch_keys {
@@ -228,7 +229,7 @@ where
                 };
             let mut all_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
-                match Self::fetch_and_create_network_key(
+                match Self::fetch_and_init_network_key(
                     &sui_client,
                     &network_dec_key_shares,
                     &weighted_threshold_access_structure,
@@ -237,13 +238,15 @@ where
                 {
                     Ok(key) => {
                         all_network_keys_data.insert(key_id.clone(), key);
-                        fetched_network_keys.insert((key_id, system_inner.epoch()));
+                        network_keys_cache.insert((key_id, system_inner.epoch()));
                     }
                     Err(err) => {
                         error!(
-                            "Failed to get network decryption key data for key_id: {:?}, error: {:?}",
-                            key_id, err
+                            key=?key_id,
+                            err=?err,
+                            "failed to get network decryption key data, retrying...",
                         );
+                        // todo(itay): retry the outer loop.
                         continue;
                     }
                 }
@@ -254,7 +257,7 @@ where
         }
     }
 
-    async fn fetch_and_create_network_key(
+    async fn fetch_and_init_network_key(
         sui_client: &SuiClient<C>,
         network_dec_key_shares: &DWalletNetworkDecryptionKey,
         access_structure: &WeightedThresholdAccessStructure,
