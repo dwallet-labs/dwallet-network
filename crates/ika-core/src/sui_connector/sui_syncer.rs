@@ -27,13 +27,13 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::watch::Sender;
 use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,
     time::{self, Duration},
 };
-use tokio::sync::watch::Sender;
 use tracing::{debug, error, info, warn};
 
 /// Map from contract address to their start cursor (exclusive)
