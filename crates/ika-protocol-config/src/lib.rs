@@ -405,6 +405,18 @@ impl ProtocolConfig {
             // responsibility is shared amongst more nodes. We can increase that once we do have
             // higher confidence.
             consensus_bad_nodes_stake_threshold: Some(20),
+
+            // TODO (#873): Implement a production grade configuration upgrade mechanism
+            // We use the `_for_testing` functions because they are currently the only way
+            // to modify Sui's protocol configuration from external crates.
+            // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
+            // in the Sui repository to address this limitation.
+            // This value has been derived from monitoring the largest message
+            // size in real world scenarios.
+            consensus_max_transaction_size_bytes: Some(315218930),
+            consensus_max_transactions_in_block_bytes: Some(315218930),
+            consensus_max_num_transactions_in_block: Some(512),
+            consensus_gc_depth: None,
         };
         for cur in 2..=version.0 {
             match cur {

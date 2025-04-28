@@ -88,13 +88,13 @@ impl ConsensusManagerTrait for MysticetiManager {
         let system_state = epoch_store.epoch_start_state();
         let committee: Committee = system_state.get_consensus_committee();
         let epoch = epoch_store.epoch();
-        let protocol_config = epoch_store.protocol_config();
+        let ika_protocol_config = epoch_store.protocol_config();
 
         let Some(_guard) = RunningLockGuard::acquire_start(
             &self.metrics,
             &self.running,
             epoch,
-            protocol_config.version,
+            ika_protocol_config.version,
         )
         .await
         else {
@@ -148,38 +148,35 @@ impl ConsensusManagerTrait for MysticetiManager {
         }
 
         // This can only be changed for all validators together at the same epoch
-        let mut protocol_config = if epoch >= 0 {
-            sui_protocol_config::ProtocolConfig::get_for_version(
+        // IMPORTANT: DONT CHANGE THIS VALUE UNLESS YOU KNOW WHAT YOU ARE DOING
+        // MAKE SURE TO CHECK WE MANUALLY SET EVERY CONSENSUS CONFIG FROM OUR PROTOCOL CONFIG
+        // AND THAT WE OVERRIDE THE SUI PROTOCOL CONFIG VALUES
+        let mut protocol_config = sui_protocol_config::ProtocolConfig::get_for_version(
                 sui_protocol_config::ProtocolVersion::new(70),
                 sui_protocol_config::Chain::Mainnet,
-            )
-        } else {
-            sui_protocol_config::ProtocolConfig::get_for_version(
-                sui_protocol_config::ProtocolVersion::new(70),
-                sui_protocol_config::Chain::Mainnet,
-            )
-        };
+            );
 
-        // TODO (#873): Implement a production grade configuration upgrade mechanism
-        // We use the `_for_testing` functions because they are currently the only way
-        // to modify Sui's protocol configuration from external crates.
-        // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
-        // in the Sui repository to address this limitation.
-        // This value has been derived from monitoring the largest message
-        // size in real world scenarios.
-        let max_dwallet_mpc_message_size_bytes = 315218930;
         protocol_config.set_consensus_max_transaction_size_bytes_for_testing(
-            max_dwallet_mpc_message_size_bytes,
+            ika_protocol_config.consensus_max_transaction_size_bytes(),
         );
         protocol_config.set_consensus_max_transactions_in_block_bytes_for_testing(
-            max_dwallet_mpc_message_size_bytes,
+            ika_protocol_config.consensus_max_transactions_in_block_bytes()
         );
+
+        protocol_config.set_consensus_max_num_transactions_in_block_for_testing(
+            ika_protocol_config.consensus_max_num_transactions_in_block()
+        );
+
+        protocol_config.set_consensus_gc_depth_for_testing(
+            ika_protocol_config.consensus_gc_depth()
+        );
+
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
             own_index,
             committee.clone(),
             parameters.clone(),
-            protocol_config,
+            protocol_config.clone(),
             self.protocol_keypair.clone(),
             self.network_keypair.clone(),
             Arc::new(tx_validator.clone()),
@@ -188,6 +185,9 @@ impl ConsensusManagerTrait for MysticetiManager {
             *boot_counter,
         )
         .await;
+
+        println!("sui protocol config: {:?}", protocol_config);
+
         let client = authority.transaction_client();
 
         let registry_id = self.registry_service.add(registry.clone());
