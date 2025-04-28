@@ -762,7 +762,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
@@ -828,7 +828,7 @@ impl IkaNode {
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
@@ -998,7 +998,7 @@ impl IkaNode {
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         sui_client: Arc<SuiBridgeClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
@@ -1242,7 +1242,7 @@ impl IkaNode {
         sui_client: Arc<SuiBridgeClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
         let mut service = DWalletMPCService::new(

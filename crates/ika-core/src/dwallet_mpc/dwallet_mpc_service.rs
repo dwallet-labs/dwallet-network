@@ -46,7 +46,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiBridgeClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
 }
 
 impl DWalletMPCService {
@@ -56,7 +56,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiBridgeClient>,
-        network_keys_receiver: Receiver<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),

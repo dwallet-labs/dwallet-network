@@ -97,7 +97,7 @@ pub struct DWalletMPCManager {
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
-    pub(crate) network_keys: DwalletMPCNetworkKeys,
+    pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
 }
 
@@ -186,7 +186,7 @@ impl DWalletMPCManager {
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
-            network_keys: dwallet_network_keys,
+            network_keys: Box::new(dwallet_network_keys),
             events_pending_for_network_key: vec![],
         })
     }

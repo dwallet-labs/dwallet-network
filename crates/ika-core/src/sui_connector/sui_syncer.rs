@@ -69,7 +69,7 @@ where
         self,
         query_interval: Duration,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
-        network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -179,7 +179,7 @@ where
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) {
         let mut fetched_network_keys: HashSet<(ObjectID, u64)> = HashSet::new();
         loop {
@@ -248,7 +248,7 @@ where
                     }
                 }
             }
-            if let Err(err) = network_keys_sender.send(all_network_keys_data) {
+            if let Err(err) = network_keys_sender.send(Arc::new(all_network_keys_data)) {
                 error!(?err, "failed to send network keys data to the channel",);
             }
         }

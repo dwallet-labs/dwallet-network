@@ -68,7 +68,7 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         next_epoch_committee: Arc<RwLock<Option<Committee>>>,
-        network_keys_sender: watch::Sender<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
