@@ -354,6 +354,10 @@ public enum ECDSASignState has copy, drop, store {
     }
 }
 
+/// The DWallet MPC session type
+/// User initiated sessions have a sequence number, which is used to determine in which epoch the session will get
+/// completed.
+/// System sessions are guaranteed to always get completed in the epoch they were created in.
 public enum SessionType has copy, drop, store {
     User {
         sequence_number: u64,
