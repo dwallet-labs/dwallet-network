@@ -2445,6 +2445,10 @@ Variant <code>Requested</code>
 
 ## Enum `SessionType`
 
+The dWallet MPC session type
+User initiated sessions have a sequence number, which is used to determine in which epoch
+the session will get completed.
+System sessions are guaranteed to always get completed in the epoch they were created in.
 
 
 <pre><code><b>public</b> <b>enum</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SessionType">SessionType</a> <b>has</b> <b>copy</b>, drop, store

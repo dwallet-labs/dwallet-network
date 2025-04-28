@@ -1361,7 +1361,7 @@ impl AuthorityPerEpochStore {
                         Some(event)
                     }
                     Ok(None) => {
-                        error!("failed to extract session info from event");
+                        warn!("Received an event that does not trigger the start of an MPC flow");
                         None
                     }
                     Err(e) => {
