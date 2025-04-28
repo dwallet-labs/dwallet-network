@@ -47,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::HashingIntentScope;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::Deref;
 use std::sync::{Arc, Weak};
 use sui_json_rpc_types::SuiEvent;
 use sui_storage::mutex_table::MutexGuard;
@@ -402,8 +403,12 @@ impl DWalletMPCManager {
     fn get_decryption_key_shares(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.network_keys.get_decryption_key_share(key_id.clone())
+    ) -> Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        self.network_keys
+            .validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(&key_id)
+            .map(|v| v.clone())
     }
 
     /// Returns the sessions that can perform the next cryptographic round,

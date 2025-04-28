@@ -200,7 +200,6 @@ impl DwalletMPCNetworkKeys {
     /// Retrieves the protocol public parameters for the specified key ID.
     pub fn get_protocol_public_parameters(
         &self,
-        current_epoch: u64,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
