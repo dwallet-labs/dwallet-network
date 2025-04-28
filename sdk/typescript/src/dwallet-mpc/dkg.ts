@@ -11,7 +11,6 @@ import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { DWallet, EncryptedDWalletData } from './globals.js';
 import {
-	checkpointCreationTime,
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
@@ -21,8 +20,6 @@ import {
 	getNetworkDecryptionKeyID,
 	getObjectWithType,
 	isActiveDWallet,
-	isAddressObjectOwner,
-	isDWalletCap,
 	isMoveObject,
 	isStartSessionEvent,
 	MPCKeyScheme,
