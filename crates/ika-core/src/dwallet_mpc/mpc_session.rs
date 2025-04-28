@@ -253,6 +253,7 @@ impl DWalletMPCSession {
                 session_id: self.session_id.clone(),
                 mpc_round: mpc_event_data.init_protocol_data.clone(),
                 is_immediate: false,
+                epoch: self.epoch_id,
             },
         ))
     }

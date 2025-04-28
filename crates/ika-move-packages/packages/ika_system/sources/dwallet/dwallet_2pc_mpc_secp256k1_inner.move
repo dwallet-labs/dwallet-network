@@ -76,6 +76,7 @@ public struct DWalletCoordinatorInner has store {
     total_messages_processed: u64,
     /// The last checkpoint sequence number processed.
     last_processed_checkpoint_sequence_number: Option<u64>,
+    previous_epoch_last_checkpoint_sequence_number: u64,
 
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
@@ -757,6 +758,7 @@ public(package) fun create_dwallet_coordinator_inner(
         last_processed_checkpoint_sequence_number: option::none(),
         completed_immediate_sessions_count: 0,
         started_immediate_sessions_count: 0,
+        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     }
 }
@@ -887,6 +889,10 @@ public(package) fun advance_epoch(
     next_committee: BlsCommittee
 ): Balance<IKA> {
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
+    if (self.last_processed_checkpoint_sequence_number.is_some()) {
+        let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    };
     self.locked_last_session_to_complete_in_current_epoch = false;
     self.update_last_session_to_complete_in_current_epoch();
     self.current_epoch = self.current_epoch + 1;
@@ -976,17 +982,11 @@ fun create_immediate_dwallet_event<E: copy + drop + store>(
 
     let event = DWalletEvent {
         epoch: self.current_epoch,
-        session_sequence_number: self.next_session_sequence_number,
+        // session sequence number is not used for immediate events, passing a dummy value
+        session_sequence_number: 0,
         session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         event_data,
     };
-
-    // This special logic is here to allow the immediate session have a unique session sequenece number on the one hand,
-    // yet ignore it when deciding the last session to complete in the current epoch, as immediate sessions
-    // are special sessions that must get completed in the current epoch.
-    self.next_session_sequence_number = self.next_session_sequence_number + 1;
-    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.last_session_to_complete_in_current_epoch = self.last_session_to_complete_in_current_epoch + 1;
 
     event
 }
@@ -1203,7 +1203,9 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     let new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        self.next_session_sequence_number - 1,
+        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
+        // as we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
+        self.next_session_sequence_number,
     );
     if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
         return

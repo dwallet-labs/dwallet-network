@@ -23,6 +23,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'push'
     name: Build
     runs-on: ubuntu-latest
     steps:
