@@ -295,6 +295,11 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
  The last checkpoint sequence number processed.
 </dd>
 <dt>
+<code>previous_epoch_last_checkpoint_sequence_number: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>extra_fields: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
@@ -2713,6 +2718,7 @@ Supported hash schemes for message signing.
         last_processed_checkpoint_sequence_number: option::none(),
         completed_immediate_sessions_count: 0,
         started_immediate_sessions_count: 0,
+        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     }
 }
@@ -2984,6 +2990,10 @@ Supported hash schemes for message signing.
     next_committee: BlsCommittee
 ): Balance&lt;IKA&gt; {
     <b>assert</b>!(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
+    <b>if</b> (self.last_processed_checkpoint_sequence_number.is_some()) {
+        <b>let</b> last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
+        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
+    };
     self.locked_last_session_to_complete_in_current_epoch = <b>false</b>;
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>();
     self.current_epoch = self.current_epoch + 1;

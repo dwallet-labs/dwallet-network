@@ -96,6 +96,7 @@ pub struct DWalletMPCManager {
     /// yet received an event for from Sui.
     pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
+    pub(crate) recognized_self_as_malicious: bool,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -168,6 +169,7 @@ impl DWalletMPCManager {
             pending_for_computation_order: VecDeque::new(),
             pending_for_events_order: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
+            recognized_self_as_malicious: false,
         })
     }
 
@@ -185,6 +187,15 @@ impl DWalletMPCManager {
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+        if event.session_info.epoch != self.epoch_id {
+            warn!(
+                session_id=?event.session_info.session_id,
+                event_type=?event.event,
+                event_epoch=?event.session_info.epoch,
+                "received an event for a different epoch, skipping"
+            );
+            return;
+        }
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
             error!(?err, "failed to handle event with error");
         }
@@ -258,6 +269,12 @@ impl DWalletMPCManager {
         let status = self
             .malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
+        if self
+            .malicious_handler
+            .is_malicious_actor(&self.epoch_store()?.name)
+        {
+            self.recognized_self_as_malicious = true;
+        }
 
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
