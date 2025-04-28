@@ -185,7 +185,11 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<()> {
         self.network_decryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(key_id, key.clone(), weighted_threshold_access_structure)
+            .store_decryption_secret_shares(
+                key_id,
+                key.clone(),
+                weighted_threshold_access_structure,
+            )
     }
 
     /// Returns all the decryption key shares for any specified key ID.
