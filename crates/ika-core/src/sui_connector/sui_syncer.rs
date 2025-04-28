@@ -129,10 +129,11 @@ where
                     continue;
                 }
             };
+            let committee_epoch = committee.epoch();
             if let Err(err) = next_epoch_committee_sender.send(committee) {
-                error!(?err, committee_epoch=?committee.epoch, "failed to send next epoch committee to the channel");
+                error!(?err, committee_epoch=?committee_epoch, "failed to send next epoch committee to the channel");
             } else {
-                info!(committee_epoch=?committee.epoch, "next epoch committee sent successfully");
+                info!(committee_epoch=?committee_epoch, "next epoch committee sent successfully");
             }
         }
     }
