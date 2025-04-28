@@ -188,27 +188,6 @@ impl DwalletMPCNetworkKeys {
             )
     }
 
-    /// Returns all the decryption key shares for any specified key ID.
-    pub fn get_decryption_key_share(
-        &self,
-        current_epoch: u64,
-        key_id: ObjectID,
-    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        let key_epoch = self.get_key_epoch(&key_id).await?;
-        if key_epoch != current_epoch {
-            return Err(DwalletMPCError::DecryptionKeyEpochMismatch {
-                key_id,
-                expected_epoch: current_epoch,
-                actual_epoch: key_epoch,
-            });
-        }
-        Ok(self
-            .validator_decryption_keys_shares()
-            .get(&key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-            .clone())
-    }
-
     pub fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
             .network_decryption_keys
