@@ -197,7 +197,7 @@ impl DWalletMPCManager {
             return;
         }
         if let Err(err) = self.handle_event(event.event, event.session_info).await {
-            error!("failed to handle event with error: {:?}", err);
+            error!(?err, "failed to handle event with error");
         }
     }
 
@@ -361,19 +361,26 @@ impl DWalletMPCManager {
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> Vec<u8> {
         loop {
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            let epoch_store = match self.epoch_store() {
+                Ok(store) => store,
+                Err(err) => {
+                    error!(?err, "failed to get the epoch store, retrying...");
+                    continue;
+                }
+            };
             if let Ok(dwallet_mpc_network_keys) = self.dwallet_mpc_network_keys() {
                 if let Ok(protocol_public_parameters) = dwallet_mpc_network_keys
-                    .get_protocol_public_parameters(key_id, key_scheme)
+                    .get_protocol_public_parameters(epoch_store.epoch(), key_id, key_scheme)
                     .await
                 {
                     return protocol_public_parameters;
                 }
             }
             info!(
-                "Waiting for the protocol public parameters to be available for key_id: {:?}",
-                key_id
+                ?key_id,
+                "Waiting for the protocol public parameters to be available for key_id",
             );
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         }
     }
 
@@ -391,7 +398,7 @@ impl DWalletMPCManager {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
         self.dwallet_mpc_network_keys()?
-            .get_decryption_public_parameters(key_id)
+            .get_decryption_public_parameters(self.epoch_store()?.epoch(), key_id)
             .await
     }
 
@@ -411,7 +418,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
         let decryption_shares = self
             .dwallet_mpc_network_keys()?
-            .get_decryption_key_share(key_id.clone())
+            .get_decryption_key_share(self.epoch_store()?.epoch(), key_id.clone())
             .await?;
 
         Ok(decryption_shares)
