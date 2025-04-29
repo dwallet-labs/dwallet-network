@@ -152,35 +152,32 @@ impl ConsensusManagerTrait for MysticetiManager {
         // MAKE SURE TO CHECK WE MANUALLY SET EVERY CONSENSUS CONFIG FROM OUR PROTOCOL CONFIG
         // AND THAT WE OVERRIDE THE SUI PROTOCOL CONFIG VALUES
         let mut protocol_config = sui_protocol_config::ProtocolConfig::get_for_version(
-                sui_protocol_config::ProtocolVersion::new(70),
-                sui_protocol_config::Chain::Mainnet,
-            );
+            sui_protocol_config::ProtocolVersion::new(70),
+            sui_protocol_config::Chain::Mainnet,
+        );
 
         protocol_config.set_consensus_max_transaction_size_bytes_for_testing(
             ika_protocol_config.consensus_max_transaction_size_bytes(),
         );
         protocol_config.set_consensus_max_transactions_in_block_bytes_for_testing(
-            ika_protocol_config.consensus_max_transactions_in_block_bytes()
+            ika_protocol_config.consensus_max_transactions_in_block_bytes(),
         );
 
         protocol_config.set_consensus_max_num_transactions_in_block_for_testing(
-            ika_protocol_config.consensus_max_num_transactions_in_block()
+            ika_protocol_config.consensus_max_num_transactions_in_block(),
         );
 
-        protocol_config.set_consensus_gc_depth_for_testing(
-            ika_protocol_config.gc_depth()
-        );
+        protocol_config.set_consensus_gc_depth_for_testing(ika_protocol_config.gc_depth());
 
-        protocol_config.set_consensus_round_prober_for_testing(
-            ika_protocol_config.consensus_round_prober()
-        );
+        protocol_config
+            .set_consensus_round_prober_for_testing(ika_protocol_config.consensus_round_prober());
 
         protocol_config.set_mysticeti_num_leaders_per_round_for_testing(
-            ika_protocol_config.mysticeti_num_leaders_per_round()
+            ika_protocol_config.mysticeti_num_leaders_per_round(),
         );
 
         protocol_config.set_consensus_linearize_subdag_v2_for_testing(
-            ika_protocol_config.consensus_linearize_subdag_v2()
+            ika_protocol_config.consensus_linearize_subdag_v2(),
         );
 
         let authority = ConsensusAuthority::start(
@@ -197,9 +194,6 @@ impl ConsensusManagerTrait for MysticetiManager {
             *boot_counter,
         )
         .await;
-
-        println!("sui protocol config: {:?}", protocol_config);
-
         let client = authority.transaction_client();
 
         let registry_id = self.registry_service.add(registry.clone());

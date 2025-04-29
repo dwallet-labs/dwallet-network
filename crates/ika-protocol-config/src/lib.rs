@@ -109,7 +109,7 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
-
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
     // Probe rounds received by peers from every authority.
     #[serde(skip_serializing_if = "is_false")]
     consensus_round_prober: bool,
@@ -213,6 +213,8 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
 
     /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
     /// `max_tx_size_bytes` with some additional headroom.
