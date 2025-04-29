@@ -850,10 +850,10 @@ exchange_rate_at_epoch
 ika_balance_at_epoch
 	public(package) fun
 	0x0::validator
-new_validator_operation_cap
+rotate_operation_cap
 	public(package) fun
 	0x0::validator
-new_validator_commission_cap
+rotate_commission_cap
 	public(package) fun
 	0x0::validator
 collect_commission
@@ -1021,6 +1021,12 @@ request_withdraw_stake
 withdraw_stake
 	public(package) fun
 	0x0::validator_set
+rotate_operation_cap
+	public(package) fun
+	0x0::validator_set
+rotate_commission_cap
+	public(package) fun
+	0x0::validator_set
 set_validator_name
 	public(package) fun
 	0x0::validator_set
@@ -1078,50 +1084,14 @@ is_active_validator
 get_reporters_of
 	public(package) fun
 	0x0::validator_set
-count_duplicates_vec
-	fun
-	0x0::validator_set
-is_duplicate_validator
-	public(package) fun
-	0x0::validator_set
-is_duplicate_with_active_validator
-	fun
-	0x0::validator_set
-is_duplicate_with_next_epoch_active_committee
-	fun
-	0x0::validator_set
 is_duplicate_with_pending_validator
 	fun
 	0x0::validator_set
 get_validator_mut
 	public(package) fun
 	0x0::validator_set
-get_validator_ref
+get_validator
 	public fun
-	0x0::validator_set
-get_candidate_or_active_validator_mut
-	fun
-	0x0::validator_set
-get_candidate_or_active_or_inactive_validator_mut
-	fun
-	0x0::validator_set
-get_active_or_pending_validator_mut
-	fun
-	0x0::validator_set
-get_active_or_pending_or_candidate_validator_mut
-	fun
-	0x0::validator_set
-get_validator_mut_with_operation_cap
-	public(package) fun
-	0x0::validator_set
-get_validator_mut_with_operation_cap_including_candidates
-	public(package) fun
-	0x0::validator_set
-get_validator_mut_with_cap
-	public(package) fun
-	0x0::validator_set
-get_validator_mut_with_cap_including_candidates
-	public(package) fun
 	0x0::validator_set
 get_validator_indices
 	fun

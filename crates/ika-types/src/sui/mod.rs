@@ -145,7 +145,7 @@ pub trait SystemInnerTrait {
         &self,
         committee: &BlsCommittee,
     ) -> Vec<(ObjectID, (AuthorityName, StakeUnit))>;
-    fn validators(&self) -> &ValidatorSetV1;
+    fn validator_set(&self) -> &ValidatorSetV1;
 }
 
 /// [`SystemInner`] provides an abstraction over multiple versions of

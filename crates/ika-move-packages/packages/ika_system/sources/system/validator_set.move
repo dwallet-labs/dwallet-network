@@ -93,12 +93,8 @@ const ENonValidatorInReportRecords: u64 = 0;
 const EDuplicateValidator: u64 = 2;
 const ENotAValidator: u64 = 4;
 const EValidatorNotCandidate: u64 = 7;
-const ENotActiveOrPendingValidator: u64 = 9;
 const EStakingBelowThreshold: u64 = 10;
 const EValidatorAlreadyRemoved: u64 = 11;
-const ENotCandidateOrActiveValidator: u64 = 14;
-const ENotCandidateOrActiveOrInactiveValidator: u64 = 15;
-const ENotCandidateOrActiveOrPendingValidator: u64 = 16;
 const ECannotReportOneself: u64 = 17;
 const EReportRecordNotFound: u64 = 18;
 
@@ -180,12 +176,8 @@ public(package) fun request_add_validator_candidate(
     let validator_id = validator.validator_id();
 
     // The next assertions are not critical for the protocol, but they are here to catch problematic configs earlier.
-    assert!(
-        !is_duplicate_with_active_validator(self, &validator)
-                && !is_duplicate_with_pending_validator(self, &validator)
-                && !is_duplicate_with_next_epoch_active_committee(self, &validator),
-        EDuplicateValidator,
-    );
+    assert!(!is_duplicate_with_pending_validator(self, &validator), EDuplicateValidator);
+
     assert!(!self.validators.contains(validator_id), EDuplicateValidator);
 
     assert!(validator.is_preactive(), EValidatorNotCandidate);
@@ -250,12 +242,7 @@ public(package) fun request_add_validator(
     let committee_selected = self.next_epoch_active_committee.is_some();
     // We have to remove and to add again because we can have 2 refs to self
     let mut validator = self.validators.remove(validator_id);
-    assert!(
-        !self.is_duplicate_with_active_validator(&validator)
-                && !self.is_duplicate_with_pending_validator(&validator)
-                && !self.is_duplicate_with_next_epoch_active_committee(&validator),
-        EDuplicateValidator,
-    );
+    assert!(!self.is_duplicate_with_pending_validator(&validator), EDuplicateValidator);
 
     assert!(validator.is_preactive(), EValidatorNotCandidate);
 
@@ -275,12 +262,7 @@ public(package) fun assert_no_pending_or_active_duplicates(
     // We have to remove and to add again because we can have 2 refs to self
     let validator = self.validators.remove(validator_id);
 
-    assert!(
-        !self.is_duplicate_with_active_validator(&validator)
-                && !self.is_duplicate_with_pending_validator(&validator)
-                && !self.is_duplicate_with_next_epoch_active_committee(&validator),
-        EDuplicateValidator,
-    );
+    assert!(!self.is_duplicate_with_pending_validator(&validator), EDuplicateValidator);
 
     self.validators.add(validator_id, validator);
 }
@@ -322,7 +304,7 @@ public(package) fun request_add_stake(
     let committee_selected = self.next_epoch_active_committee.is_some();
     let ika_amount = stake.value();
     assert!(ika_amount >= MIN_STAKING_THRESHOLD, EStakingBelowThreshold);
-    let validator = get_candidate_or_active_validator_mut(self, validator_id);
+    let validator = self.get_validator_mut(validator_id);
     let staked_ika = validator.stake(
         stake, 
         epoch, 
@@ -345,7 +327,8 @@ public(package) fun request_withdraw_stake(
     let committee_selected = self.next_epoch_active_committee.is_some();
     let is_current_committee = self.active_committee.contains(&validator_id);
     let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
-    let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);validator.request_withdraw_stake(
+    let validator = self.get_validator_mut(validator_id);
+    validator.request_withdraw_stake(
         staked_ika,
         is_current_committee, 
         is_next_committee, 
@@ -368,7 +351,7 @@ public(package) fun withdraw_stake(
     let is_current_committee = self.active_committee.contains(&validator_id);
     let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
     
-    let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
+    let validator = self.get_validator_mut(validator_id);
     let ika_balance = validator.withdraw_stake(
         staked_ika,
         is_current_committee, 
@@ -404,6 +387,21 @@ public(package) fun withdraw_stake(
 // }
 
 // ==== validator config setting functions ====
+
+/// Create a new `ValidatorOperationCap` and registers it.
+/// The original object is thus revoked.
+public(package) fun rotate_operation_cap(self: &mut ValidatorSet, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
+    let validator = self.get_validator_mut(cap.validator_id());
+    validator.rotate_operation_cap(cap, ctx)
+}
+
+/// Create a new `ValidatorCommissionCap` and registers it.
+/// The original object is thus revoked.
+public(package) fun rotate_commission_cap(self: &mut ValidatorSet, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
+    let validator = self.get_validator_mut(cap.validator_id());
+    validator.rotate_commission_cap(cap, ctx)
+}
+
 
 public(package) fun set_validator_name(
     self: &mut ValidatorSet,
@@ -650,7 +648,7 @@ fun activate_added_validators(
 //     while (i < num_validators) {
 //         let vid = vs[i].validator_id();
 
-//         let v = self.get_validator_ref(vid);
+//         let v = self.get_validator(vid);
 //         entries.push_back(
 //             pq::new_entry(v.computation_price(), vs[i].voting_power()),
 //         );
@@ -676,15 +674,15 @@ public fun total_stake(self: &ValidatorSet): u64 {
 }
 
 public fun validator_total_stake_amount(self: &mut ValidatorSet, validator_id: ID): u64 {
-    let validator = get_validator_ref(self, validator_id);
+    let validator = get_validator(self, validator_id);
     validator.ika_balance()
 }
 
 public(package) fun token_exchange_rates(
-    self: &mut ValidatorSet,
+    self: &ValidatorSet,
     validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
-    let validator = self.get_validator_ref(validator_id);
+    let validator = self.get_validator(validator_id);
     validator.exchange_rates()
 }
 
@@ -711,54 +709,17 @@ public(package) fun get_reporters_of(self: &ValidatorSet, validator_id: ID): Vec
 }
 // ==== private helpers ====
 
-fun count_duplicates_vec(
-    self: &mut ValidatorSet,
-    validators: &vector<ID>,
-    validator: &Validator
-): u64 {
-    let len = validators.length();
-    let mut i = 0;
-    let mut result = 0;
-    while (i < len) {
-        let vid = validators[i];
-        let v = self.get_validator_mut(vid);
-        if (v.validator_info().is_duplicate(validator.validator_info())) {
-            result = result + 1;
-        };
-        i = i + 1;
-    };
-    result
-}
-
-public(package) fun is_duplicate_validator(
-    self: &mut ValidatorSet,
-    validators: &vector<ID>,
-    new_validator: &Validator,
-): bool {
-    self.count_duplicates_vec( validators, new_validator) > 0
-}
-
-/// Checks whether `new_validator` is duplicate with any currently active validators.
-/// It differs from `is_active_validator` in that the former checks
-/// only the id but this function looks at more metadata.
-fun is_duplicate_with_active_validator(self: &mut ValidatorSet, new_validator: &Validator): bool {
-    let active_validator_ids = self.active_committee.validator_ids();
-    self.count_duplicates_vec(&active_validator_ids, new_validator) > 0
-}
-
-/// Checks whether `new_validator` is duplicate with any next epoch active validators.
-fun is_duplicate_with_next_epoch_active_committee(self: &mut ValidatorSet, new_validator: &Validator): bool {
-    if(self.next_epoch_active_committee.is_none()) {
-        return false
-    };
-    let next_epoch_active_validator_ids = self.next_epoch_active_committee.borrow().validator_ids();
-    self.count_duplicates_vec(&next_epoch_active_validator_ids, new_validator) > 0
-}
-
-/// Checks whether `new_validator` is duplicate with any currently pending validators.
-fun is_duplicate_with_pending_validator(self: &mut ValidatorSet, new_validator: &Validator): bool {
+/// Checks whether `new_validator` is duplicate with any currently pending validators in the pending active set.
+fun is_duplicate_with_pending_validator(self: &ValidatorSet, new_validator: &Validator): bool {
     let pending_active_validator_ids = self.pending_active_set.borrow().active_ids();
-    self.count_duplicates_vec(&pending_active_validator_ids, new_validator) > 0
+    pending_active_validator_ids.any!(|id| {
+        if(new_validator.validator_id() == *id) {
+            false
+        } else {
+            let validator = self.get_validator(*id);
+            validator.validator_info().is_duplicate(new_validator.validator_info())
+        }
+    })
 }
 
 /// Get mutable reference to a validator by id.
@@ -771,90 +732,9 @@ public(package) fun get_validator_mut(
 }
 
 /// Get reference to a validator by id.
-public fun get_validator_ref(self: &mut ValidatorSet, validator_id: ID): &Validator {
-    self.get_validator_mut(validator_id)
-}
-
-/// Get mutable reference to either a candidate or an active validator by id.
-fun get_candidate_or_active_validator_mut(
-    self: &mut ValidatorSet,
-    validator_id: ID,
-): &mut Validator {
-    let is_active_validator = self.is_active_validator(validator_id);
-    let validator = self.get_validator_mut(validator_id);
-    assert!(validator.is_preactive() || is_active_validator, ENotCandidateOrActiveValidator);
-    validator
-}
-
-/// Get mutable reference to either a candidate or an active or an inactive validator by id.
-fun get_candidate_or_active_or_inactive_validator_mut(
-    self: &mut ValidatorSet,
-    validator_id: ID,
-): &mut Validator {
-    let is_active_validator = self.is_active_validator(validator_id);
-    let validator = self.get_validator_mut(validator_id);
-    assert!(validator.is_preactive() || validator.is_withdrawing() || is_active_validator, ENotCandidateOrActiveOrInactiveValidator);
-    validator
-}
-
-/// Get mutable reference to an active or (if active does not exist) pending or (if pending and
-/// active do not exist) by id.
-/// Note: this function should be called carefully, only after verifying the transaction
-/// sender has the ability to modify the `Validator`.
-fun get_active_or_pending_validator_mut(
-    self: &mut ValidatorSet,
-    validator_id: ID,
-): &mut Validator {
-    assert!(self.active_committee.contains(&validator_id) || self.pending_active_set.borrow().find_validator_index(validator_id).is_some(), ENotActiveOrPendingValidator);
-    self.get_validator_mut(validator_id)
-}
-
-/// Get mutable reference to an active or (if active does not exist) pending or (if pending and
-/// active do not exist) or candidate validator by id.
-/// Note: this function should be called carefully, only after verifying the transaction
-/// sender has the ability to modify the `Validator`.
-fun get_active_or_pending_or_candidate_validator_mut(
-    self: &mut ValidatorSet,
-    validator_id: ID,
-): &mut Validator {
-    let is_active_validator = self.is_active_validator(validator_id);
-    let is_pending_active_validator = self.pending_active_set.borrow().find_validator_index(validator_id).is_some();
-
-    let validator = self.get_validator_mut(validator_id);
-    assert!(is_active_validator || is_pending_active_validator || validator.is_preactive(), ENotCandidateOrActiveOrPendingValidator);
-    validator
-}
-
-public(package) fun get_validator_mut_with_operation_cap(
-    self: &mut ValidatorSet,
-    operation_cap: &ValidatorOperationCap,
-): &mut Validator {
-    let validator_id = operation_cap.validator_id();
-    self.get_active_or_pending_validator_mut(validator_id)
-}
-
-public(package) fun get_validator_mut_with_operation_cap_including_candidates(
-    self: &mut ValidatorSet,
-    operation_cap: &ValidatorOperationCap,
-): &mut Validator {
-    let validator_id = operation_cap.validator_id();
-    self.get_active_or_pending_or_candidate_validator_mut(validator_id)
-}
-
-public(package) fun get_validator_mut_with_cap(
-    self: &mut ValidatorSet,
-    cap: &ValidatorCap,
-): &mut Validator {
-    let validator_id = cap.validator_id();
-    self.get_active_or_pending_validator_mut(validator_id)
-}
-
-public(package) fun get_validator_mut_with_cap_including_candidates(
-    self: &mut ValidatorSet,
-    cap: &ValidatorCap,
-): &mut Validator {
-    let validator_id = cap.validator_id();
-    self.get_active_or_pending_or_candidate_validator_mut(validator_id)
+public fun get_validator(self: &ValidatorSet, validator_id: ID): &Validator {
+    assert!(self.validators.contains(validator_id), ENotAValidator);
+    self.validators.borrow(validator_id)
 }
 
 /// Given a vector of validator ids to look for, return their indices in the validator vector.
@@ -879,11 +759,11 @@ fun get_validator_indices(
 
 /// Verify the operation capability is valid for a Validator.
 public(package) fun verify_operation_cap(
-    self: &mut ValidatorSet,
+    self: &ValidatorSet,
     cap: &ValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
-    let validator = self.get_validator_ref(validator_id);
+    let validator = self.get_validator(validator_id);
     assert!(validator.operation_cap_id() == &object::id(cap), EInvalidCap);
 }
 
@@ -1070,7 +950,7 @@ fun distribute_reward(
 /// Emit events containing information of each validator for the epoch,
 /// including stakes, rewards, performance, etc.
 fun emit_validator_epoch_events(
-    self: &mut ValidatorSet,
+    self: &ValidatorSet,
     new_epoch: u64,
     staking_rewards_amounts: &vector<u64>,
     slashed_validators: &vector<ID>,
@@ -1081,7 +961,7 @@ fun emit_validator_epoch_events(
     while (i < num_validators) {
         let member = members[i];
         let validator_id = member.validator_id();
-        let validator = self.get_validator_ref(validator_id);
+        let validator = self.get_validator(validator_id);
         let tallying_rule_reporters = if (self.validator_report_records.contains(&validator_id)) {
             self.validator_report_records[&validator_id].into_keys()
         } else {
@@ -1199,12 +1079,12 @@ public fun pending_active_set(self: &ValidatorSet): &PendingActiveSet {
 
 /// Returns true if the `validator_id` is a validator candidate.
 public fun is_validator_candidate(self: &mut ValidatorSet, validator_id: ID): bool {
-    let validator = self.get_validator_ref(validator_id);
+    let validator = self.get_validator(validator_id);
     validator.is_preactive()
 }
 
 /// Returns true if the validator identified by `validator_id` is of an inactive validator.
 public fun is_inactive_validator(self: &mut ValidatorSet, validator_id: ID): bool {
-    let validator = self.get_validator_ref(validator_id);
+    let validator = self.get_validator(validator_id);
     validator.is_withdrawing()
 }

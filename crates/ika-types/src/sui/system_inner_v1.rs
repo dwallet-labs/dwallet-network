@@ -77,7 +77,7 @@ pub struct SystemInnerV1 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub upgrade_caps: Vec<UpgradeCap>,
-    pub validators: ValidatorSetV1,
+    pub validator_set: ValidatorSetV1,
     pub parameters: SystemParametersV1,
     pub computation_price_per_unit_size: u64,
     pub ika_treasury: IkaTreasuryV1,
@@ -197,8 +197,8 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
     }
 
-    fn validators(&self) -> &ValidatorSetV1 {
-        &self.validators
+    fn validator_set(&self) -> &ValidatorSetV1 {
+        &self.validator_set
     }
 
     fn read_bls_committee(
@@ -234,11 +234,11 @@ impl SystemInnerTrait for SystemInnerV1 {
     }
 
     fn get_ika_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
-        self.read_bls_committee(&self.validators.active_committee)
+        self.read_bls_committee(&self.validator_set.active_committee)
     }
 
     fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>> {
-        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
+        let Some(next_epoch_committee) = self.validator_set.next_epoch_committee.as_ref() else {
             return None;
         };
         Some(self.read_bls_committee(next_epoch_committee))

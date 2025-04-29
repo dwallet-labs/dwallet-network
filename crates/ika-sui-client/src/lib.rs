@@ -331,7 +331,7 @@ where
         match ika_system_state_inner {
             SystemInner::V1(ika_system_state_inner) => {
                 let validator_ids = ika_system_state_inner
-                    .validators
+                    .validator_set
                     .active_committee
                     .members
                     .iter()
@@ -341,7 +341,7 @@ where
                 let validators = self
                     .inner
                     .get_validators_from_object_table(
-                        ika_system_state_inner.validators.validators.id,
+                        ika_system_state_inner.validator_set.validators.id,
                         validator_ids,
                     )
                     .await
@@ -401,7 +401,7 @@ where
                     })?;
 
                 let validators = ika_system_state_inner
-                    .validators
+                    .validator_set
                     .active_committee
                     .members
                     .iter()
@@ -441,8 +441,8 @@ where
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
                     network_decryption_keys_data,
-                    ika_system_state_inner.validators.active_committee.quorum_threshold,
-                    ika_system_state_inner.validators.active_committee.validity_threshold
+                    ika_system_state_inner.validator_set.active_committee.quorum_threshold,
+                    ika_system_state_inner.validator_set.active_committee.validity_threshold
                 );
 
                 Ok(epoch_start_system_state)
@@ -459,7 +459,7 @@ where
         let validators = self
             .inner
             .get_validators_from_object_table(
-                ika_system_state_inner.validators.validators.id,
+                ika_system_state_inner.validator_set.validators.id,
                 validator_ids,
             )
             .await

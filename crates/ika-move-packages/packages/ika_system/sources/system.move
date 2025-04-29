@@ -406,10 +406,10 @@ public fun set_next_epoch_network_pubkey_bytes(
 
 /// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
 public fun token_exchange_rates(
-    self: &mut System,
+    self: &System,
     validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
-    let self = self.inner_mut();
+    let self = self.inner();
     self.token_exchange_rates(validator_id)
 }
 
@@ -543,9 +543,9 @@ public fun get_reporters_of(self: &mut System, validator_id: ID): VecSet<ID> {
 
 #[test_only]
 /// Return the current validator set
-public fun validators(self: &mut System): &ValidatorSet {
+public fun validator_set(self: &mut System): &ValidatorSet {
     let self = self.inner();
-    self.validators()
+    self.validator_set()
 }
 
 #[test_only]

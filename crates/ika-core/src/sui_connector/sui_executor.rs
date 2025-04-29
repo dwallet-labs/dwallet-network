@@ -104,7 +104,7 @@ where
         let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + (ika_system_state_inner.epoch_duration_ms() / 2);
         let next_epoch_committee_is_empty =
-            system_inner_v1.validators.next_epoch_committee.is_none();
+            system_inner_v1.validator_set.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time
             && next_epoch_committee_is_empty
             && self.is_completed_network_dkg_for_all_keys().await
@@ -161,7 +161,7 @@ where
             == coordinator.last_session_to_complete_in_current_epoch;
         let all_immediate_sessions_completed = coordinator.started_system_sessions_count
             == coordinator.completed_system_sessions_count;
-        let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
+        let next_epoch_committee_exists = system_inner_v1.validator_set.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
@@ -268,7 +268,7 @@ where
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
                         let active_members: BlsCommittee =
-                            ika_system_state_inner.validators().clone().active_committee;
+                            ika_system_state_inner.validator_set().clone().active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =

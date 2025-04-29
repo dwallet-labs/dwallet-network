@@ -29,8 +29,8 @@ title: Module `(ika_system=0x0)::validator`
 -  [Function `destroy_empty`](#(ika_system=0x0)_validator_destroy_empty)
 -  [Function `exchange_rate_at_epoch`](#(ika_system=0x0)_validator_exchange_rate_at_epoch)
 -  [Function `ika_balance_at_epoch`](#(ika_system=0x0)_validator_ika_balance_at_epoch)
--  [Function `new_validator_operation_cap`](#(ika_system=0x0)_validator_new_validator_operation_cap)
--  [Function `new_validator_commission_cap`](#(ika_system=0x0)_validator_new_validator_commission_cap)
+-  [Function `rotate_operation_cap`](#(ika_system=0x0)_validator_rotate_operation_cap)
+-  [Function `rotate_commission_cap`](#(ika_system=0x0)_validator_rotate_commission_cap)
 -  [Function `collect_commission`](#(ika_system=0x0)_validator_collect_commission)
 -  [Function `validator_id`](#(ika_system=0x0)_validator_validator_id)
 -  [Function `validator_cap_id`](#(ika_system=0x0)_validator_validator_cap_id)
@@ -382,12 +382,12 @@ The state of the validator and the parameters to advance the epoch are not consi
 
 
 
-<a name="(ika_system=0x0)_validator_EIncorrectPoolId"></a>
+<a name="(ika_system=0x0)_validator_EIncorrectValidatorId"></a>
 
 Trying to withdraw stake from the incorrect validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectPoolId">EIncorrectPoolId</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>: u64 = 9;
 </code></pre>
 
 
@@ -412,52 +412,52 @@ Trying to withdraw active stake.
 
 
 
-<a name="(ika_system=0x0)_validator_EPoolAlreadyUpdated"></a>
+<a name="(ika_system=0x0)_validator_EValidatorAlreadyUpdated"></a>
 
 The epoch of the validator has already been advanced.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolAlreadyUpdated">EPoolAlreadyUpdated</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EPoolAlreadyWithdrawing"></a>
+<a name="(ika_system=0x0)_validator_EValidatorAlreadyWithdrawing"></a>
 
 Trying to set the validator to withdrawing state when it is already withdrawing.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolAlreadyWithdrawing">EPoolAlreadyWithdrawing</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyWithdrawing">EValidatorAlreadyWithdrawing</a>: u64 = 5;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EPoolIsNotActive"></a>
+<a name="(ika_system=0x0)_validator_EValidatorIsNotActive"></a>
 
-Pool is not in <code>Active</code> state.
+Validator is not in <code>Active</code> state.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolIsNotActive">EPoolIsNotActive</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotActive">EValidatorIsNotActive</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EPoolIsNotPreActive"></a>
+<a name="(ika_system=0x0)_validator_EValidatorIsNotPreActive"></a>
 
-Pool is not in <code>PreActive</code> state.
+Validator is not in <code>PreActive</code> state.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolIsNotPreActive">EPoolIsNotPreActive</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EPoolNotEmpty"></a>
+<a name="(ika_system=0x0)_validator_EValidatorNotEmpty"></a>
 
 Trying to destroy a non-empty validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolNotEmpty">EPoolNotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>: u64 = 3;
 </code></pre>
 
 
@@ -610,7 +610,7 @@ Otherwise, it will be activated in the current epoch.
 ) {
     <b>assert</b>!(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>assert</b>!(object::id(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_cap_id">validator_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.state == ValidatorState::PreActive, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolIsNotPreActive">EPoolIsNotPreActive</a>);
+    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.state == ValidatorState::PreActive, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>);
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a> = <b>if</b> (committee_selected) {
         current_epoch + 2
     } <b>else</b> {
@@ -650,7 +650,7 @@ Set the state of the validator to <code>Withdrawing</code>.
 ) {
     <b>assert</b>!(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>assert</b>!(object::id(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_cap_id">validator_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(!<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_withdrawing">is_withdrawing</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolAlreadyWithdrawing">EPoolAlreadyWithdrawing</a>);
+    <b>assert</b>!(!<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_withdrawing">is_withdrawing</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyWithdrawing">EValidatorAlreadyWithdrawing</a>);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.state = ValidatorState::Withdrawing(current_epoch + 1);
 }
 </code></pre>
@@ -710,7 +710,7 @@ Stake the given amount of IKA in the validator.
     committee_selected: bool,
     ctx: &<b>mut</b> TxContext,
 ): StakedIka {
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive">is_preactive</a>() || <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_active">is_active</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolIsNotActive">EPoolIsNotActive</a>);
+    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive">is_preactive</a>() || <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_active">is_active</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotActive">EValidatorIsNotActive</a>);
     <b>assert</b>!(to_stake.value() &gt; 0, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>);
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a> = <b>if</b> (committee_selected) {
         current_epoch + 2
@@ -759,7 +759,7 @@ Marks the <code>StakedIka</code> as withdrawing and updates the activation epoch
     current_epoch: u64,
 ) {
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value() &gt; 0, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>);
-    <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectPoolId">EIncorrectPoolId</a>);
+    <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>);
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.is_staked(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>);
     // Only allow requesting <b>if</b> the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> cannot be withdrawn directly.
     <b>assert</b>!(!<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.can_withdraw_early(in_next_committee, current_epoch), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>);
@@ -821,7 +821,7 @@ Perform the withdrawal of the staked IKA, returning the amount to the caller.
     current_epoch: u64,
 ): Balance&lt;IKA&gt; {
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value() &gt; 0, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>);
-    <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectPoolId">EIncorrectPoolId</a>);
+    <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>);
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a> = <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>();
     // One step, early withdrawal in the case when committee before
     // activation epoch hasn't been selected. covers both E+1 and E+2 cases.
@@ -893,7 +893,7 @@ Advance epoch for the <code><a href="../ika_system/validator.md#(ika_system=0x0)
     <b>mut</b> rewards: Balance&lt;IKA&gt;,
     current_epoch: u64,
 ) {
-    <b>assert</b>!(current_epoch &gt; <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.latest_epoch, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolAlreadyUpdated">EPoolAlreadyUpdated</a>);
+    <b>assert</b>!(current_epoch &gt; <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.latest_epoch, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>);
     // Sanity check.
     <b>assert</b>!(rewards.value() == 0 || <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_ika_balance">ika_balance</a> &gt; 0, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectEpochAdvance">EIncorrectEpochAdvance</a>);
     // Split the commission from the rewards.
@@ -1306,7 +1306,7 @@ Destroy the validator if it is empty.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_destroy_empty">destroy_empty</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>) {
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_empty">is_empty</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EPoolNotEmpty">EPoolNotEmpty</a>);
+    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_empty">is_empty</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>);
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a> {
         id,
         <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>,
@@ -1421,15 +1421,15 @@ requests, and lack of immediate updates.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_new_validator_operation_cap"></a>
+<a name="(ika_system=0x0)_validator_rotate_operation_cap"></a>
 
-## Function `new_validator_operation_cap`
+## Function `rotate_operation_cap`
 
 Create a new <code>ValidatorOperationCap</code>, and registers it,
 thus revoking the previous cap's permission.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_new_validator_operation_cap">new_validator_operation_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rotate_operation_cap">rotate_operation_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>
 </code></pre>
 
 
@@ -1438,13 +1438,14 @@ thus revoking the previous cap's permission.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_new_validator_operation_cap">new_validator_operation_cap</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rotate_operation_cap">rotate_operation_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>,
     cap: &ValidatorCap,
     ctx: &<b>mut</b> TxContext,
 ): ValidatorOperationCap {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> = cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>();
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>let</b> operation_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_operation_cap">validator_cap::new_validator_operation_cap</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>, ctx);
     self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a> = object::id(&operation_cap);
     operation_cap
@@ -1455,13 +1456,15 @@ thus revoking the previous cap's permission.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_new_validator_commission_cap"></a>
+<a name="(ika_system=0x0)_validator_rotate_commission_cap"></a>
 
-## Function `new_validator_commission_cap`
+## Function `rotate_commission_cap`
+
+Create a new <code>ValidatorCommissionCap</code>, and registers it,
+thus revoking the previous cap's permission.
 
 
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_new_validator_commission_cap">new_validator_commission_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">validator_cap::ValidatorCommissionCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rotate_commission_cap">rotate_commission_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">validator_cap::ValidatorCommissionCap</a>
 </code></pre>
 
 
@@ -1470,13 +1473,14 @@ thus revoking the previous cap's permission.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_new_validator_commission_cap">new_validator_commission_cap</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rotate_commission_cap">rotate_commission_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>,
     cap: &ValidatorCap,
     ctx: &<b>mut</b> TxContext,
 ): ValidatorCommissionCap {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> = cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>();
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>let</b> commission_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_commission_cap">validator_cap::new_validator_commission_cap</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>, ctx);
     self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a> = object::id(&commission_cap);
     commission_cap

@@ -980,7 +980,7 @@ The change will only take effects starting from the next epoch.
 Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_token_exchange_rates">token_exchange_rates</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<a href="../sui/table.md#sui_table_Table">sui::table::Table</a>&lt;u64, (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate_TokenExchangeRate">token_exchange_rate::TokenExchangeRate</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_token_exchange_rates">token_exchange_rates</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<a href="../sui/table.md#sui_table_Table">sui::table::Table</a>&lt;u64, (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate_TokenExchangeRate">token_exchange_rate::TokenExchangeRate</a>&gt;
 </code></pre>
 
 
@@ -990,10 +990,10 @@ Getter of the pool token exchange rate of a validator. Works for both active and
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_token_exchange_rates">token_exchange_rates</a>(
-    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     validator_id: ID,
 ): &Table&lt;u64, TokenExchangeRate&gt; {
-    <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
+    <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>();
     self.<a href="../ika_system/system.md#(ika_system=0x0)_system_token_exchange_rates">token_exchange_rates</a>(validator_id)
 }
 </code></pre>

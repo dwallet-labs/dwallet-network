@@ -21,25 +21,25 @@ const BASIS_POINT_DENOMINATOR: u16 = 10_000;
 
 // Error codes
 /// The epoch of the validator has already been advanced.
-const EPoolAlreadyUpdated: u64 = 0;
+const EValidatorAlreadyUpdated: u64 = 0;
 /// Error in a calculation. Indicates that a sanity check failed.
 const ECalculationError: u64 = 1;
 /// The state of the validator and the parameters to advance the epoch are not consistent.
 const EIncorrectEpochAdvance: u64 = 2;
 /// Trying to destroy a non-empty validator.
-const EPoolNotEmpty: u64 = 3;
-/// Pool is not in `PreActive` state.
-const EPoolIsNotPreActive: u64 = 4;
+const EValidatorNotEmpty: u64 = 3;
+/// Validator is not in `PreActive` state.
+const EValidatorIsNotPreActive: u64 = 4;
 /// Trying to set the validator to withdrawing state when it is already withdrawing.
-const EPoolAlreadyWithdrawing: u64 = 5;
-/// Pool is not in `Active` state.
-const EPoolIsNotActive: u64 = 6;
+const EValidatorAlreadyWithdrawing: u64 = 5;
+/// Validator is not in `Active` state.
+const EValidatorIsNotActive: u64 = 6;
 /// Trying to stake zero amount.
 const EZeroStake: u64 = 7;
 /// StakedIka is already in `Withdrawing` state.
 const ENotStaked: u64 = 8;
 /// Trying to withdraw stake from the incorrect validator.
-const EIncorrectPoolId: u64 = 9;
+const EIncorrectValidatorId: u64 = 9;
 /// Trying to withdraw active stake.
 const ENotWithdrawing: u64 = 10;
 /// Attempt to withdraw before `withdraw_epoch`.
@@ -224,7 +224,7 @@ public(package) fun activate(
 ) {
     assert!(validator_cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
     assert!(object::id(validator_cap) == validator.validator_cap_id, EAuthorizationFailure);
-    assert!(validator.state == ValidatorState::PreActive, EPoolIsNotPreActive);
+    assert!(validator.state == ValidatorState::PreActive, EValidatorIsNotPreActive);
     let activation_epoch = if (committee_selected) {
         current_epoch + 2
     } else {
@@ -246,7 +246,7 @@ public(package) fun set_withdrawing(
 ) {
     assert!(validator_cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
     assert!(object::id(validator_cap) == validator.validator_cap_id, EAuthorizationFailure);
-    assert!(!validator.is_withdrawing(), EPoolAlreadyWithdrawing);
+    assert!(!validator.is_withdrawing(), EValidatorAlreadyWithdrawing);
     validator.state = ValidatorState::Withdrawing(current_epoch + 1);
 }
 
@@ -266,7 +266,7 @@ public(package) fun stake(
     committee_selected: bool,
     ctx: &mut TxContext,
 ): StakedIka {
-    assert!(validator.is_preactive() || validator.is_active(), EPoolIsNotActive);
+    assert!(validator.is_preactive() || validator.is_active(), EValidatorIsNotActive);
     assert!(to_stake.value() > 0, EZeroStake);
 
     let activation_epoch = if (committee_selected) {
@@ -298,7 +298,7 @@ public(package) fun request_withdraw_stake(
     current_epoch: u64,
 ) {
     assert!(staked_ika.value() > 0, EZeroStake);
-    assert!(staked_ika.validator_id() == validator.validator_id(), EIncorrectPoolId);
+    assert!(staked_ika.validator_id() == validator.validator_id(), EIncorrectValidatorId);
     assert!(staked_ika.is_staked(), ENotStaked);
 
     // Only allow requesting if the stake cannot be withdrawn directly.
@@ -347,7 +347,7 @@ public(package) fun withdraw_stake(
     current_epoch: u64,
 ): Balance<IKA> {
     assert!(staked_ika.value() > 0, EZeroStake);
-    assert!(staked_ika.validator_id() == validator.validator_id(), EIncorrectPoolId);
+    assert!(staked_ika.validator_id() == validator.validator_id(), EIncorrectValidatorId);
 
     let activation_epoch = staked_ika.activation_epoch();
 
@@ -404,7 +404,7 @@ public(package) fun advance_epoch(
     mut rewards: Balance<IKA>,
     current_epoch: u64,
 ) {
-    assert!(current_epoch > validator.latest_epoch, EPoolAlreadyUpdated);
+    assert!(current_epoch > validator.latest_epoch, EValidatorAlreadyUpdated);
     // Sanity check.
     assert!(rewards.value() == 0 || validator.ika_balance > 0, EIncorrectEpochAdvance);
 
@@ -600,7 +600,7 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
 
 /// Destroy the validator if it is empty.
 public(package) fun destroy_empty(validator: Validator) {
-    assert!(validator.is_empty(), EPoolNotEmpty);
+    assert!(validator.is_empty(), EValidatorNotEmpty);
 
     let Validator {
         id,
@@ -681,25 +681,29 @@ public(package) fun ika_balance_at_epoch(validator: &Validator, epoch: u64): u64
 
 /// Create a new `ValidatorOperationCap`, and registers it,
 /// thus revoking the previous cap's permission.
-public(package) fun new_validator_operation_cap(
+public(package) fun rotate_operation_cap(
     self: &mut Validator,
     cap: &ValidatorCap,
     ctx: &mut TxContext,
 ): ValidatorOperationCap {
     let validator_id = cap.validator_id();
     assert!(validator_id == self.id.to_inner(), EAuthorizationFailure);
+    assert!(object::id(cap) == self.operation_cap_id, EAuthorizationFailure);
     let operation_cap = validator_cap::new_validator_operation_cap(validator_id, ctx);
     self.operation_cap_id = object::id(&operation_cap);
     operation_cap
 }
 
-public(package) fun new_validator_commission_cap(
+/// Create a new `ValidatorCommissionCap`, and registers it,
+/// thus revoking the previous cap's permission.
+public(package) fun rotate_commission_cap(
     self: &mut Validator,
     cap: &ValidatorCap,
     ctx: &mut TxContext,
 ): ValidatorCommissionCap {
     let validator_id = cap.validator_id();
     assert!(validator_id == self.id.to_inner(), EAuthorizationFailure);
+    assert!(object::id(cap) == self.commission_cap_id, EAuthorizationFailure);
     let commission_cap = validator_cap::new_validator_commission_cap(validator_id, ctx);
     self.commission_cap_id = object::id(&commission_cap);
     commission_cap

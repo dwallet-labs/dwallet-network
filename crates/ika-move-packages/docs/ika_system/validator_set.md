@@ -20,6 +20,8 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `request_add_stake`](#(ika_system=0x0)_validator_set_request_add_stake)
 -  [Function `request_withdraw_stake`](#(ika_system=0x0)_validator_set_request_withdraw_stake)
 -  [Function `withdraw_stake`](#(ika_system=0x0)_validator_set_withdraw_stake)
+-  [Function `rotate_operation_cap`](#(ika_system=0x0)_validator_set_rotate_operation_cap)
+-  [Function `rotate_commission_cap`](#(ika_system=0x0)_validator_set_rotate_commission_cap)
 -  [Function `set_validator_name`](#(ika_system=0x0)_validator_set_set_validator_name)
 -  [Function `set_validator_metadata`](#(ika_system=0x0)_validator_set_set_validator_metadata)
 -  [Function `set_next_commission`](#(ika_system=0x0)_validator_set_set_next_commission)
@@ -39,21 +41,9 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `pending_active_validators_count`](#(ika_system=0x0)_validator_set_pending_active_validators_count)
 -  [Function `is_active_validator`](#(ika_system=0x0)_validator_set_is_active_validator)
 -  [Function `get_reporters_of`](#(ika_system=0x0)_validator_set_get_reporters_of)
--  [Function `count_duplicates_vec`](#(ika_system=0x0)_validator_set_count_duplicates_vec)
--  [Function `is_duplicate_validator`](#(ika_system=0x0)_validator_set_is_duplicate_validator)
--  [Function `is_duplicate_with_active_validator`](#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator)
--  [Function `is_duplicate_with_next_epoch_active_committee`](#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee)
 -  [Function `is_duplicate_with_pending_validator`](#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator)
 -  [Function `get_validator_mut`](#(ika_system=0x0)_validator_set_get_validator_mut)
--  [Function `get_validator_ref`](#(ika_system=0x0)_validator_set_get_validator_ref)
--  [Function `get_candidate_or_active_validator_mut`](#(ika_system=0x0)_validator_set_get_candidate_or_active_validator_mut)
--  [Function `get_candidate_or_active_or_inactive_validator_mut`](#(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut)
--  [Function `get_active_or_pending_validator_mut`](#(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut)
--  [Function `get_active_or_pending_or_candidate_validator_mut`](#(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut)
--  [Function `get_validator_mut_with_operation_cap`](#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap)
--  [Function `get_validator_mut_with_operation_cap_including_candidates`](#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap_including_candidates)
--  [Function `get_validator_mut_with_cap`](#(ika_system=0x0)_validator_set_get_validator_mut_with_cap)
--  [Function `get_validator_mut_with_cap_including_candidates`](#(ika_system=0x0)_validator_set_get_validator_mut_with_cap_including_candidates)
+-  [Function `get_validator`](#(ika_system=0x0)_validator_set_get_validator)
 -  [Function `get_validator_indices`](#(ika_system=0x0)_validator_set_get_validator_indices)
 -  [Function `verify_operation_cap`](#(ika_system=0x0)_validator_set_verify_operation_cap)
 -  [Function `process_pending_validators`](#(ika_system=0x0)_validator_set_process_pending_validators)
@@ -416,42 +406,6 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_ENotActiveOrPendingValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotActiveOrPendingValidator">ENotActiveOrPendingValidator</a>: u64 = 9;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrInactiveValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrInactiveValidator">ENotCandidateOrActiveOrInactiveValidator</a>: u64 = 15;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrPendingValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrPendingValidator">ENotCandidateOrActiveOrPendingValidator</a>: u64 = 16;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ENotCandidateOrActiveValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveValidator">ENotCandidateOrActiveValidator</a>: u64 = 14;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
 
 
@@ -622,12 +576,7 @@ Called by <code>ika_system</code> to add a new validator candidate.
     );
     <b>let</b> validator_id = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.validator_id();
     // The next assertions are not critical <b>for</b> the protocol, but they are here to catch problematic configs earlier.
-    <b>assert</b>!(
-        !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self, &<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self, &<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self, &<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>),
-        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>,
-    );
+    <b>assert</b>!(!<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self, &<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>);
     <b>assert</b>!(!self.validators.contains(validator_id), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>);
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>);
     self.validators.add(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>);
@@ -748,12 +697,7 @@ Called by <code>ika_system</code> to add a new validator to <code>pending_active
     <b>let</b> committee_selected = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some();
     // We have to remove and to add again because we can have 2 refs to self
     <b>let</b> <b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.validators.remove(validator_id);
-    <b>assert</b>!(
-        !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>),
-        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>,
-    );
+    <b>assert</b>!(!self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>);
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.activate(cap, current_epoch, committee_selected);
     self.validators.add(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>);
@@ -787,12 +731,7 @@ Called by <code>ika_system</code> to add a new validator to <code>pending_active
     <b>assert</b>!(self.validators.contains(validator_id), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotAValidator">ENotAValidator</a>);
     // We have to remove and to add again because we can have 2 refs to self
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.validators.remove(validator_id);
-    <b>assert</b>!(
-        !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>)
-                && !self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>),
-        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>,
-    );
+    <b>assert</b>!(!self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(&<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>);
     self.validators.add(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>);
 }
 </code></pre>
@@ -871,7 +810,7 @@ Aborts in case the staking amount is smaller than MIN_STAKING_THRESHOLD
     <b>let</b> committee_selected = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some();
     <b>let</b> ika_amount = stake.value();
     <b>assert</b>!(ika_amount &gt;= <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>);
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_validator_mut">get_candidate_or_active_validator_mut</a>(self, validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <b>let</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.stake(
         stake,
         epoch,
@@ -914,7 +853,8 @@ withdrawal can be performed.
     <b>let</b> committee_selected = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some();
     <b>let</b> is_current_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.contains(&validator_id);
     <b>let</b> is_next_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some_and!(|c| c.contains(&validator_id));
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut">get_candidate_or_active_or_inactive_validator_mut</a>(validator_id);<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_withdraw_stake">request_withdraw_stake</a>(
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_withdraw_stake">request_withdraw_stake</a>(
         <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>,
         is_current_committee,
         is_next_committee,
@@ -956,7 +896,7 @@ greater than the <code>withdraw_epoch</code>.
     <b>let</b> committee_selected = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some();
     <b>let</b> is_current_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.contains(&validator_id);
     <b>let</b> is_next_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some_and!(|c| c.contains(&validator_id));
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut">get_candidate_or_active_or_inactive_validator_mut</a>(validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <b>let</b> ika_balance = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_withdraw_stake">withdraw_stake</a>(
         <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>,
         is_current_committee,
@@ -965,6 +905,60 @@ greater than the <code>withdraw_epoch</code>.
     );
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_pending_active_set">update_pending_active_set</a>(validator_id, current_epoch, committee_selected, <b>false</b>);
     ika_balance.into_coin(ctx)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_rotate_operation_cap"></a>
+
+## Function `rotate_operation_cap`
+
+Create a new <code>ValidatorOperationCap</code> and registers it.
+The original object is thus revoked.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_operation_cap">rotate_operation_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_operation_cap">rotate_operation_cap</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, cap: &ValidatorCap, ctx: &<b>mut</b> TxContext): ValidatorOperationCap {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(cap.validator_id());
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_operation_cap">rotate_operation_cap</a>(cap, ctx)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_rotate_commission_cap"></a>
+
+## Function `rotate_commission_cap`
+
+Create a new <code>ValidatorCommissionCap</code> and registers it.
+The original object is thus revoked.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_commission_cap">rotate_commission_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">validator_cap::ValidatorCommissionCap</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_commission_cap">rotate_commission_cap</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, cap: &ValidatorCap, ctx: &<b>mut</b> TxContext): ValidatorCommissionCap {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(cap.validator_id());
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_rotate_commission_cap">rotate_commission_cap</a>(cap, ctx)
 }
 </code></pre>
 
@@ -1488,7 +1482,7 @@ It does the following things:
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_validator_total_stake_amount">validator_total_stake_amount</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): u64 {
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(self, validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(self, validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.ika_balance()
 }
 </code></pre>
@@ -1503,7 +1497,7 @@ It does the following things:
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_token_exchange_rates">token_exchange_rates</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<a href="../sui/table.md#sui_table_Table">sui::table::Table</a>&lt;u64, (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate_TokenExchangeRate">token_exchange_rate::TokenExchangeRate</a>&gt;
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_token_exchange_rates">token_exchange_rates</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<a href="../sui/table.md#sui_table_Table">sui::table::Table</a>&lt;u64, (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate_TokenExchangeRate">token_exchange_rate::TokenExchangeRate</a>&gt;
 </code></pre>
 
 
@@ -1513,10 +1507,10 @@ It does the following things:
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_token_exchange_rates">token_exchange_rates</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
     validator_id: ID,
 ): &Table&lt;u64, TokenExchangeRate&gt; {
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.exchange_rates()
 }
 </code></pre>
@@ -1607,138 +1601,14 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_validator_set_count_duplicates_vec"></a>
-
-## Function `count_duplicates_vec`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validators: &vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validators: &vector&lt;ID&gt;,
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &Validator
-): u64 {
-    <b>let</b> len = validators.length();
-    <b>let</b> <b>mut</b> i = 0;
-    <b>let</b> <b>mut</b> result = 0;
-    <b>while</b> (i &lt; len) {
-        <b>let</b> vid = validators[i];
-        <b>let</b> v = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(vid);
-        <b>if</b> (v.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>().is_duplicate(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>())) {
-            result = result + 1;
-        };
-        i = i + 1;
-    };
-    result
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_is_duplicate_validator"></a>
-
-## Function `is_duplicate_validator`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_validator">is_duplicate_validator</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validators: &vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_validator">is_duplicate_validator</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validators: &vector&lt;ID&gt;,
-    new_validator: &Validator,
-): bool {
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>( validators, new_validator) &gt; 0
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_is_duplicate_with_active_validator"></a>
-
-## Function `is_duplicate_with_active_validator`
-
-Checks whether <code>new_validator</code> is duplicate with any currently active validators.
-It differs from <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a></code> in that the former checks
-only the id but this function looks at more metadata.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &Validator): bool {
-    <b>let</b> active_validator_ids = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.validator_ids();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(&active_validator_ids, new_validator) &gt; 0
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee"></a>
-
-## Function `is_duplicate_with_next_epoch_active_committee`
-
-Checks whether <code>new_validator</code> is duplicate with any next epoch active validators.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_next_epoch_active_committee">is_duplicate_with_next_epoch_active_committee</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &Validator): bool {
-    <b>if</b>(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_none()) {
-        <b>return</b> <b>false</b>
-    };
-    <b>let</b> next_epoch_active_validator_ids = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.borrow().validator_ids();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(&next_epoch_active_validator_ids, new_validator) &gt; 0
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator"></a>
 
 ## Function `is_duplicate_with_pending_validator`
 
-Checks whether <code>new_validator</code> is duplicate with any currently pending validators.
+Checks whether <code>new_validator</code> is duplicate with any currently pending validators in the pending active set.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): bool
+<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>): bool
 </code></pre>
 
 
@@ -1747,9 +1617,16 @@ Checks whether <code>new_validator</code> is duplicate with any currently pendin
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &Validator): bool {
+<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, new_validator: &Validator): bool {
     <b>let</b> pending_active_validator_ids = self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow().active_ids();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_count_duplicates_vec">count_duplicates_vec</a>(&pending_active_validator_ids, new_validator) &gt; 0
+    pending_active_validator_ids.any!(|id| {
+        <b>if</b>(new_validator.validator_id() == *id) {
+            <b>false</b>
+        } <b>else</b> {
+            <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(*id);
+            <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>().is_duplicate(new_validator.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>())
+        }
+    })
 }
 </code></pre>
 
@@ -1786,14 +1663,14 @@ Get mutable reference to a validator by id.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_set_get_validator_ref"></a>
+<a name="(ika_system=0x0)_validator_set_get_validator"></a>
 
-## Function `get_validator_ref`
+## Function `get_validator`
 
 Get reference to a validator by id.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
 </code></pre>
 
 
@@ -1802,249 +1679,9 @@ Get reference to a validator by id.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): &Validator {
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_candidate_or_active_validator_mut"></a>
-
-## Function `get_candidate_or_active_validator_mut`
-
-Get mutable reference to either a candidate or an active validator by id.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_validator_mut">get_candidate_or_active_validator_mut</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_validator_mut">get_candidate_or_active_validator_mut</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validator_id: ID,
-): &<b>mut</b> Validator {
-    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a>(validator_id);
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive() || <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a>, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveValidator">ENotCandidateOrActiveValidator</a>);
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut"></a>
-
-## Function `get_candidate_or_active_or_inactive_validator_mut`
-
-Get mutable reference to either a candidate or an active or an inactive validator by id.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut">get_candidate_or_active_or_inactive_validator_mut</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_candidate_or_active_or_inactive_validator_mut">get_candidate_or_active_or_inactive_validator_mut</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validator_id: ID,
-): &<b>mut</b> Validator {
-    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a>(validator_id);
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive() || <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_withdrawing() || <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a>, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrInactiveValidator">ENotCandidateOrActiveOrInactiveValidator</a>);
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut"></a>
-
-## Function `get_active_or_pending_validator_mut`
-
-Get mutable reference to an active or (if active does not exist) pending or (if pending and
-active do not exist) by id.
-Note: this function should be called carefully, only after verifying the transaction
-sender has the ability to modify the <code>Validator</code>.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut">get_active_or_pending_validator_mut</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut">get_active_or_pending_validator_mut</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validator_id: ID,
-): &<b>mut</b> Validator {
-    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.contains(&validator_id) || self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow().find_validator_index(validator_id).is_some(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotActiveOrPendingValidator">ENotActiveOrPendingValidator</a>);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut"></a>
-
-## Function `get_active_or_pending_or_candidate_validator_mut`
-
-Get mutable reference to an active or (if active does not exist) pending or (if pending and
-active do not exist) or candidate validator by id.
-Note: this function should be called carefully, only after verifying the transaction
-sender has the ability to modify the <code>Validator</code>.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut">get_active_or_pending_or_candidate_validator_mut</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut">get_active_or_pending_or_candidate_validator_mut</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    validator_id: ID,
-): &<b>mut</b> Validator {
-    <b>let</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a>(validator_id);
-    <b>let</b> is_pending_active_validator = self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow().find_validator_index(validator_id).is_some();
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
-    <b>assert</b>!(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_active_validator">is_active_validator</a> || is_pending_active_validator || <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotCandidateOrActiveOrPendingValidator">ENotCandidateOrActiveOrPendingValidator</a>);
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap"></a>
-
-## Function `get_validator_mut_with_operation_cap`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap">get_validator_mut_with_operation_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, operation_cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap">get_validator_mut_with_operation_cap</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    operation_cap: &ValidatorOperationCap,
-): &<b>mut</b> Validator {
-    <b>let</b> validator_id = operation_cap.validator_id();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut">get_active_or_pending_validator_mut</a>(validator_id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap_including_candidates"></a>
-
-## Function `get_validator_mut_with_operation_cap_including_candidates`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap_including_candidates">get_validator_mut_with_operation_cap_including_candidates</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, operation_cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_operation_cap_including_candidates">get_validator_mut_with_operation_cap_including_candidates</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    operation_cap: &ValidatorOperationCap,
-): &<b>mut</b> Validator {
-    <b>let</b> validator_id = operation_cap.validator_id();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut">get_active_or_pending_or_candidate_validator_mut</a>(validator_id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_validator_mut_with_cap"></a>
-
-## Function `get_validator_mut_with_cap`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_cap">get_validator_mut_with_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_cap">get_validator_mut_with_cap</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    cap: &ValidatorCap,
-): &<b>mut</b> Validator {
-    <b>let</b> validator_id = cap.validator_id();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_validator_mut">get_active_or_pending_validator_mut</a>(validator_id)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_get_validator_mut_with_cap_including_candidates"></a>
-
-## Function `get_validator_mut_with_cap_including_candidates`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_cap_including_candidates">get_validator_mut_with_cap_including_candidates</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>): &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut_with_cap_including_candidates">get_validator_mut_with_cap_including_candidates</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    cap: &ValidatorCap,
-): &<b>mut</b> Validator {
-    <b>let</b> validator_id = cap.validator_id();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_active_or_pending_or_candidate_validator_mut">get_active_or_pending_or_candidate_validator_mut</a>(validator_id)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): &Validator {
+    <b>assert</b>!(self.validators.contains(validator_id), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotAValidator">ENotAValidator</a>);
+    self.validators.borrow(validator_id)
 }
 </code></pre>
 
@@ -2099,7 +1736,7 @@ Aborts if any id isn't in the given validator vector.
 Verify the operation capability is valid for a Validator.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_verify_operation_cap">verify_operation_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_verify_operation_cap">verify_operation_cap</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -2109,11 +1746,11 @@ Verify the operation capability is valid for a Validator.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_verify_operation_cap">verify_operation_cap</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
     cap: &ValidatorOperationCap,
 ) {
     <b>let</b> validator_id = cap.validator_id();
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.operation_cap_id() == &object::id(cap), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>);
 }
 </code></pre>
@@ -2440,7 +2077,7 @@ Emit events containing information of each validator for the epoch,
 including stakes, rewards, performance, etc.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_epoch: u64, staking_rewards_amounts: &vector&lt;u64&gt;, slashed_validators: &vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
+<pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_epoch: u64, staking_rewards_amounts: &vector&lt;u64&gt;, slashed_validators: &vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
 </code></pre>
 
 
@@ -2450,7 +2087,7 @@ including stakes, rewards, performance, etc.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(
-    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
     new_epoch: u64,
     staking_rewards_amounts: &vector&lt;u64&gt;,
     slashed_validators: &vector&lt;ID&gt;,
@@ -2461,7 +2098,7 @@ including stakes, rewards, performance, etc.
     <b>while</b> (i &lt; num_validators) {
         <b>let</b> member = members[i];
         <b>let</b> validator_id = member.validator_id();
-        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(validator_id);
+        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
         <b>let</b> tallying_rule_reporters = <b>if</b> (self.validator_report_records.contains(&validator_id)) {
             self.validator_report_records[&validator_id].into_keys()
         } <b>else</b> {
@@ -2727,7 +2364,7 @@ Returns true if the <code>validator_id</code> is a validator candidate.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_validator_candidate">is_validator_candidate</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): bool {
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive()
 }
 </code></pre>
@@ -2753,7 +2390,7 @@ Returns true if the validator identified by <code>validator_id</code> is of an i
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_inactive_validator">is_inactive_validator</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): bool {
-    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_ref">get_validator_ref</a>(validator_id);
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_withdrawing()
 }
 </code></pre>
