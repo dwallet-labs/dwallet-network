@@ -73,7 +73,7 @@ fn get_decryption_key_shares_from_public_output(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     match shares.state {
-        NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.public_output {
+        NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.latest_public_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
@@ -88,7 +88,7 @@ fn get_decryption_key_shares_from_public_output(
                 Ok(secret_shares)
             }
         },
-        NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.public_output {
+        NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.latest_public_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
@@ -232,6 +232,18 @@ impl DwalletMPCNetworkKeys {
             }
         }
     }
+
+    pub async fn get_network_dkg_public_output(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<MPCPublicOutput> {
+        Ok(self
+            .network_decryption_keys
+            .get(key_id)
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
+            .network_dkg_output
+            .clone())
+    }
 }
 
 /// Advances the network DKG protocol for the supported key types.
@@ -268,16 +280,19 @@ pub(crate) fn advance_network_dkg(
 }
 
 pub(super) fn network_dkg_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<Vec<u8>> {
     match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            generate_secp256k1_dkg_party_public_input(encryption_keys_and_proofs)
-        }
-        DWalletMPCNetworkKeyScheme::Ristretto => {
-            generate_ristretto_dkg_party_public_input(encryption_keys_and_proofs)
-        }
+        DWalletMPCNetworkKeyScheme::Secp256k1 => generate_secp256k1_dkg_party_public_input(
+            weighted_threshold_access_structure,
+            encryption_keys_and_proofs,
+        ),
+        DWalletMPCNetworkKeyScheme::Ristretto => generate_ristretto_dkg_party_public_input(
+            weighted_threshold_access_structure,
+            encryption_keys_and_proofs,
+        ),
     }
 }
 
@@ -324,9 +339,11 @@ fn network_dkg_ristretto_session_info(
 }
 
 fn generate_secp256k1_dkg_party_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
     let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
+        weighted_threshold_access_structure,
         secp256k1::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
@@ -336,9 +353,11 @@ fn generate_secp256k1_dkg_party_public_input(
 }
 
 fn generate_ristretto_dkg_party_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<Vec<u8>> {
     let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
+        weighted_threshold_access_structure,
         ristretto::scalar::PublicParameters::default(),
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
@@ -365,6 +384,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
             epoch,
             weighted_threshold_access_structure,
             &key_data.current_reconfiguration_public_output,
+            &key_data.network_dkg_public_output,
         )
     }
 }
@@ -373,6 +393,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
     epoch: u64,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     let mpc_public_output: MPCPublicOutput =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
@@ -389,10 +410,11 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
             Ok(NetworkDecryptionKeyPublicData {
                 epoch,
                 state: NetworkDecryptionKeyPublicOutputType::Reshare,
-                public_output: mpc_public_output,
+                latest_public_output: mpc_public_output,
                 decryption_key_share_public_parameters: bcs::to_bytes(
                     &decryption_key_share_public_parameters,
                 )?,
+                network_dkg_output: bcs::from_bytes(network_dkg_public_output)?,
             })
         }
     }
@@ -419,10 +441,11 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
                 Ok(NetworkDecryptionKeyPublicData {
                     epoch,
                     state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
-                    public_output: mpc_public_output,
+                    latest_public_output: mpc_public_output.clone(),
                     decryption_key_share_public_parameters: bcs::to_bytes(
                         &decryption_key_share_public_parameters,
                     )?,
+                    network_dkg_output: mpc_public_output,
                 })
             }
         },
