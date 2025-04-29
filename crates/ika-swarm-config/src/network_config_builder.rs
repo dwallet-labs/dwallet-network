@@ -10,6 +10,7 @@ use ika_config::node::{
     AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
     LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
 };
+use ika_config::NodeConfig;
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -339,7 +340,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             )
             .await?;
 
-        let validator_configs = validator_initialization_configs
+        let validator_configs: Vec<NodeConfig> = validator_initialization_configs
             .iter()
             .enumerate()
             .map(|(idx, validator)| {
@@ -419,6 +420,16 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 fullnode_configs.push(config);
             });
         }
+
+        // // Serialize to YAML and print
+        // let yaml_fullnode = serde_yaml::to_string(&fullnode_configs)?;
+        // println!("Fullnode Config:\n{}", yaml_fullnode);
+        //
+        // for (i, validator_config) in validator_configs.iter().enumerate() {
+        //     let yaml_validator = serde_yaml::to_string(validator_config)?;
+        //     println!("Validator Config [{}]:\n{}", i, yaml_validator);
+        // }
+
         Ok(NetworkConfig {
             validator_configs,
             fullnode_configs,

@@ -22,8 +22,8 @@ There are two ways to configure the admin address:
 Run the following commands:
 
 ```bash
-pera client faucet
-pera client call --package 0x3 --module pera_system --function request_start_network_dkg --args 1 0x5 --gas-budget 1000000000
+ika client faucet
+ika client call --package 0x3 --module pera_system --function request_start_network_dkg --args 1 0x5 --gas-budget 1000000000
 ```
 
 ### Mocks for Development

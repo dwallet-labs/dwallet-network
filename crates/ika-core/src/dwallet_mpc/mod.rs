@@ -283,7 +283,7 @@ fn get_expected_decrypters(
         + (total_votes as f64 * 0.05).floor() as u32;
     let mut votes_sum = 0;
     let mut expected_decrypters = vec![];
-    while (votes_sum < expected_decrypters_votes) {
+    while votes_sum < expected_decrypters_votes {
         let authority_name = shuffled_committee.pop().unwrap();
         let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
         votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;
@@ -520,6 +520,9 @@ pub(crate) async fn session_input_from_event(
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
                 network_dkg::network_dkg_public_input(
+                    &dwallet_mpc_manager
+                        .epoch_store()?
+                        .get_weighted_threshold_access_structure()?,
                     dwallet_mpc_manager
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
@@ -563,6 +566,13 @@ pub(crate) async fn session_input_from_event(
                             .event_data
                             .dwallet_network_decryption_key_id,
                     )?,
+                    dwallet_mpc_manager
+                        .get_network_dkg_public_output(
+                            &deserialized_event
+                                .event_data
+                                .dwallet_network_decryption_key_id,
+                        )
+                        .await?,
                 )?,
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
