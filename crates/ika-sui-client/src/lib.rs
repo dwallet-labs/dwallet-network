@@ -985,24 +985,21 @@ impl SuiClientInner for SuiSdkClient {
                     [key_slice.name.clone() as usize] = key_slice.value.clone();
             }
             // this deser returns an error i believe
-            let validator_class_groups_public_key_and_proof: Result<
-                Vec<SingleEncryptionKeyAndProof>,
-                _,
-            > = validator_class_groups_public_key_and_proof_bytes
+            let validator_class_groups_public_key_and_proof: Vec<SingleEncryptionKeyAndProof> = validator_class_groups_public_key_and_proof_bytes
                 .into_iter()
-                .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
+                .filter_map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v).ok())
                 .collect();
 
-            if validator_class_groups_public_key_and_proof.is_err() {
-                panic!(
-                    "failed to deserialize class groups public key and proof: {:?}",
-                    validator_class_groups_public_key_and_proof.err().unwrap()
-                );
-            }
+            // if validator_class_groups_public_key_and_proof.is_err() {
+            //     panic!(
+            //         "failed to deserialize class groups public key and proof: {:?}",
+            //         validator_class_groups_public_key_and_proof.err().unwrap()
+            //     );
+            // }
 
             class_groups_public_keys_and_proofs.insert(
                 validator.validator_id,
-                validator_class_groups_public_key_and_proof?
+                validator_class_groups_public_key_and_proof
                     .try_into()
                     .map_err(|_| {
                         Error::DataError(
