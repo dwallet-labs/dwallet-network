@@ -60,6 +60,12 @@ pub struct SuiExecutor<C> {
     metrics: Arc<SuiConnectorMetrics>,
 }
 
+struct EpochSwitchState {
+    ran_mid_epoch: bool,
+    ran_lock_last_session: bool,
+    ran_request_advance_epoch: bool,
+}
+
 impl<C> SuiExecutor<C>
 where
     C: SuiClientInner + 'static,
@@ -92,6 +98,7 @@ where
         &self,
         sui_notifier: &SuiNotifier,
         ika_system_state_inner: &SystemInner,
+        epoch_switch_state: &mut EpochSwitchState,
     ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
             error!("failed to get clock when running epoch switch");
@@ -112,6 +119,7 @@ where
         if clock.timestamp_ms > mid_epoch_time
             && next_epoch_committee_is_empty
             && self.is_completed_network_dkg_for_all_keys().await
+            && !epoch_switch_state.ran_mid_epoch
         {
             info!("Calling `process_mid_epoch()`");
             if let Err(e) = Self::process_mid_epoch(
@@ -125,6 +133,7 @@ where
                 error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
                 info!("`process_mid_epoch()` successful");
+                epoch_switch_state.ran_mid_epoch = true;
             }
         }
 
@@ -141,7 +150,10 @@ where
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + ika_system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
-        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
+        if clock.timestamp_ms > epoch_finish_time
+            && epoch_not_locked
+            && !epoch_switch_state.ran_lock_last_session
+        {
             info!("Calling `lock_last_active_session_sequence_number()`");
             if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
@@ -157,6 +169,7 @@ where
                 );
             } else {
                 info!("Successfully locked last active session sequence number");
+                epoch_switch_state.ran_lock_last_session = true;
             }
         }
 
@@ -170,6 +183,7 @@ where
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
             && next_epoch_committee_exists
+            && !epoch_switch_state.ran_request_advance_epoch
         {
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
@@ -183,6 +197,7 @@ where
                 error!("failed to process request advance epoch: {:?}", e);
             } else {
                 info!("Successfully processed request advance epoch");
+                epoch_switch_state.ran_request_advance_epoch = true;
             }
         }
     }
@@ -229,6 +244,12 @@ where
 
         let mut last_submitted_checkpoint: Option<u64> = None;
 
+        let mut epoch_switch_state = EpochSwitchState {
+            ran_mid_epoch: false,
+            ran_lock_last_session: false,
+            ran_request_advance_epoch: false,
+        };
+
         loop {
             interval.tick().await;
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
@@ -262,7 +283,7 @@ where
             }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
-                self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
+                self.run_epoch_switch(sui_notifier, &ika_system_state_inner, &epoch_switch_state)
                     .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
