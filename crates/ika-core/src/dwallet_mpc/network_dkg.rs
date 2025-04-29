@@ -205,8 +205,8 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<Vec<u8>> {
         let Some(result) = self.network_decryption_keys.get(key_id) else {
             warn!(
-                "failed to fetch the network decryption key shares for key ID: {:?}",
-                key_id
+                ?key_id,
+                "failed to fetch the network decryption key shares for key ID"
             );
             return Err(DwalletMPCError::WaitingForNetworkKey(key_id.clone()));
         };
@@ -372,7 +372,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    if (key_data.current_reconfiguration_public_output.is_empty()) {
+    if key_data.current_reconfiguration_public_output.is_empty() {
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,

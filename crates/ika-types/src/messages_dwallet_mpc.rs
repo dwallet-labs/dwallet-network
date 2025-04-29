@@ -163,8 +163,10 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    /// The MPC round number, starts from 0.
+    /// The MPC round number starts from 0.
     pub round_number: usize,
+    /// The MPC protocol that this message belongs to.
+    pub mpc_protocol: String,
 }
 
 /// The message unique key in the consensus network.
@@ -174,7 +176,7 @@ pub struct DWalletMPCMessageKey {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    /// The MPC round number, starts from 0.
+    /// The MPC round number starts from 0.
     pub round_number: usize,
 }
 
@@ -242,8 +244,8 @@ pub struct StartEncryptedShareVerificationEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The public output of the decentralized party,
-    /// belongs to the dWallet that its centralized secret share is being encrypted.
+    /// The public output of the decentralized party.
+    /// Belongs to the dWallet that its centralized secret share is being encrypted.
     pub decentralized_public_output: Vec<u8>,
     /// The ID of the dWallet that this encrypted secret key share belongs to.
     pub dwallet_id: ObjectID,
