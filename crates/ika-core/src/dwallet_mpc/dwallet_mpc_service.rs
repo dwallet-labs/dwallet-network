@@ -20,7 +20,7 @@ use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::sui::DWalletCoordinatorInner;
+use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
@@ -82,10 +82,10 @@ impl DWalletMPCService {
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
         let system_inner = self.sui_client.must_get_system_inner_object().await;
-        if let Some(dwallet_coordinator_id) = system_inner
-            .into_init_version_for_tooling()
-            .dwallet_2pc_mpc_secp256k1_id
-        {
+        let system_inner = match system_inner {
+            SystemInner::V1(system_inner) => system_inner,
+        };
+        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_secp256k1_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
