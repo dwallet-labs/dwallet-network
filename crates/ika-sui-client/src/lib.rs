@@ -1058,8 +1058,8 @@ impl SuiClientInner for SuiSdkClient {
                     .await?
             } else {
                 warn!(
-                    "reconfiguration output for current epoch {:?} not found",
-                    key.current_epoch
+                    key=?key.current_epoch
+                    "reconfiguration output for the current epoch wasn't found"
                 );
                 vec![]
             };

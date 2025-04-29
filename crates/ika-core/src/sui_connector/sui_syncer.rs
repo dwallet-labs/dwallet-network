@@ -247,7 +247,7 @@ where
                         );
                     }
                     Err(err) => {
-                        error!(
+                        warn!(
                             key=?key_id,
                             err=?err,
                             "failed to get network decryption key data, retrying...",
