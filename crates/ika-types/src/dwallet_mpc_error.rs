@@ -144,10 +144,13 @@ pub enum DwalletMPCError {
     #[error("{0}")]
     IkaError(#[from] crate::error::IkaError),
 
+    #[error("waiting for network key with ID: {0}")]
+    WaitingForNetworkKey(ObjectID),
+
     #[error(
-        "key epoch out of sync: {key_id:?} expected epoch {expected_epoch} but got {actual_epoch}"
+        "decryption key epoch out of sync: {key_id:?} expected epoch: {expected_epoch} but got: {actual_epoch}"
     )]
-    KeyEpochMismatch {
+    DecryptionKeyEpochMismatch {
         key_id: ObjectID,
         expected_epoch: u64,
         actual_epoch: u64,

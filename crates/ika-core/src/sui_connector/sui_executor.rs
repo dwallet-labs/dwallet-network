@@ -6,11 +6,13 @@
 use crate::checkpoints::CheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::governance::{
     MIN_VALIDATOR_JOINING_STAKE_NIKA, VALIDATOR_LOW_STAKE_GRACE_PERIOD,
@@ -20,7 +22,7 @@ use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
-use ika_types::sui::system_inner_v1::BlsCommittee;
+use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_ADVANCE_EPOCH_FUNCTION_NAME,
@@ -161,8 +163,8 @@ where
         // Check if we can advance the epoch.
         let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
             == coordinator.last_session_to_complete_in_current_epoch;
-        let all_immediate_sessions_completed = coordinator.started_immediate_sessions_count
-            == coordinator.completed_immediate_sessions_count;
+        let all_immediate_sessions_completed = coordinator.started_system_sessions_count
+            == coordinator.completed_system_sessions_count;
         let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
@@ -225,6 +227,8 @@ where
 
         let mut interval = time::interval(Duration::from_millis(120));
 
+        let mut last_submitted_checkpoint: Option<u64> = None;
+
         loop {
             interval.tick().await;
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
@@ -241,11 +245,21 @@ where
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
             }
+            let dwallet_coordinator_inner = self
+                .sui_client
+                .must_get_dwallet_coordinator_inner_v1()
+                .await;
             let last_processed_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_checkpoint_sequence_number();
+                dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
+
+            if last_submitted_checkpoint.is_some()
+                && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            {
+                continue;
+            }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
@@ -282,6 +296,7 @@ where
                         .await;
                         match task {
                             Ok(_) => {
+                                last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
@@ -531,8 +546,6 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
-
         let dwallet_2pc_mpc_secp256k1_arg = sui_client
             .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
             .await;
@@ -544,7 +557,6 @@ where
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(ika_system_state_arg),
             CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
@@ -561,7 +573,7 @@ where
 
         ptb.move_call(
             ika_system_package_id,
-            SYSTEM_MODULE_NAME.into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,

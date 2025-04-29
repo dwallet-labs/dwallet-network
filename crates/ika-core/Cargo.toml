@@ -18,7 +18,7 @@ homomorphic_encryption.workspace = true
 class_groups.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "0aae42a3"}
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "3ad27518"}
 shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
 rand_core = "0.6.4"
 crypto-bigint = { workspace = true, features = ["rand_core", "serde"], default-features = false }
@@ -165,8 +165,3 @@ harness = false
 
 [features]
 test-utils = []
-# This feature must be enabled for release builds!
-# If it is not enabled, then we will receive dWallet MPC sessions even if the network key is not set.
-# The network DKG pauses the manager from advancing any MPC sessions if the network key is not initialized.
-# This feature allows bypassing this restriction, enabling development without relying on the network DKG.
-with-network-dkg = []
