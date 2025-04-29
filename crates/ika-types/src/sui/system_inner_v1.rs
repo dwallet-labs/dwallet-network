@@ -234,26 +234,20 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.validators
     }
 
-    fn get_ika_next_epoch_committee(
+    fn read_bls_committee(
         &self,
-    ) -> Option<HashMap<ObjectID, (AuthorityName, StakeUnit)>> {
-        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
-            return None;
-        };
-
-        let upcoming_committee_validator_ids: Vec<_> = next_epoch_committee
+        bls_committee: &BlsCommittee,
+    ) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
+        let committee_validator_ids: Vec<_> = bls_committee
             .members
             .iter()
             .map(|member| member.validator_id)
             .collect();
 
-        let voting_rights = self
-            .validators
-            .next_epoch_committee
-            .clone()?
+        let voting_rights = bls_committee
             .members
             .iter()
-            .filter(|v| upcoming_committee_validator_ids.contains(&v.validator_id))
+            .filter(|v| committee_validator_ids.contains(&v.validator_id))
             .map(|v| {
                 (
                     v.validator_id,
@@ -269,7 +263,18 @@ impl SystemInnerTrait for SystemInnerV1 {
             })
             .collect();
 
-        Some(voting_rights)
+        voting_rights
+    }
+
+    fn get_ika_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
+        self.read_bls_committee(&self.validators.active_committee)
+    }
+
+    fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>> {
+        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
+            return None;
+        };
+        Some(self.read_bls_committee(next_epoch_committee))
     }
 }
 

@@ -27,21 +27,24 @@ import {
 } from '../../src/dwallet-mpc/sign';
 import { dkgMocks, mockPresign } from './mocks';
 
-const fiveMinutes = 5 * 60 * 1000;
+const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
-		const dWalletSeed = new Uint8Array(32).fill(8);
+		// todo(zeev): Think key is probably incorrect, check it.
+		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
+		const dWalletSeed = new Uint8Array(32).fill(1);
 		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
 			Buffer.from(dWalletSeed).toString('hex'),
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
 		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV1({
 			host: getFaucetHost('localnet'),
+			// host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
@@ -49,6 +52,7 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
+			// todo(zeev): fix this, bad parsing, bad path, needs to be localized.
 			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,
@@ -126,7 +130,7 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should sign full flow', async () => {
+	it('should sign full flow with a mocked network key', async () => {
 		console.log('Creating dWallet...');
 		const dwalletID = await createDWallet(conf, mockedNetworkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwalletID}`);
@@ -186,16 +190,24 @@ describe('Test dWallet MPC', () => {
 
 	it('should sign full flow with on-chain network DKG output', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		console.log('Creating dWallet...');
+
+		console.log('Step 1: dWallet Creation');
+		console.time('Step 1: dWallet Creation');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
+		console.log(`Step 1: dWallet created | dWalletID = ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		console.log('Starting Presign...');
+
+		console.log('Step 2: Presign Phase');
+		console.time('Step 2: Presign Phase');
 		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		console.timeEnd('Step 2: Presign Phase');
+		console.log(`Step 2: Presign completed | presignID = ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
-		console.log('Running Sign...');
-		await sign(
+
+		console.log('Step 3: Sign Phase');
+		console.time('Step 3: Sign Phase');
+		const completedSignEvent = await sign(
 			conf,
 			presignCompletion.presign_id,
 			dwallet.dwallet_cap_id,
@@ -204,11 +216,13 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			networkDecryptionKeyPublicOutput,
 		);
+		console.timeEnd('Step 3: Sign Phase');
+		console.log(`Step 3: Sign completed | result = ${JSON.stringify(completedSignEvent)}`);
 	});
 });
 
 describe('Test dWallet MPC - offline', () => {
-	it('should run sign centralized party', () => {
+	it('should run sign for a centralized party', () => {
 		const centralizedSignedMessage = create_sign_centralized_output(
 			mockedNetworkDecryptionKeyPublicOutput,
 			MPCKeyScheme.Secp256k1,

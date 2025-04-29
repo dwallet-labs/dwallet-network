@@ -250,8 +250,8 @@ impl IkaNode {
         {
             // This error will get printed while running the testing chain using Swarm,
             // as all the validators start on the same process,
-            // therefore Rayon can't configure a thread pool more than once.
-            error!("Failed to create rayon thread pool: {:?}", err);
+            // therefore, Rayon can't configure a thread pool more than once.
+            error!("failed to create rayon thread pool: {:?}", err);
         }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
@@ -412,7 +412,6 @@ impl IkaNode {
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
                 dwallet_network_keys.clone(),
-                epoch_store.get_weighted_threshold_access_structure()?,
                 epoch_store.next_epoch_committee.clone(),
             )
             .await?,

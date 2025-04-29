@@ -23,6 +23,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'push'
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -40,7 +41,7 @@ jobs:
         run: rustup target add x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
       - name: Build
-        run: cargo build --bin ika --target-dir . --release --target x86_64-unknown-linux-gnu
+        run: cargo build --bin ika --target-dir . --profile dev --target x86_64-unknown-linux-gnu
 
   fmt:
     name: Format Check

@@ -1,3 +1,6 @@
+use crate::dwallet_mpc::{
+    authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
+};
 use class_groups::reconfiguration::{PublicInput, Secp256k1Party};
 use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
@@ -25,18 +28,6 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
         protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput>;
-}
-
-fn authority_name_to_party_id_from_committee(
-    committee: &Committee,
-    authority_name: &AuthorityName,
-) -> DwalletMPCResult<PartyID> {
-    committee
-        .authority_index(authority_name)
-        // Need to add 1 because the authority index is 0-based,
-        // and the twopc_mpc library uses 1-based party IDs.
-        .map(|index| (index + 1) as PartyID)
-        .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
 }
 
 fn current_tangible_party_id_to_upcoming(
@@ -68,9 +59,9 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         let quorum_threshold = current_committee.quorum_threshold();
 
         let current_access_structure =
-            create_access_structure(&current_committee, quorum_threshold)?;
+            generate_access_structure_from_committee(&current_committee)?;
         let upcoming_access_structure =
-            create_access_structure(&upcoming_committee, upcoming_committee.quorum_threshold())?;
+            generate_access_structure_from_committee(&upcoming_committee)?;
 
         let plaintext_space_public_parameters = secp256k1::scalar::PublicParameters::default();
 
@@ -119,25 +110,6 @@ pub(super) fn network_decryption_key_reshare_session_info_from_event(
         mpc_round: MPCProtocolInitData::DecryptionKeyReshare(deserialized_event),
         is_immediate: true,
     }
-}
-
-fn create_access_structure(
-    committee: &Committee,
-    quorum_threshold: u64,
-) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-    let weighted_parties: HashMap<PartyID, Weight> = committee
-        .voting_rights
-        .iter()
-        .map(|(name, weight)| {
-            Ok((
-                authority_name_to_party_id_from_committee(committee, name)?,
-                *weight as Weight,
-            ))
-        })
-        .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-
-    WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
 }
 
 fn extract_encryption_keys_from_committee(

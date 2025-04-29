@@ -241,8 +241,17 @@ impl DwalletMPCNetworkKeys {
     /// Returns all the decryption key shares for any specified key ID.
     pub async fn get_decryption_key_share(
         &self,
+        current_epoch: u64,
         key_id: ObjectID,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        let key_epoch = self.get_key_epoch(&key_id).await?;
+        if key_epoch != current_epoch {
+            return Err(DwalletMPCError::KeyEpochMismatch {
+                key_id,
+                expected_epoch: current_epoch,
+                actual_epoch: key_epoch,
+            });
+        }
         Ok(self
             .validator_decryption_keys_shares()
             .await
@@ -253,8 +262,17 @@ impl DwalletMPCNetworkKeys {
 
     pub async fn get_decryption_public_parameters(
         &self,
+        current_epoch: u64,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Vec<u8>> {
+        let key_epoch = self.get_key_epoch(&key_id).await?;
+        if key_epoch != current_epoch {
+            return Err(DwalletMPCError::KeyEpochMismatch {
+                key_id: *key_id,
+                expected_epoch: current_epoch,
+                actual_epoch: key_epoch,
+            });
+        }
         Ok(self
             .inner
             .read()
@@ -277,11 +295,21 @@ impl DwalletMPCNetworkKeys {
             .map(|v| v.clone()))
     }
 
+    pub async fn get_key_epoch(&self, key_id: &ObjectID) -> DwalletMPCResult<u64> {
+        let inner = self.inner.read().await;
+        Ok(inner
+            .network_decryption_keys
+            .get(&key_id)
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .epoch)
+    }
+
     /// Retrieves the protocol public parameters for the specified key ID.
     /// This function assumes the given key_id is a valid key ID, and retries getting it until it has been synced from
     /// the Sui network.
     pub async fn get_protocol_public_parameters(
         &self,
+        current_epoch: u64,
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
@@ -291,6 +319,16 @@ impl DwalletMPCNetworkKeys {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 continue;
             };
+            if result.epoch != current_epoch {
+                warn!(
+                    key_epoch=?result.epoch,
+                    current_epoch=?current_epoch,
+                    key_id=?key_id,
+                    "network decryption key shares for are not up to date, trying again");
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                continue;
+            }
             let decryption_key_share_public_parameters =
                 bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
                     &result.decryption_key_share_public_parameters,
@@ -326,6 +364,7 @@ pub(crate) fn advance_network_dkg(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    // todo(zeev): move the mock to a func.
     #[cfg(not(feature = "with-network-dkg"))]
     {
         let secret_shares = shared_wasm_class_groups::decryption_key_shares(party_id);
@@ -454,7 +493,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    if (key_data.current_reconfiguration_public_output.is_empty()) {
+    if key_data.current_reconfiguration_public_output.is_empty() {
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,
