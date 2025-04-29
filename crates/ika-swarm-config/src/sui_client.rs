@@ -989,7 +989,7 @@ async fn create_class_groups_public_key_and_proof_object(
         context,
         client,
         ika_system_package_id,
-        (0, 2),
+        (0, 3),
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )
