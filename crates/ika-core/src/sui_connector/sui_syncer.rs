@@ -17,7 +17,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
-use ika_types::sui::{SystemInnerInit, SystemInnerTrait};
+use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
 use im::HashSet;
 use itertools::Itertools;
 use mpc::{Weight, WeightedThresholdAccessStructure};
@@ -109,7 +109,9 @@ where
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = system_inner.into_init_version_for_tooling();
+            let system_inner = match system_inner {
+                SystemInner::V1(system_inner) => system_inner,
+            };
             let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -199,7 +201,9 @@ where
                 });
             let active_committee = sui_client.get_epoch_active_committee().await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = system_inner.into_init_version_for_tooling();
+            let system_inner = match system_inner {
+                SystemInner::V1(system_inner) => system_inner,
+            };
             let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache

@@ -705,9 +705,7 @@ where
         Ok(self
             .inner
             .get_network_decryption_keys(
-                system_inner
-                    .into_init_version_for_tooling()
-                    .dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+                system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
             )
             .await
             .map_err(|e| {
@@ -717,9 +715,7 @@ where
 
     pub async fn get_epoch_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
         let system_inner = self.must_get_system_inner_object().await;
-        system_inner
-            .into_init_version_for_tooling()
-            .get_ika_active_committee()
+        system_inner.get_ika_active_committee()
     }
 
     pub async fn get_network_decryption_key_with_full_data(
