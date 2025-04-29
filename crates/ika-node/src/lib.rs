@@ -186,7 +186,7 @@ use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_sui_client::{SuiConnectorClient, SuiClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
@@ -768,7 +768,7 @@ impl IkaNode {
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -836,7 +836,7 @@ impl IkaNode {
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -1008,7 +1008,7 @@ impl IkaNode {
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
         loop {
@@ -1250,7 +1250,7 @@ impl IkaNode {
 
     async fn start_dwallet_mpc_service(
         epoch_store: Arc<AuthorityPerEpochStore>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,

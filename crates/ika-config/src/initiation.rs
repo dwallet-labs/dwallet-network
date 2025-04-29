@@ -5,6 +5,25 @@ use fastcrypto::hash::HashFunction;
 
 use ika_types::committee::ProtocolVersion;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use ika_types::ika_coin::NIKA_PER_IKA;
+
+/// Minimum number of active validators at any moment.
+/// We do not allow the number of validators in any epoch to go below this.
+pub const MIN_VALIDATOR_COUNT: u64 = 4;
+
+/// Maximum number of active validators at any moment.
+/// We do not allow the number of validators in any epoch to go above this.
+pub const MAX_VALIDATOR_COUNT: u64 = 150;
+
+/// Lower-bound on the amount of stake required to become a validator.
+/// 30 million IKA
+pub const MIN_VALIDATOR_JOINING_STAKE_NIKA: u64 = 30_000_000 * NIKA_PER_IKA;
+
+/// how many reward are slashed to punish a validator, in bps.
+pub const REWARD_SLASHING_RATE: u16 = 10_000;
+
+/// Lock active committee between epochs.
+pub const LOCK_ACTIVE_COMMITTEE: bool = false;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -105,23 +124,23 @@ impl InitiationParameters {
     }
 
     fn default_min_validator_count() -> u64 {
-        ika_types::governance::MIN_VALIDATOR_COUNT
+        MIN_VALIDATOR_COUNT
     }
 
     fn default_max_validator_count() -> u64 {
-        ika_types::governance::MAX_VALIDATOR_COUNT
+        MAX_VALIDATOR_COUNT
     }
 
     fn default_min_validator_joining_stake() -> u64 {
-        ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA
+        MIN_VALIDATOR_JOINING_STAKE_NIKA
     }
 
     fn default_reward_slashing_rate() -> u16 {
-        ika_types::governance::REWARD_SLASHING_RATE
+        REWARD_SLASHING_RATE
     }
 
     fn default_lock_active_committee() -> bool {
-        ika_types::governance::LOCK_ACTIVE_COMMITTEE
+        LOCK_ACTIVE_COMMITTEE
     }
 }
 

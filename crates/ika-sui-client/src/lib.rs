@@ -120,9 +120,9 @@ pub struct SuiClient<P> {
     ika_system_object_id: ObjectID,
 }
 
-pub type SuiBridgeClient = SuiClient<SuiSdkClient>;
+pub type SuiConnectorClient = SuiClient<SuiSdkClient>;
 
-impl SuiBridgeClient {
+impl SuiConnectorClient {
     pub async fn new(
         rpc_url: &str,
         sui_client_metrics: Arc<SuiClientMetrics>,

@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{PublicKey, SuiKeyPair};
 use sui_types::multiaddr::Multiaddr;
+use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 
 pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 
@@ -210,7 +211,7 @@ impl ValidatorInitializationConfigBuilder {
             commission_rate: DEFAULT_COMMISSION_RATE,
             current_epoch_consensus_address,
             next_epoch_consensus_address,
-            stake: ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA,
+            stake: MIN_VALIDATOR_JOINING_STAKE_NIKA,
             name: None,
         }
     }
@@ -225,7 +226,7 @@ fn default_multiaddr_address() -> Multiaddr {
 }
 
 fn default_stake() -> u64 {
-    ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA
+    MIN_VALIDATOR_JOINING_STAKE_NIKA
 }
 
 fn default_bls12381_key_pair() -> AuthorityKeyPair {
