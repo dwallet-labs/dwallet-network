@@ -651,7 +651,7 @@ Set the state of the validator to <code>Withdrawing</code>.
     <b>assert</b>!(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>assert</b>!(object::id(<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_cap_id">validator_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
     <b>assert</b>!(!<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_withdrawing">is_withdrawing</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyWithdrawing">EValidatorAlreadyWithdrawing</a>);
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.state = ValidatorState::Withdrawing(current_epoch + 1);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.state = ValidatorState::Withdrawing(current_epoch);
 }
 </code></pre>
 

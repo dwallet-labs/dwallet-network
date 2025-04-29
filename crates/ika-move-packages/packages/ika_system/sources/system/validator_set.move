@@ -79,7 +79,7 @@ public struct ValidatorJoinEvent has copy, drop {
 /// Event emitted every time a validator leaves the committee.
 /// The epoch value corresponds to the first epoch this change takes place.
 public struct ValidatorLeaveEvent has copy, drop {
-    epoch: u64,
+    withdrawing_epoch: u64,
     validator_id: ID,
     is_voluntary: bool,
 }
@@ -223,11 +223,11 @@ public(package) fun update_pending_active_set(
         let removed_validator = self.get_validator_mut(removed_validator_id.extract());
         let new_epoch = current_epoch + 1;
         removed_validator.deactivate(new_epoch);
-            event::emit(ValidatorLeaveEvent {
-                epoch: new_epoch,
-                validator_id,
-                is_voluntary: false,
-            });
+        event::emit(ValidatorLeaveEvent {
+            withdrawing_epoch: new_epoch,
+            validator_id,
+            is_voluntary: false,
+        });
     };
 }
 
@@ -277,12 +277,20 @@ public(package) fun request_remove_validator(
     cap: &ValidatorCap,
 ) {
     let validator_id = cap.validator_id();
+    let committee_selected = self.next_epoch_active_committee.is_some();
+
     let validator = self.get_validator_mut(validator_id);
     assert!(!validator.is_withdrawing(), EValidatorAlreadyRemoved);
-    validator.set_withdrawing(cap, current_epoch);
+    
+    let withdrawing_epoch = if (committee_selected) {
+        current_epoch + 2
+    } else {
+        current_epoch + 1
+    };
+    validator.set_withdrawing(cap, withdrawing_epoch);
     self.pending_active_set.borrow_mut().remove(validator_id);
     event::emit(ValidatorLeaveEvent {
-        epoch: current_epoch + 1,
+        withdrawing_epoch,
         validator_id,
         is_voluntary: true,
     });

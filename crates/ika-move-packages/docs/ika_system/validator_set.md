@@ -308,7 +308,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <dl>
 <dt>
-<code>epoch: u64</code>
+<code>withdrawing_epoch: u64</code>
 </dt>
 <dd>
 </dd>
@@ -658,11 +658,11 @@ Called by <code>ika_system</code> to remove a validator candidate, and move them
         <b>let</b> removed_validator = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(removed_validator_id.extract());
         <b>let</b> new_epoch = current_epoch + 1;
         removed_validator.deactivate(new_epoch);
-            event::emit(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorLeaveEvent">ValidatorLeaveEvent</a> {
-                epoch: new_epoch,
-                validator_id,
-                is_voluntary: <b>false</b>,
-            });
+        event::emit(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorLeaveEvent">ValidatorLeaveEvent</a> {
+            withdrawing_epoch: new_epoch,
+            validator_id,
+            is_voluntary: <b>false</b>,
+        });
     };
 }
 </code></pre>
@@ -765,12 +765,18 @@ Only an active validator can request to be removed.
     cap: &ValidatorCap,
 ) {
     <b>let</b> validator_id = cap.validator_id();
+    <b>let</b> committee_selected = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some();
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <b>assert</b>!(!<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_withdrawing(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorAlreadyRemoved">EValidatorAlreadyRemoved</a>);
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.set_withdrawing(cap, current_epoch);
+    <b>let</b> withdrawing_epoch = <b>if</b> (committee_selected) {
+        current_epoch + 2
+    } <b>else</b> {
+        current_epoch + 1
+    };
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.set_withdrawing(cap, withdrawing_epoch);
     self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().remove(validator_id);
     event::emit(<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorLeaveEvent">ValidatorLeaveEvent</a> {
-        epoch: current_epoch + 1,
+        withdrawing_epoch,
         validator_id,
         is_voluntary: <b>true</b>,
     });

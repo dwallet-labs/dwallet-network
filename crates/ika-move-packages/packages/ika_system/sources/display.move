@@ -13,11 +13,11 @@
 /// Optionally:
 /// - thumbnail_url
 /// - creator
-module ika::display;
+module ika_system::display;
 
 use std::type_name;
 use sui::{display::{Self, Display}, object_bag::{Self, ObjectBag}, package::Publisher};
-use ika::staked_ika::StakedIka;
+use ika_system::staked_ika::StakedIka;
 
 /// The wrapper that stores the objects.
 public struct ObjectDisplay has key {
