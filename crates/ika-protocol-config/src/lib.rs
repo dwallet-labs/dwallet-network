@@ -114,18 +114,6 @@ struct FeatureFlags {
     #[serde(skip_serializing_if = "is_false")]
     consensus_round_prober: bool,
 
-    // Enables Mysticeti fastpath.
-    #[serde(skip_serializing_if = "is_false")]
-    mysticeti_fastpath: bool,
-
-    // If true, enabled batched block sync in consensus.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_batched_block_sync: bool,
-
-    // If true, enforces checkpoint timestamps are non-decreasing.
-    #[serde(skip_serializing_if = "is_false")]
-    enforce_checkpoint_timestamp_monotonicity: bool,
-
     // Set number of leaders per round for Mysticeti commits.
     #[serde(skip_serializing_if = "Option::is_none")]
     mysticeti_num_leaders_per_round: Option<usize>,
@@ -134,10 +122,6 @@ struct FeatureFlags {
     // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
     #[serde(skip_serializing_if = "is_false")]
     consensus_linearize_subdag_v2: bool,
-
-    // If true, enable zstd compression for consensus tonic network.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_zstd_compression: bool,
 }
 
 fn is_false(b: &bool) -> bool {
@@ -258,6 +242,27 @@ impl ProtocolConfig {
     //         )))
     //     }
     // }
+
+    pub fn consensus_round_prober(&self) -> bool {
+        self.feature_flags.consensus_round_prober
+    }
+
+    pub fn mysticeti_num_leaders_per_round(&self) -> Option<usize> {
+        self.feature_flags.mysticeti_num_leaders_per_round
+    }
+
+    pub fn consensus_linearize_subdag_v2(&self) -> bool {
+        let res = self.feature_flags.consensus_linearize_subdag_v2;
+        assert!(
+            !res || self.gc_depth() > 0,
+            "The consensus linearize sub dag V2 requires GC to be enabled"
+        );
+        res
+    }
+
+    pub fn gc_depth(&self) -> u32 {
+        self.consensus_gc_depth.unwrap_or(0)
+    }
 }
 
 #[cfg(not(msim))]
@@ -418,6 +423,9 @@ impl ProtocolConfig {
             consensus_max_num_transactions_in_block: Some(512),
             consensus_gc_depth: None,
         };
+
+        cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
+
         for cur in 2..=version.0 {
             match cur {
                 1 => unreachable!(),

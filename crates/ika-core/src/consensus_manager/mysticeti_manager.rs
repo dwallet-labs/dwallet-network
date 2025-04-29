@@ -168,47 +168,20 @@ impl ConsensusManagerTrait for MysticetiManager {
         );
 
         protocol_config.set_consensus_gc_depth_for_testing(
-            ika_protocol_config.consensus_gc_depth()
+            ika_protocol_config.gc_depth()
         );
 
         protocol_config.set_consensus_round_prober_for_testing(
             ika_protocol_config.consensus_round_prober()
         );
 
-        protocol_config.set_
-
-        protocol_config.set_mysticeti_fastpath_for_testing(
-            ika_protocol_config.mysticeti_fastpath()
+        protocol_config.set_mysticeti_num_leaders_per_round_for_testing(
+            ika_protocol_config.mysticeti_num_leaders_per_round()
         );
 
-        protocol_config.set_consensus_batched_block_sync_for_testing(
-            ika_protocol_config.consensus_batched_block_sync()
+        protocol_config.set_consensus_linearize_subdag_v2_for_testing(
+            ika_protocol_config.consensus_linearize_subdag_v2()
         );
-
-        // If true, enabled batched block sync in consensus.
-        #[serde(skip_serializing_if = "is_false")]
-        consensus_batched_block_sync: bool,
-
-        // If true, enforces checkpoint timestamps are non-decreasing.
-        #[serde(skip_serializing_if = "is_false")]
-        enforce_checkpoint_timestamp_monotonicity: bool,
-
-        // Set number of leaders
-        //         //         #[serde(skip_serializing_if = "Option::is_none")]
-        //         //         mysticeti_num_leaders_per_round: Option<usize>,
-        //         //
-        //         //         // Enables the new logic for collecting the subdag in the consensus linearizer. The ne per round for Mysticeti commits.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        mysticeti_num_leaders_per_round: Option<usize>,
-
-        // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
-        // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
-        #[serde(skip_serializing_if = "is_false")]
-        consensus_linearize_subdag_v2: bool,
-
-        // If true, enable zstd compression for consensus tonic network.
-        #[serde(skip_serializing_if = "is_false")]
-        consensus_zstd_compression: bool,
 
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
