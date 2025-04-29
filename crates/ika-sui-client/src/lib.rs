@@ -428,7 +428,7 @@ where
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),
-                            voting_power: m.voting_power,
+                            voting_power: 1,
                             hostname: info.name.clone(),
                         }
                     })
@@ -441,6 +441,8 @@ where
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
                     network_decryption_keys_data,
+                    ika_system_state_inner.validators.active_committee.quorum_threshold,
+                    ika_system_state_inner.validators.active_committee.validity_threshold
                 );
 
                 Ok(epoch_start_system_state)

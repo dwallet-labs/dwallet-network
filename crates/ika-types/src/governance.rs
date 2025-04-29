@@ -29,23 +29,6 @@ pub const MAX_VALIDATOR_COUNT: u64 = 150;
 /// 30 million IKA
 pub const MIN_VALIDATOR_JOINING_STAKE_NIKA: u64 = 30_000_000 * NIKA_PER_IKA;
 
-/// Validators with stake amount below `validator_low_stake_threshold` are considered to
-/// have low stake and will be escorted out of the validator set after being below this
-/// threshold for more than `validator_low_stake_grace_period` number of epochs.
-///
-/// 20 million IKA
-pub const VALIDATOR_LOW_STAKE_THRESHOLD_NIKA: u64 = 20_000_000 * NIKA_PER_IKA;
-
-/// Validators with stake below `validator_very_low_stake_threshold` will be removed
-/// immediately at epoch change, no grace period.
-///
-/// 15 million IKA
-pub const VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA: u64 = 15_000_000 * NIKA_PER_IKA;
-
-/// A validator can have stake below `validator_low_stake_threshold`
-/// for this many epochs before being kicked out.
-pub const VALIDATOR_LOW_STAKE_GRACE_PERIOD: u64 = 7;
-
 /// how many reward are slashed to punish a validator, in bps.
 pub const REWARD_SLASHING_RATE: u16 = 10_000;
 

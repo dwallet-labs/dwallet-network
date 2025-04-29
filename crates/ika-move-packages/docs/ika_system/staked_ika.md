@@ -4,8 +4,8 @@ title: Module `(ika_system=0x0)::staked_ika`
 
 Implements the <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">StakedIka</a></code> functionality - a staked IKA is an object that
 represents a staked amount of IKAs in a staking pool. It is created in the
-<code><a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool">staking_pool</a></code> on staking and can be split, joined, and burned. The burning
-is performed via the <code>withdraw_stake</code> method in the <code><a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool">staking_pool</a></code>.
+<code>staking_pool</code> on staking and can be split, joined, and burned. The burning
+is performed via the <code>withdraw_stake</code> method in the <code>staking_pool</code>.
 
 
 -  [Struct `StakedIka`](#(ika_system=0x0)_staked_ika_StakedIka)

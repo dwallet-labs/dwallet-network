@@ -759,6 +759,8 @@ impl AuthorityPerEpochStore {
             next_epoch,
             self.committee.voting_rights.iter().cloned().collect(),
             self.committee.class_groups_public_keys_and_proofs.clone(),
+            self.committee.quorum_threshold,
+            self.committee.validity_threshold,
         );
         self.new_at_next_epoch(
             self.name,

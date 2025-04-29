@@ -48,22 +48,6 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_min_validator_joining_stake")]
     pub min_validator_joining_stake: u64,
 
-    /// Validators with stake amount below `validator_low_stake_threshold` are considered to
-    /// have low stake and will be escorted out of the validator set after being below this
-    /// threshold for more than `validator_low_stake_grace_period` number of epochs.
-    #[serde(default = "InitiationParameters::default_validator_low_stake_threshold")]
-    pub validator_low_stake_threshold: u64,
-
-    /// Validators with stake below `validator_very_low_stake_threshold` will be removed
-    /// immediately at epoch change, no grace period.
-    #[serde(default = "InitiationParameters::default_validator_very_low_stake_threshold")]
-    pub validator_very_low_stake_threshold: u64,
-
-    /// A validator can have stake below `validator_low_stake_threshold`
-    /// for this many epochs before being kicked out.
-    #[serde(default = "InitiationParameters::default_validator_low_stake_grace_period")]
-    pub validator_low_stake_grace_period: u64,
-
     /// how many reward are slashed to punish a validator, in bps.
     #[serde(default = "InitiationParameters::default_reward_slashing_rate")]
     pub reward_slashing_rate: u16,
@@ -85,9 +69,6 @@ impl InitiationParameters {
             min_validator_count: Self::default_min_validator_count(),
             max_validator_count: Self::default_max_validator_count(),
             min_validator_joining_stake: Self::default_min_validator_joining_stake(),
-            validator_low_stake_threshold: Self::default_validator_low_stake_threshold(),
-            validator_very_low_stake_threshold: Self::default_validator_very_low_stake_threshold(),
-            validator_low_stake_grace_period: Self::default_validator_low_stake_grace_period(),
             reward_slashing_rate: Self::default_reward_slashing_rate(),
             lock_active_committee: Self::default_lock_active_committee(),
         }
@@ -133,18 +114,6 @@ impl InitiationParameters {
 
     fn default_min_validator_joining_stake() -> u64 {
         ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA
-    }
-
-    fn default_validator_low_stake_threshold() -> u64 {
-        ika_types::governance::VALIDATOR_LOW_STAKE_THRESHOLD_NIKA
-    }
-
-    fn default_validator_very_low_stake_threshold() -> u64 {
-        ika_types::governance::VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA
-    }
-
-    fn default_validator_low_stake_grace_period() -> u64 {
-        ika_types::governance::VALIDATOR_LOW_STAKE_GRACE_PERIOD
     }
 
     fn default_reward_slashing_rate() -> u16 {

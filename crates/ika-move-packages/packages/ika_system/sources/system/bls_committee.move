@@ -9,8 +9,7 @@ use sui::event;
 
 public struct BlsCommitteeMember has store, copy, drop {
     validator_id: ID,
-    protocol_pubkey: Element<UncompressedG1>,
-    stake: u64,
+    protocol_pubkey: Element<UncompressedG1>
 }
 
 /// Represents the current committee in the system.
@@ -18,12 +17,14 @@ public struct BlsCommittee has store, copy, drop {
     members: vector<BlsCommitteeMember>,
     /// The aggregation of public keys for all members of the committee
     aggregated_protocol_pubkey: Element<G1>,
+    quorum_threshold: u64,
+    validity_threshold: u64,
 }
 
 /// Event emitted after verifing quorum of signature.
 public struct CommitteeQuorumVerifiedEvent has copy, drop {
     epoch: u64,
-    total_signers_stake: u64,
+    signer_count: u64,
 }
 
 const BLS_SIGNATURE_LEN: u64 = 96;
@@ -41,39 +42,13 @@ const EInvalidSignature: vector<u8> = b"Invalid certificate signature.";
 #[error]
 const ENotEnoughStake: vector<u8> = b"Not enough stake of signers for the bls signature.";
 
-/// Calculate the BFT quorum threshold based on the total voting power (2n/3 + 1)
-fun calculate_quorum_threshold(total_voting_power: u64): u64 {
-    // 2n/3 rounded up + 1
-    let two_thirds = (2 * total_voting_power).divide_and_round_up(3);
-    if (two_thirds == 0 && total_voting_power > 0) {
-        // Special case: if there is at least one member, require at least one vote
-        1
-    } else {
-        two_thirds
-    }
-}
-
-/// Calculate the BFT validity threshold based on the total voting power (n/3 + 1)
-fun calculate_validity_threshold(total_voting_power: u64): u64 {
-    // n/3 rounded up + 1
-    let one_third = total_voting_power.divide_and_round_up(3);
-    if (one_third == 0 && total_voting_power > 0) {
-        // Special case: if there is at least one member, require at least one vote
-        1
-    } else {
-        one_third + 1
-    }
-}
-
 public(package) fun new_bls_committee_member(
     validator_id: ID,
-    protocol_pubkey: Element<UncompressedG1>,
-    stake: u64,
+    protocol_pubkey: Element<UncompressedG1>
 ): BlsCommitteeMember {
     BlsCommitteeMember {
         validator_id,
         protocol_pubkey,
-        stake,
     }
 }
 
@@ -92,9 +67,14 @@ public(package) fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsC
         ),
     );
 
+    let quorum_threshold = (2 * members.length()).divide_and_round_up(3);
+    let validity_threshold = members.length().divide_and_round_up(3);
+
     BlsCommittee {
         members,
         aggregated_protocol_pubkey,
+        quorum_threshold,
+        validity_threshold,
     }
 }
 
@@ -103,6 +83,8 @@ public(package) fun empty(): BlsCommittee {
     BlsCommittee {
         members: vector[],
         aggregated_protocol_pubkey: bls12381::g1_identity(),
+        quorum_threshold: 0,
+        validity_threshold: 0,
     }
 }
 
@@ -125,18 +107,18 @@ public fun total_voting_power(self: &BlsCommittee): u64 {
 
 /// Return the quorum threshold (2n/3 + 1) calculated on demand
 public fun quorum_threshold(self: &BlsCommittee): u64 {
-    calculate_quorum_threshold(self.members.length())
+    self.quorum_threshold
 }
 
 /// Return the validity threshold (n/3 + 1) calculated on demand
 public fun validity_threshold(self: &BlsCommittee): u64 {
-    calculate_validity_threshold(self.members.length())
+    self.validity_threshold
 }
 
 /// Verify an aggregate BLS signature is a certificate in the epoch, and return
 /// the type of certificate and the bytes certified. The `signers` vector is
 /// an increasing list of indexes into the `committee` vector.
-/// If there is a certificate, the function returns the total stake. Otherwise, it aborts.
+/// If there is no certificate, the function aborts.
 public(package) fun verify_certificate(
     self: &BlsCommittee,
     epoch: u64,
@@ -216,18 +198,18 @@ public(package) fun verify_certificate(
 
     event::emit(CommitteeQuorumVerifiedEvent {
         epoch,
-        total_signers_stake: signer_count,
+        signer_count,
     });
 }
 
 /// Returns true if the voting power meets or exceeds the quorum threshold.
 /// Calculates the threshold on demand based on total voting power.
 public(package) fun is_quorum_threshold(self: &BlsCommittee, signer_count: u64): bool {
-    signer_count >= calculate_quorum_threshold(self.members.length())
+    signer_count >= self.quorum_threshold
 }
 
 /// Returns true if the voting power meets or exceeds the validity threshold.
 /// Calculates the threshold on demand based on total voting power.
 public(package) fun is_validity_threshold(self: &BlsCommittee, signer_count: u64): bool {
-    signer_count >= calculate_validity_threshold(self.members.length())
+    signer_count >= self.validity_threshold
 }

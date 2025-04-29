@@ -557,12 +557,10 @@ public fun set_epoch_for_testing(self: &mut System, epoch_num: u64) {
 #[test_only]
 public fun request_add_validator_for_testing(
     self: &mut System,
-    min_joining_stake_for_testing: u64,
     cap: &ValidatorCap,
-    ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.request_add_validator_for_testing(cap, min_joining_stake_for_testing, ctx)
+    self.request_add_validator_for_testing(cap)
 }
 
 #[test_only]

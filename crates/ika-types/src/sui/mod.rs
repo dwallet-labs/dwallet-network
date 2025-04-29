@@ -234,11 +234,11 @@ pub struct ExtendedField {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct PendingValues {
-    pub values: VecMap<ObjectID, u64>,
+    pub values: VecMap<u64, u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub enum PoolExchangeRate {
+pub enum TokenExchangeRate {
     Flat,
     Variable {
         ika_amount: u128,
@@ -246,12 +246,12 @@ pub enum PoolExchangeRate {
     },
 }
 
-impl PoolExchangeRate {
-    /// Rate of the staking pool, share amount : Ika amount
+impl TokenExchangeRate {
+    /// Rate of the staking pool, share amount: Ika amount
     pub fn rate(&self) -> f64 {
         match self {
-            PoolExchangeRate::Flat => 1_f64,
-            PoolExchangeRate::Variable { ika_amount, share_amount } => {
+            TokenExchangeRate::Flat => 1_f64,
+            TokenExchangeRate::Variable { ika_amount, share_amount } => {
                 if *ika_amount == 0 {
                     1_f64
                 } else {
@@ -263,12 +263,12 @@ impl PoolExchangeRate {
 
     /// Create a new exchange rate with the given amounts.
     /// If both amounts are 0 or share_amount <= ika_amount, returns Flat rate.
-    /// Otherwise returns Variable rate.
+    /// Otherwise, returns Variable rate.
     pub fn new(ika_amount: u64, share_amount: u64) -> Self {
         if ika_amount == 0 || share_amount == 0 || share_amount <= ika_amount {
-            PoolExchangeRate::Flat
+            TokenExchangeRate::Flat
         } else {
-            PoolExchangeRate::Variable {
+            TokenExchangeRate::Variable {
                 ika_amount: ika_amount as u128,
                 share_amount: share_amount as u128,
             }

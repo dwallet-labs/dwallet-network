@@ -8,8 +8,6 @@ title: Module `(ika_system=0x0)::bls_committee`
 -  [Struct `BlsCommittee`](#(ika_system=0x0)_bls_committee_BlsCommittee)
 -  [Struct `CommitteeQuorumVerifiedEvent`](#(ika_system=0x0)_bls_committee_CommitteeQuorumVerifiedEvent)
 -  [Constants](#@Constants_0)
--  [Function `calculate_quorum_threshold`](#(ika_system=0x0)_bls_committee_calculate_quorum_threshold)
--  [Function `calculate_validity_threshold`](#(ika_system=0x0)_bls_committee_calculate_validity_threshold)
 -  [Function `new_bls_committee_member`](#(ika_system=0x0)_bls_committee_new_bls_committee_member)
 -  [Function `validator_id`](#(ika_system=0x0)_bls_committee_validator_id)
 -  [Function `new_bls_committee`](#(ika_system=0x0)_bls_committee_new_bls_committee)
@@ -69,11 +67,6 @@ title: Module `(ika_system=0x0)::bls_committee`
 </dt>
 <dd>
 </dd>
-<dt>
-<code>stake: u64</code>
-</dt>
-<dd>
-</dd>
 </dl>
 
 
@@ -107,6 +100,16 @@ Represents the current committee in the system.
 <dd>
  The aggregation of public keys for all members of the committee
 </dd>
+<dt>
+<code><a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code><a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>: u64</code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -135,7 +138,7 @@ Event emitted after verifing quorum of signature.
 <dd>
 </dd>
 <dt>
-<code>total_signers_stake: u64</code>
+<code>signer_count: u64</code>
 </dt>
 <dd>
 </dd>
@@ -197,77 +200,13 @@ Event emitted after verifing quorum of signature.
 
 
 
-<a name="(ika_system=0x0)_bls_committee_calculate_quorum_threshold"></a>
-
-## Function `calculate_quorum_threshold`
-
-Calculate the BFT quorum threshold based on the total voting power (2n/3 + 1)
-
-
-<pre><code><b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_quorum_threshold">calculate_quorum_threshold</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>: u64): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_quorum_threshold">calculate_quorum_threshold</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>: u64): u64 {
-    // 2n/3 rounded up + 1
-    <b>let</b> two_thirds = (2 * <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>).divide_and_round_up(3);
-    <b>if</b> (two_thirds == 0 && <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a> &gt; 0) {
-        // Special case: <b>if</b> there is at least one member, require at least one vote
-        1
-    } <b>else</b> {
-        two_thirds
-    }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_bls_committee_calculate_validity_threshold"></a>
-
-## Function `calculate_validity_threshold`
-
-Calculate the BFT validity threshold based on the total voting power (n/3 + 1)
-
-
-<pre><code><b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_validity_threshold">calculate_validity_threshold</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>: u64): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_validity_threshold">calculate_validity_threshold</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>: u64): u64 {
-    // n/3 rounded up + 1
-    <b>let</b> one_third = <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a>.divide_and_round_up(3);
-    <b>if</b> (one_third == 0 && <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_total_voting_power">total_voting_power</a> &gt; 0) {
-        // Special case: <b>if</b> there is at least one member, require at least one vote
-        1
-    } <b>else</b> {
-        one_third + 1
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_bls_committee_new_bls_committee_member"></a>
 
 ## Function `new_bls_committee_member`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_new_bls_committee_member">new_bls_committee_member</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validator_id">validator_id</a>: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, protocol_pubkey: <a href="../sui/group_ops.md#sui_group_ops_Element">sui::group_ops::Element</a>&lt;<a href="../sui/bls12381.md#sui_bls12381_UncompressedG1">sui::bls12381::UncompressedG1</a>&gt;, stake: u64): (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommitteeMember">bls_committee::BlsCommitteeMember</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_new_bls_committee_member">new_bls_committee_member</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validator_id">validator_id</a>: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, protocol_pubkey: <a href="../sui/group_ops.md#sui_group_ops_Element">sui::group_ops::Element</a>&lt;<a href="../sui/bls12381.md#sui_bls12381_UncompressedG1">sui::bls12381::UncompressedG1</a>&gt;): (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommitteeMember">bls_committee::BlsCommitteeMember</a>
 </code></pre>
 
 
@@ -278,13 +217,11 @@ Calculate the BFT validity threshold based on the total voting power (n/3 + 1)
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_new_bls_committee_member">new_bls_committee_member</a>(
     <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validator_id">validator_id</a>: ID,
-    protocol_pubkey: Element&lt;UncompressedG1&gt;,
-    stake: u64,
+    protocol_pubkey: Element&lt;UncompressedG1&gt;
 ): <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommitteeMember">BlsCommitteeMember</a> {
     <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommitteeMember">BlsCommitteeMember</a> {
         <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validator_id">validator_id</a>,
         protocol_pubkey,
-        stake,
     }
 }
 </code></pre>
@@ -342,9 +279,13 @@ Total voting power is equal to the number of members.
             &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.map!(|member| member.protocol_pubkey),
         ),
     );
+    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a> = (2 * <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length()).divide_and_round_up(3);
+    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a> = <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length().divide_and_round_up(3);
     <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a> {
         <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>,
         aggregated_protocol_pubkey,
+        <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>,
+        <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>,
     }
 }
 </code></pre>
@@ -373,6 +314,8 @@ Creates an empty committee. Only relevant for init phase.
     <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a> {
         <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>: vector[],
         aggregated_protocol_pubkey: bls12381::g1_identity(),
+        <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>: 0,
+        <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>: 0,
     }
 }
 </code></pre>
@@ -495,7 +438,7 @@ Return the quorum threshold (2n/3 + 1) calculated on demand
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>(self: &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a>): u64 {
-    <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_quorum_threshold">calculate_quorum_threshold</a>(self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length())
+    self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>
 }
 </code></pre>
 
@@ -520,7 +463,7 @@ Return the validity threshold (n/3 + 1) calculated on demand
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>(self: &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a>): u64 {
-    <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_validity_threshold">calculate_validity_threshold</a>(self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length())
+    self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>
 }
 </code></pre>
 
@@ -535,7 +478,7 @@ Return the validity threshold (n/3 + 1) calculated on demand
 Verify an aggregate BLS signature is a certificate in the epoch, and return
 the type of certificate and the bytes certified. The <code>signers</code> vector is
 an increasing list of indexes into the <code>committee</code> vector.
-If there is a certificate, the function returns the total stake. Otherwise, it aborts.
+If there is no certificate, the function aborts.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_verify_certificate">verify_certificate</a>(self: &(ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>, epoch: u64, signature: &vector&lt;u8&gt;, signers_bitmap: &vector&lt;u8&gt;, intent_bytes: &vector&lt;u8&gt;)
@@ -615,7 +558,7 @@ If there is a certificate, the function returns the total stake. Otherwise, it a
     );
     event::emit(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_CommitteeQuorumVerifiedEvent">CommitteeQuorumVerifiedEvent</a> {
         epoch,
-        total_signers_stake: signer_count,
+        signer_count,
     });
 }
 </code></pre>
@@ -642,7 +585,7 @@ Calculates the threshold on demand based on total voting power.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_is_quorum_threshold">is_quorum_threshold</a>(self: &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a>, signer_count: u64): bool {
-    signer_count &gt;= <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_quorum_threshold">calculate_quorum_threshold</a>(self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length())
+    signer_count &gt;= self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a>
 }
 </code></pre>
 
@@ -668,7 +611,7 @@ Calculates the threshold on demand based on total voting power.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_is_validity_threshold">is_validity_threshold</a>(self: &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a>, signer_count: u64): bool {
-    signer_count &gt;= <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_calculate_validity_threshold">calculate_validity_threshold</a>(self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length())
+    signer_count &gt;= self.<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a>
 }
 </code></pre>
 

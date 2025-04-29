@@ -7,6 +7,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_secp256k1`
 -  [Struct `DWalletCoordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator)
 -  [Constants](#@Constants_0)
 -  [Function `create_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_create_dwallet_coordinator)
+-  [Function `share_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_share_dwallet_coordinator)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_process_checkpoint_message_by_quorum)
 -  [Function `request_dwallet_network_decryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_request_dwallet_network_decryption_key_dkg)
 -  [Function `advance_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_advance_epoch)
@@ -152,7 +153,7 @@ Create a new System object and make it shared.
 This function will be called only once in init.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_create_dwallet_coordinator">create_dwallet_coordinator</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, epoch: u64, active_committee: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_create_dwallet_coordinator">create_dwallet_coordinator</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, epoch: u64, active_committee: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>
 </code></pre>
 
 
@@ -167,7 +168,7 @@ This function will be called only once in init.
     active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &<b>mut</b> TxContext
-): ID {
+): <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">DWalletCoordinator</a> {
     <b>let</b> dwallet_coordinator_inner = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_dwallet_coordinator_inner">dwallet_2pc_mpc_secp256k1_inner::create_dwallet_coordinator_inner</a>(
         epoch,
         active_committee,
@@ -181,10 +182,34 @@ This function will be called only once in init.
         package_id,
         new_package_id: option::none(),
     };
-    <b>let</b> self_id = object::id(&self);
     dynamic_field::add(&<b>mut</b> self.id, <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_VERSION">VERSION</a>, dwallet_coordinator_inner);
-    transfer::share_object(self);
-    self_id
+    self
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_share_dwallet_coordinator"></a>
+
+## Function `share_dwallet_coordinator`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_share_dwallet_coordinator">share_dwallet_coordinator</a>(dwallet_coordinator: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">dwallet_2pc_mpc_secp256k1::DWalletCoordinator</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_share_dwallet_coordinator">share_dwallet_coordinator</a>(
+    dwallet_coordinator: <a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_DWalletCoordinator">DWalletCoordinator</a>,
+) {
+    transfer::share_object(dwallet_coordinator);
 }
 </code></pre>
 

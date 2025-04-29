@@ -10,36 +10,37 @@ use ika_system::system_inner;
 use ika_system::protocol_treasury;
 use ika_system::validator_set::{Self};
 use ika_system::protocol_cap::{Self, ProtocolCap};
+use ika_system::display;
 use sui::coin::{TreasuryCap};
-use sui::package::UpgradeCap;
+use sui::package::{Self, Publisher, UpgradeCap};
 
+/// The provided upgrade cap does not belong to this package.
 const EInvalidUpgradeCap: u64 = 1;
 
-
-public struct Init has key {
-    id: UID,
-}
+/// The OTW to create `Publisher` and `Display` objects.
+public struct INIT has drop {}
 
 /// Must only be created by `init`.
 public struct InitCap has key, store {
     id: UID,
+    publisher: Publisher,
 }
 
 /// Init function, creates an init cap and transfers it to the sender.
 /// This allows the sender to call the function to actually initialize the system
 /// with the corresponding parameters. Once that function is called, the cap is destroyed.
-fun init(ctx: &mut TxContext) {
+fun init(otw: INIT, ctx: &mut TxContext) {
     let id = object::new(ctx);
-    let init_cap = InitCap {
-        id,
-    };
+    let publisher = package::claim(otw, ctx);
+    let init_cap = InitCap { id, publisher };
     transfer::transfer(init_cap, ctx.sender());
 }
+
 
 /// Function to initialize ika and share the system object.
 /// This can only be called once, after which the `InitCap` is destroyed.
 public fun initialize(
-    cap: InitCap,
+    init_cap: InitCap,
     ika_upgrade_cap: UpgradeCap,
     ika_system_upgrade_cap: UpgradeCap,
     protocol_treasury_cap: TreasuryCap<IKA>,
@@ -54,13 +55,13 @@ public fun initialize(
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
-    validator_low_stake_threshold: u64,
-    validator_very_low_stake_threshold: u64,
-    validator_low_stake_grace_period: u64,
     reward_slashing_rate: u16,
     lock_active_committee: bool,
     ctx: &mut TxContext,
 ): ProtocolCap {
+    let InitCap { id, publisher } = init_cap;
+    id.delete();
+
     let ika_package_id = ika_upgrade_cap.package();
     let ika_system_package_id = ika_system_upgrade_cap.package();
 
@@ -76,18 +77,17 @@ public fun initialize(
 
     let upgrade_caps = vector[ika_upgrade_cap, ika_system_upgrade_cap];
 
-    let validators = validator_set::new(ctx);
+    let validators = validator_set::new(
+        min_validator_count,
+        max_validator_count,
+        min_validator_joining_stake,
+        ctx,
+    );
 
     let system_parameters = system_inner::create_system_parameters(
         epoch_duration_ms,
         stake_subsidy_start_epoch,
         // Validator committee parameters
-        min_validator_count,
-        max_validator_count,
-        min_validator_joining_stake,
-        validator_low_stake_threshold,
-        validator_very_low_stake_threshold,
-        validator_low_stake_grace_period,
         reward_slashing_rate,
         lock_active_committee,
         ctx,
@@ -116,14 +116,9 @@ public fun initialize(
         ctx,
     );
 
-    cap.destroy();
+    display::create(publisher, ctx);
     
     protocol_cap
-}
-
-fun destroy(cap: InitCap) {
-    let InitCap { id } = cap;
-    id.delete();
 }
 
 

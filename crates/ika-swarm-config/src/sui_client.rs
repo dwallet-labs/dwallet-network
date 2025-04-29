@@ -442,15 +442,6 @@ async fn init_initialize(
             CallArg::Pure(bcs::to_bytes(
                 &initiation_parameters.min_validator_joining_stake,
             )?),
-            CallArg::Pure(bcs::to_bytes(
-                &initiation_parameters.validator_low_stake_threshold,
-            )?),
-            CallArg::Pure(bcs::to_bytes(
-                &initiation_parameters.validator_very_low_stake_threshold,
-            )?),
-            CallArg::Pure(bcs::to_bytes(
-                &initiation_parameters.validator_low_stake_grace_period,
-            )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.lock_active_committee)?),
         ],

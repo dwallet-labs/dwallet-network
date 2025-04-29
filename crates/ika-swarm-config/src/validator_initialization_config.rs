@@ -225,7 +225,7 @@ fn default_multiaddr_address() -> Multiaddr {
 }
 
 fn default_stake() -> u64 {
-    ika_types::governance::VALIDATOR_LOW_STAKE_THRESHOLD_NIKA
+    ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA
 }
 
 fn default_bls12381_key_pair() -> AuthorityKeyPair {

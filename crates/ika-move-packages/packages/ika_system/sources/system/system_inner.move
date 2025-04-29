@@ -33,23 +33,6 @@ public struct SystemParametersV1 has store {
     epoch_duration_ms: u64,
     /// The starting epoch in which stake subsidies start being paid out
     stake_subsidy_start_epoch: u64,
-    /// Minimum number of active validators at any moment.
-    min_validator_count: u64,
-    /// Maximum number of active validators at any moment.
-    /// We do not allow the number of validators in any epoch to go above this.
-    max_validator_count: u64,
-    /// Lower-bound on the amount of stake required to become a validator.
-    min_validator_joining_stake: u64,
-    /// Validators with stake amount below `validator_low_stake_threshold` are considered to
-    /// have low stake and will be escorted out of the validator set after being below this
-    /// threshold for more than `validator_low_stake_grace_period` number of epochs.
-    validator_low_stake_threshold: u64,
-    /// Validators with stake below `validator_very_low_stake_threshold` will be removed
-    /// immediately at epoch change, no grace period.
-    validator_very_low_stake_threshold: u64,
-    /// A validator can have stake below `validator_low_stake_threshold`
-    /// for this many epochs before being kicked out.
-    validator_low_stake_grace_period: u64,
     /// How many reward are slashed to punish a validator, in bps.
     reward_slashing_rate: u16,
     /// Lock active committee between epochs.
@@ -116,10 +99,8 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 }
 
 // Errors
-const ELimitExceeded: u64 = 1;
-const EBpsTooLarge: u64 = 5;
-const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 6;
-// const ESafeModeGasNotProcessed: u64 = 7;
+const EBpsTooLarge: u64 = 1;
+const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -182,12 +163,6 @@ public(package) fun create_system_parameters(
     epoch_duration_ms: u64,
     stake_subsidy_start_epoch: u64,
     // Validator committee parameters
-    min_validator_count: u64,
-    max_validator_count: u64,
-    min_validator_joining_stake: u64,
-    validator_low_stake_threshold: u64,
-    validator_very_low_stake_threshold: u64,
-    validator_low_stake_grace_period: u64,
     reward_slashing_rate: u16,
     lock_active_committee: bool,
     ctx: &mut TxContext,
@@ -200,12 +175,6 @@ public(package) fun create_system_parameters(
     SystemParametersV1 {
         epoch_duration_ms,
         stake_subsidy_start_epoch,
-        min_validator_count,
-        max_validator_count,
-        min_validator_joining_stake,
-        validator_low_stake_threshold,
-        validator_very_low_stake_threshold,
-        validator_low_stake_grace_period,
         reward_slashing_rate,
         lock_active_committee,
         extra_fields: bag::new(ctx),
@@ -223,15 +192,13 @@ public(package) fun initialize(
     let now = clock.timestamp_ms();
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
+    let pending_active_set = self.validators.pending_active_set();
+    assert!(pending_active_set.size() >= pending_active_set.min_validator_count(), ECannotInitialize);
     // self.epoch = self.epoch + 1;
     // self.validators.initialize();
 
     self.validators.process_mid_epoch(
-        self.epoch,
         self.parameters.lock_active_committee,
-        self.parameters.validator_low_stake_threshold,
-        self.parameters.validator_very_low_stake_threshold,
-        self.parameters.validator_low_stake_grace_period,
     );
     let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
     let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
@@ -298,12 +265,7 @@ public(package) fun request_add_validator(
     self: &mut SystemInnerV1, 
     cap: &ValidatorCap,
 ) {
-    assert!(
-        self.validators.pending_active_validators_count() < self.parameters.max_validator_count,
-        ELimitExceeded,
-    );
-
-    self.validators.request_add_validator(self.epoch, cap, self.parameters.min_validator_joining_stake);
+    self.validators.request_add_validator(self.epoch, cap);
 }
 
 /// A validator can call this function to request a removal in the next epoch.
@@ -315,16 +277,6 @@ public(package) fun request_remove_validator(
     self: &mut SystemInnerV1,
     cap: &ValidatorCap,
 ) {
-    // Only check min validator condition if the current number of validators satisfy the constraint.
-    // This is so that if we somehow already are in a state where we have less than min validators, it no longer matters
-    // and is ok to stay so. This is useful for a test setup.
-    if (self.active_committee().members().length() >= self.parameters.min_validator_count) {
-        assert!(
-            self.validators.pending_active_validators_count() > self.parameters.min_validator_count,
-            ELimitExceeded,
-        );
-    };
-
     self.validators.request_remove_validator(self.epoch, cap);
 }
 
@@ -608,11 +560,7 @@ public(package) fun process_mid_epoch(
     assert!(self.validators.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.parameters.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
 
     self.validators.process_mid_epoch(
-        self.epoch, 
         self.parameters.lock_active_committee,
-        self.parameters.validator_low_stake_threshold,
-        self.parameters.validator_very_low_stake_threshold,
-        self.parameters.validator_low_stake_grace_period,
     );
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
@@ -694,42 +642,6 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
 }
 
-// TODO (#857): Remove this entire redundant function
-fun process_checkpoint_message(
-    self: &mut SystemInnerV1,
-    message: vector<u8>,
-    _ctx: &mut TxContext,
-) {
-    assert!(!self.active_committee().members().is_empty(), EActiveBlsCommitteeMustInitialize);
-
-    // first let's make sure it's the correct checkpoint message
-    let mut bcs_body = bcs::new(copy message);
-
-    let epoch = bcs_body.peel_u64();
-    assert!(epoch == self.epoch, EIncorrectEpochInCheckpoint);
-
-    let sequence_number = bcs_body.peel_u64();
-
-    if(self.last_processed_checkpoint_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } else {
-        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
-
-    //let network_total_messages = bcs_body.peel_u64();
-    //let previous_digest = bcs_body.peel_option!(|previous_digest| previous_digest.peel_vec_u8() );
-    let timestamp_ms = bcs_body.peel_u64();
-
-    event::emit(SystemCheckpointInfoEvent {
-        epoch,
-        sequence_number,
-        timestamp_ms,
-    });
-}
-
-
 public(package) fun authorize_update_message_by_cap(
     self: &mut SystemInnerV1,
     cap: &ProtocolCap,
@@ -789,15 +701,8 @@ public(package) fun set_epoch_for_testing(self: &mut SystemInnerV1, epoch_num: u
 public(package) fun request_add_validator_for_testing(
     self: &mut SystemInnerV1,
     cap: &ValidatorCap,
-    min_joining_stake_for_testing: u64,
-    _ctx: &TxContext,
 ) {
-    assert!(
-        self.validators.pending_active_validators_count() < self.parameters.max_validator_count,
-        ELimitExceeded,
-    );
-
-    self.validators.request_add_validator(self.epoch, cap, min_joining_stake_for_testing);
+    self.validators.request_add_validator(self.epoch, cap);
 }
 
 #[test_only]

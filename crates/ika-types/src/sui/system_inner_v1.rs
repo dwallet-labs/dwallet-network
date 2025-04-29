@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{Element, SystemInnerTrait};
+use super::{Element, ExtendedField, SystemInnerTrait};
 use crate::committee::StakeUnit;
 use crate::crypto::{AuthorityName, AuthorityPublicKey};
 use fastcrypto::traits::ToFromBytes;
@@ -22,29 +22,6 @@ pub struct SystemParametersV1 {
     /// The starting epoch in which stake subsidies start being paid out
     pub stake_subsidy_start_epoch: u64,
 
-    /// Minimum number of active validators at any moment.
-    pub min_validator_count: u64,
-
-    /// Maximum number of active validators at any moment.
-    /// We do not allow the number of validators in any epoch to go above this.
-    pub max_validator_count: u64,
-
-    /// Lower-bound on the amount of stake required to become a validator.
-    pub min_validator_joining_stake: u64,
-
-    /// Validators with stake amount below `validator_low_stake_threshold` are considered to
-    /// have low stake and will be escorted out of the validator set after being below this
-    /// threshold for more than `validator_low_stake_grace_period` number of epochs.
-    pub validator_low_stake_threshold: u64,
-
-    /// Validators with stake below `validator_very_low_stake_threshold` will be removed
-    /// immediately at epoch change, no grace period.
-    pub validator_very_low_stake_threshold: u64,
-
-    /// A validator can have stake below `validator_low_stake_threshold`
-    /// for this many epochs before being kicked out.
-    pub validator_low_stake_grace_period: u64,
-
     /// how many reward are slashed to punish a validator, in bps.
     pub reward_slashing_rate: u16,
 
@@ -58,9 +35,7 @@ pub struct SystemParametersV1 {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct BlsCommitteeMember {
     pub validator_id: ObjectID,
-    pub protocol_pubkey: Element,
-    pub voting_power: u64,
-    pub stake: u64,
+    pub protocol_pubkey: Element
 }
 
 /// Represents the current committee in the system.
@@ -68,6 +43,8 @@ pub struct BlsCommitteeMember {
 pub struct BlsCommittee {
     pub members: Vec<BlsCommitteeMember>,
     pub aggregated_protocol_pubkey: Element,
+    pub quorum_threshold: u64,
+    pub validity_threshold: u64,
 }
 
 pub type ObjectTable = Table;
@@ -80,8 +57,7 @@ pub struct ValidatorSetV1 {
     pub active_committee: BlsCommittee,
     pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
-    pub pending_active_validators: Vec<ObjectID>,
-    pub at_risk_validators: VecMap<ID, u64>,
+    pub pending_active_set: ExtendedField,
     pub validator_report_records: VecMap<ObjectID, VecSet<ObjectID>>,
     pub extra_fields: Bag,
 }
@@ -248,7 +224,7 @@ impl SystemInnerTrait for SystemInnerV1 {
                         (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
                             .unwrap())
                             .into(),
-                        v.voting_power,
+                        1,
                     ),
                 )
             })

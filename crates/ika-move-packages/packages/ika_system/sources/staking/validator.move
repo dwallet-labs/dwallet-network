@@ -137,7 +137,7 @@ public struct Validator has key, store {
     /// next epoch's stake.
     pending_stake: PendingValues,
     /// The rewards that the validator has received from being in the committee.
-    rewards_validator: Balance<IKA>,
+    rewards_pool: Balance<IKA>,
     /// The commission that the validator has received from the rewards.
     commission: Balance<IKA>,
     /// The ID of this validator's `ValidatorCap`
@@ -201,7 +201,7 @@ public(package) fun new(
         pending_commission_rate: pending_values::empty(),
         ika_balance: 0,
         num_shares: 0,
-        rewards_validator: balance::zero(),
+        rewards_pool: balance::zero(),
         commission: balance::zero(),
         validator_cap_id: object::id(&validator_cap),
         operation_cap_id: object::id(&validator_operation_cap),
@@ -226,9 +226,9 @@ public(package) fun activate(
     assert!(object::id(validator_cap) == validator.validator_cap_id, EAuthorizationFailure);
     assert!(validator.state == ValidatorState::PreActive, EPoolIsNotPreActive);
     let activation_epoch = if (committee_selected) {
-        current_epoch + 1
+        current_epoch + 2
     } else {
-        current_epoch
+        current_epoch + 1
     };
 
     // // Add the initial exchange rate to the table.
@@ -392,8 +392,8 @@ public(package) fun withdraw_stake(
     // Withdraw rewards. Due to rounding errors, there's a chance that the
     // rewards amount is higher than the rewards validator, in this case, we
     // withdraw the maximum amount possible.
-    let rewards_amount = rewards_amount.min(validator.rewards_validator.value());
-    let mut to_withdraw = validator.rewards_validator.split(rewards_amount);
+    let rewards_amount = rewards_amount.min(validator.rewards_pool.value());
+    let mut to_withdraw = validator.rewards_pool.split(rewards_amount);
     to_withdraw.join(principal);
     to_withdraw
 }
@@ -425,7 +425,7 @@ public(package) fun advance_epoch(
 
     // Add rewards to the validator and update the `ika_balance`.
     let rewards_amount = rewards.value();
-    validator.rewards_validator.join(rewards);
+    validator.rewards_pool.join(rewards);
     validator.ika_balance = validator.ika_balance + rewards_amount;
     validator.latest_epoch = current_epoch;
     validator.validator_info.roatate_next_epoch_info();
@@ -606,7 +606,7 @@ public(package) fun destroy_empty(validator: Validator) {
         id,
         validator_info,
         exchange_rates,
-        rewards_validator,
+        rewards_pool,
         commission,
         extra_fields,
         ..,
@@ -616,7 +616,7 @@ public(package) fun destroy_empty(validator: Validator) {
     validator_info.destroy();
     exchange_rates.drop();
     commission.destroy_zero();
-    rewards_validator.destroy_zero();
+    rewards_pool.destroy_zero();
     extra_fields.destroy_empty();
 }
 
@@ -742,7 +742,7 @@ public(package) fun commission_rate(validator: &Validator): u16 { validator.comm
 public(package) fun commission_amount(validator: &Validator): u64 { validator.commission.value() }
 
 /// Returns the rewards amount for the validator.
-public(package) fun rewards_amount(validator: &Validator): u64 { validator.rewards_validator.value() }
+public(package) fun rewards_amount(validator: &Validator): u64 { validator.rewards_pool.value() }
 
 /// Returns the rewards for the validator.
 public(package) fun ika_balance(validator: &Validator): u64 { validator.ika_balance }
@@ -790,7 +790,7 @@ public(package) fun is_empty(validator: &Validator): bool {
     let pending_stake = validator.pending_stake.unwrap();
     let non_empty = pending_stake.keys().count!(|epoch| pending_stake[epoch] != 0);
 
-    validator.rewards_validator.value() == 0 &&
+    validator.rewards_pool.value() == 0 &&
     validator.num_shares == 0 &&
     validator.commission.value() == 0 &&
     validator.ika_balance == 0 &&
