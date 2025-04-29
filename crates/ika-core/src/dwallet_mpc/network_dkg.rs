@@ -240,7 +240,7 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_decryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
             .network_dkg_output
             .clone())
     }
