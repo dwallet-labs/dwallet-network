@@ -6,6 +6,7 @@ use colored::Colorize;
 use ika::ika_commands::IkaCommand;
 use ika_types::exit_main;
 use tracing::debug;
+use ika::validator_commands::read_or_generate_seed_and_class_groups_key;
 
 // Define the `GIT_REVISION` and `VERSION` consts
 bin_version::bin_version!();
@@ -26,16 +27,10 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    #[cfg(windows)]
-    colored::control::set_virtual_terminal(true).unwrap();
-
-    let args = Args::parse();
-    let _guard = match args.command {
-        _ => telemetry_subscribers::TelemetryConfig::new()
-            .with_log_level("error")
-            .with_env()
-            .init(),
-    };
-    debug!("Ika CLI version: {VERSION}");
-    exit_main!(args.command.execute().await);
+    //current dir
+    let dir = std::env::current_dir().unwrap();
+    read_or_generate_seed_and_class_groups_key(
+        dir.join("class-groups.key"),
+        dir.join("class-groups.seed"),
+    );
 }

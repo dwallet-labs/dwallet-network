@@ -138,56 +138,57 @@ impl IkaValidatorCommand {
                 sender_sui_address,
             } => {
                 let dir = std::env::current_dir()?;
-                let protocol_key_file_name = dir.join("protocol.key");
-                let network_key_file_name = dir.join("network.key");
-                let consensus_key_file_name = dir.join("consensus.key");
-
-                make_key_files(protocol_key_file_name.clone(), true, None)?;
-                make_key_files(network_key_file_name.clone(), false, None)?;
-                make_key_files(consensus_key_file_name.clone(), false, None)?;
-
-                let keypair = read_authority_keypair_from_file(&protocol_key_file_name);
-                let consensus_keypair: NetworkKeyPair =
-                    read_network_keypair_from_file(consensus_key_file_name)?;
-                let network_keypair: NetworkKeyPair =
-                    read_network_keypair_from_file(network_key_file_name)?;
-                let pop = generate_proof_of_possession(&keypair, sender_sui_address);
+                // let protocol_key_file_name = dir.join("protocol.key");
+                // let network_key_file_name = dir.join("network.key");
+                // let consensus_key_file_name = dir.join("consensus.key");
+                //
+                // make_key_files(protocol_key_file_name.clone(), true, None)?;
+                // make_key_files(network_key_file_name.clone(), false, None)?;
+                // make_key_files(consensus_key_file_name.clone(), false, None)?;
+                //
+                // let keypair = read_authority_keypair_from_file(&protocol_key_file_name);
+                // let consensus_keypair: NetworkKeyPair =
+                //     read_network_keypair_from_file(consensus_key_file_name)?;
+                // let network_keypair: NetworkKeyPair =
+                //     read_network_keypair_from_file(network_key_file_name)?;
+                // let pop = generate_proof_of_possession(&keypair, sender_sui_address);
 
                 let class_groups_public_key_and_proof = read_or_generate_seed_and_class_groups_key(
                     dir.join("class-groups.key"),
                     dir.join("class-groups.seed"),
                 )?;
+                return Ok(IkaValidatorCommandResponse::MakeValidatorInfo);
 
-                let validator_info = ValidatorInfo {
-                    name,
-                    class_groups_public_key_and_proof: class_groups_public_key_and_proof
-                        .public_bytes(),
-                    account_address: sender_sui_address,
-                    protocol_public_key: keypair.public().into(),
-                    consensus_public_key: consensus_keypair.public().clone(),
-                    network_public_key: network_keypair.public().clone(),
-                    computation_price: gas_price,
-                    description,
-                    image_url,
-                    project_url,
-                    commission_rate: DEFAULT_COMMISSION_RATE,
-                    consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
-                    network_address: Multiaddr::try_from(format!(
-                        "/dns/{}/tcp/8080/http",
-                        host_name
-                    ))?,
-                    p2p_address: Multiaddr::try_from(format!("/dns/{}/udp/8084", host_name))?,
-                    proof_of_possession: pop,
-                };
-
-                let validator_info_file_name = dir.join("validator.info");
-                let validator_info_bytes = serde_yaml::to_string(&validator_info)?;
-                fs::write(validator_info_file_name.clone(), validator_info_bytes)?;
-                println!(
-                    "Generated validator info file: {:?}.",
-                    validator_info_file_name
-                );
-                IkaValidatorCommandResponse::MakeValidatorInfo
+                // let validator_info = ValidatorInfo {
+                //     name,
+                //     class_groups_public_key_and_proof: class_groups_public_key_and_proof
+                //         .public_bytes(),
+                //     account_address: sender_sui_address,
+                //     protocol_public_key: keypair.public().into(),
+                //     consensus_public_key: consensus_keypair.public().clone(),
+                //     network_public_key: network_keypair.public().clone(),
+                //     computation_price: gas_price,
+                //     description,
+                //     image_url,
+                //     project_url,
+                //     commission_rate: DEFAULT_COMMISSION_RATE,
+                //     consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
+                //     network_address: Multiaddr::try_from(format!(
+                //         "/dns/{}/tcp/8080/http",
+                //         host_name
+                //     ))?,
+                //     p2p_address: Multiaddr::try_from(format!("/dns/{}/udp/8084", host_name))?,
+                //     proof_of_possession: pop,
+                // };
+                //
+                // let validator_info_file_name = dir.join("validator.info");
+                // let validator_info_bytes = serde_yaml::to_string(&validator_info)?;
+                // fs::write(validator_info_file_name.clone(), validator_info_bytes)?;
+                // println!(
+                //     "Generated validator info file: {:?}.",
+                //     validator_info_file_name
+                // );
+                // IkaValidatorCommandResponse::MakeValidatorInfo
             }
             IkaValidatorCommand::ConfigEnv {
                 ika_package_id,
@@ -422,7 +423,7 @@ fn make_key_files(
 /// Reads the class groups a key pair and proof from a file if it exists,
 /// otherwise generates it from the seed.
 /// The seed is the private key of the authority key pair.
-fn read_or_generate_seed_and_class_groups_key(
+pub fn read_or_generate_seed_and_class_groups_key(
     file_path: PathBuf,
     seed_path: PathBuf,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
