@@ -39,6 +39,7 @@ fn current_tangible_party_id_to_upcoming(
         .voting_rights
         .iter()
         .map(|(name, _)| {
+            // Todo (#972): Authority name can change, we need to use real const value for the committee - validator ID
             // Safe to unwrap because we know the name is in the current committee.
             let current_party_id =
                 authority_name_to_party_id_from_committee(&current_committee, name).unwrap();
