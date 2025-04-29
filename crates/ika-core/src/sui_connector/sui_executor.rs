@@ -283,8 +283,12 @@ where
             }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
-                self.run_epoch_switch(sui_notifier, &ika_system_state_inner, &epoch_switch_state)
-                    .await;
+                self.run_epoch_switch(
+                    sui_notifier,
+                    &ika_system_state_inner,
+                    &mut epoch_switch_state,
+                )
+                .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
