@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ika-new-devnet-ika-fullnode-1-config-yaml
+  namespace: ika-new-devnet-services
+  uid: 044f745b-d424-41e5-93ae-d5b9ff4c7f3e
+  resourceVersion: '96923005'
+  creationTimestamp: '2025-04-29T14:29:06Z'
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: ika-new-devnet-chain
+    meta.helm.sh/release-namespace: default
+  selfLink: >-
+    /api/v1/namespaces/ika-new-devnet-services/configmaps/ika-new-devnet-ika-fullnode-1-config-yaml
+spec: {}
+data:
+  fullnode.yaml: |-
+    # NOTE: this value is fake because of wrong validation,
+    # it will be removed later.
+    class-groups-key-pair-and-proof:
+      path: fake.key
+    # Update this value to the location you want Sui to store its database.
+    db-path: "/opt/ika/db"
+
+    # For ipv4, update this to "/ip4/X.X.X.X/tcp/8080/http"
+    network-address: "/dns/localhost/tcp/8080/http"
+    metrics-address: "0.0.0.0:9184"
+    sui-connector-config:
+      sui-rpc-url: https://fullnode.sui.beta.devnet.ika-network.net
+      sui-chain-identifier: custom
+      ika-package-id: 0xf29e98b22d4b672b06075960e7af4b26e2f3280d82bca95b4f58a7f8d5812df5
+      ika-system-package-id: 0xf2600cf639227dd29082bc68bac7965e974905903789c5448b84e43cd9e1a6c4
+      ika-system-object-id: 0x69f99fc9fd91ffe27884a649617929933181c3341d91256cddd42df78aa2bac3
+      notifier-client-key-pair:
+        path: /opt/ika/key-pairs/notifier.key
+    p2p-config:
+      external-address: /dns/fullnode1.beta50.devnet.ika-network.net/udp/8084
+      listen-address: "0.0.0.0:8084"
+      # add state-sync seed peers below
+      seed-peers:
+        - address: /dns/val1.beta50.devnet.ika-network.net/udp/8084
+          peer-id: af59c82d427fcc5130bcadffdae1186d672951c3135fe9e80aa9ed9badf43cd0
+        - address: /dns/val2.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 88d6b6444f2c9e945e7ad325075a19eb2c76c262802f32af3b1f41d5f128dcac
+        - address: /dns/val3.beta50.devnet.ika-network.net/udp/8084
+          peer-id: cf8f5ef018067f3b85eaac5fbe9539080a44c24c89c35c274aba246f3a3403a8
+        - address: /dns/val4.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 7b51df21331211f75fd4ba8920d1ad85578bf0d859ea9ac2f86554513bd1d128
+        - address: /dns/val5.beta50.devnet.ika-network.net/udp/8084
+          peer-id: bcf81f99030dede8129800fdd72780501abaac066f0445cb2a541a62f31d4e56
+        - address: /dns/val6.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 743fc2d4a10f3b6ee14d6a3f67dd5c65dc013e08af09b87d607738017d9c28b7
+        - address: /dns/val7.beta50.devnet.ika-network.net/udp/8084
+          peer-id: ba12ca3bd6edd480d4912b111a700bb51c37557653a69d1f12686bad5a8e79c9
+        - address: /dns/val8.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 01361cde510865cab72a3201dacd1ad54988d4b0e8cc05af526dd2b220adaa14
+        - address: /dns/val9.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 2fd254087bfc08fc98b0990465f82ba38850842adf3848c6dd654f89320f6c59
+        - address: /dns/val10.beta50.devnet.ika-network.net/udp/8084
+          peer-id: aaba80d30688734b1294990c90f8366eda562410abc4b2d6273ca0f12beba54f
+        - address: /dns/val11.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 12283ee2e61fb989752b8caa573c3156deed6cc0490d43576dae71afa3a3a87d
+        - address: /dns/val12.beta50.devnet.ika-network.net/udp/8084
+          peer-id: e89c8a31e284d62a3ed22a81bbf2f2bd426820f065e34c8bd9781cc8251188d0
+        - address: /dns/val13.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 7af2351805329b98626d2a3067cb2cb7fe39c84c9352c9ce367ecc3ac92c83e1
+        - address: /dns/val14.beta50.devnet.ika-network.net/udp/8084
+          peer-id: a0e755e9ab76b80825e14cb3bb8345d28f18549c3388624050c78ab0315491a6
+        - address: /dns/val15.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 469fd48651060c5c39c482efd8e19d90625434c82de12e4d9e61d324fa02c917
+        - address: /dns/val16.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 27e9f0a2527259628cdd6a4aac534f06b84963e4591573858184e359995ede3b
+        - address: /dns/val17.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 31fa4195118e5c35d4a55f512f5d37dd7b13fbb88f421fb39002a00eea3ac25d
+        - address: /dns/val18.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 3b1d688f9ccbdb6375c1b4b0d50c19b0c33c5d587b45a43ec1a0e36b4fce753b
+        - address: /dns/val19.beta50.devnet.ika-network.net/udp/8084
+          peer-id: aecf0b00a4021c488f8cf3ae0aec447e886c25c022051ed93992de83e6733741
+        - address: /dns/val20.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 3cf4614d03597fef7d9f731c797a2a83613286b85b5ab5f7968f5f4dd1137907
+        - address: /dns/val21.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 60345eabd728a3b4940a762c0a140b032c822b80540d053f9e84ca150c364828
+        - address: /dns/val22.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 38ccefb137ba320b7e463d6f2e4c2b6433c6e5f8e6e9a0e5a893cd76fb59b276
+        - address: /dns/val23.beta50.devnet.ika-network.net/udp/8084
+          peer-id: d0187530b94db62d1081c1aa6cc48a16f61f6284fee21d41b4de1089a3878a81
+        - address: /dns/val24.beta50.devnet.ika-network.net/udp/8084
+          peer-id: a77b6924c40d466fd06312c56f9aac0dce7aa7db2856844afd5abb04f9854459
+        - address: /dns/val25.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 75da6e17ec9f16cc0af647b8dfba8bb94fdbe97800393773e0e51d2551f7b1e9
+        - address: /dns/val26.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 9f9b499beac7627947767c71c17f79af08ab7e041a9f752d1efea15b2e0ba0ce
+        - address: /dns/val27.beta50.devnet.ika-network.net/udp/8084
+          peer-id: ecad3d0673d83f7ea52a46f3e6bd3cfffa951a05cde7dad57d32676b2b644a48
+        - address: /dns/val28.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 2817c2713abde93ef9befdda6295a6c82078ec2db90b4e31060e31c58bd6275a
+        - address: /dns/val29.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 65945638156981eea74805df0fe8769eaabf7422a9dac02f6fac7bc02101e87c
+        - address: /dns/val30.beta50.devnet.ika-network.net/udp/8084
+          peer-id: a4e2cd6ab1eb36510b00b8519708887c4b388ef00f0293906e8bf7001720bf37
+        - address: /dns/val31.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 24fa3f1454841b7c624e663c24bf793e24d3939094c95a307b7a0568597162d6
+        - address: /dns/val32.beta50.devnet.ika-network.net/udp/8084
+          peer-id: c09d8cbcbba4648ca1aa6beabbfcae1ebd8bb8c8485e2de8bd23e0cb9421274e
+        - address: /dns/val33.beta50.devnet.ika-network.net/udp/8084
+          peer-id: cac51f3f5c81c17c1bb7b1c9ad5c2986230aa0efc9511ce1fb82c825bb9d7cc5
+        - address: /dns/val34.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 87d3aeb428c63e67e037bcc11f911402d4962af722d9afefe21d28cfac33a54c
+        - address: /dns/val35.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 01e70074ec418bc3832ff6d050039857c32eba66a82b55e45d23bff4cf7f87ae
+        - address: /dns/val36.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 9c0635eb62b975d708055a26948cdbdbedd72a509c2745f37256a3a872776fb2
+        - address: /dns/val37.beta50.devnet.ika-network.net/udp/8084
+          peer-id: fcbb959dc37c87ff9f4af024e8b03ae43c8b6a7bc2d11df63438642ec931a57c
+        - address: /dns/val38.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 79ecc366eea1fda043d30fcb8fff6327b1f7f1a9bae2975370c664f6e1bacfc3
+        - address: /dns/val39.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 534aa484f5e04ce0e2129440c8b159f7e4104e617956ab8044e8a124b9c3e9b3
+        - address: /dns/val40.beta50.devnet.ika-network.net/udp/8084
+          peer-id: a2aecb5a7f5e75f1e9b783a4cd61545671ee0f452c6a692e09900b1a774e39bd
+        - address: /dns/val41.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 59ff698ddc1842b0cf95a48d0e5e5e84b3cba46d65eda727ac6647d0f784e005
+        - address: /dns/val42.beta50.devnet.ika-network.net/udp/8084
+          peer-id: fabb340b8391c3313c01627c816efce134fde95f0d90ce7c0a5561ef709ff3b0
+        - address: /dns/val43.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 5020910c910cdb9630c8196be6ff6a95ba6274d19a7f47b6678fbd06505572f6
+        - address: /dns/val44.beta50.devnet.ika-network.net/udp/8084
+          peer-id: eea1edc62f68db11c9071197cdceb03487f437454d72ebd6f470b6bc1037b0f7
+        - address: /dns/val45.beta50.devnet.ika-network.net/udp/8084
+          peer-id: a775b8fe4c2840d73d14829b63990ae992ebe7feaac8eb2a4e7bbb08725be4a6
+        - address: /dns/val46.beta50.devnet.ika-network.net/udp/8084
+          peer-id: becae4c648a19187ffb6c872a3213a468c4ec166b100488a89c8f28af3668d05
+        - address: /dns/val47.beta50.devnet.ika-network.net/udp/8084
+          peer-id: e98a8b1a63cabee4742c2f3c95b86650933d6baa1cb2579da1f14411a14acc62
+        - address: /dns/val48.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 5984daca674194070ae78f9d25ea54aaca3017aa25148309e1864bcb7ae74808
+        - address: /dns/val49.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 5018d4f445af3c347955a493dbd99a481a146db6d8f1674fd995fdaec0ba2d2f
+        - address: /dns/val50.beta50.devnet.ika-network.net/udp/8084
+          peer-id: 9d137fdf14344eebceac4b8a7a7bcdd44c8a1e11c09fca0be1221e206ae41e09
+      # todo(zeev): check if it's relevant?
+    #      state-sync:
+    #        checkpoint-content-timeout-ms: 10000
+    #    end-of-epoch-broadcast-channel-capacity: 128
+
+    authority-store-pruning-config:
+      num-latest-epoch-dbs-to-retain: 3
+      epoch-db-pruning-period-secs: 3600
+      num-epochs-to-retain: 1
+      max-checkpoints-in-batch: 10
+      max-transactions-in-batch: 1000
+      pruning-run-delay-seconds: 60
+
+    state-archive-write-config:
+      concurrency: 0
+      use-for-pruning-watermark: false
+    state-archive-read-config: [ ]
+      #authority-overload-config:
+      #max-txn-age-in-queue:
+      #  secs: 0
+      #  nanos: 500000000
+      #overload-monitor-interval:
+      #  secs: 10
+      #  nanos: 0
+      #execution-queue-latency-soft-limit:
+      #  secs: 1
+      #  nanos: 0
+      #execution-queue-latency-hard-limit:
+      #  secs: 10
+      #  nanos: 0
+    #max-load-shedding-percentage: 95
+    #min-load-shedding-percentage-above-hard-limit: 50
+    #safe-transaction-ready-rate: 100
+    #check-system-overload-at-signing: true
+    #max-transaction-manager-queue-length: 100000
+    #max-transaction-manager-per-object-queue-length: 20
