@@ -38,14 +38,6 @@ publish the public data (encryption key + proof), and store the decryption key.
 To bypass this process during development, you can mock the key generation by enabling the `mock-class-groups` feature
 on `ika-swarm-config` crate.
 
-#### Mocking the Network DKG Protocol
-
-The MPC session requires the network DKG protocol to calculate the network MPC key.
-However, running the network DKG protocol currently takes a significant amount of time (approximately 20 minutes in
-`release` mode).  
-To bypass this process during development, you can mock the network DKG protocol by disabling the `with-network-dkg`
-feature on the `ika-core` crate.
-
 ### **OUTDATED** Generating the RPC API for TypeScript
 
 To generate the RPC schema, follow these steps:
@@ -107,55 +99,3 @@ RUST_LOG="off,pera_node=info,pera_core=error" RUST_MIN_STACK=16777216 cargo run 
 To test the state sync feature, uncomment the code in the `start` function located in
 `crates/pera/src/pera_commands.rs`.
 This code restarts a validator node 10 seconds after the chain starts.
-
-## Create Mock Data for the MPC Protocols
-
-Clone the `cryptography-private` repository and check out the `ika-print-tests` branch.  
-This branch contains code to store the Secp256K1 network DKG output into files.  
-The files are generated while running the `dkg::tests::generates_distributed_key_secp256k1` test.
-
-Before running the test, make sure to switch to `release` mode to avoid long execution times.  
-The current test configuration is set to run with **four parties** and a **threshold of three**, with each party having
-a voting power of **one**.
-
-### Running the Test
-
-To run the test from IntelliJ IDE, use the following debug configuration:
-
-- **Command:**
-  ```sh
-  test --all-features --package class_groups --lib dkg::tests::generates_distributed_key_secp256k1 -- --nocapture
-  ```
-- **Environment variables:**
-  ```sh
-  RUST_MIN_STACK=16777216
-  ```
-
-### Output Files
-
-After running the test, the generated files will be stored in the `cryptography-private/class_groups` directory:
-
-- **`class-groups-keypair`**: Contains the key pair for class groups, used by all parties in the network DKG for
-  encryption and decryption of secret shares.
-- **`decryption_key_share_public_parameters.txt`**: Stores the decryption public parameters used in the signing
-  protocol.
-- **`decryption_shares.txt`**: Contains the decryption shares for all parties participating in the network DKG.
-- **`encryption_scheme_public_parameters.txt`**: Includes the encryption scheme's public parameters used for all MPC
-  protocols.
-- **`public_output.txt`**: Stores the public output of the network DKG.
-
-### Updating the Project with Mock Data
-
-Replace the mock values of the following constants with the corresponding file contents:
-
-- **`DECRYPTION_KEY_SHARE_PUBLIC_PARAMETERS`** → `decryption_key_share_public_parameters.txt`
-- **`NETWORK_DKG_OUTPUT`** → `public_output.txt`
-- **`DECRYPTION_SHARES`** → `decryption_shares.txt`
-
-These constants are located in the `crates/shared-wasm-class-groups/src/constants.rs` file.
-
-Next, replace the contents of `class-groups-keys-mock-files/class-groups-mock-key-full` with the content of
-`class-groups-keypair`.
-
-Finally, update the `mockedProtocolPublicParameters` in `sdk/typescript/src/dwallet-mpc/globals.ts` with the content of
-`encryption_scheme_public_parameters.txt`.  

@@ -989,21 +989,12 @@ async fn create_class_groups_public_key_and_proof_object(
         context,
         client,
         ika_system_package_id,
-        (0, 4),
+        (0, 3),
         builder_object_ref.0,
         &class_groups_public_key_and_proof,
     )
     .await?;
-    add_public_keys_and_proofs_with_rng(
-        publisher_address,
-        context,
-        client,
-        ika_system_package_id,
-        (4, 6),
-        builder_object_ref.0,
-        &class_groups_public_key_and_proof,
-    )
-    .await?;
+
     let builder_object_ref = client
         .transaction_builder()
         .get_object_ref(builder_object_ref.0)

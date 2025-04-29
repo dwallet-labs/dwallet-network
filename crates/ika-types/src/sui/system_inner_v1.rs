@@ -107,8 +107,6 @@ pub struct SystemInnerV1 {
     pub ika_treasury: IkaTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
     pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
@@ -145,8 +143,8 @@ pub struct DWalletCoordinatorInnerV1 {
     pub sessions: ObjectTable,
     pub session_start_events: Bag,
     pub number_of_completed_sessions: u64,
-    pub started_immediate_sessions_count: u64,
-    pub completed_immediate_sessions_count: u64,
+    pub started_system_sessions_count: u64,
+    pub completed_system_sessions_count: u64,
     pub next_session_sequence_number: u64,
     pub last_session_to_complete_in_current_epoch: u64,
     pub locked_last_session_to_complete_in_current_epoch: bool,
@@ -162,6 +160,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub previous_committee: BlsCommittee,
     pub total_messages_processed: u64,
     pub last_processed_checkpoint_sequence_number: Option<u64>,
+    pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub extra_fields: Bag,
 }
 
@@ -206,14 +205,6 @@ impl SystemInnerTrait for SystemInnerV1 {
 
     fn epoch_start_timestamp_ms(&self) -> u64 {
         self.epoch_start_timestamp_ms
-    }
-
-    fn last_processed_checkpoint_sequence_number(&self) -> Option<u64> {
-        self.last_processed_checkpoint_sequence_number
-    }
-
-    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_checkpoint_sequence_number
     }
 
     fn epoch_duration_ms(&self) -> u64 {
