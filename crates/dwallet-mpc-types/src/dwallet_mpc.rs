@@ -110,11 +110,16 @@ pub struct NetworkDecryptionKeyPublicData {
     pub epoch: u64,
 
     pub state: NetworkDecryptionKeyPublicOutputType,
-    pub public_output: MPCPublicOutput,
+    /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
+    pub latest_public_output: MPCPublicOutput,
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
     pub decryption_key_share_public_parameters: Vec<u8>,
+
+    /// The public output of the `NetworkDKG` process (the first and only one).
+    /// On first instance it will be equal to `latest_public_output`.
+    pub network_dkg_output: MPCPublicOutput,
 }
 
 #[repr(u8)]

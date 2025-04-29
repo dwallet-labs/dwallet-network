@@ -184,7 +184,7 @@ dependencies = [
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -216,7 +216,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -521,7 +521,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -624,7 +624,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
@@ -681,7 +681,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -877,7 +877,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -947,7 +947,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -1147,7 +1147,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -1637,7 +1637,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -1662,7 +1662,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0aae42a3#0aae42a3ab6be8d793cbeb1dab02d2c532e77f41"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
 dependencies = [
  "class_groups",
  "commitment",
