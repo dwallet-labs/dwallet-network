@@ -158,3 +158,10 @@ here: https://www.figma.com/board/uzpZ7ToOQ8DWcID2vOUlwt/State-Sync-Overview?nod
     - Add validator 
     - Remove validator 
     - Reconfiguation
+
+
+sui-tool download-db-snapshot --latest \
+--network testnet --snapshot-bucket <BUCKET-NAME> \
+--snapshot-bucket-type <TYPE> --path <PATH-TO-NODE-DB> \
+--num-parallel-downloads 25 \
+--skip-indexes
