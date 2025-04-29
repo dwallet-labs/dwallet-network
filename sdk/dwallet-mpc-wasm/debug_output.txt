@@ -1,0 +1,5 @@
+thread '<unnamed>' panicked at crates/ika-swarm-config/src/class_groups_mock_builder.rs:10:44:
+called `Result::unwrap()` on an `Err` value: FailedToReadCGKey("No such file or directory (os error 2)")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2025-04-29T17:15:05.645794Z ERROR telemetry_subscribers: panicked at crates/ika-swarm-config/src/class_groups_mock_builder.rs:10:44:
+called `Result::unwrap()` on an `Err` value: FailedToReadCGKey("No such file or directory (os error 2)") panic.file="crates/ika-swarm-config/src/class_groups_mock_builder.rs" panic.line=10 panic.column=44
