@@ -76,7 +76,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [workspace.dependencies]
 k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", rev = "46ae5a0a" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "46ae5a0a", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "46ae5a0a", subdir = "class-groups", features = ["default", "threshold"] }
 twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups"], rev = "46ae5a0a" }
 group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "46ae5a0a" }
 homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "46ae5a0a" }
