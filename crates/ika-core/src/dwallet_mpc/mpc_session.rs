@@ -215,7 +215,7 @@ impl DWalletMPCSession {
                 )
             }
             Err(err) => {
-                error!(?err, "failed to advance the MPC session: {:?}");
+                error!(?err, "failed to advance the MPC session");
                 let base64_mpc_messages = general_purpose::STANDARD
                     .encode(bcs::to_bytes(&self.serialized_full_messages)?);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
