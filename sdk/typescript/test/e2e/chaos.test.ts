@@ -62,6 +62,10 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 		},
 		data: {
 			'fullnode.yaml': fullNodeYaml,
+			'notifier.key': fs.readFileSync(
+				'sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/sui_config/publisher.key',
+				'utf8',
+			),
 			...validatorsConfig,
 		},
 	};
@@ -183,6 +187,67 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 			body: pod,
 		});
 	}
+	let fullnodePod = {
+		metadata: {
+			name: `ika-fullnode`,
+			namespace: namespaceName,
+		},
+		spec: {
+			containers: [
+				{
+					env: [
+						{
+							name: 'RUST_LOG',
+							value: 'off,ika_node=info,ika_core=warn',
+						},
+						{
+							name: 'RUST_MIN_STACK',
+							value: '16777216',
+						},
+					],
+					command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/fullnode.yaml'],
+					name: 'ika-node',
+					image:
+						'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
+					volumeMounts: [
+						{
+							name: 'config-vol',
+							mountPath: '/opt/ika/key-pairs/notifier.key',
+							subPath: 'notifier.key',
+						},
+						{
+							name: 'config-vol',
+							mountPath: '/opt/ika/config/fullnode.yaml',
+							subPath: 'fullnode.yaml',
+						},
+					],
+				},
+			],
+			volumes: [
+				{
+					name: 'config-vol',
+					configMap: {
+						name: CONFIG_MAP_NAME,
+						items: [
+							{
+								key: `notifier.key`,
+								path: 'notifier.key',
+							},
+							{
+								key: `fullnode.yaml`,
+								path: 'fullnode.yaml',
+							},
+						],
+					},
+				},
+			],
+			restartPolicy: 'Always',
+		},
+	};
+	await k8sApi.createNamespacedPod({
+		namespace: namespaceName,
+		body: fullnodePod,
+	});
 }
 
 describe('run chain chaos testing', () => {
