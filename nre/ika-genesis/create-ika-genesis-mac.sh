@@ -164,6 +164,7 @@ pushd "$SUBDOMAIN"
 ## Create Validators
 ############################
 SUI_BACKUP_DIR="sui_backup"
+CLASS_GROUPS_KEY_CREATED=0  # Track if the class-groups.key has been created
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
     # Split the tuple "name:hostname" into VALIDATOR_NAME and VALIDATOR_HOSTNAME.
@@ -189,7 +190,9 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     cp $SUI_TEMPLATE_DIR/sui.keystore.template "$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE"
     cp $SUI_TEMPLATE_DIR/client.template.yaml "$SUI_CONFIG_PATH/$SUI_CLIENT_YAML_FILE"
     cp $SUI_TEMPLATE_DIR/sui.aliases.template.json "$SUI_CONFIG_PATH/$SUI_ALIASES_FILE"
-    pushd $SUI_CONFIG_PATH
+
+    pushd $SUI_CONFIG_PATH > /dev/null
+
     sui keytool generate ed25519 "m/44'/784'/0'/0'/0'" word24 --json > "$VALIDATOR_ACCOUNT_KEY_FILE"
     SUI_ADDR=$(jq -r '.suiAddress' "$VALIDATOR_ACCOUNT_KEY_FILE")
     MNEMONIC=$(jq -r '.mnemonic' "$VALIDATOR_ACCOUNT_KEY_FILE")
@@ -197,29 +200,44 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # Fetch the alias and change it (the --alias option is not working currently)
     SUI_CURRENT_ALIAS=$(jq -r '.[].alias' sui.aliases)
-    sui keytool update-alias  "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
+    sui keytool update-alias "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
     yq e -i ".envs[].alias = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".envs[].rpc = \"$SUI_FULLNODE_RPC_URL\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_address = \"$SUI_ADDR\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_env = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".keystore.File = \"$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE\"" "$SUI_CLIENT_YAML_FILE"
-    popd
+
+    popd > /dev/null
     cp -r $SUI_CONFIG_PATH "$VALIDATOR_DIR/$SUI_BACKUP_DIR"
     SENDER_SUI_ADDR=$SUI_ADDR
 
     # Create Validator info.
     pushd "$VALIDATOR_DIR" > /dev/null
-    # todo(zeev): remove this later, also `make-validator-info` should be able to get this key as param.
-    cp ../../class-groups.key .
 
-    # Usage: {binary_name} validator make-validator-info <NAME> <DESCRIPTION> <IMAGE_URL> <PROJECT_URL> <HOST_NAME> <GAS_PRICE> <sender_sui_address>
+    # If we already have a class-groups.key, copy it into current dir before make-validator-info
+    if [ "$CLASS_GROUPS_KEY_CREATED" -eq 1 ]; then
+        echo "Copying existing class-groups.key for validator '$VALIDATOR_NAME'"
+        cp ../class-groups.key .
+    fi
+
+    # Now run make-validator-info
     RUST_MIN_STACK=$RUST_MIN_STACK $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "" "" "$VALIDATOR_HOSTNAME" 0 "$SENDER_SUI_ADDR"
+
+    # After the first validator generates class-groups.key, save it globally
+    if [ "$CLASS_GROUPS_KEY_CREATED" -eq 0 ]; then
+        echo "Saving initial class-groups.key after first validator"
+        cp class-groups.key ../class-groups.key
+        CLASS_GROUPS_KEY_CREATED=1
+    fi
 
     mkdir -p "$KEY_PAIRS_DIR"
     mv ./*.key "$KEY_PAIRS_DIR"/
+
     popd > /dev/null
+
     sui keytool list
 done
+
 
 ###############################
 # Create the Ika system on Sui.

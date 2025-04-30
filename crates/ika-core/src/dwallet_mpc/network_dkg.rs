@@ -73,7 +73,7 @@ fn get_decryption_key_shares_from_public_output(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     match shares.state {
-        NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.public_output {
+        NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.latest_public_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
@@ -88,7 +88,7 @@ fn get_decryption_key_shares_from_public_output(
                 Ok(secret_shares)
             }
         },
-        NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.public_output {
+        NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.latest_public_output {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
@@ -240,7 +240,7 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_decryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
             .network_dkg_output
             .clone())
     }
@@ -410,7 +410,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
             Ok(NetworkDecryptionKeyPublicData {
                 epoch,
                 state: NetworkDecryptionKeyPublicOutputType::Reshare,
-                public_output: mpc_public_output,
+                latest_public_output: mpc_public_output,
                 decryption_key_share_public_parameters: bcs::to_bytes(
                     &decryption_key_share_public_parameters,
                 )?,
@@ -441,7 +441,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
                 Ok(NetworkDecryptionKeyPublicData {
                     epoch,
                     state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
-                    public_output: mpc_public_output.clone(),
+                    latest_public_output: mpc_public_output.clone(),
                     decryption_key_share_public_parameters: bcs::to_bytes(
                         &decryption_key_share_public_parameters,
                     )?,

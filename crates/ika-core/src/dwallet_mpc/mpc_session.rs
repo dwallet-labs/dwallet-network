@@ -237,6 +237,7 @@ impl DWalletMPCSession {
                     validator=?validator_name,
                     epoch=?self.epoch_id,
                     error=?e,
+                    crypto_round=self.pending_quorum_for_highest_round_number,
                     "failed to advance the MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
