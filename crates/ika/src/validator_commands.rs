@@ -432,7 +432,8 @@ fn read_or_generate_seed_and_class_groups_key(
             println!("Use existing: {:?}.", file_path,);
             Ok(class_groups_public_key_and_proof)
         }
-        Err(_) => {
+        Err(err) => {
+            println!("error reading class groups key from file: {err:?}, generating...");
             let seed = read_class_groups_seed_from_file(seed_path.clone()).unwrap_or(sample_seed());
             let class_groups_public_key_and_proof =
                 Box::new(generate_class_groups_keypair_and_proof_from_seed(seed));

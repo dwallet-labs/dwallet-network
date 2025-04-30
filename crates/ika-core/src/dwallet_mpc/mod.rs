@@ -283,7 +283,7 @@ fn get_expected_decrypters(
         + (total_votes as f64 * 0.05).floor() as u32;
     let mut votes_sum = 0;
     let mut expected_decrypters = vec![];
-    while (votes_sum < expected_decrypters_votes) {
+    while votes_sum < expected_decrypters_votes {
         let authority_name = shuffled_committee.pop().unwrap();
         let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
         votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;

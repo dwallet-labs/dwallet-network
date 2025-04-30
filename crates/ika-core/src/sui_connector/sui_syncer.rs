@@ -247,9 +247,13 @@ where
                     Ok(key) => {
                         all_network_keys_data.insert(key_id.clone(), key);
                         network_keys_cache.insert((key_id, system_inner.epoch()));
+                        info!(
+                            key_id=?key_id,
+                            "Successfully synced the network decryption key for `key_id`",
+                        );
                     }
                     Err(err) => {
-                        error!(
+                        warn!(
                             key=?key_id,
                             err=?err,
                             "failed to get network decryption key data, retrying...",
