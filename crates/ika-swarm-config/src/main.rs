@@ -328,7 +328,6 @@ async fn main() -> Result<()> {
 
             println!("Loaded configuration: {:?}", publish_config);
 
-
             // Check that the required fields are present.
             let ika_system_object_id = publish_config.ika_system_object_id.ok_or_else(|| {
                 anyhow::Error::msg(

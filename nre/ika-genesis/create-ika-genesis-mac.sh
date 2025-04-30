@@ -108,7 +108,6 @@ RUST_MIN_STACK=16777216
 RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME"
 cp ../../target/release/"$BINARY_NAME" .
 BINARY_NAME="$(pwd)/$BINARY_NAME"
-cargo build --bin ika-swarm-config
 
 VALIDATORS_ARRAY=()
 
@@ -222,7 +221,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     fi
 
     # Now run make-validator-info
-    RUST_MIN_STACK=$RUST_MIN_STACK $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "" "" "$VALIDATOR_HOSTNAME" 0 "$SENDER_SUI_ADDR"
+    RUST_MIN_STACK=$RUST_MIN_STACK $BINARY_NAME validator make-validator-info "$VALIDATOR_NAME" "$VALIDATOR_NAME" "https://example.com/image.png" "https://example.com" "$VALIDATOR_HOSTNAME" 10000 "$SENDER_SUI_ADDR"
 
     # After the first validator generates class-groups.key, save it globally
     if [ "$CLASS_GROUPS_KEY_CREATED" -eq 0 ]; then
@@ -245,7 +244,8 @@ done
 ###############################
 rm -rf "$SUI_CONFIG_PATH"
 
-cp ../../../target/debug/ika-swarm-config .
+cargo build --release --bin ika-swarm-config
+cp ../../../target/release/ika-swarm-config .
 
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
