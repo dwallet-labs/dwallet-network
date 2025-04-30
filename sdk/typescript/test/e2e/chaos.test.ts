@@ -5,6 +5,7 @@ import {
 	loadYaml,
 	V1ConfigMap,
 	V1Namespace,
+	V1Pod,
 	V1Service,
 } from '@kubernetes/client-node';
 import Handlebars from 'handlebars';
@@ -22,6 +23,7 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	});
 };
 
+const CONFIG_MAP_NAME = 'ika-chaos-test-config';
 const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValidators: number) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const fullNodeYaml = fs.readFileSync(
@@ -56,7 +58,7 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 	const configMap: V1ConfigMap = {
 		metadata: {
 			namespace: namespaceName,
-			name: 'ika-chaos-test-config',
+			name: CONFIG_MAP_NAME,
 		},
 		data: {
 			'fullnode.yaml': fullNodeYaml,
@@ -86,6 +88,29 @@ async function createNetworkServices(
 			namespace: namespaceName,
 			body: serviceBody as V1Service,
 		});
+	}
+}
+
+async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
+	for (let i = 0; i < numOfValidators; i++) {
+		const pod: V1Pod = {
+			metadata: {
+				name: `ika-node-devnet-${i + 1}`,
+				namespace: namespaceName,
+			},
+			spec: {
+				containers: [
+					{
+						name: 'ika-node',
+						image:
+							'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
+						volumeMounts: [{ name: 'config-vol', mountPath: '/app/config' }],
+					},
+				],
+				volumes: [{ name: 'config-vol', configMap: { name: CONFIG_MAP_NAME } }],
+				restartPolicy: 'Always',
+			},
+		};
 	}
 }
 
