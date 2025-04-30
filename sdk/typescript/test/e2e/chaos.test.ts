@@ -95,7 +95,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 	for (let i = 0; i < numOfValidators; i++) {
 		const pod: V1Pod = {
 			metadata: {
-				name: `ika-node-devnet-${i + 1}`,
+				name: `ika-new-devnet-ika-val-${i + 1}`,
 				namespace: namespaceName,
 			},
 			spec: {
