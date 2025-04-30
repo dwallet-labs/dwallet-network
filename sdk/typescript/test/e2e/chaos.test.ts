@@ -2,9 +2,7 @@ import fs from 'fs';
 import { CoreV1Api, KubeConfig, V1ConfigMap } from '@kubernetes/client-node';
 import { beforeEach, describe, it } from 'vitest';
 
-import { Config, delay, getNetworkDecryptionKeyPublicOutput } from '../../src/dwallet-mpc/globals';
-
-const namespace = 'ika-chaos-test';
+const namespaceName = 'test';
 
 const createConfigMap = async () => {
 	const kc = new KubeConfig();
@@ -17,13 +15,17 @@ const createConfigMap = async () => {
 	);
 	const configMap: V1ConfigMap = {
 		metadata: {
-			namespace,
+			namespace: namespaceName,
 			name: 'ika-chaos-test-config',
 		},
 		data: {
 			'fullnode.yaml': yourYamlString,
 		},
 	};
+	await k8sApi.createNamespacedConfigMap({
+		namespace: namespaceName,
+		body: configMap,
+	});
 };
 
 describe('run chain chaos testing', () => {
