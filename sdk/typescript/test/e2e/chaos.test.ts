@@ -21,6 +21,22 @@ const createConfigMap = async (namespaceName: string, numOfValidators: number) =
 	const validatorsConfig: Record<string, string> = {};
 
 	for (let i = 0; i < numOfValidators; i++) {
+		validatorsConfig[`validator${i + 1}_class-groups.key`] = fs.readFileSync(
+			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/class-groups.key`,
+			'utf8',
+		);
+		validatorsConfig[`validator${i + 1}_consensus.key`] = fs.readFileSync(
+			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/consensus.key`,
+			'utf8',
+		);
+		validatorsConfig[`validator${i + 1}_network.key`] = fs.readFileSync(
+			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/network.key`,
+			'utf8',
+		);
+		validatorsConfig[`validator${i + 1}_protocol.key`] = fs.readFileSync(
+			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/protocol.key`,
+			'utf8',
+		);
 		validatorsConfig[`validator${i + 1}.yaml`] = fs.readFileSync(
 			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/validator.yaml`,
 			'utf8',
