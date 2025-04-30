@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=12
+export VALIDATOR_NUM=50
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -44,15 +44,15 @@ export VALIDATORS_FILE=""
 # Validator Docker image name.
 export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64"
 # SUI fullnode URL.
-#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
-export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-#export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
+export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-export SUI_FAUCET_URL="http://localhost:9123/gas"
+export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+#export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
 #export EPOCH_DURATION_TIME_MS=86400000
 export EPOCH_DURATION_TIME_MS=2400000
@@ -343,7 +343,7 @@ request_and_generate_yaml() {
 }
 
 # Concurrency control (compatible with bash < 4.3)
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -424,7 +424,7 @@ process_validator() {
 }
 
 # Launch jobs with a max concurrency of 5 using a simple counter
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do

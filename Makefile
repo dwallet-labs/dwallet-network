@@ -14,3 +14,4 @@ snapshot:
 	cargo build
 clean-ika:
 	rm -rf ~/.ika
+#RUST_LOG=warn,ika=info,ika_node=info,ika_core=info,sui_node=info;RUST_MIN_STACK=67108864 cargo run --release --bin ika -- start --epoch-duration-ms 150000 2>&1 | tee debug_output.txt
