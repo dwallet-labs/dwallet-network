@@ -347,6 +347,8 @@ pub async fn request_add_validator_candidate(
         type_params: vec![],
     };
 
+    println!("{:?}", object_changes);
+
     let validator_cap_id = object_changes
         .iter()
         .filter_map(|o| match o {

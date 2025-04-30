@@ -103,7 +103,7 @@ enum Commands {
 const ALIAS_PUBLISHER: &str = "publisher";
 
 /// Configuration data that will be saved after publishing the IKA modules.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct PublishIkaConfig {
     pub publisher_address: SuiAddress,
     pub ika_package_id: ObjectID,
@@ -322,9 +322,12 @@ async fn main() -> Result<()> {
             );
 
             // Load the published config.
-            let config_content = std::fs::read_to_string(&ika_config_path)?;
+            let config_content = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig =
                 serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
+
+            println!("Loaded configuration: {:?}", publish_config);
+
 
             // Check that the required fields are present.
             let ika_system_object_id = publish_config.ika_system_object_id.ok_or_else(|| {
