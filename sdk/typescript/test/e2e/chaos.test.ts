@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
-import { beforeEach, describe, it } from 'vitest';
+import { describe, it } from 'vitest';
 
 const createConfigMap = async (namespaceName: string, numOfValidators: number) => {
 	const kc = new KubeConfig();
@@ -14,12 +14,19 @@ const createConfigMap = async (namespaceName: string, numOfValidators: number) =
 	await k8sApi.createNamespace({ body: namespaceBody }).catch((err) => {
 		if (err.response?.statusCode !== 409) throw err;
 	});
-
-	const clientIdentifier = 'my-subdomain';
 	const yourYamlString = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml',
 		'utf8',
 	);
+	const validatorsConfig: Record<string, string> = {};
+
+	for (let i = 0; i < numOfValidators; i++) {
+		validatorsConfig[`validator${i + 1}.yaml`] = fs.readFileSync(
+			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/validator.yaml`,
+			'utf8',
+		);
+	}
+
 	const configMap: V1ConfigMap = {
 		metadata: {
 			namespace: namespaceName,
@@ -27,6 +34,7 @@ const createConfigMap = async (namespaceName: string, numOfValidators: number) =
 		},
 		data: {
 			'fullnode.yaml': yourYamlString,
+			...validatorsConfig,
 		},
 	};
 	await k8sApi.createNamespacedConfigMap({
@@ -37,11 +45,14 @@ const createConfigMap = async (namespaceName: string, numOfValidators: number) =
 
 describe('run chain chaos testing', () => {
 	it('create and deploy the config map', async () => {
-		await createConfigMap(generateUniqueNamespace());
+		const namespaceName = generateUniqueNamespace();
+		// print it
+		console.log(`Creating namespace: ${namespaceName}`);
+		await createConfigMap(namespaceName, 4);
 	});
 });
 
-function generateUniqueNamespace(prefix = 'chaos_test'): string {
-	const timestamp = Date.now().toString(36);
+function generateUniqueNamespace(prefix = 'chaos-test'): string {
+	const timestamp = Date.now().toString();
 	return `${prefix}-${timestamp}`;
 }
