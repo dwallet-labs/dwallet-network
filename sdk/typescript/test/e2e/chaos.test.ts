@@ -63,7 +63,7 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 		data: {
 			'fullnode.yaml': fullNodeYaml,
 			'notifier.key': fs.readFileSync(
-				'sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/sui_config/publisher.key',
+				'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/sui_config/publisher.key',
 				'utf8',
 			),
 			...validatorsConfig,
