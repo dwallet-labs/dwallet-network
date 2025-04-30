@@ -343,7 +343,7 @@ request_and_generate_yaml() {
 }
 
 # Concurrency control (compatible with bash < 4.3)
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -424,7 +424,7 @@ process_validator() {
 }
 
 # Launch jobs with a max concurrency of 5 using a simple counter
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
