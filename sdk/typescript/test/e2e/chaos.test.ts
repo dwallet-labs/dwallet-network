@@ -3,7 +3,7 @@ import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/cli
 import { describe, it } from 'vitest';
 import Handlebars from 'handlebars';
 
-const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValidators: number) => {
+const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const namespaceBody: V1Namespace = {
 		metadata: {
@@ -13,7 +13,11 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 	await k8sApi.createNamespace({ body: namespaceBody }).catch((err) => {
 		if (err.response?.statusCode !== 409) throw err;
 	});
-	const yourYamlString = fs.readFileSync(
+};
+
+const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValidators: number) => {
+	const k8sApi = kc.makeApiClient(CoreV1Api);
+	const fullNodeYaml = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml',
 		'utf8',
 	);
@@ -48,7 +52,7 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 			name: 'ika-chaos-test-config',
 		},
 		data: {
-			'fullnode.yaml': yourYamlString,
+			'fullnode.yaml': fullNodeYaml,
 			...validatorsConfig,
 		},
 	};
@@ -58,7 +62,7 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 	});
 };
 
-async function createNetworkServices() {
+async function createNetworkServices(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
 
 }
 
@@ -67,6 +71,7 @@ describe('run chain chaos testing', () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
 		const namespaceName = generateUniqueNamespace();
+		await createNamespace(kc, namespaceName);
 		console.log(`Creating namespace: ${namespaceName}`);
 		await createConfigMap(kc, namespaceName, 4);
 	});
