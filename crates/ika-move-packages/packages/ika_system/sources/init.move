@@ -8,9 +8,9 @@ use ika::ika::IKA;
 use ika_system::system;
 use ika_system::system_inner;
 use ika_system::protocol_treasury;
+use ika_system::display;
 use ika_system::validator_set::{Self};
 use ika_system::protocol_cap::{Self, ProtocolCap};
-use ika_system::display;
 use sui::coin::{TreasuryCap};
 use sui::package::{Self, Publisher, UpgradeCap};
 

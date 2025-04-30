@@ -11,11 +11,11 @@ title: Module `(ika_system=0x0)::init`
 -  [Function `initialize`](#(ika_system=0x0)_init_initialize)
 
 
-<pre><code><b>use</b> (ika=0x0)::<a href="../ika_system/display.md#(ika=0x0)_display">display</a>;
-<b>use</b> (ika=0x0)::ika;
+<pre><code><b>use</b> (ika=0x0)::ika;
 <b>use</b> (ika_system=0x0)::<b>address</b>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/display.md#(ika_system=0x0)_display">display</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">dwallet_2pc_mpc_secp256k1_inner</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
@@ -258,7 +258,7 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         authorized_protocol_cap_ids,
         ctx,
     );
-    <a href="../ika_system/display.md#(ika=0x0)_display_create">display::create</a>(publisher, ctx);
+    <a href="../ika_system/display.md#(ika_system=0x0)_display_create">display::create</a>(publisher, ctx);
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>
 }
 </code></pre>

@@ -247,7 +247,7 @@ public(package) fun set_withdrawing(
     assert!(validator_cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
     assert!(object::id(validator_cap) == validator.validator_cap_id, EAuthorizationFailure);
     assert!(!validator.is_withdrawing(), EValidatorAlreadyWithdrawing);
-    validator.state = ValidatorState::Withdrawing(current_epoch + 1);
+    validator.state = ValidatorState::Withdrawing(current_epoch);
 }
 
 /// Set the state of the validator to `Withdrawing`.
