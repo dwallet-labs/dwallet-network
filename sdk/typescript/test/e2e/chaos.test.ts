@@ -1,10 +1,9 @@
 import fs from 'fs';
 import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
 import { describe, it } from 'vitest';
+import Handlebars from 'handlebars';
 
-const createConfigMap = async (namespaceName: string, numOfValidators: number) => {
-	const kc = new KubeConfig();
-	kc.loadFromDefault();
+const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValidators: number) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const namespaceBody: V1Namespace = {
 		metadata: {
@@ -59,12 +58,17 @@ const createConfigMap = async (namespaceName: string, numOfValidators: number) =
 	});
 };
 
+async function createNetworkServices() {
+
+}
+
 describe('run chain chaos testing', () => {
 	it('create and deploy the config map', async () => {
+		const kc = new KubeConfig();
+		kc.loadFromDefault();
 		const namespaceName = generateUniqueNamespace();
-		// print it
 		console.log(`Creating namespace: ${namespaceName}`);
-		await createConfigMap(namespaceName, 4);
+		await createConfigMap(kc, namespaceName, 4);
 	});
 });
 
