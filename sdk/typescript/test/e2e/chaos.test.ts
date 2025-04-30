@@ -82,11 +82,10 @@ async function createNetworkServices(
 	const compiled = Handlebars.compile(template);
 	for (let i = 0; i < numOfValidators; i++) {
 		const serviceBody = loadYaml(compiled({ validatorIndex: i + 1 }));
-		const service = await k8sApi.createNamespacedService({
+		await k8sApi.createNamespacedService({
 			namespace: namespaceName,
 			body: serviceBody as V1Service,
 		});
-		console.log({ service });
 	}
 }
 
