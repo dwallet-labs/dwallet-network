@@ -10,7 +10,7 @@ const createConfigMap = async () => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const clientIdentifier = 'my-subdomain';
 	const yourYamlString = fs.readFileSync(
-		'./beta50.devnet.ika-network.net/publisher/fullnode.yaml',
+		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml',
 		'utf8',
 	);
 	const configMap: V1ConfigMap = {
