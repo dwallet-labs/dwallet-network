@@ -2,18 +2,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ika-new-devnet-ika-val-{{validatorIndex}}
-  labels:
-    app.kubernetes.io/instance: ika-new-devnet-chain
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: ika-new-devnet-ika-val-{{validatorIndex}}
-    app.kubernetes.io/version: 1.16.0
-    helm.sh/chart: ika-chain-0.1.0
-  annotations:
-    cloud.google.com/neg: '{"ingress":true}'
-    external-dns.alpha.kubernetes.io/hostname: val{{validatorIndex}}.beta50.devnet.ika-network.net
-    external-dns.alpha.kubernetes.io/ttl: '10'
-    meta.helm.sh/release-name: ika-new-devnet-chain
-    meta.helm.sh/release-namespace: default
 spec:
   ports:
     - name: tx-interface
