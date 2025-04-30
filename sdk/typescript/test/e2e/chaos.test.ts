@@ -2,9 +2,7 @@ import fs from 'fs';
 import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
 import { beforeEach, describe, it } from 'vitest';
 
-const namespaceName = 'testush';
-
-const createConfigMap = async () => {
+const createConfigMap = async (namespaceName: string, numOfValidators: number) => {
 	const kc = new KubeConfig();
 	kc.loadFromDefault();
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -39,6 +37,11 @@ const createConfigMap = async () => {
 
 describe('run chain chaos testing', () => {
 	it('create and deploy the config map', async () => {
-		await createConfigMap();
+		await createConfigMap(generateUniqueNamespace());
 	});
 });
+
+function generateUniqueNamespace(prefix = 'chaos_test'): string {
+	const timestamp = Date.now().toString(36);
+	return `${prefix}-${timestamp}`;
+}
