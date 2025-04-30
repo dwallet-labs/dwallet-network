@@ -227,9 +227,9 @@ impl DWalletMPCSession {
                     .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
                 let base64_mpc_session_type =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
-                debug!("MPC session failed",
+                debug!(
                     messages=?base64_mpc_messages,
-                    public_input=?base64_mpc_public_input
+                    public_input=?base64_mpc_public_input,
                     private_input=?base64_mpc_private_input,
                     init_protocol_data=?base64_mpc_init_protocol_data,
                     session_type=?base64_mpc_session_type,
@@ -237,6 +237,7 @@ impl DWalletMPCSession {
                     validator=?self.epoch_store()?.name,
                     crypto_round=?self.pending_quorum_for_highest_round_number,
                     party_id=?self.party_id,
+                    "MPC session failed"
                 );
 
                 let consensus_adapter = self.consensus_adapter.clone();
