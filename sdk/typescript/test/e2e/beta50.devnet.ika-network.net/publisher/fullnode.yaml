@@ -1,0 +1,65 @@
+# NOTE: this value is fake because of wrong validation,
+# it will be removed later.
+class-groups-key-pair-and-proof:
+  path: fake.key
+# Update this value to the location you want Sui to store its database.
+db-path: "/opt/ika/db"
+# For ipv4, update this to "/ip4/X.X.X.X/tcp/8080/http"
+network-address: "/dns/localhost/tcp/8080/http"
+metrics-address: "0.0.0.0:9184"
+sui-connector-config:
+  sui-rpc-url: https://fullnode.sui.beta.devnet.ika-network.net
+  sui-chain-identifier: custom
+  ika-package-id: 0xdc1b92043f9467a550f9966adc6b86033f34a50ff55e855922e0539396ebc56f
+  ika-system-package-id: 0x6261b56ff6785e4100049beea9e1d20cb44c43b42f6aaa8c76c608d7949f61a5
+  ika-system-object-id: 0xd82cdbbbfbeb579fd43af79896b63f14f494b2d9573d99583f3af1305c6dd1ef
+  notifier-client-key-pair:
+    path: /opt/ika/key-pairs/notifier.key
+p2p-config:
+  external-address: /dns/fullnode.beta50.devnet.ika-network.net/udp/8084
+  listen-address: "0.0.0.0:8084"
+  # add state-sync seed peers below
+  seed-peers:
+    - address: /dns/val1.beta50.devnet.ika-network.net/udp/8084
+      peer-id: 12aeeb92676c17e96dc4bd1c6990420646065900a6cbd100e937d59266d51add
+    - address: /dns/val2.beta50.devnet.ika-network.net/udp/8084
+      peer-id: f06bdeb08f1d32848608e99116d16610dfad18d7f7ffd4d98c0f9197471bf68c
+    - address: /dns/val3.beta50.devnet.ika-network.net/udp/8084
+      peer-id: fdc67e2f34ad5f875e7e2175f5aa1152d75e112e58406286463c0df0d53d4d46
+    - address: /dns/val4.beta50.devnet.ika-network.net/udp/8084
+      peer-id: e9070df729768a6e404f9e752f72b121587d6f0796a5706233745c26ad6db199
+  # todo(zeev): check if it's relevant?
+#      state-sync:
+#        checkpoint-content-timeout-ms: 10000
+#    end-of-epoch-broadcast-channel-capacity: 128
+
+authority-store-pruning-config:
+  num-latest-epoch-dbs-to-retain: 3
+  epoch-db-pruning-period-secs: 3600
+  num-epochs-to-retain: 1
+  max-checkpoints-in-batch: 10
+  max-transactions-in-batch: 1000
+  pruning-run-delay-seconds: 60
+state-archive-write-config:
+  concurrency: 0
+  use-for-pruning-watermark: false
+state-archive-read-config: []
+#authority-overload-config:
+#max-txn-age-in-queue:
+#  secs: 0
+#  nanos: 500000000
+#overload-monitor-interval:
+#  secs: 10
+#  nanos: 0
+#execution-queue-latency-soft-limit:
+#  secs: 1
+#  nanos: 0
+#execution-queue-latency-hard-limit:
+#  secs: 10
+#  nanos: 0
+#max-load-shedding-percentage: 95
+#min-load-shedding-percentage-above-hard-limit: 50
+#safe-transaction-ready-rate: 100
+#check-system-overload-at-signing: true
+#max-transaction-manager-queue-length: 100000
+#max-transaction-manager-per-object-queue-length: 20
