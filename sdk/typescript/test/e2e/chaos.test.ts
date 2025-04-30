@@ -1,13 +1,22 @@
 import fs from 'fs';
-import { CoreV1Api, KubeConfig, V1ConfigMap } from '@kubernetes/client-node';
+import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
 import { beforeEach, describe, it } from 'vitest';
 
-const namespaceName = 'test';
+const namespaceName = 'testush';
 
 const createConfigMap = async () => {
 	const kc = new KubeConfig();
 	kc.loadFromDefault();
 	const k8sApi = kc.makeApiClient(CoreV1Api);
+	const namespaceBody: V1Namespace = {
+		metadata: {
+			name: namespaceName,
+		},
+	};
+	await k8sApi.createNamespace({ body: namespaceBody }).catch((err) => {
+		if (err.response?.statusCode !== 409) throw err;
+	});
+
 	const clientIdentifier = 'my-subdomain';
 	const yourYamlString = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml',
