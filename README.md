@@ -57,7 +57,7 @@ We are committed to improving the dWallet Network and moving towards a more stab
 Use the following links to learn more about the dWallet Network and its ecosystem:
 
 * Learn more about working with dWallets in the [dWallet Network Documentation](https://docs.dwallet.io/).
-* Find out more about the dWallet Network community on the [community](https://dwallet.io/community/) page and join the community on [dWallet Network Discord](https://discord.gg/dwallet).
+* Find out more about the dWallet Network community on the [community](https://dwallet.io/community/) page and join the community on [dWallet Network Discord](https://discord.com/invite/ikadotxyz).
 
 ## Acknowledgement
 
