@@ -337,14 +337,19 @@ pub async fn stake_ika(
     let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id)?))?;
     let call_args = vec![stake, validator];
 
-
     let sender = context.active_address()?;
 
-    add_ika_system_command_to_ptb(context, REQUEST_ADD_STAKE_FUNCTION_NAME, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
+    add_ika_system_command_to_ptb(
+        context,
+        REQUEST_ADD_STAKE_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
 
-    ptb.transfer_args(sender, vec![
-        Argument::NestedResult(1, 0),
-    ]);
+    ptb.transfer_args(sender, vec![Argument::NestedResult(1, 0)]);
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
@@ -370,15 +375,26 @@ pub async fn request_add_validator(
     )))?];
 
     let sender = context.active_address()?;
-    
-    add_ika_system_command_to_ptb(context, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
 
-    ptb.transfer_args(sender, vec![
-        Argument::NestedResult(1, 0),
-        Argument::NestedResult(1, 1),
-        Argument::NestedResult(1, 2),
-    ]);
-    
+    add_ika_system_command_to_ptb(
+        context,
+        REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
+
+    ptb.transfer_args(
+        sender,
+        vec![
+            Argument::NestedResult(1, 0),
+            Argument::NestedResult(1, 1),
+            Argument::NestedResult(1, 2),
+        ],
+    );
+
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
     Ok(execute_transaction(context, tx_data).await?)
@@ -424,15 +440,30 @@ async fn construct_unsigned_ika_system_txn(
     ika_system_package_id: ObjectID,
     mut ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
-    add_ika_system_command_to_ptb(context, function, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
+    add_ika_system_command_to_ptb(
+        context,
+        function,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
 
     construct_unsigned_txn(context, sender, gas_budget, ptb).await
 }
 
-async fn add_ika_system_command_to_ptb(context: &mut WalletContext, function: &IdentStr, call_args: Vec<Argument>, ika_system_object_id: ObjectID, ika_system_package_id: ObjectID, ptb: &mut ProgrammableTransactionBuilder) -> anyhow::Result<()> {
+async fn add_ika_system_command_to_ptb(
+    context: &mut WalletContext,
+    function: &IdentStr,
+    call_args: Vec<Argument>,
+    ika_system_object_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> anyhow::Result<()> {
     let Some(Owner::Shared {
-                 initial_shared_version,
-             }) = context
+        initial_shared_version,
+    }) = context
         .get_client()
         .await?
         .read_api()

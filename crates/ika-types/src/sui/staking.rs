@@ -1,20 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use fastcrypto::traits::ToFromBytes;
 use super::{ClassGroupsPublicKeyAndProof, Element, ExtendedField, PendingValues};
-use crate::crypto::{
-    AuthorityPublicKey, AuthorityPublicKeyBytes,
-    NetworkPublicKey,
-};
+use crate::crypto::{AuthorityPublicKey, AuthorityPublicKeyBytes, NetworkPublicKey};
+use fastcrypto::traits::ToFromBytes;
 use jsonrpsee::core::Serialize;
 use mysten_network::Multiaddr;
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use sui_types::balance::Balance;
-use sui_types::base_types::{ObjectID};
+use sui_types::base_types::ObjectID;
 use sui_types::collection_types::{Bag, Table, TableVec, VecMap};
-
 
 const E_METADATA_INVALID_POP: u64 = 0;
 const E_METADATA_INVALID_PUBKEY: u64 = 1;
@@ -87,7 +83,6 @@ impl ValidatorInfo {
                     .map_err(|_| E_METADATA_INVALID_PUBKEY)?,
             )),
         }?;
-
 
         let next_epoch_network_pubkey = match self.next_epoch_network_pubkey_bytes.clone() {
             None => Ok::<Option<NetworkPublicKey>, u64>(None),

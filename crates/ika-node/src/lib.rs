@@ -186,7 +186,7 @@ use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::{SuiConnectorClient, SuiClient};
+use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
