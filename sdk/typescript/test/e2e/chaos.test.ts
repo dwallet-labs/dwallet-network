@@ -190,9 +190,10 @@ describe('run chain chaos testing', () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
 		const namespaceName = generateUniqueNamespace();
-		await createNamespace(kc, namespaceName);
 		console.log(`Creating namespace: ${namespaceName}`);
-		// await createConfigMap(kc, namespaceName, 4);
+		await createNamespace(kc, namespaceName);
+		await createConfigMap(kc, namespaceName, 4);
+		await createPods(kc, namespaceName, 4);
 		await createNetworkServices(kc, namespaceName, 4);
 	});
 });
