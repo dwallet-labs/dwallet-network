@@ -882,7 +882,7 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-async fn publish_ika_system_package_to_sui(
+pub async fn publish_ika_system_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -1118,7 +1118,7 @@ async fn add_public_keys_and_proofs_with_rng(
     Ok(())
 }
 
-async fn publish_ika_package_to_sui(
+pub async fn publish_ika_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
