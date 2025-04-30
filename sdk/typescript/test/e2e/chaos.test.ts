@@ -75,7 +75,6 @@ async function createNetworkServices(
 	numOfValidators: number,
 ) {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
-	const validatorsServices: Record<string, string> = {};
 	const template = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/service_template.yaml',
 		'utf-8',
@@ -83,10 +82,11 @@ async function createNetworkServices(
 	const compiled = Handlebars.compile(template);
 	for (let i = 0; i < numOfValidators; i++) {
 		const serviceBody = loadYaml(compiled({ validatorIndex: i + 1 }));
-		await k8sApi.createNamespacedService({
+		const service = await k8sApi.createNamespacedService({
 			namespace: namespaceName,
 			body: serviceBody as V1Service,
 		});
+		console.log({ service });
 	}
 }
 
