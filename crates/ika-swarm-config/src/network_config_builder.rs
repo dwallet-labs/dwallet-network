@@ -10,7 +10,6 @@ use ika_config::node::{
     AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
     LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
 };
-use ika_config::NodeConfig;
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -340,7 +339,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             )
             .await?;
 
-        let validator_configs: Vec<NodeConfig> = validator_initialization_configs
+        let validator_configs = validator_initialization_configs
             .iter()
             .enumerate()
             .map(|(idx, validator)| {

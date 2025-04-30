@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=1
+export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -408,8 +408,7 @@ process_validator() {
 
     SUI_CONFIG_DIR="$LOCAL_SUI_CONFIG_DIR" \
     IKA_CONFIG_DIR="$LOCAL_IKA_CONFIG_DIR" \
-#    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$OUTPUT_FILE"
-    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info"
+    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$OUTPUT_FILE"
 
     # Validate and extract IDs
     if jq empty "$OUTPUT_FILE" 2>/dev/null; then
@@ -420,6 +419,7 @@ process_validator() {
     else
         echo "[ERROR] Invalid JSON from become-candidate for $VALIDATOR_NAME"
         cat "$OUTPUT_FILE"
+        exit 1
     fi
 }
 

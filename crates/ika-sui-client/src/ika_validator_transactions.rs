@@ -342,7 +342,7 @@ pub async fn request_add_validator_candidate(
 
     if !response.errors.is_empty() {
         println!("{:?}", response.errors);
-        panic!("become-candidate failed")
+        panic!("Become-candidate failed")
     }
 
     let validator_cap_type = StructTag {
@@ -351,8 +351,6 @@ pub async fn request_add_validator_candidate(
         name: VALIDATOR_CAP_STRUCT_NAME.into(),
         type_params: vec![],
     };
-
-    println!("{:?}", object_changes);
 
     let validator_cap_id = object_changes
         .iter()

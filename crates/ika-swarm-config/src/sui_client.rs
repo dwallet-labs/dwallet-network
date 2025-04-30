@@ -126,14 +126,14 @@ pub async fn init_ika_on_sui(
         validator_addresses.push(validator_address);
     }
 
-    for future in request_tokens_from_faucet_futures {
-        future.await?;
-    }
+    // for future in request_tokens_from_faucet_futures {
+    //     future.await?;
+    // }
 
-    // futures::future::join_all(request_tokens_from_faucet_futures)
-    //     .await
-    //     .into_iter()
-    //     .collect::<Result<Vec<_>, _>>()?;
+    futures::future::join_all(request_tokens_from_faucet_futures)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
 
     let ika_package = ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika");
     let ika_system_package =
@@ -202,7 +202,7 @@ pub async fn init_ika_on_sui(
             (&validator_initialization_config.account_key_pair.public()).into();
 
         let validator_initialization_metadata = validator_initialization_config.to_validator_info();
-        let (validator_id, validator_cap_id) = request_add_validator_candidate(
+        let (validator_id, validator_cap_id) = request_add_validator_candidate_swarm(
             validator_address,
             &mut context,
             client.clone(),
@@ -728,7 +728,7 @@ pub async fn minted_ika(
     Ok(*ika_supply_id)
 }
 
-async fn request_add_validator_candidate(
+async fn request_add_validator_candidate_swarm(
     validator_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
