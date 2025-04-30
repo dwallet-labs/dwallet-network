@@ -101,6 +101,17 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 			spec: {
 				containers: [
 					{
+						env: [
+							{
+								name: 'RUST_LOG',
+								value: 'off,ika_node=info,ika_core=warn',
+							},
+							{
+								name: 'RUST_MIN_STACK',
+								value: '16777216',
+							},
+						],
+						command: ['/opt/ika/bin/ika-node', 'start'],
 						name: 'ika-node',
 						image:
 							'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
