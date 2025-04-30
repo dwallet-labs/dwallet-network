@@ -6,7 +6,7 @@ use ika_move_packages::BuiltInIkaMovePackages;
 use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::sui_client::{
     ika_system_initialize, ika_system_request_dwallet_network_decryption_key_dkg_by_cap,
-    init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
+    init_initialize, minted_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -223,7 +223,7 @@ async fn main() -> Result<()> {
 
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.
-            let ika_supply_id = mint_ika(
+            let ika_supply_id = minted_ika(
                 publisher_address,
                 &mut context,
                 client.clone(),
