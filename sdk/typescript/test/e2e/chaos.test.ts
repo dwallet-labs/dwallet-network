@@ -3,6 +3,10 @@ import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/cli
 import Handlebars from 'handlebars';
 import { describe, it } from 'vitest';
 
+
+
+
+
 const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const namespaceBody: V1Namespace = {
@@ -74,9 +78,11 @@ async function createNetworkServices(
 	);
 	const compiled = Handlebars.compile(template);
 	for (let i = 0; i < numOfValidators; i++) {
-		const rendered = compiled({ validatorIndex: i + 1 });
-		fs.writeFileSync(`./out/ika-val-${i}.yaml`, rendered);
+		validatorsServices[`val${i + 1}.yaml`] = compiled({ validatorIndex: i + 1 });
 	}
+
+	const k8sApi = kc.makeApiClient(CoreV1Api);
+	await k8sApi.createNamespacedService({ namespace: namespaceName, body: validatorsServices });
 }
 
 describe('run chain chaos testing', () => {
