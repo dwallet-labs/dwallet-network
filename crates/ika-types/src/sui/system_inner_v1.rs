@@ -35,7 +35,7 @@ pub struct SystemParametersV1 {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct BlsCommitteeMember {
     pub validator_id: ObjectID,
-    pub protocol_pubkey: Element
+    pub protocol_pubkey: Element,
 }
 
 /// Represents the current committee in the system.
@@ -53,7 +53,7 @@ pub type ObjectTable = Table;
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
-    pub validators: ObjectTable,  // This now holds StakingPool objects
+    pub validators: ObjectTable, // This now holds StakingPool objects
     pub active_committee: BlsCommittee,
     pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,

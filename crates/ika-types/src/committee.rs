@@ -114,7 +114,13 @@ impl Committee {
         let quorum_threshold = (2 * num_nodes as u64).div_ceil(3);
         let validity_threshold = (num_nodes as u64).div_ceil(3);
 
-        Self::new(epoch, voting_weights.into_iter().collect(), HashMap::new(), quorum_threshold, validity_threshold)
+        Self::new(
+            epoch,
+            voting_weights.into_iter().collect(),
+            HashMap::new(),
+            quorum_threshold,
+            validity_threshold,
+        )
     }
 
     // We call this if these have not yet been computed

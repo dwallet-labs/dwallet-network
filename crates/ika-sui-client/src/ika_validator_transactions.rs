@@ -3,7 +3,17 @@ use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
-use ika_types::sui::{ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME};
+use ika_types::sui::{
+    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
+};
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
@@ -199,8 +209,8 @@ pub async fn request_add_validator_candidate(
     let empty_str = ptb.input(CallArg::Pure(bcs::to_bytes(String::new().as_str())?))?;
 
     let Some(Owner::Shared {
-                 initial_shared_version,
-             }) = context
+        initial_shared_version,
+    }) = context
         .get_client()
         .await?
         .read_api()
@@ -218,7 +228,7 @@ pub async fn request_add_validator_candidate(
 
     let system_ref = ptb.input(CallArg::Object(ObjectArg::SharedObject {
         id: ika_system_object_id,
-        initial_shared_version: initial_shared_version,
+        initial_shared_version,
         mutable: true,
     }))?;
 
@@ -243,9 +253,9 @@ pub async fn request_add_validator_candidate(
             .to_vec(),
     )?))?;
 
-    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-        class_groups_pubkey_and_proof_obj_ref,
-    )))?;
+    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(class_groups_pubkey_and_proof_obj_ref),
+    ))?;
 
     let proof_of_possession = ptb.input(CallArg::Pure(bcs::to_bytes(
         &validator_initialization_metadata
@@ -255,26 +265,19 @@ pub async fn request_add_validator_candidate(
     )?))?;
 
     let network_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .network_address
-            .clone(),
+        &validator_initialization_metadata.network_address.clone(),
     )?))?;
 
     let p2p_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .p2p_address
-            .clone(),
+        &validator_initialization_metadata.p2p_address.clone(),
     )?))?;
 
     let consensus_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .consensus_address
-            .clone(),
+        &validator_initialization_metadata.consensus_address.clone(),
     )?))?;
 
     let commission_rate = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .commission_rate,
+        &validator_initialization_metadata.commission_rate,
     )?))?;
 
     let metadata = ptb.command(Command::move_call(
@@ -282,11 +285,7 @@ pub async fn request_add_validator_candidate(
         VALIDATOR_METADATA_MODULE_NAME.into(),
         NEW_VALIDATOR_METADATA_FUNCTION_NAME.into(),
         vec![],
-        vec![
-            name,
-            empty_str,
-            empty_str,
-        ],
+        vec![name, empty_str, empty_str],
     ));
 
     ptb.command(Command::move_call(
@@ -312,24 +311,18 @@ pub async fn request_add_validator_candidate(
 
     let sender = context.active_address()?;
 
-    ptb.transfer_args(sender, vec![
-        Argument::NestedResult(1, 0),
-        Argument::NestedResult(1, 1),
-        Argument::NestedResult(1, 2),
-    ]);
-
-
-    let tx = construct_unsigned_txn(
-        context,
+    ptb.transfer_args(
         sender,
-        gas_budget,
-        ptb,
-    ).await?;
+        vec![
+            Argument::NestedResult(1, 0),
+            Argument::NestedResult(1, 1),
+            Argument::NestedResult(1, 2),
+        ],
+    );
 
-    let response = execute_transaction(
-        context,
-        tx,
-    ).await?;
+    let tx = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
+
+    let response = execute_transaction(context, tx).await?;
 
     // let response = call_ika_system(
     //     context,
@@ -407,14 +400,19 @@ pub async fn stake_ika(
     let validator = ptb.input(CallArg::Pure(bcs::to_bytes(&validator_id)?))?;
     let call_args = vec![stake, validator];
 
-
     let sender = context.active_address()?;
 
-    add_ika_system_command_to_ptb(context, REQUEST_ADD_STAKE_FUNCTION_NAME, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
+    add_ika_system_command_to_ptb(
+        context,
+        REQUEST_ADD_STAKE_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
 
-    ptb.transfer_args(sender, vec![
-        Argument::NestedResult(1, 0),
-    ]);
+    ptb.transfer_args(sender, vec![Argument::NestedResult(1, 0)]);
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
@@ -441,7 +439,15 @@ pub async fn request_add_validator(
 
     let sender = context.active_address()?;
 
-    add_ika_system_command_to_ptb(context, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
+    add_ika_system_command_to_ptb(
+        context,
+        REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
@@ -488,15 +494,30 @@ async fn construct_unsigned_ika_system_txn(
     ika_system_package_id: ObjectID,
     mut ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
-    add_ika_system_command_to_ptb(context, function, call_args, ika_system_object_id, ika_system_package_id, &mut ptb).await?;
+    add_ika_system_command_to_ptb(
+        context,
+        function,
+        call_args,
+        ika_system_object_id,
+        ika_system_package_id,
+        &mut ptb,
+    )
+    .await?;
 
     construct_unsigned_txn(context, sender, gas_budget, ptb).await
 }
 
-async fn add_ika_system_command_to_ptb(context: &mut WalletContext, function: &IdentStr, call_args: Vec<Argument>, ika_system_object_id: ObjectID, ika_system_package_id: ObjectID, ptb: &mut ProgrammableTransactionBuilder) -> anyhow::Result<()> {
+async fn add_ika_system_command_to_ptb(
+    context: &mut WalletContext,
+    function: &IdentStr,
+    call_args: Vec<Argument>,
+    ika_system_object_id: ObjectID,
+    ika_system_package_id: ObjectID,
+    ptb: &mut ProgrammableTransactionBuilder,
+) -> anyhow::Result<()> {
     let Some(Owner::Shared {
-                 initial_shared_version,
-             }) = context
+        initial_shared_version,
+    }) = context
         .get_client()
         .await?
         .read_api()

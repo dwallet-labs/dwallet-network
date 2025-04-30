@@ -20,10 +20,10 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkDecryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
+use ika_types::sui::staking::StakingPool;
 use ika_types::sui::system_inner_v1::{
     DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
 };
-use ika_types::sui::staking::StakingPool;
 use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
@@ -441,8 +441,14 @@ where
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
                     network_decryption_keys_data,
-                    ika_system_state_inner.validator_set.active_committee.quorum_threshold,
-                    ika_system_state_inner.validator_set.active_committee.validity_threshold
+                    ika_system_state_inner
+                        .validator_set
+                        .active_committee
+                        .quorum_threshold,
+                    ika_system_state_inner
+                        .validator_set
+                        .active_committee
+                        .validity_threshold,
                 );
 
                 Ok(epoch_start_system_state)
@@ -500,7 +506,7 @@ where
         //         })
         //     })
         //     .collect::<Result<Vec<_>, _>>()?;
-        // 
+        //
         // let validators = self
         //     .inner
         //     .get_validator_inners(validators)
@@ -510,7 +516,7 @@ where
         //             "failure in `get_validator_inners()`: {e}"
         //         ))
         //     })?;
-        // 
+        //
         // let validators = validators
         //     .iter()
         //     .map(|v| {
@@ -521,7 +527,7 @@ where
         //         })
         //     })
         //     .collect::<Result<Vec<_>, _>>()?;
-        // 
+        //
         // Ok(validators
         //     .iter()
         //     .map(|v| v.value.clone())

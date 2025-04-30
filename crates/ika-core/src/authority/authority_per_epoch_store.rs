@@ -563,8 +563,9 @@ impl AuthorityPerEpochStore {
             .protocol_version();
         // let protocol_config =
         //     ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-        
-        let protocol_config = ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
+
+        let protocol_config =
+            ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
 
         let s = Arc::new(Self {
             name,
