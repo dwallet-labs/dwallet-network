@@ -1,11 +1,14 @@
 import fs from 'fs';
-import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
+import {
+	CoreV1Api,
+	KubeConfig,
+	loadYaml,
+	V1ConfigMap,
+	V1Namespace,
+	V1Service,
+} from '@kubernetes/client-node';
 import Handlebars from 'handlebars';
 import { describe, it } from 'vitest';
-
-
-
-
 
 const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -71,6 +74,7 @@ async function createNetworkServices(
 	namespaceName: string,
 	numOfValidators: number,
 ) {
+	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const validatorsServices: Record<string, string> = {};
 	const template = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/service_template.yaml',
@@ -78,11 +82,12 @@ async function createNetworkServices(
 	);
 	const compiled = Handlebars.compile(template);
 	for (let i = 0; i < numOfValidators; i++) {
-		validatorsServices[`val${i + 1}.yaml`] = compiled({ validatorIndex: i + 1 });
+		const serviceBody = loadYaml(compiled({ validatorIndex: i + 1 }));
+		await k8sApi.createNamespacedService({
+			namespace: namespaceName,
+			body: serviceBody as V1Service,
+		});
 	}
-
-	const k8sApi = kc.makeApiClient(CoreV1Api);
-	await k8sApi.createNamespacedService({ namespace: namespaceName, body: validatorsServices });
 }
 
 describe('run chain chaos testing', () => {
