@@ -161,7 +161,8 @@ where
             == coordinator.last_session_to_complete_in_current_epoch;
         let all_immediate_sessions_completed = coordinator.started_system_sessions_count
             == coordinator.completed_system_sessions_count;
-        let next_epoch_committee_exists = system_inner_v1.validator_set.next_epoch_committee.is_some();
+        let next_epoch_committee_exists =
+            system_inner_v1.validator_set.next_epoch_committee.is_some();
         if coordinator.locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
@@ -267,8 +268,10 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee =
-                            ika_system_state_inner.validator_set().clone().active_committee;
+                        let active_members: BlsCommittee = ika_system_state_inner
+                            .validator_set()
+                            .clone()
+                            .active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =

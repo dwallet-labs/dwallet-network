@@ -20,14 +20,13 @@ use sui_types::MoveTypeTagTrait;
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
 
-pub mod system_inner_v1;
-pub mod staking;
 pub mod epoch_start_system;
+pub mod staking;
+pub mod system_inner_v1;
 
-pub use system_inner_v1::*;
-pub use staking::*;
 pub use epoch_start_system::*;
-
+pub use staking::*;
+pub use system_inner_v1::*;
 
 #[cfg(msim)]
 use self::simtest_ika_system_state_inner::{
@@ -70,8 +69,7 @@ pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_a
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
 
-pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr =
-    ident_str!("new");
+pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
@@ -251,7 +249,10 @@ impl TokenExchangeRate {
     pub fn rate(&self) -> f64 {
         match self {
             TokenExchangeRate::Flat => 1_f64,
-            TokenExchangeRate::Variable { ika_amount, share_amount } => {
+            TokenExchangeRate::Variable {
+                ika_amount,
+                share_amount,
+            } => {
                 if *ika_amount == 0 {
                     1_f64
                 } else {

@@ -9,7 +9,19 @@ use ika_move_packages::IkaMovePackage;
 use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
-use ika_types::sui::{ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System, ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME};
+use ika_types::sui::{
+    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
+    DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+};
 use move_core_types::language_storage::StructTag;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
@@ -21,9 +33,11 @@ use sui::client_commands::{
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
-use sui_sdk::rpc_types::{SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI};
 use sui_sdk::rpc_types::{
     ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
+};
+use sui_sdk::rpc_types::{
+    SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
@@ -34,7 +48,10 @@ use sui_types::crypto::{SignatureScheme, SuiKeyPair};
 use sui_types::move_package::UpgradeCap;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI, TransactionKind};
+use sui_types::transaction::{
+    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
+    TransactionKind,
+};
 use sui_types::{
     Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
 };
@@ -691,10 +708,20 @@ pub async fn minted_ika(
     //     .unwrap()
     //     .clone();
 
-    let data = client.read_api().get_owned_objects(publisher_address, Some(SuiObjectResponseQuery {
-        filter: Some(SuiObjectDataFilter::StructType(IKACoin::type_(ika_package_id.into()))),
-        options: None,
-    }), None, None).await?;
+    let data = client
+        .read_api()
+        .get_owned_objects(
+            publisher_address,
+            Some(SuiObjectResponseQuery {
+                filter: Some(SuiObjectDataFilter::StructType(IKACoin::type_(
+                    ika_package_id.into(),
+                ))),
+                options: None,
+            }),
+            None,
+            None,
+        )
+        .await?;
 
     let ika_supply_id = &data.data.first().unwrap().object_id()?;
 
@@ -755,9 +782,9 @@ async fn request_add_validator_candidate(
             .to_vec(),
     )?))?;
 
-    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-        class_groups_pubkey_and_proof_obj_ref,
-    )))?;
+    let class_groups_pubkey_and_proof_obj_ref = ptb.input(CallArg::Object(
+        ObjectArg::ImmOrOwnedObject(class_groups_pubkey_and_proof_obj_ref),
+    ))?;
 
     let proof_of_possession = ptb.input(CallArg::Pure(bcs::to_bytes(
         &validator_initialization_metadata
@@ -767,26 +794,19 @@ async fn request_add_validator_candidate(
     )?))?;
 
     let network_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .network_address
-            .clone(),
+        &validator_initialization_metadata.network_address.clone(),
     )?))?;
 
     let p2p_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .p2p_address
-            .clone(),
+        &validator_initialization_metadata.p2p_address.clone(),
     )?))?;
 
     let consensus_address = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .consensus_address
-            .clone(),
+        &validator_initialization_metadata.consensus_address.clone(),
     )?))?;
 
     let commission_rate = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &validator_initialization_metadata
-            .commission_rate,
+        &validator_initialization_metadata.commission_rate,
     )?))?;
 
     let metadata = ptb.command(Command::move_call(
@@ -794,11 +814,7 @@ async fn request_add_validator_candidate(
         VALIDATOR_METADATA_MODULE_NAME.into(),
         NEW_VALIDATOR_METADATA_FUNCTION_NAME.into(),
         vec![],
-        vec![
-            name,
-            empty_str,
-            empty_str,
-        ],
+        vec![name, empty_str, empty_str],
     ));
 
     ptb.command(Command::move_call(
@@ -822,11 +838,14 @@ async fn request_add_validator_candidate(
         ],
     ));
 
-    ptb.transfer_args(validator_address, vec![
-        Argument::NestedResult(1, 0),
-        Argument::NestedResult(1, 1),
-        Argument::NestedResult(1, 2),
-    ]);
+    ptb.transfer_args(
+        validator_address,
+        vec![
+            Argument::NestedResult(1, 0),
+            Argument::NestedResult(1, 1),
+            Argument::NestedResult(1, 2),
+        ],
+    );
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 

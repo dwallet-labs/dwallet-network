@@ -8,6 +8,7 @@ use dwallet_classgroups_types::{
     write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
+use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_config::local_ip_utils;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::crypto::{
@@ -19,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{PublicKey, SuiKeyPair};
 use sui_types::multiaddr::Multiaddr;
-use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 
 pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 

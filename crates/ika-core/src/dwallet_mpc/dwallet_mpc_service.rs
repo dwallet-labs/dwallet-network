@@ -12,7 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
 };
 use ika_config::NodeConfig;
-use ika_sui_client::{SuiConnectorClient, SuiClient};
+use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
