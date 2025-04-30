@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=4
+export VALIDATOR_NUM=12
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -106,6 +106,7 @@ done
 RUST_MIN_STACK=16777216
 
 RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME"
+cargo build --release --bin ika-swarm-config
 cp ../../target/release/"$BINARY_NAME" .
 BINARY_NAME="$(pwd)/$BINARY_NAME"
 
@@ -244,7 +245,6 @@ done
 ###############################
 rm -rf "$SUI_CONFIG_PATH"
 
-cargo build --release --bin ika-swarm-config
 cp ../../../target/release/ika-swarm-config .
 
 # Publish IKA Modules (Creates the publisher config).
