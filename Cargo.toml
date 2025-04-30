@@ -75,11 +75,11 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { git = "https://github.com/RustCrypto/elliptic-curves.git", tag = "k256/v0.14.0-pre.2", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", rev = "0c48d2fc"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "0c48d2fc", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups"], rev = "0c48d2fc"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "0c48d2fc"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "0c48d2fc"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", rev = "46ae5a0a" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "46ae5a0a", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups"], rev = "46ae5a0a" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "46ae5a0a" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "46ae5a0a" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -429,7 +429,7 @@ ika-sdk-types = { git = "https://github.com/MystenLabs/sui-rust-sdk.git", packag
 
 ### Sui Members ###
 anemo-benchmark = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
-bin-version =  { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
+bin-version = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 mysten-common = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 mysten-metrics = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
 mysten-network = { git = "https://github.com/MystenLabs/sui", rev = "5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc" }
@@ -529,8 +529,8 @@ crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev
 
 ### Workspace Members ###
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
-dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
-dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types" }
+dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types" }
 ika = { path = "crates/ika" }
 ika-config = { path = "crates/ika-config" }
 ika-core = { path = "crates/ika-core" }
@@ -559,5 +559,5 @@ spinners = "4.1.0"
 include_dir = "0.7.3"
 
 [patch.crates-io]
-ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4"}
+ecdsa = { git = "https://github.com/yaelAbergel/signatures", rev = "7c8523182b1a28e5bcc6bb8d1508fbde1ea845c4" }
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = '43226a4' }
