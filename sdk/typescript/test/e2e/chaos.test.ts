@@ -92,6 +92,7 @@ async function createNetworkServices(
 }
 
 async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
+	const k8sApi = kc.makeApiClient(CoreV1Api);
 	for (let i = 0; i < numOfValidators; i++) {
 		const pod: V1Pod = {
 			metadata: {
@@ -111,7 +112,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 								value: '16777216',
 							},
 						],
-						command: ['/opt/ika/bin/ika-node', 'start'],
+						command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/validator.yaml'],
 						name: 'ika-node',
 						image:
 							'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
@@ -177,6 +178,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 				restartPolicy: 'Always',
 			},
 		};
+		await k8sApi.createNamespacedPod({
+			namespace: namespaceName,
+			body: pod,
+		});
 	}
 }
 
