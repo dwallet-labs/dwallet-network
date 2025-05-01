@@ -184,7 +184,7 @@ dependencies = [
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -198,8 +198,8 @@ dependencies = [
  "proof",
  "rand",
  "rand_chacha",
+ "rayon",
  "serde",
- "serde_json",
  "sha3 0.10.8",
  "thiserror",
 ]
@@ -216,7 +216,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -251,6 +251,31 @@ name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
+
+[[package]]
+name = "crossbeam-deque"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dd111b7b7f7d55b72c0a6ae361660ee5853c9af73f70c3c2ef6858b950e2e51"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-utils"
+version = "0.8.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "crunchy"
@@ -496,7 +521,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -599,13 +624,14 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
  "getrandom",
  "itertools",
  "k256 0.14.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rayon",
  "serde",
  "sha3 0.11.0-pre.4",
  "sha3 0.9.1",
@@ -655,7 +681,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -851,7 +877,7 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -921,7 +947,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -929,6 +955,7 @@ dependencies = [
  "getrandom",
  "group 0.1.0",
  "rand",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror",
@@ -1120,7 +1147,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -1131,6 +1158,8 @@ dependencies = [
  "itertools",
  "merlin",
  "mpc",
+ "rand_core",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror",
@@ -1179,6 +1208,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rayon"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b418a60154510ca1a002a752ca9714984e21e4241e804d32555251faf8b78ffa"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -1588,7 +1637,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -1613,7 +1662,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=0c48d2fc#0c48d2fc9bb80fd429e67e08c4be16824ec81269"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3c2059c3#3c2059c3be6419d92d0a0187ba3eaefd5ecbb3b9"
 dependencies = [
  "class_groups",
  "commitment",

@@ -702,6 +702,7 @@ impl DWalletMPCManager {
             mpc_event_data,
         );
         info!(
+            // todo(zeev): add metadata.
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
