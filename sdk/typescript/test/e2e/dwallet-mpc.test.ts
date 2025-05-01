@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { SuiClient } from '@mysten/sui/client';
+import { requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
@@ -36,11 +36,11 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV1({
-			host: getFaucetHost('localnet'),
-			// host: 'https://faucet.sui.beta.devnet.ika-network.net',
+			// host: getFaucetHost('localnet'),
+			host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
@@ -78,23 +78,30 @@ describe('Test dWallet MPC', () => {
 	it('should sign full flow', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		console.time('Step 1: dWallet Creation');
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
 		await delay(checkpointCreationTime);
 		console.log('Running Presign...');
-		const presignCompletion = await presign(conf, dwalletID.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		console.time('Step 2: Presign Phase');
+		const presignCompletion = await presign(conf, dwallet.dwalletID);
+		console.timeEnd('Step 2: Presign Phase');
+		console.log(`Step 2: Presign completed | presignID = ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Sign...');
-		await sign(
+		console.time('Step 3: Sign Phase');
+		const signRes = await sign(
 			conf,
 			presignCompletion.presign_id,
-			dwalletID.dwallet_cap_id,
+			dwallet.dwallet_cap_id,
 			Buffer.from('hello world'),
-			dwalletID.secret_share,
+			dwallet.secret_share,
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
+		console.log(`Sing completed successfully: ${signRes.sign_id}`);
+		console.timeEnd('Step 3: Sign Phase');
 	});
 
 	it('should complete future sign', async () => {
