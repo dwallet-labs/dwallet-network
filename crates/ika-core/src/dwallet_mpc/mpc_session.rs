@@ -569,6 +569,10 @@ impl DWalletMPCSession {
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
+                if party_to_msg.len() >= self.weighted_threshold_access_structure.threshold as usize {
+                    // TODO: fix this properly, this is just a temporary hot-patch
+                    return Ok(());
+                }
                 if party_to_msg.contains_key(&source_party_id) {
                     error!(
                         session_id=?message.session_id,
