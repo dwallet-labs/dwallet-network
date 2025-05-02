@@ -314,6 +314,14 @@ impl DWalletMPCManager {
             .is_malicious_actor(&self.epoch_store()?.name)
         {
             self.recognized_self_as_malicious = true;
+            error!(
+                authority=?epoch_store.name,
+                reporting_authority=?reporting_authority,
+                malicious_actors=?report.malicious_actors,
+                session_id=?report.session_id,
+                advance_result=?report.advance_result,
+                "node recognized itself as malicious"
+            );
         }
 
         match status {

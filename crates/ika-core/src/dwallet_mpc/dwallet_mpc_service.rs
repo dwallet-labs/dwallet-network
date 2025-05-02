@@ -188,11 +188,11 @@ impl DWalletMPCService {
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
-                    error!("DWalletMPCService exit signal received");
+                    info!("DWalletMPCService exit signal received");
                     break;
                 }
                 Err(err) => {
-                    error!("Failed to check DWalletMPCService exit signal: {:?}", err);
+                    error!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
                     break;
                 }
                 Ok(false) => (),
