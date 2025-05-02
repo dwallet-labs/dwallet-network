@@ -1,3 +1,6 @@
+use base64::alphabet::STANDARD;
+use base64::engine::general_purpose;
+use base64::Engine;
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
@@ -7,11 +10,12 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::PartyID;
 use itertools::Itertools;
+use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -217,9 +221,26 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+                let base64_mpc_messages = general_purpose::STANDARD
+                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
+                let mpc_event_data = self.mpc_event_data.clone().unwrap();
+                let base64_mpc_public_input =
+                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
+                let base64_mpc_init_protocol_data = general_purpose::STANDARD
+                    .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
+                let base64_mpc_session_type =
+                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
                 error!(
-                    "session failed with malicious parties: {:?}",
-                    malicious_parties
+                    messages=?base64_mpc_messages,
+                    public_input=?base64_mpc_public_input,
+                    init_protocol_data=?base64_mpc_init_protocol_data,
+                    session_type=?base64_mpc_session_type,
+                    session_id=?self.session_id,
+                    validator=?self.epoch_store()?.name,
+                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    party_id=?self.party_id,
+                    malicious_parties=?malicious_parties,
+                    "MPC session failed with malicious parties"
                 );
                 self.report_malicious_actors(
                     tokio_runtime_handle,
@@ -227,19 +248,34 @@ impl DWalletMPCSession {
                     AdvanceResult::Failure,
                 )
             }
-            Err(e) => {
-                let validator_name = self.epoch_store()?.name;
-                // Safe to unwrap as advance can only be called after the event is received.
+            Err(err) => {
+                let base64_mpc_messages = general_purpose::STANDARD
+                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
+                let mpc_event_data = self.mpc_event_data.clone().unwrap();
+                let base64_mpc_public_input =
+                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
+                let base64_mpc_init_protocol_data = general_purpose::STANDARD
+                    .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
+                let base64_mpc_session_type =
+                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
                 let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
+                let validator_name = self.epoch_store()?.name;
+
                 error!(
-                    mpc_protocol=?&mpc_protocol,
+                    messages=?base64_mpc_messages,
+                    public_input=?base64_mpc_public_input,
+                    init_protocol_data=?base64_mpc_init_protocol_data,
+                    session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?validator_name,
+                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    party_id=?self.party_id,
+                    error=?err,
+                    mpc_protocol=?mpc_protocol,
                     epoch=?self.epoch_id,
-                    error=?e,
-                    crypto_round=self.pending_quorum_for_highest_round_number,
                     "failed to advance the MPC session"
                 );
+
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
@@ -260,7 +296,7 @@ impl DWalletMPCSession {
                             "failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
-                Err(e)
+                Err(err)
             }
         }
     }
