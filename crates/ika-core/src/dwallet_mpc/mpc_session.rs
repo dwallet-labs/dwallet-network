@@ -75,7 +75,9 @@ pub(super) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
-
+    /// Messages that have been received after the first consensus round in which a quorum has been reached.
+    /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
+    /// malicious actors.
     pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
