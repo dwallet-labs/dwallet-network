@@ -306,12 +306,7 @@ impl IkaNode {
         let committee_arc = Arc::new(committee.clone());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
-        //let genesis_committee = genesis.committee()?;
-        let committee_store = Arc::new(CommitteeStore::new(
-            config.db_path().join("epochs"),
-            &committee_arc,
-            None,
-        ));
+        let committee_store = Arc::new(CommitteeStore::new(config.db_path().join("epochs"), None));
         let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
         let perpetual_tables = Arc::new(AuthorityPerpetualTables::open(
             &config.db_path().join("store"),
@@ -374,11 +369,6 @@ impl IkaNode {
         info!("creating checkpoint store");
 
         let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
-        // checkpoint_store.insert_genesis_checkpoint(
-        //     genesis.checkpoint(),
-        //     genesis.checkpoint_contents().clone(),
-        //     &epoch_store,
-        // );
 
         info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());

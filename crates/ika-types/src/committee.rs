@@ -34,19 +34,6 @@ pub type CommitteeDigest = [u8; 32];
 // The voting power, quorum threshold and max voting power are defined in the `voting_power.move` module.
 // We're following the very same convention in the validator binaries.
 
-// /// Set total_voting_power as 10_000 by convention. Individual voting powers can be interpreted
-// /// as easily understandable basis points (e.g., voting_power: 100 = 1%, voting_power: 1 = 0.01%).
-// /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
-// /// than recomputing these.
-// pub const TOTAL_VOTING_POWER: StakeUnit = 4;
-//
-// /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
-// /// up to BFT assumptions
-// pub const QUORUM_THRESHOLD: StakeUnit = (2 * TOTAL_VOTING_POWER) / 3 + 1;
-//
-// /// Validity threshold defined by f+1
-// pub const VALIDITY_THRESHOLD: StakeUnit = TOTAL_VOTING_POWER / 3 + 1;
-
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
     pub epoch: EpochId,

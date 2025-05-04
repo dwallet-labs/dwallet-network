@@ -16,10 +16,10 @@ pub const MIN_VALIDATOR_COUNT: u64 = 4;
 pub const MAX_VALIDATOR_COUNT: u64 = 115;
 
 /// Lower-bound on the amount of stake required to become a validator.
-/// 30 million IKA
+/// 30 million IKA.
 pub const MIN_VALIDATOR_JOINING_STAKE_NIKA: u64 = 30_000_000 * NIKA_PER_IKA;
 
-/// how many reward are slashed to punish a validator, in bps.
+/// How many rewards are slashed to punish a validator, in BPS (Basis Points).
 pub const REWARD_SLASHING_RATE: u16 = 10_000;
 
 /// Lock active committee between epochs.
@@ -28,7 +28,7 @@ pub const LOCK_ACTIVE_COMMITTEE: bool = false;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct InitiationParameters {
-    /// protocol version that the chain starts at.
+    /// Protocol version that the chain starts at.
     #[serde(default = "InitiationParameters::default_protocol_version")]
     pub protocol_version: u64,
 
@@ -49,7 +49,7 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_stake_subsidy_rate")]
     pub stake_subsidy_rate: u16,
 
-    /// Number of distributions to occur before the amount per distribution will be recalculated.
+    /// The Number of distributions to occur before the amount per distribution will be recalculated.
     #[serde(default = "InitiationParameters::default_stake_subsidy_period_length")]
     pub stake_subsidy_period_length: u64,
 
@@ -67,7 +67,7 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_min_validator_joining_stake")]
     pub min_validator_joining_stake: u64,
 
-    /// how many reward are slashed to punish a validator, in bps.
+    /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
     #[serde(default = "InitiationParameters::default_reward_slashing_rate")]
     pub reward_slashing_rate: u16,
 

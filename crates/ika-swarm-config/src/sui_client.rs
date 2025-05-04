@@ -6,7 +6,7 @@ use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_N
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
-use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
+use ika_types::ika_coin::IKACoin;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
@@ -43,7 +43,7 @@ use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
-use sui_types::coin::{TreasuryCap, COIN_MODULE_NAME};
+use sui_types::coin::TreasuryCap;
 use sui_types::crypto::{SignatureScheme, SuiKeyPair};
 use sui_types::move_package::UpgradeCap;
 use sui_types::object::Owner;
@@ -52,9 +52,7 @@ use sui_types::transaction::{
     Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
     TransactionKind,
 };
-use sui_types::{
-    Identifier, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION, SUI_FRAMEWORK_PACKAGE_ID,
-};
+use sui_types::{SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION};
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -167,14 +165,7 @@ pub async fn init_ika_on_sui(
 
     println!("Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}");
 
-    let ika_supply_id = minted_ika(
-        publisher_address,
-        &mut context,
-        client.clone(),
-        ika_package_id,
-        treasury_cap_id,
-    )
-    .await?;
+    let ika_supply_id = minted_ika(publisher_address, client.clone(), ika_package_id).await?;
 
     println!("Minting done: ika_supply_id: {ika_supply_id}");
 
@@ -668,52 +659,9 @@ async fn stake_ika(
 
 async fn minted_ika(
     publisher_address: SuiAddress,
-    context: &mut WalletContext,
     client: SuiClient,
     ika_package_id: ObjectID,
-    treasury_cap_id: ObjectID,
 ) -> Result<ObjectID, anyhow::Error> {
-    // let mut ptb = ProgrammableTransactionBuilder::new();
-    //
-    // let treasury_cap_ref = client
-    //     .transaction_builder()
-    //     .get_object_ref(treasury_cap_id)
-    //     .await?;
-    //
-    // let treasury_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
-    //     treasury_cap_ref,
-    // )))?;
-    // let total_supply_arg = ptb.input(CallArg::Pure(bcs::to_bytes(&TOTAL_SUPPLY_NIKA)?))?;
-    // let publisher_address_arg = ptb.input(CallArg::Pure(bcs::to_bytes(&publisher_address)?))?;
-    // ptb.command(sui_types::transaction::Command::move_call(
-    //     SUI_FRAMEWORK_PACKAGE_ID,
-    //     COIN_MODULE_NAME.into(),
-    //     Identifier::new("mint_and_transfer")?,
-    //     vec![IKA::type_tag(ika_package_id.into())],
-    //     vec![treasury_cap_arg, total_supply_arg, publisher_address_arg],
-    // ));
-    //
-    // let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-    //
-    // let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-    //
-    // let object_changes = response.object_changes.unwrap();
-    //
-    // let ika_supply_id = object_changes
-    //     .iter()
-    //     .filter_map(|o| match o {
-    //         ObjectChange::Created {
-    //             object_id,
-    //             object_type,
-    //             ..
-    //         } if IKACoin::type_(ika_package_id.into()) == *object_type => Some(*object_id),
-    //         _ => None,
-    //     })
-    //     .collect::<Vec<_>>()
-    //     .first()
-    //     .unwrap()
-    //     .clone();
-
     let data = client
         .read_api()
         .get_owned_objects(
