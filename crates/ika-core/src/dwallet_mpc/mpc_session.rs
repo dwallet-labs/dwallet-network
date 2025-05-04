@@ -63,14 +63,9 @@ pub struct MPCEventData {
     pub(crate) session_type: SessionType,
 }
 
-/// A dWallet MPC session.
-/// It keeps track of the session, the channel to send messages to the session,
-/// and the messages that are pending to be sent to the session.
-// TODO (#539): Simplify struct to only contain session related data.
 #[derive(Clone)]
-pub(super) struct DWalletMPCSession {
-    /// The status of the MPC session.
-    pub(super) status: MPCSessionStatus,
+pub struct Attempt {
+    pub start_round: usize,
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
@@ -79,6 +74,88 @@ pub(super) struct DWalletMPCSession {
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
     /// malicious actors.
     pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
+}
+
+impl Attempt {
+    fn new(start_round: usize) -> Self {
+        Self {
+            start_round,
+            serialized_full_messages: vec![],
+            spare_messages: vec![],
+        }
+    }
+
+    pub(crate) fn store_spare_message(
+        &mut self,
+        message: &DWalletMPCMessage,
+        source_party_id: PartyID,
+    ) {
+        match self.spare_messages.get_mut(message.round_number) {
+            None => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    crypto_round_number=?message.round_number,
+                    "Creating new spare messages map for round",
+                );
+                for _ in self.spare_messages.len()..=message.round_number {
+                    self.spare_messages.push(HashMap::new());
+                }
+                self.spare_messages[message.round_number]
+                    .insert(source_party_id, message.message.clone());
+            }
+            Some(spare_messages) => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    crypto_round_number=?message.round_number,
+                    "Adding message to existing spare messages map",
+                );
+                spare_messages.insert(source_party_id, message.message.clone());
+            }
+        }
+    }
+
+    pub(crate) fn store_message(
+        &mut self,
+        message: &DWalletMPCMessage,
+        source_party_id: PartyID,
+    )  {
+        match self.serialized_full_messages.get_mut(message.round_number) {
+            None => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    crypto_round_number=?message.round_number,
+                    "Creating new spare messages map for round",
+                );
+                for _ in self.serialized_full_messages.len()..=message.round_number {
+                    self.serialized_full_messages.push(HashMap::new());
+                }
+                self.serialized_full_messages[message.round_number]
+                    .insert(source_party_id, message.message.clone());
+            }
+            Some(serialized_full_messages) => {
+                info!(
+                    session_id=?message.session_id,
+                    from_authority=?message.authority,
+                    crypto_round_number=?message.round_number,
+                    "Adding message to existing spare messages map",
+                );
+                serialized_full_messages.insert(source_party_id, message.message.clone());
+            }
+        }
+    }
+}
+
+/// A dWallet MPC session.
+/// It keeps track of the session, the channel to send messages to the session,
+/// and the messages that are pending to be sent to the session.
+// TODO (#539): Simplify struct to only contain session related data.
+#[derive(Clone)]
+pub(super) struct DWalletMPCSession {
+    /// The status of the MPC session.
+    pub(super) status: MPCSessionStatus,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -86,6 +163,7 @@ pub(super) struct DWalletMPCSession {
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
     pub(super) pending_quorum_for_highest_round_number: usize,
+    pub(super) attempts: Vec<Attempt>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
@@ -105,7 +183,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            serialized_full_messages: vec![HashMap::new()],
+            attempts: vec![Attempt::new(0)],
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
@@ -114,13 +192,12 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
-            spare_messages: vec![],
         }
     }
 
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
-        self.serialized_full_messages = Default::default();
+        self.attempts.clear();
     }
 
     /// Returns the epoch store.
@@ -534,6 +611,7 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
+            self.attempts.len() - 1,
         ))
     }
 

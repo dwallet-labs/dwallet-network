@@ -128,6 +128,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
+        attempt_number: usize,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
@@ -139,6 +140,7 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_id,
+                attempt_number
             }),
         }
     }
