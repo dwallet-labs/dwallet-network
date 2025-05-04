@@ -668,88 +668,20 @@ impl DWalletMPCSession {
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-        let current_round = self.serialized_full_messages.len();
-
-        let authority_name = self.epoch_store()?.name;
-
-        if self.pending_quorum_for_highest_round_number <= message.round_number {
-            match self.serialized_full_messages.get_mut(message.round_number) {
-                Some(party_to_msg) => {
-                    if party_to_msg.contains_key(&source_party_id) {
-                        error!(
-                            session_id=?message.session_id,
-                            from_authority=?message.authority,
-                            receiving_authority=?authority_name,
-                            crypto_round_number=?message.round_number,
-                            "Received a duplicate message from authority",
-                        );
-                        // Duplicate.
-                        // This should never happen, as the consensus uniqueness key contains only the origin authority,
-                        // session ID and MPC round.
-                        return Ok(());
-                    }
-                    info!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?authority_name,
-                        crypto_round_number=?message.round_number,
-                        "Inserting a message into the party to message maps",
-                    );
-                    party_to_msg.insert(source_party_id, message.message.clone());
-                }
-                None if message.round_number == current_round => {
-                    info!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?authority_name,
-                        crypto_round_number=?message.round_number,
-                        "Store message for the current round",
-                    );
-                    let mut map = HashMap::new();
-                    map.insert(source_party_id, message.message.clone());
-                    self.serialized_full_messages.push(map);
-                }
-                // Received a message for a future round (above the current round).
-                // If it happens, there is an issue with the consensus.
-                None => {
-                    error!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?authority_name,
-                        crypto_round_number=?message.round_number,
-                        "Received a message for two or more rounds above known round for session",
-                    );
-                    // Unexpected round number; rounds should grow sequentially.
-                    return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
-                }
-            }
+        let Some(attempt) = self.attempts.get_mut(message.attempt_number) else {
+            error!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "eeceived a message for an attempt that does not exist",
+            );
+            return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+        };
+        if message.round_number >= self.pending_quorum_for_highest_round_number {
+            attempt.store_message(message, source_party_id);
         } else {
-            match self.spare_messages.get_mut(message.round_number) {
-                None => {
-                    info!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?authority_name,
-                        crypto_round_number=?message.round_number,
-                        "Creating new spare messages map for round",
-                    );
-                    for _ in self.spare_messages.len()..=message.round_number {
-                        self.spare_messages.push(HashMap::new());
-                    }
-                    self.spare_messages[message.round_number]
-                        .insert(source_party_id, message.message.clone());
-                }
-                Some(spare_messages) => {
-                    info!(
-                        session_id=?message.session_id,
-                        from_authority=?message.authority,
-                        receiving_authority=?authority_name,
-                        crypto_round_number=?message.round_number,
-                        "Adding message to existing spare messages map",
-                    );
-                    spare_messages.insert(source_party_id, message.message.clone());
-                }
-            }
+            attempt.store_spare_message(message, source_party_id);
         }
         Ok(())
     }
