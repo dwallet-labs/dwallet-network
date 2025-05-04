@@ -393,6 +393,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
+    let mpc_round = messages.len() + 1;
     let res = match P::advance(
         session_id,
         party_id,
@@ -407,12 +408,14 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             let general_error = DwalletMPCError::TwoPCMPCError(format!(
                 "MPC error in party {party_id} session {} at round #{} {:?}",
                 session_id,
-                messages.len() + 1,
+                mpc_round,
                 e
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {
+                    let round_to_restart = P::round_to_retry_on_threshold_not_reached(mpc_round)
+                        .map_err(|e| DwalletMPCError::TwoPCMPCError(e))?;
                     let malicious_actors = messages
                         .last()
                         .ok_or(general_error)?
@@ -422,6 +425,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                         .collect();
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
+                        round_to_restart,
                     ))
                 }
                 _ => Err(general_error),
