@@ -64,8 +64,12 @@ pub struct MPCEventData {
     pub(crate) session_type: SessionType,
 }
 
+/// Represents an attempt to complete the MPC session.
+///
+/// A new attempt is created when the session need to return more than one cryptographic round back.
 #[derive(Clone)]
 pub struct Attempt {
+    /// The round number in which the attempt started.
     pub start_round: usize,
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
@@ -757,7 +761,7 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
-                "eeceived a message for an attempt that does not exist",
+                "received a message for an attempt that does not exist",
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         };
