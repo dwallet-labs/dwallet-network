@@ -136,8 +136,9 @@ where
         // The Epoch was finished.
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + ika_system_state_inner.epoch_duration_ms();
+        let next_epoch_committee_exists = system_inner_v1.validators.next_epoch_committee.is_some();
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
-        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked {
+        if clock.timestamp_ms > epoch_finish_time && epoch_not_locked && next_epoch_committee_exists {
             info!("Calling `lock_last_active_session_sequence_number()`");
             if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
