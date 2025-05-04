@@ -143,6 +143,23 @@ impl Attempt {
             }
         }
     }
+
+    pub(crate) fn retry_last_round(&mut self, pending_quorum_for_highest_round_number: usize, malicious_actors: &HashSet<PartyID>) {
+        // Remove malicious parties from the self messages.
+        let round_messages = self
+            .serialized_full_messages
+            .get_mut(pending_quorum_for_highest_round_number)
+            .expect("session cannot fail with malicious parties for a round that no messages were received for");
+        malicious_actors.iter().for_each(|malicious_actor| {
+            round_messages.remove(malicious_actor);
+        });
+        if let Some(spare_round_messages) = self
+            .spare_messages
+            .get(pending_quorum_for_highest_round_number)
+        {
+            round_messages.extend(spare_round_messages.clone());
+        }
+    }
 }
 
 /// A dWallet MPC session.
@@ -373,22 +390,17 @@ impl DWalletMPCSession {
         malicious_actors: &HashSet<PartyID>,
         round_to_restart_from: usize,
     ) {
-        // For every advance we increase the round number by 1,
-        // so to re-run the same round, we decrease it by 1.
-        self.pending_quorum_for_highest_round_number -= 1;
-        // Remove malicious parties from the self messages.
-        let round_messages = self
-            .serialized_full_messages
-            .get_mut(self.pending_quorum_for_highest_round_number)
-            .expect("session cannot fail with malicious parties for a round that no messages were received for");
-        malicious_actors.iter().for_each(|malicious_actor| {
-            round_messages.remove(malicious_actor);
-        });
-        if let Some(spare_round_messages) = self
-            .spare_messages
-            .get(self.pending_quorum_for_highest_round_number)
-        {
-            round_messages.extend(spare_round_messages.clone());
+        if round_to_restart_from == self.pending_quorum_for_highest_round_number - 1 {
+            // For every advance we increase the round number by 1,
+            // so to re-run the same round, we decrease it by 1.
+            self.pending_quorum_for_highest_round_number -= 1;
+            let mut current_attempt = self.attempts.last_mut().expect("attempts should not be empty");
+            current_attempt.retry_last_round(
+                self.pending_quorum_for_highest_round_number,
+                malicious_actors,
+            );
+        } else {
+
         }
     }
 
