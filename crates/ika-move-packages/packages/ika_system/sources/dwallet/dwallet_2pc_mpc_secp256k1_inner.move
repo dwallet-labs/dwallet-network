@@ -824,8 +824,8 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
         dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
         event::emit(self.create_system_dwallet_event(
             dwallet_network_decryption_key_id,
-            RejectedDWalletDKGSFirstRoundEvent {
-                dwallet_id: object::id(dwallet_network_decryption_key),
+            DWalletNetworkDKGDecryptionKeyRequestEvent {
+                dwallet_network_decryption_key_id,
             },
             ctx,
         ));
@@ -864,9 +864,8 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
         dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
         event::emit(self.create_system_dwallet_event(
             dwallet_network_decryption_key_id,
-            RejectedDWalletDKGSecondRoundEvent {
-                dwallet_id: object::id(dwallet_network_decryption_key),
-                public_output,
+            DWalletDecryptionKeyReshareRequestEvent {
+                dwallet_network_decryption_key_id,
             },
             ctx,
         ));
