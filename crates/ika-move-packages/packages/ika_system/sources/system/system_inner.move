@@ -563,7 +563,6 @@ public(package) fun lock_last_active_session_sequence_number(
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
 ) {
-    assert!(self.validator_set.next_epoch_active_committee().is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
     assert!(clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
     dwallet_coordinator.lock_last_active_session_sequence_number();
 }
