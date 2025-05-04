@@ -427,10 +427,8 @@ impl DWalletMPCSession {
                 .attempts
                 .last_mut()
                 .expect("attempts should not be empty");
-            last_attempt.merge_spare_messages_and_remove_malicious(
-                round_to_restart_from,
-                malicious_actors,
-            );
+            last_attempt
+                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
             self.attempts.push(Attempt::new(round_to_restart_from + 1));
         }
     }
@@ -768,10 +766,7 @@ impl DWalletMPCSession {
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
-                                .attempts
-                                .last()
-                                .expect("attempts should not be empty")
-                                .serialized_full_messages
+                                .build_input_mpc_messages()
                                 .get(self.pending_quorum_for_highest_round_number)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
