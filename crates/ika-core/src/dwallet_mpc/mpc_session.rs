@@ -488,18 +488,15 @@ impl DWalletMPCSession {
                 let attempt = &attempts[i];
                 let next_attempt = &attempts[i + 1];
                 messages.extend(
-                    attempt.serialized_full_messages.clone().into_iter()
-                        [last_processed_round..next_attempt.start_round]
-                        .collect::<Vec<_>>()
-                        .clone(),
+                    (attempt.serialized_full_messages.clone()
+                        [last_processed_round..next_attempt.start_round])
+                        .to_vec(),
                 );
                 last_processed_round = next_attempt.start_round;
             } else {
                 // no next attempt
                 messages.extend(
-                    attempts[i].serialized_full_messages.clone().into_iter()
-                        [last_processed_round..]
-                        .collect::<Vec<_>>(),
+                    (attempts[i].serialized_full_messages.clone()[last_processed_round..]).to_vec(),
                 );
             }
         }

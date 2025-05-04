@@ -415,9 +415,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                 mpc::Error::ThresholdNotReached { honest_subset } => {
                     let round_to_restart = P::round_to_retry_on_threshold_not_reached(mpc_round)
                         .expect(&format!(
-                            ?mpc_round,
-                            ?session_id,
-                            "failed to get the round to retry from, this should never happen.",
+                            "failed to get the round to retry from, this should never happen. {mpc_round} {session_id}",
                         ));
 
                     let malicious_actors = messages
