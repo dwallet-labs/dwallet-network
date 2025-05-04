@@ -14,6 +14,7 @@ use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
+use im::hashmap;
 use tokio::runtime::Handle;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
@@ -417,14 +418,18 @@ impl DWalletMPCSession {
     }
 
     fn build_input_mpc_messages(&self) -> Vec<HashMap<PartyID, MPCMessage>> {
+        Self::build_input_mpc_messages_static(&self.attempts)
+    }
+
+    fn build_input_mpc_messages_static(attempts: &Vec<Attempt>) -> Vec<HashMap<PartyID, MPCMessage>> {
         let mut messages = vec![];
         let mut last_processed_round = 0;
 
-        for i in 0..self.attempts.len() {
-            if i + 1 < self.attempts.len() {
+        for i in 0..attempts.len() {
+            if i + 1 < attempts.len() {
                 // there's a next attempt
-                let attempt = &self.attempts[i];
-                let next_attempt = &self.attempts[i + 1];
+                let attempt = &attempts[i];
+                let next_attempt = &attempts[i + 1];
                 messages.extend(
                     attempt
                         .serialized_full_messages
@@ -439,7 +444,7 @@ impl DWalletMPCSession {
             } else {
                 // no next attempt
                 messages.extend(
-                    self.attempts[i]
+                    attempts[i]
                         .serialized_full_messages
                         .clone()
                         .into_iter()
@@ -767,4 +772,58 @@ impl DWalletMPCSession {
             }
         });
     }
+}
+
+#[test]
+fn single_attempt_returns_all() {
+    let m1: HashMap<PartyID, MPCMessage> = hashmap! { 1 => vec![1u8] };
+    let m2: HashMap<PartyID, MPCMessage> = hashmap! { 2 => vec![2u8] };
+    let attempts = vec![Attempt {
+        start_round: 0,
+        serialized_full_messages: vec![m1.clone(), m2.clone()],
+        spare_messages: vec![],
+    }];
+    let out = DWalletMPCSession::build_input_mpc_messages_static(&attempts);
+    assert_eq!(out, vec![m1, m2]);
+}
+
+#[test]
+fn two_attempts_cuts_at_next_start() {
+    let m0: HashMap<PartyID, MPCMessage> = hashmap! { 1 => vec![1u8] };
+    let m1: HashMap<PartyID, MPCMessage> = hashmap! { 2 => vec![2u8] };
+    let m2: HashMap<PartyID, MPCMessage> = hashmap! { 3 => vec![3u8] };
+    let a1 = Attempt {
+        start_round: 0,
+        serialized_full_messages: vec![m0.clone(), m1.clone(), m2.clone()],
+        spare_messages: vec![],
+    };
+    let a2 = Attempt {
+        start_round: 2,
+        serialized_full_messages: vec![],
+        spare_messages: vec![],
+    };
+    let out = DWalletMPCSession::build_input_mpc_messages_static(&vec![a1, a2]);
+    assert_eq!(out, vec![m0, m1, m2]);
+}
+
+#[test]
+fn three_attempts_respect_each_start() {
+    let m = |i: u16| -> HashMap<PartyID, MPCMessage> { hashmap! { i => vec![i as u8] } };
+    let a1 = Attempt {
+        start_round: 0,
+        serialized_full_messages: vec![m(0), m(1), m(2), m(3)],
+        spare_messages: vec![],
+    };
+    let a2 = Attempt {
+        start_round: 2,
+        serialized_full_messages: vec![],
+        spare_messages: vec![],
+    };
+    let a3 = Attempt {
+        start_round: 3,
+        serialized_full_messages: vec![],
+        spare_messages: vec![],
+    };
+    let out = DWalletMPCSession::build_input_mpc_messages_static(&vec![a1, a2, a3]);
+    assert_eq!(out, vec![m(0), m(1), m(2), m(3)]);
 }
