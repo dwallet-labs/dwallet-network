@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{Element, SystemInnerTrait};
+use super::{Element, ExtendedField, SystemInnerTrait};
 use crate::committee::StakeUnit;
 use crate::crypto::{AuthorityName, AuthorityPublicKey};
 use fastcrypto::traits::ToFromBytes;
@@ -22,29 +22,6 @@ pub struct SystemParametersV1 {
     /// The starting epoch in which stake subsidies start being paid out
     pub stake_subsidy_start_epoch: u64,
 
-    /// Minimum number of active validators at any moment.
-    pub min_validator_count: u64,
-
-    /// Maximum number of active validators at any moment.
-    /// We do not allow the number of validators in any epoch to go above this.
-    pub max_validator_count: u64,
-
-    /// Lower-bound on the amount of stake required to become a validator.
-    pub min_validator_joining_stake: u64,
-
-    /// Validators with stake amount below `validator_low_stake_threshold` are considered to
-    /// have low stake and will be escorted out of the validator set after being below this
-    /// threshold for more than `validator_low_stake_grace_period` number of epochs.
-    pub validator_low_stake_threshold: u64,
-
-    /// Validators with stake below `validator_very_low_stake_threshold` will be removed
-    /// immediately at epoch change, no grace period.
-    pub validator_very_low_stake_threshold: u64,
-
-    /// A validator can have stake below `validator_low_stake_threshold`
-    /// for this many epochs before being kicked out.
-    pub validator_low_stake_grace_period: u64,
-
     /// how many reward are slashed to punish a validator, in bps.
     pub reward_slashing_rate: u16,
 
@@ -59,8 +36,6 @@ pub struct SystemParametersV1 {
 pub struct BlsCommitteeMember {
     pub validator_id: ObjectID,
     pub protocol_pubkey: Element,
-    pub voting_power: u64,
-    pub stake: u64,
 }
 
 /// Represents the current committee in the system.
@@ -68,6 +43,8 @@ pub struct BlsCommitteeMember {
 pub struct BlsCommittee {
     pub members: Vec<BlsCommitteeMember>,
     pub aggregated_protocol_pubkey: Element,
+    pub quorum_threshold: u64,
+    pub validity_threshold: u64,
 }
 
 pub type ObjectTable = Table;
@@ -76,12 +53,11 @@ pub type ObjectTable = Table;
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
-    pub validators: ObjectTable,
+    pub validators: ObjectTable, // This now holds StakingPool objects
     pub active_committee: BlsCommittee,
     pub next_epoch_committee: Option<BlsCommittee>,
     pub previous_committee: BlsCommittee,
-    pub pending_active_validators: Vec<ObjectID>,
-    pub at_risk_validators: VecMap<ID, u64>,
+    pub pending_active_set: ExtendedField,
     pub validator_report_records: VecMap<ObjectID, VecSet<ObjectID>>,
     pub extra_fields: Bag,
 }
@@ -95,15 +71,14 @@ pub struct UpgradeCap {
     pub policy: u8,
 }
 
-/// Rust version of the Move ika_system::ika_system::IkaSystemStateInner type
+/// Rust version of the Move ika::ika_system::SystemInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemInnerV1 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub upgrade_caps: Vec<UpgradeCap>,
-    pub validators: ValidatorSetV1,
+    pub validator_set: ValidatorSetV1,
     pub parameters: SystemParametersV1,
-    pub computation_price_per_unit_size: u64,
     pub ika_treasury: IkaTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
     pub total_messages_processed: u64,
@@ -191,10 +166,6 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.epoch
     }
 
-    fn computation_price_per_unit_size(&self) -> u64 {
-        self.computation_price_per_unit_size
-    }
-
     fn protocol_version(&self) -> u64 {
         self.protocol_version
     }
@@ -221,8 +192,8 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
     }
 
-    fn validators(&self) -> &ValidatorSetV1 {
-        &self.validators
+    fn validator_set(&self) -> &ValidatorSetV1 {
+        &self.validator_set
     }
 
     fn read_bls_committee(
@@ -248,7 +219,7 @@ impl SystemInnerTrait for SystemInnerV1 {
                         (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
                             .unwrap())
                             .into(),
-                        v.voting_power,
+                        1,
                     ),
                 )
             })
@@ -258,11 +229,11 @@ impl SystemInnerTrait for SystemInnerV1 {
     }
 
     fn get_ika_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
-        self.read_bls_committee(&self.validators.active_committee)
+        self.read_bls_committee(&self.validator_set.active_committee)
     }
 
     fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>> {
-        let Some(next_epoch_committee) = self.validators.next_epoch_committee.as_ref() else {
+        let Some(next_epoch_committee) = self.validator_set.next_epoch_committee.as_ref() else {
             return None;
         };
         Some(self.read_bls_committee(next_epoch_committee))

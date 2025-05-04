@@ -113,6 +113,7 @@ pub struct ValidatorComponents {
 
     dwallet_mpc_service_exit: watch::Sender<()>,
 }
+
 pub struct P2pComponents {
     p2p_network: Network,
     known_peers: HashMap<PeerId, String>,
@@ -185,7 +186,7 @@ use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
@@ -305,12 +306,7 @@ impl IkaNode {
         let committee_arc = Arc::new(committee.clone());
 
         let secret = Arc::pin(config.protocol_key_pair().copy());
-        //let genesis_committee = genesis.committee()?;
-        let committee_store = Arc::new(CommitteeStore::new(
-            config.db_path().join("epochs"),
-            &committee_arc,
-            None,
-        ));
+        let committee_store = Arc::new(CommitteeStore::new(config.db_path().join("epochs"), None));
         let perpetual_tables_options = default_db_options().optimize_db_for_write_throughput(4);
         let perpetual_tables = Arc::new(AuthorityPerpetualTables::open(
             &config.db_path().join("store"),
@@ -373,11 +369,6 @@ impl IkaNode {
         info!("creating checkpoint store");
 
         let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
-        // checkpoint_store.insert_genesis_checkpoint(
-        //     genesis.checkpoint(),
-        //     genesis.checkpoint_contents().clone(),
-        //     &epoch_store,
-        // );
 
         info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
@@ -767,7 +758,7 @@ impl IkaNode {
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -835,7 +826,7 @@ impl IkaNode {
         previous_epoch_last_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_checkpoint_service(
             config,
@@ -1007,7 +998,7 @@ impl IkaNode {
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
         loop {
@@ -1249,7 +1240,7 @@ impl IkaNode {
 
     async fn start_dwallet_mpc_service(
         epoch_store: Arc<AuthorityPerEpochStore>,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,

@@ -2,12 +2,6 @@
 title: Module `(ika_system=0x0)::dwallet_pricing`
 ---
 
-
-<a name="@Module:_dwallet_pricing_0"></a>
-
-## Module: dwallet_pricing
-
-
 This module provides structures and functions for managing pricing information for a dWallet.
 Each operation (e.g., DKG, re-encrypt user share, ECDSA presign, etc.) has its own pricing data,
 represented by a <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a></code>. Each <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a></code> holds three values:
@@ -21,12 +15,11 @@ The DKG operation is split into two separate rounds:
 - <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_dkg_second_round">dkg_second_round</a></code>
 
 
--  [Module: dwallet_pricing](#@Module:_dwallet_pricing_0)
 -  [Struct `PricingPerOperation`](#(ika_system=0x0)_dwallet_pricing_PricingPerOperation)
 -  [Struct `DWalletPricing2PcMpcSecp256K1`](#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1)
 -  [Function `create_dwallet_pricing_2pc_mpc_secp256k1`](#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1)
-    -  [Parameters](#@Parameters_1)
-    -  [Returns](#@Returns_2)
+    -  [Parameters](#@Parameters_0)
+    -  [Returns](#@Returns_1)
 -  [Function `zero`](#(ika_system=0x0)_dwallet_pricing_zero)
 -  [Function `dkg_first_round`](#(ika_system=0x0)_dwallet_pricing_dkg_first_round)
 -  [Function `dkg_second_round`](#(ika_system=0x0)_dwallet_pricing_dkg_second_round)
@@ -170,7 +163,7 @@ Creates a new [<code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_
 Initializes pricing data for each operation by providing values for the three pricing fields for each operation.
 
 
-<a name="@Parameters_1"></a>
+<a name="@Parameters_0"></a>
 
 ### Parameters
 
@@ -213,7 +206,7 @@ Initializes pricing data for each operation by providing values for the three pr
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Returns_2"></a>
+<a name="@Returns_1"></a>
 
 ### Returns
 
@@ -221,7 +214,7 @@ Initializes pricing data for each operation by providing values for the three pr
 A newly created instance of <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a></code>.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(dkg_first_round_consensus_validation_ika: u64, dkg_first_round_computation_ika: u64, dkg_first_round_gas_fee_reimbursement_sui: u64, dkg_second_round_consensus_validation_ika: u64, dkg_second_round_computation_ika: u64, dkg_second_round_gas_fee_reimbursement_sui: u64, re_encrypt_consensus_validation_ika: u64, re_encrypt_computation_ika: u64, re_encrypt_gas_fee_reimbursement_sui: u64, ecdsa_presign_consensus_validation_ika: u64, ecdsa_presign_computation_ika: u64, ecdsa_presign_gas_fee_reimbursement_sui: u64, ecdsa_sign_consensus_validation_ika: u64, ecdsa_sign_computation_ika: u64, ecdsa_sign_gas_fee_reimbursement_sui: u64, ecdsa_future_sign_consensus_validation_ika: u64, ecdsa_future_sign_computation_ika: u64, ecdsa_future_sign_gas_fee_reimbursement_sui: u64, ecdsa_partial_sign_consensus_validation_ika: u64, ecdsa_partial_sign_computation_ika: u64, ecdsa_partial_sign_gas_fee_reimbursement_sui: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(dkg_first_round_consensus_validation_ika: u64, dkg_first_round_computation_ika: u64, dkg_first_round_gas_fee_reimbursement_sui: u64, dkg_second_round_consensus_validation_ika: u64, dkg_second_round_computation_ika: u64, dkg_second_round_gas_fee_reimbursement_sui: u64, re_encrypt_consensus_validation_ika: u64, re_encrypt_computation_ika: u64, re_encrypt_gas_fee_reimbursement_sui: u64, ecdsa_presign_consensus_validation_ika: u64, ecdsa_presign_computation_ika: u64, ecdsa_presign_gas_fee_reimbursement_sui: u64, ecdsa_sign_consensus_validation_ika: u64, ecdsa_sign_computation_ika: u64, ecdsa_sign_gas_fee_reimbursement_sui: u64, ecdsa_future_sign_consensus_validation_ika: u64, ecdsa_future_sign_computation_ika: u64, ecdsa_future_sign_gas_fee_reimbursement_sui: u64, ecdsa_partial_sign_consensus_validation_ika: u64, ecdsa_partial_sign_computation_ika: u64, ecdsa_partial_sign_gas_fee_reimbursement_sui: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>
 </code></pre>
 
 
@@ -230,7 +223,7 @@ A newly created instance of <code><a href="../ika_system/dwallet_pricing.md#(ika
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(
     // DKG First Round Pricing
     dkg_first_round_consensus_validation_ika: u64,
     dkg_first_round_computation_ika: u64,

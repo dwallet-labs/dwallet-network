@@ -1,11 +1,10 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-// TODO: remove #[allow(unused_field)]
 /// This module handles the logic for creating and managing dWallets using the Secp256K1 signature scheme
 /// and the DKG process. It leverages validators to execute MPC (Multi-Party Computation)
 /// protocols to ensure trustless and decentralized wallet creation and key management.
-#[allow(unused_field)]
+
 module ika_system::dwallet_2pc_mpc_secp256k1_inner;
 
 use sui::table_vec::{Self, TableVec};
@@ -2010,7 +2009,6 @@ public(package) fun respond_ecdsa_future_sign(
         _ => abort EWrongState
     }
 }
-
 public(package) fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedECDSAPartialUserSignatureCap,
@@ -2310,3 +2308,4 @@ fun process_checkpoint_message(
     };
     self.total_messages_processed = self.total_messages_processed + i;
 }
+

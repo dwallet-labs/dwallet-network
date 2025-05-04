@@ -4,30 +4,35 @@ title: Module `(ika_system=0x0)::init`
 
 
 
--  [Struct `Init`](#(ika_system=0x0)_init_Init)
+-  [Struct `INIT`](#(ika_system=0x0)_init_INIT)
 -  [Struct `InitCap`](#(ika_system=0x0)_init_InitCap)
 -  [Constants](#@Constants_0)
 -  [Function `init`](#(ika_system=0x0)_init_init)
 -  [Function `initialize`](#(ika_system=0x0)_init_initialize)
--  [Function `destroy`](#(ika_system=0x0)_init_destroy)
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
 <b>use</b> (ika_system=0x0)::<b>address</b>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/display.md#(ika_system=0x0)_display">display</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1">dwallet_2pc_mpc_secp256k1</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner">dwallet_2pc_mpc_secp256k1_inner</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field">extended_field</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr">multiaddr</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/pending_values.md#(ika_system=0x0)_pending_values">pending_values</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/staking_pool.md#(ika_system=0x0)_staking_pool">staking_pool</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system">system</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1">system_inner_v1</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner">system_inner</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/token_exchange_rate.md#(ika_system=0x0)_token_exchange_rate">token_exchange_rate</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_inner.md#(ika_system=0x0)_validator_inner_v1">validator_inner_v1</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata">validator_metadata</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>;
 <b>use</b> <a href="../std/address.md#std_address">std::address</a>;
 <b>use</b> <a href="../std/ascii.md#std_ascii">std::ascii</a>;
@@ -46,6 +51,7 @@ title: Module `(ika_system=0x0)::init`
 <b>use</b> <a href="../sui/coin.md#sui_coin">sui::coin</a>;
 <b>use</b> <a href="../sui/config.md#sui_config">sui::config</a>;
 <b>use</b> <a href="../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
+<b>use</b> <a href="../sui/display.md#sui_display">sui::display</a>;
 <b>use</b> <a href="../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
 <b>use</b> <a href="../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
@@ -54,10 +60,9 @@ title: Module `(ika_system=0x0)::init`
 <b>use</b> <a href="../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
+<b>use</b> <a href="../sui/object_bag.md#sui_object_bag">sui::object_bag</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../sui/package.md#sui_package">sui::package</a>;
-<b>use</b> <a href="../sui/pay.md#sui_pay">sui::pay</a>;
-<b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
@@ -67,18 +72,18 @@ title: Module `(ika_system=0x0)::init`
 <b>use</b> <a href="../sui/url.md#sui_url">sui::url</a>;
 <b>use</b> <a href="../sui/vec_map.md#sui_vec_map">sui::vec_map</a>;
 <b>use</b> <a href="../sui/vec_set.md#sui_vec_set">sui::vec_set</a>;
-<b>use</b> <a href="../sui/versioned.md#sui_versioned">sui::versioned</a>;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_init_Init"></a>
+<a name="(ika_system=0x0)_init_INIT"></a>
 
-## Struct `Init`
+## Struct `INIT`
+
+The OTW to create <code>Publisher</code> and <code>Display</code> objects.
 
 
-
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_Init">Init</a> <b>has</b> key
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_INIT">INIT</a> <b>has</b> drop
 </code></pre>
 
 
@@ -88,11 +93,6 @@ title: Module `(ika_system=0x0)::init`
 
 
 <dl>
-<dt>
-<code>id: <a href="../sui/object.md#sui_object_UID">sui::object::UID</a></code>
-</dt>
-<dd>
-</dd>
 </dl>
 
 
@@ -120,6 +120,11 @@ Must only be created by <code><a href="../ika_system/init.md#(ika_system=0x0)_in
 </dt>
 <dd>
 </dd>
+<dt>
+<code>publisher: <a href="../sui/package.md#sui_package_Publisher">sui::package::Publisher</a></code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -132,6 +137,7 @@ Must only be created by <code><a href="../ika_system/init.md#(ika_system=0x0)_in
 
 <a name="(ika_system=0x0)_init_EInvalidUpgradeCap"></a>
 
+The provided upgrade cap does not belong to this package.
 
 
 <pre><code><b>const</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_EInvalidUpgradeCap">EInvalidUpgradeCap</a>: u64 = 1;
@@ -148,7 +154,7 @@ This allows the sender to call the function to actually initialize the system
 with the corresponding parameters. Once that function is called, the cap is destroyed.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>(ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>(otw: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_INIT">init::INIT</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -157,11 +163,10 @@ with the corresponding parameters. Once that function is called, the cap is dest
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>(ctx: &<b>mut</b> TxContext) {
+<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>(otw: <a href="../ika_system/init.md#(ika_system=0x0)_init_INIT">INIT</a>, ctx: &<b>mut</b> TxContext) {
     <b>let</b> id = object::new(ctx);
-    <b>let</b> init_cap = <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a> {
-        id,
-    };
+    <b>let</b> publisher = package::claim(otw, ctx);
+    <b>let</b> init_cap = <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a> { id, publisher };
     transfer::transfer(init_cap, ctx.sender());
 }
 </code></pre>
@@ -178,7 +183,7 @@ Function to initialize ika and share the system object.
 This can only be called once, after which the <code><a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a></code> is destroyed.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, validator_low_stake_threshold: u64, validator_very_low_stake_threshold: u64, validator_low_stake_grace_period: u64, reward_slashing_rate: u16, lock_active_committee: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(init_cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, reward_slashing_rate: u16, lock_active_committee: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
 </code></pre>
 
 
@@ -188,7 +193,7 @@ This can only be called once, after which the <code><a href="../ika_system/init.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(
-    cap: <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a>,
+    init_cap: <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a>,
     ika_upgrade_cap: UpgradeCap,
     ika_system_upgrade_cap: UpgradeCap,
     protocol_treasury_cap: TreasuryCap&lt;IKA&gt;,
@@ -203,13 +208,12 @@ This can only be called once, after which the <code><a href="../ika_system/init.
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
-    validator_low_stake_threshold: u64,
-    validator_very_low_stake_threshold: u64,
-    validator_low_stake_grace_period: u64,
     reward_slashing_rate: u16,
     lock_active_committee: bool,
     ctx: &<b>mut</b> TxContext,
 ): ProtocolCap {
+    <b>let</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a> { id, publisher } = init_cap;
+    id.delete();
     <b>let</b> ika_package_id = ika_upgrade_cap.package();
     <b>let</b> ika_system_package_id = ika_system_upgrade_cap.package();
     <b>assert</b>!(
@@ -221,17 +225,16 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         <a href="../ika_system/init.md#(ika_system=0x0)_init_EInvalidUpgradeCap">EInvalidUpgradeCap</a>,
     );
     <b>let</b> upgrade_caps = vector[ika_upgrade_cap, ika_system_upgrade_cap];
-    <b>let</b> validators = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">validator_set::new</a>(ctx);
-    <b>let</b> system_parameters = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_v1_create_system_parameters">system_inner_v1::create_system_parameters</a>(
-        epoch_duration_ms,
-        stake_subsidy_start_epoch,
-        // Validator committee parameters
+    <b>let</b> validators = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">validator_set::new</a>(
         min_validator_count,
         max_validator_count,
         min_validator_joining_stake,
-        validator_low_stake_threshold,
-        validator_very_low_stake_threshold,
-        validator_low_stake_grace_period,
+        ctx,
+    );
+    <b>let</b> system_parameters = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_create_system_parameters">system_inner::create_system_parameters</a>(
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
+        // Validator committee parameters
         reward_slashing_rate,
         lock_active_committee,
         ctx,
@@ -255,33 +258,8 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         authorized_protocol_cap_ids,
         ctx,
     );
-    cap.<a href="../ika_system/init.md#(ika_system=0x0)_init_destroy">destroy</a>();
+    <a href="../ika_system/display.md#(ika_system=0x0)_display_create">display::create</a>(publisher, ctx);
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_init_destroy"></a>
-
-## Function `destroy`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_destroy">destroy</a>(cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_destroy">destroy</a>(cap: <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a>) {
-    <b>let</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a> { id } = cap;
-    id.delete();
 }
 </code></pre>
 

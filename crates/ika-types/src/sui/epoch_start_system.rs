@@ -62,6 +62,8 @@ impl EpochStartSystem {
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
         dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
+        quorum_threshold: u64,
+        validity_threshold: u64,
     ) -> Self {
         Self::V1(EpochStartSystemV1 {
             epoch,
@@ -70,6 +72,8 @@ impl EpochStartSystem {
             epoch_duration_ms,
             active_validators,
             dwallet_network_decryption_keys,
+            quorum_threshold,
+            validity_threshold,
         })
     }
 
@@ -87,6 +91,8 @@ impl EpochStartSystem {
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
                 dwallet_network_decryption_keys: state.dwallet_network_decryption_keys.clone(),
+                quorum_threshold: 0,
+                validity_threshold: 0,
             }),
         }
     }
@@ -100,6 +106,8 @@ pub struct EpochStartSystemV1 {
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
     dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
+    quorum_threshold: u64,
+    validity_threshold: u64,
 }
 
 impl EpochStartSystemV1 {
@@ -115,6 +123,8 @@ impl EpochStartSystemV1 {
             epoch_duration_ms: 1000,
             active_validators: vec![],
             dwallet_network_decryption_keys: HashMap::new(),
+            quorum_threshold: 0,
+            validity_threshold: 0,
         }
     }
 }
@@ -181,6 +191,8 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             self.epoch,
             voting_rights,
             class_groups_public_keys_and_proofs,
+            self.quorum_threshold,
+            self.validity_threshold,
         )
     }
 
@@ -318,9 +330,11 @@ mod test {
             let narwhal_network_key = NetworkKeyPair::generate(&mut thread_rng());
 
             active_validators.push(EpochStartValidatorInfoV1 {
+                validator_id: ObjectID::random(),
                 protocol_pubkey: protocol_key.public().clone(),
                 network_pubkey: narwhal_network_key.public().clone(),
                 consensus_pubkey: narwhal_network_key.public().clone(),
+                class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes::default(),
                 network_address: Multiaddr::empty(),
                 p2p_address: Multiaddr::empty(),
                 consensus_address: Multiaddr::empty(),

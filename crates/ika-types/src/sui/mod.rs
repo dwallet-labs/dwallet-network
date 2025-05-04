@@ -13,17 +13,20 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use sui_types::collection_types::TableVec;
+use sui_types::collection_types::{TableVec, VecMap};
 use sui_types::storage::ObjectStore;
 use sui_types::versioned::Versioned;
 use sui_types::MoveTypeTagTrait;
 use system_inner_v1::SystemInnerV1;
 use system_inner_v1::UpgradeCap;
-use validator_inner_v1::ValidatorInnerV1;
 
 pub mod epoch_start_system;
+pub mod staking;
 pub mod system_inner_v1;
-pub mod validator_inner_v1;
+
+pub use epoch_start_system::*;
+pub use staking::*;
+pub use system_inner_v1::*;
 
 #[cfg(msim)]
 use self::simtest_ika_system_state_inner::{
@@ -45,6 +48,7 @@ pub const DWALLET_COORDINATOR_STRUCT_NAME: &IdentStr = ident_str!("DWalletCoordi
 pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
+pub const VALIDATOR_METADATA_MODULE_NAME: &IdentStr = ident_str!("validator_metadata");
 pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
 pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
     ident_str!("dwallet_2pc_mpc_secp256k1");
@@ -64,6 +68,8 @@ pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
 pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
+
+pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
 pub const CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME: &IdentStr =
     ident_str!("class_groups_public_key_and_proof");
@@ -122,7 +128,6 @@ impl System {
 #[enum_dispatch]
 pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
-    fn computation_price_per_unit_size(&self) -> u64;
     fn protocol_version(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
@@ -137,7 +142,7 @@ pub trait SystemInnerTrait {
         &self,
         committee: &BlsCommittee,
     ) -> Vec<(ObjectID, (AuthorityName, StakeUnit))>;
-    fn validators(&self) -> &ValidatorSetV1;
+    fn validator_set(&self) -> &ValidatorSetV1;
 }
 
 /// [`SystemInner`] provides an abstraction over multiple versions of
@@ -159,7 +164,6 @@ pub enum DWalletCoordinatorInner {
 
 /// This is the fixed type used by init.
 pub type SystemInnerInit = SystemInnerV1;
-pub type ValidatorInnerInit = ValidatorInnerV1;
 
 impl SystemInner {
     /// Always return the version that we will be using for init.
@@ -177,30 +181,6 @@ impl SystemInner {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Element {
     bytes: Vec<u8>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Default)]
-pub struct PoolTokenExchangeRate {
-    ika_amount: u64,
-    pool_token_amount: u64,
-}
-
-impl PoolTokenExchangeRate {
-    /// Rate of the staking pool, pool token amount: Ika amount
-    pub fn rate(&self) -> f64 {
-        if self.ika_amount == 0 {
-            1_f64
-        } else {
-            self.pool_token_amount as f64 / self.ika_amount as f64
-        }
-    }
-
-    pub fn new(ika_amount: u64, pool_token_amount: u64) -> Self {
-        Self {
-            ika_amount,
-            pool_token_amount,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -240,6 +220,58 @@ impl ClassGroupsPublicKeyAndProof {
             name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
             module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct ExtendedField {
+    pub id: ObjectID,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct PendingValues {
+    pub values: VecMap<u64, u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum TokenExchangeRate {
+    Flat,
+    Variable {
+        ika_amount: u128,
+        share_amount: u128,
+    },
+}
+
+impl TokenExchangeRate {
+    /// Rate of the staking pool, share amount: Ika amount
+    pub fn rate(&self) -> f64 {
+        match self {
+            TokenExchangeRate::Flat => 1_f64,
+            TokenExchangeRate::Variable {
+                ika_amount,
+                share_amount,
+            } => {
+                if *ika_amount == 0 {
+                    1_f64
+                } else {
+                    *share_amount as f64 / *ika_amount as f64
+                }
+            }
+        }
+    }
+
+    /// Create a new exchange rate with the given amounts.
+    /// If both amounts are 0 or share_amount <= ika_amount, returns Flat rate.
+    /// Otherwise, returns Variable rate.
+    pub fn new(ika_amount: u64, share_amount: u64) -> Self {
+        if ika_amount == 0 || share_amount == 0 || share_amount <= ika_amount {
+            TokenExchangeRate::Flat
+        } else {
+            TokenExchangeRate::Variable {
+                ika_amount: ika_amount as u128,
+                share_amount: share_amount as u128,
+            }
         }
     }
 }

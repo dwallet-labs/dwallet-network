@@ -12,7 +12,6 @@ pub mod error;
 pub mod committee;
 pub mod crypto;
 pub mod digests;
-pub mod governance;
 pub mod ika_coin;
 pub mod ika_serde;
 pub mod intent;

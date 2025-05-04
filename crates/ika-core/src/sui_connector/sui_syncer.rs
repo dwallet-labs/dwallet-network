@@ -177,6 +177,11 @@ where
                 .map(|(_, (name, stake))| (*name, *stake))
                 .collect(),
             class_group_encryption_keys_and_proofs,
+            system_inner.validator_set.active_committee.quorum_threshold,
+            system_inner
+                .validator_set
+                .active_committee
+                .validity_threshold,
         ))
     }
 

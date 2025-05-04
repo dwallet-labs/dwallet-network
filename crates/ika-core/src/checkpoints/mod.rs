@@ -963,7 +963,10 @@ impl CheckpointBuilder {
         //     }
         // }
         let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq);
-        if epoch != 0 && last_checkpoint_seq.is_none() {
+        // Epoch 0 is where we create the validator set (we are not running Epoch 0).
+        // Once we initialize, the active committee starts in Epoch 1.
+        // So there is no previous committee in epoch 1.
+        if epoch != 1 && last_checkpoint_seq.is_none() {
             last_checkpoint_seq = Some(self.previous_epoch_last_checkpoint_sequence_number);
         }
         info!(

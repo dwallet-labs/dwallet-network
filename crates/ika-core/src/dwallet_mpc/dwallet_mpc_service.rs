@@ -12,7 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
 };
 use ika_config::NodeConfig;
-use ika_sui_client::{SuiBridgeClient, SuiClient};
+use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
@@ -44,7 +44,7 @@ pub struct DWalletMPCService {
     epoch_store: Arc<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     notify: Arc<Notify>,
-    sui_client: Arc<SuiBridgeClient>,
+    sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
@@ -56,7 +56,7 @@ impl DWalletMPCService {
         exit: Receiver<()>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
-        sui_client: Arc<SuiBridgeClient>,
+        sui_client: Arc<SuiConnectorClient>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
     ) -> Self {

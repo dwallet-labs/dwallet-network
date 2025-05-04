@@ -1,8 +1,6 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-/// # Module: dwallet_pricing
-///
 /// This module provides structures and functions for managing pricing information for a dWallet.
 /// Each operation (e.g., DKG, re-encrypt user share, ECDSA presign, etc.) has its own pricing data,
 /// represented by a `PricingPerOperation`. Each `PricingPerOperation` holds three values:
@@ -90,7 +88,7 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
 /// # Returns
 ///
 /// A newly created instance of `DWalletPricing2PcMpcSecp256K1`.
-public(package) fun create_dwallet_pricing_2pc_mpc_secp256k1(
+public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     // DKG First Round Pricing
     dkg_first_round_consensus_validation_ika: u64,
     dkg_first_round_computation_ika: u64,
