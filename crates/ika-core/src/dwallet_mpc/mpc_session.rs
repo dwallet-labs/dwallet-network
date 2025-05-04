@@ -313,7 +313,7 @@ impl DWalletMPCSession {
         });
         if let Some(spare_round_messages) = self
             .spare_messages
-            .get_mut(self.pending_quorum_for_highest_round_number)
+            .get(self.pending_quorum_for_highest_round_number)
         {
             round_messages.extend(spare_round_messages.clone());
         }
