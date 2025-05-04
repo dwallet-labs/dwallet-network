@@ -59,7 +59,7 @@ pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
-    pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
 }
 
@@ -345,10 +345,8 @@ impl DWalletMPCSession {
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input_from_event = &mpc_event_data.public_input;
-        // let mpc_event_data = self.mpc_event_data.clone().unwrap();
-        let base64_mpc_public_input =
-            general_purpose::STANDARD.encode(bcs::to_bytes(&public_input_from_event)?);
-        let base64_mpc_protocol = mpc_event_data.init_protocol_data.to_string();
+        let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
+        let mpc_protocol = mpc_event_data.init_protocol_data.to_string();
 
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
@@ -367,8 +365,11 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                    base64_mpc_public_input,
-                    base64_mpc_protocol,
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
@@ -381,8 +382,11 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input.clone(),
                     (),
-                    base64_mpc_public_input,
-                    base64_mpc_protocol,
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
@@ -418,21 +422,34 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                    base64_mpc_public_input,
-                    base64_mpc_protocol,
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(public_input_from_event)?;
+
+                let decryption_key_shares = mpc_event_data
+                    .decryption_shares
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                    .collect::<HashMap<_, _>>();
+
                 crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    mpc_event_data.decryption_share.clone(),
-                    base64_mpc_public_input,
-                    base64_mpc_protocol,
+                    mpc_event_data.decryption_shares.clone(),
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    Some(&decryption_key_shares),
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
@@ -448,8 +465,9 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
-                base64_mpc_public_input,
-                base64_mpc_protocol,
+                public_input_from_event,
+                mpc_protocol,
+                party_to_authority_map,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 let protocol_public_parameters = mpc_event_data.public_input.clone();
@@ -490,7 +508,7 @@ impl DWalletMPCSession {
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 let public_input = bcs::from_bytes(public_input_from_event)?;
                 let decryption_key_shares = mpc_event_data
-                    .decryption_share
+                    .decryption_shares
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
@@ -507,10 +525,13 @@ impl DWalletMPCSession {
                                 .clone()
                                 .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                         )?,
-                        decryption_key_shares,
+                        decryption_key_shares.clone(),
                     ),
-                    base64_mpc_public_input,
-                    base64_mpc_protocol,
+                    mpc_event_data.private_input.clone(),
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    Some(&decryption_key_shares),
                 )
             }
             _ => {

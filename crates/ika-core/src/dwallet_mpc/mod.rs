@@ -9,6 +9,7 @@ use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp2
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use base64::engine::general_purpose;
 use base64::Engine;
+use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
@@ -395,8 +396,13 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-    base64_mpc_public_input: String,
-    mpc_protocol: String,
+    // This is actually the ClassGroupsKeyPairAndProof, not needed on all cases.
+    encoded_private_input: MPCPrivateInput,
+    encoded_public_input: &MPCPublicInput,
+    mpc_protocol_name: String,
+    party_to_authority_map: HashMap<PartyID, AuthorityName>,
+    // These are the virtual key shares (virtual party->secret key share).
+    decryption_key_shares: Option<&HashMap<PartyID, SecretKeyShareSizedInteger>>,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -413,19 +419,22 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     let filename = format!("session_{}_round_{}.json", session_id, round);
     let path = log_dir.join(&filename);
 
-    let encoded_messages = general_purpose::STANDARD.encode(&bcs::to_bytes(&messages).unwrap());
-    let encoded_threshold =
-        general_purpose::STANDARD.encode(&bcs::to_bytes(access_threshold).unwrap());
+    let encoded_messages = &bcs::to_bytes(&messages).unwrap();
+    let encoded_threshold = &bcs::to_bytes(access_threshold).unwrap();
+    let encoded_decryption_key_shares = &bcs::to_bytes(&decryption_key_shares).unwrap();
 
-    // Serialize to JSON
+    // Serialize to JSON.
     let log = json!({
         "session_id": session_id,
         "round": round,
         "party_id": party_id,
-        "access_threshold_b64": encoded_threshold,
-        "messages_b64": encoded_messages,
-        "public_input_b64": base64_mpc_public_input,
-        "mpc_protocol": mpc_protocol,
+        "access_threshold": encoded_threshold,
+        "messages": encoded_messages,
+        "public_input": encoded_public_input,
+        "mpc_protocol": mpc_protocol_name,
+        "party_to_authority_map": party_to_authority_map,
+        "class_groups_key_pair_and_proof": encoded_private_input,
+        "decryption_key_shares": encoded_decryption_key_shares,
     });
 
     // Create and write the file, propagating any I/O errors
@@ -738,7 +747,7 @@ fn get_log_dir() -> Result<&'static PathBuf, DwalletMPCError> {
     }
 
     // Otherwise, attempt creation
-    const PRIMARY: &str = "/opt/ika/mpcslogs/logs";
+    const PRIMARY: &str = "/opt/ika/db/mpclogs/logs";
     const FALLBACK: &str = "/tmp/mpclogs/logs";
 
     let chosen = if fs::create_dir_all(PRIMARY).is_ok() {

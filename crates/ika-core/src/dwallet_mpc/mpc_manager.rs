@@ -369,7 +369,7 @@ impl DWalletMPCManager {
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
             private_input,
-            decryption_share: match session_info.mpc_round {
+            decryption_shares: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self
                     .get_decryption_key_shares(&init_event.event_data.dwallet_mpc_network_key_id)?,
                 MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
