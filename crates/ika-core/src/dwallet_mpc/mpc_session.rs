@@ -6,7 +6,7 @@ use commitment::CommitmentSizedNumber;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionStatus, SerializedWrappedMPCPublicOutput,
+    MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use itertools::Itertools;
@@ -41,8 +41,6 @@ use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-
-pub const FAILED_SESSION_OUTPUT: [u8; 1] = [1];
 
 /// The result of the check if the session is ready to advance.
 ///
@@ -191,8 +189,9 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let consensus_message =
-                    self.new_dwallet_mpc_output_message(public_output.clone())?;
+                let consensus_message = self.new_dwallet_mpc_output_message(
+                    MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
+                )?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -257,7 +256,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
-                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                    self.new_dwallet_mpc_output_message(MPCSessionPublicOutput::SessionFailed)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -276,8 +275,9 @@ impl DWalletMPCSession {
     /// Errors if the epoch was switched in the middle and was not available.
     fn new_dwallet_mpc_output_message(
         &self,
-        output: Vec<u8>,
+        output: MPCSessionPublicOutput,
     ) -> DwalletMPCResult<ConsensusTransaction> {
+        let output = bcs::to_bytes(&output)?;
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };

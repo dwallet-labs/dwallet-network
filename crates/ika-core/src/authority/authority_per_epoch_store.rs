@@ -56,7 +56,6 @@ use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
-use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::session_info_from_event;
 use crate::dwallet_mpc::{
@@ -66,7 +65,8 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyPublicData,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCSessionPublicOutput,
+    NetworkDecryptionKeyPublicData,
 };
 use group::PartyID;
 use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -1577,7 +1577,13 @@ impl AuthorityPerEpochStore {
             session_id=?session_info.session_id,
             "creating session output checkpoint transaction"
         );
-        let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
+        let (rejected, output) = match bcs::from_bytes(&output)? {
+            MPCSessionPublicOutput::CompletedSuccessfully(output) => {
+                let output = bcs::to_bytes(&output)?;
+                (false, output)
+            }
+            MPCSessionPublicOutput::SessionFailed => (true, vec![]),
+        };
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
                 let SessionType::User { sequence_number } = event_data.session_type else {
@@ -1675,40 +1681,42 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
-                match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = if rejected {
-                            vec![Secp256K1NetworkKeyPublicOutputSlice {
-                                dwallet_network_decryption_key_id: init_event.event_data.dwallet_network_decryption_key_id
-                                    .clone()
-                                    .to_vec(),
-                                public_output: vec![],
-                                is_last: true,
-                                rejected: true,
-                            }]
-                        } else {
-                            Self::slice_network_decryption_key_public_output_into_messages(
-                                &init_event.event_data.dwallet_network_decryption_key_id,
-                                output
-                            )
-                        };
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = if rejected {
+                        vec![Secp256K1NetworkKeyPublicOutputSlice {
+                            dwallet_network_decryption_key_id: init_event
+                                .event_data
+                                .dwallet_network_decryption_key_id
+                                .clone()
+                                .to_vec(),
+                            public_output: vec![],
+                            is_last: true,
+                            rejected: true,
+                        }]
+                    } else {
+                        Self::slice_network_decryption_key_public_output_into_messages(
+                            &init_event.event_data.dwallet_network_decryption_key_id,
+                            output,
+                        )
+                    };
 
-                        let messages: Vec<_> = slices
-                            .into_iter()
-                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                            .collect();
-                        Ok(self.process_consensus_system_bulk_transaction(&messages))
-                    }
-                    DWalletMPCNetworkKeyScheme::Ristretto => {
-                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                    }
+                    let messages: Vec<_> = slices
+                        .into_iter()
+                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .collect();
+                    Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
-            }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                }
+            },
             MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
                 let slices = if rejected {
                     vec![Secp256K1NetworkKeyPublicOutputSlice {
-                        dwallet_network_decryption_key_id: init_event.event_data.dwallet_network_decryption_key_id
+                        dwallet_network_decryption_key_id: init_event
+                            .event_data
+                            .dwallet_network_decryption_key_id
                             .clone()
                             .to_vec(),
                         public_output: vec![],
@@ -1718,7 +1726,7 @@ impl AuthorityPerEpochStore {
                 } else {
                     Self::slice_network_decryption_key_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
-                        output
+                        output,
                     )
                 };
 
