@@ -646,6 +646,13 @@ impl DWalletMPCSession {
         } else {
             match self.spare_messages.get_mut(message.round_number) {
                 None => {
+                    info!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Creating new spare messages map for round",
+                    );
                     for _ in self.spare_messages.len()..=message.round_number {
                         self.spare_messages.push(HashMap::new());
                     }
@@ -653,6 +660,13 @@ impl DWalletMPCSession {
                         .insert(source_party_id, message.message.clone());
                 }
                 Some(spare_messages) => {
+                    info!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Adding message to existing spare messages map",
+                    );
                     spare_messages.insert(source_party_id, message.message.clone());
                 }
             }
