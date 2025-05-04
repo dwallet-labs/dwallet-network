@@ -428,7 +428,7 @@ impl DWalletMPCSession {
                 .last_mut()
                 .expect("attempts should not be empty");
             last_attempt.merge_spare_messages_and_remove_malicious(
-                self.pending_quorum_for_highest_round_number,
+                round_to_restart_from,
                 malicious_actors,
             );
             self.attempts.push(Attempt::new(round_to_restart_from + 1));
