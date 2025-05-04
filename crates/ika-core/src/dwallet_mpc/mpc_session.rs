@@ -694,6 +694,9 @@ impl DWalletMPCSession {
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
+                                .attempts
+                                .last()
+                                .expect("attempts should not be empty")
                                 .serialized_full_messages
                                 .get(self.pending_quorum_for_highest_round_number)
                                 .unwrap_or(&HashMap::new())
