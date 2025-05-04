@@ -24,7 +24,12 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 };
 
 const CONFIG_MAP_NAME = 'ika-chaos-test-config';
-const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValidators: number) => {
+
+async function createConfigMap(
+	kc: KubeConfig,
+	namespaceName: string,
+	numOfValidators: number,
+): Promise<V1ConfigMap> {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	const fullNodeYaml = fs.readFileSync(
 		'/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml',
@@ -69,11 +74,11 @@ const createConfigMap = async (kc: KubeConfig, namespaceName: string, numOfValid
 			...validatorsConfig,
 		},
 	};
-	await k8sApi.createNamespacedConfigMap({
+	return await k8sApi.createNamespacedConfigMap({
 		namespace: namespaceName,
 		body: configMap,
 	});
-};
+}
 
 async function createNetworkServices(
 	kc: KubeConfig,
@@ -257,7 +262,8 @@ describe('run chain chaos testing', () => {
 		const namespaceName = generateUniqueNamespace();
 		console.log(`Creating namespace: ${namespaceName}`);
 		await createNamespace(kc, namespaceName);
-		await createConfigMap(kc, namespaceName, 4);
+		const configMap = await createConfigMap(kc, namespaceName, 4);
+		console.log(`ConfigMap created: ${configMap}`);
 		await createPods(kc, namespaceName, 4);
 		await createNetworkServices(kc, namespaceName, 4);
 	});
