@@ -24,7 +24,7 @@ use sui::vec_set::{VecSet};
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use std::string::String;
-
+use sui::vec_map::VecMap;
 const BASIS_POINT_DENOMINATOR: u16 = 10000;
 
 /// The params of the system.
@@ -85,14 +85,6 @@ public struct SystemEpochInfoEvent has copy, drop {
 public struct SystemProtocolCapVerifiedEvent has copy, drop {
     epoch: u64,
     protocol_cap_id: ID,
-}
-
-/// Event containing system-level checkpoint information, emitted during
-/// the checkpoint submmision message.
-public struct SystemCheckpointInfoEvent has copy, drop {
-    epoch: u64,
-    sequence_number: u64,
-    timestamp_ms: u64,
 }
 
 // Errors
@@ -634,6 +626,47 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     let key_cap = dwallet_2pc_mpc_secp256k1.request_dwallet_network_decryption_key_dkg(ctx);
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
 }
+
+public(package) fun set_supported_curves_to_signature_algorithms(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_secp256k1_inner.set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
+}
+
+public(package) fun set_supported_signature_algorithms_to_hash_schemes(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_secp256k1_inner.set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
+}
+
+public(package) fun set_paused_curves(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    paused_curves: vector<u8>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_secp256k1_inner.set_paused_curves(paused_curves);
+}
+
+public(package) fun set_paused_signature_algorithms(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    paused_signature_algorithms: vector<u8>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_secp256k1_inner.set_paused_signature_algorithms(paused_signature_algorithms);
+}
+
 
 public(package) fun authorize_update_message_by_cap(
     self: &mut SystemInnerV1,

@@ -8,6 +8,7 @@ use sui::balance::Balance;
 use sui::sui::SUI;
 use sui::coin::{Coin};
 use sui::dynamic_field;
+use sui::vec_map::VecMap;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
     Self,
@@ -125,12 +126,14 @@ public fun register_encryption_key(
 public fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinator,
     dwallet_network_decryption_key_id: ID,
+    curve: u8,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
     self.inner_mut().request_dwallet_dkg_first_round(
         dwallet_network_decryption_key_id,
+        curve,
         payment_ika,
         payment_sui,
         ctx
@@ -199,12 +202,14 @@ public fun accept_encrypted_user_share(
 public fun request_ecdsa_presign(
     self: &mut DWalletCoordinator,
     dwallet_id: ID,
+    signature_algorithm: u8,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): ECDSAPresignCap {
     self.inner_mut().request_ecdsa_presign(
         dwallet_id,
+        signature_algorithm,
         payment_ika,
         payment_sui,
         ctx,
@@ -330,4 +335,32 @@ public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordi
 public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
+}
+
+public(package) fun set_supported_curves_to_signature_algorithms(
+    self: &mut DWalletCoordinator,
+    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
+) {
+    self.inner_mut().set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
+}
+
+public(package) fun set_supported_signature_algorithms_to_hash_schemes(
+    self: &mut DWalletCoordinator,
+    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+) {
+    self.inner_mut().set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
+}
+
+public(package) fun set_paused_curves(
+    self: &mut DWalletCoordinator,
+    paused_curves: vector<u8>,
+) {
+    self.inner_mut().set_paused_curves(paused_curves);
+}
+
+public(package) fun set_paused_signature_algorithms(
+    self: &mut DWalletCoordinator,
+    paused_signature_algorithms: vector<u8>,
+) {
+    self.inner_mut().set_paused_signature_algorithms(paused_signature_algorithms);
 }
