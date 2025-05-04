@@ -291,6 +291,7 @@ public enum DWalletState has copy, drop, store {
         first_round_output: vector<u8>,
     },
     AwaitingNetworkVerification,
+    NetworkRejectedFirstRound,
     NetworkRejectedSecondRound,
     Active {
         /// The output of the DKG process.
@@ -433,6 +434,11 @@ public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
 
     /// The decentralized public output data produced by the first round of the DKG process.
     first_round_output: vector<u8>,
+}
+
+public struct RejectedDWalletDKGSFirstRoundEvent has copy, drop, store {
+    /// The identifier of the dWallet created as a result of the DKG process.
+    dwallet_id: ID,
 }
 
 /// Event emitted to initiate the second round of the DKG process.
@@ -807,25 +813,39 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     dwallet_network_decryption_key_id: ID,
     network_public_output: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last_chunk) {
-                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-            } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            }
-        },
-        _ => abort EWrongState
-    };
+    if (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_decryption_key_id,
+            RejectedDWalletDKGSFirstRoundEvent {
+                dwallet_id: object::id(dwallet_network_decryption_key),
+            },
+            ctx,
+        ));
+    } else {
+        dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
+        dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+            DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+                
+                if (is_last_chunk) {
+                        event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                            dwallet_network_decryption_key_id,
+                        });
+                        DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                    } else {
+                        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                    }
+            },
+            _ => abort EWrongState
+        };
+    }
 }
 
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
@@ -833,26 +853,40 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
-    next_reconfiguration_public_output.push_back(public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
-            if (is_last_chunk) {
-                event::emit(CompletedDWalletDecryptionKeyReshareEvent {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
-            } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
-            }
-        },
-        _ => abort EWrongState
-    };
+    if (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_decryption_key_id,
+            RejectedDWalletDKGSecondRoundEvent {
+                dwallet_id: object::id(dwallet_network_decryption_key),
+                public_output,
+            },
+            ctx,
+        ));
+    } else {
+        let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+            next_reconfiguration_public_output.push_back(public_output);
+            dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
+                    if (is_last_chunk) {
+                            event::emit(CompletedDWalletDecryptionKeyReshareEvent {
+                                dwallet_network_decryption_key_id,
+                            });
+                            DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+                        } else {
+                            DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+                        }
+                    },  
+                _ => abort EWrongState
+            };
+    }
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
@@ -939,7 +973,7 @@ fun validate_active_and_get_public_output(
         } => {
             public_output
         },
-        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedSecondRound => abort EDWalletInactive,
+        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedFirstRound | DWalletState::NetworkRejectedSecondRound => abort EDWalletInactive,
     }
 }
 
@@ -1278,6 +1312,7 @@ public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
     first_round_output: vector<u8>,
+    rejected: bool,
     session_sequence_number: u64,
 ) {
     self.remove_session_and_charge<DWalletDKGFirstRoundRequestEvent>(session_sequence_number);
@@ -1285,12 +1320,19 @@ public(package) fun respond_dwallet_dkg_first_round(
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.state = match (dwallet.state) {
         DWalletState::Requested => {
-            event::emit(CompletedDKGFirstdRoundEvent {
+            if (rejected) {
+                event::emit(RejectedDWalletDKGSFirstRoundEvent {
+                    dwallet_id,
+                });
+                DWalletState::NetworkRejectedFirstRound
+            } else {
+                event::emit(CompletedDKGFirstdRoundEvent {
                 dwallet_id,
                 first_round_output,
             });
             DWalletState::AwaitingUser {
                 first_round_output
+            }
             }
         },
         _ => abort EWrongState
@@ -2224,8 +2266,9 @@ fun process_checkpoint_message(
             if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
+                let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, rejected, session_sequence_number);
             } else if (message_data_type == 1) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2297,12 +2340,14 @@ fun process_checkpoint_message(
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             } else if (message_data_type == 7) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             };
         i = i + 1;
     };
