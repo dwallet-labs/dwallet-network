@@ -419,7 +419,23 @@ impl DWalletMPCSession {
                 );
                 return;
             }
-
+            let mut next_attempt = Attempt::new(round_to_restart_from);
+            for _ in 0..=round_to_restart_from {
+                next_attempt.serialized_full_messages.push(HashMap::new());
+            }
+            let last_attempt = self.attempts.last().expect("attempts should not be empty");
+            next_attempt.serialized_full_messages[round_to_restart_from] = last_attempt
+                .serialized_full_messages
+                .get(round_to_restart_from)
+                .expect("at least one message should be present for the round to restart from")
+                .clone();
+            if let Some(last_attempt_spared_messages) =
+                last_attempt.spare_messages.get(round_to_restart_from)
+            {
+                next_attempt.serialized_full_messages[round_to_restart_from]
+                    .extend(last_attempt_spared_messages.clone());
+            }
+            self.attempts.push(next_attempt);
         }
     }
 
