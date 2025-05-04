@@ -431,6 +431,7 @@ public fun request_lock_epoch_sessions(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock
 ) {
     let inner = self.inner_mut();
+    inner.validator_set().next_epoch_active_committee().is_none();
     assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
     dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
 }
