@@ -75,6 +75,8 @@ pub(super) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+
+    pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -110,6 +112,7 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
+            spare_messages: vec![],
         }
     }
 
@@ -566,54 +569,69 @@ impl DWalletMPCSession {
 
         let authority_name = self.epoch_store()?.name;
 
-        match self.serialized_full_messages.get_mut(message.round_number) {
-            Some(party_to_msg) => {
-                if party_to_msg.contains_key(&source_party_id) {
+        if self.pending_quorum_for_highest_round_number <= message.round_number {
+            match self.serialized_full_messages.get_mut(message.round_number) {
+                Some(party_to_msg) => {
+                    if party_to_msg.contains_key(&source_party_id) {
+                        error!(
+                            session_id=?message.session_id,
+                            from_authority=?message.authority,
+                            receiving_authority=?authority_name,
+                            crypto_round_number=?message.round_number,
+                            "Received a duplicate message from authority",
+                        );
+                        // Duplicate.
+                        // This should never happen, as the consensus uniqueness key contains only the origin authority,
+                        // session ID and MPC round.
+                        return Ok(());
+                    }
+                    info!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Inserting a message into the party to message maps",
+                    );
+                    party_to_msg.insert(source_party_id, message.message.clone());
+                }
+                None if message.round_number == current_round => {
+                    info!(
+                        session_id=?message.session_id,
+                        from_authority=?message.authority,
+                        receiving_authority=?authority_name,
+                        crypto_round_number=?message.round_number,
+                        "Store message for the current round",
+                    );
+                    let mut map = HashMap::new();
+                    map.insert(source_party_id, message.message.clone());
+                    self.serialized_full_messages.push(map);
+                }
+                // Received a message for a future round (above the current round).
+                // If it happens, there is an issue with the consensus.
+                None => {
                     error!(
                         session_id=?message.session_id,
                         from_authority=?message.authority,
                         receiving_authority=?authority_name,
                         crypto_round_number=?message.round_number,
-                        "Received a duplicate message from authority",
+                        "Received a message for two or more rounds above known round for session",
                     );
-                    // Duplicate.
-                    // This should never happen, as the consensus uniqueness key contains only the origin authority,
-                    // session ID and MPC round.
-                    return Ok(());
+                    // Unexpected round number; rounds should grow sequentially.
+                    return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
                 }
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    receiving_authority=?authority_name,
-                    crypto_round_number=?message.round_number,
-                    "Inserting a message into the party to message maps",
-                );
-                party_to_msg.insert(source_party_id, message.message.clone());
             }
-            None if message.round_number == current_round => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    receiving_authority=?authority_name,
-                    crypto_round_number=?message.round_number,
-                    "Store message for the current round",
-                );
-                let mut map = HashMap::new();
-                map.insert(source_party_id, message.message.clone());
-                self.serialized_full_messages.push(map);
-            }
-            // Received a message for a future round (above the current round).
-            // If it happens, there is an issue with the consensus.
-            None => {
-                error!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    receiving_authority=?authority_name,
-                    crypto_round_number=?message.round_number,
-                    "Received a message for two or more rounds above known round for session",
-                );
-                // Unexpected round number; rounds should grow sequentially.
-                return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+        } else {
+            match self.spare_messages.get_mut(message.round_number) {
+                None => {
+                    for _ in self.spare_messages.len()..=message.round_number {
+                        self.spare_messages.push(HashMap::new());
+                    }
+                    self.spare_messages[message.round_number]
+                        .insert(source_party_id, message.message.clone());
+                }
+                Some(spare_messages) => {
+                    spare_messages.insert(source_party_id, message.message.clone());
+                }
             }
         }
         Ok(())
