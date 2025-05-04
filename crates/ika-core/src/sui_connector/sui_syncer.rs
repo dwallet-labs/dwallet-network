@@ -246,6 +246,12 @@ where
                         all_network_keys_data.insert(key_id.clone(), key);
                         network_keys_cache.insert((key_id, system_inner.epoch()));
                     }
+                    Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {
+                        // This is expected if the key is not yet available.
+                        // We can skip this key and continue to the next one.
+                        debug!(key=?key_id, "Waiting for network decryption key data");
+                        continue 'sync_network_keys;
+                    }
                     Err(err) => {
                         error!(
                             key=?key_id,
