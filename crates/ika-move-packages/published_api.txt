@@ -180,346 +180,367 @@ gas_fee_reimbursement_sui
 	0x0::dwallet_pricing
 DWalletCoordinatorInner
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletSessionEventKey
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletSession
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCap
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDecryptionKeyCap
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDecryptionKey
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptionKey
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedUserSecretKeyShare
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-UnverifiedECDSAPartialUserSignatureCap
+	0x0::dwallet_2pc_mpc_coordinator_inner
+UnverifiedPartialUserSignatureCap
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-VerifiedECDSAPartialUserSignatureCap
+	0x0::dwallet_2pc_mpc_coordinator_inner
+VerifiedPartialUserSignatureCap
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPartialUserSignature
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PartialUserSignature
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWallet
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPresignCap
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PresignCap
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPresign
+	0x0::dwallet_2pc_mpc_coordinator_inner
+Presign
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSASign
+	0x0::dwallet_2pc_mpc_coordinator_inner
+Sign
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CreatedEncryptionKeyEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDKGDecryptionKeyRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDecryptionKeyReshareRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedDWalletDecryptionKeyReshareEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedDWalletNetworkDKGDecryptionKeyEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDKGFirstRoundRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedDKGFirstdRoundEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDKGSecondRoundRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedDWalletDKGSecondRoundEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedDWalletDKGSecondRoundEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedShareVerificationRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedEncryptedShareVerificationEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedEncryptedShareVerificationEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 AcceptReEncryptedUserShareEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPresignRequestEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PresignRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedECDSAPresignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedPresignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedECDSAPresignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedPresignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSASignRequestEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+SignRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAFutureSignRequestEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+FutureSignRequestEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedECDSAFutureSignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedFutureSignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedECDSAFutureSignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedFutureSignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedECDSASignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedSignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-RejectedECDSASignEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedSignEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-SystemCheckpointInfoEvent
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletCheckpointInfoEvent
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 MessageApproval
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDecryptionKeyState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedUserSecretKeyShareState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPartialUserSignatureState
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PartialUserSignatureState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSAPresignState
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PresignState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-ECDSASignState
+	0x0::dwallet_2pc_mpc_coordinator_inner
+SignState
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 SessionType
 	public enum
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 lock_last_active_session_sequence_number
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 create_dwallet_coordinator_inner
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_network_decryption_key_dkg
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_network_decryption_key_reconfiguration
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 advance_epoch_dwallet_network_decryption_key
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 emit_start_reshare_event
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_network_decryption_key
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 advance_epoch
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_dwallet
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_dwallet_mut
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 validate_active_and_get_public_output
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 charge_and_create_current_epoch_dwallet_event
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 create_system_dwallet_event
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_and_public_output
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_and_public_output_mut
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_encryption_key
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 register_encryption_key
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-create_message_approval
-	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 approve_message
-	public fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-is_supported_hash_scheme
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_dkg_first_round
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 update_last_session_to_complete_in_current_epoch
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 all_current_epoch_sessions_completed
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 remove_session_and_charge
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_dkg_first_round
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_dkg_second_round
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_dkg_second_round
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_re_encrypt_user_share_for
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_re_encrypt_user_share_for
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 accept_encrypted_user_share
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_ecdsa_presign
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_presign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_ecdsa_presign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 is_ecdsa_presign_valid
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 emit_ecdsa_sign_event
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_ecdsa_sign
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_sign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_ecdsa_future_sign
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_future_sign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_ecdsa_future_sign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 verify_ecdsa_partial_user_signature_cap
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
-request_ecdsa_sign_with_partial_user_signatures
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_sign_with_partial_user_signatures
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 compare_ecdsa_partial_user_signatures_with_approvals
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_ecdsa_sign
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 process_checkpoint_message_by_quorum
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
 process_checkpoint_message
 	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_supported_curves_to_signature_algorithms
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_supported_signature_algorithms_to_hash_schemes
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_paused_curves
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_paused_signature_algorithms
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCoordinator
 	public struct
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 create_dwallet_coordinator
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 share_dwallet_coordinator
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 process_checkpoint_message_by_quorum
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_network_decryption_key_dkg
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 advance_epoch
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 get_active_encryption_key
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 register_encryption_key
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
+approve_message
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_first_round
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_second_round
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 request_re_encrypt_user_share_for
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 accept_encrypted_user_share
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
-request_ecdsa_presign
+	0x0::dwallet_2pc_mpc_coordinator
+request_presign
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 is_ecdsa_presign_valid
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
-request_ecdsa_sign
+	0x0::dwallet_2pc_mpc_coordinator
+request_sign
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
-request_ecdsa_future_sign
+	0x0::dwallet_2pc_mpc_coordinator
+request_future_sign
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 verify_ecdsa_partial_user_signature_cap
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
-request_ecdsa_sign_with_partial_user_signatures
+	0x0::dwallet_2pc_mpc_coordinator
+request_sign_with_partial_user_signatures
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 compare_ecdsa_partial_user_signatures_with_approvals
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 migrate
 	public fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 inner_mut
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
 inner
 	public(package) fun
-	0x0::dwallet_2pc_mpc_secp256k1
+	0x0::dwallet_2pc_mpc_coordinator
+set_supported_curves_to_signature_algorithms
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator
+set_supported_signature_algorithms_to_hash_schemes
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator
+set_paused_curves
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator
+set_paused_signature_algorithms
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator
 ExtendedField
 	public struct
 	0x0::extended_field
@@ -1189,9 +1210,6 @@ SystemEpochInfoEvent
 SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner
-SystemCheckpointInfoEvent
-	public struct
-	0x0::system_inner
 create
 	public(package) fun
 	0x0::system_inner
@@ -1306,6 +1324,18 @@ verify_cap
 request_dwallet_network_decryption_key_dkg_by_cap
 	public(package) fun
 	0x0::system_inner
+set_supported_curves_to_signature_algorithms
+	public(package) fun
+	0x0::system_inner
+set_supported_signature_algorithms_to_hash_schemes
+	public(package) fun
+	0x0::system_inner
+set_paused_curves
+	public(package) fun
+	0x0::system_inner
+set_paused_signature_algorithms
+	public(package) fun
+	0x0::system_inner
 authorize_update_message_by_cap
 	public(package) fun
 	0x0::system_inner
@@ -1406,6 +1436,18 @@ request_advance_epoch
 	public fun
 	0x0::system
 request_dwallet_network_decryption_key_dkg_by_cap
+	public fun
+	0x0::system
+set_supported_curves_to_signature_algorithms
+	public fun
+	0x0::system
+set_supported_signature_algorithms_to_hash_schemes
+	public fun
+	0x0::system
+set_paused_curves
+	public fun
+	0x0::system
+set_paused_signature_algorithms
 	public fun
 	0x0::system
 authorize_update_message_by_cap

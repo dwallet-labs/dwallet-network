@@ -39,7 +39,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, StartPresignFirstRoundEvent,
+    MaliciousReport, SessionInfo, SessionType, PresignRequestEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;

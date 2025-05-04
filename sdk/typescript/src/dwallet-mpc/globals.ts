@@ -3,8 +3,8 @@
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
+export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
+export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -82,8 +82,8 @@ interface IKASystemStateInner {
 	fields: {
 		value: {
 			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_2pc_mpc_secp256k1_network_decryption_keys: Array<any>;
+				dwallet_2pc_mpc_coordinator_id: string;
+				dwallet_2pc_mpc_coordinator_network_decryption_keys: Array<any>;
 			};
 		};
 	};
@@ -147,8 +147,8 @@ export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_decryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
 
@@ -167,7 +167,7 @@ export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
 		throw new Error('Invalid inner system state');
 	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
@@ -373,7 +373,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 
 	const network_decryption_keys =
 		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
+			.dwallet_2pc_mpc_coordinator_network_decryption_keys;
 	const decryptionKeyID =
 		network_decryption_keys[network_decryption_keys.length - 1]?.fields
 			?.dwallet_network_decryption_key_id;

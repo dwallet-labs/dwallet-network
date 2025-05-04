@@ -45,7 +45,7 @@ pub mod sui_syncer;
 
 pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
 pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_secp256k1_inner");
+    ident_str!("dwallet_2pc_mpc_coordinator_inner");
 
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,

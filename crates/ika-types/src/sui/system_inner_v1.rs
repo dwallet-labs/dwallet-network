@@ -84,8 +84,8 @@ pub struct SystemInnerV1 {
     pub total_messages_processed: u64,
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
-    pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
-    pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
+    pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
+    pub dwallet_2pc_mpc_coordinator_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -136,6 +136,10 @@ pub struct DWalletCoordinatorInnerV1 {
     pub total_messages_processed: u64,
     pub last_processed_checkpoint_sequence_number: Option<u64>,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
+    pub supported_curves_to_signature_algorithms: VecMap<u8, Vec<u8>>,
+    pub supported_signature_algorithms_to_hash_schemes: VecMap<u8, Vec<u8>>,
+    pub paused_curves: Vec<u8>,
+    pub paused_signature_algorithms: Vec<u8>,
     pub extra_fields: Bag,
 }
 
@@ -182,14 +186,14 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.parameters.epoch_duration_ms
     }
 
-    fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID> {
-        self.dwallet_2pc_mpc_secp256k1_id
+    fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID> {
+        self.dwallet_2pc_mpc_coordinator_id
     }
 
-    fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
+    fn dwallet_2pc_mpc_coordinator_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap> {
-        &self.dwallet_2pc_mpc_secp256k1_network_decryption_keys
+        &self.dwallet_2pc_mpc_coordinator_network_decryption_keys
     }
 
     fn validator_set(&self) -> &ValidatorSetV1 {
@@ -254,7 +258,7 @@ pub struct ValidatorOperationCapV1 {
     pub validator_id: ObjectID,
 }
 
-/// Rust version of the Move ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap type
+/// Rust version of the Move ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletNetworkDecryptionKeyCap {
     pub id: ObjectID,

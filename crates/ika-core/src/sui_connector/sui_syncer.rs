@@ -207,7 +207,7 @@ where
             let system_inner = match system_inner {
                 SystemInner::V1(system_inner) => system_inner,
             };
-            let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
+            let current_keys = system_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache
                     .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))

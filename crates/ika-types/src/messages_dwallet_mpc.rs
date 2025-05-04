@@ -4,13 +4,13 @@ use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    DWALLET_MPC_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    DWALLET_MPC_EVENT_STRUCT_NAME, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    START_NETWORK_DKG_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
+    SIGN_REQUEST_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
-    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
+    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME,
 };
 use group::PartyID;
 use move_core_types::account_address::AccountAddress;
@@ -34,19 +34,19 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// The first round of the DKG protocol.
-    DKGFirst(DWalletMPCSuiEvent<StartDKGFirstRoundEvent>),
+    DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
-    DKGSecond(DWalletMPCSuiEvent<StartDKGSecondRoundEvent>),
+    DKGSecond(DWalletMPCSuiEvent<DWalletDKGSecondRoundRequestEvent>),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
     /// and the dWallets' network key version.
-    Presign(DWalletMPCSuiEvent<StartPresignFirstRoundEvent>),
+    Presign(DWalletMPCSuiEvent<PresignRequestEvent>),
     /// The first and only round of the Sign protocol.
     /// Contains all the data needed to sign the message.
-    Sign(DWalletMPCSuiEvent<StartSignEvent>),
+    Sign(DWalletMPCSuiEvent<SignRequestEvent>),
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.
@@ -60,7 +60,7 @@ pub enum MPCProtocolInitData {
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
-    PartialSignatureVerification(DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent>),
+    PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
 
@@ -267,33 +267,35 @@ impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
     }
 }
 
-/// Rust representation of the Move `StartPartialSignaturesVerificationEvent` Event.
+/// Rust representation of the Move `FutureSignRequestEvent` Event.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartPartialSignaturesVerificationEvent {
+pub struct FutureSignRequestEvent {
     pub dwallet_id: ObjectID,
     pub partial_centralized_signed_message_id: ObjectID,
     pub message: Vec<u8>,
     pub presign: Vec<u8>,
     pub dkg_output: Vec<u8>,
+    pub curve: u8,
+    pub signature_algorithm: u8,
     pub hash_scheme: u8,
     pub message_centralized_signature: Vec<u8>,
     pub dwallet_mpc_network_key_id: ObjectID,
 }
 
-impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent {
+impl DWalletMPCEventTrait for FutureSignRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: ident_str!("ECDSAFutureSignRequestEvent").to_owned(),
+            name: ident_str!("FutureSignRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 }
 
-/// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGSecondRoundRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartDKGSecondRoundEvent {
+pub struct DWalletDKGSecondRoundRequestEvent {
     pub dwallet_id: ObjectID,
     /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
@@ -313,16 +315,17 @@ pub struct StartDKGSecondRoundEvent {
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
     pub dwallet_mpc_network_key_id: ObjectID,
+    pub curve: u8,
 }
 
-impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
+impl DWalletMPCEventTrait for DWalletDKGSecondRoundRequestEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
+    /// It is used to detect [`DWalletDKGSecondRoundRequestEvent`] events from the chain
     /// and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            name: DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -365,25 +368,27 @@ impl MaliciousReport {
     }
 }
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::PresignRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartPresignFirstRoundEvent {
+pub struct PresignRequestEvent {
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ObjectID,
     pub presign_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
     pub dwallet_network_decryption_key_id: ObjectID,
+    pub curve: u8,
+    pub signature_algorithm: u8,
 }
 
-impl DWalletMPCEventTrait for StartPresignFirstRoundEvent {
+impl DWalletMPCEventTrait for PresignRequestEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartPresignFirstRoundEvent`] events
+    /// It is used to detect [`PresignRequestEvent`] events
     /// from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            name: PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -402,22 +407,23 @@ pub struct IkaPackagesConfig {
 
 impl sui_config::Config for IkaPackagesConfig {}
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet::StartDKGFirstRoundEvent`.
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGFirstRoundRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartDKGFirstRoundEvent {
+pub struct DWalletDKGFirstRoundRequestEvent {
     pub dwallet_id: ObjectID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
+    pub curve: u8,
 }
 
-impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
+impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            name: DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -425,14 +431,16 @@ impl DWalletMPCEventTrait for StartDKGFirstRoundEvent {
 }
 
 /// Represents the Rust version of the Move
-/// struct `ika_system::dwallet::StartSignEvent`.
+/// struct `ika_system::dwallet_2pc_mpc_coordinator_inner::SignRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartSignEvent {
+pub struct SignRequestEvent {
     pub sign_id: ObjectID,
     /// The `DWallet` object's ObjectID associated with the DKG output.
     pub dwallet_id: ObjectID,
     /// The public output of the decentralized party in the dWallet DKG process.
     pub dwallet_decentralized_public_output: Vec<u8>,
+    pub curve: u8,
+    pub signature_algorithm: u8,
     pub hash_scheme: u8,
     /// Hashed messages to Sign.
     pub message: Vec<u8>,
@@ -450,21 +458,21 @@ pub struct StartSignEvent {
     pub is_future_sign: bool,
 }
 
-impl DWalletMPCEventTrait for StartSignEvent {
+impl DWalletMPCEventTrait for SignRequestEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignEvent`]
+    /// It is used to detect [`SignRequestEvent`]
     /// events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: START_SIGN_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            name: SIGN_REQUEST_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 }
 
-/// Rust version of the Move [`ika_system::dwallet_network_key::StartNetworkDKGEvent`] type.
+/// Rust version of the Move [`ika_system::dwallet_2pc_mpc_coordinator_inner::StartNetworkDKGEvent`] type.
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartNetworkDKGEvent {
@@ -485,7 +493,7 @@ impl DWalletMPCEventTrait for StartNetworkDKGEvent {
     }
 }
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKey`.
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKey`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DWalletNetworkDecryptionKey {
     pub id: ObjectID,
@@ -508,7 +516,7 @@ pub struct DWalletNetworkDecryptionKeyData {
     pub state: DWalletNetworkDecryptionKeyState,
 }
 
-/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyShares`.
+/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyShares`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DWalletNetworkDecryptionKeyState {
     AwaitingNetworkDKG,

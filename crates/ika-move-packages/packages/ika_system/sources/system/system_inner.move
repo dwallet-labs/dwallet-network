@@ -13,8 +13,8 @@ use ika_system::bls_committee::{BlsCommittee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
+use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -64,8 +64,8 @@ public struct SystemInnerV1 has store {
     /// List of authorized protocol cap ids.
     authorized_protocol_cap_ids: vector<ID>, 
     // TODO: maybe change that later
-    dwallet_2pc_mpc_secp256k1_id: Option<ID>,
-    dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
+    dwallet_2pc_mpc_coordinator_id: Option<ID>,
+    dwallet_2pc_mpc_coordinator_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -129,20 +129,20 @@ public(package) fun create(
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
-        dwallet_2pc_mpc_secp256k1_id: option::none(),
-        dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
+        dwallet_2pc_mpc_coordinator_id: option::none(),
+        dwallet_2pc_mpc_coordinator_network_decryption_keys: vector[],
         extra_fields: bag::new(ctx),
     };
     system_state
 }
 
 public(package) fun advance_network_keys(
-    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinatorInner
+    self: &SystemInnerV1, dwallet_2pc_mpc_coordinator: &mut DWalletCoordinatorInner
 ): Balance<IKA> {
     let mut total_reward = sui::balance::zero<IKA>();
 
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
-        total_reward.join(dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
+    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| {
+        total_reward.join(dwallet_2pc_mpc_coordinator.advance_epoch_dwallet_network_decryption_key(cap));
     });
     total_reward
 }
@@ -189,13 +189,13 @@ public(package) fun initialize(
         self.parameters.lock_active_committee,
     );
     let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    dwallet_2pc_mpc_secp256k1_inner.lock_last_active_session_sequence_number();
-    self.advance_epoch(dwallet_2pc_mpc_secp256k1_inner, clock, ctx);
+    let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    dwallet_2pc_mpc_coordinator_inner.lock_last_active_session_sequence_number();
+    self.advance_epoch(dwallet_2pc_mpc_coordinator_inner, clock, ctx);
 
-    self.dwallet_2pc_mpc_secp256k1_id.fill(object::id(&dwallet_2pc_mpc_secp256k1));
-    dwallet_2pc_mpc_secp256k1.share_dwallet_coordinator();
+    self.dwallet_2pc_mpc_coordinator_id.fill(object::id(&dwallet_2pc_mpc_coordinator));
+    dwallet_2pc_mpc_coordinator.share_dwallet_coordinator();
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
@@ -547,7 +547,7 @@ public(package) fun process_mid_epoch(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
@@ -618,53 +618,53 @@ fun verify_cap(
 
 public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self: &mut SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_secp256k1.request_dwallet_network_decryption_key_dkg(ctx);
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
+    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_decryption_key_dkg(ctx);
+    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.push_back(key_cap);
 }
 
 public(package) fun set_supported_curves_to_signature_algorithms(
     self: &SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_secp256k1_inner.set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
+    dwallet_2pc_mpc_coordinator_inner.set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
 }
 
 public(package) fun set_supported_signature_algorithms_to_hash_schemes(
     self: &SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_secp256k1_inner.set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
+    dwallet_2pc_mpc_coordinator_inner.set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
 }
 
 public(package) fun set_paused_curves(
     self: &SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     paused_curves: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_secp256k1_inner.set_paused_curves(paused_curves);
+    dwallet_2pc_mpc_coordinator_inner.set_paused_curves(paused_curves);
 }
 
 public(package) fun set_paused_signature_algorithms(
     self: &SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1_inner: &mut DWalletCoordinatorInner,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     paused_signature_algorithms: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_secp256k1_inner.set_paused_signature_algorithms(paused_signature_algorithms);
+    dwallet_2pc_mpc_coordinator_inner.set_paused_signature_algorithms(paused_signature_algorithms);
 }
 
 

@@ -54,7 +54,7 @@ use ika_system::validator_set::ValidatorSet;
 use ika_system::bls_committee::BlsCommittee;
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{DWalletCoordinator};
+use ika_system::dwallet_2pc_mpc_coordinator::{DWalletCoordinator};
 use ika_system::validator_metadata::ValidatorMetadata;
 use sui::coin::Coin;
 use sui::dynamic_field;
@@ -445,56 +445,56 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
 
 public fun request_dwallet_network_decryption_key_dkg_by_cap(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_secp256k1, cap, ctx);
+    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
 }
 
 public fun set_supported_curves_to_signature_algorithms(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
     protocol_cap: &ProtocolCap,
 ) {
     let self = self.inner_mut();
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    self.set_supported_curves_to_signature_algorithms(dwallet_2pc_mpc_secp256k1_inner, supported_curves_to_signature_algorithms, protocol_cap);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.set_supported_curves_to_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, supported_curves_to_signature_algorithms, protocol_cap);
 }
 
 public fun set_supported_signature_algorithms_to_hash_schemes(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
     protocol_cap: &ProtocolCap,
 ) {
     let self = self.inner_mut();
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    self.set_supported_signature_algorithms_to_hash_schemes(dwallet_2pc_mpc_secp256k1_inner, supported_signature_algorithms_to_hash_schemes, protocol_cap);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.set_supported_signature_algorithms_to_hash_schemes(dwallet_2pc_mpc_coordinator_inner, supported_signature_algorithms_to_hash_schemes, protocol_cap);
 }
 
 public fun set_paused_curves(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     paused_curves: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     let self = self.inner_mut();
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    self.set_paused_curves(dwallet_2pc_mpc_secp256k1_inner, paused_curves, protocol_cap);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.set_paused_curves(dwallet_2pc_mpc_coordinator_inner, paused_curves, protocol_cap);
 }
 
 public fun set_paused_signature_algorithms(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     paused_signature_algorithms: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     let self = self.inner_mut();
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    self.set_paused_signature_algorithms(dwallet_2pc_mpc_secp256k1_inner, paused_signature_algorithms, protocol_cap);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.set_paused_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_signature_algorithms, protocol_cap);
 }
 
 // === Upgrades ===
