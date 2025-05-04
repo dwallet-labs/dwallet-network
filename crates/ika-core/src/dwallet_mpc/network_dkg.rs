@@ -255,6 +255,8 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
+    base64_mpc_public_input: String,
+    base64_mpc_session_type: String,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -266,6 +268,8 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
+            base64_mpc_public_input,
+            base64_mpc_session_type,
         ),
         DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
@@ -274,6 +278,8 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
+            base64_mpc_public_input,
+            base64_mpc_session_type,
         ),
     }?;
     Ok(res)

@@ -7,6 +7,8 @@ use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
+use base64::engine::general_purpose;
+use base64::Engine;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
@@ -30,11 +32,16 @@ use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
+use serde_json::json;
 use sha3::digest::FixedOutput as Sha3FixedOutput;
 use sha3::Digest as Sha3Digest;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+use std::sync::{Arc, OnceLock};
 use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
@@ -55,6 +62,7 @@ mod reshare;
 pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
+static LOG_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 pub(crate) fn authority_name_to_party_id_from_committee(
     committee: &Committee,
@@ -225,13 +233,15 @@ fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(DKGSecondParty::generate_public_input(
-        protocol_public_parameters,
-        deserialized_event.first_round_output.clone(),
-        deserialized_event
-            .centralized_public_key_share_and_proof
-            .clone(),
-    )?)
+    Ok(
+        <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
+            deserialized_event.first_round_output.clone(),
+            deserialized_event
+                .centralized_public_key_share_and_proof
+                .clone(),
+        )?,
+    )
 }
 
 fn dkg_second_party_session_info(
@@ -385,6 +395,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
+    base64_mpc_public_input: String,
+    mpc_protocol: String,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -392,6 +404,45 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         messages,
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
+
+    // Determine round number
+    let round = messages.len();
+
+    // Get (and initialize once) the log directory
+    let log_dir = get_log_dir()?;
+    let filename = format!("session_{}_round_{}.json", session_id, round);
+    let path = log_dir.join(&filename);
+
+    let encoded_messages = general_purpose::STANDARD.encode(&bcs::to_bytes(&messages).unwrap());
+    let encoded_threshold =
+        general_purpose::STANDARD.encode(&bcs::to_bytes(access_threshold).unwrap());
+
+    // Serialize to JSON
+    let log = json!({
+        "session_id": session_id,
+        "round": round,
+        "party_id": party_id,
+        "access_threshold_b64": encoded_threshold,
+        "messages_b64": encoded_messages,
+        "public_input_b64": base64_mpc_public_input,
+        "mpc_protocol": mpc_protocol,
+    });
+
+    // Create and write the file, propagating any I/O errors
+    let mut file = File::create(&path).map_err(|e| {
+        DwalletMPCError::TwoPCMPCError(format!(
+            "Failed to create log file {}: {}",
+            path.display(),
+            e
+        ))
+    })?;
+    file.write_all(log.to_string().as_bytes()).map_err(|e| {
+        DwalletMPCError::TwoPCMPCError(format!(
+            "Failed to write to the log file {}: {}",
+            path.display(),
+            e
+        ))
+    })?;
 
     let res = match P::advance(
         session_id,
@@ -679,4 +730,36 @@ pub(crate) async fn session_input_from_event(
 // TODO (#683): Parse the network key version from the network key object ID
 pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
     0
+}
+
+fn get_log_dir() -> Result<&'static PathBuf, DwalletMPCError> {
+    if let Some(dir) = LOG_DIR.get() {
+        return Ok(dir);
+    }
+
+    // Otherwise, attempt creation
+    const PRIMARY: &str = "/opt/ika/mpcslogs/logs";
+    const FALLBACK: &str = "/tmp/mpclogs/logs";
+
+    let chosen = if fs::create_dir_all(PRIMARY).is_ok() {
+        PRIMARY
+    } else {
+        // Primary failed → try fallback (propagate error if that fails).
+        fs::create_dir_all(FALLBACK).map_err(|e| {
+            DwalletMPCError::TwoPCMPCError(format!(
+                "Failed to create a fallback log directory {}: {}",
+                FALLBACK, e
+            ))
+        })?;
+        FALLBACK
+    };
+
+    // Insert into our OnceLock (this only ever succeeds once).
+    let pathbuf = PathBuf::from(chosen);
+    LOG_DIR.set(pathbuf).map_err(|_| {
+        DwalletMPCError::TwoPCMPCError("failed to set a global log directory".into())
+    })?;
+
+    // Safe to unwrap — we just set it
+    Ok(LOG_DIR.get().unwrap())
 }
