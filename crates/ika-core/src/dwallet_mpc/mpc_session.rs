@@ -427,7 +427,10 @@ impl DWalletMPCSession {
             for _ in 0..=round_to_restart_from {
                 next_attempt.serialized_full_messages.push(HashMap::new());
             }
-            let last_attempt = self.attempts.last_mut().expect("attempts should not be empty");
+            let last_attempt = self
+                .attempts
+                .last_mut()
+                .expect("attempts should not be empty");
             last_attempt.merge_spare_messages_and_remove_malicious(
                 self.pending_quorum_for_highest_round_number,
                 malicious_actors,
@@ -485,12 +488,8 @@ impl DWalletMPCSession {
                 let attempt = &attempts[i];
                 let next_attempt = &attempts[i + 1];
                 messages.extend(
-                    attempt
-                        .serialized_full_messages
-                        .clone()
-                        .into_iter()
-                        .skip(last_processed_round)
-                        .take(next_attempt.start_round)
+                    attempt.serialized_full_messages.clone().into_iter()
+                        [last_processed_round..next_attempt.start_round]
                         .collect::<Vec<_>>()
                         .clone(),
                 );
@@ -498,11 +497,8 @@ impl DWalletMPCSession {
             } else {
                 // no next attempt
                 messages.extend(
-                    attempts[i]
-                        .serialized_full_messages
-                        .clone()
-                        .into_iter()
-                        .skip(last_processed_round)
+                    attempts[i].serialized_full_messages.clone().into_iter()
+                        [last_processed_round..]
                         .collect::<Vec<_>>(),
                 );
             }
