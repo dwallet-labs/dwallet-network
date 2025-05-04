@@ -148,7 +148,7 @@ impl Attempt {
         }
     }
 
-    pub(crate) fn retry_last_round(
+    pub(crate) fn merge_spare_messages_and_remove_malicious(
         &mut self,
         pending_quorum_for_highest_round_number: usize,
         malicious_actors: &HashSet<PartyID>,
@@ -409,7 +409,7 @@ impl DWalletMPCSession {
                 .attempts
                 .last_mut()
                 .expect("attempts should not be empty");
-            current_attempt.retry_last_round(
+            current_attempt.merge_spare_messages_and_remove_malicious(
                 self.pending_quorum_for_highest_round_number,
                 malicious_actors,
             );
@@ -427,18 +427,16 @@ impl DWalletMPCSession {
             for _ in 0..=round_to_restart_from {
                 next_attempt.serialized_full_messages.push(HashMap::new());
             }
-            let last_attempt = self.attempts.last().expect("attempts should not be empty");
+            let last_attempt = self.attempts.last_mut().expect("attempts should not be empty");
+            last_attempt.merge_spare_messages_and_remove_malicious(
+                self.pending_quorum_for_highest_round_number,
+                malicious_actors,
+            );
             next_attempt.serialized_full_messages[round_to_restart_from] = last_attempt
                 .serialized_full_messages
                 .get(round_to_restart_from)
                 .expect("at least one message should be present for the round to restart from")
                 .clone();
-            if let Some(last_attempt_spared_messages) =
-                last_attempt.spare_messages.get(round_to_restart_from)
-            {
-                next_attempt.serialized_full_messages[round_to_restart_from]
-                    .extend(last_attempt_spared_messages.clone());
-            }
             self.attempts.push(next_attempt);
         }
     }
