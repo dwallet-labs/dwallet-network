@@ -393,6 +393,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
+    /// Needed as the cryptographic library's rounds indexing is 1-based.
     let mpc_round = messages.len() + 1;
     let res = match P::advance(
         session_id,
