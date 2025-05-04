@@ -476,7 +476,7 @@ impl DWalletMPCSession {
                         .clone()
                         .into_iter()
                         .skip(last_processed_round)
-                        .collect(),
+                        .collect::<Vec<_>>(),
                 );
             }
         }
