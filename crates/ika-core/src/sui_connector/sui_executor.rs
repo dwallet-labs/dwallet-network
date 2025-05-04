@@ -93,10 +93,10 @@ where
             error!("failed to get clock when running epoch switch");
             return;
         };
-        let Some(dwallet_2pc_mpc_secp256k1_id) =
-            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        let Some(dwallet_2pc_mpc_coordinator_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
         else {
-            error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
+            error!("failed to get `dwallet_2pc_mpc_coordinator_id` when running epoch switch");
             return;
         };
         let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
@@ -112,7 +112,7 @@ where
             info!("Calling `process_mid_epoch()`");
             if let Err(e) = Self::process_mid_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
+                dwallet_2pc_mpc_coordinator_id,
                 &sui_notifier,
                 &self.sui_client,
             )
@@ -126,7 +126,7 @@ where
 
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
             .await
         else {
             error!("failed to get dwallet coordinator inner when running epoch switch");
@@ -141,7 +141,7 @@ where
             info!("Calling `lock_last_active_session_sequence_number()`");
             if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
+                dwallet_2pc_mpc_coordinator_id,
                 &sui_notifier,
                 &self.sui_client,
             )
@@ -171,7 +171,7 @@ where
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
+                dwallet_2pc_mpc_coordinator_id,
                 &sui_notifier,
                 &self.sui_client,
             )
@@ -265,8 +265,8 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
-                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                    if let Some(dwallet_2pc_mpc_coordinator_id) =
+                        ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
                     {
                         let active_members: BlsCommittee = ika_system_state_inner
                             .validator_set()
@@ -284,7 +284,7 @@ where
 
                         let task = Self::handle_execution_task(
                             self.ika_system_package_id,
-                            dwallet_2pc_mpc_secp256k1_id,
+                            dwallet_2pc_mpc_coordinator_id,
                             signature,
                             signers_bitmap,
                             message,
@@ -341,7 +341,7 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -355,13 +355,13 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -396,7 +396,7 @@ where
 
     async fn lock_last_session_to_complete_in_current_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -411,13 +411,13 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -452,7 +452,7 @@ where
 
     async fn process_request_advance_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -467,13 +467,13 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -508,7 +508,7 @@ where
 
     async fn handle_execution_task(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -545,8 +545,8 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
             .await;
 
         info!(
@@ -556,7 +556,7 @@ where
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
                     "can't serialize `signature`: {e}"

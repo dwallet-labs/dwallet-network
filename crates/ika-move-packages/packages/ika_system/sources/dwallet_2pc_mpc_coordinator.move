@@ -1,23 +1,24 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::dwallet_2pc_mpc_secp256k1;
+module ika_system::dwallet_2pc_mpc_coordinator;
 
 use ika::ika::IKA;
 use sui::balance::Balance;
 use sui::sui::SUI;
 use sui::coin::{Coin};
 use sui::dynamic_field;
+use sui::vec_map::VecMap;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
-use ika_system::dwallet_2pc_mpc_secp256k1_inner::{
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     Self,
     DWalletCoordinatorInner,
     DWalletNetworkDecryptionKeyCap,
     DWalletCap,
-    ECDSAPresignCap,
+    PresignCap,
     MessageApproval,
-    UnverifiedECDSAPartialUserSignatureCap,
-    VerifiedECDSAPartialUserSignatureCap
+    UnverifiedPartialUserSignatureCap,
+    VerifiedPartialUserSignatureCap
 };
 use ika_system::bls_committee::BlsCommittee;
 
@@ -45,7 +46,7 @@ public(package) fun create_dwallet_coordinator(
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
 ): DWalletCoordinator {
-    let dwallet_coordinator_inner = dwallet_2pc_mpc_secp256k1_inner::create_dwallet_coordinator_inner(
+    let dwallet_coordinator_inner = dwallet_2pc_mpc_coordinator_inner::create_dwallet_coordinator_inner(
         epoch,
         active_committee,
         pricing,
@@ -70,7 +71,7 @@ public(package) fun share_dwallet_coordinator(
 
 /// Being called by the Ika network to store outputs of completed MPC sessions to Sui.
 public fun process_checkpoint_message_by_quorum(
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     mut message: vector<u8>,
@@ -82,7 +83,7 @@ public fun process_checkpoint_message_by_quorum(
     message.append(message2);
     message.append(message3);
     message.append(message4);
-    let dwallet_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
+    let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
@@ -122,15 +123,32 @@ public fun register_encryption_key(
     )
 }
 
+public fun approve_message(
+    self: &mut DWalletCoordinator,
+    dwallet_cap: &DWalletCap,
+    signature_algorithm: u8,
+    hash_scheme: u8,
+    message: vector<u8>
+): MessageApproval {
+    self.inner().approve_message(
+        dwallet_cap,
+        signature_algorithm,
+        hash_scheme,
+        message,
+    )
+}
+
 public fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinator,
     dwallet_network_decryption_key_id: ID,
+    curve: u8,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
     self.inner_mut().request_dwallet_dkg_first_round(
         dwallet_network_decryption_key_id,
+        curve,
         payment_ika,
         payment_sui,
         ctx
@@ -196,15 +214,17 @@ public fun accept_encrypted_user_share(
     )
 }
 
-public fun request_ecdsa_presign(
+public fun request_presign(
     self: &mut DWalletCoordinator,
     dwallet_id: ID,
+    signature_algorithm: u8,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-): ECDSAPresignCap {
-    self.inner_mut().request_ecdsa_presign(
+): PresignCap {
+    self.inner_mut().request_presign(
         dwallet_id,
+        signature_algorithm,
         payment_ika,
         payment_sui,
         ctx,
@@ -213,23 +233,23 @@ public fun request_ecdsa_presign(
 
 public fun is_ecdsa_presign_valid(
     self: &DWalletCoordinator,
-    presign_cap: &ECDSAPresignCap,
+    presign_cap: &PresignCap,
 ): bool {
     self.inner().is_ecdsa_presign_valid(
         presign_cap,
     )
 }
 
-public fun request_ecdsa_sign(
+public fun request_sign(
     self: &mut DWalletCoordinator,
-    presign_cap: ECDSAPresignCap,
+    presign_cap: PresignCap,
     message_approval: MessageApproval,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    self.inner_mut().request_ecdsa_sign(
+    self.inner_mut().request_sign(
         message_approval,
         presign_cap,
         message_centralized_signature,
@@ -239,17 +259,17 @@ public fun request_ecdsa_sign(
     )
 }
 
-public fun request_ecdsa_future_sign(
+public fun request_future_sign(
     self: &mut DWalletCoordinator,
-    presign_cap: ECDSAPresignCap,
+    presign_cap: PresignCap,
     message: vector<u8>,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-): UnverifiedECDSAPartialUserSignatureCap {
-    self.inner_mut().request_ecdsa_future_sign(
+): UnverifiedPartialUserSignatureCap {
+    self.inner_mut().request_future_sign(
         presign_cap,
         message,
         hash_scheme,
@@ -262,24 +282,24 @@ public fun request_ecdsa_future_sign(
 
 public fun verify_ecdsa_partial_user_signature_cap(
     self: &mut DWalletCoordinator,
-    cap: UnverifiedECDSAPartialUserSignatureCap,
+    cap: UnverifiedPartialUserSignatureCap,
     ctx: &mut TxContext
-): VerifiedECDSAPartialUserSignatureCap {
+): VerifiedPartialUserSignatureCap {
     self.inner_mut().verify_ecdsa_partial_user_signature_cap(
         cap,
         ctx,
     )
 }
 
-public fun request_ecdsa_sign_with_partial_user_signatures(
+public fun request_sign_with_partial_user_signatures(
     self: &mut DWalletCoordinator,
-    partial_user_signature_cap: VerifiedECDSAPartialUserSignatureCap,
+    partial_user_signature_cap: VerifiedPartialUserSignatureCap,
     message_approval: MessageApproval,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-    self.inner_mut().request_ecdsa_sign_with_partial_user_signatures(
+    self.inner_mut().request_sign_with_partial_user_signatures(
         partial_user_signature_cap,
         message_approval,
         payment_ika,
@@ -290,7 +310,7 @@ public fun request_ecdsa_sign_with_partial_user_signatures(
 
 public fun compare_ecdsa_partial_user_signatures_with_approvals(
     self: &DWalletCoordinator,
-    partial_user_signature_cap: &VerifiedECDSAPartialUserSignatureCap,
+    partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ) {
     self.inner().compare_ecdsa_partial_user_signatures_with_approvals(
@@ -299,18 +319,18 @@ public fun compare_ecdsa_partial_user_signatures_with_approvals(
     )
 }
 
-/// Migrate the dwallet_2pc_mpc_secp256k1 object to the new package id.
+/// Migrate the dwallet_2pc_mpc_coordinator object to the new package id.
 ///
 /// This function sets the new package id and version and can be modified in future versions
-/// to migrate changes in the `dwallet_2pc_mpc_secp256k1_inner` object if needed.
+/// to migrate changes in the `dwallet_2pc_mpc_coordinator_inner` object if needed.
 public fun migrate(
         self: &mut DWalletCoordinator,
 ) {
     assert!(self.version < VERSION, EInvalidMigration);
 
     // Move the old system state inner to the new version.
-    let dwallet_2pc_mpc_secp256k1_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
-    dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_secp256k1_inner);
+    let dwallet_2pc_mpc_coordinator_inner: DWalletCoordinatorInner = dynamic_field::remove(&mut self.id, self.version);
+    dynamic_field::add(&mut self.id, VERSION, dwallet_2pc_mpc_coordinator_inner);
     self.version = VERSION;
 
     // Set the new package id.
@@ -330,4 +350,32 @@ public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordi
 public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
+}
+
+public(package) fun set_supported_curves_to_signature_algorithms(
+    self: &mut DWalletCoordinator,
+    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
+) {
+    self.inner_mut().set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
+}
+
+public(package) fun set_supported_signature_algorithms_to_hash_schemes(
+    self: &mut DWalletCoordinator,
+    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+) {
+    self.inner_mut().set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
+}
+
+public(package) fun set_paused_curves(
+    self: &mut DWalletCoordinator,
+    paused_curves: vector<u8>,
+) {
+    self.inner_mut().set_paused_curves(paused_curves);
+}
+
+public(package) fun set_paused_signature_algorithms(
+    self: &mut DWalletCoordinator,
+    paused_signature_algorithms: vector<u8>,
+) {
+    self.inner_mut().set_paused_signature_algorithms(paused_signature_algorithms);
 }

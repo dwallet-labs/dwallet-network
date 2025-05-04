@@ -364,7 +364,7 @@ where
                 let network_decryption_keys = self
                     .inner
                     .get_network_decryption_keys(
-                        &ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
+                        &ika_system_state_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys,
                     )
                     .await
                     .unwrap_or_default();
@@ -515,19 +515,19 @@ where
         .await
     }
 
-    /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
-    pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
+    /// Retrieves the dwallet_2pc_mpc_coordinator_id object arg from the Sui chain.
+    pub async fn get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
         &self,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
     ) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
                 self.inner
-                    .get_mutable_shared_arg(dwallet_2pc_mpc_secp256k1_id),
+                    .get_mutable_shared_arg(dwallet_2pc_mpc_coordinator_id),
                 Duration::from_secs(30)
             ) else {
-                panic!("Failed to get dwallet_2pc_mpc_secp256k1_id object arg after retries");
+                panic!("Failed to get dwallet_2pc_mpc_coordinator_id object arg after retries");
             };
             system_arg
         })
@@ -634,14 +634,14 @@ where
     pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
         loop {
             let system_inner = self.must_get_system_inner_object().await;
-            let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
+            let Some(dwallet_2pc_mpc_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id()
             else {
-                error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when fetching dwallet coordinator inner");
+                error!("failed to get `dwallet_2pc_mpc_coordinator_id` when fetching dwallet coordinator inner");
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
             let DWalletCoordinatorInner::V1(inner_v1) = self
-                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
                 .await
             else {
                 error!("fetched a wrong version of dwallet coordinator inner, trying again");
@@ -659,7 +659,7 @@ where
         Ok(self
             .inner
             .get_network_decryption_keys(
-                system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+                system_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys(),
             )
             .await
             .map_err(|e| {

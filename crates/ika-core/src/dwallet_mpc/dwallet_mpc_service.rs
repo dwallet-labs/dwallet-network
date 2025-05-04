@@ -85,7 +85,7 @@ impl DWalletMPCService {
         let system_inner = match system_inner {
             SystemInner::V1(system_inner) => system_inner,
         };
-        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_secp256k1_id {
+        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)

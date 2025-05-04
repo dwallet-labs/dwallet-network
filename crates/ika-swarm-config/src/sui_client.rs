@@ -241,7 +241,7 @@ pub async fn init_ika_on_sui(
         println!("Running `system::request_add_validator` done for validator {validator_address}");
     }
 
-    let (dwallet_2pc_mpc_secp256k1_id, dwallet_2pc_mpc_secp256k1_initial_shared_version) =
+    let (dwallet_2pc_mpc_coordinator_id, dwallet_2pc_mpc_coordinator_initial_shared_version) =
         ika_system_initialize(
             publisher_address,
             &mut context,
@@ -260,8 +260,8 @@ pub async fn init_ika_on_sui(
         ika_system_package_id,
         ika_system_object_id,
         init_system_shared_version,
-        dwallet_2pc_mpc_secp256k1_id,
-        dwallet_2pc_mpc_secp256k1_initial_shared_version,
+        dwallet_2pc_mpc_coordinator_id,
+        dwallet_2pc_mpc_coordinator_initial_shared_version,
         protocol_cap_id,
     )
     .await?;
@@ -285,8 +285,8 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
-    dwallet_2pc_mpc_secp256k1_id: ObjectID,
-    dwallet_2pc_mpc_secp256k1_initial_shared_version: SequenceNumber,
+    dwallet_2pc_mpc_coordinator_id: ObjectID,
+    dwallet_2pc_mpc_coordinator_initial_shared_version: SequenceNumber,
     protocol_cap_id: ObjectID,
 ) -> Result<(), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -308,8 +308,8 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::SharedObject {
-                id: dwallet_2pc_mpc_secp256k1_id,
-                initial_shared_version: dwallet_2pc_mpc_secp256k1_initial_shared_version,
+                id: dwallet_2pc_mpc_coordinator_id,
+                initial_shared_version: dwallet_2pc_mpc_coordinator_initial_shared_version,
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(protocol_cap_ref)),
@@ -358,21 +358,21 @@ async fn ika_system_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
-    let dwallet_2pc_mpc_secp256k1_type = StructTag {
+    let dwallet_2pc_mpc_coordinator_type = StructTag {
         address: ika_system_package_id.into(),
         module: DWALLET_2PC_MPC_SECP256K1_MODULE_NAME.into(),
         name: DWALLET_COORDINATOR_STRUCT_NAME.into(),
         type_params: vec![],
     };
 
-    let dwallet_2pc_mpc_secp256k1_id = object_changes
+    let dwallet_2pc_mpc_coordinator_id = object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
                 object_id,
                 object_type,
                 ..
-            } if dwallet_2pc_mpc_secp256k1_type == *object_type => Some(*object_id),
+            } if dwallet_2pc_mpc_coordinator_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
@@ -385,7 +385,7 @@ async fn ika_system_initialize(
     let response = client
         .read_api()
         .get_object_with_options(
-            dwallet_2pc_mpc_secp256k1_id,
+            dwallet_2pc_mpc_coordinator_id,
             SuiObjectDataOptions::new().with_owner(),
         )
         .await?;
@@ -397,7 +397,7 @@ async fn ika_system_initialize(
         return Err(anyhow::Error::msg("Owner does not exist"));
     };
 
-    Ok((dwallet_2pc_mpc_secp256k1_id, initial_shared_version))
+    Ok((dwallet_2pc_mpc_coordinator_id, initial_shared_version))
 }
 
 async fn init_initialize(

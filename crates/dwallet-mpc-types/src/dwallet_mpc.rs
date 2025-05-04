@@ -5,22 +5,20 @@ use thiserror::Error;
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_MPC_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletEvent");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1");
+pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_coordinator");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 /// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
 /// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
-pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_secp256k1_inner");
-pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
+pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_coordinator_inner");
+pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGFirstRoundRequestEvent");
 // TODO (#650): Rename Move structs
-pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
+pub const DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGSecondRoundRequestEvent");
 // TODO (#650): Rename Move structs
-pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("ECDSAPresignRequestEvent");
-pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartPresignSecondRoundEvent");
-pub const START_SIGN_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("ECDSASignRequestEvent");
+pub const PRESIGN_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("PresignRequestEvent");
+pub const SIGN_REQUEST_EVENT_STRUCT_NAME: &IdentStr = ident_str!("SignRequestEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =

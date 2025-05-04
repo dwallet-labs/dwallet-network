@@ -51,7 +51,7 @@ pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
 pub const VALIDATOR_METADATA_MODULE_NAME: &IdentStr = ident_str!("validator_metadata");
 pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
 pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_secp256k1");
+    ident_str!("dwallet_2pc_mpc_coordinator");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
@@ -132,8 +132,8 @@ pub trait SystemInnerTrait {
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
-    fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID>;
-    fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
+    fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID>;
+    fn dwallet_2pc_mpc_coordinator_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>>;

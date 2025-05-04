@@ -31,7 +31,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	const dWalletStateData = await getDWalletSecpState(conf);
 
 	const presignCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_presign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -39,6 +39,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 				mutable: true,
 			}),
 			tx.pure.id(dwallet_id),
+			tx.pure.u8(0),
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -65,7 +66,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 		throw new Error('invalid start session event');
 	}
 
-	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAPresignEvent`;
+	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedPresignEvent`;
 
 	return await fetchCompletedEvent(
 		conf,

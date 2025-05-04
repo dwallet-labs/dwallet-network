@@ -239,6 +239,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 				mutable: true,
 			}),
 			tx.pure.id(networkDecryptionKeyID),
+			tx.pure.u8(0),
 			emptyIKACoin,
 			tx.gas,
 		],
