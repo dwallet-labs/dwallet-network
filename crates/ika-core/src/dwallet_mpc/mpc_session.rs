@@ -473,6 +473,7 @@ impl DWalletMPCSession {
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &mpc_event_data.public_input;
+        let mpc_messages = self.build_input_mpc_messages();
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
@@ -487,7 +488,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    mpc_messages,
                     public_input,
                     (),
                 )
@@ -499,7 +500,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    mpc_messages,
                     public_input.clone(),
                     (),
                 )?;
@@ -534,7 +535,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    mpc_messages,
                     public_input,
                     (),
                 )
@@ -545,7 +546,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    mpc_messages,
                     public_input,
                     mpc_event_data.decryption_share.clone(),
                 )
@@ -556,7 +557,7 @@ impl DWalletMPCSession {
                 self.party_id,
                 public_input,
                 key_scheme,
-                self.serialized_full_messages.clone(),
+                mpc_messages,
                 bcs::from_bytes(
                     &mpc_event_data
                         .private_input
@@ -611,7 +612,7 @@ impl DWalletMPCSession {
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    mpc_messages,
                     public_input,
                     (
                         bcs::from_bytes(
