@@ -320,6 +320,7 @@ impl DWalletMPCManager {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => match report.advance_result {
                 AdvanceResult::Success => {
+                    // No need to re-perform the last step, as the advance was successful.
                     return Ok(());
                 }
                 AdvanceResult::Failure {
