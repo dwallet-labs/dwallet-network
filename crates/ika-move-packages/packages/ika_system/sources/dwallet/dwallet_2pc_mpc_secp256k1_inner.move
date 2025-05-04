@@ -833,7 +833,6 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
         dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
         dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
             DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-                
                 if (is_last_chunk) {
                         event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                             dwallet_network_decryption_key_id,
@@ -882,7 +881,7 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
                         } else {
                             DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
                         }
-                    },  
+                    },
                 _ => abort EWrongState
             };
     }

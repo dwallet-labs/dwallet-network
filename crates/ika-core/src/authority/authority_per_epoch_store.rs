@@ -1578,10 +1578,7 @@ impl AuthorityPerEpochStore {
             "creating session output checkpoint transaction"
         );
         let (rejected, output) = match bcs::from_bytes(&output)? {
-            MPCSessionPublicOutput::CompletedSuccessfully(output) => {
-                let output = bcs::to_bytes(&output)?;
-                (false, output)
-            }
+            MPCSessionPublicOutput::CompletedSuccessfully(output) => (false, output),
             MPCSessionPublicOutput::SessionFailed => (true, vec![]),
         };
         match &session_info.mpc_round {
