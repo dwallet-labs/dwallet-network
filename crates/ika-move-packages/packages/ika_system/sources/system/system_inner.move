@@ -98,6 +98,7 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 // Errors
 const EBpsTooLarge: u64 = 1;
 const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
+const EHaveNotReachedEndEpochTime: u64 = 3;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -557,7 +558,15 @@ public(package) fun process_mid_epoch(
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
 }
 
-
+public(package) fun lock_last_active_session_sequence_number(
+    self: &SystemInnerV1,
+    dwallet_coordinator: &mut DWalletCoordinatorInner,
+    clock: &Clock,
+) {
+    assert!(self.validator_set.next_epoch_active_committee().is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
+    assert!(clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
+    dwallet_coordinator.lock_last_active_session_sequence_number();
+}
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
 /// since epochs are ever-increasing and epoch changes are intended to happen every 24 hours.
