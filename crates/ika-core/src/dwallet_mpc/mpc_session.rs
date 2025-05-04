@@ -225,7 +225,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    round=?self.serialized_full_messages.len(),
+                    round=?self.pending_quorum_for_highest_round_number - 1,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
@@ -287,8 +287,6 @@ impl DWalletMPCSession {
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
                 error!(?malicious_parties, "session failed with malicious parties",);
-                let base64_mpc_messages = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
                 let base64_mpc_public_input =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
@@ -297,7 +295,6 @@ impl DWalletMPCSession {
                 let base64_mpc_session_type =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
                 error!(
-                    messages=?base64_mpc_messages,
                     public_input=?base64_mpc_public_input,
                     init_protocol_data=?base64_mpc_init_protocol_data,
                     session_type=?base64_mpc_session_type,
@@ -315,8 +312,6 @@ impl DWalletMPCSession {
             }
             Err(err) => {
                 error!(?err, "failed to advance the MPC session");
-                let base64_mpc_messages = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
                 let base64_mpc_public_input =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
@@ -325,7 +320,6 @@ impl DWalletMPCSession {
                 let base64_mpc_session_type =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
                 error!(
-                    messages=?base64_mpc_messages,
                     public_input=?base64_mpc_public_input,
                     init_protocol_data=?base64_mpc_init_protocol_data,
                     session_type=?base64_mpc_session_type,
