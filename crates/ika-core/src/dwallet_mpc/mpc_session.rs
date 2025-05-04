@@ -476,6 +476,10 @@ impl DWalletMPCSession {
         Self::build_input_mpc_messages_static(&self.attempts)
     }
 
+    /// Build the vector of messages from all the attempts.
+    ///
+    /// Take messages from the first attempt until the start of the second attempt, from the second until the
+    /// start of the third, and so on.
     fn build_input_mpc_messages_static(
         attempts: &Vec<Attempt>,
     ) -> Vec<HashMap<PartyID, MPCMessage>> {
