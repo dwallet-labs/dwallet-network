@@ -826,3 +826,46 @@ impl DWalletMPCSession {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_build_input_mpc_messages_static() {
+        let attempt1 = Attempt {
+            start_round: 0,
+            serialized_full_messages: vec![
+                HashMap::from([(1u64 as PartyID, vec![1, 2, 3]), (2u64 as PartyID, vec![4, 5, 6])]),
+                HashMap::from([(1u64 as PartyID, vec![7, 8, 9]), (2u64 as PartyID, vec![10, 11, 12])]),
+            ],
+            spare_messages: vec![],
+        };
+
+        let attempt2 = Attempt {
+            start_round: 1,
+            serialized_full_messages: vec![
+                HashMap::from([(1u64 as PartyID as PartyID, vec![13, 14, 15]), (2u64 as PartyID, vec![16, 17, 18])]),
+                HashMap::from([(1u64 as PartyID, vec![19, 20, 21]), (2u64 as PartyID, vec![22, 23, 24])]),
+            ],
+            spare_messages: vec![],
+        };
+
+        let attempts = vec![attempt1, attempt2];
+
+        let result = DWalletMPCSession::build_input_mpc_messages_static(&attempts);
+
+        assert_eq!(result.len(), 3);
+        
+        // First message from attempt1
+        assert_eq!(result[0].get(&(1u64 as PartyID)).unwrap(), &vec![1, 2, 3]);
+        assert_eq!(result[0].get(&(2u64 as PartyID)).unwrap(), &vec![4, 5, 6]);
+
+        // Messages from attempt2
+        assert_eq!(result[1].get(&(1u64 as PartyID)).unwrap(), &vec![13, 14, 15]);
+        assert_eq!(result[1].get(&(2u64 as PartyID)).unwrap(), &vec![16, 17, 18]);
+        
+        assert_eq!(result[2].get(&(1u64 as PartyID)).unwrap(), &vec![19, 20, 21]);
+        assert_eq!(result[2].get(&(2u64 as PartyID)).unwrap(), &vec![22, 23, 24]);
+    }
+
+}
