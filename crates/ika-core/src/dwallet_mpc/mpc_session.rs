@@ -116,11 +116,7 @@ impl Attempt {
         }
     }
 
-    pub(crate) fn store_message(
-        &mut self,
-        message: &DWalletMPCMessage,
-        source_party_id: PartyID,
-    )  {
+    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage, source_party_id: PartyID) {
         match self.serialized_full_messages.get_mut(message.round_number) {
             None => {
                 info!(
@@ -418,6 +414,41 @@ impl DWalletMPCSession {
             }
         });
         Ok(())
+    }
+
+    fn build_input_mpc_messages(&self) -> Vec<HashMap<PartyID, MPCMessage>> {
+        let mut messages = vec![];
+        let mut last_processed_round = 0;
+
+        for i in 0..self.attempts.len() {
+            if i + 1 < self.attempts.len() {
+                // there's a next attempt
+                let attempt = &self.attempts[i];
+                let next_attempt = &self.attempts[i + 1];
+                messages.extend(
+                    attempt
+                        .serialized_full_messages
+                        .clone()
+                        .into_iter()
+                        .skip(last_processed_round)
+                        .take(next_attempt.start_round)
+                        .collect::<Vec<_>>()
+                        .clone(),
+                );
+                last_processed_round = next_attempt.start_round;
+            } else {
+                // no next attempt
+                messages.extend(
+                    self.attempts[i]
+                        .serialized_full_messages
+                        .clone()
+                        .into_iter()
+                        .skip(last_processed_round)
+                        .collect(),
+                );
+            }
+        }
+        messages
     }
 
     fn advance_specific_party(
