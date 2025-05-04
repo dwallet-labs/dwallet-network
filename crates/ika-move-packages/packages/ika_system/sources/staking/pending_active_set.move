@@ -62,15 +62,19 @@ public(package) fun new(min_validator_count: u64, max_validator_count: u64, min_
 /// unless that would violate the minimum validator count.
 /// Returns true if the validator is in the set after the operation, false otherwise.
 /// Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
-public(package) fun insert_or_update(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (bool, Option<ID>) {
+public(package) fun insert_or_update_or_remove(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (bool, Option<ID>) {
     // Currently, the `min_validator_joining_stake` is set to `0`, so we need to account for that.
     if (staked_amount == 0 || staked_amount < set.min_validator_joining_stake) {
-        set.remove(validator_id);
-        return (false, option::some(validator_id))
-    };
-
-    if (set.update(validator_id, staked_amount)) (true, option::none())
-    else set.insert(validator_id, staked_amount)
+        if (set.remove(validator_id)) {
+            (false, option::some(validator_id))
+        } else {
+            (false, option::none())
+        }
+    } else if (set.update(validator_id, staked_amount)) {
+        (true, option::none())
+    } else {
+        set.insert(validator_id, staked_amount)
+    }
 }
 
 /// Updates the staked amount of the storage validator with the given `validator_id` in
@@ -78,10 +82,14 @@ public(package) fun insert_or_update(set: &mut PendingActiveSet, validator_id: I
 /// Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
 public(package) fun update_or_remove(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (bool, Option<ID>) {
     if (staked_amount == 0 || staked_amount < set.min_validator_joining_stake) {
-        set.remove(validator_id);
-        return (false, option::some(validator_id))
-    };
-    (set.update(validator_id, staked_amount), option::none())
+        if (set.remove(validator_id)) {
+            (false, option::some(validator_id))
+        } else {
+            (false, option::none())
+        }
+    } else {
+        (set.update(validator_id, staked_amount), option::none())
+    }
 }
 
 /// Updates the staked amount of the storage validator with the given `validator_id` in
@@ -134,9 +142,10 @@ fun insert(set: &mut PendingActiveSet, validator_id: ID, staked_amount: u64): (b
 
 /// Removes the storage validator with the given `validator_id` from the active set.
 /// Will abort with EBelowMinValidatorCount if removing would bring the set below min_validator_count.
-public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID) {
+public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID): bool {
     let is_under_min_validator_count = set.validators.length() < set.min_validator_count;
     let index = set.find_validator_index(validator_id);
+    let removed = index.is_some();
     index.do!(|idx| {
         let entry = set.validators.remove(idx);
         set.total_stake = set.total_stake - entry.staked_amount;
@@ -144,6 +153,7 @@ public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID) {
     
     // Abort if removal would violate the minimum validator count
     assert!(is_under_min_validator_count || set.validators.length() >= set.min_validator_count, EBelowMinValidatorCount);
+    removed
 }
 
 /// Finds the index of a validator in the active set using linear search.
@@ -266,15 +276,15 @@ public fun stake_for_validator(set: &PendingActiveSet, validator_id: ID): u64 {
 #[test]
 fun test_evict_correct_validator_simple() {
     let mut set = new(1, 5, 0);
-    let (inserted, _) = set.insert_or_update(object::id_from_address(@0x1), 10);
+    let (inserted, _) = set.insert_or_update_or_remove(object::id_from_address(@0x1), 10);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(object::id_from_address(@0x2), 9);
+    let (inserted, _) = set.insert_or_update_or_remove(object::id_from_address(@0x2), 9);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(object::id_from_address(@0x3), 8);
+    let (inserted, _) = set.insert_or_update_or_remove(object::id_from_address(@0x3), 8);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(object::id_from_address(@0x4), 7);
+    let (inserted, _) = set.insert_or_update_or_remove(object::id_from_address(@0x4), 7);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(object::id_from_address(@0x5), 6);
+    let (inserted, _) = set.insert_or_update_or_remove(object::id_from_address(@0x5), 6);
     assert!(inserted);
 
     let mut total_stake = 10 + 9 + 8 + 7 + 6;
@@ -282,7 +292,7 @@ fun test_evict_correct_validator_simple() {
     assert!(set.total_stake == total_stake);
 
     // insert another validator which should eject validator 5
-    let (inserted, removed_id) = set.insert_or_update(object::id_from_address(@0x6), 11);
+    let (inserted, removed_id) = set.insert_or_update_or_remove(object::id_from_address(@0x6), 11);
     assert!(inserted);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == object::id_from_address(@0x5));
@@ -316,15 +326,15 @@ fun test_evict_correct_validator_with_updates() {
     ];
 
     let mut set = new(1, 5, 0);
-    let (inserted, _) = set.insert_or_update(validators[3], 7);
+    let (inserted, _) = set.insert_or_update_or_remove(validators[3], 7);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(validators[0], 10);
+    let (inserted, _) = set.insert_or_update_or_remove(validators[0], 10);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(validators[2], 8);
+    let (inserted, _) = set.insert_or_update_or_remove(validators[2], 8);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(validators[1], 9);
+    let (inserted, _) = set.insert_or_update_or_remove(validators[1], 9);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(validators[4], 6);
+    let (inserted, _) = set.insert_or_update_or_remove(validators[4], 6);
     assert!(inserted);
 
     let mut total_stake = 10 + 9 + 8 + 7 + 6;
@@ -332,7 +342,7 @@ fun test_evict_correct_validator_with_updates() {
     assert!(set.total_stake == total_stake);
 
     // update validators again
-    let (updated, _) = set.insert_or_update(validators[0], 12);
+    let (updated, _) = set.insert_or_update_or_remove(validators[0], 12);
     assert!(updated);
     // check if total stake was updated correctly
     total_stake = total_stake - 10 + 12;
@@ -340,7 +350,7 @@ fun test_evict_correct_validator_with_updates() {
     // check if the stake of the validator was updated correctly
     assert!(set.stake_for_validator(validators[0]) == 12);
 
-    let (updated, _) = set.insert_or_update(validators[2], 13);
+    let (updated, _) = set.insert_or_update_or_remove(validators[2], 13);
     assert!(updated);
     // check if total stake was updated correctly
     total_stake = total_stake - 8 + 13;
@@ -348,7 +358,7 @@ fun test_evict_correct_validator_with_updates() {
     // check if the stake of the validator was updated correctly
     assert!(set.stake_for_validator(validators[2]) == 13);
 
-    let (updated, _) = set.insert_or_update(validators[3], 9);
+    let (updated, _) = set.insert_or_update_or_remove(validators[3], 9);
     assert!(updated);
     // check if total stake was updated correctly
     total_stake = total_stake - 7 + 9;
@@ -356,7 +366,7 @@ fun test_evict_correct_validator_with_updates() {
     // check if the stake of the validator was updated correctly
     assert!(set.stake_for_validator(validators[3]) == 9);
 
-    let (updated, _) = set.insert_or_update(validators[1], 10);
+    let (updated, _) = set.insert_or_update_or_remove(validators[1], 10);
     assert!(updated);
     // check if total stake was updated correctly
     total_stake = total_stake - 9 + 10;
@@ -364,7 +374,7 @@ fun test_evict_correct_validator_with_updates() {
     // check if the stake of the validator was updated correctly
     assert!(set.stake_for_validator(validators[1]) == 10);
 
-    let (updated, _) = set.insert_or_update(validators[4], 7);
+    let (updated, _) = set.insert_or_update_or_remove(validators[4], 7);
     assert!(updated);
     // check if total stake was updated correctly
     total_stake = total_stake - 6 + 7;
@@ -373,7 +383,7 @@ fun test_evict_correct_validator_with_updates() {
     assert!(set.stake_for_validator(validators[4]) == 7);
 
     // insert another validator which should eject validators[4] (address @5)
-    let (inserted, removed_id) = set.insert_or_update(validators[5], 11);
+    let (inserted, removed_id) = set.insert_or_update_or_remove(validators[5], 11);
     assert!(inserted);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == validators[4]);
@@ -416,15 +426,15 @@ fun test_removal() {
     let v4 = object::id_from_address(@0x4);
     let v5 = object::id_from_address(@0x5);
 
-    let (inserted, _) = set.insert_or_update(v1, 10);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v2, 20);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v3, 30);
+    let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v4, 40);
+    let (inserted, _) = set.insert_or_update_or_remove(v4, 40);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v5, 50);
+    let (inserted, _) = set.insert_or_update_or_remove(v5, 50);
     assert!(inserted);
 
     assert!(set.size() == 5);
@@ -471,11 +481,11 @@ fun test_min_validator_count() {
     let v3 = object::id_from_address(@0x3);
     
     // Add three validators
-    let (inserted, _) = set.insert_or_update(v1, 10);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v2, 20);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v3, 30);
+    let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
     assert!(set.size() == 3);
     
@@ -487,7 +497,7 @@ fun test_min_validator_count() {
     // Attempting to remove should abort, so we don't test it here
     
     // Re-add v1
-    let (inserted, _) = set.insert_or_update(v1, 15);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 15);
     assert!(inserted);
     assert!(set.size() == 3);
     
@@ -505,9 +515,9 @@ fun test_remove_below_min_aborts() {
     let v2 = object::id_from_address(@0x2);
     
     // Add two validators (exactly at min)
-    let (inserted, _) = set.insert_or_update(v1, 10);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v2, 20);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
     assert!(set.size() == 2);
     
@@ -524,16 +534,16 @@ fun test_min_validator_count_aborts() {
     let v3 = object::id_from_address(@0x3);
 
     // Insert below threshold - should fail
-    let (inserted, _) = set.insert_or_update(v1, 50);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 50);
     assert!(!inserted);
     assert!(set.size() == 0);
 
     // Insert at/above threshold
-    let (inserted, _) = set.insert_or_update(v2, 100);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 100);
     assert!(inserted);
     assert!(set.size() == 1);
     assert!(set.total_stake() == 100);
-    let (inserted, _) = set.insert_or_update(v3, 150);
+    let (inserted, _) = set.insert_or_update_or_remove(v3, 150);
     assert!(inserted);
     assert!(set.size() == 2);
     assert!(set.total_stake() == 250);
@@ -541,7 +551,7 @@ fun test_min_validator_count_aborts() {
     // Update below threshold - this is different now
     // Since min_validator_count = 1 and we have 2 validators,
     // we should still be able to remove v2
-    let (updated, removed_id) = set.insert_or_update(v2, 90);
+    let (updated, removed_id) = set.insert_or_update_or_remove(v2, 90);
     assert!(!updated);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == v2);
@@ -552,7 +562,7 @@ fun test_min_validator_count_aborts() {
     
     // Now we're at min_validator_count=1, trying to update below threshold
     // should keep the validator since we can't remove it
-    let (updated, _) = set.insert_or_update(v3, 90);
+    let (updated, _) = set.insert_or_update_or_remove(v3, 90);
     assert!(updated);
 }
 
@@ -565,16 +575,16 @@ fun test_min_validator_count2() {
     let v4 = object::id_from_address(@0x4);
 
     // Insert below threshold - should fail
-    let (inserted, _) = set.insert_or_update(v1, 50);
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 50);
     assert!(!inserted);
     assert!(set.size() == 0);
 
     // Insert at/above threshold
-    let (inserted, _) = set.insert_or_update(v2, 100);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 100);
     assert!(inserted);
     assert!(set.size() == 1);
     assert!(set.total_stake() == 100);
-    let (inserted, _) = set.insert_or_update(v3, 150);
+    let (inserted, _) = set.insert_or_update_or_remove(v3, 150);
     assert!(inserted);
     assert!(set.size() == 2);
     assert!(set.total_stake() == 250);
@@ -582,7 +592,7 @@ fun test_min_validator_count2() {
     // Update below threshold - this is different now
     // Since min_validator_count = 1 and we have 2 validators,
     // we should still be able to remove v2
-    let (updated, removed_id) = set.insert_or_update(v2, 90);
+    let (updated, removed_id) = set.insert_or_update_or_remove(v2, 90);
     assert!(!updated);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == v2);
@@ -592,9 +602,9 @@ fun test_min_validator_count2() {
     assert!(!set.active_ids().contains(&v2));
 
     // Refill set
-    let (inserted, _) = set.insert_or_update(v2, 120); // v2 re-enters
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 120); // v2 re-enters
     assert!(inserted);
-    let (inserted, _) = set.insert_or_update(v4, 110); // v4 enters
+    let (inserted, _) = set.insert_or_update_or_remove(v4, 110); // v4 enters
     assert!(inserted);
     assert!(set.size() == 3);
     assert!(set.total_stake() == 150 + 120 + 110);
@@ -604,7 +614,7 @@ fun test_min_validator_count2() {
     assert!(set.current_min_validator_joining_stake() == 110); // Full set, should return actual min
 
     // Insert another validator - should eject v4
-    let (inserted, removed_id) = set.insert_or_update(v1, 130);
+    let (inserted, removed_id) = set.insert_or_update_or_remove(v1, 130);
     assert!(inserted);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == v4);
@@ -616,4 +626,47 @@ fun test_min_validator_count2() {
     assert!(active_ids.contains(&v2));
     assert!(active_ids.contains(&v3));
     assert!(set.current_min_validator_joining_stake() == 120);
+}
+
+#[test]
+fun test_removal_reporting() {
+    let mut set = new(0, 5, 100); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 100
+    let v1 = object::id_from_address(@0x1);
+    let v2 = object::id_from_address(@0x2);
+    
+    // Try to remove validator not in set using update_or_remove
+    let (in_set, removed_id) = set.update_or_remove(v1, 50);
+    assert!(!in_set); // Should not be in set
+    assert!(option::is_none(&removed_id)); // Should not report removal since validator wasn't in set
+    
+    // Try to remove validator not in set using insert_or_update_or_remove
+    let (in_set, removed_id) = set.insert_or_update_or_remove(v2, 50);
+    assert!(!in_set); // Should not be in set
+    assert!(option::is_none(&removed_id)); // Should not report removal since validator wasn't in set
+    
+    // Add a validator to the set
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 150);
+    assert!(inserted);
+    assert!(set.size() == 1);
+    
+    // Now remove validator that is in set using update_or_remove with stake below threshold
+    let (in_set, removed_id) = set.update_or_remove(v1, 50);
+    assert!(!in_set); // Should not be in set after removal
+    assert!(option::is_some(&removed_id)); // Should report removal
+    assert!(*option::borrow(&removed_id) == v1); // Should remove the correct validator
+    assert!(set.size() == 0);
+    
+    // Add validators back to set
+    let (inserted, _) = set.insert_or_update_or_remove(v1, 150);
+    assert!(inserted);
+    let (inserted, _) = set.insert_or_update_or_remove(v2, 200);
+    assert!(inserted);
+    assert!(set.size() == 2);
+    
+    // Remove validator that is in set using insert_or_update_or_remove with stake below threshold
+    let (in_set, removed_id) = set.insert_or_update_or_remove(v1, 50);
+    assert!(!in_set); // Should not be in set after removal
+    assert!(option::is_some(&removed_id)); // Should report removal
+    assert!(*option::borrow(&removed_id) == v1); // Should remove the correct validator
+    assert!(set.size() == 1);
 }

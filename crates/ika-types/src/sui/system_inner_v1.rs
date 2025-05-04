@@ -79,7 +79,6 @@ pub struct SystemInnerV1 {
     pub upgrade_caps: Vec<UpgradeCap>,
     pub validator_set: ValidatorSetV1,
     pub parameters: SystemParametersV1,
-    pub computation_price_per_unit_size: u64,
     pub ika_treasury: IkaTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
     pub total_messages_processed: u64,
@@ -165,10 +164,6 @@ pub struct IkaTreasuryV1 {
 impl SystemInnerTrait for SystemInnerV1 {
     fn epoch(&self) -> u64 {
         self.epoch
-    }
-
-    fn computation_price_per_unit_size(&self) -> u64 {
-        self.computation_price_per_unit_size
     }
 
     fn protocol_version(&self) -> u64 {

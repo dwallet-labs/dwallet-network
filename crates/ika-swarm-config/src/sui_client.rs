@@ -129,7 +129,17 @@ pub async fn init_ika_on_sui(
     futures::future::join_all(request_tokens_from_faucet_futures)
         .await
         .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<Vec<_>, _>>()
+        // Temporary workaround for the faucet returning 200 OK, but it seems as an error
+        // since the new faucet api changed
+        // TODO: Remove this workaround when we move to the new sui version and new faucet api
+        .or_else(|e| {
+            if e.to_string().contains("200 OK") {
+                Ok(vec![])
+            } else {
+                Err(e)
+            }
+        })?;
 
     let ika_package = ika_move_packages::BuiltInIkaMovePackages::get_package_by_name("ika");
     let ika_system_package =

@@ -796,7 +796,7 @@ set_withdrawing
 deactivate
 	public(package) fun
 	0x0::validator
-stake
+request_add_stake
 	public(package) fun
 	0x0::validator
 request_withdraw_stake
@@ -922,7 +922,7 @@ PendingActiveSet
 new
 	public(package) fun
 	0x0::pending_active_set
-insert_or_update
+insert_or_update_or_remove
 	public(package) fun
 	0x0::pending_active_set
 update_or_remove

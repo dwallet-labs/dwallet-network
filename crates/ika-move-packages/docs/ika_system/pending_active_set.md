@@ -11,7 +11,7 @@ IKA to make the calculation of the rewards and voting power distribution easier.
 -  [Struct `PendingActiveSet`](#(ika_system=0x0)_pending_active_set_PendingActiveSet)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#(ika_system=0x0)_pending_active_set_new)
--  [Function `insert_or_update`](#(ika_system=0x0)_pending_active_set_insert_or_update)
+-  [Function `insert_or_update_or_remove`](#(ika_system=0x0)_pending_active_set_insert_or_update_or_remove)
 -  [Function `update_or_remove`](#(ika_system=0x0)_pending_active_set_update_or_remove)
 -  [Function `update`](#(ika_system=0x0)_pending_active_set_update)
 -  [Function `insert`](#(ika_system=0x0)_pending_active_set_insert)
@@ -201,9 +201,9 @@ IKA to be included in the active set initially.
 
 </details>
 
-<a name="(ika_system=0x0)_pending_active_set_insert_or_update"></a>
+<a name="(ika_system=0x0)_pending_active_set_insert_or_update_or_remove"></a>
 
-## Function `insert_or_update`
+## Function `insert_or_update_or_remove`
 
 Inserts the validator if it is not already in the active set, otherwise updates its stake.
 If the validator's stake is below the threshold value, it attempts to remove it from the set
@@ -212,7 +212,7 @@ Returns true if the validator is in the set after the operation, false otherwise
 Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_or_update">insert_or_update</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_or_update_or_remove">insert_or_update_or_remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
 </code></pre>
 
 
@@ -221,14 +221,19 @@ Also returns the ID of any validator that was removed during the operation, or N
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_or_update">insert_or_update</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID, staked_amount: u64): (bool, Option&lt;ID&gt;) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_or_update_or_remove">insert_or_update_or_remove</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID, staked_amount: u64): (bool, Option&lt;ID&gt;) {
     // Currently, the `<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>` is set to `0`, so we need to account <b>for</b> that.
     <b>if</b> (staked_amount == 0 || staked_amount &lt; set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>) {
-        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(validator_id);
-        <b>return</b> (<b>false</b>, option::some(validator_id))
-    };
-    <b>if</b> (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update">update</a>(validator_id, staked_amount)) (<b>true</b>, option::none())
-    <b>else</b> set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id, staked_amount)
+        <b>if</b> (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(validator_id)) {
+            (<b>false</b>, option::some(validator_id))
+        } <b>else</b> {
+            (<b>false</b>, option::none())
+        }
+    } <b>else</b> <b>if</b> (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update">update</a>(validator_id, staked_amount)) {
+        (<b>true</b>, option::none())
+    } <b>else</b> {
+        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id, staked_amount)
+    }
 }
 </code></pre>
 
@@ -256,10 +261,14 @@ Also returns the ID of any validator that was removed during the operation, or N
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update_or_remove">update_or_remove</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID, staked_amount: u64): (bool, Option&lt;ID&gt;) {
     <b>if</b> (staked_amount == 0 || staked_amount &lt; set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>) {
-        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(validator_id);
-        <b>return</b> (<b>false</b>, option::some(validator_id))
-    };
-    (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update">update</a>(validator_id, staked_amount), option::none())
+        <b>if</b> (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(validator_id)) {
+            (<b>false</b>, option::some(validator_id))
+        } <b>else</b> {
+            (<b>false</b>, option::none())
+        }
+    } <b>else</b> {
+        (set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update">update</a>(validator_id, staked_amount), option::none())
+    }
 }
 </code></pre>
 
@@ -360,7 +369,7 @@ Removes the storage validator with the given <code>validator_id</code> from the 
 Will abort with EBelowMinValidatorCount if removing would bring the set below min_validator_count.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): bool
 </code></pre>
 
 
@@ -369,15 +378,17 @@ Will abort with EBelowMinValidatorCount if removing would bring the set below mi
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID): bool {
     <b>let</b> is_under_min_validator_count = set.validators.length() &lt; set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>;
     <b>let</b> index = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_find_validator_index">find_validator_index</a>(validator_id);
+    <b>let</b> removed = index.is_some();
     index.do!(|idx| {
         <b>let</b> <b>entry</b> = set.validators.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(idx);
         set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> - <b>entry</b>.staked_amount;
     });
     // Abort <b>if</b> removal would violate the minimum <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> count
     <b>assert</b>!(is_under_min_validator_count || set.validators.length() &gt;= set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a>);
+    removed
 }
 </code></pre>
 
