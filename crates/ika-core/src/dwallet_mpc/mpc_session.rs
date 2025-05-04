@@ -282,7 +282,7 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties, mpc_round_to_restart)) => {
                 error!(?malicious_parties, "session failed with malicious parties",);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
                 let base64_mpc_public_input =
@@ -304,7 +304,9 @@ impl DWalletMPCSession {
                 self.report_malicious_actors(
                     tokio_runtime_handle,
                     malicious_parties,
-                    AdvanceResult::Failure,
+                    AdvanceResult::Failure {
+                        round_to_restart_from: mpc_round_to_restart,
+                    },
                 )
             }
             Err(err) => {
@@ -369,6 +371,7 @@ impl DWalletMPCSession {
     pub(crate) fn handle_session_failed_due_to_malicious_parties(
         &mut self,
         malicious_actors: &HashSet<PartyID>,
+        round_to_restart_from: usize,
     ) {
         // For every advance we increase the round number by 1,
         // so to re-run the same round, we decrease it by 1.

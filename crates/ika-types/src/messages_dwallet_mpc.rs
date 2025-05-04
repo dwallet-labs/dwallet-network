@@ -334,7 +334,9 @@ impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum AdvanceResult {
     Success,
-    Failure,
+    Failure {
+        round_to_restart_from: usize,
+    },
 }
 
 /// Represents a report of malicious behavior in the dWallet MPC process.

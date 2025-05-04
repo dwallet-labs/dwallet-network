@@ -62,7 +62,6 @@ use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
 
-
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
 /// — Executing all active sessions, and
@@ -320,16 +319,22 @@ impl DWalletMPCManager {
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
             ReportStatus::QuorumReached => {
-                if report.advance_result == AdvanceResult::Success {
-                    // No need to re-perform the last step, as the advance was successful.
-                    return Ok(());
-                }
-                if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    session.handle_session_failed_due_to_malicious_parties(
-                        &self
-                            .malicious_handler
-                            .get_malicious_actors_ids(epoch_store)?,
-                    );
+                match report.advance_result {
+                    AdvanceResult::Success => {
+                        return Ok(());
+                    }
+                    AdvanceResult::Failure {
+                        round_to_restart_from,
+                    } => {
+                        if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
+                            session.handle_session_failed_due_to_malicious_parties(
+                                &self
+                                    .malicious_handler
+                                    .get_malicious_actors_ids(epoch_store)?,
+                                round_to_restart_from,
+                            );
+                        }
+                    }
                 }
             }
             ReportStatus::WaitingForQuorum => {}
