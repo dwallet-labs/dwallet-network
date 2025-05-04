@@ -410,7 +410,16 @@ impl DWalletMPCSession {
                 malicious_actors,
             );
         } else {
-            todo!();
+            if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
+                error!(
+                    session_id=?self.session_id,
+                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    round_to_restart_from=?round_to_restart_from,
+                    "round to restart from is greater than the current round number, this should never happen"
+                );
+                return;
+            }
+
         }
     }
 
