@@ -247,6 +247,9 @@ DWalletDKGFirstRoundRequestEvent
 CompletedDKGFirstdRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
+RejectedDWalletDKGSFirstRoundEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletDKGSecondRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner

@@ -30,6 +30,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `CompletedDWalletNetworkDKGDecryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent)
 -  [Struct `DWalletDKGFirstRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGFirstRoundRequestEvent)
 -  [Struct `CompletedDKGFirstdRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent)
+-  [Struct `RejectedDWalletDKGSFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent)
 -  [Struct `DWalletDKGSecondRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent)
 -  [Struct `CompletedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDKGSecondRoundEvent)
 -  [Struct `RejectedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSecondRoundEvent)
@@ -1257,6 +1258,33 @@ the second round and call the <code><a href="../ika_system/dwallet_2pc_mpc_secp2
 
 </details>
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent"></a>
+
+## Struct `RejectedDWalletDKGSFirstRoundEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent">RejectedDWalletDKGSFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+ The identifier of the dWallet created as a result of the DKG process.
+</dd>
+</dl>
+
+
+</details>
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent"></a>
 
 ## Struct `DWalletDKGSecondRoundRequestEvent`
@@ -2337,6 +2365,11 @@ Variant <code>AwaitingUser</code>
 </dl>
 
 <dt>
+Variant <code>NetworkRejectedFirstRound</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>NetworkRejectedSecondRound</code>
 </dt>
 <dd>
@@ -2825,7 +2858,7 @@ Supported hash schemes for message signing.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, network_public_output: vector&lt;u8&gt;, is_last_chunk: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, network_public_output: vector&lt;u8&gt;, is_last_chunk: bool, rejected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2839,25 +2872,38 @@ Supported hash schemes for message signing.
     dwallet_network_decryption_key_id: ID,
     network_public_output: vector&lt;u8&gt;,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &<b>mut</b> TxContext,
 ) {
     <b>if</b> (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
-            <b>if</b> (is_last_chunk) {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-            } <b>else</b> {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            }
-        },
-        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
-    };
+    <b>if</b> (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
+        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+            dwallet_network_decryption_key_id,
+            <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent">RejectedDWalletDKGSFirstRoundEvent</a> {
+                dwallet_id: object::id(dwallet_network_decryption_key),
+            },
+            ctx,
+        ));
+    } <b>else</b> {
+        dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
+        dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+            DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
+                <b>if</b> (is_last_chunk) {
+                        event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
+                            dwallet_network_decryption_key_id,
+                        });
+                        DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                    } <b>else</b> {
+                        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                    }
+            },
+            _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
+        };
+    }
 }
 </code></pre>
 
@@ -2871,7 +2917,7 @@ Supported hash schemes for message signing.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_reconfiguration">respond_dwallet_network_decryption_key_reconfiguration</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, is_last_chunk: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_reconfiguration">respond_dwallet_network_decryption_key_reconfiguration</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, is_last_chunk: bool, rejected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2885,26 +2931,40 @@ Supported hash schemes for message signing.
     dwallet_network_decryption_key_id: ID,
     public_output: vector&lt;u8&gt;,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &<b>mut</b> TxContext,
 ) {
     <b>if</b> (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    <b>let</b> next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
-    next_reconfiguration_public_output.push_back(public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration =&gt; {
-            <b>if</b> (is_last_chunk) {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDecryptionKeyReshareEvent">CompletedDWalletDecryptionKeyReshareEvent</a> {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
-            } <b>else</b> {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
-            }
-        },
-        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
-    };
+    <b>if</b> (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+            dwallet_network_decryption_key_id,
+            <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSecondRoundEvent">RejectedDWalletDKGSecondRoundEvent</a> {
+                dwallet_id: object::id(dwallet_network_decryption_key),
+                public_output,
+            },
+            ctx,
+        ));
+    } <b>else</b> {
+        <b>let</b> next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+            next_reconfiguration_public_output.push_back(public_output);
+            dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration =&gt; {
+                    <b>if</b> (is_last_chunk) {
+                            event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDecryptionKeyReshareEvent">CompletedDWalletDecryptionKeyReshareEvent</a> {
+                                dwallet_network_decryption_key_id,
+                            });
+                            DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+                        } <b>else</b> {
+                            DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+                        }
+                    },
+                _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
+            };
+    }
 }
 </code></pre>
 
@@ -3131,7 +3191,7 @@ Supported hash schemes for message signing.
         } =&gt; {
             public_output
         },
-        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedSecondRound =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletInactive">EDWalletInactive</a>,
+        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedFirstRound | DWalletState::NetworkRejectedSecondRound =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletInactive">EDWalletInactive</a>,
     }
 }
 </code></pre>
@@ -3750,7 +3810,7 @@ Validators call it, it's part of the blockchain logic.
 - Panics with <code>ENotSystemAddress</code> if the sender is not the system address.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, first_round_output: vector&lt;u8&gt;, session_sequence_number: u64)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, first_round_output: vector&lt;u8&gt;, rejected: bool, session_sequence_number: u64)
 </code></pre>
 
 
@@ -3763,18 +3823,26 @@ Validators call it, it's part of the blockchain logic.
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_id: ID,
     first_round_output: vector&lt;u8&gt;,
+    rejected: bool,
     session_sequence_number: u64,
 ) {
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGFirstRoundRequestEvent">DWalletDKGFirstRoundRequestEvent</a>&gt;(session_sequence_number);
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     dwallet.state = match (dwallet.state) {
         DWalletState::Requested =&gt; {
-            event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent">CompletedDKGFirstdRoundEvent</a> {
+            <b>if</b> (rejected) {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent">RejectedDWalletDKGSFirstRoundEvent</a> {
+                    dwallet_id,
+                });
+                DWalletState::NetworkRejectedFirstRound
+            } <b>else</b> {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent">CompletedDKGFirstdRoundEvent</a> {
                 dwallet_id,
                 first_round_output,
             });
             DWalletState::AwaitingUser {
                 first_round_output
+            }
             }
         },
         _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
@@ -5111,8 +5179,9 @@ the function will abort with this error.
             <b>if</b> (message_data_type == 0) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();
+                <b>let</b> rejected = bcs_body.peel_bool();
                 <b>let</b> session_sequence_number = bcs_body.peel_u64();
-                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output, session_sequence_number);
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output, rejected, session_sequence_number);
             } <b>else</b> <b>if</b> (message_data_type == 1) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -5184,12 +5253,14 @@ the function will abort with this error.
                 <b>let</b> dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> is_last = bcs_body.peel_bool();
-                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, is_last);
+                <b>let</b> rejected = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_dkg">respond_dwallet_network_decryption_key_dkg</a>(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             } <b>else</b> <b>if</b> (message_data_type == 7) {
                 <b>let</b> dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
                 <b>let</b> is_last = bcs_body.peel_bool();
-                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_reconfiguration">respond_dwallet_network_decryption_key_reconfiguration</a>(dwallet_network_decryption_key_id, public_output, is_last);
+                <b>let</b> rejected = bcs_body.peel_bool();
+                self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_network_decryption_key_reconfiguration">respond_dwallet_network_decryption_key_reconfiguration</a>(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             };
         i = i + 1;
     };
