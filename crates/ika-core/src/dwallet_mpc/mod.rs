@@ -407,9 +407,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!(
                 "MPC error in party {party_id} session {} at round #{} {:?}",
-                session_id,
-                mpc_round,
-                e
+                session_id, mpc_round, e
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.

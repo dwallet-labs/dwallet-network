@@ -318,25 +318,23 @@ impl DWalletMPCManager {
 
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
-            ReportStatus::QuorumReached => {
-                match report.advance_result {
-                    AdvanceResult::Success => {
-                        return Ok(());
-                    }
-                    AdvanceResult::Failure {
-                        round_to_restart_from,
-                    } => {
-                        if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                            session.handle_session_failed_due_to_malicious_parties(
-                                &self
-                                    .malicious_handler
-                                    .get_malicious_actors_ids(epoch_store)?,
-                                round_to_restart_from,
-                            );
-                        }
+            ReportStatus::QuorumReached => match report.advance_result {
+                AdvanceResult::Success => {
+                    return Ok(());
+                }
+                AdvanceResult::Failure {
+                    round_to_restart_from,
+                } => {
+                    if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
+                        session.handle_session_failed_due_to_malicious_parties(
+                            &self
+                                .malicious_handler
+                                .get_malicious_actors_ids(epoch_store)?,
+                            round_to_restart_from,
+                        );
                     }
                 }
-            }
+            },
             ReportStatus::WaitingForQuorum => {}
             ReportStatus::OverQuorum => {}
         }

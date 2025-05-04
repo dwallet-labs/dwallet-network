@@ -9,12 +9,12 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
+use im::hashmap;
 use itertools::Itertools;
 use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use im::hashmap;
 use tokio::runtime::Handle;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
@@ -144,7 +144,11 @@ impl Attempt {
         }
     }
 
-    pub(crate) fn retry_last_round(&mut self, pending_quorum_for_highest_round_number: usize, malicious_actors: &HashSet<PartyID>) {
+    pub(crate) fn retry_last_round(
+        &mut self,
+        pending_quorum_for_highest_round_number: usize,
+        malicious_actors: &HashSet<PartyID>,
+    ) {
         // Remove malicious parties from the self messages.
         let round_messages = self
             .serialized_full_messages
@@ -299,7 +303,10 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties, mpc_round_to_restart)) => {
+            Err(DwalletMPCError::SessionFailedWithMaliciousParties(
+                malicious_parties,
+                mpc_round_to_restart,
+            )) => {
                 error!(?malicious_parties, "session failed with malicious parties",);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
                 let base64_mpc_public_input =
@@ -394,13 +401,16 @@ impl DWalletMPCSession {
             // For every advance we increase the round number by 1,
             // so to re-run the same round, we decrease it by 1.
             self.pending_quorum_for_highest_round_number -= 1;
-            let mut current_attempt = self.attempts.last_mut().expect("attempts should not be empty");
+            let mut current_attempt = self
+                .attempts
+                .last_mut()
+                .expect("attempts should not be empty");
             current_attempt.retry_last_round(
                 self.pending_quorum_for_highest_round_number,
                 malicious_actors,
             );
         } else {
-
+            todo!();
         }
     }
 
@@ -436,7 +446,9 @@ impl DWalletMPCSession {
         Self::build_input_mpc_messages_static(&self.attempts)
     }
 
-    fn build_input_mpc_messages_static(attempts: &Vec<Attempt>) -> Vec<HashMap<PartyID, MPCMessage>> {
+    fn build_input_mpc_messages_static(
+        attempts: &Vec<Attempt>,
+    ) -> Vec<HashMap<PartyID, MPCMessage>> {
         let mut messages = vec![];
         let mut last_processed_round = 0;
 
@@ -824,7 +836,9 @@ fn two_attempts_cuts_at_next_start() {
 
 #[test]
 fn three_attempts_respect_each_start() {
-    let m = |i: u16| -> HashMap<PartyID, MPCMessage> { hashmap! { i => vec![i as u8] } };
+    let m = |i: u16| -> HashMap<PartyID, MPCMessage> {
+        hashmap! { i => vec![i as u8] }
+    };
     let a1 = Attempt {
         start_round: 0,
         serialized_full_messages: vec![m(0), m(1), m(2), m(3)],
