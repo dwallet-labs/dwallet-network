@@ -8,7 +8,7 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Struct `SystemInnerV1`](#(ika_system=0x0)_system_inner_SystemInnerV1)
 -  [Struct `SystemEpochInfoEvent`](#(ika_system=0x0)_system_inner_SystemEpochInfoEvent)
 -  [Struct `SystemProtocolCapVerifiedEvent`](#(ika_system=0x0)_system_inner_SystemProtocolCapVerifiedEvent)
--  [Struct `SystemCheckpointInfoEvent`](#(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent)
+-  [Struct `SystemParamsMessageInfoEvent`](#(ika_system=0x0)_system_inner_SystemParamsMessageInfoEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_create)
 -  [Function `advance_network_keys`](#(ika_system=0x0)_system_inner_advance_network_keys)
@@ -51,6 +51,9 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_inner_authorize_update_message_by_cap)
 -  [Function `authorize_update_message`](#(ika_system=0x0)_system_inner_authorize_update_message)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_inner_commit_upgrade)
+-  [Function `process_params_message_by_cap`](#(ika_system=0x0)_system_inner_process_params_message_by_cap)
+-  [Function `process_params_message_by_quorum`](#(ika_system=0x0)_system_inner_process_params_message_by_quorum)
+-  [Function `process_params_message`](#(ika_system=0x0)_system_inner_process_params_message)
 -  [Function `epoch_duration_ms`](#(ika_system=0x0)_system_inner_epoch_duration_ms)
 
 
@@ -196,6 +199,11 @@ Uses SystemParametersV1 as the parameters.
  The current protocol version, starting from 1.
 </dd>
 <dt>
+<code>next_protocol_version: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;</code>
 </dt>
 <dd>
@@ -226,12 +234,6 @@ Uses SystemParametersV1 as the parameters.
  Unix timestamp of the current epoch start.
 </dd>
 <dt>
-<code>total_messages_processed: u64</code>
-</dt>
-<dd>
- The total messages processed.
-</dd>
-<dt>
 <code>remaining_rewards: <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;</code>
 </dt>
 <dd>
@@ -250,6 +252,11 @@ Uses SystemParametersV1 as the parameters.
 </dd>
 <dt>
 <code>dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletNetworkDecryptionKeyCap">dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap</a>&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>last_processed_params_message_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -349,15 +356,15 @@ Event emitted during verifing quorum checkpoint submmision signature.
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent"></a>
+<a name="(ika_system=0x0)_system_inner_SystemParamsMessageInfoEvent"></a>
 
-## Struct `SystemCheckpointInfoEvent`
+## Struct `SystemParamsMessageInfoEvent`
 
 Event containing system-level checkpoint information, emitted during
 the checkpoint submmision message.
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemParamsMessageInfoEvent">SystemParamsMessageInfoEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -401,6 +408,15 @@ the checkpoint submmision message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: u64 = 3;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_EBpsTooLarge"></a>
 
 
@@ -430,6 +446,15 @@ the checkpoint submmision message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_EIncorrectEpochInParamsMessage"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInParamsMessage">EIncorrectEpochInParamsMessage</a>: u64 = 4;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_ENextCommitteeNotSetOnAdvanceEpoch"></a>
 
 
@@ -455,6 +480,24 @@ the checkpoint submmision message.
 
 <pre><code>#[error]
 <b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongEpochState">EWrongEpochState</a>: vector&lt;u8&gt; = b"The <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> is in the wrong <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> state <b>for</b> the operation.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_system_inner_EWrongParamsMessageSequenceNumber"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongParamsMessageSequenceNumber">EWrongParamsMessageSequenceNumber</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT">PARAMS_MESSAGE_INTENT</a>: vector&lt;u8&gt; = vector[2, 0, 0];
 </code></pre>
 
 
@@ -490,16 +533,17 @@ This function will be called only once in init.
     <b>let</b> system_state = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: 0,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
+        next_protocol_version: option::none(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>,
         parameters,
         <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>,
-        total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
+        last_processed_params_message_sequence_number: option::none(),
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -1337,6 +1381,9 @@ gas coins.
     <b>let</b> total_reward_amount_before_distribution = total_reward.value();
     <b>let</b> new_epoch = current_epoch + 1;
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> = new_epoch;
+    <b>if</b> (self.next_protocol_version.is_some()) {
+        self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a> = self.next_protocol_version.extract();
+    };
     self
         .<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>
         .<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(
@@ -1718,12 +1765,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     package_id: ID,
     digest: vector&lt;u8&gt;,
 ): UpgradeTicket {
-    <b>let</b> protocol_cap_id = object::id(cap);
-    <b>assert</b>!(self.authorized_protocol_cap_ids.contains(&protocol_cap_id), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap">EUnauthorizedProtocolCap</a>);
-    event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemProtocolCapVerifiedEvent">SystemProtocolCapVerifiedEvent</a> {
-        <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
-        protocol_cap_id: object::id(cap),
-    });
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(cap);
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message">authorize_update_message</a>(package_id, digest)
 }
 </code></pre>
@@ -1786,6 +1828,123 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     <b>let</b> old_package_id = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].package();
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].commit(receipt);
     old_package_id
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_process_params_message_by_cap"></a>
+
+## Function `process_params_message_by_cap`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message_by_cap">process_params_message_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message_by_cap">process_params_message_by_cap</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
+    cap: &ProtocolCap,
+    message: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+)  {
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(cap);
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message">process_params_message</a>(message, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_process_params_message_by_quorum"></a>
+
+## Function `process_params_message_by_quorum`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message_by_quorum">process_params_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message_by_quorum">process_params_message_by_quorum</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
+    signature: vector&lt;u8&gt;,
+    signers_bitmap: vector&lt;u8&gt;,
+    message: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+) {
+    <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>();
+    <b>assert</b>!(!<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>.members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>);
+    <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT">PARAMS_MESSAGE_INTENT</a>;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>));
+    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>.verify_certificate(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, &signature, &signers_bitmap, &intent_bytes);
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message">process_params_message</a>(message, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_process_params_message"></a>
+
+## Function `process_params_message`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message">process_params_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, message: vector&lt;u8&gt;, _ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_params_message">process_params_message</a>(self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>, message: vector&lt;u8&gt;, _ctx: &<b>mut</b> TxContext) {
+    <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
+    <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> = bcs_body.peel_u64();
+    <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInParamsMessage">EIncorrectEpochInParamsMessage</a>);
+    <b>let</b> sequence_number = bcs_body.peel_u64();
+    <b>if</b>(self.last_processed_params_message_sequence_number.is_none()) {
+        <b>assert</b>!(sequence_number == 0, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongParamsMessageSequenceNumber">EWrongParamsMessageSequenceNumber</a>);
+        self.last_processed_params_message_sequence_number.fill(sequence_number);
+    } <b>else</b> {
+        <b>assert</b>!(sequence_number &gt; 0 && *self.last_processed_params_message_sequence_number.borrow() + 1 == sequence_number, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongParamsMessageSequenceNumber">EWrongParamsMessageSequenceNumber</a>);
+        self.last_processed_params_message_sequence_number.swap(sequence_number);
+    };
+    <b>let</b> timestamp_ms = bcs_body.peel_u64();
+    event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemParamsMessageInfoEvent">SystemParamsMessageInfoEvent</a> {
+        <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+        sequence_number,
+        timestamp_ms,
+    });
+    <b>let</b> len = bcs_body.peel_vec_length();
+    <b>let</b> <b>mut</b> i = 0;
+    <b>while</b> (i &lt; len) {
+        <b>let</b> message_data_type = bcs_body.peel_vec_length();
+            // Parses params message BCS bytes directly.
+            <b>if</b> (message_data_type == 0) {
+                <b>let</b> next_protocol_version = bcs_body.peel_u64();
+                self.next_protocol_version.fill(next_protocol_version);
+            };
+        i = i + 1;
+    };
 }
 </code></pre>
 

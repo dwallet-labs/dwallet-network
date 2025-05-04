@@ -1189,7 +1189,7 @@ SystemEpochInfoEvent
 SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner
-SystemCheckpointInfoEvent
+SystemParamsMessageInfoEvent
 	public struct
 	0x0::system_inner
 create
@@ -1315,6 +1315,15 @@ authorize_update_message
 commit_upgrade
 	public(package) fun
 	0x0::system_inner
+process_params_message_by_cap
+	public(package) fun
+	0x0::system_inner
+process_params_message_by_quorum
+	public(package) fun
+	0x0::system_inner
+process_params_message
+	public(package) fun
+	0x0::system_inner
 epoch_duration_ms
 	public(package) fun
 	0x0::system_inner
@@ -1412,6 +1421,12 @@ authorize_update_message_by_cap
 	public fun
 	0x0::system
 commit_upgrade
+	public fun
+	0x0::system
+process_params_message_by_cap
+	public fun
+	0x0::system
+process_params_message_by_quorum
 	public fun
 	0x0::system
 migrate

@@ -76,16 +76,17 @@ pub struct UpgradeCap {
 pub struct SystemInnerV1 {
     pub epoch: u64,
     pub protocol_version: u64,
+    pub next_protocol_version: Option<u64>,
     pub upgrade_caps: Vec<UpgradeCap>,
     pub validator_set: ValidatorSetV1,
     pub parameters: SystemParametersV1,
     pub ika_treasury: IkaTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
-    pub total_messages_processed: u64,
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
+    pub last_processed_params_message_sequence_number: Option<u64>,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
