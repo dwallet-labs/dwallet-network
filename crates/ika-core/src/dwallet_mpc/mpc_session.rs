@@ -296,6 +296,29 @@ impl DWalletMPCSession {
         ))
     }
 
+    pub(crate) fn handle_session_failed_due_to_malicious_parties(
+        &mut self,
+        malicious_actors: &HashSet<PartyID>,
+    ) {
+        // For every advance we increase the round number by 1,
+        // so to re-run the same round, we decrease it by 1.
+        self.pending_quorum_for_highest_round_number -= 1;
+        // Remove malicious parties from the self messages.
+        let round_messages = self
+            .serialized_full_messages
+            .get_mut(self.pending_quorum_for_highest_round_number)
+            .expect("session cannot fail with malicious parties for a round that no messages were received for");
+        malicious_actors.iter().for_each(|malicious_actor| {
+            round_messages.remove(malicious_actor);
+        });
+        if let Some(spare_round_messages) = self
+            .spare_messages
+            .get_mut(self.pending_quorum_for_highest_round_number)
+        {
+            round_messages.extend(spare_round_messages.clone());
+        }
+    }
+
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
