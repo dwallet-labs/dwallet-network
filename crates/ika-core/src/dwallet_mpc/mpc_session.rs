@@ -414,7 +414,7 @@ impl DWalletMPCSession {
                 );
                 return;
             }
-            self.attempts.push(Attempt::new(round_to_restart_from + 1));
+            self.attempts.push(Attempt::new(round_to_restart_from));
         }
         self.pending_quorum_for_highest_round_number = round_to_restart_from;
     }
