@@ -211,6 +211,13 @@ where
             let system_inner = match system_inner {
                 SystemInner::V1(system_inner) => system_inner,
             };
+            if network_decryption_keys
+                .iter()
+                .any(|(_, key)| key.current_epoch != system_inner.epoch())
+            {
+                warn!("The network decryption keys are not in the current epoch");
+                continue;
+            }
             let active_bls_committee = system_inner.get_ika_active_committee();
             let active_committee = system_inner.read_bls_committee(&active_bls_committee);
             let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
@@ -256,8 +263,8 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key);
-                        network_keys_cache.insert((key_id, system_inner.epoch()));
+                        all_network_keys_data.insert(key_id.clone(), key.clone());
+                        network_keys_cache.insert((key_id, key.epoch));
                     }
                     Err(err) => {
                         error!(
