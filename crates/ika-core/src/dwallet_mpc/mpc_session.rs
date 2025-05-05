@@ -76,7 +76,7 @@ pub struct Attempt {
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
     /// Messages that have been received after the first consensus round in which a quorum has been reached for that round.
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
-    /// malicious actors.
+    /// too many malicious actors.
     pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
 }
 
