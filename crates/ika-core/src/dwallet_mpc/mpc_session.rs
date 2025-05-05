@@ -73,19 +73,19 @@ pub struct Attempt {
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
-    pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     /// Messages that have been received after the first consensus round in which a quorum has been reached for that round.
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
     /// too many malicious actors.
-    pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) spare_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 }
 
 impl Attempt {
     fn new(start_round: usize) -> Self {
         Self {
             start_round,
-            serialized_full_messages: vec![],
-            spare_messages: vec![],
+            serialized_full_messages: HashMap::new(),
+            spare_messages: HashMap::new(),
         }
     }
 
@@ -94,57 +94,17 @@ impl Attempt {
         message: &DWalletMPCMessage,
         source_party_id: PartyID,
     ) {
-        match self.spare_messages.get_mut(message.round_number) {
-            None => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Creating new spare messages map for round",
-                );
-                for _ in self.spare_messages.len()..=message.round_number {
-                    self.spare_messages.push(HashMap::new());
-                }
-                self.spare_messages[message.round_number]
-                    .insert(source_party_id, message.message.clone());
-            }
-            Some(spare_messages) => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Adding message to existing spare messages map",
-                );
-                spare_messages.insert(source_party_id, message.message.clone());
-            }
-        }
+        self.spare_messages
+            .entry(message.round_number)
+            .or_insert(Default::default())
+            .insert(source_party_id, message.message.clone());
     }
 
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage, source_party_id: PartyID) {
-        match self.serialized_full_messages.get_mut(message.round_number) {
-            None => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Creating new spare messages map for round",
-                );
-                for _ in self.serialized_full_messages.len()..=message.round_number {
-                    self.serialized_full_messages.push(HashMap::new());
-                }
-                self.serialized_full_messages[message.round_number]
-                    .insert(source_party_id, message.message.clone());
-            }
-            Some(serialized_full_messages) => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Adding message to existing spare messages map",
-                );
-                serialized_full_messages.insert(source_party_id, message.message.clone());
-            }
-        }
+        self.serialized_full_messages
+            .entry(message.round_number)
+            .or_insert(Default::default())
+            .insert(source_party_id, message.message.clone());
     }
 
     pub(crate) fn merge_spare_messages_and_remove_malicious(
@@ -155,15 +115,15 @@ impl Attempt {
         // Remove malicious parties from the self messages.
         let round_messages = self
             .serialized_full_messages
-            .get_mut(round_to_restart)
+            .get_mut(&round_to_restart)
             .expect("session cannot fail with malicious parties for a round that no messages were received for");
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
-            if let Some(spare_round_messages) = self.spare_messages.get_mut(round_to_restart) {
+            if let Some(spare_round_messages) = self.spare_messages.get_mut(&round_to_restart) {
                 spare_round_messages.remove(malicious_actor);
             }
         });
-        if let Some(spare_round_messages) = self.spare_messages.get(round_to_restart) {
+        if let Some(spare_round_messages) = self.spare_messages.get(&round_to_restart) {
             round_messages.extend(spare_round_messages.clone());
         }
     }
@@ -183,7 +143,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) session_id: ObjectID,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
-    pub(super) pending_quorum_for_highest_round_number: usize,
+    pub(super) current_cryptographic_round: usize,
     pub(super) attempts: Vec<Attempt>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
@@ -209,7 +169,7 @@ impl DWalletMPCSession {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_id,
-            pending_quorum_for_highest_round_number: 0,
+            current_cryptographic_round: 1,
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
@@ -246,7 +206,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    round=?self.pending_quorum_for_highest_round_number - 1,
+                    round=?self.current_cryptographic_round,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
@@ -324,7 +284,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -351,7 +311,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -406,11 +366,11 @@ impl DWalletMPCSession {
                 malicious_actors,
             );
         });
-        if round_to_restart_from - 1 != self.pending_quorum_for_highest_round_number - 1 {
-            if round_to_restart_from - 1 >= self.pending_quorum_for_highest_round_number {
+        if round_to_restart_from != self.current_cryptographic_round - 1 {
+            if round_to_restart_from >= self.current_cryptographic_round {
                 error!(
                     session_id=?self.session_id,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     round_to_restart_from=?round_to_restart_from,
                     "round to restart from is greater than the current round number, this should never happen"
                 );
@@ -418,7 +378,7 @@ impl DWalletMPCSession {
             }
             self.attempts.push(Attempt::new(round_to_restart_from));
         }
-        self.pending_quorum_for_highest_round_number = round_to_restart_from - 1;
+        self.current_cryptographic_round = round_to_restart_from;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
@@ -454,36 +414,49 @@ impl DWalletMPCSession {
     /// Take messages from the first attempt until the start of the second attempt, from the second until the
     /// start of the third, and so on.
     fn build_input_mpc_messages(&self) -> Vec<HashMap<PartyID, MPCMessage>> {
-        Self::build_input_mpc_messages_static(&self.attempts)
+        Self::build_input_mpc_messages_static(&self.attempts, self.current_cryptographic_round)
     }
 
     /// A static version of [`Self::build_input_mpc_messages_static`] for testing purposes.
     fn build_input_mpc_messages_static(
         attempts: &Vec<Attempt>,
+        current_cryptographic_round: usize,
     ) -> Vec<HashMap<PartyID, MPCMessage>> {
         let mut messages = vec![];
-        let mut last_processed_round = 0;
+        let mut last_processed_round = 1;
 
-        for i in 0..attempts.len() {
-            if i + 1 < attempts.len() {
+        for attempt_number in 0..attempts.len() {
+            if attempt_number + 1 < attempts.len() {
                 // there's a next attempt
-                let attempt = &attempts[i];
-                let next_attempt = &attempts[i + 1];
-                messages.extend(
-                    (attempt.serialized_full_messages.clone()
-                        [last_processed_round..next_attempt.start_round])
-                        .to_vec(),
-                );
+                let attempt = &attempts[attempt_number];
+                let next_attempt = &attempts[attempt_number + 1];
+                for crypto_round_number in last_processed_round..next_attempt.start_round {
+                    match attempt.serialized_full_messages.get(&crypto_round_number) {
+                        Some(round_messages) => messages.push(round_messages.clone()),
+                        None => {
+                            // Should never happen, as the session should have a quorum of messages for every round
+                            // before the next attempt start round.
+                            error!(
+                                crypto_round=?crypto_round_number,
+                                "no messages found for round that should have a quorum messages",
+                            );
+                        }
+                    }
+                }
                 last_processed_round = next_attempt.start_round;
             } else {
-                // no next attempt
-                if last_processed_round >= attempts[i].serialized_full_messages.len() {
-                    // no messages to process
+                if last_processed_round > current_cryptographic_round {
                     break;
                 }
-                messages.extend(
-                    (attempts[i].serialized_full_messages.clone()[last_processed_round..]).to_vec(),
-                );
+                let attempt = &attempts[attempt_number];
+                for crypto_round_number in
+                    last_processed_round..current_cryptographic_round + 1
+                {
+                    match attempt.serialized_full_messages.get(&crypto_round_number) {
+                        Some(round_messages) => messages.push(round_messages.clone()),
+                        None => return messages,
+                    }
+                }
             }
         }
         messages
@@ -501,7 +474,7 @@ impl DWalletMPCSession {
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
-            crypto_round=?self.pending_quorum_for_highest_round_number,
+            crypto_round=?self.current_cryptographic_round,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
@@ -513,7 +486,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     validator=?self.epoch_store()?.name,
                     session_id=?self.session_id,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     "Advancing DKG first party",
                 );
                 let public_input = bcs::from_bytes(public_input)?;
@@ -674,7 +647,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
-            self.pending_quorum_for_highest_round_number,
+            self.current_cryptographic_round,
             self.attempts.len() - 1,
         ))
     }
@@ -742,7 +715,7 @@ impl DWalletMPCSession {
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         };
-        if message.round_number >= self.pending_quorum_for_highest_round_number {
+        if message.round_number >= self.current_cryptographic_round {
             attempt.store_message(message, source_party_id);
         } else {
             attempt.store_spare_message(message, source_party_id);
@@ -753,13 +726,13 @@ impl DWalletMPCSession {
     pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                if self.pending_quorum_for_highest_round_number == 0
+                if self.current_cryptographic_round == 1
                     || self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
                                 .build_input_mpc_messages()
-                                .get(self.pending_quorum_for_highest_round_number)
+                                .get(self.current_cryptographic_round - 2)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
