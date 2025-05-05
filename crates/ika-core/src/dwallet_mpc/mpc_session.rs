@@ -732,7 +732,7 @@ impl DWalletMPCSession {
                         .is_authorized_subset(
                             &self
                                 .build_input_mpc_messages()
-                                .get(self.pending_quorum_for_highest_round_number)
+                                .get(self.pending_quorum_for_highest_round_number - 1)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
