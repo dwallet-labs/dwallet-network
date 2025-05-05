@@ -8,7 +8,6 @@ use sui::balance::Balance;
 use sui::sui::SUI;
 use sui::coin::{Coin};
 use sui::dynamic_field;
-use sui::vec_map::VecMap;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     Self,
@@ -350,32 +349,4 @@ public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordi
 public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
-}
-
-public(package) fun set_supported_curves_to_signature_algorithms(
-    self: &mut DWalletCoordinator,
-    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
-) {
-    self.inner_mut().set_supported_curves_to_signature_algorithms(supported_curves_to_signature_algorithms);
-}
-
-public(package) fun set_supported_signature_algorithms_to_hash_schemes(
-    self: &mut DWalletCoordinator,
-    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
-) {
-    self.inner_mut().set_supported_signature_algorithms_to_hash_schemes(supported_signature_algorithms_to_hash_schemes);
-}
-
-public(package) fun set_paused_curves(
-    self: &mut DWalletCoordinator,
-    paused_curves: vector<u8>,
-) {
-    self.inner_mut().set_paused_curves(paused_curves);
-}
-
-public(package) fun set_paused_signature_algorithms(
-    self: &mut DWalletCoordinator,
-    paused_signature_algorithms: vector<u8>,
-) {
-    self.inner_mut().set_paused_signature_algorithms(paused_signature_algorithms);
 }

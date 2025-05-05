@@ -2395,30 +2395,20 @@ fun process_checkpoint_message(
     self.total_messages_processed = self.total_messages_processed + i;
 }
 
-public(package) fun set_supported_curves_to_signature_algorithms(
+public(package) fun set_supported_curves_and_signature_algorithms_and_hash_schemes(
     self: &mut DWalletCoordinatorInner,
-    supported_curvess_to_signature_algorithm: VecMap<u8, vector<u8>>,
-) {
-    self.supported_curves_to_signature_algorithms = supported_curvess_to_signature_algorithm;
-}
-
-public(package) fun set_supported_signature_algorithms_to_hash_schemes(
-    self: &mut DWalletCoordinatorInner,
+    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
     supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
 ) {
+    self.supported_curves_to_signature_algorithms = supported_curves_to_signature_algorithms;
     self.supported_signature_algorithms_to_hash_schemes = supported_signature_algorithms_to_hash_schemes;
 }
 
-public(package) fun set_paused_curves(
+public(package) fun set_paused_curves_and_signature_algorithms(
     self: &mut DWalletCoordinatorInner,
     paused_curves: vector<u8>,
-) {
-    self.paused_curves = paused_curves;
-}
-
-public(package) fun set_paused_signature_algorithms(
-    self: &mut DWalletCoordinatorInner,
     paused_signature_algorithms: vector<u8>,
 ) {
+    self.paused_curves = paused_curves;
     self.paused_signature_algorithms = paused_signature_algorithms;
 }

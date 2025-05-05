@@ -47,10 +47,8 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `next_epoch_active_committee`](#(ika_system=0x0)_system_inner_next_epoch_active_committee)
 -  [Function `verify_cap`](#(ika_system=0x0)_system_inner_verify_cap)
 -  [Function `request_dwallet_network_decryption_key_dkg_by_cap`](#(ika_system=0x0)_system_inner_request_dwallet_network_decryption_key_dkg_by_cap)
--  [Function `set_supported_curves_to_signature_algorithms`](#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms)
--  [Function `set_supported_signature_algorithms_to_hash_schemes`](#(ika_system=0x0)_system_inner_set_supported_signature_algorithms_to_hash_schemes)
--  [Function `set_paused_curves`](#(ika_system=0x0)_system_inner_set_paused_curves)
--  [Function `set_paused_signature_algorithms`](#(ika_system=0x0)_system_inner_set_paused_signature_algorithms)
+-  [Function `set_supported_curves_and_signature_algorithms_and_hash_schemes`](#(ika_system=0x0)_system_inner_set_supported_curves_and_signature_algorithms_and_hash_schemes)
+-  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms)
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_inner_authorize_update_message_by_cap)
 -  [Function `authorize_update_message`](#(ika_system=0x0)_system_inner_authorize_update_message)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_inner_commit_upgrade)
@@ -1662,13 +1660,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms"></a>
+<a name="(ika_system=0x0)_system_inner_set_supported_curves_and_signature_algorithms_and_hash_schemes"></a>
 
-## Function `set_supported_curves_to_signature_algorithms`
+## Function `set_supported_curves_and_signature_algorithms_and_hash_schemes`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms">set_supported_curves_to_signature_algorithms</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_curves_to_signature_algorithms: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_and_signature_algorithms_and_hash_schemes">set_supported_curves_and_signature_algorithms_and_hash_schemes</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_curves_to_signature_algorithms: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;, supported_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
 </code></pre>
 
 
@@ -1677,44 +1675,15 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms">set_supported_curves_to_signature_algorithms</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_and_signature_algorithms_and_hash_schemes">set_supported_curves_and_signature_algorithms_and_hash_schemes</a>(
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> DWalletCoordinatorInner,
     supported_curves_to_signature_algorithms: VecMap&lt;u8, vector&lt;u8&gt;&gt;,
-    <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
-) {
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms">set_supported_curves_to_signature_algorithms</a>(supported_curves_to_signature_algorithms);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_system_inner_set_supported_signature_algorithms_to_hash_schemes"></a>
-
-## Function `set_supported_signature_algorithms_to_hash_schemes`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_signature_algorithms_to_hash_schemes">set_supported_signature_algorithms_to_hash_schemes</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_signature_algorithms_to_hash_schemes">set_supported_signature_algorithms_to_hash_schemes</a>(
-    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> DWalletCoordinatorInner,
     supported_signature_algorithms_to_hash_schemes: VecMap&lt;u8, vector&lt;u8&gt;&gt;,
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_signature_algorithms_to_hash_schemes">set_supported_signature_algorithms_to_hash_schemes</a>(supported_signature_algorithms_to_hash_schemes);
+    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_and_signature_algorithms_and_hash_schemes">set_supported_curves_and_signature_algorithms_and_hash_schemes</a>(supported_curves_to_signature_algorithms, supported_signature_algorithms_to_hash_schemes);
 }
 </code></pre>
 
@@ -1722,13 +1691,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_set_paused_curves"></a>
+<a name="(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms"></a>
 
-## Function `set_paused_curves`
+## Function `set_paused_curves_and_signature_algorithms`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves">set_paused_curves</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, paused_curves: vector&lt;u8&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, paused_curves: vector&lt;u8&gt;, paused_signature_algorithms: vector&lt;u8&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
 </code></pre>
 
 
@@ -1737,44 +1706,15 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves">set_paused_curves</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> DWalletCoordinatorInner,
     paused_curves: vector&lt;u8&gt;,
-    <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
-) {
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves">set_paused_curves</a>(paused_curves);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_system_inner_set_paused_signature_algorithms"></a>
-
-## Function `set_paused_signature_algorithms`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_signature_algorithms">set_paused_signature_algorithms</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, paused_signature_algorithms: vector&lt;u8&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_signature_algorithms">set_paused_signature_algorithms</a>(
-    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> DWalletCoordinatorInner,
     paused_signature_algorithms: vector&lt;u8&gt;,
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_signature_algorithms">set_paused_signature_algorithms</a>(paused_signature_algorithms);
+    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(paused_curves, paused_signature_algorithms);
 }
 </code></pre>
 

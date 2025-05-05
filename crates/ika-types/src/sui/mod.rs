@@ -68,6 +68,10 @@ pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
 pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
     ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
+pub const SET_SUPPORTED_CURVES_AND_SIGNATURE_ALGORITHMS_AND_HASH_SCHEMES_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_supported_curves_and_signature_algorithms_and_hash_schemes");
+pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_paused_curves_and_signature_algorithms");
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
