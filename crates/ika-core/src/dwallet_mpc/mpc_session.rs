@@ -422,6 +422,7 @@ impl DWalletMPCSession {
                 );
                 return;
             }
+            self.pending_quorum_for_highest_round_number = round_to_restart_from;
             let last_attempt = self
                 .attempts
                 .last_mut()
