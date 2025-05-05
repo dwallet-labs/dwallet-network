@@ -361,11 +361,20 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
+<a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 17;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
 </code></pre>
 
 
@@ -374,7 +383,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
 </code></pre>
 
 
@@ -401,7 +410,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotAValidator">ENotAValidator</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotAValidator">ENotAValidator</a>: u64 = 2;
 </code></pre>
 
 
@@ -420,7 +429,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 18;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
 </code></pre>
 
 
@@ -429,7 +438,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>: u64 = 10;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>: u64 = 4;
 </code></pre>
 
 
@@ -438,7 +447,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorAlreadyRemoved">EValidatorAlreadyRemoved</a>: u64 = 11;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorAlreadyRemoved">EValidatorAlreadyRemoved</a>: u64 = 5;
 </code></pre>
 
 
@@ -447,7 +456,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
 </code></pre>
 
 
@@ -627,7 +636,7 @@ Called by <code>ika_system</code> to remove a validator candidate, and move them
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_pending_active_set">update_pending_active_set</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, current_epoch: u64, committee_selected: bool, insert_if_not_in_set: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_pending_active_set">update_pending_active_set</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, current_epoch: u64, committee_selected: bool, insert_if_not_in_set: bool): bool
 </code></pre>
 
 
@@ -642,15 +651,15 @@ Called by <code>ika_system</code> to remove a validator candidate, and move them
     current_epoch: u64,
     committee_selected: bool,
     insert_if_not_in_set: bool,
-) {
+): bool {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <b>let</b> balance = <b>if</b> (committee_selected) {
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.ika_balance_at_epoch(current_epoch + 2)
     } <b>else</b> {
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.ika_balance_at_epoch(current_epoch + 1)
     };
-    <b>let</b> (_, <b>mut</b> removed_validator_id) = <b>if</b> (insert_if_not_in_set) {
-        self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().insert_or_update(validator_id, balance)
+    <b>let</b> (in_set, <b>mut</b> removed_validator_id) = <b>if</b> (insert_if_not_in_set) {
+        self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().insert_or_update_or_remove(validator_id, balance)
     } <b>else</b> {
         self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().update_or_remove(validator_id, balance)
     };
@@ -664,6 +673,7 @@ Called by <code>ika_system</code> to remove a validator candidate, and move them
             is_voluntary: <b>false</b>,
         });
     };
+    in_set
 }
 </code></pre>
 
@@ -701,7 +711,8 @@ Called by <code>ika_system</code> to add a new validator to <code>pending_active
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_preactive(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.activate(cap, current_epoch, committee_selected);
     self.validators.add(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_pending_active_set">update_pending_active_set</a>(validator_id, current_epoch, committee_selected, <b>true</b>);
+    <b>let</b> in_set = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_update_pending_active_set">update_pending_active_set</a>(validator_id, current_epoch, committee_selected, <b>true</b>);
+    <b>assert</b>!(in_set, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>);
 }
 </code></pre>
 
@@ -817,7 +828,7 @@ Aborts in case the staking amount is smaller than MIN_STAKING_THRESHOLD
     <b>let</b> ika_amount = stake.value();
     <b>assert</b>!(ika_amount &gt;= <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>);
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
-    <b>let</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.stake(
+    <b>let</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_add_stake">request_add_stake</a>(
         stake,
         epoch,
         committee_selected,
@@ -1331,7 +1342,7 @@ It does the following things:
 5. At the end, we calculate the total stake for the new epoch.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, _current_epoch: u64, new_epoch: u64, total_reward: &<b>mut</b> <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;, reward_slashing_rate: u16)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_epoch: u64, total_reward: &<b>mut</b> <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;, reward_slashing_rate: u16)
 </code></pre>
 
 
@@ -1342,7 +1353,6 @@ It does the following things:
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(
     self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    _current_epoch: u64,
     new_epoch: u64,
     total_reward: &<b>mut</b> Balance&lt;IKA&gt;,
     reward_slashing_rate: u16,

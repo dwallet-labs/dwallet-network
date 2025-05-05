@@ -128,7 +128,6 @@ impl System {
 #[enum_dispatch]
 pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
-    fn computation_price_per_unit_size(&self) -> u64;
     fn protocol_version(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;

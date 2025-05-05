@@ -53,8 +53,6 @@ public struct SystemInnerV1 has store {
     validator_set: ValidatorSet,
     /// A list of system config parameters.
     parameters: SystemParametersV1,
-    /// The computation price per unit size for the current epoch.
-    computation_price_per_unit_size: u64,
     /// Schedule of stake subsidies given out each epoch.
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
@@ -77,7 +75,6 @@ public struct SystemInnerV1 has store {
 public struct SystemEpochInfoEvent has copy, drop {
     epoch: u64,
     protocol_version: u64,
-    computation_price_per_unit_size: u64,
     total_stake: u64,
     stake_subsidy_amount: u64,
     total_computation_fees: u64,
@@ -135,7 +132,6 @@ public(package) fun create(
         upgrade_caps,
         validator_set,
         parameters,
-        computation_price_per_unit_size: 0,
         protocol_treasury,
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
@@ -519,7 +515,6 @@ public(package) fun advance_epoch(
     self
         .validator_set
         .advance_epoch(
-            current_epoch,
             new_epoch,
             &mut total_reward,
             self.parameters.reward_slashing_rate,
@@ -542,7 +537,6 @@ public(package) fun advance_epoch(
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
         protocol_version: self.protocol_version,
-        computation_price_per_unit_size: self.computation_price_per_unit_size,
         total_stake: new_total_stake,
         stake_subsidy_amount,
         total_computation_fees,

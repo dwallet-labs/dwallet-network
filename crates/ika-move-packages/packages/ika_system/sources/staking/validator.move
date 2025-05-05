@@ -259,7 +259,7 @@ public(package) fun deactivate(
 }
 
 /// Stake the given amount of IKA in the validator.
-public(package) fun stake(
+public(package) fun request_add_stake(
     validator: &mut Validator,
     to_stake: Balance<IKA>,
     current_epoch: u64,

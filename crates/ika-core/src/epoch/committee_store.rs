@@ -35,7 +35,7 @@ fn committee_table_default_config() -> DBOptions {
 }
 
 impl CommitteeStore {
-    pub fn new(path: PathBuf, genesis_committee: &Committee, db_options: Option<Options>) -> Self {
+    pub fn new(path: PathBuf, db_options: Option<Options>) -> Self {
         let tables = CommitteeStoreTables::open_tables_read_write(
             path,
             MetricConf::new("committee"),
@@ -46,18 +46,13 @@ impl CommitteeStore {
             tables,
             cache: RwLock::new(HashMap::new()),
         };
-        // if store.database_is_empty() {
-        //     store
-        //         .init_genesis_committee(genesis_committee.clone())
-        //         .expect("Init genesis committee data must not fail");
-        // }
         store
     }
 
     pub fn new_for_testing(genesis_committee: &Committee) -> Self {
         let dir = std::env::temp_dir();
         let path = dir.join(format!("DB_{:?}", nondeterministic!(ObjectID::random())));
-        Self::new(path, genesis_committee, None)
+        Self::new(path, None)
     }
 
     pub fn init_genesis_committee(&self, genesis_committee: Committee) -> IkaResult {

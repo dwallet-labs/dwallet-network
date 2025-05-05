@@ -361,10 +361,6 @@ where
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                // let validators = self
-                //     .get_validators_info_by_ids(ika_system_state_inner, validator_ids)
-                //     .await?;
-
                 let network_decryption_keys = self
                     .inner
                     .get_network_decryption_keys(
@@ -484,54 +480,6 @@ where
                 })
             })
             .collect::<Result<Vec<_>, _>>()
-        // let validators = self
-        //     .inner
-        //     .get_validators_from_object_table(
-        //         ika_system_state_inner.validators.validators.id,
-        //         validator_ids,
-        //     )
-        //     .await
-        //     .map_err(|e| {
-        //         IkaError::SuiClientInternalError(format!(
-        //             "failure in `get_validators_from_object_table()`: {e}"
-        //         ))
-        //     })?;
-        // let validators = validators
-        //     .iter()
-        //     .map(|v| {
-        //         bcs::from_bytes::<Validator>(&v).map_err(|e| {
-        //             IkaError::SuiClientSerializationError(format!(
-        //                 "failed to de-serialize Validator info: {e}"
-        //             ))
-        //         })
-        //     })
-        //     .collect::<Result<Vec<_>, _>>()?;
-        //
-        // let validators = self
-        //     .inner
-        //     .get_validator_inners(validators)
-        //     .await
-        //     .map_err(|e| {
-        //         IkaError::SuiClientInternalError(format!(
-        //             "failure in `get_validator_inners()`: {e}"
-        //         ))
-        //     })?;
-        //
-        // let validators = validators
-        //     .iter()
-        //     .map(|v| {
-        //         bcs::from_bytes::<Field<u64, ValidatorInnerV1>>(&v).map_err(|e| {
-        //             IkaError::SuiClientSerializationError(format!(
-        //                 "failure to de-serialize ValidatorInnerV1: {e}"
-        //             ))
-        //         })
-        //     })
-        //     .collect::<Result<Vec<_>, _>>()?;
-        //
-        // Ok(validators
-        //     .iter()
-        //     .map(|v| v.value.clone())
-        //     .collect::<Vec<_>>())
     }
 
     /// Get the mutable system object arg on chain.

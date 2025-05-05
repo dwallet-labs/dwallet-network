@@ -214,12 +214,6 @@ Uses SystemParametersV1 as the parameters.
  A list of system config parameters.
 </dd>
 <dt>
-<code>computation_price_per_unit_size: u64</code>
-</dt>
-<dd>
- The computation price per unit size for the current epoch.
-</dd>
-<dt>
 <code><a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">protocol_treasury::ProtocolTreasury</a></code>
 </dt>
 <dd>
@@ -295,11 +289,6 @@ the epoch advancement message.
 </dd>
 <dt>
 <code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>computation_price_per_unit_size: u64</code>
 </dt>
 <dd>
 </dd>
@@ -504,7 +493,6 @@ This function will be called only once in init.
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>,
         parameters,
-        computation_price_per_unit_size: 0,
         <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>,
         total_messages_processed: 0,
@@ -1352,7 +1340,6 @@ gas coins.
     self
         .<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>
         .<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(
-            current_epoch,
             new_epoch,
             &<b>mut</b> total_reward,
             self.parameters.reward_slashing_rate,
@@ -1370,7 +1357,6 @@ gas coins.
     event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemEpochInfoEvent">SystemEpochInfoEvent</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
-        computation_price_per_unit_size: self.computation_price_per_unit_size,
         total_stake: new_total_stake,
         stake_subsidy_amount,
         total_computation_fees,

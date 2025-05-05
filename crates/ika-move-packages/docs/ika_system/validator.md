@@ -11,7 +11,7 @@ title: Module `(ika_system=0x0)::validator`
 -  [Function `activate`](#(ika_system=0x0)_validator_activate)
 -  [Function `set_withdrawing`](#(ika_system=0x0)_validator_set_withdrawing)
 -  [Function `deactivate`](#(ika_system=0x0)_validator_deactivate)
--  [Function `stake`](#(ika_system=0x0)_validator_stake)
+-  [Function `request_add_stake`](#(ika_system=0x0)_validator_request_add_stake)
 -  [Function `request_withdraw_stake`](#(ika_system=0x0)_validator_request_withdraw_stake)
 -  [Function `withdraw_stake`](#(ika_system=0x0)_validator_withdraw_stake)
 -  [Function `advance_epoch`](#(ika_system=0x0)_validator_advance_epoch)
@@ -687,14 +687,14 @@ Set the state of the validator to <code>Withdrawing</code>.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_stake"></a>
+<a name="(ika_system=0x0)_validator_request_add_stake"></a>
 
-## Function `stake`
+## Function `request_add_stake`
 
 Stake the given amount of IKA in the validator.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, to_stake: <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;, current_epoch: u64, committee_selected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_request_add_stake">request_add_stake</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, to_stake: <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;, current_epoch: u64, committee_selected: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>
 </code></pre>
 
 
@@ -703,7 +703,7 @@ Stake the given amount of IKA in the validator.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_request_add_stake">request_add_stake</a>(
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>,
     to_stake: Balance&lt;IKA&gt;,
     current_epoch: u64,
@@ -724,7 +724,7 @@ Stake the given amount of IKA in the validator.
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>,
         ctx,
     );
-    // Add the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> to the pending <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> either <b>for</b> E+1 or E+2.
+    // Add the stake to the pending stake either <b>for</b> E+1 or E+2.
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.pending_stake.insert_or_add(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>, staked_amount);
     <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>
 }
@@ -761,10 +761,10 @@ Marks the <code>StakedIka</code> as withdrawing and updates the activation epoch
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value() &gt; 0, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>);
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>);
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.is_staked(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>);
-    // Only allow requesting <b>if</b> the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> cannot be withdrawn directly.
+    // Only allow requesting <b>if</b> the stake cannot be withdrawn directly.
     <b>assert</b>!(!<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.can_withdraw_early(in_next_committee, current_epoch), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>);
     // Early withdrawal request: only possible <b>if</b> activation epoch <b>has</b> not been
-    // reached, and the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> is already counted <b>for</b> the next committee selection.
+    // reached, and the stake is already counted <b>for</b> the next committee selection.
     <b>if</b> (<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>() == current_epoch + 1) {
         <b>let</b> withdraw_epoch = <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>() + 1;
         // register principal in the early withdrawals, the value will get converted to
@@ -774,7 +774,7 @@ Marks the <code>StakedIka</code> as withdrawing and updates the activation epoch
         <b>return</b>
     };
     <b>assert</b>!(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>() &lt;= current_epoch, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EActivationEpochNotReached">EActivationEpochNotReached</a>);
-    // If the node is in the committee, the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> will be withdrawn in E+2,
+    // If the node is in the committee, the stake will be withdrawn in E+2,
     // otherwise in E+1.
     <b>let</b> withdraw_epoch = <b>if</b> (in_next_committee) {
         current_epoch + 2
@@ -834,18 +834,18 @@ Perform the withdrawal of the staked IKA, returning the amount to the caller.
     ) {
         // One step withdrawal <b>for</b> an inactive node.
         <b>if</b> (<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a> &gt; current_epoch) {
-            // Not even active <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> yet, remove from pending <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a>.
+            // Not even active stake yet, remove from pending stake.
             <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.pending_stake.reduce(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value());
             0
         } <b>else</b> {
-            // Active <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a>, remove it with the current epoch <b>as</b> the withdraw epoch.
+            // Active stake, remove it with the current epoch <b>as</b> the withdraw epoch.
             <b>let</b> share_amount = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>
                 .<a href="../ika_system/validator.md#(ika_system=0x0)_validator_exchange_rate_at_epoch">exchange_rate_at_epoch</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>)
                 .convert_to_share_amount(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value());
             <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.pending_shares_withdraw.insert_or_add(current_epoch, share_amount);
             <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_calculate_rewards">calculate_rewards</a>(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.value(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>, current_epoch)
         }
-        // Note that <b>if</b> the <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> is in state Withdrawing, it can either be
+        // Note that <b>if</b> the stake is in state Withdrawing, it can either be
         // from a pre-active withdrawal, but then
         // (in_current_committee || in_next_committee) is <b>true</b> since it was
         // an early withdrawal, or from a standard two step withdrawal,
@@ -915,7 +915,7 @@ Advance epoch for the <code><a href="../ika_system/validator.md#(ika_system=0x0)
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_ika_balance">ika_balance</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_ika_balance">ika_balance</a> + <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rewards_amount">rewards_amount</a>;
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.latest_epoch = current_epoch;
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.roatate_next_epoch_info();
-    // Perform <a href="../ika_system/validator.md#(ika_system=0x0)_validator_stake">stake</a> deduction / addition <b>for</b> the current epoch.
+    // Perform stake deduction / addition <b>for</b> the current epoch.
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_process_pending_stake">process_pending_stake</a>(current_epoch);
 }
 </code></pre>

@@ -90,13 +90,14 @@ const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
 
 // Errors
 const ENonValidatorInReportRecords: u64 = 0;
-const EDuplicateValidator: u64 = 2;
-const ENotAValidator: u64 = 4;
-const EValidatorNotCandidate: u64 = 7;
-const EStakingBelowThreshold: u64 = 10;
-const EValidatorAlreadyRemoved: u64 = 11;
-const ECannotReportOneself: u64 = 17;
-const EReportRecordNotFound: u64 = 18;
+const EDuplicateValidator: u64 = 1;
+const ENotAValidator: u64 = 2;
+const EValidatorNotCandidate: u64 = 3;
+const EStakingBelowThreshold: u64 = 4;
+const EValidatorAlreadyRemoved: u64 = 5;
+const ECannotReportOneself: u64 = 6;
+const EReportRecordNotFound: u64 = 7;
+const ECannotJoinActiveSet: u64 = 8;
 
 const EInvalidCap: u64 = 101;
 
@@ -206,15 +207,15 @@ public(package) fun update_pending_active_set(
     current_epoch: u64,
     committee_selected: bool,
     insert_if_not_in_set: bool,
-) {
+): bool {
     let validator = self.get_validator_mut(validator_id);
     let balance = if (committee_selected) {
         validator.ika_balance_at_epoch(current_epoch + 2)
     } else {
         validator.ika_balance_at_epoch(current_epoch + 1)
     };
-    let (_, mut removed_validator_id) = if (insert_if_not_in_set) {
-        self.pending_active_set.borrow_mut().insert_or_update(validator_id, balance)
+    let (in_set, mut removed_validator_id) = if (insert_if_not_in_set) {
+        self.pending_active_set.borrow_mut().insert_or_update_or_remove(validator_id, balance)
     } else {
         self.pending_active_set.borrow_mut().update_or_remove(validator_id, balance)
     };
@@ -229,6 +230,7 @@ public(package) fun update_pending_active_set(
             is_voluntary: false,
         });
     };
+    in_set
 }
 
 /// Called by `ika_system` to add a new validator to `pending_active_validators`
@@ -251,7 +253,8 @@ public(package) fun request_add_validator(
     self.validators.add(validator_id, validator);
 
 
-    self.update_pending_active_set(validator_id, current_epoch, committee_selected, true);
+    let in_set = self.update_pending_active_set(validator_id, current_epoch, committee_selected, true);
+    assert!(in_set, ECannotJoinActiveSet);
 }
 
 public(package) fun assert_no_pending_or_active_duplicates(
@@ -313,7 +316,7 @@ public(package) fun request_add_stake(
     let ika_amount = stake.value();
     assert!(ika_amount >= MIN_STAKING_THRESHOLD, EStakingBelowThreshold);
     let validator = self.get_validator_mut(validator_id);
-    let staked_ika = validator.stake(
+    let staked_ika = validator.request_add_stake(
         stake, 
         epoch, 
         committee_selected, 
@@ -548,7 +551,6 @@ public(package) fun process_mid_epoch(
 ///   5. At the end, we calculate the total stake for the new epoch.
 public(package) fun advance_epoch(
     self: &mut ValidatorSet,
-    _current_epoch: u64,
     new_epoch: u64,
     total_reward: &mut Balance<IKA>,
     reward_slashing_rate: u16,
