@@ -12,6 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
+use futures::future::err;
 use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
 use ika_types::crypto::AuthorityName;
@@ -429,13 +430,18 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                             "failed to get the round to retry from, this should never happen. {mpc_round} {session_id}",
                         ));
 
-                    let malicious_actors = messages
-                        .last()
-                        .ok_or(general_error)?
-                        .keys()
+                    let keys = messages.last().ok_or(general_error)?.keys();
+                    let keys_clone = keys.clone();
+                    let malicious_actors = keys
                         .filter(|party_id| !honest_subset.contains(*party_id))
                         .cloned()
                         .collect();
+                    error!(
+                        unfiltered_malicious_round_keys=?keys_clone,
+                        ?malicious_actors,
+                        ?honest_subset,
+                        "recognized malicious actors"
+                    );
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
                         round_to_restart,

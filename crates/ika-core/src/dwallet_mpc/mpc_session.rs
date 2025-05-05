@@ -121,6 +121,12 @@ impl Attempt {
     }
 
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage, source_party_id: PartyID) {
+        error!(
+            ?source_party_id,
+            attempt_start_round=?self.start_round,
+            message_round_number=?message.round_number,
+            "storing message"
+        );
         match self.serialized_full_messages.get_mut(message.round_number) {
             None => {
                 info!(
@@ -318,16 +324,16 @@ impl DWalletMPCSession {
                     .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
                 let base64_mpc_session_type =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
-                error!(
-                    public_input=?base64_mpc_public_input,
-                    init_protocol_data=?base64_mpc_init_protocol_data,
-                    session_type=?base64_mpc_session_type,
-                    session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
-                    party_id=?self.party_id,
-                    "MPC session failed"
-                );
+                // error!(
+                //     public_input=?base64_mpc_public_input,
+                //     init_protocol_data=?base64_mpc_init_protocol_data,
+                //     session_type=?base64_mpc_session_type,
+                //     session_id=?self.session_id,
+                //     validator=?self.epoch_store()?.name,
+                //     crypto_round=?self.pending_quorum_for_highest_round_number,
+                //     party_id=?self.party_id,
+                //     "MPC session failed"
+                // );
                 self.report_malicious_actors(
                     tokio_runtime_handle,
                     malicious_parties,
@@ -345,16 +351,16 @@ impl DWalletMPCSession {
                     .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
                 let base64_mpc_session_type =
                     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
-                error!(
-                    public_input=?base64_mpc_public_input,
-                    init_protocol_data=?base64_mpc_init_protocol_data,
-                    session_type=?base64_mpc_session_type,
-                    session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
-                    party_id=?self.party_id,
-                    "MPC session failed"
-                );
+                // error!(
+                //     public_input=?base64_mpc_public_input,
+                //     init_protocol_data=?base64_mpc_init_protocol_data,
+                //     session_type=?base64_mpc_session_type,
+                //     session_id=?self.session_id,
+                //     validator=?self.epoch_store()?.name,
+                //     crypto_round=?self.pending_quorum_for_highest_round_number,
+                //     party_id=?self.party_id,
+                //     "MPC session failed"
+                // );
 
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
@@ -400,6 +406,7 @@ impl DWalletMPCSession {
         malicious_actors: &HashSet<PartyID>,
         round_to_restart_from: usize,
     ) {
+        error!(?round_to_restart_from, "restarting from round");
         self.attempts.iter_mut().for_each(|attempt| {
             attempt.merge_spare_messages_and_remove_malicious(
                 round_to_restart_from - 1,
