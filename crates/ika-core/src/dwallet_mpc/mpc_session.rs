@@ -77,7 +77,7 @@ pub struct Attempt {
     /// Messages that have been received after the first consensus round in which a quorum has been reached for that round.
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
     /// too many malicious actors.
-    pub(super) spare_messages: HashMap<usize, Vec<HashMap<PartyID, MPCMessage>>>,
+    pub(super) spare_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 }
 
 impl Attempt {
@@ -155,15 +155,15 @@ impl Attempt {
         // Remove malicious parties from the self messages.
         let round_messages = self
             .serialized_full_messages
-            .get_mut(round_to_restart)
+            .get_mut(&round_to_restart)
             .expect("session cannot fail with malicious parties for a round that no messages were received for");
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
-            if let Some(spare_round_messages) = self.spare_messages.get_mut(round_to_restart) {
+            if let Some(spare_round_messages) = self.spare_messages.get_mut(&round_to_restart) {
                 spare_round_messages.remove(malicious_actor);
             }
         });
-        if let Some(spare_round_messages) = self.spare_messages.get(round_to_restart) {
+        if let Some(spare_round_messages) = self.spare_messages.get(&round_to_restart) {
             round_messages.extend(spare_round_messages.clone());
         }
     }
