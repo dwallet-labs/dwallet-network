@@ -12,6 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
+use futures::future::err;
 use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
 use ika_types::crypto::AuthorityName;
@@ -36,7 +37,6 @@ use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
-use futures::future::err;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
@@ -430,10 +430,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                             "failed to get the round to retry from, this should never happen. {mpc_round} {session_id}",
                         ));
 
-                    let keys = messages
-                        .last()
-                        .ok_or(general_error)?
-                        .keys();
+                    let keys = messages.last().ok_or(general_error)?.keys();
                     let keys_clone = keys.clone();
                     let malicious_actors = keys
                         .filter(|party_id| !honest_subset.contains(*party_id))

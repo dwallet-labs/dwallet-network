@@ -264,11 +264,7 @@ pub(crate) fn advance_network_dkg(
         .iter()
         .map(|m| m.keys().copied().collect())
         .collect();
-    error!(
-        ?messages_party_ids,
-        ?party_id,
-        "advancing"
-    );
+    error!(?messages_party_ids, ?party_id, "advancing");
     if party_id == 3 {
         let res = match key_scheme {
             DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
