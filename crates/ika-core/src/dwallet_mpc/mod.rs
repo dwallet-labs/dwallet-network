@@ -447,7 +447,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                     );
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
-                        round_to_restart,
+                        round_to_restart - 1,
                     ))
                 }
                 _ => Err(general_error),
