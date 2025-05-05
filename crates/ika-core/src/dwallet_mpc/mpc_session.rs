@@ -159,6 +159,9 @@ impl Attempt {
             .expect("session cannot fail with malicious parties for a round that no messages were received for");
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
+            if let Some(spare_round_messages) = self.spare_messages.get_mut(round_to_restart) {
+                spare_round_messages.remove(malicious_actor);
+            }
         });
         if let Some(spare_round_messages) = self.spare_messages.get(round_to_restart) {
             round_messages.extend(spare_round_messages.clone());
