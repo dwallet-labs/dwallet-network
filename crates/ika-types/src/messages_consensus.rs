@@ -209,6 +209,7 @@ impl ConsensusTransaction {
                     authority: message.authority.clone(),
                     session_id: message.session_id.clone(),
                     round_number: message.round_number,
+                    attempt: message.attempt_number
                 })
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
