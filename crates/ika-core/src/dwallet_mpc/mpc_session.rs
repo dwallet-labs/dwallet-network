@@ -400,19 +400,13 @@ impl DWalletMPCSession {
         malicious_actors: &HashSet<PartyID>,
         round_to_restart_from: usize,
     ) {
-        if round_to_restart_from == self.pending_quorum_for_highest_round_number - 1 {
-            // For every advance we increase the round number by 1,
-            // so to re-run the same round, we decrease it by 1.
-            self.pending_quorum_for_highest_round_number -= 1;
-            let mut current_attempt = self
-                .attempts
-                .last_mut()
-                .expect("attempts should not be empty");
-            current_attempt.merge_spare_messages_and_remove_malicious(
-                self.pending_quorum_for_highest_round_number,
+        self.attempts.iter_mut().for_each(|attempt| {
+            attempt.merge_spare_messages_and_remove_malicious(
+                round_to_restart_from,
                 malicious_actors,
             );
-        } else {
+        });
+        if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
             if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
                 error!(
                     session_id=?self.session_id,
@@ -422,15 +416,9 @@ impl DWalletMPCSession {
                 );
                 return;
             }
-            self.pending_quorum_for_highest_round_number = round_to_restart_from;
-            let last_attempt = self
-                .attempts
-                .last_mut()
-                .expect("attempts should not be empty");
-            last_attempt
-                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
             self.attempts.push(Attempt::new(round_to_restart_from + 1));
         }
+        self.pending_quorum_for_highest_round_number = round_to_restart_from;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
