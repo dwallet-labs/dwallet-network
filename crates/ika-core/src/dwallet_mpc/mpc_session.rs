@@ -618,7 +618,8 @@ impl DWalletMPCSession {
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
-                if party_to_msg.len() >= self.weighted_threshold_access_structure.threshold as usize
+                if self.pending_quorum_for_highest_round_number
+                    != message.round_number
                 {
                     // TODO: fix this properly, this is just a temporary hot-patch
                     return Ok(());
