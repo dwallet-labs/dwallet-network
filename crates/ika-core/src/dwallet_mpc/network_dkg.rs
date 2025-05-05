@@ -30,6 +30,8 @@ use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use sui_types::base_types::ObjectID;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -277,7 +279,9 @@ pub(crate) fn advance_network_dkg(
                 class_groups_decryption_key,
             ),
         }?;
-        return Ok(res)
+        return Ok(res);
+    } else if party_id == 4 {
+        thread::sleep(Duration::from_secs(30));
     }
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
