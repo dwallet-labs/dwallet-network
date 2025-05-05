@@ -9,7 +9,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
-use im::hashmap;
 use itertools::Itertools;
 use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
