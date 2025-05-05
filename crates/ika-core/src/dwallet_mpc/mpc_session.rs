@@ -824,6 +824,11 @@ mod tests {
             first_attempt.clone(),
             second_attempt.clone(),
         ]);
-        println!("built: {:?}", built);
+        let expected_result = vec![
+            HashMap::new(),
+            HashMap::from([(1, vec![1u8]), (2, vec![1u8]), (4, vec![1u8])]),
+            HashMap::from([(1, vec![1u8]), (2, vec![1u8]), (4, vec![1u8])]),
+        ];
+        assert_eq!(built, expected_result);
     }
 }
