@@ -6,14 +6,16 @@ use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMe
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
 };
-use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
+use crate::supported_protocol_versions::{SupportedProtocolVersions, SupportedProtocolVersionsWithHashes};
 use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
+use ika_protocol_config::Chain;
 
 // todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
 /// Consensus round number.
@@ -95,6 +97,32 @@ pub struct AuthorityCapabilitiesV1 {
     /// A list of package id to move package digest to
     /// determine whether to do a protocol upgrade on sui.
     pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+}
+
+impl AuthorityCapabilitiesV1 {
+    pub fn new(
+        authority: AuthorityName,
+        chain: Chain,
+        supported_protocol_versions: SupportedProtocolVersions,
+        available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+    ) -> Self {
+        let generation = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Sui did not exist prior to 1970")
+            .as_millis()
+            .try_into()
+            .expect("This build of sui is not supported in the year 500,000,000");
+        Self {
+            authority,
+            generation,
+            supported_protocol_versions:
+            SupportedProtocolVersionsWithHashes::from_supported_versions(
+                supported_protocol_versions,
+                chain,
+            ),
+            available_move_packages,
+        }
+    }
 }
 
 impl Debug for AuthorityCapabilitiesV1 {
@@ -182,6 +210,16 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::CheckpointSignature(Box::new(data)),
+        }
+    }
+
+    pub fn new_capability_notification_v1(data: AuthorityCapabilitiesV1) -> Self {
+        let mut hasher = DefaultHasher::new();
+        data.authority.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::CapabilityNotificationV1(data),
         }
     }
 

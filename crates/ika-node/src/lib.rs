@@ -92,7 +92,9 @@ use ika_types::sui::SystemInnerTrait;
 use sui_types::crypto::KeypairTraits;
 
 use ika_core::consensus_adapter::SubmitToConsensus;
-use ika_types::supported_protocol_versions::SupportedProtocolVersions;
+use ika_types::supported_protocol_versions::{
+    SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
+};
 use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
 
@@ -1001,43 +1003,64 @@ impl IkaNode {
         sui_client: Arc<SuiConnectorClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
+        let system_inner = sui_client.must_get_system_inner_object().await;
         loop {
             let run_with_range = self.config.run_with_range;
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if
-        //     let transaction = if config.authority_capabilities_v2() {
-        //         ConsensusTransaction::new_capability_notification_v2(
-        //             AuthorityCapabilitiesV2::new(
-        //                 self.state.name,
-        //                 cur_epoch_store.get_chain_identifier().chain(),
-        //                 self.config
-        //                     .supported_protocol_versions
-        //                     .expect("Supported versions should be populated")
-        //                     // no need to send digests of versions less than the current version
-        //                     .truncate_below(config.version),
-        //                 self.state
-        //                     .get_available_system_packages(&binary_config)
-        //                     .await,
-        //             ),
-        //         )
-        //     } else {
-        //         ConsensusTransaction::new_capability_notification(AuthorityCapabilitiesV1::new(
-        //             self.state.name,
-        //             self.config
-        //                 .supported_protocol_versions
-        //                 .expect("Supported versions should be populated"),
-        //             self.state
-        //                 .get_available_system_packages(&binary_config)
-        //                 .await,
-        //         ))
-        //     };
-        //     info!(?transaction, "submitting capabilities to consensus");
-        //     components
-        //         .consensus_adapter
-        //         .submit(transaction, None, &cur_epoch_store)?;
-        // }
+            if self.config.supported_protocol_versions.is_none() {
+                info!(
+                    "populating config.supported_protocol_versions with default {:?}",
+                    SupportedProtocolVersions::SYSTEM_DEFAULT
+                );
+                self.config.supported_protocol_versions =
+                    Some(SupportedProtocolVersions::SYSTEM_DEFAULT);
+            };
+
+            if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
+                let next_version_supported = system_inner
+                    .next_protocl_version()
+                    .map_or(false, |next_version| {
+                        supported_versions.is_version_supported(next_version)
+                    });
+
+                let current_version_supported = system_inner.next_protocl_version().is_none()
+                    && supported_versions.is_version_supported(system_inner.protocol_version());
+
+                if !next_version_supported || current_version_supported {
+                    ConsensusTransaction::new_capability_notification_v1(
+                        AuthorityCapabilitiesV1::new(
+                            self.state.name,
+                            cur_epoch_store.get_chain_identifier().chain(),
+                            supported_versions,
+                            self.state
+                                .(&binary_config)
+                                .await,
+                        ),
+                        );
+                    );
+                    //             AuthorityCapabilitiesV2::new(
+                    //                 self.state.name,
+                    //                 cur_epoch_store.get_chain_identifier().chain(),
+                    //                 self.config
+                    //                     .supported_protocol_versions
+                    //                     .expect("Supported versions should be populated")
+                    //                     // no need to send digests of versions less than the current version
+                    //                     .truncate_below(config.version),
+                    //                 self.state
+                    //                     .get_available_system_packages(&binary_config)
+                    //                     .await,
+                    //             ),
+                    //         )
+
+                    // components
+                    //         .consensus_adapter
+                    //         .submit(transaction, None, &cur_epoch_store)?;
+                }
+            } else {
+                info!(authority_name=?self.state.name, protocol_version=?self.config.supported_protocol_versions, "Protocol version is up to date");
+            }
 
             let stop_condition = self
                 .sui_connector_service
