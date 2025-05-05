@@ -177,6 +177,7 @@ pub struct DWalletMPCMessageKey {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+    pub attempt: usize,
 }
 
 /// Holds information about the current MPC session.
