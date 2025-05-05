@@ -94,57 +94,17 @@ impl Attempt {
         message: &DWalletMPCMessage,
         source_party_id: PartyID,
     ) {
-        match self.spare_messages.get_mut(message.round_number) {
-            None => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Creating new spare messages map for round",
-                );
-                for _ in self.spare_messages.len()..=message.round_number {
-                    self.spare_messages.push(HashMap::new());
-                }
-                self.spare_messages[message.round_number]
-                    .insert(source_party_id, message.message.clone());
-            }
-            Some(spare_messages) => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Adding message to existing spare messages map",
-                );
-                spare_messages.insert(source_party_id, message.message.clone());
-            }
-        }
+        self.spare_messages
+            .entry(message.round_number)
+            .or_insert(Default::default())
+            .insert(source_party_id, message.message.clone());
     }
 
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage, source_party_id: PartyID) {
-        match self.serialized_full_messages.get_mut(message.round_number) {
-            None => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Creating new spare messages map for round",
-                );
-                for _ in self.serialized_full_messages.len()..=message.round_number {
-                    self.serialized_full_messages.push(HashMap::new());
-                }
-                self.serialized_full_messages[message.round_number]
-                    .insert(source_party_id, message.message.clone());
-            }
-            Some(serialized_full_messages) => {
-                info!(
-                    session_id=?message.session_id,
-                    from_authority=?message.authority,
-                    crypto_round_number=?message.round_number,
-                    "Adding message to existing spare messages map",
-                );
-                serialized_full_messages.insert(source_party_id, message.message.clone());
-            }
-        }
+        self.serialized_full_messages
+            .entry(message.round_number)
+            .or_insert(Default::default())
+            .insert(source_party_id, message.message.clone());
     }
 
     pub(crate) fn merge_spare_messages_and_remove_malicious(
