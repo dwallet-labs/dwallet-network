@@ -414,7 +414,7 @@ impl DWalletMPCSession {
     /// Take messages from the first attempt until the start of the second attempt, from the second until the
     /// start of the third, and so on.
     fn build_input_mpc_messages(&self) -> Vec<HashMap<PartyID, MPCMessage>> {
-        Self::build_input_mpc_messages_static(&self.attempts)
+        Self::build_input_mpc_messages_static(&self.attempts, self.current_cryptographic_round)
     }
 
     /// A static version of [`Self::build_input_mpc_messages_static`] for testing purposes.
@@ -432,7 +432,7 @@ impl DWalletMPCSession {
                 let next_attempt = &attempts[attempt_number + 1];
                 for crypto_round_number in last_processed_round..next_attempt.start_round {
                     match attempt.serialized_full_messages.get(&crypto_round_number) {
-                        Some(messages) => messages.push(messages.clone()),
+                        Some(round_messages) => messages.push(round_messages.clone()),
                         None => {
                             // Should never happen, as the session should have a quorum of messages for every round
                             // before the next attempt start round.
@@ -453,7 +453,7 @@ impl DWalletMPCSession {
                     last_processed_round..pending_quorum_for_highest_round_number + 1
                 {
                     match attempt.serialized_full_messages.get(&crypto_round_number) {
-                        Some(messages) => messages.push(messages.clone()),
+                        Some(round_messages) => messages.push(round_messages.clone()),
                         None => return messages,
                     }
                 }
