@@ -36,6 +36,7 @@ use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
+use futures::future::err;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
@@ -429,13 +430,21 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                             "failed to get the round to retry from, this should never happen. {mpc_round} {session_id}",
                         ));
 
-                    let malicious_actors = messages
+                    let keys = messages
                         .last()
                         .ok_or(general_error)?
-                        .keys()
+                        .keys();
+                    let keys_clone = keys.clone();
+                    let malicious_actors = keys
                         .filter(|party_id| !honest_subset.contains(*party_id))
                         .cloned()
                         .collect();
+                    error!(
+                        unfiltered_malicious_round_keys=?keys_clone,
+                        ?malicious_actors,
+                        ?honest_subset,
+                        "recognized malicious actors"
+                    );
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
                         round_to_restart,
