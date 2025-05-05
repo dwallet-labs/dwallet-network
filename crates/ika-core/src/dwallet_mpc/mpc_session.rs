@@ -568,9 +568,8 @@ impl DWalletMPCSession {
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
-                if self.pending_quorum_for_highest_round_number
-                    != message.round_number
-                {
+                // Received a message for a round that was already processed.
+                if self.pending_quorum_for_highest_round_number != message.round_number {
                     // TODO: fix this properly, this is just a temporary hot-patch
                     return Ok(());
                 }
