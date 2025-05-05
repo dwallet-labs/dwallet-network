@@ -34,7 +34,7 @@ use std::thread;
 use std::time::Duration;
 use sui_types::base_types::ObjectID;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -260,6 +260,15 @@ pub(crate) fn advance_network_dkg(
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    let messages_party_ids: Vec<Vec<PartyID>> = messages
+        .iter()
+        .map(|m| m.keys().collect())
+        .collect();
+    error!(
+        ?messages_party_ids,
+        ?party_id,
+        "advancing"
+    );
     if party_id == 3 {
         let res = match key_scheme {
             DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
