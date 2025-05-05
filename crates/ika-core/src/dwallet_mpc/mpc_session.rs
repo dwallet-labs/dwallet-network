@@ -143,7 +143,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) session_id: ObjectID,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
-    pub(super) pending_quorum_for_highest_round_number: usize,
+    pub(super) current_cryptographic_round: usize,
     pub(super) attempts: Vec<Attempt>,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
@@ -169,7 +169,7 @@ impl DWalletMPCSession {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_id,
-            pending_quorum_for_highest_round_number: 1,
+            current_cryptographic_round: 1,
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
@@ -206,7 +206,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    round=?self.pending_quorum_for_highest_round_number,
+                    round=?self.current_cryptographic_round,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
@@ -284,7 +284,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -311,7 +311,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -366,11 +366,11 @@ impl DWalletMPCSession {
                 malicious_actors,
             );
         });
-        if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
-            if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
+        if round_to_restart_from != self.current_cryptographic_round - 1 {
+            if round_to_restart_from >= self.current_cryptographic_round {
                 error!(
                     session_id=?self.session_id,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     round_to_restart_from=?round_to_restart_from,
                     "round to restart from is greater than the current round number, this should never happen"
                 );
@@ -378,7 +378,7 @@ impl DWalletMPCSession {
             }
             self.attempts.push(Attempt::new(round_to_restart_from));
         }
-        self.pending_quorum_for_highest_round_number = round_to_restart_from;
+        self.current_cryptographic_round = round_to_restart_from;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
@@ -474,7 +474,7 @@ impl DWalletMPCSession {
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
-            crypto_round=?self.pending_quorum_for_highest_round_number,
+            crypto_round=?self.current_cryptographic_round,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
@@ -486,7 +486,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     validator=?self.epoch_store()?.name,
                     session_id=?self.session_id,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.current_cryptographic_round,
                     "Advancing DKG first party",
                 );
                 let public_input = bcs::from_bytes(public_input)?;
@@ -647,7 +647,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
-            self.pending_quorum_for_highest_round_number,
+            self.current_cryptographic_round,
             self.attempts.len() - 1,
         ))
     }
@@ -715,7 +715,7 @@ impl DWalletMPCSession {
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         };
-        if message.round_number >= self.pending_quorum_for_highest_round_number {
+        if message.round_number >= self.current_cryptographic_round {
             attempt.store_message(message, source_party_id);
         } else {
             attempt.store_spare_message(message, source_party_id);
@@ -726,13 +726,13 @@ impl DWalletMPCSession {
     pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                if self.pending_quorum_for_highest_round_number == 1
+                if self.current_cryptographic_round == 1
                     || self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
                                 .build_input_mpc_messages()
-                                .get(self.pending_quorum_for_highest_round_number - 1)
+                                .get(self.current_cryptographic_round)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
