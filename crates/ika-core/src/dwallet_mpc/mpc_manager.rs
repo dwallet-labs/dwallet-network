@@ -440,12 +440,6 @@ impl DWalletMPCManager {
                     // until it is ready to advance or finalized.
                     session.pending_quorum_for_highest_round_number += 1;
                     let mut session_clone = session.clone();
-                    session_clone
-                        .attempts
-                        .last_mut()
-                        .expect("session should have at least one attempt")
-                        .serialized_full_messages
-                        .truncate(session.pending_quorum_for_highest_round_number);
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None

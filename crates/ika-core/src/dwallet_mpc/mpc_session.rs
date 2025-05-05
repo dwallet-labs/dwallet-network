@@ -460,30 +460,43 @@ impl DWalletMPCSession {
     /// A static version of [`Self::build_input_mpc_messages_static`] for testing purposes.
     fn build_input_mpc_messages_static(
         attempts: &Vec<Attempt>,
+        pending_quorum_for_highest_round_number: usize,
     ) -> Vec<HashMap<PartyID, MPCMessage>> {
         let mut messages = vec![];
-        let mut last_processed_round = 0;
+        let mut last_processed_round = 1;
 
-        for i in 0..attempts.len() {
-            if i + 1 < attempts.len() {
+        for attempt_number in 0..attempts.len() {
+            if attempt_number + 1 < attempts.len() {
                 // there's a next attempt
-                let attempt = &attempts[i];
-                let next_attempt = &attempts[i + 1];
-                messages.extend(
-                    (attempt.serialized_full_messages.clone()
-                        [last_processed_round..next_attempt.start_round])
-                        .to_vec(),
-                );
+                let attempt = &attempts[attempt_number];
+                let next_attempt = &attempts[attempt_number + 1];
+                for crypto_round_number in last_processed_round..next_attempt.start_round {
+                    match attempt.serialized_full_messages.get(&crypto_round_number) {
+                        Some(messages) => messages.push(messages.clone()),
+                        None => {
+                            // Should never happen, as the session should have a quorum of messages for every round
+                            // before the next attempt start round.
+                            error!(
+                                crypto_round=?crypto_round_number,
+                                "no messages found for round that should have a quorum messages",
+                            );
+                        }
+                    }
+                }
                 last_processed_round = next_attempt.start_round;
             } else {
-                // no next attempt
-                if last_processed_round >= attempts[i].serialized_full_messages.len() {
-                    // no messages to process
+                if last_processed_round > pending_quorum_for_highest_round_number {
                     break;
                 }
-                messages.extend(
-                    (attempts[i].serialized_full_messages.clone()[last_processed_round..]).to_vec(),
-                );
+                let attempt = &attempts[attempt_number];
+                for crypto_round_number in
+                    last_processed_round..pending_quorum_for_highest_round_number
+                {
+                    match attempt.serialized_full_messages.get(&crypto_round_number) {
+                        Some(messages) => messages.push(messages.clone()),
+                        None => return messages,
+                    }
+                }
             }
         }
         messages
