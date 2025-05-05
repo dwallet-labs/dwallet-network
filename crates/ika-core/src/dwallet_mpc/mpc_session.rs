@@ -209,7 +209,7 @@ impl DWalletMPCSession {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_id,
-            pending_quorum_for_highest_round_number: 0,
+            pending_quorum_for_highest_round_number: 1,
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
@@ -246,7 +246,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    round=?self.pending_quorum_for_highest_round_number - 1,
+                    round=?self.pending_quorum_for_highest_round_number,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
@@ -406,8 +406,8 @@ impl DWalletMPCSession {
                 malicious_actors,
             );
         });
-        if round_to_restart_from - 1 != self.pending_quorum_for_highest_round_number - 1 {
-            if round_to_restart_from - 1 >= self.pending_quorum_for_highest_round_number {
+        if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
+            if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
                 error!(
                     session_id=?self.session_id,
                     crypto_round=?self.pending_quorum_for_highest_round_number,
@@ -418,7 +418,7 @@ impl DWalletMPCSession {
             }
             self.attempts.push(Attempt::new(round_to_restart_from));
         }
-        self.pending_quorum_for_highest_round_number = round_to_restart_from - 1;
+        self.pending_quorum_for_highest_round_number = round_to_restart_from;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
@@ -753,7 +753,7 @@ impl DWalletMPCSession {
     pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                if self.pending_quorum_for_highest_round_number == 0
+                if self.pending_quorum_for_highest_round_number == 1
                     || self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
