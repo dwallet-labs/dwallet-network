@@ -160,10 +160,7 @@ impl Attempt {
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
         });
-        if let Some(spare_round_messages) = self
-            .spare_messages
-            .get(round_to_restart)
-        {
+        if let Some(spare_round_messages) = self.spare_messages.get(round_to_restart) {
             round_messages.extend(spare_round_messages.clone());
         }
     }
@@ -401,10 +398,8 @@ impl DWalletMPCSession {
         round_to_restart_from: usize,
     ) {
         self.attempts.iter_mut().for_each(|attempt| {
-            attempt.merge_spare_messages_and_remove_malicious(
-                round_to_restart_from,
-                malicious_actors,
-            );
+            attempt
+                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
         });
         if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
             if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
