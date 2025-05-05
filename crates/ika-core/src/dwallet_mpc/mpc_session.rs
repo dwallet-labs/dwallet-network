@@ -802,3 +802,28 @@ impl DWalletMPCSession {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_input_mpc_messages_static() {
+        let mut first_attempt = Attempt::new(0);
+        first_attempt.serialized_full_messages = vec![
+            HashMap::new(),
+            HashMap::from([(1, vec![1u8]), (2, vec![1u8]), (4, vec![1u8])]),
+        ];
+        let mut second_attempt = Attempt::new(2);
+        second_attempt.serialized_full_messages = vec![
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::from([(1, vec![1u8]), (2, vec![1u8]), (4, vec![1u8])]),
+        ];
+        let built = DWalletMPCSession::build_input_mpc_messages_static(&vec![
+            first_attempt.clone(),
+            second_attempt.clone(),
+        ]);
+        println!("built: {:?}", built);
+    }
+}
