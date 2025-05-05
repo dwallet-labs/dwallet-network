@@ -262,7 +262,7 @@ pub(crate) fn advance_network_dkg(
 > {
     let messages_party_ids: Vec<Vec<PartyID>> = messages
         .iter()
-        .map(|m| m.keys().collect())
+        .map(|m| m.keys().copied().collect())
         .collect();
     error!(
         ?messages_party_ids,
