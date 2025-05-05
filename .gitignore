@@ -20,11 +20,6 @@ storage
 !narwhal/storage
 
 # Move-related files
-Move.lock
-!crates/ika-framework/packages/move-stdlib/Move.lock
-!crates/ika-framework/packages/ika-framework/Move.lock
-!crates/ika-framework/packages/ika-system/Move.lock
-!crates/ika-framework/packages/deepbook/Move.lock
 .trace
 .coverage_map.mvcov
 
