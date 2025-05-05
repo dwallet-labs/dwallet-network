@@ -420,7 +420,7 @@ impl DWalletMPCSession {
     /// A static version of [`Self::build_input_mpc_messages_static`] for testing purposes.
     fn build_input_mpc_messages_static(
         attempts: &Vec<Attempt>,
-        pending_quorum_for_highest_round_number: usize,
+        current_cryptographic_round: usize,
     ) -> Vec<HashMap<PartyID, MPCMessage>> {
         let mut messages = vec![];
         let mut last_processed_round = 1;
@@ -445,12 +445,12 @@ impl DWalletMPCSession {
                 }
                 last_processed_round = next_attempt.start_round;
             } else {
-                if last_processed_round > pending_quorum_for_highest_round_number {
+                if last_processed_round > current_cryptographic_round {
                     break;
                 }
                 let attempt = &attempts[attempt_number];
                 for crypto_round_number in
-                    last_processed_round..pending_quorum_for_highest_round_number + 1
+                    last_processed_round..current_cryptographic_round + 1
                 {
                     match attempt.serialized_full_messages.get(&crypto_round_number) {
                         Some(round_messages) => messages.push(round_messages.clone()),
