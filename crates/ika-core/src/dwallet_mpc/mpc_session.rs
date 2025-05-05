@@ -129,7 +129,7 @@ impl Attempt {
                     crypto_round_number=?message.round_number,
                     "Creating new spare messages map for round",
                 );
-                for _ in self.serialized_full_messages.len()..message.round_number {
+                for _ in self.serialized_full_messages.len()..=message.round_number {
                     self.serialized_full_messages.push(HashMap::new());
                 }
                 self.serialized_full_messages[message.round_number]
