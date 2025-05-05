@@ -423,7 +423,7 @@ impl DWalletMPCSession {
             }
             self.attempts.push(Attempt::new(round_to_restart_from));
         }
-        self.pending_quorum_for_highest_round_number = round_to_restart_from;
+        self.pending_quorum_for_highest_round_number = round_to_restart_from - 1;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
