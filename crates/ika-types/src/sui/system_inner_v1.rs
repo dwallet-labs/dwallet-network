@@ -171,6 +171,10 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.protocol_version
     }
 
+    fn next_protocol_version(&self) -> Option<u64> {
+        self.next_protocol_version
+    }
+
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {
         &self.upgrade_caps
     }

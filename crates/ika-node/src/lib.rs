@@ -1009,57 +1009,34 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if self.config.supported_protocol_versions.is_none() {
-                info!(
-                    "populating config.supported_protocol_versions with default {:?}",
-                    SupportedProtocolVersions::SYSTEM_DEFAULT
-                );
-                self.config.supported_protocol_versions =
-                    Some(SupportedProtocolVersions::SYSTEM_DEFAULT);
-            };
-
             if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
                 let next_version_supported = system_inner
-                    .next_protocl_version()
+                    .next_protocol_version()
                     .map_or(false, |next_version| {
-                        supported_versions.is_version_supported(next_version)
+                        supported_versions.is_version_supported(next_version.into())
                     });
 
-                let current_version_supported = system_inner.next_protocl_version().is_none()
-                    && supported_versions.is_version_supported(system_inner.protocol_version());
+                let current_version_supported = system_inner.next_protocol_version().is_none()
+                    && supported_versions.is_version_supported(system_inner.protocol_version().into());
 
                 if !next_version_supported || current_version_supported {
-                    ConsensusTransaction::new_capability_notification_v1(
+                    let transaction = ConsensusTransaction::new_capability_notification_v1(
                         AuthorityCapabilitiesV1::new(
                             self.state.name,
                             cur_epoch_store.get_chain_identifier().chain(),
                             supported_versions,
-                            self.state
-                                .(&binary_config)
-                                .await,
+                            sui_client
+                                .get_available_move_packages()
+                                .await
+                                .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?
                         ),
-                        );
                     );
-                    //             AuthorityCapabilitiesV2::new(
-                    //                 self.state.name,
-                    //                 cur_epoch_store.get_chain_identifier().chain(),
-                    //                 self.config
-                    //                     .supported_protocol_versions
-                    //                     .expect("Supported versions should be populated")
-                    //                     // no need to send digests of versions less than the current version
-                    //                     .truncate_below(config.version),
-                    //                 self.state
-                    //                     .get_available_system_packages(&binary_config)
-                    //                     .await,
-                    //             ),
-                    //         )
 
-                    // components
-                    //         .consensus_adapter
-                    //         .submit(transaction, None, &cur_epoch_store)?;
+                    if let Some(components) = &*self.validator_components.lock().await {
+                        info!(?transaction, "submitting capabilities to consensus");
+                        components.consensus_adapter.submit_to_consensus(&[transaction], &cur_epoch_store).await?;
+                    }
                 }
-            } else {
-                info!(authority_name=?self.state.name, protocol_version=?self.config.supported_protocol_versions, "Protocol version is up to date");
             }
 
             let stop_condition = self
