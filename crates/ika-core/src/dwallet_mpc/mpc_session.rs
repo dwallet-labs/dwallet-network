@@ -121,6 +121,12 @@ impl Attempt {
     }
 
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage, source_party_id: PartyID) {
+        error!(
+            ?source_party_id,
+            attempt_start_round=?self.start_round,
+            message_round_number=?message.round_number,
+            "storing message"
+        );
         match self.serialized_full_messages.get_mut(message.round_number) {
             None => {
                 info!(
@@ -400,6 +406,7 @@ impl DWalletMPCSession {
         malicious_actors: &HashSet<PartyID>,
         round_to_restart_from: usize,
     ) {
+        error!(?round_to_restart_from, "restarting from round");
         self.attempts.iter_mut().for_each(|attempt| {
             attempt
                 .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
