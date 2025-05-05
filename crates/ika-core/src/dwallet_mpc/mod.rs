@@ -438,8 +438,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                         .collect();
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
-                        // The cryptographic library's rounds indexing is 1-based.
-                        round_to_restart - 1,
+                        round_to_restart,
                     ))
                 }
                 _ => Err(general_error),

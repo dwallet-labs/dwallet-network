@@ -401,11 +401,13 @@ impl DWalletMPCSession {
         round_to_restart_from: usize,
     ) {
         self.attempts.iter_mut().for_each(|attempt| {
-            attempt
-                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
+            attempt.merge_spare_messages_and_remove_malicious(
+                round_to_restart_from - 1,
+                malicious_actors,
+            );
         });
-        if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
-            if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
+        if round_to_restart_from - 1 != self.pending_quorum_for_highest_round_number - 1 {
+            if round_to_restart_from - 1 >= self.pending_quorum_for_highest_round_number {
                 error!(
                     session_id=?self.session_id,
                     crypto_round=?self.pending_quorum_for_highest_round_number,
@@ -414,9 +416,9 @@ impl DWalletMPCSession {
                 );
                 return;
             }
-            self.attempts.push(Attempt::new(round_to_restart_from + 1));
+            self.attempts.push(Attempt::new(round_to_restart_from));
         }
-        self.pending_quorum_for_highest_round_number = round_to_restart_from;
+        self.pending_quorum_for_highest_round_number = round_to_restart_from - 1;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
