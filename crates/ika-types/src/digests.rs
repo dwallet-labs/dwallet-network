@@ -728,3 +728,214 @@ impl DWalletMPCOutputDigest {
         self.0.next_lexicographical().map(Self)
     }
 }
+
+/// Representation of a ParamsMessage's digest
+#[derive(
+    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
+pub struct ParamsMessageDigest(Digest);
+
+impl crate::digests::ParamsMessageDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
+impl AsRef<[u8]> for crate::digests::ParamsMessageDigest {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8; 32]> for crate::digests::ParamsMessageDigest {
+    fn as_ref(&self) -> &[u8; 32] {
+        self.0.as_ref()
+    }
+}
+
+impl From<crate::digests::ParamsMessageDigest> for [u8; 32] {
+    fn from(digest: crate::digests::ParamsMessageDigest) -> Self {
+        digest.into_inner()
+    }
+}
+
+impl From<[u8; 32]> for crate::digests::ParamsMessageDigest {
+    fn from(digest: [u8; 32]) -> Self {
+        Self::new(digest)
+    }
+}
+
+impl TryFrom<Vec<u8>> for crate::digests::ParamsMessageDigest {
+    type Error = IkaError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
+        Digest::try_from(bytes).map(crate::digests::ParamsMessageDigest)
+    }
+}
+
+impl fmt::Display for crate::digests::ParamsMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl fmt::Debug for crate::digests::ParamsMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("CheckpointDigest").field(&self.0).finish()
+    }
+}
+
+impl fmt::LowerHex for crate::digests::ParamsMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::UpperHex for crate::digests::ParamsMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.0, f)
+    }
+}
+
+impl std::str::FromStr for crate::digests::ParamsMessageDigest {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = [0; 32];
+        let buffer = Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?;
+        if buffer.len() != 32 {
+            return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
+        }
+        result.copy_from_slice(&buffer);
+        Ok(crate::digests::ParamsMessageDigest::new(result))
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
+pub struct ParamsMessageContentsDigest(Digest);
+
+impl crate::digests::ParamsMessageContentsDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
+impl AsRef<[u8]> for crate::digests::ParamsMessageContentsDigest {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8; 32]> for crate::digests::ParamsMessageContentsDigest {
+    fn as_ref(&self) -> &[u8; 32] {
+        self.0.as_ref()
+    }
+}
+
+impl TryFrom<Vec<u8>> for crate::digests::ParamsMessageContentsDigest {
+    type Error = IkaError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
+        Digest::try_from(bytes).map(crate::digests::ParamsMessageContentsDigest)
+    }
+}
+
+impl From<crate::digests::ParamsMessageContentsDigest> for [u8; 32] {
+    fn from(digest: crate::digests::ParamsMessageContentsDigest) -> Self {
+        digest.into_inner()
+    }
+}
+
+impl From<[u8; 32]> for crate::digests::ParamsMessageContentsDigest {
+    fn from(digest: [u8; 32]) -> Self {
+        Self::new(digest)
+    }
+}
+
+impl fmt::Display for crate::digests::ParamsMessageContentsDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl fmt::Debug for crate::digests::ParamsMessageContentsDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ParamsMessageContentsDigest")
+            .field(&self.0)
+            .finish()
+    }
+}
+
+impl std::str::FromStr for crate::digests::ParamsMessageContentsDigest {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = [0; 32];
+        let buffer = Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?;
+        if buffer.len() != 32 {
+            return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
+        }
+        result.copy_from_slice(&buffer);
+        Ok(crate::digests::ParamsMessageContentsDigest::new(result))
+    }
+}
+
+impl fmt::LowerHex for crate::digests::ParamsMessageContentsDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::UpperHex for crate::digests::ParamsMessageContentsDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.0, f)
+    }
+}
