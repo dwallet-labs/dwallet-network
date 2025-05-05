@@ -149,20 +149,20 @@ impl Attempt {
 
     pub(crate) fn merge_spare_messages_and_remove_malicious(
         &mut self,
-        pending_quorum_for_highest_round_number: usize,
+        round_to_restart: usize,
         malicious_actors: &HashSet<PartyID>,
     ) {
         // Remove malicious parties from the self messages.
         let round_messages = self
             .serialized_full_messages
-            .get_mut(pending_quorum_for_highest_round_number)
+            .get_mut(round_to_restart)
             .expect("session cannot fail with malicious parties for a round that no messages were received for");
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
         });
         if let Some(spare_round_messages) = self
             .spare_messages
-            .get(pending_quorum_for_highest_round_number)
+            .get(round_to_restart)
         {
             round_messages.extend(spare_round_messages.clone());
         }
