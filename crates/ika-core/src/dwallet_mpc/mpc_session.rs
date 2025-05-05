@@ -73,19 +73,19 @@ pub struct Attempt {
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
-    pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     /// Messages that have been received after the first consensus round in which a quorum has been reached for that round.
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
     /// too many malicious actors.
-    pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) spare_messages: HashMap<usize, Vec<HashMap<PartyID, MPCMessage>>>,
 }
 
 impl Attempt {
     fn new(start_round: usize) -> Self {
         Self {
             start_round,
-            serialized_full_messages: vec![],
-            spare_messages: vec![],
+            serialized_full_messages: HashMap::new(),
+            spare_messages: HashMap::new(),
         }
     }
 
