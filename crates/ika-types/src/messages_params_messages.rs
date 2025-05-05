@@ -25,7 +25,6 @@ use tracing::warn;
 
 pub use crate::digests::ParamsMessageContentsDigest;
 pub use crate::digests::ParamsMessageDigest;
-use crate::message::MessageKind;
 
 pub type ParamsMessageSequenceNumber = u64;
 pub type ParamsMessageTimestamp = u64;
@@ -33,7 +32,7 @@ pub type ParamsMessageTimestamp = u64;
 // The constituent parts of params_messages, signed and certified
 
 pub enum ParamsMessageKind {
-    NextConfigVersion(),
+    NextConfigVersion(ProtocolVersion),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -60,7 +59,7 @@ impl ParamsMessage {
     pub fn new(
         epoch: EpochId,
         sequence_number: ParamsMessageSequenceNumber,
-        messages: Vec<MessageKind>,
+        messages: Vec<ParamsMessageKind>,
         timestamp_ms: ParamsMessageTimestamp,
     ) -> ParamsMessage {
         Self {
