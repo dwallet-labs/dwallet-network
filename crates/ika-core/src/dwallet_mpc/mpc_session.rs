@@ -9,7 +9,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
-use im::hashmap;
 use itertools::Itertools;
 use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
@@ -75,9 +74,9 @@ pub struct Attempt {
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
     pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
-    /// Messages that have been received after the first consensus round in which a quorum has been reached.
+    /// Messages that have been received after the first consensus round in which a quorum has been reached for that round.
     /// Those messages are being stored so that they can be used in case the cryptographic round fails due to
-    /// malicious actors.
+    /// too many malicious actors.
     pub(super) spare_messages: Vec<HashMap<PartyID, MPCMessage>>,
 }
 
@@ -130,7 +129,7 @@ impl Attempt {
                     crypto_round_number=?message.round_number,
                     "Creating new spare messages map for round",
                 );
-                for _ in self.serialized_full_messages.len()..=message.round_number {
+                for _ in self.serialized_full_messages.len()..message.round_number {
                     self.serialized_full_messages.push(HashMap::new());
                 }
                 self.serialized_full_messages[message.round_number]
@@ -150,21 +149,21 @@ impl Attempt {
 
     pub(crate) fn merge_spare_messages_and_remove_malicious(
         &mut self,
-        pending_quorum_for_highest_round_number: usize,
+        round_to_restart: usize,
         malicious_actors: &HashSet<PartyID>,
     ) {
         // Remove malicious parties from the self messages.
         let round_messages = self
             .serialized_full_messages
-            .get_mut(pending_quorum_for_highest_round_number)
+            .get_mut(round_to_restart)
             .expect("session cannot fail with malicious parties for a round that no messages were received for");
         malicious_actors.iter().for_each(|malicious_actor| {
             round_messages.remove(malicious_actor);
+            if let Some(spare_round_messages) = self.spare_messages.get_mut(round_to_restart) {
+                spare_round_messages.remove(malicious_actor);
+            }
         });
-        if let Some(spare_round_messages) = self
-            .spare_messages
-            .get(pending_quorum_for_highest_round_number)
-        {
+        if let Some(spare_round_messages) = self.spare_messages.get(round_to_restart) {
             round_messages.extend(spare_round_messages.clone());
         }
     }
@@ -401,19 +400,11 @@ impl DWalletMPCSession {
         malicious_actors: &HashSet<PartyID>,
         round_to_restart_from: usize,
     ) {
-        if round_to_restart_from == self.pending_quorum_for_highest_round_number - 1 {
-            // For every advance we increase the round number by 1,
-            // so to re-run the same round, we decrease it by 1.
-            self.pending_quorum_for_highest_round_number -= 1;
-            let mut current_attempt = self
-                .attempts
-                .last_mut()
-                .expect("attempts should not be empty");
-            current_attempt.merge_spare_messages_and_remove_malicious(
-                self.pending_quorum_for_highest_round_number,
-                malicious_actors,
-            );
-        } else {
+        self.attempts.iter_mut().for_each(|attempt| {
+            attempt
+                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
+        });
+        if round_to_restart_from != self.pending_quorum_for_highest_round_number - 1 {
             if round_to_restart_from >= self.pending_quorum_for_highest_round_number {
                 error!(
                     session_id=?self.session_id,
@@ -423,14 +414,9 @@ impl DWalletMPCSession {
                 );
                 return;
             }
-            let last_attempt = self
-                .attempts
-                .last_mut()
-                .expect("attempts should not be empty");
-            last_attempt
-                .merge_spare_messages_and_remove_malicious(round_to_restart_from, malicious_actors);
             self.attempts.push(Attempt::new(round_to_restart_from + 1));
         }
+        self.pending_quorum_for_highest_round_number = round_to_restart_from;
     }
 
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
