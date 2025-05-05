@@ -408,7 +408,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 > {
     let DeserializeMPCMessagesResponse {
         messages,
-        malicious_parties: _,
+        malicious_parties,
     } = deserialize_mpc_messages(messages);
 
     // Determine round number
@@ -419,22 +419,19 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     let filename = format!("session_{}_round_{}.json", session_id, round);
     let path = log_dir.join(&filename);
 
-    let encoded_messages = &bcs::to_bytes(&messages).unwrap();
-    let encoded_threshold = &bcs::to_bytes(access_threshold).unwrap();
-    let encoded_decryption_key_shares = &bcs::to_bytes(&decryption_key_shares).unwrap();
-
     // Serialize to JSON.
     let log = json!({
         "session_id": session_id,
         "round": round,
         "party_id": party_id,
-        "access_threshold": encoded_threshold,
-        "messages": encoded_messages,
+        "access_threshold": access_threshold,
+        "messages": messages,
         "public_input": encoded_public_input,
         "mpc_protocol": mpc_protocol_name,
         "party_to_authority_map": party_to_authority_map,
         "class_groups_key_pair_and_proof": encoded_private_input,
-        "decryption_key_shares": encoded_decryption_key_shares,
+        "decryption_key_shares": decryption_key_shares,
+        "malicious_parties": malicious_parties,
     });
 
     // Create and write the file, propagating any I/O errors
