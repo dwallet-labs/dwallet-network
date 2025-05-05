@@ -491,6 +491,7 @@ pub struct DWalletNetworkDecryptionKey {
     pub id: ObjectID,
     pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
+    /// key -> epoch, value -> reconfiguration public output (TableVec).
     pub reconfiguration_public_outputs: Table,
     pub network_dkg_public_output: TableVec,
     /// The fees paid for computation in IKA.
