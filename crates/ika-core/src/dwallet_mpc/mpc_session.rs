@@ -490,7 +490,7 @@ impl DWalletMPCSession {
                 }
                 let attempt = &attempts[attempt_number];
                 for crypto_round_number in
-                    last_processed_round..pending_quorum_for_highest_round_number
+                    last_processed_round..pending_quorum_for_highest_round_number + 1
                 {
                     match attempt.serialized_full_messages.get(&crypto_round_number) {
                         Some(messages) => messages.push(messages.clone()),
