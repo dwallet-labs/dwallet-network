@@ -258,6 +258,27 @@ pub(crate) fn advance_network_dkg(
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    if party_id == 3 {
+        let res = match key_scheme {
+            DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
+                session_id,
+                1,
+                &weighted_threshold_access_structure,
+                messages,
+                bcs::from_bytes(public_input)?,
+                class_groups_decryption_key,
+            ),
+            DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
+                session_id,
+                1,
+                &weighted_threshold_access_structure,
+                messages,
+                bcs::from_bytes(public_input)?,
+                class_groups_decryption_key,
+            ),
+        }?;
+        return Ok(res)
+    }
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
             session_id,
