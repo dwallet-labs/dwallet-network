@@ -55,7 +55,7 @@ export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 #export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
 #export EPOCH_DURATION_TIME_MS=86400000
-export EPOCH_DURATION_TIME_MS=2400000
+export EPOCH_DURATION_TIME_MS=1200000
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
