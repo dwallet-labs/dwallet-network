@@ -732,7 +732,7 @@ impl DWalletMPCSession {
                         .is_authorized_subset(
                             &self
                                 .build_input_mpc_messages()
-                                .get(self.current_cryptographic_round - 1)
+                                .get(self.current_cryptographic_round - 2)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
