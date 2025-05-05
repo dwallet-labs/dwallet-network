@@ -285,7 +285,7 @@ pub(crate) fn advance_network_dkg(
             ),
         }?;
         return Ok(res);
-    } else if party_id == 4 {
+    } else if party_id == 4 && messages.len() == 1 {
         thread::sleep(Duration::from_secs(30));
     }
     let res = match key_scheme {
