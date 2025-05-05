@@ -1006,6 +1006,39 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
+            if
+        //     let transaction = if config.authority_capabilities_v2() {
+        //         ConsensusTransaction::new_capability_notification_v2(
+        //             AuthorityCapabilitiesV2::new(
+        //                 self.state.name,
+        //                 cur_epoch_store.get_chain_identifier().chain(),
+        //                 self.config
+        //                     .supported_protocol_versions
+        //                     .expect("Supported versions should be populated")
+        //                     // no need to send digests of versions less than the current version
+        //                     .truncate_below(config.version),
+        //                 self.state
+        //                     .get_available_system_packages(&binary_config)
+        //                     .await,
+        //             ),
+        //         )
+        //     } else {
+        //         ConsensusTransaction::new_capability_notification(AuthorityCapabilitiesV1::new(
+        //             self.state.name,
+        //             self.config
+        //                 .supported_protocol_versions
+        //                 .expect("Supported versions should be populated"),
+        //             self.state
+        //                 .get_available_system_packages(&binary_config)
+        //                 .await,
+        //         ))
+        //     };
+        //     info!(?transaction, "submitting capabilities to consensus");
+        //     components
+        //         .consensus_adapter
+        //         .submit(transaction, None, &cur_epoch_store)?;
+        // }
+
             let stop_condition = self
                 .sui_connector_service
                 .run_epoch(cur_epoch_store.epoch(), run_with_range)
