@@ -165,6 +165,7 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+    pub attempt_number: usize,
 }
 
 /// The message unique key in the consensus network.
@@ -176,6 +177,7 @@ pub struct DWalletMPCMessageKey {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+    pub attempt: usize,
 }
 
 /// Holds information about the current MPC session.
@@ -333,7 +335,7 @@ impl DWalletMPCEventTrait for StartDKGSecondRoundEvent {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum AdvanceResult {
     Success,
-    Failure,
+    Failure { round_to_restart_from: usize },
 }
 
 /// Represents a report of malicious behavior in the dWallet MPC process.

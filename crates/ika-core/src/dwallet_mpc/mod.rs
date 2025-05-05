@@ -39,6 +39,7 @@ use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
+use tracing::error;
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -393,6 +394,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
+    /// Needed as the cryptographic library's rounds indexing is 1-based.
+    let mpc_round = messages.len() + 1;
     let res = match P::advance(
         session_id,
         party_id,
@@ -406,13 +409,26 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!(
                 "MPC error in party {party_id} session {} at round #{} {:?}",
-                session_id,
-                messages.len() + 1,
-                e
+                session_id, mpc_round, e
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached { honest_subset } => {
+                    let round_to_restart = P::round_to_retry_on_threshold_not_reached(mpc_round)
+                        .map_err(|err| {
+                            error!(
+                                ?err,
+                                ?session_id,
+                                ?mpc_round,
+                                ?party_id,
+                                ?access_threshold,
+                                "failed to get the round to retry from, this should never happen"
+                            )
+                        })
+                        .expect(&format!(
+                            "failed to get the round to retry from, this should never happen. {mpc_round} {session_id}",
+                        ));
+
                     let malicious_actors = messages
                         .last()
                         .ok_or(general_error)?
@@ -422,6 +438,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                         .collect();
                     Err(DwalletMPCError::SessionFailedWithMaliciousParties(
                         malicious_actors,
+                        round_to_restart,
                     ))
                 }
                 _ => Err(general_error),

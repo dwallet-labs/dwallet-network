@@ -318,31 +318,24 @@ impl DWalletMPCManager {
 
         match status {
             // Quorum reached, remove the malicious parties from the session messages.
-            ReportStatus::QuorumReached => {
-                if report.advance_result == AdvanceResult::Success {
+            ReportStatus::QuorumReached => match report.advance_result {
+                AdvanceResult::Success => {
                     // No need to re-perform the last step, as the advance was successful.
                     return Ok(());
                 }
-                if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    // For every advance we increase the round number by 1,
-                    // so to re-run the same round, we decrease it by 1.
-                    session.pending_quorum_for_highest_round_number -= 1;
-                    // Remove malicious parties from the session messages.
-                    let round_messages = session
-                        .serialized_full_messages
-                        .get_mut(session.pending_quorum_for_highest_round_number)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: report.session_id,
-                        })?;
-
-                    self.malicious_handler
-                        .get_malicious_actors_ids(epoch_store)?
-                        .iter()
-                        .for_each(|malicious_actor| {
-                            round_messages.remove(malicious_actor);
-                        });
+                AdvanceResult::Failure {
+                    round_to_restart_from,
+                } => {
+                    if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
+                        session.handle_session_failed_due_to_malicious_parties(
+                            &self
+                                .malicious_handler
+                                .get_malicious_actors_ids(epoch_store)?,
+                            round_to_restart_from,
+                        );
+                    }
                 }
-            }
+            },
             ReportStatus::WaitingForQuorum => {}
             ReportStatus::OverQuorum => {}
         }
@@ -448,6 +441,9 @@ impl DWalletMPCManager {
                     session.pending_quorum_for_highest_round_number += 1;
                     let mut session_clone = session.clone();
                     session_clone
+                        .attempts
+                        .last_mut()
+                        .expect("session should have at least one attempt")
                         .serialized_full_messages
                         .truncate(session.pending_quorum_for_highest_round_number);
                     Some((session_clone, quorum_check_result.malicious_parties))

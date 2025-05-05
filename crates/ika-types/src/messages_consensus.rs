@@ -128,6 +128,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
+        attempt_number: usize,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
@@ -139,6 +140,7 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_id,
+                attempt_number,
             }),
         }
     }
@@ -207,6 +209,7 @@ impl ConsensusTransaction {
                     authority: message.authority.clone(),
                     session_id: message.session_id.clone(),
                     round_number: message.round_number,
+                    attempt: message.attempt_number,
                 })
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
