@@ -475,6 +475,10 @@ impl DWalletMPCSession {
                 last_processed_round = next_attempt.start_round;
             } else {
                 // no next attempt
+                if last_processed_round >= attempts[i].serialized_full_messages.len() {
+                    // no messages to process
+                    break;
+                }
                 messages.extend(
                     (attempts[i].serialized_full_messages.clone()[last_processed_round..]).to_vec(),
                 );
