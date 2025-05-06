@@ -80,7 +80,7 @@ impl DWalletMPCService {
             dwallet_mpc_manager,
             network_keys_receiver,
             exit,
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics,
         }
     }
 
