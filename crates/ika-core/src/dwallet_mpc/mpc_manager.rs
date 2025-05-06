@@ -39,8 +39,11 @@ use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, StartPresignFirstRoundEvent,
+    AdvanceResult, DBSuiEvent, DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent,
+    DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent, MPCProtocolInitData,
+    MaliciousReport, SessionInfo, SessionType, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
+    StartEncryptedShareVerificationEvent, StartNetworkDKGEvent,
+    StartPartialSignaturesVerificationEvent, StartPresignFirstRoundEvent, StartSignEvent,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -356,11 +359,77 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    fn increment_metrics_for_event(&self, event: &DBSuiEvent) -> DwalletMPCResult<()> {
+        let packages_config = &self.epoch_store()?.packages_config;
+
+        match &event.type_ {
+            t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_network_dkg_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_decryption_key_reshare_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_dwallet_dkg_first_round_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_dwallet_dkg_second_round_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_presign_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_sign_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<StartEncryptedShareVerificationEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_encrypted_share_verification_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<StartPartialSignaturesVerificationEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_partial_signature_verification_count
+                    .inc();
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
+        if let Err(err) = self.increment_metrics_for_event(&event) {
+            warn!(?err, "Failed to increment metrics for event...");
+        }
         let (public_input, private_input) = session_input_from_event(event, &self).await?;
         let mpc_event_data = Some(MPCEventData {
             session_type: session_info.session_type,

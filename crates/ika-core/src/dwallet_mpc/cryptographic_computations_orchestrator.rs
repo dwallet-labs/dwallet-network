@@ -141,6 +141,7 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let session = session.clone();
         Self::update_started_computation_metric(
+            // Safe to unwrap here (event must exist before this).
             &session.mpc_event_data.clone().unwrap().init_protocol_data,
             dwallet_mpc_metrics.clone(),
         );
@@ -159,6 +160,7 @@ impl CryptographicComputationsOrchestrator {
                 error!("failed to advance session with error: {:?}", err);
             };
             Self::update_completed_computation_metric(
+                // Safe to unwrap here (event must exist before this).
                 &session.mpc_event_data.unwrap().init_protocol_data,
                 dwallet_mpc_metrics.clone(),
             );

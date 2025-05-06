@@ -226,13 +226,15 @@ fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(DKGSecondParty::generate_public_input(
-        protocol_public_parameters,
-        deserialized_event.first_round_output.clone(),
-        deserialized_event
-            .centralized_public_key_share_and_proof
-            .clone(),
-    )?)
+    Ok(
+        <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
+            deserialized_event.first_round_output.clone(),
+            deserialized_event
+                .centralized_public_key_share_and_proof
+                .clone(),
+        )?,
+    )
 }
 
 fn dkg_second_party_session_info(
@@ -513,10 +515,6 @@ pub(crate) async fn session_input_from_event(
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_network_dkg_count
-                .inc();
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof
@@ -545,10 +543,6 @@ pub(crate) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_decryption_key_reshare_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -566,7 +560,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                ReshareSecp256k1Party::generate_public_input(
+                <ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
@@ -590,10 +584,6 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGFirstRoundEvent>::type_(packages_config) => {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_dwallet_dkg_first_round_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartDKGFirstRoundEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -607,10 +597,6 @@ pub(crate) async fn session_input_from_event(
             Ok((dkg_first_public_input(protocol_public_parameters)?, None))
         }
         t if t == &DWalletMPCSuiEvent::<StartDKGSecondRoundEvent>::type_(packages_config) => {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_dwallet_dkg_second_round_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartDKGSecondRoundEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -625,10 +611,6 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t == &DWalletMPCSuiEvent::<StartPresignFirstRoundEvent>::type_(packages_config) => {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_presign_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartPresignFirstRoundEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -645,10 +627,6 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t == &DWalletMPCSuiEvent::<StartSignEvent>::type_(packages_config) => {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_sign_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartSignEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -671,10 +649,6 @@ pub(crate) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_encrypted_share_verification_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
                 bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
@@ -690,10 +664,6 @@ pub(crate) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            dwallet_mpc_manager
-                .dwallet_mpc_metrics
-                .received_events_start_partial_signature_verification_count
-                .inc();
             let deserialized_event: DWalletMPCSuiEvent<StartPartialSignaturesVerificationEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
