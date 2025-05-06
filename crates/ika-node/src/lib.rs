@@ -336,6 +336,8 @@ impl IkaNode {
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
         };
 
+        let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
+        
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee_arc.clone(),
@@ -346,6 +348,7 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
+            dwallet_mpc_metrics
         );
 
         info!("created epoch store");
@@ -475,7 +478,6 @@ impl IkaNode {
         let connection_monitor_status = Arc::new(connection_monitor_status);
         let ika_node_metrics = Arc::new(IkaNodeMetrics::new(&registry_service.default_registry()));
 
-        let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
         let validator_components = if state.is_validator(&epoch_store) {
             let components = Self::construct_validator_components(
                 config.clone(),
