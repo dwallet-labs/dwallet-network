@@ -1148,7 +1148,7 @@ impl IkaNode {
                             consensus_manager,
                             consensus_store_pruner,
                             checkpoint_metrics,
-
+                            dwallet_mpc_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
