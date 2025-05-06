@@ -349,7 +349,6 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
-    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -544,7 +543,6 @@ impl AuthorityPerEpochStore {
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         packages_config: IkaPackagesConfig,
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
@@ -595,7 +593,6 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             perpetual_tables,
             packages_config,
-            dwallet_mpc_metrics,
         });
 
         s.update_buffer_stake_metric();
@@ -750,7 +747,6 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             perpetual_tables,
             self.packages_config.clone(),
-            self.dwallet_mpc_metrics.clone(),
         )
     }
 
