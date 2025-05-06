@@ -594,7 +594,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             perpetual_tables,
             packages_config,
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics,
         });
 
         s.update_buffer_stake_metric();

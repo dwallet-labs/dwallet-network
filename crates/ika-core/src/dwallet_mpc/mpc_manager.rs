@@ -8,6 +8,7 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
@@ -61,7 +62,6 @@ use tokio::sync::{watch, OnceCell};
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 use typed_store::Map;
-use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -104,7 +104,7 @@ pub struct DWalletMPCManager {
     /// Once we get the network key, these events will continue.
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
-    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>
+    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -148,7 +148,7 @@ impl DWalletMPCManager {
             epoch_store.clone(),
             next_epoch_committee_receiver,
             node_config.clone(),
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics,
         )
         .unwrap_or_else(|err| {
             error!(?err, "Failed to create DWalletMPCManager.");
@@ -201,7 +201,7 @@ impl DWalletMPCManager {
             network_keys: Box::new(dwallet_network_keys),
             next_epoch_committee_receiver,
             events_pending_for_network_key: vec![],
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics,
         })
     }
 

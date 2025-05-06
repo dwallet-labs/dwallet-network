@@ -68,7 +68,7 @@ impl DWalletMPCService {
             epoch_store.clone(),
             next_epoch_committee_receiver,
             node_config,
-            dwallet_mpc_metrics.clone()
+            dwallet_mpc_metrics.clone(),
         )
         .await;
         Self {
