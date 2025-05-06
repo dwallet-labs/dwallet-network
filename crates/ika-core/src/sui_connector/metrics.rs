@@ -25,11 +25,21 @@ pub struct SuiConnectorMetrics {
     pub last_synced_sui_checkpoints: IntGaugeVec,
 
     pub gas_coin_balance: IntGauge,
-    pub(crate) last_checkpoint_to_write_to_sui: IntGauge,
-    pub(crate) last_checkpoint_written_to_sui: IntGauge,
-    pub(crate) new_checkpoint_to_write_to_sui_count: IntGauge,
-    pub(crate) successful_checkpoints_written_to_sui_count: IntGauge,
-    pub(crate) failed_checkpoints_written_to_sui_count: IntGauge,
+
+    /// Sequence number of the next checkpoint to write to Sui.
+    pub(crate) next_checkpoint_sequence: IntGauge,
+
+    /// Sequence number of the last checkpoint successfully written to Sui.
+    pub(crate) last_written_checkpoint_sequence: IntGauge,
+
+    /// Total number of checkpoint write requests sent to Sui.
+    pub(crate) checkpoint_write_requests_total: IntGauge,
+
+    /// Total number of successful checkpoint writes to Sui.
+    pub(crate) checkpoint_writes_success_total: IntGauge,
+
+    /// Total number of failed checkpoint writes to Sui.
+    pub(crate) checkpoint_writes_failure_total: IntGauge,
 }
 
 impl SuiConnectorMetrics {
@@ -48,34 +58,39 @@ impl SuiConnectorMetrics {
                 registry,
             )
             .unwrap(),
-            last_checkpoint_to_write_to_sui: register_int_gauge_with_registry!(
-                "last_checkpoint_to_write_to_sui",
-                "The last checkpoint to write to Sui",
-                registry
+
+            next_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_next_checkpoint_sequence",
+                "Sequence number of the next checkpoint to write to Sui",
+                registry,
             )
             .unwrap(),
-            last_checkpoint_written_to_sui: register_int_gauge_with_registry!(
-                "last_checkpoint_written_to_sui",
-                "The last checkpoint written to Sui",
-                registry
+
+            last_written_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_last_written_checkpoint_sequence",
+                "Sequence number of the last checkpoint successfully written to Sui",
+                registry,
             )
             .unwrap(),
-            new_checkpoint_to_write_to_sui_count: register_int_gauge_with_registry!(
-                "new_checkpoint_to_write_to_sui_count",
-                "The number of new checkpoints to write to Sui",
-                registry
+
+            checkpoint_write_requests_total: register_int_gauge_with_registry!(
+                "sui_connector_checkpoint_write_requests_total",
+                "Total number of checkpoint write requests sent to Sui",
+                registry,
             )
             .unwrap(),
-            successful_checkpoints_written_to_sui_count: register_int_gauge_with_registry!(
-                "successful_checkpoints_written_to_sui_count",
-                "The number of successful checkpoints written to Sui",
-                registry
+
+            checkpoint_writes_success_total: register_int_gauge_with_registry!(
+                "sui_connector_checkpoint_writes_success_total",
+                "Total number of successful checkpoint writes to Sui",
+                registry,
             )
             .unwrap(),
-            failed_checkpoints_written_to_sui_count: register_int_gauge_with_registry!(
-                "failed_checkpoints_written_to_sui_count",
-                "The number of failed checkpoints written to Sui",
-                registry
+
+            checkpoint_writes_failure_total: register_int_gauge_with_registry!(
+                "sui_connector_checkpoint_writes_failure_total",
+                "Total number of failed checkpoint writes to Sui",
+                registry,
             )
             .unwrap(),
         };
