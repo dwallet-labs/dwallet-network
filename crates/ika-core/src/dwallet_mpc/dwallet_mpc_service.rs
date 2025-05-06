@@ -160,7 +160,7 @@ impl DWalletMPCService {
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
                     for (key_id, key_data) in new_keys.iter() {
-                        info!("Updating network key for key_id: {:?}", key_id);
+                        info!(?key_id, "Updating the network key");
                         self.dwallet_mpc_manager
                             .network_keys
                             .update_network_key(
