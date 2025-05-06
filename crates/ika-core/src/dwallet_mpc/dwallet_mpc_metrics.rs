@@ -6,52 +6,52 @@ use std::sync::Arc;
 
 pub struct DWalletMPCMetrics {
     // DKG first Round
-    advance_calls_for_dwallet_dkg_first_round: IntGauge,
-    advance_completions_for_dwallet_dkg_first_round: IntGauge,
-    received_start_dwallet_dkg_events_count: IntGauge,
-    dwallet_dkg_first_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_dwallet_dkg_first_round: IntGauge,
+    pub(crate) advance_completions_for_dwallet_dkg_first_round: IntGauge,
+    pub(crate) received_start_dwallet_dkg_first_round_events_count: IntGauge,
+    pub(crate) dwallet_dkg_first_round_completions_count: IntGauge,
 
     // DKG Second Round
-    advance_calls_for_dwallet_dkg_second_round: IntGauge,
-    advance_completions_for_dwallet_dkg_second_round: IntGauge,
-    received_start_dwallet_dkg_second_round_events_count: IntGauge,
-    dwallet_dkg_second_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_dwallet_dkg_second_round: IntGauge,
+    pub(crate) advance_completions_for_dwallet_dkg_second_round: IntGauge,
+    pub(crate) received_start_dwallet_dkg_second_round_events_count: IntGauge,
+    pub(crate) dwallet_dkg_second_round_completions_count: IntGauge,
 
     // Presign
-    advance_calls_for_presign: IntGauge,
-    advance_completions_for_presign: IntGauge,
-    received_start_presign_events_count: IntGauge,
-    presign_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_presign: IntGauge,
+    pub(crate) advance_completions_for_presign: IntGauge,
+    pub(crate) received_start_presign_events_count: IntGauge,
+    pub(crate) presign_round_completions_count: IntGauge,
 
     // Sign
-    advance_calls_for_sign: IntGauge,
-    advance_completions_for_sign: IntGauge,
-    received_start_sign_events_count: IntGauge,
-    sign_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_sign: IntGauge,
+    pub(crate) advance_completions_for_sign: IntGauge,
+    pub(crate) received_start_sign_events_count: IntGauge,
+    pub(crate) sign_round_completions_count: IntGauge,
 
     // Network DKG
-    advance_calls_for_network_dkg: IntGauge,
-    advance_completions_for_network_dkg: IntGauge,
-    received_start_network_dkg_events_count: IntGauge,
-    network_dkg_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_network_dkg: IntGauge,
+    pub(crate) advance_completions_for_network_dkg: IntGauge,
+    pub(crate) received_start_network_dkg_events_count: IntGauge,
+    pub(crate) network_dkg_round_completions_count: IntGauge,
 
     // Encrypted Share Verification
-    advance_calls_for_encrypted_share_verification: IntGauge,
-    advance_completions_for_encrypted_share_verification: IntGauge,
-    received_start_encrypted_share_verification_events_count: IntGauge,
-    encrypted_share_verification_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_encrypted_share_verification: IntGauge,
+    pub(crate) advance_completions_for_encrypted_share_verification: IntGauge,
+    pub(crate) received_start_encrypted_share_verification_events_count: IntGauge,
+    pub(crate) encrypted_share_verification_round_completions_count: IntGauge,
 
     // Partial Signature Verification
-    advance_calls_for_partial_signature_verification: IntGauge,
-    advance_completions_for_partial_signature_verification: IntGauge,
-    received_start_partial_signature_verification_events_count: IntGauge,
-    partial_signature_verification_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_partial_signature_verification: IntGauge,
+    pub(crate) advance_completions_for_partial_signature_verification: IntGauge,
+    pub(crate) received_start_partial_signature_verification_events_count: IntGauge,
+    pub(crate) partial_signature_verification_round_completions_count: IntGauge,
 
     // Decryption Key Reshare
-    advance_calls_for_decryption_key_reshare: IntGauge,
-    advance_completions_for_decryption_key_reshare: IntGauge,
-    received_start_decryption_key_reshare_events_count: IntGauge,
-    decryption_key_reshare_round_completions_count: IntGauge,
+    pub(crate) advance_calls_for_decryption_key_reshare: IntGauge,
+    pub(crate) advance_completions_for_decryption_key_reshare: IntGauge,
+    pub(crate) received_start_decryption_key_reshare_events_count: IntGauge,
+    pub(crate) decryption_key_reshare_round_completions_count: IntGauge,
 }
 
 impl DWalletMPCMetrics {
@@ -69,7 +69,7 @@ impl DWalletMPCMetrics {
                 registry
             )
             .unwrap(),
-            received_start_dwallet_dkg_events_count: register_int_gauge_with_registry!(
+            received_start_dwallet_dkg_first_round_events_count: register_int_gauge_with_registry!(
                 "received_start_dwallet_dkg_events_count",
                 "Received start dwallet dkg events count",
                 registry
