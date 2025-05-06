@@ -5,13 +5,14 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
 use group::{GroupElement, PartyID};
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionInfo};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, MPCProtocolInitData, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -44,6 +45,7 @@ pub struct DWalletMPCOutputsVerifier {
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     pub(crate) consensus_round_completed_sessions: HashSet<ObjectID>,
+    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -78,7 +80,10 @@ pub struct OutputVerificationResult {
 }
 
 impl DWalletMPCOutputsVerifier {
-    pub fn new(epoch_store: &Arc<AuthorityPerEpochStore>) -> Self {
+    pub fn new(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    ) -> Self {
         DWalletMPCOutputsVerifier {
             epoch_store: Arc::downgrade(&epoch_store),
             quorum_threshold: epoch_store.committee().quorum_threshold(),
@@ -94,6 +99,7 @@ impl DWalletMPCOutputsVerifier {
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
+            dwallet_mpc_metrics,
         }
     }
 
@@ -180,6 +186,7 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
+            self.update_completed_sessions_metric(&session_info);
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
                 malicious_actors: vec![],
@@ -210,5 +217,48 @@ impl DWalletMPCOutputsVerifier {
                 current_result: OutputVerificationStatus::NotEnoughVotes,
             },
         );
+    }
+
+    fn update_completed_sessions_metric(&self, session_info: &SessionInfo) {
+        match session_info.mpc_round {
+            MPCProtocolInitData::DKGFirst(_) => {
+                self.dwallet_mpc_metrics
+                    .dwallet_dkg_first_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                self.dwallet_mpc_metrics
+                    .dwallet_dkg_second_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::Presign(_) => {
+                self.dwallet_mpc_metrics
+                    .presign_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::Sign(_) => {
+                self.dwallet_mpc_metrics.sign_round_completions_count.inc();
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                self.dwallet_mpc_metrics
+                    .network_dkg_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                self.dwallet_mpc_metrics
+                    .encrypted_share_verification_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                self.dwallet_mpc_metrics
+                    .partial_signature_verification_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                self.dwallet_mpc_metrics
+                    .decryption_key_reshare_round_completions_count
+                    .inc();
+            }
+        }
     }
 }
