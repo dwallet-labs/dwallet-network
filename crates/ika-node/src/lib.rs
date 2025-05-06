@@ -348,7 +348,7 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics.clone()
         );
 
         info!("created epoch store");
