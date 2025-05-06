@@ -215,7 +215,17 @@ where
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
-                warn!("The network decryption keys are not in the current epoch");
+                // Gather all the (ObjectID, current epoch) pairs that are out of date.
+                let mismatches: Vec<(ObjectID, u64)> = network_decryption_keys
+                    .iter()
+                    .filter(|(_, key)| key.current_epoch != system_inner.epoch())
+                    .map(|(id, key)| (id.clone(), key.current_epoch))
+                    .collect();
+                warn!(
+                    keys_current_epoch=?mismatches,
+                    system_inner_epoch=?system_inner.epoch(),
+                    "Network decryption key is out-of-date for this authority"
+                );
                 continue;
             }
             let active_bls_committee = system_inner.get_ika_active_committee();
@@ -265,9 +275,13 @@ where
                     Ok(key) => {
                         all_network_keys_data.insert(key_id.clone(), key.clone());
                         network_keys_cache.insert((key_id, key.epoch));
+                        info!(
+                            key_id=?key_id,
+                            "Successfully synced the network decryption key for `key_id`",
+                        );
                     }
                     Err(err) => {
-                        error!(
+                        warn!(
                             key=?key_id,
                             err=?err,
                             "failed to get network decryption key data, retrying...",

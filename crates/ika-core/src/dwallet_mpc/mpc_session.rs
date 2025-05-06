@@ -59,7 +59,7 @@ pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
-    pub(crate) decryption_share: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
 }
 
@@ -113,11 +113,6 @@ impl DWalletMPCSession {
         }
     }
 
-    pub(crate) fn clear_data(&mut self) {
-        self.mpc_event_data = None;
-        self.serialized_full_messages = Default::default();
-    }
-
     /// Returns the epoch store.
     /// Errors if the epoch was switched in the middle.
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
@@ -138,12 +133,16 @@ impl DWalletMPCSession {
                 malicious_parties,
                 message,
             }) => {
+                // Safe to unwrap as advance can only be called after the event is received.
+                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
+                let session_id = self.session_id;
+                let validator_name = self.epoch_store()?.name;
+                let round_number = self.serialized_full_messages.len();
                 info!(
-                    // Safe to unwrap as advance can only be called after the event is received.
-                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
-                    session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
-                    round=?self.serialized_full_messages.len(),
+                    mpc_protocol=?mpc_protocol,
+                    session_id=?session_id,
+                    validator=?validator_name,
+                    round=?round_number,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
@@ -155,13 +154,20 @@ impl DWalletMPCSession {
                         AdvanceResult::Success,
                     )?;
                 }
-                let message = self.new_dwallet_mpc_message(message)?;
+                let message = self.new_dwallet_mpc_message(message, &mpc_protocol.to_string())?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![message], &epoch_store)
                         .await
                     {
-                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                        error!(
+                            mpc_protocol=?mpc_protocol,
+                            session_id=?session_id,
+                            validator=?validator_name,
+                            round=?round_number,
+                            err=?err,
+                            "failed to submit an MPC message to consensus"
+                        );
                     }
                 });
                 Ok(())
@@ -171,20 +177,25 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
+                let validator_name = self.epoch_store()?.name;
+                // Safe to unwrap as advance can only be called after the event is received.
+                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 info!(
-                    "session {:?} finalized successfully, malicious_parties {:?}",
-                    self.session_id, malicious_parties
-                );
-                info!(
-                    // Safe to unwrap as advance can only be called after the event is received.
-                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    mpc_protocol=?&mpc_protocol,
                     session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
+                    validator=?&validator_name,
                     "Reached public output (Finalize) for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
+                    warn!(
+                        mpc_protocol=?&mpc_protocol,
+                        session_id=?self.session_id,
+                        validator=?&validator_name,
+                        ?malicious_parties,
+                        "Malicious Parties detected on MPC session Finalize",
+                    );
                     self.report_malicious_actors(
                         tokio_runtime_handle,
                         malicious_parties,
@@ -193,37 +204,30 @@ impl DWalletMPCSession {
                 }
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
+                let session_id_clone = self.session_id;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
                         .await
                     {
-                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                        error!(
+                            mpc_protocol=?mpc_protocol,
+                            session_id=?session_id_clone,
+                            validator=?validator_name,
+                            "failed to submit an MPC message to consensus: {:?}", err
+                        );
                     }
                 });
                 Ok(())
             }
             Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
-                error!(?malicious_parties, "session failed with malicious parties",);
-                let base64_mpc_messages = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
-                let mpc_event_data = self.mpc_event_data.clone().unwrap();
-                let base64_mpc_public_input =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
-                let base64_mpc_init_protocol_data = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
-                let base64_mpc_session_type =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
                 error!(
-                    messages=?base64_mpc_messages,
-                    public_input=?base64_mpc_public_input,
-                    init_protocol_data=?base64_mpc_init_protocol_data,
-                    session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
                     crypto_round=?self.pending_quorum_for_highest_round_number,
                     party_id=?self.party_id,
-                    "MPC session failed"
+                    malicious_parties=?malicious_parties,
+                    "MPC session failed with malicious parties"
                 );
                 self.report_malicious_actors(
                     tokio_runtime_handle,
@@ -232,38 +236,38 @@ impl DWalletMPCSession {
                 )
             }
             Err(err) => {
-                error!(?err, "failed to advance the MPC session");
-                let base64_mpc_messages = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
-                let mpc_event_data = self.mpc_event_data.clone().unwrap();
-                let base64_mpc_public_input =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
-                let base64_mpc_init_protocol_data = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
-                let base64_mpc_session_type =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
+                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
+                let validator_name = self.epoch_store()?.name;
+
                 error!(
-                    messages=?base64_mpc_messages,
-                    public_input=?base64_mpc_public_input,
-                    init_protocol_data=?base64_mpc_init_protocol_data,
-                    session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
+                    validator=?validator_name,
                     crypto_round=?self.pending_quorum_for_highest_round_number,
                     party_id=?self.party_id,
-                    "MPC session failed"
+                    error=?err,
+                    mpc_protocol=?mpc_protocol,
+                    epoch=?self.epoch_id,
+                    "failed to advance the MPC session"
                 );
 
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                let session_id_clone = self.session_id;
+                let epoch_id_clone = self.epoch_id;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
                         .await
                     {
-                        error!("failed to submit an MPC message to consensus: {:?}", err);
+                        error!(
+                            mpc_protocol=?&mpc_protocol,
+                            session_id=?session_id_clone,
+                            validator=?validator_name,
+                            epoch=?epoch_id_clone,
+                            error=?err,
+                            "failed to submit an MPC message to consensus: {:?}", err);
                     }
                 });
                 Err(err)
@@ -329,15 +333,20 @@ impl DWalletMPCSession {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
+
         info!(
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
             crypto_round=?self.pending_quorum_for_highest_round_number,
+            weighted_parties=?self.weighted_threshold_access_structure,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
-        let public_input = &mpc_event_data.public_input;
+        let public_input_from_event = &mpc_event_data.public_input;
+        let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
+        let mpc_protocol = mpc_event_data.init_protocol_data.to_string();
+
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
@@ -347,7 +356,7 @@ impl DWalletMPCSession {
                     crypto_round=?self.pending_quorum_for_highest_round_number,
                     "Advancing DKG first party",
                 );
-                let public_input = bcs::from_bytes(public_input)?;
+                let public_input = bcs::from_bytes(public_input_from_event)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
@@ -355,11 +364,16 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
-                    bcs::from_bytes(public_input)?;
+                    bcs::from_bytes(public_input_from_event)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
@@ -367,6 +381,11 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input.clone(),
                     (),
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
@@ -394,7 +413,7 @@ impl DWalletMPCSession {
                 Ok(result)
             }
             MPCProtocolInitData::Presign(..) => {
-                let public_input = bcs::from_bytes(public_input)?;
+                let public_input = bcs::from_bytes(public_input_from_event)?;
                 crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
@@ -402,24 +421,41 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    None,
                 )
             }
             MPCProtocolInitData::Sign(..) => {
-                let public_input = bcs::from_bytes(public_input)?;
+                let public_input = bcs::from_bytes(public_input_from_event)?;
+
+                let decryption_key_shares = mpc_event_data
+                    .decryption_shares
+                    .iter()
+                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                    .collect::<HashMap<_, _>>();
+
                 crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    mpc_event_data.decryption_share.clone(),
+                    mpc_event_data.decryption_shares.clone(),
+                    None,
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    Some(&decryption_key_shares),
                 )
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
-                public_input,
+                public_input_from_event,
                 key_scheme,
                 self.serialized_full_messages.clone(),
                 bcs::from_bytes(
@@ -428,6 +464,9 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
+                public_input_from_event,
+                mpc_protocol,
+                party_to_authority_map,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 let protocol_public_parameters = mpc_event_data.public_input.clone();
@@ -456,7 +495,7 @@ impl DWalletMPCSession {
                     &event_data.event_data.dkg_output,
                     &event_data.event_data.presign,
                     &event_data.event_data.message_centralized_signature,
-                    &bcs::from_bytes(public_input)?,
+                    &bcs::from_bytes(public_input_from_event)?,
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -466,9 +505,9 @@ impl DWalletMPCSession {
                 })
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                let public_input = bcs::from_bytes(public_input)?;
+                let public_input = bcs::from_bytes(public_input_from_event)?;
                 let decryption_key_shares = mpc_event_data
-                    .decryption_share
+                    .decryption_shares
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
@@ -485,8 +524,13 @@ impl DWalletMPCSession {
                                 .clone()
                                 .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                         )?,
-                        decryption_key_shares,
+                        decryption_key_shares.clone(),
                     ),
+                    mpc_event_data.private_input.clone(),
+                    public_input_from_event,
+                    mpc_protocol,
+                    party_to_authority_map,
+                    Some(&decryption_key_shares),
                 )
             }
             _ => {
@@ -500,12 +544,14 @@ impl DWalletMPCSession {
     fn new_dwallet_mpc_message(
         &self,
         message: MPCMessage,
+        mpc_protocol: &str,
     ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
             self.pending_quorum_for_highest_round_number,
+            mpc_protocol,
         ))
     }
 
@@ -528,7 +574,7 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        // This happens because we clear the session when it is finished, and change the status,
+        // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
             warn!(
@@ -536,6 +582,7 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
+                mpc_protocol=%message.mpc_protocol,
                 "Received a message for a session that is not active",
             );
             return Ok(());
@@ -547,7 +594,8 @@ impl DWalletMPCSession {
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
-            "Received DWallet mpc message",
+            mpc_protocol=message.mpc_protocol,
+            "Received a dWallet MPC message",
         );
         if message.round_number == 0 {
             error!(
@@ -555,6 +603,7 @@ impl DWalletMPCSession {
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
+                mpc_protocol=?message.mpc_protocol,
                 "Received a message for round zero",
             );
             return Err(DwalletMPCError::MessageForFirstMPCStep);
@@ -579,6 +628,7 @@ impl DWalletMPCSession {
                         from_authority=?message.authority,
                         receiving_authority=?authority_name,
                         crypto_round_number=?message.round_number,
+                        mpc_protocol=?message.mpc_protocol,
                         "Received a duplicate message from authority",
                     );
                     // Duplicate.
@@ -591,7 +641,8 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Inserting a message into the party to message maps",
+                    mpc_protocol=%message.mpc_protocol,
+                    "Inserting an MPC message into the party-to-message maps",
                 );
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
@@ -601,7 +652,8 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
-                    "Store message for the current round",
+                    mpc_protocol=?message.mpc_protocol,
+                    "Storing a message for the current round",
                 );
                 let mut map = HashMap::new();
                 map.insert(source_party_id, message.message.clone());
@@ -615,6 +667,7 @@ impl DWalletMPCSession {
                     from_authority=?message.authority,
                     receiving_authority=?authority_name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "Received a message for two or more rounds above known round for session",
                 );
                 // Unexpected round number; rounds should grow sequentially.

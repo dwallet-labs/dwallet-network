@@ -35,7 +35,7 @@ use sui_types::base_types::{random_object_ref, ConciseableName, ObjectID};
 use sui_types::crypto::RandomnessRound;
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, mpsc, watch, Mutex};
+use tokio::sync::{broadcast, mpsc, watch, Mutex, MutexGuard};
 use tokio::task::{JoinHandle, JoinSet};
 use tower::ServiceBuilder;
 use tracing::{debug, error, warn};
@@ -253,8 +253,8 @@ impl IkaNode {
         {
             // This error will get printed while running the testing chain using Swarm,
             // as all the validators start on the same process,
-            // therefore Rayon can't configure a thread pool more than once.
-            error!("Failed to create rayon thread pool: {:?}", err);
+            // therefore, Rayon can't configure a thread pool more than once.
+            error!("failed to create rayon thread pool: {:?}", err);
         }
         NodeConfigMetrics::new(&registry_service.default_registry()).record_metrics(&config);
         let mut config = config.clone();
@@ -839,7 +839,7 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
+        let dwallet_mpc_service_exit_sender = Self::start_dwallet_mpc_service(
             epoch_store.clone(),
             sui_client,
             Arc::new(consensus_adapter.clone()),
@@ -904,7 +904,7 @@ impl IkaNode {
             checkpoint_service_tasks,
             checkpoint_metrics,
             ika_tx_validator_metrics,
-            dwallet_mpc_service_exit,
+            dwallet_mpc_service_exit: dwallet_mpc_service_exit_sender,
         })
     }
 
@@ -1043,7 +1043,7 @@ impl IkaNode {
             if let Err(err) = self.end_of_epoch_channel.send(latest_system_state.clone()) {
                 if self.state.is_fullnode(&cur_epoch_store) {
                     warn!(
-                        "Failed to send end of epoch notification to subscriber: {:?}",
+                        "Failed to send the end-of-epoch notification to subscriber: {:?}",
                         err
                     );
                 }
@@ -1059,7 +1059,7 @@ impl IkaNode {
 
             info!(
                 next_epoch,
-                "Finished executing all checkpoints in epoch. About to reconfigure the system."
+                "Finished executing all checkpoints in the epoch. About to reconfigure the system."
             );
 
             fail_point_async!("reconfig_delay");
@@ -1082,9 +1082,9 @@ impl IkaNode {
             );
 
             // The following code handles 4 different cases, depending on whether the node
-            // was a validator in the previous epoch, and whether the node is a validator
+            // was a validator in the previous epoch
+            // and whether the node is a validator
             // in the new epoch.
-
             let new_validator_components = if let Some(ValidatorComponents {
                 consensus_manager,
                 consensus_store_pruner,
@@ -1189,13 +1189,21 @@ impl IkaNode {
                     None
                 }
             };
+            // todo(zeev): fix this
+            // Close the old validator components.
+            self.validator_components
+                .lock()
+                .await
+                .as_mut()
+                .map(|components| {
+                    components.dwallet_mpc_service_exit.send(()).ok();
+                });
             *self.validator_components.lock().await = new_validator_components;
-
-            // Force releasing current epoch store DB handle, because the
+            // Force releasing the current epoch store DB handle, because the
             // Arc<AuthorityPerEpochStore> may linger.
             cur_epoch_store.release_db_handles();
 
-            info!("Reconfiguration finished");
+            info!("Reconfiguration finished, sending exit signal");
         }
     }
 

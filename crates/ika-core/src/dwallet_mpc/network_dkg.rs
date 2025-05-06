@@ -15,12 +15,13 @@ use class_groups::{
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput,
-    MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCPublicOutput, MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
     NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
 };
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
+use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState,
@@ -205,8 +206,8 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<Vec<u8>> {
         let Some(result) = self.network_decryption_keys.get(key_id) else {
             warn!(
-                "failed to fetch the network decryption key shares for key ID: {:?}",
-                key_id
+                ?key_id,
+                "failed to fetch the network decryption key shares for key ID"
             );
             return Err(DwalletMPCError::WaitingForNetworkKey(key_id.clone()));
         };
@@ -255,9 +256,14 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
+    encoded_public_input: &MPCPublicInput,
+    mpc_protocol_name: String,
+    party_to_authority_map: HashMap<PartyID, AuthorityName>,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    let encoded_private_input: MPCPrivateInput = Some(bcs::to_bytes(&class_groups_decryption_key)?);
+
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
             session_id,
@@ -266,6 +272,11 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
+            encoded_private_input,
+            encoded_public_input,
+            mpc_protocol_name,
+            party_to_authority_map,
+            None,
         ),
         DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
@@ -274,6 +285,11 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
+            encoded_private_input,
+            encoded_public_input,
+            mpc_protocol_name,
+            party_to_authority_map,
+            None,
         ),
     }?;
     Ok(res)
@@ -372,7 +388,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    if (key_data.current_reconfiguration_public_output.is_empty()) {
+    if key_data.current_reconfiguration_public_output.is_empty() {
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,

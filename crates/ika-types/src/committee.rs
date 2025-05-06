@@ -9,6 +9,7 @@ use crate::crypto::{
 use crate::error::{IkaError, IkaResult};
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::KeyPair;
+use group::PartyID;
 pub use ika_protocol_config::ProtocolVersion;
 use once_cell::sync::OnceCell;
 use rand::rngs::{StdRng, ThreadRng};
@@ -42,6 +43,7 @@ pub struct Committee {
     pub quorum_threshold: u64,
     pub validity_threshold: u64,
     expanded_keys: HashMap<AuthorityName, AuthorityPublicKey>,
+    /// AuthorityName -> to PartyID (from 0).
     index_map: HashMap<AuthorityName, usize>,
 }
 
@@ -159,6 +161,17 @@ impl Committee {
                 self.expanded_keys.len()
             ))),
         }
+    }
+
+    /// Return a `HashMap` from **1-based** `PartyID` to `AuthorityName`.
+    pub fn party_to_authority_map(&self) -> HashMap<PartyID, AuthorityName> {
+        self.index_map
+            .iter()
+            .map(|(auth, &idx)| {
+                // idx is 0-based in index_map, so we add 1 to match the crypto lib.
+                ((idx + 1) as PartyID, auth.clone())
+            })
+            .collect()
     }
 
     pub fn class_groups_public_key_and_proof(
