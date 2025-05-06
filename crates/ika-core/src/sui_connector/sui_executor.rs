@@ -265,6 +265,10 @@ where
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
+                    self.metrics.checkpoint_write_requests_total.inc();
+                    self.metrics
+                        .next_checkpoint_sequence
+                        .set(next_checkpoint_sequence_number as i64);
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
@@ -295,10 +299,15 @@ where
                         .await;
                         match task {
                             Ok(_) => {
+                                self.metrics.checkpoint_writes_success_total.inc();
+                                self.metrics
+                                    .last_written_checkpoint_sequence
+                                    .set(next_checkpoint_sequence_number as i64);
                                 last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
+                                self.metrics.checkpoint_writes_failure_total.inc();
                                 error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
                             }
                         };
