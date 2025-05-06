@@ -859,8 +859,10 @@ impl IkaNode {
         .await;
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
-        epoch_store
-            .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store, dwallet_mpc_metrics.clone()))?;
+        epoch_store.set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(
+            &epoch_store,
+            dwallet_mpc_metrics.clone(),
+        ))?;
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
