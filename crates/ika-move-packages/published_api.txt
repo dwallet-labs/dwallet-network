@@ -157,16 +157,16 @@ dkg_second_round
 re_encrypt_user_share
 	public fun
 	0x0::dwallet_pricing
-ecdsa_presign
+presign
 	public fun
 	0x0::dwallet_pricing
-ecdsa_sign
+sign
 	public fun
 	0x0::dwallet_pricing
-ecdsa_future_sign
+future_sign
 	public fun
 	0x0::dwallet_pricing
-ecdsa_sign_with_partial_user_signature
+sign_with_partial_user_signature
 	public fun
 	0x0::dwallet_pricing
 consensus_validation_ika
@@ -412,13 +412,16 @@ accept_encrypted_user_share
 request_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_ecdsa_presign
+request_global_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-is_ecdsa_presign_valid
+respond_presign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-emit_ecdsa_sign_event
+is_presign_valid
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+emit_sign_event
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_sign
@@ -427,19 +430,19 @@ request_sign
 request_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_ecdsa_future_sign
+respond_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-verify_ecdsa_partial_user_signature_cap
+verify_partial_user_signature_cap
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_sign_with_partial_user_signatures
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-compare_ecdsa_partial_user_signatures_with_approvals
+compare_partial_user_signatures_with_approvals
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_ecdsa_sign
+respond_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 process_checkpoint_message_by_quorum
@@ -496,7 +499,10 @@ accept_encrypted_user_share
 request_presign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-is_ecdsa_presign_valid
+request_global_presign
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+is_presign_valid
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_sign
@@ -505,13 +511,13 @@ request_sign
 request_future_sign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-verify_ecdsa_partial_user_signature_cap
+verify_partial_user_signature_cap
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_sign_with_partial_user_signatures
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-compare_ecdsa_partial_user_signatures_with_approvals
+compare_partial_user_signatures_with_approvals
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 migrate

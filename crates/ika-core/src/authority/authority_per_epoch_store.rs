@@ -1631,7 +1631,7 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
                     rejected,
                     session_sequence_number: sequence_number,

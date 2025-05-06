@@ -27,19 +27,19 @@ public struct PricingPerOperation has copy, drop, store {
 /// - `dkg_first_round`: Pricing for the first round of distributed key generation.
 /// - `dkg_second_round`: Pricing for the second round of distributed key generation.
 /// - `re_encrypt_user_share`: Pricing for re-encrypting user shares.
-/// - `ecdsa_presign`: Pricing for ECDSA presigning.
-/// - `ecdsa_sign`: Pricing for ECDSA signing.
-/// - `ecdsa_future_sign`: Pricing for ECDSA future signing.
-/// - `ecdsa_sign_with_partial_user_signature`: Pricing for ECDSA signing with partial user signature.
+/// - `presign`: Pricing for ECDSA presigning.
+/// - `sign`: Pricing for ECDSA signing.
+/// - `future_sign`: Pricing for ECDSA future signing.
+/// - `sign_with_partial_user_signature`: Pricing for ECDSA signing with partial user signature.
 public struct DWalletPricing2PcMpcSecp256K1 has key, store {
     id: UID,
     dkg_first_round: PricingPerOperation,
     dkg_second_round: PricingPerOperation,
     re_encrypt_user_share: PricingPerOperation,
-    ecdsa_presign: PricingPerOperation,
-    ecdsa_sign: PricingPerOperation,
-    ecdsa_future_sign: PricingPerOperation,
-    ecdsa_sign_with_partial_user_signature: PricingPerOperation,
+    presign: PricingPerOperation,
+    sign: PricingPerOperation,
+    future_sign: PricingPerOperation,
+    sign_with_partial_user_signature: PricingPerOperation,
 }
 
 /// Creates a new [`DWalletPricing2PcMpcSecp256K1`] object.
@@ -64,24 +64,24 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
 ///   - `re_encrypt_gas_fee_reimbursement_sui`: SUI reimbursement.
 ///
 /// - **ECDSA Presign Pricing:**
-///   - `ecdsa_presign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `ecdsa_presign_computation_ika`: Computation IKA price.
-///   - `ecdsa_presign_gas_fee_reimbursement_sui`: SUI reimbursement.
+///   - `presign_consensus_validation_ika`: Consensus validation IKA price.
+///   - `presign_computation_ika`: Computation IKA price.
+///   - `presign_gas_fee_reimbursement_sui`: SUI reimbursement.
 ///
 /// - **ECDSA Sign Pricing:**
-///   - `ecdsa_sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `ecdsa_sign_computation_ika`: Computation IKA price.
-///   - `ecdsa_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
+///   - `sign_consensus_validation_ika`: Consensus validation IKA price.
+///   - `sign_computation_ika`: Computation IKA price.
+///   - `sign_gas_fee_reimbursement_sui`: SUI reimbursement.
 ///
 /// - **ECDSA Future Sign Pricing:**
-///   - `ecdsa_future_sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `ecdsa_future_sign_computation_ika`: Computation IKA price.
-///   - `ecdsa_future_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
+///   - `future_sign_consensus_validation_ika`: Consensus validation IKA price.
+///   - `future_sign_computation_ika`: Computation IKA price.
+///   - `future_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
 ///
 /// - **ECDSA Sign with Partial User Signature Pricing:**
-///   - `ecdsa_partial_sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `ecdsa_partial_sign_computation_ika`: Computation IKA price.
-///   - `ecdsa_partial_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
+///   - `partial_sign_consensus_validation_ika`: Consensus validation IKA price.
+///   - `partial_sign_computation_ika`: Computation IKA price.
+///   - `partial_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
 ///
 /// - `ctx`: The transaction context.
 ///
@@ -105,24 +105,24 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     re_encrypt_gas_fee_reimbursement_sui: u64,
 
     // ECDSA Presign Pricing
-    ecdsa_presign_consensus_validation_ika: u64,
-    ecdsa_presign_computation_ika: u64,
-    ecdsa_presign_gas_fee_reimbursement_sui: u64,
+    presign_consensus_validation_ika: u64,
+    presign_computation_ika: u64,
+    presign_gas_fee_reimbursement_sui: u64,
 
     // ECDSA Sign Pricing
-    ecdsa_sign_consensus_validation_ika: u64,
-    ecdsa_sign_computation_ika: u64,
-    ecdsa_sign_gas_fee_reimbursement_sui: u64,
+    sign_consensus_validation_ika: u64,
+    sign_computation_ika: u64,
+    sign_gas_fee_reimbursement_sui: u64,
 
     // ECDSA Future Sign Pricing
-    ecdsa_future_sign_consensus_validation_ika: u64,
-    ecdsa_future_sign_computation_ika: u64,
-    ecdsa_future_sign_gas_fee_reimbursement_sui: u64,
+    future_sign_consensus_validation_ika: u64,
+    future_sign_computation_ika: u64,
+    future_sign_gas_fee_reimbursement_sui: u64,
 
     // ECDSA Sign with Partial User Signature Pricing
-    ecdsa_partial_sign_consensus_validation_ika: u64,
-    ecdsa_partial_sign_computation_ika: u64,
-    ecdsa_partial_sign_gas_fee_reimbursement_sui: u64,
+    partial_sign_consensus_validation_ika: u64,
+    partial_sign_computation_ika: u64,
+    partial_sign_gas_fee_reimbursement_sui: u64,
 
     ctx: &mut TxContext
 ): DWalletPricing2PcMpcSecp256K1 {
@@ -143,25 +143,25 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
             computation_ika: re_encrypt_computation_ika,
             gas_fee_reimbursement_sui: re_encrypt_gas_fee_reimbursement_sui,
         },
-        ecdsa_presign: PricingPerOperation {
-            consensus_validation_ika: ecdsa_presign_consensus_validation_ika,
-            computation_ika: ecdsa_presign_computation_ika,
-            gas_fee_reimbursement_sui: ecdsa_presign_gas_fee_reimbursement_sui,
+        presign: PricingPerOperation {
+            consensus_validation_ika: presign_consensus_validation_ika,
+            computation_ika: presign_computation_ika,
+            gas_fee_reimbursement_sui: presign_gas_fee_reimbursement_sui,
         },
-        ecdsa_sign: PricingPerOperation {
-            consensus_validation_ika: ecdsa_sign_consensus_validation_ika,
-            computation_ika: ecdsa_sign_computation_ika,
-            gas_fee_reimbursement_sui: ecdsa_sign_gas_fee_reimbursement_sui,
+        sign: PricingPerOperation {
+            consensus_validation_ika: sign_consensus_validation_ika,
+            computation_ika: sign_computation_ika,
+            gas_fee_reimbursement_sui: sign_gas_fee_reimbursement_sui,
         },
-        ecdsa_future_sign: PricingPerOperation {
-            consensus_validation_ika: ecdsa_future_sign_consensus_validation_ika,
-            computation_ika: ecdsa_future_sign_computation_ika,
-            gas_fee_reimbursement_sui: ecdsa_future_sign_gas_fee_reimbursement_sui,
+        future_sign: PricingPerOperation {
+            consensus_validation_ika: future_sign_consensus_validation_ika,
+            computation_ika: future_sign_computation_ika,
+            gas_fee_reimbursement_sui: future_sign_gas_fee_reimbursement_sui,
         },
-        ecdsa_sign_with_partial_user_signature: PricingPerOperation {
-            consensus_validation_ika: ecdsa_partial_sign_consensus_validation_ika,
-            computation_ika: ecdsa_partial_sign_computation_ika,
-            gas_fee_reimbursement_sui: ecdsa_partial_sign_gas_fee_reimbursement_sui,
+        sign_with_partial_user_signature: PricingPerOperation {
+            consensus_validation_ika: partial_sign_consensus_validation_ika,
+            computation_ika: partial_sign_computation_ika,
+            gas_fee_reimbursement_sui: partial_sign_gas_fee_reimbursement_sui,
         },
     }
 }
@@ -192,23 +192,23 @@ public fun re_encrypt_user_share(self: &DWalletPricing2PcMpcSecp256K1): PricingP
 }
 
 /// Returns `PricingPerOperation` for the ECDSA presign.
-public fun ecdsa_presign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.ecdsa_presign
+public fun presign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.presign
 }
 
 /// Returns `PricingPerOperation` for the ECDSA sign.
-public fun ecdsa_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.ecdsa_sign
+public fun sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.sign
 }
 
 /// Returns `PricingPerOperation` for the ECDSA future sign.
-public fun ecdsa_future_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.ecdsa_future_sign
+public fun future_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.future_sign
 }
 
 /// Returns `PricingPerOperation` for the ECDSA sign with partial user signature.
-public fun ecdsa_sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.ecdsa_sign_with_partial_user_signature
+public fun sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.sign_with_partial_user_signature
 }
 
 /// Getter for the consensus_validation_ika field of a PricingPerOperation.

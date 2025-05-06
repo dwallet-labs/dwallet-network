@@ -230,11 +230,30 @@ public fun request_presign(
     )
 }
 
-public fun is_ecdsa_presign_valid(
+public fun request_global_presign(
+    self: &mut DWalletCoordinator,
+    dwallet_network_decryption_key_id: ID,
+    curve: u8,
+    signature_algorithm: u8,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext
+): PresignCap {
+    self.inner_mut().request_global_presign(
+        dwallet_network_decryption_key_id,
+        curve,
+        signature_algorithm,
+        payment_ika,
+        payment_sui,
+        ctx,
+    )
+}
+
+public fun is_presign_valid(
     self: &DWalletCoordinator,
     presign_cap: &PresignCap,
 ): bool {
-    self.inner().is_ecdsa_presign_valid(
+    self.inner().is_presign_valid(
         presign_cap,
     )
 }
@@ -260,6 +279,7 @@ public fun request_sign(
 
 public fun request_future_sign(
     self: &mut DWalletCoordinator,
+    dwallet_id: ID,
     presign_cap: PresignCap,
     message: vector<u8>,
     hash_scheme: u8,
@@ -269,6 +289,7 @@ public fun request_future_sign(
     ctx: &mut TxContext
 ): UnverifiedPartialUserSignatureCap {
     self.inner_mut().request_future_sign(
+        dwallet_id,
         presign_cap,
         message,
         hash_scheme,
@@ -279,12 +300,12 @@ public fun request_future_sign(
     )
 }
 
-public fun verify_ecdsa_partial_user_signature_cap(
+public fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinator,
     cap: UnverifiedPartialUserSignatureCap,
     ctx: &mut TxContext
 ): VerifiedPartialUserSignatureCap {
-    self.inner_mut().verify_ecdsa_partial_user_signature_cap(
+    self.inner_mut().verify_partial_user_signature_cap(
         cap,
         ctx,
     )
@@ -307,12 +328,12 @@ public fun request_sign_with_partial_user_signatures(
     )
 }
 
-public fun compare_ecdsa_partial_user_signatures_with_approvals(
+public fun compare_partial_user_signatures_with_approvals(
     self: &DWalletCoordinator,
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ) {
-    self.inner().compare_ecdsa_partial_user_signatures_with_approvals(
+    self.inner().compare_partial_user_signatures_with_approvals(
         partial_user_signature_cap,
         message_approval,
     )

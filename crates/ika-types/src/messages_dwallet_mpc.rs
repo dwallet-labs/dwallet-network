@@ -372,10 +372,10 @@ impl MaliciousReport {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct PresignRequestEvent {
     /// The `DWallet` object's ID associated with the DKG output.
-    pub dwallet_id: ObjectID,
+    pub dwallet_id: Option<ObjectID>,
     pub presign_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
-    pub dkg_output: Vec<u8>,
+    pub dwallet_public_output: Option<Vec<u8>>,
     pub dwallet_network_decryption_key_id: ObjectID,
     pub curve: u8,
     pub signature_algorithm: u8,

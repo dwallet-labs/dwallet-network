@@ -105,10 +105,10 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
     dkg_first_round: PricingPerOperation,
     dkg_second_round: PricingPerOperation,
     re_encrypt_user_share: PricingPerOperation,
-    ecdsa_presign: PricingPerOperation,
-    ecdsa_sign: PricingPerOperation,
-    ecdsa_future_sign: PricingPerOperation,
-    ecdsa_sign_with_partial_user_signature: PricingPerOperation,
+    presign: PricingPerOperation,
+    sign: PricingPerOperation,
+    future_sign: PricingPerOperation,
+    sign_with_partial_user_signature: PricingPerOperation,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type
@@ -127,7 +127,8 @@ pub struct DWalletCoordinatorInnerV1 {
     pub dwallets: ObjectTable,
     pub dwallet_network_decryption_keys: ObjectTable,
     pub encryption_keys: ObjectTable,
-    pub ecdsa_partial_centralized_signed_messages: ObjectTable,
+    pub presigns: ObjectTable,
+    pub partial_centralized_signed_messages: ObjectTable,
     pub pricing: DWalletPricing2PcMpcSecp256K1,
     pub gas_fee_reimbursement_sui: Balance,
     pub consensus_validation_fee_charged_ika: Balance,
@@ -140,6 +141,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub supported_signature_algorithms_to_hash_schemes: VecMap<u8, Vec<u8>>,
     pub paused_curves: Vec<u8>,
     pub paused_signature_algorithms: Vec<u8>,
+    pub signature_algorithms_allowed_global_presign: Vec<u8>,
     pub extra_fields: Bag,
 }
 

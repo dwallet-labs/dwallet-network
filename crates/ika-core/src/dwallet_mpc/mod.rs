@@ -36,6 +36,7 @@ use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
+use eyre::ContextCompat;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
@@ -247,13 +248,15 @@ fn dkg_second_party_session_info(
 }
 
 pub(crate) fn presign_public_input(
+    session_id: ObjectID,
     deserialized_event: PresignRequestEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
         <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
             protocol_public_parameters,
-            deserialized_event.dkg_output.clone(),
+            // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
+            deserialized_event.dwallet_public_output.clone().ok_or(DwalletMPCError::MPCSessionError { session_id, error: "presign public input cannot be None as we only support ECDSA".to_string() })?,
         )?,
     )
 }
@@ -620,7 +623,7 @@ pub(crate) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                presign_public_input(deserialized_event.event_data, protocol_public_parameters)?,
+                presign_public_input(deserialized_event.session_id, deserialized_event.event_data, protocol_public_parameters)?,
                 None,
             ))
         }

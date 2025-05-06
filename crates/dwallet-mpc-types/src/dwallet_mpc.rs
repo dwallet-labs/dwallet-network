@@ -45,7 +45,7 @@ pub enum MPCPublicOutput {
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
 )]
 pub enum MPCPublicOutputClassGroups {
-    /// Searailized Public Output.
+    /// Serialized Public Output.
     V1(Vec<u8>),
 }
 
