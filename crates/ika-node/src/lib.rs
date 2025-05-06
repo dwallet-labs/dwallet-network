@@ -337,7 +337,7 @@ impl IkaNode {
         };
 
         let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
-        
+
         let epoch_store = AuthorityPerEpochStore::new(
             config.protocol_public_key(),
             committee_arc.clone(),
@@ -348,7 +348,7 @@ impl IkaNode {
             chain_identifier.clone(),
             perpetual_tables.clone(),
             packages_config,
-            dwallet_mpc_metrics.clone()
+            dwallet_mpc_metrics.clone(),
         );
 
         info!("created epoch store");
