@@ -1100,19 +1100,25 @@ impl IkaNode {
                 // Waiting for checkpoint builder to finish gracefully is not possible, because it
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
+                if let Err(err) = dwallet_mpc_service_exit.send(()) {
+                    warn!(
+                        ?err,
+                        "failed to send exit signal to dwallet mpc service: {:?}"
+                    );
+                }
                 drop(dwallet_mpc_service_exit);
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
                             std::panic::resume_unwind(err.into_panic());
                         }
-                        warn!("Error in checkpoint service task: {:?}", err);
+                        warn!(?err, "error in checkpoint service task");
                     }
                 }
-                info!("Checkpoint service has shut down.");
+                info!("Checkpoint service was shut down");
 
                 consensus_manager.shutdown().await;
-                info!("Consensus has shut down.");
+                info!("Consensus was shut down");
 
                 let new_epoch_store = self
                     .reconfigure_state(
@@ -1189,14 +1195,6 @@ impl IkaNode {
                     None
                 }
             };
-            // Close the old validator components.
-            self.validator_components
-                .lock()
-                .await
-                .as_mut()
-                .map(|components| {
-                    components.dwallet_mpc_service_exit.send(()).ok();
-                });
             *self.validator_components.lock().await = new_validator_components;
             // Force releasing the current epoch store DB handle, because the
             // Arc<AuthorityPerEpochStore> may linger.

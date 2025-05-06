@@ -52,9 +52,9 @@ pub fn start_metrics_push_task(config: &ika_config::NodeConfig, registry: Regist
                 errors += 1;
                 if errors >= 10 {
                     // If we hit 10 failures in a row, start logging errors.
-                    tracing::error!("unable to push metrics: {error}; new client will be created");
+                    tracing::error!(?error, "unable to push metrics; a new client will be created");
                 } else {
-                    tracing::warn!("unable to push metrics: {error}; new client will be created");
+                    tracing::warn!(?error, "unable to push metrics; a new client will be created");
                 }
                 // aggressively recreate our client connection if we hit an error
                 client = MetricsPushClient::new(config_copy.network_key_pair().copy());
