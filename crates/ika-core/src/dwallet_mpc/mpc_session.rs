@@ -129,6 +129,7 @@ impl DWalletMPCSession {
     /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
         match self.advance_specific_party() {
+            // session_id_round_number.json
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
