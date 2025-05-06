@@ -141,7 +141,7 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let session = session.clone();
         Self::update_started_computation_metric(
-            &session.mpc_event_data.unwrap().init_protocol_data,
+            &session.mpc_event_data.clone().unwrap().init_protocol_data,
             dwallet_mpc_metrics.clone(),
         );
         if let Err(err) = self
