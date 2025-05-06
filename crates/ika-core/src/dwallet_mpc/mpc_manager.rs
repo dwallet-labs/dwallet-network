@@ -236,6 +236,8 @@ impl DWalletMPCManager {
                 );
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
+                // todo(zeev): move this to main also.
+                return;
             }
             error!(?err, "failed to handle event with error");
         }
