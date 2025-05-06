@@ -51,9 +51,9 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 
+pub mod dwallet_mpc_metrics;
 mod reshare;
 pub(crate) mod sign;
-pub mod dwallet_mpc_metrics;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 

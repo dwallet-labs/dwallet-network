@@ -5,6 +5,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 use crate::dwallet_mpc::session_info_from_event;
@@ -35,7 +36,6 @@ use tokio::task::yield_now;
 use tokio::time;
 use tracing::{error, info, warn};
 use typed_store::Map;
-use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -60,7 +60,7 @@ impl DWalletMPCService {
         sui_client: Arc<SuiConnectorClient>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),

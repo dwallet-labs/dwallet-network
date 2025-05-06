@@ -177,6 +177,7 @@ mod simulator {
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
+use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
@@ -195,7 +196,6 @@ pub use simulator::set_jwk_injector;
 use simulator::*;
 use sui_types::execution_config_utils::to_binary_config;
 use tokio::sync::watch::Receiver;
-use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -792,8 +792,7 @@ impl IkaNode {
         let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
         let ika_tx_validator_metrics =
             IkaTxValidatorMetrics::new(&registry_service.default_registry());
-        let dwallet_mpc_metrics =
-            DWalletMPCMetrics::new(&registry_service.default_registry());
+        let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
 
         Self::start_epoch_specific_validator_components(
             &config,
@@ -852,7 +851,7 @@ impl IkaNode {
             config.clone(),
             network_keys_receiver,
             next_epoch_committee_receiver,
-            dwallet_mpc_metrics.clone()
+            dwallet_mpc_metrics.clone(),
         )
         .await;
         // This verifier is in sync with the consensus,
@@ -1266,7 +1265,7 @@ impl IkaNode {
             sui_client,
             network_keys_receiver,
             next_epoch_committee_receiver,
-            dwallet_mpc_metrics
+            dwallet_mpc_metrics,
         )
         .await;
 
