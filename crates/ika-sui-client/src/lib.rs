@@ -667,11 +667,6 @@ where
             })?)
     }
 
-    pub async fn get_epoch_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
-        let system_inner = self.must_get_system_inner_object().await;
-        system_inner.get_ika_active_committee()
-    }
-
     pub async fn get_network_decryption_key_with_full_data(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
