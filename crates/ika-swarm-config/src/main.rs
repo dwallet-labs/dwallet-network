@@ -225,10 +225,8 @@ async fn main() -> Result<()> {
             // client, IKA package ID, and treasury cap ID.
             let ika_supply_id = minted_ika(
                 publisher_address,
-                &mut context,
                 client.clone(),
                 publish_config.ika_package_id,
-                publish_config.treasury_cap_id,
             )
             .await?;
             println!("Minting done: ika_supply_id: {}", ika_supply_id);
