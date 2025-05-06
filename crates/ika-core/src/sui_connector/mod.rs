@@ -42,6 +42,7 @@ use tracing::info;
 pub mod metrics;
 pub mod sui_executor;
 pub mod sui_syncer;
+mod sui_notifier_metrics;
 
 pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
 pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
