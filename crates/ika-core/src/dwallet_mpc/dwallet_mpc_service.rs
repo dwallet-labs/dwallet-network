@@ -192,7 +192,7 @@ impl DWalletMPCService {
                     break;
                 }
                 Err(err) => {
-                    error!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
+                    warn!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
                     break;
                 }
                 Ok(false) => (),

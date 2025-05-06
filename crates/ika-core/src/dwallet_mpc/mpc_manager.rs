@@ -227,7 +227,7 @@ impl DWalletMPCManager {
             .await
         {
             if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
-                error!(
+                info!(
                     ?err,
                     session_info=?event.session_info,
                     type=?event.event.type_,
