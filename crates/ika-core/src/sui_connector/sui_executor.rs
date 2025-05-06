@@ -299,10 +299,12 @@ where
                         .await;
                         match task {
                             Ok(_) => {
-                                self.metrics.successful_checkpoints_written_to_sui_count.inc();
-                                self.metrics.last_checkpoint_written_to_sui.set(
-                                    next_checkpoint_sequence_number as i64,
-                                );
+                                self.metrics
+                                    .successful_checkpoints_written_to_sui_count
+                                    .inc();
+                                self.metrics
+                                    .last_checkpoint_written_to_sui
+                                    .set(next_checkpoint_sequence_number as i64);
                                 last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }

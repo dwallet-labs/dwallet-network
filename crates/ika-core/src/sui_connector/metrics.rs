@@ -53,31 +53,31 @@ impl SuiConnectorMetrics {
                 "The last checkpoint to write to Sui",
                 registry
             )
-                .unwrap(),
+            .unwrap(),
             last_checkpoint_written_to_sui: register_int_gauge_with_registry!(
                 "last_checkpoint_written_to_sui",
                 "The last checkpoint written to Sui",
                 registry
             )
-                .unwrap(),
+            .unwrap(),
             new_checkpoint_to_write_to_sui_count: register_int_gauge_with_registry!(
                 "new_checkpoint_to_write_to_sui_count",
                 "The number of new checkpoints to write to Sui",
                 registry
             )
-                .unwrap(),
+            .unwrap(),
             successful_checkpoints_written_to_sui_count: register_int_gauge_with_registry!(
                 "successful_checkpoints_written_to_sui_count",
                 "The number of successful checkpoints written to Sui",
                 registry
             )
-                .unwrap(),
+            .unwrap(),
             failed_checkpoints_written_to_sui_count: register_int_gauge_with_registry!(
                 "failed_checkpoints_written_to_sui_count",
                 "The number of failed checkpoints written to Sui",
                 registry
             )
-                .unwrap(),
+            .unwrap(),
         };
         Arc::new(this)
     }
