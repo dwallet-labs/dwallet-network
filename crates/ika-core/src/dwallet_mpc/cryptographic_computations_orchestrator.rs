@@ -162,7 +162,6 @@ impl CryptographicComputationsOrchestrator {
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
-            // Measure session.advance()
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!(

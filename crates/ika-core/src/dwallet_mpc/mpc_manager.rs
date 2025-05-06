@@ -245,6 +245,8 @@ impl DWalletMPCManager {
                 );
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
+                // todo(zeev): move this to main also.
+                return;
             }
             error!(?err, "failed to handle event with error");
         }
@@ -785,6 +787,7 @@ impl DWalletMPCManager {
             mpc_event_data,
         );
         info!(
+            // todo(zeev): add metadata.
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );

@@ -47,6 +47,7 @@ use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
 use sui_types::dynamic_field::Field;
 use sui_types::id::{ID, UID};
+use tracing::{info, warn};
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -394,7 +395,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
-    messages: Vec<HashMap<PartyID, MPCMessage>>,
+    serialized_messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
     // This is actually the ClassGroupsKeyPairAndProof, not needed on all cases.
@@ -410,46 +411,22 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties,
-    } = deserialize_mpc_messages(messages);
+    } = deserialize_mpc_messages(&serialized_messages);
 
-    // Determine round number
-    let round = messages.len();
-
-    // Get (and initialize once) the log directory
-    let log_dir = get_log_dir()?;
-    let filename = format!("session_{}_round_{}.json", session_id, round);
-    let path = log_dir.join(&filename);
-
-    // Serialize to JSON.
-    let log = json!({
-        "session_id": session_id,
-        "round": round,
-        "party_id": party_id,
-        "access_threshold": access_threshold,
-        "messages": messages,
-        "public_input": encoded_public_input,
-        "mpc_protocol": mpc_protocol_name,
-        "party_to_authority_map": party_to_authority_map,
-        "class_groups_key_pair_and_proof": encoded_private_input,
-        "decryption_key_shares": decryption_key_shares,
-        "malicious_parties": malicious_parties,
-    });
-
-    // Create and write the file, propagating any I/O errors
-    let mut file = File::create(&path).map_err(|e| {
-        DwalletMPCError::TwoPCMPCError(format!(
-            "Failed to create log file {}: {}",
-            path.display(),
-            e
-        ))
-    })?;
-    file.write_all(log.to_string().as_bytes()).map_err(|e| {
-        DwalletMPCError::TwoPCMPCError(format!(
-            "Failed to write to the log file {}: {}",
-            path.display(),
-            e
-        ))
-    })?;
+    if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() == "1" {
+        write_mpc_session_logs_to_disk(
+            session_id,
+            party_id,
+            access_threshold,
+            &serialized_messages,
+            encoded_public_input,
+            mpc_protocol_name,
+            &party_to_authority_map,
+            encoded_private_input,
+            decryption_key_shares,
+            &malicious_parties,
+        );
+    }
 
     let res = match P::advance(
         session_id,
@@ -523,12 +500,12 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    messages: Vec<HashMap<PartyID, MPCMessage>>,
+    messages: &Vec<HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = Vec::new();
     let mut malicious_parties = Vec::new();
 
-    for message_batch in &messages {
+    for message_batch in messages {
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
@@ -768,4 +745,59 @@ fn get_log_dir() -> Result<&'static PathBuf, DwalletMPCError> {
 
     // Safe to unwrap — we just set it
     Ok(LOG_DIR.get().unwrap())
+}
+
+fn write_mpc_session_logs_to_disk(
+    session_id: CommitmentSizedNumber,
+    party_id: PartyID,
+    access_threshold: &WeightedThresholdAccessStructure,
+    messages: &Vec<HashMap<PartyID, MPCMessage>>,
+    encoded_public_input: &MPCPublicInput,
+    mpc_protocol_name: String,
+    party_to_authority_map: &HashMap<PartyID, AuthorityName>,
+    encoded_private_input: MPCPrivateInput,
+    decryption_key_shares: Option<&HashMap<PartyID, SecretKeyShareSizedInteger>>,
+    malicious_parties: &[PartyID],
+) {
+    warn!("Writing MPC session logs to disk");
+
+    // Determine round number
+    let round = messages.len();
+
+    // Get (and initialize once) the log directory
+    let log_dir = match get_log_dir() {
+        Ok(dir) => dir,
+        Err(err) => {
+            warn!(?err, "Failed to get the logs directory");
+            return;
+        }
+    };
+    let filename = format!("session_{}_round_{}.json", session_id, round);
+    let path = log_dir.join(&filename);
+
+    // Serialize to JSON.
+    let log = json!({
+        "session_id": session_id,
+        "round": round,
+        "party_id": party_id,
+        "access_threshold": access_threshold,
+        "messages": messages,
+        "public_input": encoded_public_input,
+        "mpc_protocol": mpc_protocol_name,
+        "party_to_authority_map": party_to_authority_map,
+        "class_groups_key_pair_and_proof": encoded_private_input,
+        "decryption_key_shares": decryption_key_shares,
+        "malicious_parties": malicious_parties,
+    });
+
+    let mut file = match File::create(&path) {
+        Ok(f) => f,
+        Err(e) => {
+            warn!("Failed to create log file {}: {}", path.display(), e);
+            return ();
+        }
+    };
+    if let Err(e) = file.write_all(log.to_string().as_bytes()) {
+        warn!("Failed to write to the log file {}: {}", path.display(), e);
+    }
 }
