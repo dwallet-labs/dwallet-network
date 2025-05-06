@@ -51,6 +51,7 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 
+pub mod dwallet_mpc_metrics;
 mod reshare;
 pub(crate) mod sign;
 
@@ -225,13 +226,15 @@ fn dkg_second_public_input(
     deserialized_event: StartDKGSecondRoundEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(DKGSecondParty::generate_public_input(
-        protocol_public_parameters,
-        deserialized_event.first_round_output.clone(),
-        deserialized_event
-            .centralized_public_key_share_and_proof
-            .clone(),
-    )?)
+    Ok(
+        <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
+            deserialized_event.first_round_output.clone(),
+            deserialized_event
+                .centralized_public_key_share_and_proof
+                .clone(),
+        )?,
+    )
 }
 
 fn dkg_second_party_session_info(
@@ -557,7 +560,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                ReshareSecp256k1Party::generate_public_input(
+                <ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
