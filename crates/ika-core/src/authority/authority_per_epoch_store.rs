@@ -114,6 +114,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -348,7 +349,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
-    pub(crate) dwallet_mpc_metrics: Arc<AuthorityMetrics>,
+    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -543,7 +544,7 @@ impl AuthorityPerEpochStore {
         chain_identifier: ChainIdentifier,
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         packages_config: IkaPackagesConfig,
-        dwallet_mpc_metrics: Arc<AuthorityMetrics>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Arc<Self> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
