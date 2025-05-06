@@ -1101,10 +1101,7 @@ impl IkaNode {
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
                 if let Err(err) = dwallet_mpc_service_exit.send(()) {
-                    warn!(
-                        ?err,
-                        "failed to send exit signal to dwallet mpc service: {:?}"
-                    );
+                    warn!(?err, "failed to send exit signal to dwallet mpc service");
                 }
                 drop(dwallet_mpc_service_exit);
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
