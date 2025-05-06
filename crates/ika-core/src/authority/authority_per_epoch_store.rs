@@ -749,6 +749,7 @@ impl AuthorityPerEpochStore {
             chain_identifier,
             perpetual_tables,
             self.packages_config.clone(),
+            self.dwallet_mpc_metrics.clone(),
         )
     }
 
