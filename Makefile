@@ -6,6 +6,10 @@ run-local:
 	cargo run --release --package ika --bin ika -- start
 run-local-short-epoch:
 	cargo run --release --package ika --bin ika -- start --epoch-duration-ms 600000
+run-local-short-epoch-no-info-logs:
+	RUST_LOG=warn cargo run --release --package ika --bin ika -- start
+run-local-short-epoch-no-info-logs:
+	RUST_LOG=warn cargo run --release --package ika --bin ika -- start
 snapshot:
 	UPDATE=1 cargo test --package ika-move-packages --test build_ika_move_packages build_ika_move_packages -- --exact
 	cargo fmt
