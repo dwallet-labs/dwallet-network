@@ -475,6 +475,7 @@ impl IkaNode {
         let connection_monitor_status = Arc::new(connection_monitor_status);
         let ika_node_metrics = Arc::new(IkaNodeMetrics::new(&registry_service.default_registry()));
 
+        let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
         let validator_components = if state.is_validator(&epoch_store) {
             let components = Self::construct_validator_components(
                 config.clone(),
@@ -491,6 +492,7 @@ impl IkaNode {
                 network_keys_receiver.clone(),
                 next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
+                dwallet_mpc_metrics.clone(),
             )
             .await?;
             // This is only needed during cold start.
@@ -540,6 +542,7 @@ impl IkaNode {
                 network_keys_receiver.clone(),
                 next_epoch_committee_receiver.clone(),
                 sui_client_clone,
+                dwallet_mpc_metrics,
             )
             .await;
             if let Err(error) = result {
@@ -761,6 +764,7 @@ impl IkaNode {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -792,8 +796,6 @@ impl IkaNode {
         let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
         let ika_tx_validator_metrics =
             IkaTxValidatorMetrics::new(&registry_service.default_registry());
-        let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
-
         Self::start_epoch_specific_validator_components(
             &config,
             state.clone(),
@@ -1006,6 +1008,7 @@ impl IkaNode {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
         loop {
@@ -1191,6 +1194,7 @@ impl IkaNode {
                             network_keys_receiver.clone(),
                             next_epoch_committee_receiver.clone(),
                             sui_client.clone(),
+                            dwallet_mpc_metrics.clone(),
                         )
                         .await?,
                     )
