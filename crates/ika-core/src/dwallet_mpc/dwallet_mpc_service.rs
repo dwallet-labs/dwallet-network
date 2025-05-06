@@ -49,6 +49,7 @@ pub struct DWalletMPCService {
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    pub dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCService {
@@ -79,6 +80,7 @@ impl DWalletMPCService {
             dwallet_mpc_manager,
             network_keys_receiver,
             exit,
+            dwallet_mpc_metrics
         }
     }
 
