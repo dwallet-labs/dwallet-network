@@ -52,7 +52,6 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
