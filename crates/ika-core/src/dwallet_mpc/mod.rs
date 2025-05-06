@@ -53,6 +53,7 @@ mod presign;
 
 mod reshare;
 pub(crate) mod sign;
+mod dwallet_mpc_metrics;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
