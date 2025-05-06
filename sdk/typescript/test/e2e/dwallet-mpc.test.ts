@@ -74,34 +74,47 @@ describe('Test dWallet MPC', () => {
 	it('should sign full flow', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwalletID}`);
+		console.time('Step 1: dWallet Creation');
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
 		await delay(checkpointCreationTime);
 		console.log('Running Presign...');
-		const presignCompletion = await presign(conf, dwalletID.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		console.time('Step 2: Presign Phase');
+		const presignCompletion = await presign(conf, dwallet.dwalletID);
+		console.timeEnd('Step 2: Presign Phase');
+		console.log(`Step 2: Presign completed | presignID = ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Sign...');
-		await sign(
+		console.time('Step 3: Sign Phase');
+		const signRes = await sign(
 			conf,
 			presignCompletion.presign_id,
-			dwalletID.dwallet_cap_id,
+			dwallet.dwallet_cap_id,
 			Buffer.from('hello world'),
-			dwalletID.secret_share,
+			dwallet.secret_share,
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
+		console.log(`Sing completed successfully: ${signRes.sign_id}`);
+		console.timeEnd('Step 3: Sign Phase');
 	});
 
 	it('should complete future sign', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		console.log('Creating dWallet...');
+
+		console.log('Step 1: dWallet Creation');
+		console.time('Step 1: dWallet Creation');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
+		console.log(`Step 1: dWallet created | dWalletID = ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		console.log('Starting Presign...');
+
+		console.log('Step 2: Presign Phase');
+		console.time('Step 2: Presign Phase');
 		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		console.timeEnd('Step 2: Presign Phase');
+		console.log(`Step 2: Presign completed | presignID = ${presignCompletion.presign_id}`);
 		await delay(checkpointCreationTime);
 		const unverifiedECDSAPartialUserSignatureCapID =
 			await createUnverifiedECDSAPartialUserSignatureCap(

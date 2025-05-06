@@ -21,8 +21,8 @@ pub type Round = u64;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusTransaction {
-    /// Encodes an u64 unique tracking id to allow us trace a message between Ika and consensus.
-    /// Use an byte array instead of u64 to ensure stable serialization.
+    /// Encodes an u64 unique tracking ID to allow us to trace a message between Ika and consensus.
+    /// Use a byte array instead of u64 to ensure stable serialization.
     pub tracking_id: [u8; 8],
     pub kind: ConsensusTransactionKind,
 }
@@ -76,14 +76,15 @@ impl Debug for ConsensusTransactionKey {
 
 pub type MovePackageDigest = [u8; 32];
 
-/// Used to advertise capabilities of each authority via consensus. This allows validators to
-/// negotiate the creation of the AdvanceEpoch transaction.
+/// Used to advertise the capabilities of each authority via consensus.
+/// This allows validators to negotiate the creation of the AdvanceEpoch transaction.
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct AuthorityCapabilitiesV1 {
-    /// Originating authority - must match transaction source authority from consensus.
+    /// Originating authority — must match transaction source authority from consensus.
     pub authority: AuthorityName,
-    /// Generation number set by sending authority. Used to determine which of multiple
-    /// AuthorityCapabilities messages from the same authority is the most recent.
+    /// Generation number set by sending authority.
+    /// Used to determine which of multiple
+    /// `AuthorityCapabilities` messages from the same authority is the most recent.
     ///
     /// (Currently, we just set this to the current time in milliseconds since the epoch, but this
     /// should not be interpreted as a timestamp.)
@@ -128,6 +129,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
+        mpc_protocol: &str,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
@@ -139,6 +141,7 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_id,
+                mpc_protocol: mpc_protocol.to_string(),
             }),
         }
     }

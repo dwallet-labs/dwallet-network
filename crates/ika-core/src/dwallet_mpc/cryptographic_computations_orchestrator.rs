@@ -23,6 +23,7 @@ use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::time::Instant;
 use tracing::{error, info};
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
@@ -82,7 +83,7 @@ impl CryptographicComputationsOrchestrator {
         }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
-            "available CPU cores for Rayon cryptographic computations"
+            "Available CPU cores for Rayon cryptographic computations"
         );
 
         Ok(CryptographicComputationsOrchestrator {
@@ -105,6 +106,7 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
+                        // todo(zeev): protocol, session, etc..
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
@@ -134,24 +136,55 @@ impl CryptographicComputationsOrchestrator {
     pub(super) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let session = session.clone();
+        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
         if let Err(err) = self
             .computation_channel_sender
             .send(ComputationUpdate::Started)
         {
+            // This should not happen, but error just in case.
             error!(
-                "failed to send a started computation message with error: {:?}",
-                err
+                session_id=?session.session_id,
+                mpc_protocol=?mpc_protocol,
+                error=?err,
+                "failed to send a `started` computation message",
             );
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
+            // Measure session.advance()
+            let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
-                error!("failed to advance session with error: {:?}", err);
-            };
+                error!(
+                    error=?err,
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    "failed to advance an MPC session"
+                );
+            } else {
+                let elapsed_ms = start_advance.elapsed().as_millis();
+                info!(
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    duration_ms = elapsed_ms,
+                    duration_seconds = elapsed_ms / 1000,
+                    "MPC session advanced successfully"
+                );
+            }
+            // Measure computation_channel_sender.send(...)
+            let start_send = Instant::now();
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
-                    "failed to send a finished computation message with error: {:?}",
-                    err
+                    error=?err,
+                    mpc_protocol=?mpc_protocol,
+                    "failed to send a finished computation message"
+                );
+            } else {
+                let elapsed_ms = start_send.elapsed().as_millis();
+                info!(
+                    duration_ms = elapsed_ms,
+                    mpc_protocol=?mpc_protocol,
+                    duration_seconds = elapsed_ms / 1000,
+                    "Computation update message sent"
                 );
             }
         });
