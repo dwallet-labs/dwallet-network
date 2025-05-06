@@ -570,7 +570,7 @@ impl DWalletMPCManager {
             }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
-                .spawn_session(&oldest_pending_session)
+                .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,
