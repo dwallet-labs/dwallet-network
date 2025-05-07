@@ -114,7 +114,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 						env: [
 							{
 								name: 'RUST_LOG',
-								value: 'off,ika_node=info,ika_core=info',
+								value: 'off,ika_node=info,ika_core=debug',
 							},
 							{
 								name: 'RUST_MIN_STACK',
@@ -202,7 +202,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 					env: [
 						{
 							name: 'RUST_LOG',
-							value: 'off,ika_node=info,ika_core=info',
+							value: 'off,ika_node=info,ika_core=debug',
 						},
 						{
 							name: 'RUST_MIN_STACK',
