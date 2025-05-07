@@ -1056,7 +1056,7 @@ impl AuthorityState {
             })
     }
 
-    fn choose_protocol_version_and_system_packages_v1(
+    pub fn choose_protocol_version_and_system_packages_v1(
         current_protocol_version: ProtocolVersion,
         protocol_config: &ProtocolConfig,
         committee: &Committee,

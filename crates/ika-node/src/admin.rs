@@ -221,11 +221,6 @@ async fn capabilities(State(state): State<Arc<AppState>>) -> (StatusCode, String
         output.push_str(&format!("{:?}\n", capability));
     }
 
-    let capabilities = epoch_store.get_capabilities_v1();
-    for capability in capabilities.unwrap_or_default() {
-        output.push_str(&format!("{:?}\n", capability));
-    }
-
     (StatusCode::OK, output)
 }
 

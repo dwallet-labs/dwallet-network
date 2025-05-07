@@ -16,6 +16,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
 use ika_protocol_config::Chain;
+use crate::messages_params_messages::ParamsMessageSignatureMessage;
 
 // todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
 /// Consensus round number.
@@ -147,6 +148,7 @@ pub enum ConsensusTransactionKind {
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
+    ParamsMessageSignature(Box<ParamsMessageSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -210,6 +212,19 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::CheckpointSignature(Box::new(data)),
+        }
+    }
+
+    pub fn new_params_message_signature_message(data: ParamsMessageSignatureMessage) -> Self {
+        let mut hasher = DefaultHasher::new();
+        data.params_message
+            .auth_sig()
+            .signature
+            .hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::ParamsMessageSignature(Box::new(data)),
         }
     }
 

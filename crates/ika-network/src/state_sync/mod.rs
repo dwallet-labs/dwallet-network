@@ -91,6 +91,7 @@ pub use generated::{
 };
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_types::digests::ChainIdentifier;
+use ika_types::messages_params_messages::VerifiedParamsMessage;
 pub use server::GetCheckpointAvailabilityResponse;
 pub use server::GetCheckpointMessageRequest;
 
@@ -127,6 +128,16 @@ impl Handle {
         &self,
     ) -> broadcast::Receiver<VerifiedCheckpointMessage> {
         self.checkpoint_event_sender.subscribe()
+    }
+
+    // todo (yael)
+    pub async fn send_params_message(&self, params_message: VerifiedParamsMessage) {
+        self.sender
+            .send(StateSyncMessage::VerifiedParamsMessage(Box::new(
+                params_message,
+            )))
+            .await
+            .unwrap()
     }
 }
 
@@ -334,6 +345,9 @@ enum StateSyncMessage {
     // it was able to successfully sync a checkpoint's contents. If multiple checkpoints were
     // synced at the same time, only the highest checkpoint is sent.
     SyncedCheckpoint(Box<VerifiedCheckpointMessage>),
+
+    // todo (yael);
+    VerifiedParamsMessage(Box<VerifiedParamsMessage>),
 }
 
 struct StateSyncEventLoop<S> {

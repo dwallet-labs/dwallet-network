@@ -130,6 +130,7 @@ pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
     fn protocol_version(&self) -> u64;
     fn next_protocol_version(&self) -> Option<u64>;
+    fn last_processed_params_message_sequence_number(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;

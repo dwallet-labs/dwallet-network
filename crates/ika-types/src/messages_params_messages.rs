@@ -31,6 +31,7 @@ pub type ParamsMessageTimestamp = u64;
 
 // The constituent parts of params_messages, signed and certified
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ParamsMessageKind {
     NextConfigVersion(ProtocolVersion),
 }
@@ -43,6 +44,7 @@ pub struct ParamsMessage {
     /// ParamsMessage timestamps are monotonic, but not strongly monotonic - subsequent
     /// params_messages can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: ParamsMessageTimestamp,
+    // todo : check with omer if it is okay to remove the vector
     pub messages: Vec<ParamsMessageKind>,
 }
 
@@ -65,7 +67,7 @@ impl ParamsMessage {
         Self {
             epoch,
             sequence_number,
-            messages,
+            messages: messages,
             timestamp_ms,
         }
     }
@@ -185,12 +187,12 @@ impl VerifiedParamsMessage {
 /// This is a message validators publish to consensus in order to sign params_message
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ParamsMessageSignatureMessage {
-    pub params_message_message: SignedParamsMessage,
+    pub params_message: SignedParamsMessage,
 }
 
 impl ParamsMessageSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.params_message_message
+        self.params_message
             .verify_authority_signatures(committee)
     }
 }
