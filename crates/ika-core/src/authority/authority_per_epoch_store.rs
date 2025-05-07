@@ -1130,6 +1130,19 @@ impl AuthorityPerEpochStore {
                     return None;
                 }
             }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::ParamsMessageSignature(data),
+                ..
+            }) => {
+                if transaction.sender_authority() != data.params_message.auth_sig().authority {
+                    warn!(
+            "CheckpointSignature authority {} does not match its author from consensus {}",
+            data.params_message.auth_sig().authority,
+            transaction.certificate_author_index
+            );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))

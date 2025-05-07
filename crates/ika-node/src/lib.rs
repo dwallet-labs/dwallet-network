@@ -1287,7 +1287,7 @@ impl IkaNode {
             epoch_store.protocol_version(),
             epoch_store.protocol_config(),
             epoch_store.committee(),
-            capabilities,
+            capabilities.clone(),
             epoch_store.get_effective_buffer_stake_bps(),
         );
 
@@ -1312,7 +1312,7 @@ impl IkaNode {
                     timestamp_ms: 0,
                     messages: vec![ParamsMessageKind::NextConfigVersion(new_version)],
                 },
-                signer,
+                &*signer,
                 self.state.name,
             );
 
@@ -1328,6 +1328,7 @@ impl IkaNode {
                     .await?;
             }
         }
+        Ok(())
     }
 
     pub fn get_config(&self) -> &NodeConfig {
