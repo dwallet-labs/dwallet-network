@@ -1012,6 +1012,7 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
+            // todo: check! does this could only happen once an epoch? this runs in an infinite loop so we need to change the check
             if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
                 let next_version_supported = system_inner
                     .next_protocol_version()
