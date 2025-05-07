@@ -7,6 +7,7 @@ import {
 	V1Namespace,
 	V1Pod,
 	V1Service,
+	V1PersistentVolumeClaim,
 } from '@kubernetes/client-node';
 import Handlebars from 'handlebars';
 import { describe, it } from 'vitest';
@@ -150,6 +151,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 								mountPath: '/opt/ika/config/validator.yaml',
 								subPath: 'validator.yaml',
 							},
+							{
+								name: 'data-vol',
+								mountPath: '/opt/ika/db',
+							},
 						],
 					},
 				],
@@ -180,6 +185,12 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 									path: 'validator.yaml',
 								},
 							],
+						},
+					},
+					{
+						name: 'data-vol',
+						persistentVolumeClaim: {
+							claimName: `validator-${i + 1}-data`,
 						},
 					},
 				],
@@ -223,6 +234,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 							mountPath: '/opt/ika/config/fullnode.yaml',
 							subPath: 'fullnode.yaml',
 						},
+						{
+							name: 'data-vol',
+							mountPath: '/opt/ika/db',
+						},
 					],
 				},
 			],
@@ -243,6 +258,12 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 						],
 					},
 				},
+				{
+					name: 'data-vol',
+					persistentVolumeClaim: {
+						claimName: 'fullnode-data',
+					},
+				},
 			],
 			restartPolicy: 'Always',
 		},
@@ -250,6 +271,52 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 	await k8sApi.createNamespacedPod({
 		namespace: namespaceName,
 		body: fullnodePod,
+	});
+}
+
+async function createPersistentVolumeClaims(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
+	const k8sApi = kc.makeApiClient(CoreV1Api);
+	
+	// Create PVCs for validators
+	for (let i = 0; i < numOfValidators; i++) {
+		const pvc: V1PersistentVolumeClaim = {
+			metadata: {
+				name: `validator-${i + 1}-data`,
+				namespace: namespaceName,
+			},
+			spec: {
+				accessModes: ['ReadWriteOnce'],
+				resources: {
+					requests: {
+						storage: '10Gi',
+					},
+				},
+			},
+		};
+		await k8sApi.createNamespacedPersistentVolumeClaim({
+			namespace: namespaceName,
+			body: pvc,
+		});
+	}
+
+	// Create PVC for fullnode
+	const fullnodePvc: V1PersistentVolumeClaim = {
+		metadata: {
+			name: 'fullnode-data',
+			namespace: namespaceName,
+		},
+		spec: {
+			accessModes: ['ReadWriteOnce'],
+			resources: {
+				requests: {
+					storage: '10Gi',
+				},
+			},
+		},
+	};
+	await k8sApi.createNamespacedPersistentVolumeClaim({
+		namespace: namespaceName,
+		body: fullnodePvc,
 	});
 }
 
@@ -262,6 +329,7 @@ describe('run chain chaos testing', () => {
 		await createNamespace(kc, namespaceName);
 		const configMap = await createConfigMap(kc, namespaceName, 4);
 		console.log(`ConfigMap created: ${configMap}`);
+		await createPersistentVolumeClaims(kc, namespaceName, 4);
 		await createPods(kc, namespaceName, 4);
 		await createNetworkServices(kc, namespaceName, 4);
 	});
