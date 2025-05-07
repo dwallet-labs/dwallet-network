@@ -23,10 +23,13 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
 use std::time::Instant;
+use im::HashMap;
+use sui_types::base_types::ObjectID;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tracing::{error, info};
+use tracing::{error, info, info_span, Span};
+use tracing::span::{Entered, EnteredSpan};
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
 ///
@@ -67,6 +70,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
     /// Used to prevent exceeding available CPU cores.
     currently_running_sessions_count: usize,
+    sessions_spans: HashMap<ObjectID, EnteredSpan>
 }
 
 impl CryptographicComputationsOrchestrator {
@@ -93,6 +97,7 @@ impl CryptographicComputationsOrchestrator {
             computation_channel_sender: completed_computation_channel_sender,
             computation_channel_receiver: completed_computation_channel_receiver,
             currently_running_sessions_count: 0,
+            sessions_spans: Default::default(),
         })
     }
 
@@ -156,7 +161,11 @@ impl CryptographicComputationsOrchestrator {
             );
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
+        let p = info_span!("p");
+        let _guard = p.entered();
+        let c = info_span!(parent: &_guard, "c");
         rayon::spawn_fifo(move || {
+            let _guard = c.enter();
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!("failed to advance session with error: {:?}", err);
@@ -175,6 +184,7 @@ impl CryptographicComputationsOrchestrator {
                 );
             }
         });
+        println!("{:?}", _guard);
         Ok(())
     }
 
