@@ -251,12 +251,13 @@ impl DWalletMPCMetrics {
                     registry
                 )
                 .unwrap(),
-            encrypted_share_verification_last_completion_duration: register_int_gauge_with_registry!(
-                "encrypted_share_verification_last_completion_duration",
-                "Duration of last completion for encrypted share verification",
-                registry
-            )
-            .unwrap(),
+            encrypted_share_verification_last_completion_duration:
+                register_int_gauge_with_registry!(
+                    "encrypted_share_verification_last_completion_duration",
+                    "Duration of last completion for encrypted share verification",
+                    registry
+                )
+                .unwrap(),
 
             // Partial Signature Verification.
             advance_calls_for_partial_signature_verification: register_int_gauge_with_registry!(
@@ -286,12 +287,13 @@ impl DWalletMPCMetrics {
                     registry
                 )
                 .unwrap(),
-            partial_signature_verification_last_completion_duration: register_int_gauge_with_registry!(
-                "partial_signature_verification_last_completion_duration",
-                "Duration of last completion for partial signature verification",
-                registry
-            )
-            .unwrap(),
+            partial_signature_verification_last_completion_duration:
+                register_int_gauge_with_registry!(
+                    "partial_signature_verification_last_completion_duration",
+                    "Duration of last completion for partial signature verification",
+                    registry
+                )
+                .unwrap(),
 
             // Decryption Key Reshare.
             advance_calls_for_decryption_key_reshare: register_int_gauge_with_registry!(
