@@ -7,4 +7,4 @@ envs:
     ws: ~
     basic_auth: ~
 active_env: beta50.devnet.ika-network.net
-active_address: 0xaf100a2fd322a637131c2658bc26b5066fefbcbef0e075cf9fbc2186d74727dc
+active_address: 0x8e01c644c085ffa4bea3e03890229dbb5bf6d31b495f504bbc8be28074110da4

@@ -1,0 +1,10 @@
+---
+keystore:
+  File: /Users/itaylevy/.sui/sui_config/sui.keystore
+envs:
+  - alias: fullnode.sui.beta.devnet.ika-network.net
+    rpc: "https://fullnode.sui.beta.devnet.ika-network.net"
+    ws: ~
+    basic_auth: ~
+active_env: fullnode.sui.beta.devnet.ika-network.net
+active_address: "0x35c428f8f0e7f2debcd58dd4891cbafc9aaa34f1509f2874616a99329762497a"

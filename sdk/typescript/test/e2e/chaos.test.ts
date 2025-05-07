@@ -123,8 +123,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 						],
 						command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/validator.yaml'],
 						name: 'ika-node',
-						image:
-							'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
+						image: 'ika:devnet-v0.0.6-arm64',
 						volumeMounts: [
 							{
 								name: 'config-vol',
@@ -212,8 +211,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 					],
 					command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/fullnode.yaml'],
 					name: 'ika-node',
-					image:
-						'us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.6-arm64',
+					image: 'ika:devnet-v0.0.6-arm64',
 					volumeMounts: [
 						{
 							name: 'config-vol',

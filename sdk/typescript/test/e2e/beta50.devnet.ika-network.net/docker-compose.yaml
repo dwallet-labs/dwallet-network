@@ -3,7 +3,7 @@ version: "3"
 services:
   val1:
     container_name: val1.beta50.devnet.ika-network.net
-    image: us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64
+    image: ika:devnet-v0.0.6-arm64
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=warn,ika_node=info,ika_core=info,ika_network::state_sync=error
@@ -31,7 +31,7 @@ services:
         max-size: "5g"
   val2:
     container_name: val2.beta50.devnet.ika-network.net
-    image: us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64
+    image: ika:devnet-v0.0.6-arm64
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=warn,ika_node=info,ika_core=info,ika_network::state_sync=error
@@ -58,7 +58,7 @@ services:
         max-size: "5g"
   val3:
     container_name: val3.beta50.devnet.ika-network.net
-    image: us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64
+    image: ika:devnet-v0.0.6-arm64
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=warn,ika_node=info,ika_core=info,ika_network::state_sync=error
@@ -85,7 +85,7 @@ services:
         max-size: "5g"
   val4:
     container_name: val4.beta50.devnet.ika-network.net
-    image: us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64
+    image: ika:devnet-v0.0.6-arm64
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=warn,ika_node=info,ika_core=info,ika_network::state_sync=error
@@ -112,7 +112,7 @@ services:
         max-size: "5g"
   fullnode:
     container_name: fullnode.beta50.devnet.ika-network.net
-    image: us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64
+    image: ika:devnet-v0.0.6-arm64
     ports:
       - "8080:8080"
       - "9184:9184"

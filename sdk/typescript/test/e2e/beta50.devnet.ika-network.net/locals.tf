@@ -1,8 +1,8 @@
 locals {
   ika_chain_config = {
     sui_chain_identifier  = "custom"
-    ika_package_id        = "0xdc1b92043f9467a550f9966adc6b86033f34a50ff55e855922e0539396ebc56f"
-    ika_system_package_id = "0x6261b56ff6785e4100049beea9e1d20cb44c43b42f6aaa8c76c608d7949f61a5"
-    ika_system_object_id  = "0xd82cdbbbfbeb579fd43af79896b63f14f494b2d9573d99583f3af1305c6dd1ef"
+    ika_package_id        = "0x1325b0e00baa9154d2dcb46441bdef7dd4e0cf96837142143955f4f254379fcd"
+    ika_system_package_id = "0x3d55e615641cb254a692344a83581f08a915e4777f21d661d262be0d3e4ad8a7"
+    ika_system_object_id  = "0x1a29f554b6996978fccd875bd35affcc531478b086dcb36a3fbe254a1056063a"
   }
 }

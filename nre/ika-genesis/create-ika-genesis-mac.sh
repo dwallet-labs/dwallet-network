@@ -42,7 +42,7 @@ ROOT_ADDR=""
 # The file containing the validators (separator: newline).
 export VALIDATORS_FILE=""
 # Validator Docker image name.
-export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64"
+export IMAGE_NAME="ika:devnet-v0.0.6-arm64"
 # SUI fullnode URL.
 export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 #export SUI_FULLNODE_RPC_URL="http://localhost:9000"

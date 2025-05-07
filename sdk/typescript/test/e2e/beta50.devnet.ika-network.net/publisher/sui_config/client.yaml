@@ -7,4 +7,4 @@ envs:
     ws: ~
     basic_auth: ~
 active_env: fullnode.sui.beta.devnet.ika-network.net
-active_address: "0x322f6da7b47a09db5e0595f332b7647f9b414fef51f989298a9150de1416f97b"
+active_address: "0x4cc4237e1deb4417a55912ae46ff54d75aadefa866416bd6a94b024bf5abeb8c"
