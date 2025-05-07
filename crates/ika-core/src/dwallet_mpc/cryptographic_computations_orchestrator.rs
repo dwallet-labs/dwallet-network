@@ -231,7 +231,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_dwallet_dkg_first_round
                     .inc();
                 dwallet_mpc_metrics
-                    .dwallet_dkg_last_first_round_completion_duration
+                    .dwallet_dkg_first_round_completion_duration
                     .set(computation_duration as i64);
             }
             MPCProtocolInitData::DKGSecond(_) => {
@@ -239,7 +239,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_dwallet_dkg_second_round
                     .inc();
                 dwallet_mpc_metrics
-                    .dwallet_dkg_last_second_round_completion_duration
+                    .dwallet_dkg_second_round_completion_duration
                     .set(computation_duration as i64);
             }
             MPCProtocolInitData::Presign(_) => {
@@ -259,7 +259,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_network_dkg
                     .inc();
                 dwallet_mpc_metrics
-                    .network_dkg_last_completion_duration
+                    .network_dkg_completion_duration
                     .set(computation_duration as i64);
             }
             MPCProtocolInitData::EncryptedShareVerification(_) => {
@@ -267,7 +267,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_encrypted_share_verification
                     .inc();
                 dwallet_mpc_metrics
-                    .encrypted_share_verification_last_completion_duration
+                    .encrypted_share_verification_completion_duration
                     .set(computation_duration as i64);
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
@@ -275,7 +275,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_partial_signature_verification
                     .inc();
                 dwallet_mpc_metrics
-                    .partial_signature_verification_last_completion_duration
+                    .partial_signature_verification_completion_duration
                     .set(computation_duration as i64);
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
@@ -283,7 +283,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_completions_for_decryption_key_reshare
                     .inc();
                 dwallet_mpc_metrics
-                    .decryption_key_reshare_last_completion_duration
+                    .decryption_key_reshare_completion_duration
                     .set(computation_duration as i64);
             }
         }
