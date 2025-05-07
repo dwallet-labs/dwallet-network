@@ -70,7 +70,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
     /// Used to prevent exceeding available CPU cores.
     currently_running_sessions_count: usize,
-    sessions_spans: HashMap<ObjectID, EnteredSpan>
+    sessions_spans: HashMap<ObjectID, Span>
 }
 
 impl CryptographicComputationsOrchestrator {

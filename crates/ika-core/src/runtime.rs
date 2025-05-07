@@ -12,7 +12,7 @@ pub struct IkaRuntimes {
 
 impl IkaRuntimes {
     pub fn new(_confg: &NodeConfig) -> Self {
-        let ika_node = tokio::runtime::Builder::new_multi_thread()
+        let ika_node = tokio::runtime::Builder::new_current_thread()
             .thread_name("ika-node-runtime")
             .enable_all()
             .build()
