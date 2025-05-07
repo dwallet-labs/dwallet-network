@@ -7,48 +7,56 @@ pub struct DWalletMPCMetrics {
     pub(crate) advance_completions_for_dwallet_dkg_first_round: IntGauge,
     pub(crate) received_events_start_dwallet_dkg_first_round_count: IntGauge,
     pub(crate) dwallet_dkg_first_round_completions_count: IntGauge,
+    pub(crate) dwallet_dkg_last_first_round_completion_duration: IntGauge,
 
     // DKG Second Round.
     pub(crate) advance_calls_for_dwallet_dkg_second_round: IntGauge,
     pub(crate) advance_completions_for_dwallet_dkg_second_round: IntGauge,
     pub(crate) received_events_start_dwallet_dkg_second_round_count: IntGauge,
     pub(crate) dwallet_dkg_second_round_completions_count: IntGauge,
+    pub(crate) dwallet_dkg_last_second_round_completion_duration: IntGauge,
 
     // Presign.
     pub(crate) advance_calls_for_presign: IntGauge,
     pub(crate) advance_completions_for_presign: IntGauge,
     pub(crate) received_events_start_presign_count: IntGauge,
     pub(crate) presign_round_completions_count: IntGauge,
+    pub(crate) presign_last_completion_duration: IntGauge,
 
     // Sign.
     pub(crate) advance_calls_for_sign: IntGauge,
     pub(crate) advance_completions_for_sign: IntGauge,
     pub(crate) received_events_start_sign_count: IntGauge,
     pub(crate) sign_round_completions_count: IntGauge,
+    pub(crate) sign_last_completion_duration: IntGauge,
 
     // Network DKG.
     pub(crate) advance_calls_for_network_dkg: IntGauge,
     pub(crate) advance_completions_for_network_dkg: IntGauge,
     pub(crate) received_events_start_network_dkg_count: IntGauge,
     pub(crate) network_dkg_round_completions_count: IntGauge,
+    pub(crate) network_dkg_last_completion_duration: IntGauge,
 
     // Encrypted Share Verification.
     pub(crate) advance_calls_for_encrypted_share_verification: IntGauge,
     pub(crate) advance_completions_for_encrypted_share_verification: IntGauge,
     pub(crate) received_events_start_encrypted_share_verification_count: IntGauge,
     pub(crate) encrypted_share_verification_round_completions_count: IntGauge,
+    pub(crate) encrypted_share_verification_last_completion_duration: IntGauge,
 
     // Partial Signature Verification.
     pub(crate) advance_calls_for_partial_signature_verification: IntGauge,
     pub(crate) advance_completions_for_partial_signature_verification: IntGauge,
     pub(crate) received_events_start_partial_signature_verification_count: IntGauge,
     pub(crate) partial_signature_verification_round_completions_count: IntGauge,
+    pub(crate) partial_signature_verification_last_completion_duration: IntGauge,
 
     // Decryption Key Reshare.
     pub(crate) advance_calls_for_decryption_key_reshare: IntGauge,
     pub(crate) advance_completions_for_decryption_key_reshare: IntGauge,
     pub(crate) received_events_start_decryption_key_reshare_count: IntGauge,
     pub(crate) decryption_key_reshare_round_completions_count: IntGauge,
+    pub(crate) decryption_key_reshare_last_completion_duration: IntGauge,
 }
 
 impl DWalletMPCMetrics {
@@ -79,6 +87,12 @@ impl DWalletMPCMetrics {
                 registry
             )
             .unwrap(),
+            dwallet_dkg_last_first_round_completion_duration: register_int_gauge_with_registry!(
+                "dwallet_dkg_last_first_round_completion_duration",
+                "Duration of last completion for dWallet MPC DKG first round",
+                registry
+            )
+            .unwrap(),
 
             // DKG Second Round.
             advance_calls_for_dwallet_dkg_second_round: register_int_gauge_with_registry!(
@@ -103,6 +117,12 @@ impl DWalletMPCMetrics {
             dwallet_dkg_second_round_completions_count: register_int_gauge_with_registry!(
                 "dwallet_dkg_second_round_completions_count",
                 "Number of completions for dWallet MPC DKG second round",
+                registry
+            )
+            .unwrap(),
+            dwallet_dkg_last_second_round_completion_duration: register_int_gauge_with_registry!(
+                "dwallet_dkg_last_second_round_completion_duration",
+                "Duration of last completion for dWallet MPC DKG second round",
                 registry
             )
             .unwrap(),
@@ -132,6 +152,12 @@ impl DWalletMPCMetrics {
                 registry
             )
             .unwrap(),
+            presign_last_completion_duration: register_int_gauge_with_registry!(
+                "presign_last_completion_duration",
+                "Duration of last completion for presign phase",
+                registry
+            )
+            .unwrap(),
 
             // Sign.
             advance_calls_for_sign: register_int_gauge_with_registry!(
@@ -158,6 +184,12 @@ impl DWalletMPCMetrics {
                 registry
             )
             .unwrap(),
+            sign_last_completion_duration: register_int_gauge_with_registry!(
+                "sign_last_completion_duration",
+                "Duration of last completion for sign phase",
+                registry
+            )
+            .unwrap(),
 
             // Network DKG.
             advance_calls_for_network_dkg: register_int_gauge_with_registry!(
@@ -181,6 +213,12 @@ impl DWalletMPCMetrics {
             network_dkg_round_completions_count: register_int_gauge_with_registry!(
                 "network_dkg_round_completions_count",
                 "Number of completions for network DKG",
+                registry
+            )
+            .unwrap(),
+            network_dkg_last_completion_duration: register_int_gauge_with_registry!(
+                "network_dkg_last_completion_duration",
+                "Duration of last completion for network DKG",
                 registry
             )
             .unwrap(),
@@ -213,6 +251,12 @@ impl DWalletMPCMetrics {
                     registry
                 )
                 .unwrap(),
+            encrypted_share_verification_last_completion_duration: register_int_gauge_with_registry!(
+                "encrypted_share_verification_last_completion_duration",
+                "Duration of last completion for encrypted share verification",
+                registry
+            )
+            .unwrap(),
 
             // Partial Signature Verification.
             advance_calls_for_partial_signature_verification: register_int_gauge_with_registry!(
@@ -242,6 +286,12 @@ impl DWalletMPCMetrics {
                     registry
                 )
                 .unwrap(),
+            partial_signature_verification_last_completion_duration: register_int_gauge_with_registry!(
+                "partial_signature_verification_last_completion_duration",
+                "Duration of last completion for partial signature verification",
+                registry
+            )
+            .unwrap(),
 
             // Decryption Key Reshare.
             advance_calls_for_decryption_key_reshare: register_int_gauge_with_registry!(
@@ -265,6 +315,12 @@ impl DWalletMPCMetrics {
             decryption_key_reshare_round_completions_count: register_int_gauge_with_registry!(
                 "decryption_key_reshare_round_completions_count",
                 "Number of completions for decryption key reshare",
+                registry
+            )
+            .unwrap(),
+            decryption_key_reshare_last_completion_duration: register_int_gauge_with_registry!(
+                "decryption_key_reshare_last_completion_duration",
+                "Duration of last completion for decryption key reshare",
                 registry
             )
             .unwrap(),
