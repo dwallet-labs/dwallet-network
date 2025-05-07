@@ -108,6 +108,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 			metadata: {
 				name: `ika-new-devnet-ika-val-${i + 1}`,
 				namespace: namespaceName,
+				labels: {
+					'app.kubernetes.io/instance': 'ika-chaos-test',
+					'app.kubernetes.io/name': `ika-new-devnet-ika-val-${i + 1}`,
+				},
 			},
 			spec: {
 				containers: [
@@ -206,6 +210,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 		metadata: {
 			name: `ika-fullnode`,
 			namespace: namespaceName,
+			labels: {
+				'app.kubernetes.io/instance': 'ika-chaos-test',
+				'app.kubernetes.io/name': 'ika-fullnode',
+			},
 		},
 		spec: {
 			containers: [

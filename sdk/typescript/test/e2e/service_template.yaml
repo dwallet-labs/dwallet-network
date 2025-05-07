@@ -8,24 +8,20 @@ spec:
       protocol: TCP
       port: 8080
       targetPort: 8080
-    - name: consensus
-      protocol: TCP
-      port: 8081
-      targetPort: 8081
     - name: p2p-sync
       protocol: UDP
       port: 8084
       targetPort: 8084
-    - name: metrics-pushing
-      protocol: TCP
-      port: 8443
-      targetPort: 8443
-    - name: metrics-scrape
+    - name: metrics
       protocol: TCP
       port: 9184
       targetPort: 9184
+    - name: admin
+      protocol: TCP
+      port: 1337
+      targetPort: 1337
   selector:
-    app.kubernetes.io/instance: ika-new-devnet-chain
+    app.kubernetes.io/instance: ika-chaos-test
     app.kubernetes.io/name: ika-new-devnet-ika-val-{{validatorIndex}}
   clusterIP: None
   type: ClusterIP
