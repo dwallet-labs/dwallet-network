@@ -175,6 +175,10 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.next_protocol_version
     }
 
+    fn last_processed_params_message_sequence_number(&self) -> u64 {
+        self.last_processed_params_message_sequence_number.unwrap_or_default()
+    }
+
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {
         &self.upgrade_caps
     }

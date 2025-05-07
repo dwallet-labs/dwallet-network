@@ -983,28 +983,6 @@ impl AuthorityPerEpochStore {
         Ok(result?)
     }
 
-    fn find_version_quorum_from_capability(&self) -> Option<SupportedProtocolVersionsWithHashes> {
-        let vec = self.get_capabilities_v1().ok()?;
-        let n = self.committee().quorum_threshold as usize;
-
-        if vec.len() < n {
-            return None;
-        }
-
-        // Group elements by their `supported_protocol_versions`
-        vec.iter()
-            .fold(HashMap::new(), |mut acc, authority| {
-                acc.entry(authority.supported_protocol_versions.clone())
-                    .or_insert_with(Vec::new)
-                    .push(authority);
-                acc
-            })
-            // Find the first group with `n` or more identical versions
-            .into_iter()
-            .find(|(_, group)| group.len() >= n)
-            .map(|(version, _)| version)
-    }
-
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1536,124 +1514,12 @@ impl AuthorityPerEpochStore {
                     authority.concise()
                 );
                 self.record_capabilities_v1(capabilities)?;
-
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
         }
-    }
-
-    fn is_protocol_version_supported_v1(
-        current_protocol_version: ProtocolVersion,
-        proposed_protocol_version: ProtocolVersion,
-        protocol_config: &ProtocolConfig,
-        committee: &Committee,
-        capabilities: Vec<AuthorityCapabilitiesV1>,
-        mut buffer_stake_bps: u64,
-    ) -> Option<(ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>)> {
-        if proposed_protocol_version > current_protocol_version + 1 {
-            return None;
-        }
-
-        if buffer_stake_bps > 10000 {
-            warn!("clamping buffer_stake_bps to 10000");
-            buffer_stake_bps = 10000;
-        }
-
-        // For each validator, gather the protocol version and system packages that it would like
-        // to upgrade to in the next epoch.
-        let mut desired_upgrades: Vec<_> = capabilities
-            .into_iter()
-            .filter_map(|mut cap| {
-                // A validator that lists no packages is voting against any change at all.
-                if cap.available_move_packages.is_empty() {
-                    return None;
-                }
-
-                cap.available_move_packages.sort();
-
-                info!(
-                    "validator {:?} supports {:?} with move packages: {:?}",
-                    cap.authority.concise(),
-                    cap.supported_protocol_versions,
-                    cap.available_move_packages,
-                );
-
-                // A validator that only supports the current protocol version is also voting
-                // against any change, because framework upgrades always require a protocol version
-                // bump.
-                cap.supported_protocol_versions
-                    .get_version_digest(proposed_protocol_version)
-                    .map(|digest| (digest, cap.available_move_packages, cap.authority))
-            })
-            .collect();
-
-        // There can only be one set of votes that have a majority, find one if it exists.
-        desired_upgrades.sort();
-        desired_upgrades
-            .into_iter()
-            .chunk_by(|(digest, packages, _authority)| (*digest, packages.clone()))
-            .into_iter()
-            .find_map(|((digest, packages), group)| {
-                // should have been filtered out earlier.
-                assert!(!packages.is_empty());
-
-                let mut stake_aggregator: StakeAggregator<(), true> =
-                    StakeAggregator::new(Arc::new(committee.clone()));
-
-                for (_, _, authority) in group {
-                    stake_aggregator.insert_generic(authority, ());
-                }
-
-                let total_votes = stake_aggregator.total_votes();
-                let quorum_threshold = committee.quorum_threshold();
-                let f = committee.total_votes() - committee.quorum_threshold();
-
-                // multiple by buffer_stake_bps / 10000, rounded up.
-                let buffer_stake = (f * buffer_stake_bps + 9999) / 10000;
-                let effective_threshold = quorum_threshold + buffer_stake;
-
-                info!(
-                    protocol_config_digest = ?digest,
-                    ?total_votes,
-                    ?quorum_threshold,
-                    ?buffer_stake_bps,
-                    ?effective_threshold,
-                    ?proposed_protocol_version,
-                    ?packages,
-                    "support for upgrade"
-                );
-
-                let has_support = total_votes >= effective_threshold;
-                has_support.then_some((proposed_protocol_version, packages))
-            })
-    }
-
-    fn choose_protocol_version_and_system_packages_v1(
-        current_protocol_version: ProtocolVersion,
-        protocol_config: &ProtocolConfig,
-        committee: &Committee,
-        capabilities: Vec<AuthorityCapabilitiesV1>,
-        buffer_stake_bps: u64,
-    ) -> (ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>) {
-        let mut next_protocol_version = current_protocol_version;
-        let mut system_packages = vec![];
-
-        while let Some((version, packages)) = Self::is_protocol_version_supported_v1(
-            current_protocol_version,
-            next_protocol_version + 1,
-            protocol_config,
-            committee,
-            capabilities.clone(),
-            buffer_stake_bps,
-        ) {
-            next_protocol_version = version;
-            system_packages = packages;
-        }
-
-        (next_protocol_version, system_packages)
     }
 
     async fn process_dwallet_mpc_output(
