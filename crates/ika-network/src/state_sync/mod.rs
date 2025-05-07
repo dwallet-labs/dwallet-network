@@ -474,6 +474,7 @@ where
             StateSyncMessage::SyncedCheckpoint(checkpoint) => {
                 self.spawn_notify_peers_of_checkpoint(*checkpoint)
             }
+            StateSyncMessage::VerifiedParamsMessage(_) => todo!(),
         }
     }
 

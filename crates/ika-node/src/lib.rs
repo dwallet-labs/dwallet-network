@@ -1277,7 +1277,7 @@ impl IkaNode {
         new_epoch_store
     }
 
-    async fn notify_new_protocol_version(
+    async fn check_and_notify_new_protocol_version(
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
         sui_client: Arc<SuiConnectorClient>,
@@ -1308,6 +1308,7 @@ impl IkaNode {
                     epoch: epoch_store.epoch(),
                     sequence_number: next_params_message_seq_num,
                     // todo : set real timestamp
+                    // consensus_commit.commit_timestamp_ms(),
                     timestamp_ms: 0,
                     messages: vec![ParamsMessageKind::NextConfigVersion(new_version)],
                 },

@@ -1516,6 +1516,13 @@ impl AuthorityPerEpochStore {
                 self.record_capabilities_v1(capabilities)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::ParamsMessageSignature(data),
+                ..
+            }) => {
+                // todo : what to do?
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }

@@ -6,7 +6,7 @@ use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMe
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
 };
-use crate::messages_params_messages::ParamsMessageSignatureMessage;
+use crate::messages_params_messages::{ParamsMessageSequenceNumber, ParamsMessageSignatureMessage};
 use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -43,6 +43,7 @@ pub enum ConsensusTransactionKey {
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
+    ParamsMessageSignature(AuthorityName, ParamsMessageSequenceNumber),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -74,6 +75,9 @@ impl Debug for ConsensusTransactionKey {
                     authority.concise(),
                     report,
                 )
+            }
+            ConsensusTransactionKey::ParamsMessageSignature(name, seq) => {
+                write!(f, "ParamsMessageSignature({:?}, {:?})", name.concise(), seq)
             }
         }
     }
@@ -272,6 +276,12 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
                     *authority,
                     report.clone(),
+                )
+            }
+            ConsensusTransactionKind::ParamsMessageSignature(data) => {
+                ConsensusTransactionKey::ParamsMessageSignature(
+                    data.params_message.auth_sig().authority,
+                    data.params_message.sequence_number,
                 )
             }
         }

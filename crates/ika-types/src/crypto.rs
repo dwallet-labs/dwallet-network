@@ -803,6 +803,7 @@ mod bcs_signable {
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
     impl BcsSignable for crate::messages_checkpoint::CheckpointMessage {}
+    impl BcsSignable for crate::messages_params_messages::ParamsMessage {}
 
     impl BcsSignable for crate::message::MessageKind {}
 
