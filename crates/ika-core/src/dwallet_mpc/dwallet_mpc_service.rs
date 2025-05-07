@@ -248,6 +248,7 @@ impl DWalletMPCService {
                 continue;
             };
             for event in events_from_sui {
+                info!(event_session_id=?event.session_info.session_id, "Processing event from Sui");
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;
