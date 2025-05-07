@@ -190,13 +190,15 @@ use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_params_messages::{
+    ParamsMessage, ParamsMessageKind, ParamsMessageSignatureMessage, SignedParamsMessage,
+};
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
 use simulator::*;
 use sui_types::execution_config_utils::to_binary_config;
 use tokio::sync::watch::Receiver;
-use ika_types::messages_params_messages::{ParamsMessage, ParamsMessageKind, SignedParamsMessage};
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -1018,7 +1020,8 @@ impl IkaNode {
                     });
 
                 let current_version_supported = system_inner.next_protocol_version().is_none()
-                    && supported_versions.is_version_supported(system_inner.protocol_version().into());
+                    && supported_versions
+                        .is_version_supported(system_inner.protocol_version().into());
 
                 if !next_version_supported || current_version_supported {
                     let transaction = ConsensusTransaction::new_capability_notification_v1(
@@ -1029,13 +1032,18 @@ impl IkaNode {
                             sui_client
                                 .get_available_move_packages()
                                 .await
-                                .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?
+                                .map_err(|e| {
+                                    anyhow!("Cannot get available move packages: {:?}", e)
+                                })?,
                         ),
                     );
 
                     if let Some(components) = &*self.validator_components.lock().await {
                         info!(?transaction, "submitting capabilities to consensus");
-                        components.consensus_adapter.submit_to_consensus(&[transaction], &cur_epoch_store).await?;
+                        components
+                            .consensus_adapter
+                            .submit_to_consensus(&[transaction], &cur_epoch_store)
+                            .await?;
                     }
                 }
             }
@@ -1269,49 +1277,55 @@ impl IkaNode {
     }
 
     async fn notify_new_protocol_version(
+        &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        new_protocol_version: ProtocolVersion,
         sui_client: Arc<SuiConnectorClient>,
     ) -> Result<()> {
         let capabilities = epoch_store.get_capabilities_v1()?;
-        let (new_version, _)  = AuthorityState::choose_protocol_version_and_system_packages_v1(
+        let (new_version, _) = AuthorityState::choose_protocol_version_and_system_packages_v1(
             epoch_store.protocol_version(),
             epoch_store.protocol_config(),
             epoch_store.committee(),
             capabilities,
             epoch_store.get_effective_buffer_stake_bps(),
-    );
+        );
 
         let system_inner = sui_client.must_get_system_inner_object().await;
-        let next_params_message_seq_num = system_inner
-            .last_processed_params_message_sequence_number() + 1;
+        let next_params_message_seq_num =
+            system_inner.last_processed_params_message_sequence_number() + 1;
 
-    // todo : check this, it will allow to downgrade the version
-    if new_version != epoch_store.protocol_version() {
-    info!(
-    "Found version quorum from capabilities v1 {:?}",
-    capabilities.first()
-    );
-    let summary = SignedParamsMessage::new(
-        epoch_store.epoch(),
-    ParamsMessage {
-        epoch: epoch_store.epoch(),
-    sequence_number: next_params_message_seq_num,
-    timestamp_ms: ,
-    messages: vec![ParamsMessageKind::NextConfigVersion(new_version)],
-    },
-    &*self.signer,
-        epoch_store.name,
-    );
+        // todo : check this, it will allow to downgrade the version
+        if new_version != epoch_store.protocol_version() {
+            info!(
+                "Found version quorum from capabilities v1 {:?}",
+                capabilities.first()
+            );
+            let signer = self.state.secret.clone();
+            let summary = SignedParamsMessage::new(
+                epoch_store.epoch(),
+                ParamsMessage {
+                    epoch: epoch_store.epoch(),
+                    sequence_number: next_params_message_seq_num,
+                    // todo : set real timestamp
+                    timestamp_ms: 0,
+                    messages: vec![ParamsMessageKind::NextConfigVersion(new_version)],
+                },
+                signer,
+                self.state.name,
+            );
 
-    let message = ParamsMessageSignatureMessage {
-    : params_message: summary,
-    };
-    let transaction = ConsensusTransaction::new_params_message_signature_message(message);
-    self.consensus
-    .submit_to_consensus(&vec![transaction], epoch_store)
-    .await?;
-    }
+            let message = ParamsMessageSignatureMessage {
+                params_message: summary,
+            };
+            let transaction = ConsensusTransaction::new_params_message_signature_message(message);
+            if let Some(components) = &*self.validator_components.lock().await {
+                info!(?transaction, "submitting capabilities to consensus");
+                components
+                    .consensus_adapter
+                    .submit_to_consensus(&[transaction], &epoch_store)
+                    .await?;
+            }
+        }
     }
 
     pub fn get_config(&self) -> &NodeConfig {

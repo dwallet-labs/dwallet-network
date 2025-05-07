@@ -67,7 +67,7 @@ impl ParamsMessage {
         Self {
             epoch,
             sequence_number,
-            messages: messages,
+            messages,
             timestamp_ms,
         }
     }
@@ -129,10 +129,8 @@ pub type ParamsMessageEnvelope<S> = Envelope<ParamsMessage, S>;
 pub type CertifiedParamsMessage = ParamsMessageEnvelope<AuthorityStrongQuorumSignInfo>;
 pub type SignedParamsMessage = ParamsMessageEnvelope<AuthoritySignInfo>;
 
-pub type VerifiedParamsMessage =
-    VerifiedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
-pub type TrustedParamsMessage =
-    TrustedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
+pub type VerifiedParamsMessage = VerifiedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
+pub type TrustedParamsMessage = TrustedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
 
 impl CertifiedParamsMessage {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
@@ -192,8 +190,7 @@ pub struct ParamsMessageSignatureMessage {
 
 impl ParamsMessageSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.params_message
-            .verify_authority_signatures(committee)
+        self.params_message.verify_authority_signatures(committee)
     }
 }
 
@@ -303,8 +300,9 @@ mod tests {
             .iter()
             .map(|k| {
                 let name = k.public().into();
-                let set =
-                    ParamsMessageContents::new_with_digests_only_for_tests([MessageDigest::random()]);
+                let set = ParamsMessageContents::new_with_digests_only_for_tests([
+                    MessageDigest::random(),
+                ]);
 
                 SignedParamsMessage::new(
                     committee.epoch,
@@ -331,12 +329,10 @@ mod tests {
             .into_iter()
             .map(|v| v.into_sig())
             .collect();
-        assert!(
-            CertifiedParamsMessage::new(summary, sign_infos, &committee)
-                .unwrap()
-                .verify_authority_signatures(&committee)
-                .is_err()
-        )
+        assert!(CertifiedParamsMessage::new(summary, sign_infos, &committee)
+            .unwrap()
+            .verify_authority_signatures(&committee)
+            .is_err())
     }
 
     // Generate a ParamsMessageSummary from the input transaction digest. All the other fields in the generated

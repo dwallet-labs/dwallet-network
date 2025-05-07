@@ -78,15 +78,25 @@ use ika_types::message::{
     SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
-use ika_types::messages_checkpoint::{CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage, SignedCheckpointMessage};
-use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind, MovePackageDigest};
+use ika_types::messages_checkpoint::{
+    CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
+    SignedCheckpointMessage,
+};
+use ika_types::messages_consensus::{
+    AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
+    ConsensusTransactionKind, MovePackageDigest,
+};
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     SessionType, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
+use ika_types::messages_params_messages::{
+    ParamsMessage, ParamsMessageKind, ParamsMessageSignatureMessage, SignedParamsMessage,
+};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
+use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use mysten_common::sync::notify_once::NotifyOnce;
@@ -109,8 +119,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use ika_types::messages_params_messages::{ParamsMessage, ParamsMessageKind, ParamsMessageSignatureMessage, SignedParamsMessage};
-use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -976,8 +984,7 @@ impl AuthorityPerEpochStore {
     }
 
     fn find_version_quorum_from_capability(&self) -> Option<SupportedProtocolVersionsWithHashes> {
-        let vec = self
-            .get_capabilities_v1().ok()?;
+        let vec = self.get_capabilities_v1().ok()?;
         let n = self.committee().quorum_threshold as usize;
 
         if vec.len() < n {
@@ -1530,41 +1537,6 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(capabilities)?;
 
-                let (new_version, _)  = Self::choose_protocol_version_and_system_packages_v1(
-                    self.protocol_version(),
-                    self.protocol_config(),
-                    self.committee(),
-                    self.get_capabilities_v1()?,
-                    self.get_effective_buffer_stake_bps(),
-                );
-
-                // todo : check this, it will allow to downgrade the version
-                if new_version != self.protocol_version() {
-                    info!(
-                        "Found version quorum from capabilities v1 {:?}",
-                        capabilities
-                    );
-                    let summary = SignedParamsMessage::new(
-                        self.epoch(),
-                        ParamsMessage {
-                            self.epoch(),
-                            sequence_number,
-                            timestamp_ms,
-                            messages: vec![ParamsMessageKind::NextConfigVersion(new_version)],
-
-                        },
-                        &*self.signer,
-                        self.name,
-                    );
-
-                    let message = ParamsMessageSignatureMessage {
-                        : params_message: summary,
-                    };
-                    let transaction = ConsensusTransaction::new_params_message_signature_message(message);
-                    self.consensus
-                        .submit_to_consensus(&vec![transaction], epoch_store)
-                        .await?;
-                }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {

@@ -687,7 +687,7 @@ impl CheckpointBuilder {
             sorted_tx_effects_included_in_checkpoint.extend(pending.messages);
         }
         let new_checkpoint = self
-            . create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
+            .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
             .await?;
         self.write_checkpoints(last_details.checkpoint_height, new_checkpoint)
             .await?;

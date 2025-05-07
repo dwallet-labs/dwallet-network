@@ -18,8 +18,8 @@ pub mod intent;
 pub mod message;
 pub mod message_envelope;
 pub mod messages_checkpoint;
-pub mod messages_params_messages;
 pub mod messages_consensus;
+pub mod messages_params_messages;
 pub mod metrics;
 pub mod storage;
 

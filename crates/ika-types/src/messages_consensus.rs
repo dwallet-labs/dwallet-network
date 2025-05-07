@@ -6,8 +6,12 @@ use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMe
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
 };
-use crate::supported_protocol_versions::{SupportedProtocolVersions, SupportedProtocolVersionsWithHashes};
+use crate::messages_params_messages::ParamsMessageSignatureMessage;
+use crate::supported_protocol_versions::{
+    SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
+};
 use byteorder::{BigEndian, ReadBytesExt};
+use ika_protocol_config::Chain;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};
@@ -15,8 +19,6 @@ use std::hash::{Hash, Hasher};
 use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
-use ika_protocol_config::Chain;
-use crate::messages_params_messages::ParamsMessageSignatureMessage;
 
 // todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
 /// Consensus round number.
@@ -117,10 +119,10 @@ impl AuthorityCapabilitiesV1 {
             authority,
             generation,
             supported_protocol_versions:
-            SupportedProtocolVersionsWithHashes::from_supported_versions(
-                supported_protocol_versions,
-                chain,
-            ),
+                SupportedProtocolVersionsWithHashes::from_supported_versions(
+                    supported_protocol_versions,
+                    chain,
+                ),
             available_move_packages,
         }
     }
@@ -217,10 +219,7 @@ impl ConsensusTransaction {
 
     pub fn new_params_message_signature_message(data: ParamsMessageSignatureMessage) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.params_message
-            .auth_sig()
-            .signature
-            .hash(&mut hasher);
+        data.params_message.auth_sig().signature.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
