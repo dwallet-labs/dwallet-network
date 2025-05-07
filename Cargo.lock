@@ -2903,7 +2903,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "dwallet-classgroups-types"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
@@ -2926,7 +2926,7 @@ dependencies = [
 
 [[package]]
 name = "dwallet-mpc-centralized-party"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "bcs",
@@ -2947,7 +2947,7 @@ dependencies = [
 
 [[package]]
 name = "dwallet-mpc-types"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4924,7 +4924,7 @@ checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
 name = "ika"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4972,7 +4972,7 @@ dependencies = [
 
 [[package]]
 name = "ika-archival"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -5206,7 +5206,7 @@ dependencies = [
 
 [[package]]
 name = "ika-node"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anemo",
  "anemo-tower",
@@ -10733,7 +10733,7 @@ dependencies = [
 
 [[package]]
 name = "shared_wasm_class_groups"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
