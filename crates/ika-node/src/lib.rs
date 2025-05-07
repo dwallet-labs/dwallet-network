@@ -199,6 +199,7 @@ pub use simulator::set_jwk_injector;
 use simulator::*;
 use sui_types::execution_config_utils::to_binary_config;
 use tokio::sync::watch::Receiver;
+use ika_core::params_messages::{ParamsMessageMetrics, ParamsMessageService, ParamsMessageStore, SendParamsMessageToStateSync, SubmitParamsMessageToConsensus};
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -821,11 +822,13 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         consensus_adapter: Arc<ConsensusAdapter>,
         checkpoint_store: Arc<CheckpointStore>,
+        params_message_store: Arc<ParamsMessageStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
         consensus_manager: ConsensusManager,
         consensus_store_pruner: ConsensusStorePruner,
         checkpoint_metrics: Arc<CheckpointMetrics>,
+        params_message_metrics: Arc<ParamsMessageMetrics>,
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
@@ -839,8 +842,19 @@ impl IkaNode {
             checkpoint_store,
             epoch_store.clone(),
             state.clone(),
-            state_sync_handle,
+            state_sync_handle.clone(),
             checkpoint_metrics.clone(),
+            previous_epoch_last_checkpoint_sequence_number,
+        );
+
+        let (params_message_service, params_message_service_tasks) = Self::start_params_message_service(
+            config,
+            consensus_adapter.clone(),
+            params_message_store,
+            epoch_store.clone(),
+            state.clone(),
+            state_sync_handle,
+            params_message_metrics.clone(),
             previous_epoch_last_checkpoint_sequence_number,
         );
 
@@ -957,6 +971,50 @@ impl IkaNode {
         )
     }
 
+    fn start_params_message_service(
+        config: &NodeConfig,
+        consensus_adapter: Arc<ConsensusAdapter>,
+        params_message_store: Arc<ParamsMessageStore>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        state: Arc<AuthorityState>,
+        state_sync_handle: state_sync::Handle,
+        params_message_metrics: Arc<ParamsMessageMetrics>,
+        previous_epoch_last_params_message_sequence_number: u64,
+    ) -> (Arc<ParamsMessageService>, JoinSet<()>) {
+        let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
+        let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
+
+        debug!(
+            "Starting params_message service with epoch start timestamp {}
+            and epoch duration {}",
+            epoch_start_timestamp_ms, epoch_duration_ms
+        );
+
+        let params_message_output = Box::new(SubmitParamsMessageToConsensus {
+            sender: consensus_adapter,
+            signer: state.secret.clone(),
+            authority: config.protocol_public_key(),
+            metrics: params_message_metrics.clone(),
+        });
+
+        let certified_params_message_output = SendParamsMessageToStateSync::new(state_sync_handle);
+        let max_tx_per_params_message = epoch_store.protocol_config().max_messages_per_params_message();
+        let max_params_message_size_bytes =
+            epoch_store.protocol_config().max_params_message_size_bytes() as usize;
+
+        ParamsMessageService::spawn(
+            state.clone(),
+            params_message_store,
+            epoch_store,
+            params_message_output,
+            Box::new(certified_params_message_output),
+            params_message_metrics,
+            max_tx_per_params_message,
+            max_params_message_size_bytes,
+            previous_epoch_last_params_message_sequence_number,
+        )
+    }
+
     fn construct_consensus_adapter(
         committee: &Committee,
         consensus_config: &ConsensusConfig,
@@ -1012,19 +1070,7 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            // todo: check! does this could only happen once an epoch? this runs in an infinite loop so we need to change the check
             if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
-                let next_version_supported = system_inner
-                    .next_protocol_version()
-                    .map_or(false, |next_version| {
-                        supported_versions.is_version_supported(next_version.into())
-                    });
-
-                let current_version_supported = system_inner.next_protocol_version().is_none()
-                    && supported_versions
-                        .is_version_supported(system_inner.protocol_version().into());
-
-                if !next_version_supported || current_version_supported {
                     let transaction = ConsensusTransaction::new_capability_notification_v1(
                         AuthorityCapabilitiesV1::new(
                             self.state.name,
@@ -1046,7 +1092,6 @@ impl IkaNode {
                             .submit_to_consensus(&[transaction], &cur_epoch_store)
                             .await?;
                     }
-                }
             }
 
             let stop_condition = self
@@ -1292,11 +1337,14 @@ impl IkaNode {
         );
 
         let system_inner = sui_client.must_get_system_inner_object().await;
-        let next_params_message_seq_num =
-            system_inner.last_processed_params_message_sequence_number() + 1;
+        let next_version: Option<u64> = system_inner
+            .next_protocol_version();
+        let current_version: u64 = system_inner.protocol_version();
 
-        // todo : check this, it will allow to downgrade the version
-        if new_version != epoch_store.protocol_version() {
+        let should_update_by_next_version = next_version.is_some() && next_version != Some(new_version);
+        let should_update_by_current_version = next_version.is_none() && current_version != new_version;
+
+        if should_update_by_next_version || should_update_by_current_version {
             info!(
                 "Found version quorum from capabilities v1 {:?}",
                 capabilities.first()

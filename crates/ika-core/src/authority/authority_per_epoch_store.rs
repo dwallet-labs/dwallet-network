@@ -1534,6 +1534,8 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 // todo : what to do?
+                // collect signatures
+                // if quorum reached -> send message to state sync
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {

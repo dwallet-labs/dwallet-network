@@ -68,6 +68,7 @@ public struct SystemInnerV1 has store {
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
     last_processed_params_message_sequence_number: Option<u64>,
+    previous_epoch_last_params_message_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -145,6 +146,7 @@ public(package) fun create(
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
         last_processed_params_message_sequence_number: option::none(),
+        previous_epoch_last_params_message_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state

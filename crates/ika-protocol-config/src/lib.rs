@@ -180,6 +180,8 @@ pub struct ProtocolConfig {
     /// the same value, otherwise they *will* fork.
     max_messages_per_checkpoint: Option<u64>,
 
+    max_messages_per_params_message: Option<u64>,
+
     /// Max size of a checkpoint in bytes.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
