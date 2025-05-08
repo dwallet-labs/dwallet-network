@@ -31,7 +31,7 @@ export VALIDATOR_NUM=4
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 # For local minikube cluster, use the .svc.cluster.local suffix
-export SUBDOMAIN="ika.default.svc.cluster.local"
+export SUBDOMAIN="ika-dns-service.ika.svc.cluster.local"
 #export SUBDOMAIN="beta50.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
@@ -309,6 +309,8 @@ request_and_generate_yaml() {
   yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
   yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$VALIDATOR_DIR/validator.yaml"
 
+  yq e ".p2p-config.external-address = \"$P2P_ADDR\"" -i "$VALIDATOR_DIR/validator.yaml"
+
   # Request tokens from the faucet with retry
   local attempt=1
   local max_attempts=10
@@ -569,6 +571,9 @@ yq e ".\"sui-connector-config\".\"sui-chain-identifier\" = \"$SUI_CHAIN_IDENTIFI
 yq e ".\"sui-connector-config\".\"ika-package-id\" = \"$IKA_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
 yq e ".\"sui-connector-config\".\"ika-system-package-id\" = \"$IKA_SYSTEM_PACKAGE_ID\"" -i "$FULLNODE_YAML_PATH"
 yq e ".\"sui-connector-config\".\"ika-system-object-id\" = \"$IKA_SYSTEM_OBJECT_ID\"" -i "$FULLNODE_YAML_PATH"
+
+# Replace HOSTNAME in external-address
+yq e ".\"p2p-config\".\"external-address\" = \"/dns/fullnode.$SUBDOMAIN/udp/8084\"" -i "$FULLNODE_YAML_PATH"
 
 # Replace SEED_PEERS with actual array from seed_peers.yaml
 yq e '."p2p-config"."seed-peers" = load("seed_peers.yaml")' -i "$FULLNODE_YAML_PATH"

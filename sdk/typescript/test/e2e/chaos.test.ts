@@ -375,6 +375,7 @@ describe("run chain chaos testing", () => {
 });
 
 function generateUniqueNamespace(prefix = "chaos-test"): string {
+  return "ika";
   const timestamp = Date.now().toString();
   return `${prefix}-${timestamp}`;
 }

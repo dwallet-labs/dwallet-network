@@ -7,4 +7,4 @@ envs:
     ws: ~
     basic_auth: ~
 active_env: ika.default.svc.cluster.local
-active_address: 0x015271a72456740ea7bfa4c8548520b05b259019221da818c0363bd80820212d
+active_address: 0x8d484a4cc8fc8a899c45f9422456a5aa20ccb61a2f3457bd86a8c8208673c781
