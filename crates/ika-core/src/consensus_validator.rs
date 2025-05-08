@@ -14,6 +14,7 @@ use ika_types::committee::Committee;
 use ika_types::crypto::AuthoritySignInfoTrait;
 use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
+use ika_types::message::MessageKind;
 use ika_types::message_envelope::Message;
 use ika_types::messages_checkpoint::SignedCheckpointMessage;
 use ika_types::{
@@ -94,7 +95,7 @@ impl IkaTxValidator {
     /// Verifies all certificates - if any fail return error.
     fn batch_verify_all_certificates_and_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedCheckpointMessage],
+        checkpoints: &[&SignedCheckpointMessage<MessageKind>],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -105,7 +106,10 @@ impl IkaTxValidator {
         Self::batch_verify(committee, checkpoints)
     }
 
-    fn batch_verify(committee: &Committee, checkpoints: &[&SignedCheckpointMessage]) -> IkaResult {
+    fn batch_verify(
+        committee: &Committee,
+        checkpoints: &[&SignedCheckpointMessage<MessageKind>],
+    ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
         for ckpt in checkpoints {

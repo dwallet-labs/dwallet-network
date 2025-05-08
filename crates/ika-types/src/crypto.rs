@@ -802,10 +802,14 @@ mod bcs_signable {
 
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
-    impl BcsSignable for crate::messages_checkpoint::CheckpointMessage {}
+    impl<T: serde::Serialize + for<'a> serde::Deserialize<'a>> BcsSignable
+        for crate::messages_checkpoint::CheckpointMessage<T>
+    {
+    }
 
     impl BcsSignable for crate::message::MessageKind {}
 
+    #[cfg(test)]
     impl BcsSignable for super::bcs_signable_test::Foo {}
     #[cfg(test)]
     impl BcsSignable for super::bcs_signable_test::Bar {}

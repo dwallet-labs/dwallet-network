@@ -10,7 +10,8 @@ use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::messages_checkpoint::{CertifiedCheckpointMessage, CheckpointSequenceNumber};
+use ika_types::message::MessageKind;
+use ika_types::messages_checkpoint::{CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber};
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
@@ -104,13 +105,16 @@ impl CheckpointWriter {
         })
     }
 
-    pub fn write(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
+    pub fn write(&mut self, checkpoint_message: CertifiedDWalletCheckpointMessage) -> Result<()> {
         match self.storage_format {
             StorageFormat::Blob => self.write_as_blob(checkpoint_message),
         }
     }
 
-    pub fn write_as_blob(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
+    pub fn write_as_blob(
+        &mut self,
+        checkpoint_message: CertifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
         assert_eq!(
             checkpoint_message.sequence_number,
             self.checkpoint_range.end

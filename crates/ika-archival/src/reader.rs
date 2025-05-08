@@ -7,8 +7,9 @@ use bytes::buf::Reader;
 use bytes::{Buf, Bytes};
 use futures::{StreamExt, TryStreamExt};
 use ika_config::node::ArchiveReaderConfig;
+use ika_types::message::MessageKind;
 use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+    CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -258,7 +259,7 @@ impl ArchiveReader {
             .buffer_unordered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
                         CHECKPOINT_MESSAGE_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
@@ -307,7 +308,7 @@ impl ArchiveReader {
             .buffer_unordered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
                         CHECKPOINT_MESSAGE_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
@@ -328,7 +329,7 @@ impl ArchiveReader {
     pub async fn get_checkpoints_for_list_no_verify(
         &self,
         cp_list: Vec<CheckpointSequenceNumber>,
-    ) -> Result<Vec<CertifiedCheckpointMessage>> {
+    ) -> Result<Vec<CertifiedDWalletCheckpointMessage>> {
         let checkpoint_files = self.get_checkpoint_files_for_list(cp_list.clone()).await?;
         let remote_object_store = self.remote_object_store.clone();
         let stream = futures::stream::iter(checkpoint_files.iter())
@@ -345,12 +346,14 @@ impl ArchiveReader {
         stream
             .buffer_unordered(self.concurrency)
             .try_fold(Vec::new(), |mut acc, checkpoint_data| async move {
-                let checkpoint_result: Result<Vec<CertifiedCheckpointMessage>, anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
-                        CHECKPOINT_MESSAGE_FILE_MAGIC,
-                        checkpoint_data.reader(),
-                    )
-                    .map(|checkpoint_iter| checkpoint_iter.collect::<Vec<_>>());
+                let checkpoint_result: Result<
+                    Vec<CertifiedDWalletCheckpointMessage>,
+                    anyhow::Error,
+                > = make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                    CHECKPOINT_MESSAGE_FILE_MAGIC,
+                    checkpoint_data.reader(),
+                )
+                .map(|checkpoint_iter| checkpoint_iter.collect::<Vec<_>>());
 
                 match checkpoint_result {
                     Ok(checkpoints) => {
@@ -423,7 +426,7 @@ impl ArchiveReader {
             .buffered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
                         CHECKPOINT_MESSAGE_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
@@ -498,7 +501,7 @@ impl ArchiveReader {
     /// Insert checkpoint checkpoint without verifying it
     fn insert_certified_checkpoint<S>(
         store: &S,
-        certified_checkpoint: CertifiedCheckpointMessage,
+        certified_checkpoint: CertifiedDWalletCheckpointMessage,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
@@ -513,15 +516,15 @@ impl ArchiveReader {
     /// Insert checkpoint checkpoint if it doesn't already exist (without verifying it)
     fn get_or_insert_verified_checkpoint<S>(
         store: &S,
-        certified_checkpoint: CertifiedCheckpointMessage,
-    ) -> Result<VerifiedCheckpointMessage>
+        certified_checkpoint: CertifiedDWalletCheckpointMessage,
+    ) -> Result<VerifiedCheckpointMessage<MessageKind>>
     where
         S: WriteStore + Clone,
     {
         store
             .get_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedCheckpointMessage, anyhow::Error>)
+            .map(Ok::<VerifiedCheckpointMessage<MessageKind>, anyhow::Error>)
             .unwrap_or_else(|| {
                 let verified_checkpoint =
                     VerifiedCheckpointMessage::new_unchecked(certified_checkpoint);
@@ -533,7 +536,7 @@ impl ArchiveReader {
                 store
                     .update_highest_verified_checkpoint(&verified_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedCheckpointMessage, anyhow::Error>(verified_checkpoint)
+                Ok::<VerifiedCheckpointMessage<MessageKind>, anyhow::Error>(verified_checkpoint)
             })
             .map_err(|e| anyhow!("Failed to get verified checkpoint: {:?}", e))
     }

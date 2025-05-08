@@ -6,10 +6,11 @@ use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result}
 use dashmap::DashMap;
 use futures::future::BoxFuture;
 use ika_types::digests::ChainIdentifier;
+use ika_types::message::MessageKind;
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
     messages_checkpoint::{
-        CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+        CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
     },
     storage::WriteStore,
 };
@@ -26,7 +27,7 @@ pub enum GetCheckpointMessageRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_checkpoint: Option<CertifiedCheckpointMessage>,
+    pub(crate) highest_synced_checkpoint: Option<CertifiedDWalletCheckpointMessage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -48,7 +49,7 @@ where
 {
     async fn push_checkpoint_message(
         &self,
-        request: Request<CertifiedCheckpointMessage>,
+        request: Request<CertifiedDWalletCheckpointMessage>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
@@ -88,7 +89,7 @@ where
     async fn get_checkpoint_message(
         &self,
         request: Request<GetCheckpointMessageRequest>,
-    ) -> Result<Response<Option<CertifiedCheckpointMessage>>, Status> {
+    ) -> Result<Response<Option<CertifiedDWalletCheckpointMessage>>, Status> {
         let checkpoint = match request.inner() {
             GetCheckpointMessageRequest::ByDigest(digest) => {
                 self.store.get_checkpoint_by_digest(digest)
@@ -179,7 +180,7 @@ impl<S> tower::Service<Request<GetCheckpointMessageRequest>> for CheckpointMessa
 where
     S: tower::Service<
             Request<GetCheckpointMessageRequest>,
-            Response = Response<Option<CertifiedCheckpointMessage>>,
+            Response = Response<Option<CertifiedDWalletCheckpointMessage>>,
             Error = Status,
         >
         + 'static
@@ -188,7 +189,7 @@ where
     <S as tower::Service<Request<GetCheckpointMessageRequest>>>::Future: Send,
     Request<GetCheckpointMessageRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<CertifiedCheckpointMessage>>;
+    type Response = Response<Option<CertifiedDWalletCheckpointMessage>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 

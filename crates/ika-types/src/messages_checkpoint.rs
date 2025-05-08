@@ -33,17 +33,21 @@ pub type CheckpointTimestamp = u64;
 // The constituent parts of checkpoints, signed and certified
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct CheckpointMessage {
+#[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
+pub struct CheckpointMessage<T = MessageKind>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     pub epoch: EpochId,
     pub sequence_number: CheckpointSequenceNumber,
     /// Timestamp of the checkpoint - number of milliseconds from the Unix epoch
     /// Checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
     /// checkpoints can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: CheckpointTimestamp,
-    pub messages: Vec<MessageKind>,
+    pub messages: Vec<T>,
 }
 
-impl Message for CheckpointMessage {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> Message for CheckpointMessage<T> {
     type DigestType = CheckpointMessageDigest;
     const SCOPE: IntentScope = IntentScope::CheckpointMessage;
 
@@ -52,13 +56,13 @@ impl Message for CheckpointMessage {
     }
 }
 
-impl CheckpointMessage {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> CheckpointMessage<T> {
     pub fn new(
         epoch: EpochId,
         sequence_number: CheckpointSequenceNumber,
-        messages: Vec<MessageKind>,
+        messages: Vec<T>,
         timestamp_ms: CheckpointTimestamp,
-    ) -> CheckpointMessage {
+    ) -> CheckpointMessage<T> {
         Self {
             epoch,
             sequence_number,
@@ -102,7 +106,7 @@ impl CheckpointMessage {
     }
 }
 
-impl Display for CheckpointMessage {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> Display for CheckpointMessage<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -120,41 +124,21 @@ impl Display for CheckpointMessage {
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.
 
-pub type CheckpointMessageEnvelope<S> = Envelope<CheckpointMessage, S>;
-pub type CertifiedCheckpointMessage = CheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
-pub type SignedCheckpointMessage = CheckpointMessageEnvelope<AuthoritySignInfo>;
+pub type CheckpointMessageEnvelope<T: serde::Serialize + serde::de::DeserializeOwned, S> =
+    Envelope<CheckpointMessage<T>, S>;
+pub type CertifiedDWalletCheckpointMessage =
+    CheckpointMessageEnvelope<MessageKind, AuthorityStrongQuorumSignInfo>;
+pub type CertifiedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
+    CheckpointMessageEnvelope<T, AuthorityStrongQuorumSignInfo>;
+pub type SignedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
+    CheckpointMessageEnvelope<T, AuthoritySignInfo>;
 
-pub type VerifiedCheckpointMessage =
-    VerifiedEnvelope<CheckpointMessage, AuthorityStrongQuorumSignInfo>;
-pub type TrustedCheckpointMessage =
-    TrustedEnvelope<CheckpointMessage, AuthorityStrongQuorumSignInfo>;
+pub type VerifiedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
+    VerifiedEnvelope<CheckpointMessage<T>, AuthorityStrongQuorumSignInfo>;
+pub type TrustedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
+    TrustedEnvelope<CheckpointMessage<T>, AuthorityStrongQuorumSignInfo>;
 
-impl CertifiedCheckpointMessage {
-    pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
-        self.data().verify_epoch(self.auth_sig().epoch)?;
-        self.auth_sig().verify_secure(
-            self.data(),
-            Intent::ika_app(IntentScope::CheckpointMessage),
-            committee,
-        )
-    }
-
-    pub fn try_into_verified(self, committee: &Committee) -> IkaResult<VerifiedCheckpointMessage> {
-        self.verify_authority_signatures(committee)?;
-        Ok(VerifiedCheckpointMessage::new_from_verified(self))
-    }
-
-    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage) {
-        let summary = self.into_data();
-        (summary.sequence_number, summary)
-    }
-
-    pub fn get_validator_signature(self) -> AggregateAuthoritySignature {
-        self.auth_sig().signature.clone()
-    }
-}
-
-impl SignedCheckpointMessage {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> CertifiedCheckpointMessage<T> {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
@@ -167,25 +151,57 @@ impl SignedCheckpointMessage {
     pub fn try_into_verified(
         self,
         committee: &Committee,
-    ) -> IkaResult<VerifiedEnvelope<CheckpointMessage, AuthoritySignInfo>> {
+    ) -> IkaResult<VerifiedCheckpointMessage<T>> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedEnvelope::<CheckpointMessage, AuthoritySignInfo>::new_from_verified(self))
+        Ok(VerifiedCheckpointMessage::new_from_verified(self))
+    }
+
+    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage<T>) {
+        let summary = self.into_data();
+        (summary.sequence_number, summary)
+    }
+
+    pub fn get_validator_signature(self) -> AggregateAuthoritySignature {
+        self.auth_sig().signature.clone()
     }
 }
 
-impl VerifiedCheckpointMessage {
-    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage) {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> SignedCheckpointMessage<T> {
+    pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
+        self.data().verify_epoch(self.auth_sig().epoch)?;
+        self.auth_sig().verify_secure(
+            self.data(),
+            Intent::ika_app(IntentScope::CheckpointMessage),
+            committee,
+        )
+    }
+
+    pub fn try_into_verified(
+        self,
+        committee: &Committee,
+    ) -> IkaResult<VerifiedEnvelope<CheckpointMessage<T>, AuthoritySignInfo>> {
+        self.verify_authority_signatures(committee)?;
+        Ok(VerifiedEnvelope::<CheckpointMessage<T>, AuthoritySignInfo>::new_from_verified(self))
+    }
+}
+
+impl<T: serde::Serialize + serde::de::DeserializeOwned> VerifiedCheckpointMessage<T> {
+    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage<T>) {
         self.into_inner().into_summary_and_sequence()
     }
 }
 
 /// This is a message validators publish to consensus in order to sign checkpoint
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CheckpointSignatureMessage {
-    pub checkpoint_message: SignedCheckpointMessage,
+#[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
+pub struct CheckpointSignatureMessage<T = MessageKind>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
+    pub checkpoint_message: SignedCheckpointMessage<T>,
 }
 
-impl CheckpointSignatureMessage {
+impl<T: serde::Serialize + serde::de::DeserializeOwned> CheckpointSignatureMessage<T> {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
         self.checkpoint_message
             .verify_authority_signatures(committee)
@@ -286,7 +302,8 @@ mod tests {
             .collect();
 
         let checkpoint_cert =
-            CertifiedCheckpointMessage::new(summary, sign_infos, &committee).expect("Cert is OK");
+            CertifiedDWalletCheckpointMessage::new(summary, sign_infos, &committee)
+                .expect("Cert is OK");
 
         // Signature is correct on proposal, and with same transactions
         assert!(checkpoint_cert
@@ -327,7 +344,7 @@ mod tests {
             .map(|v| v.into_sig())
             .collect();
         assert!(
-            CertifiedCheckpointMessage::new(summary, sign_infos, &committee)
+            CertifiedDWalletCheckpointMessage::new(summary, sign_infos, &committee)
                 .unwrap()
                 .verify_authority_signatures(&committee)
                 .is_err()

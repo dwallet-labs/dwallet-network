@@ -4,6 +4,7 @@
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
 use crate::digests::CheckpointMessageDigest;
+use crate::message::MessageKind;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
 use std::sync::Arc;
 
@@ -22,7 +23,7 @@ pub trait ReadStore {
     ///
     /// All transactions, effects, objects and events are guaranteed to be available for the
     /// returned checkpoint.
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage>;
+    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage<MessageKind>>;
 
     /// Get the latest available checkpoint sequence number. This is the sequence number of the latest executed checkpoint.
     fn get_latest_checkpoint_sequence_number(&self) -> Result<CheckpointSequenceNumber> {
@@ -39,12 +40,16 @@ pub trait ReadStore {
     /// Get the highest verified checkpint. This is the highest checkpoint summary that has been
     /// verified, generally by state-sync. Only the checkpoint header is guaranteed to be present in
     /// the store.
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>>;
+    fn get_highest_verified_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>>;
 
     /// Get the highest synced checkpint. This is the highest checkpoint that has been synced from
     /// state-synce. The checkpoint header, contents, transactions, and effects of this checkpoint
     /// are guaranteed to be present in the store
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>>;
+    fn get_highest_synced_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>>;
 
     /// Lowest available checkpoint for which transaction and checkpoint data can be requested.
     ///
@@ -60,12 +65,12 @@ pub trait ReadStore {
     fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>>;
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>>;
 
     fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>>;
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -73,7 +78,7 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage<MessageKind>> {
         (*self).get_latest_checkpoint()
     }
 
@@ -85,11 +90,15 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_verified_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (*self).get_highest_verified_checkpoint()
     }
 
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_synced_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (*self).get_highest_synced_checkpoint()
     }
 
@@ -100,14 +109,14 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
     fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (*self).get_checkpoint_by_digest(digest)
     }
 
     fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (*self).get_checkpoint_by_sequence_number(sequence_number)
     }
 }
@@ -117,7 +126,7 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage<MessageKind>> {
         (**self).get_latest_checkpoint()
     }
 
@@ -129,11 +138,15 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_verified_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_highest_verified_checkpoint()
     }
 
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_synced_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_highest_synced_checkpoint()
     }
 
@@ -144,14 +157,14 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
     fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_checkpoint_by_digest(digest)
     }
 
     fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 }
@@ -161,7 +174,7 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage<MessageKind>> {
         (**self).get_latest_checkpoint()
     }
 
@@ -173,11 +186,15 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_latest_epoch_id()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_verified_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_highest_verified_checkpoint()
     }
 
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
+    fn get_highest_synced_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_highest_synced_checkpoint()
     }
 
@@ -188,14 +205,14 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
     fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_checkpoint_by_digest(digest)
     }
 
     fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
+    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 }
