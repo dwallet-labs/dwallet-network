@@ -1,8 +1,0 @@
-- address: /dns/val1.beta50.devnet.ika-network.net/udp/8084
-  peer-id: 6f3432853e5dbf245fe16b96e5edc7933f68427e681539b741b77aa051c2cc8c
-- address: /dns/val2.beta50.devnet.ika-network.net/udp/8084
-  peer-id: 1007ecb445f68802e51e37623a4a0c3acf075f1a8a186a840788480fefff4a77
-- address: /dns/val3.beta50.devnet.ika-network.net/udp/8084
-  peer-id: 33cf8f726fc9decb790151f08734cef3bbea409592ed6bb9c11f1721860fd464
-- address: /dns/val4.beta50.devnet.ika-network.net/udp/8084
-  peer-id: 40029021c1727366f0433122da09bcc704446c82a2a3b5b3c2408ee2bc4ae15a

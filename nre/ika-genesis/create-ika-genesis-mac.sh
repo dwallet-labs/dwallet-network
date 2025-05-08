@@ -30,8 +30,9 @@ export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
-#export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta50.devnet.ika-network.net"
+# For local minikube cluster, use the .svc.cluster.local suffix
+export SUBDOMAIN="ika.default.svc.cluster.local"
+#export SUBDOMAIN="beta50.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
