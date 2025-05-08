@@ -158,7 +158,7 @@ fn build_anemo_services(out_dir: &Path) {
             anemo_build::manual::Method::builder()
                 .name("push_checkpoint_message")
                 .route_name("PushCheckpointMessage")
-                .request_type("ika_types::messages_checkpoint::CertifiedCheckpointMessage<ika_types::message::MessageKind>")
+                .request_type("ika_types::messages_checkpoint::CertifiedDWalletCheckpointMessage")
                 .response_type("()")
                 .codec_path(codec_path)
                 .build(),
@@ -168,7 +168,9 @@ fn build_anemo_services(out_dir: &Path) {
                 .name("get_checkpoint_message")
                 .route_name("GetCheckpointMessage")
                 .request_type("crate::state_sync::GetCheckpointMessageRequest")
-                .response_type("Option<ika_types::messages_checkpoint::CertifiedCheckpointMessage<ika_types::message::MessageKind>>")
+                .response_type(
+                    "Option<ika_types::messages_checkpoint::CertifiedDWalletCheckpointMessage>",
+                )
                 .codec_path(codec_path)
                 .build(),
         )

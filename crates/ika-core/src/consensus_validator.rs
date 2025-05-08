@@ -16,7 +16,7 @@ use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_checkpoint::{SignedCheckpointMessage, SignedDWalletCheckpointMessage};
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
@@ -95,7 +95,7 @@ impl IkaTxValidator {
     /// Verifies all certificates - if any fail return error.
     fn batch_verify_all_certificates_and_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedCheckpointMessage<DwalletCheckpointMessageKind>],
+        checkpoints: &[&SignedDWalletCheckpointMessage],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -108,7 +108,7 @@ impl IkaTxValidator {
 
     fn batch_verify(
         committee: &Committee,
-        checkpoints: &[&SignedCheckpointMessage<DwalletCheckpointMessageKind>],
+        checkpoints: &[&SignedDWalletCheckpointMessage],
     ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 

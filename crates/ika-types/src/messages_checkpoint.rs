@@ -126,8 +126,6 @@ impl<T: serde::Serialize + serde::de::DeserializeOwned> Display for CheckpointMe
 
 pub type CheckpointMessageEnvelope<T: serde::Serialize + serde::de::DeserializeOwned, S> =
     Envelope<CheckpointMessage<T>, S>;
-pub type CertifiedDWalletCheckpointMessage =
-    CheckpointMessageEnvelope<DwalletCheckpointMessageKind, AuthorityStrongQuorumSignInfo>;
 pub type CertifiedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
     CheckpointMessageEnvelope<T, AuthorityStrongQuorumSignInfo>;
 pub type SignedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
@@ -137,6 +135,12 @@ pub type VerifiedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeO
     VerifiedEnvelope<CheckpointMessage<T>, AuthorityStrongQuorumSignInfo>;
 pub type TrustedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
     TrustedEnvelope<CheckpointMessage<T>, AuthorityStrongQuorumSignInfo>;
+
+pub type CertifiedDWalletCheckpointMessage =
+    CertifiedCheckpointMessage<DwalletCheckpointMessageKind>;
+pub type SignedDWalletCheckpointMessage = SignedCheckpointMessage<DwalletCheckpointMessageKind>;
+pub type VerifiedDWalletCheckpointMessage = VerifiedCheckpointMessage<DwalletCheckpointMessageKind>;
+pub type TrustedDWalletCheckpointMessage = TrustedCheckpointMessage<DwalletCheckpointMessageKind>;
 
 impl<T: serde::Serialize + serde::de::DeserializeOwned> CertifiedCheckpointMessage<T> {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {

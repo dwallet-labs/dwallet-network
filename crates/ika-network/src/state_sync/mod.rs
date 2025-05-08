@@ -92,6 +92,7 @@ pub use generated::{
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_types::digests::ChainIdentifier;
 use ika_types::message::DwalletCheckpointMessageKind;
+use ika_types::messages_checkpoint::VerifiedDWalletCheckpointMessage;
 pub use server::GetCheckpointAvailabilityResponse;
 pub use server::GetCheckpointMessageRequest;
 
@@ -102,8 +103,7 @@ pub use server::GetCheckpointMessageRequest;
 #[derive(Clone, Debug)]
 pub struct Handle {
     sender: mpsc::Sender<StateSyncMessage>,
-    checkpoint_event_sender:
-        broadcast::Sender<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>,
+    checkpoint_event_sender: broadcast::Sender<VerifiedDWalletCheckpointMessage>,
 }
 
 impl Handle {
@@ -115,10 +115,7 @@ impl Handle {
     /// Consensus must only notify StateSync of new checkpoints that have been fully committed to
     /// persistent storage. This includes CheckpointContents and all Transactions and
     /// TransactionEffects included therein.
-    pub async fn send_checkpoint(
-        &self,
-        checkpoint: VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
-    ) {
+    pub async fn send_checkpoint(&self, checkpoint: VerifiedDWalletCheckpointMessage) {
         self.sender
             .send(StateSyncMessage::VerifiedCheckpointMessage(Box::new(
                 checkpoint,
@@ -130,7 +127,7 @@ impl Handle {
     /// Subscribe to the stream of checkpoints that have been fully synchronized and downloaded.
     pub fn subscribe_to_synced_checkpoints(
         &self,
-    ) -> broadcast::Receiver<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>> {
+    ) -> broadcast::Receiver<VerifiedDWalletCheckpointMessage> {
         self.checkpoint_event_sender.subscribe()
     }
 }
@@ -334,11 +331,11 @@ enum StateSyncMessage {
     StartSyncJob,
     // Validators will send this to the StateSyncEventLoop in order to kick off notifying our peers
     // of the new checkpoint.
-    VerifiedCheckpointMessage(Box<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>),
+    VerifiedCheckpointMessage(Box<VerifiedDWalletCheckpointMessage>),
     // Notification that the checkpoint content sync task will send to the event loop in the event
     // it was able to successfully sync a checkpoint's contents. If multiple checkpoints were
     // synced at the same time, only the highest checkpoint is sent.
-    SyncedCheckpoint(Box<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>),
+    SyncedCheckpoint(Box<VerifiedDWalletCheckpointMessage>),
 }
 
 struct StateSyncEventLoop<S> {
@@ -354,8 +351,7 @@ struct StateSyncEventLoop<S> {
 
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
-    checkpoint_event_sender:
-        broadcast::Sender<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>,
+    checkpoint_event_sender: broadcast::Sender<VerifiedDWalletCheckpointMessage>,
     network: anemo::Network,
     metrics: Metrics,
 
@@ -473,7 +469,7 @@ where
     #[instrument(level = "debug", skip_all)]
     fn handle_checkpoint_from_consensus(
         &mut self,
-        checkpoint: Box<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>,
+        checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
         if *checkpoint.sequence_number() == 0 {
             return;
@@ -622,10 +618,7 @@ where
         }
     }
 
-    fn spawn_notify_peers_of_checkpoint(
-        &mut self,
-        checkpoint: VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
-    ) {
+    fn spawn_notify_peers_of_checkpoint(&mut self, checkpoint: VerifiedDWalletCheckpointMessage) {
         let task = notify_peers_of_checkpoint(
             self.network.clone(),
             self.peer_heights.clone(),
@@ -639,7 +632,7 @@ where
 async fn notify_peers_of_checkpoint(
     network: anemo::Network,
     peer_heights: Arc<RwLock<PeerHeights>>,
-    checkpoint: VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
+    checkpoint: VerifiedDWalletCheckpointMessage,
     timeout: Duration,
 ) {
     let futs = peer_heights

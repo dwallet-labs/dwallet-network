@@ -10,6 +10,7 @@ use ika_config::node::ArchiveReaderConfig;
 use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::messages_checkpoint::{
     CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+    VerifiedDWalletCheckpointMessage,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -517,14 +518,14 @@ impl ArchiveReader {
     fn get_or_insert_verified_checkpoint<S>(
         store: &S,
         certified_checkpoint: CertifiedDWalletCheckpointMessage,
-    ) -> Result<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>
+    ) -> Result<VerifiedDWalletCheckpointMessage>
     where
         S: WriteStore + Clone,
     {
         store
             .get_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>, anyhow::Error>)
+            .map(Ok::<VerifiedDWalletCheckpointMessage, anyhow::Error>)
             .unwrap_or_else(|| {
                 let verified_checkpoint =
                     VerifiedCheckpointMessage::new_unchecked(certified_checkpoint);
@@ -536,9 +537,7 @@ impl ArchiveReader {
                 store
                     .update_highest_verified_checkpoint(&verified_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>, anyhow::Error>(
-                    verified_checkpoint,
-                )
+                Ok::<VerifiedDWalletCheckpointMessage, anyhow::Error>(verified_checkpoint)
             })
             .map_err(|e| anyhow!("Failed to get verified checkpoint: {:?}", e))
     }
