@@ -1,0 +1,10 @@
+---
+keystore:
+  File: /Users/itaylevy/.sui/sui_config/sui.keystore
+envs:
+  - alias: ika-dns-service.ika.svc.cluster.local
+    rpc: "https://fullnode.sui.beta.devnet.ika-network.net"
+    ws: ~
+    basic_auth: ~
+active_env: ika-dns-service.ika.svc.cluster.local
+active_address: 0xd88a7af9d890db4d479506523932d1cb65cfbadb5036a30ca49727a6c64f0817
