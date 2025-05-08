@@ -33,14 +33,14 @@ async function createConfigMap(
 ): Promise<V1ConfigMap> {
   const k8sApi = kc.makeApiClient(CoreV1Api);
   const fullNodeYaml = fs.readFileSync(
-    "/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/fullnode.yaml",
+    "/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/publisher/fullnode.yaml",
     "utf8"
   );
   const validatorsConfig: Record<string, string> = {};
 
   for (let i = 0; i < numOfValidators; i++) {
     const validator_config_template = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/class-groups.key`,
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/class-groups.key`,
       "utf-8"
     );
     const compiled = Handlebars.compile(validator_config_template);
@@ -48,19 +48,19 @@ async function createConfigMap(
       compiled({ external_address: `ika-val-${i + 1}.ika-dns-service.${namespaceName}.svc.cluster.local` })
     );
     validatorsConfig[`validator${i + 1}_class-groups.key`] = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/class-groups.key`,
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/class-groups.key`,
       "utf8"
     );
     validatorsConfig[`validator${i + 1}_consensus.key`] = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/consensus.key`,
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/consensus.key`,
       "utf8"
     );
     validatorsConfig[`validator${i + 1}_network.key`] = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/network.key`,
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/network.key`,
       "utf8"
     );
     validatorsConfig[`validator${i + 1}_protocol.key`] = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/protocol.key`,
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/protocol.key`,
       "utf8"
     );
     validatorsConfig[`validator${i + 1}.yaml`] = serviceBody;
@@ -74,7 +74,7 @@ async function createConfigMap(
     data: {
       "fullnode.yaml": fullNodeYaml,
       "notifier.key": fs.readFileSync(
-        "/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/publisher/sui_config/publisher.key",
+        "/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/publisher/sui_config/publisher.key",
         "utf8"
       ),
       ...validatorsConfig
