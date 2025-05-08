@@ -10,5 +10,9 @@ Run the following command from this directory to build the ika-node docker image
 ```
 
 ### 3. Create Genesis files
-Run the following command from
+Run the following command from this directory to create the genesis files:
+```bash
+./create-ika-genesis-mac.sh
+```
 
+### 4. Deploy the Ika network
