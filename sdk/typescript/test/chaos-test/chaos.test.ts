@@ -16,8 +16,8 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	await k8sApi.createNamespace({ body: namespaceBody });
 };
 
-describe('run chain chaos testing', () => {
-	it('create and deploy the config map', async () => {
+describe('chaos tests', () => {
+	it('deploy the ika network from the current directory to the local kubernetes cluster', async () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
 		await createNamespace(kc, NAMESPACE_NAME);
