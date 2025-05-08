@@ -25,7 +25,7 @@ use tracing::warn;
 
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointMessageDigest;
-use crate::message::DwalletCheckpointMessageKind;
+use crate::message::{DwalletCheckpointMessageKind, SystemCheckpointMessageKind};
 
 pub type CheckpointSequenceNumber = u64;
 pub type CheckpointTimestamp = u64;
@@ -141,6 +141,11 @@ pub type CertifiedDWalletCheckpointMessage =
 pub type SignedDWalletCheckpointMessage = SignedCheckpointMessage<DwalletCheckpointMessageKind>;
 pub type VerifiedDWalletCheckpointMessage = VerifiedCheckpointMessage<DwalletCheckpointMessageKind>;
 pub type TrustedDWalletCheckpointMessage = TrustedCheckpointMessage<DwalletCheckpointMessageKind>;
+
+pub type CertifiedSystemCheckpointMessage = CertifiedCheckpointMessage<SystemCheckpointMessageKind>;
+pub type SignedSystemCheckpointMessage = SignedCheckpointMessage<SystemCheckpointMessageKind>;
+pub type VerifiedSystemCheckpointMessage = VerifiedCheckpointMessage<SystemCheckpointMessageKind>;
+pub type TrustedSystemCheckpointMessage = TrustedCheckpointMessage<SystemCheckpointMessageKind>;
 
 impl<T: serde::Serialize + serde::de::DeserializeOwned> CertifiedCheckpointMessage<T> {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
