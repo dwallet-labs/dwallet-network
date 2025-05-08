@@ -9,5 +9,6 @@ Run the following command from this directory to build the ika-node docker image
 ./build.sh
 ```
 
-
+### 3. Create Genesis files
+Run the following command from
 
