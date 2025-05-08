@@ -23,6 +23,9 @@ import {
 	verifyECFSASignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
+const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
+const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
+
 const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
@@ -36,11 +39,9 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+		const suiClient = new SuiClient({ url: SUI_FULLNODE_URL });
 		await requestSuiFromFaucetV1({
-			// host: getFaucetHost('localnet'),
-			host: 'https://faucet.sui.beta.devnet.ika-network.net',
+			host: SUI_FAUCET_HOST,
 			recipient: address,
 		});
 

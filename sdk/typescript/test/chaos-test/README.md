@@ -19,3 +19,9 @@ Run the following command from this directory to create the genesis files:
 Run the `"deploy the ika network from the current directory to the local kubernetes cluster"` test from the 
 `./chaos.test.ts` file.
 
+### 5. Run TS tests against the deployed Ika network
+First, run the following command from this directory
+```bash
+cp ./publisher/ika_config.json ../../../../
+```
+Now, make sure your
