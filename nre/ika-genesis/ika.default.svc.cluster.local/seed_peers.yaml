@@ -1,8 +1,0 @@
-- address: /dns/val1.ika.default.svc.cluster.local/udp/8084
-  peer-id: e68498c9ea65e3e930ff90115f72b62913965859963cb2d181f6751278ac0e6d
-- address: /dns/val2.ika.default.svc.cluster.local/udp/8084
-  peer-id: 91ec819d94535032c65c253340cb2854a8eb35649f3df883b586ad91184ee29c
-- address: /dns/val3.ika.default.svc.cluster.local/udp/8084
-  peer-id: 18a1b451bc0f1a824b8f52a05c107d356b44d797ce49d6b2171bf6c24c4e93a0
-- address: /dns/val4.ika.default.svc.cluster.local/udp/8084
-  peer-id: 881dfd0d86e64c9aae885fe509cc6989b068b327e18c06da843e965d7d91c2d6
