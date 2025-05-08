@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { CoreV1Api, KubeConfig, V1ConfigMap } from '@kubernetes/client-node';
+import type { KubeConfig, V1ConfigMap } from '@kubernetes/client-node';
+import { CoreV1Api } from '@kubernetes/client-node';
 
-import { CONFIG_MAP_NAME, NAMESPACE_NAME, NETWORK_SERVICE_NAME } from './globals';
+import { CONFIG_MAP_NAME, NAMESPACE_NAME, NETWORK_SERVICE_NAME } from './globals.js';
 
 export async function createConfigMap(
 	kc: KubeConfig,
