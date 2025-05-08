@@ -1345,43 +1345,36 @@ impl AuthorityPerEpochStore {
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(id, event)| {
-                info!(
-                    event_id=?id,
-                    event=?event,
-                    "Received Sui event from perpetual tables"
-                );
-                match bcs::from_bytes::<DBSuiEvent>(event) {
-                    Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
-                        Ok(Some(session_info)) => {
-                            info!(
-                                mpc_protocol=?session_info.mpc_round,
-                                session_id=?session_info.session_id,
-                                validator=?self.name,
-                                "Received start event for session"
-                            );
-                            let event = DWalletMPCEvent {
-                                event,
-                                session_info,
-                            };
-                            Some(event)
-                        }
-                        Ok(None) => {
-                            warn!(
-                                event=?event,
-                                "Received an event that does not trigger the start of an MPC flow"
-                            );
-                            None
-                        }
-                        Err(e) => {
-                            error!("error getting session info from event: {}", e);
-                            None
-                        }
-                    },
-                    Err(e) => {
-                        error!("failed to deserialize event: {}", e);
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
+                    Ok(Some(session_info)) => {
+                        info!(
+                            mpc_protocol=?session_info.mpc_round,
+                            session_id=?session_info.session_id,
+                            validator=?self.name,
+                            "Received start event for session"
+                        );
+                        let event = DWalletMPCEvent {
+                            event,
+                            session_info,
+                        };
+                        Some(event)
+                    }
+                    Ok(None) => {
+                        warn!(
+                            event=?event,
+                            "Received an event that does not trigger the start of an MPC flow"
+                        );
                         None
                     }
+                    Err(e) => {
+                        error!("error getting session info from event: {}", e);
+                        None
+                    }
+                },
+                Err(e) => {
+                    error!("failed to deserialize event: {}", e);
+                    None
                 }
             })
             .collect();

@@ -219,13 +219,9 @@ impl DWalletMPCService {
                 error!("failed to load DB tables from the epoch store");
                 continue;
             };
-            let mut next_round_to_process = self.last_read_consensus_round;
-            if next_round_to_process != 0 {
-                next_round_to_process += 1;
-            }
             let Ok(completed_sessions) = self
                 .epoch_store
-                .load_dwallet_mpc_completed_sessions_from_round(next_round_to_process)
+                .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
@@ -241,21 +237,20 @@ impl DWalletMPCService {
             }
             let Ok(events_from_sui) = self
                 .epoch_store
-                .load_dwallet_mpc_events_from_round(next_round_to_process)
+                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
                 error!("failed to load dWallet MPC events from the local DB");
                 continue;
             };
             for event in events_from_sui {
-                info!(event_session_id=?event.session_info.session_id, "Processing event from Sui");
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;
             }
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
-                .iter_with_bounds(Some(next_round_to_process), None);
+                .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
             let mut new_messages = vec![];
             for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
