@@ -1,6 +1,6 @@
+import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace, V1Pod } from '@kubernetes/client-node';
 import fs from 'fs';
 import path from 'path';
-import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace, V1Pod } from '@kubernetes/client-node';
 import { describe, it } from 'vitest';
 
 const CONFIG_MAP_NAME = 'ika-chaos-test-config';
@@ -31,26 +31,28 @@ async function createConfigMap(
 		'utf8',
 	);
 	const validatorsConfig: Record<string, string> = {};
-
 	for (let i = 0; i < numOfValidators; i++) {
 		validatorsConfig[`validator${i + 1}_class-groups.key`] = fs.readFileSync(
-			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/class-groups.key`,
+			path.resolve(
+				process.cwd(),
+				`${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/class-groups.key`,
+			),
 			'utf8',
 		);
 		validatorsConfig[`validator${i + 1}_consensus.key`] = fs.readFileSync(
-			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/consensus.key`,
+			`${process.cwd()}/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/consensus.key`,
 			'utf8',
 		);
 		validatorsConfig[`validator${i + 1}_network.key`] = fs.readFileSync(
-			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/network.key`,
+			`${process.cwd()}/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/network.key`,
 			'utf8',
 		);
 		validatorsConfig[`validator${i + 1}_protocol.key`] = fs.readFileSync(
-			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/protocol.key`,
+			`${process.cwd()}/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/key-pairs/protocol.key`,
 			'utf8',
 		);
 		validatorsConfig[`validator${i + 1}.yaml`] = fs.readFileSync(
-			`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/validator.yaml`,
+			`${process.cwd()}/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/val${i + 1}.${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/validator.yaml`,
 			'utf-8',
 		);
 	}
@@ -63,7 +65,7 @@ async function createConfigMap(
 		data: {
 			'fullnode.yaml': fullNodeYaml,
 			'notifier.key': fs.readFileSync(
-				`/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/publisher/sui_config/publisher.key`,
+				`${process.cwd()}/${NETWORK_SERVICE_NAME}.${NAMESPACE_NAME}.svc.cluster.local/publisher/sui_config/publisher.key`,
 				'utf8',
 			),
 			...validatorsConfig,
@@ -142,7 +144,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 						env: [
 							{
 								name: 'RUST_LOG',
-								value: 'off,ika_node=info,ika_core=debug',
+								value: 'off,ika_node=info,ika_core=info',
 							},
 							{
 								name: 'RUST_MIN_STACK',
@@ -175,7 +177,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
 					env: [
 						{
 							name: 'RUST_LOG',
-							value: 'off,ika_node=info,ika_core=debug',
+							value: 'off,ika_node=info,ika_core=info',
 						},
 						{
 							name: 'RUST_MIN_STACK',
