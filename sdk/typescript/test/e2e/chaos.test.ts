@@ -39,14 +39,6 @@ async function createConfigMap(
   const validatorsConfig: Record<string, string> = {};
 
   for (let i = 0; i < numOfValidators; i++) {
-    const validator_config_template = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/class-groups.key`,
-      "utf-8"
-    );
-    const compiled = Handlebars.compile(validator_config_template);
-    const serviceBody = loadYaml(
-      compiled({ external_address: `ika-val-${i + 1}.ika-dns-service.${namespaceName}.svc.cluster.local` })
-    );
     validatorsConfig[`validator${i + 1}_class-groups.key`] = fs.readFileSync(
       `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/class-groups.key`,
       "utf8"
@@ -63,7 +55,10 @@ async function createConfigMap(
       `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/key-pairs/protocol.key`,
       "utf8"
     );
-    validatorsConfig[`validator${i + 1}.yaml`] = serviceBody;
+    validatorsConfig[`validator${i + 1}.yaml`] = fs.readFileSync(
+      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/ika-dns-service.ika.svc.cluster.local/val${i + 1}.ika-dns-service.ika.svc.cluster.local/validator.yaml`,
+      "utf-8"
+    );
   }
 
   const configMap: V1ConfigMap = {
@@ -143,7 +138,7 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
         namespace: namespaceName
       },
       spec: {
-        hostname: `ika-val-${i + 1}`,
+        hostname: `val${i + 1}`,
         subdomain: "ika-dns-service",
         containers: [
           {
