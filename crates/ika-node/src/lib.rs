@@ -1316,7 +1316,7 @@ async fn health_check_handler(
     if let Some(threshold_seconds) = threshold_seconds {
         // Attempt to get the latest checkpoint
         let summary = match state
-            .get_checkpoint_store()
+            .get_dwallet_checkpoint_store()
             .get_highest_executed_checkpoint()
         {
             Ok(Some(summary)) => summary,

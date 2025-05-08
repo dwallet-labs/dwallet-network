@@ -60,7 +60,7 @@ use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
-    checkpoint_service: Arc<CheckpointService>,
+    dwallet_checkpoint_service: Arc<CheckpointService<DwalletCheckpointMessageKind>>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -69,14 +69,14 @@ pub struct ConsensusHandlerInitializer {
 impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        dwallet_checkpoint_service: Arc<CheckpointService<DwalletCheckpointMessageKind>>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
     ) -> Self {
         Self {
             state,
-            checkpoint_service,
+            dwallet_checkpoint_service,
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
@@ -86,11 +86,11 @@ impl ConsensusHandlerInitializer {
     #[cfg(test)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        dwallet_checkpoint_service: Arc<CheckpointService<DwalletCheckpointMessageKind>>,
     ) -> Self {
         Self {
             state: state.clone(),
-            checkpoint_service,
+            dwallet_checkpoint_service,
             epoch_store: state.epoch_store_for_testing().clone(),
             low_scoring_authorities: Arc::new(Default::default()),
             throughput_calculator: Arc::new(ConsensusThroughputCalculator::new(
@@ -100,13 +100,13 @@ impl ConsensusHandlerInitializer {
         }
     }
 
-    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<CheckpointService> {
+    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<CheckpointService<DwalletCheckpointMessageKind>> {
         let new_epoch_start_state = self.epoch_store.epoch_start_state();
         let consensus_committee = new_epoch_start_state.get_consensus_committee();
 
         ConsensusHandler::new(
             self.epoch_store.clone(),
-            self.checkpoint_service.clone(),
+            self.dwallet_checkpoint_service.clone(),
             self.low_scoring_authorities.clone(),
             consensus_committee,
             self.state.metrics.clone(),
@@ -496,7 +496,7 @@ pub(crate) struct MysticetiConsensusHandler {
 
 impl MysticetiConsensusHandler {
     pub(crate) fn new(
-        mut consensus_handler: ConsensusHandler<CheckpointService>,
+        mut consensus_handler: ConsensusHandler<CheckpointService<DwalletCheckpointMessageKind>>,
         mut commit_receiver: UnboundedReceiver<consensus_core::CommittedSubDag>,
         commit_consumer_monitor: Arc<CommitConsumerMonitor>,
     ) -> Self {

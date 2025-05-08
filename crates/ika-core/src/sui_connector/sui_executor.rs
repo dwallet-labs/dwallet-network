@@ -14,7 +14,7 @@ use ika_types::committee::EpochId;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
+use ika_types::message::{DwalletCheckpointMessageKind, Secp256K1NetworkKeyPublicOutputSlice};
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
@@ -50,7 +50,7 @@ pub enum StopReason {
 
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
-    checkpoint_store: Arc<CheckpointStore>,
+    dwallet_checkpoint_store: Arc<CheckpointStore<DwalletCheckpointMessageKind>>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
@@ -62,14 +62,14 @@ where
 {
     pub fn new(
         ika_system_package_id: ObjectID,
-        checkpoint_store: Arc<CheckpointStore>,
+        dwallet_checkpoint_store: Arc<CheckpointStore<DwalletCheckpointMessageKind>>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,
         metrics: Arc<SuiConnectorMetrics>,
     ) -> Self {
         Self {
             ika_system_package_id,
-            checkpoint_store,
+            dwallet_checkpoint_store,
             sui_notifier,
             sui_client,
             metrics,
@@ -262,7 +262,7 @@ where
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
                     .await;
                 if let Ok(Some(checkpoint_message)) = self
-                    .checkpoint_store
+                    .dwallet_checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
@@ -277,7 +277,7 @@ where
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message =
-                            bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
+                            bcs::to_bytes::<CheckpointMessage<DwalletCheckpointMessageKind>>(&checkpoint_message.into_message())
                                 .expect("Serializing checkpoint message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);

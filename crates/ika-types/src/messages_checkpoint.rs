@@ -34,7 +34,7 @@ pub type CheckpointTimestamp = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
-pub struct CheckpointMessage<T = DwalletCheckpointMessageKind>
+pub struct CheckpointMessage<T> // = DwalletCheckpointMessageKind>
 where
     T: serde::Serialize + serde::de::DeserializeOwned,
 {

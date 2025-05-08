@@ -409,7 +409,7 @@ pub struct AuthorityEpochTables {
         DBMap<(CheckpointSequenceNumber, u64), CheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage>,
+    builder_dwallet_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage<DwalletCheckpointMessageKind>>,
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
@@ -1821,10 +1821,10 @@ impl AuthorityPerEpochStore {
         Ok(self.tables()?.pending_checkpoints.get(index)?)
     }
 
-    pub fn process_pending_checkpoint(
+    pub fn process_pending_dwallet_checkpoint(
         &self,
         commit_height: CheckpointHeight,
-        checkpoint_messages: Vec<CheckpointMessage>,
+        checkpoint_messages: Vec<CheckpointMessage<DwalletCheckpointMessageKind>>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
         // All created checkpoints are inserted in builder_checkpoint_summary in a single batch.
@@ -1839,7 +1839,7 @@ impl AuthorityPerEpochStore {
                 position_in_commit,
             };
             batch.insert_batch(
-                &tables.builder_checkpoint_message_v1,
+                &tables.builder_dwallet_checkpoint_message_v1,
                 [(&sequence_number, summary)],
             )?;
         }
@@ -1857,37 +1857,37 @@ impl AuthorityPerEpochStore {
         Ok(batch.write()?)
     }
 
-    pub fn last_built_checkpoint_message_builder(
+    pub fn last_built_dwallet_checkpoint_message_builder(
         &self,
-    ) -> IkaResult<Option<BuilderCheckpointMessage>> {
+    ) -> IkaResult<Option<BuilderCheckpointMessage<DwalletCheckpointMessageKind>>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(_, s)| s))
     }
 
-    pub fn last_built_checkpoint_message(
+    pub fn last_built_dwallet_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(CheckpointSequenceNumber, CheckpointMessage)>> {
+    ) -> IkaResult<Option<(CheckpointSequenceNumber, CheckpointMessage<DwalletCheckpointMessageKind>)>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
-    pub fn get_built_checkpoint_message(
+    pub fn get_built_dwallet_checkpoint_message(
         &self,
         sequence: CheckpointSequenceNumber,
-    ) -> IkaResult<Option<CheckpointMessage>> {
+    ) -> IkaResult<Option<CheckpointMessage<DwalletCheckpointMessageKind>>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .get(&sequence)?
             .map(|s| s.checkpoint_message))
     }

@@ -705,7 +705,7 @@ pub struct AuthorityState {
     /// from previous epoch that are executed but did not make into checkpoint.
     execution_lock: RwLock<EpochId>,
 
-    checkpoint_store: Arc<CheckpointStore>,
+    dwallet_checkpoint_store: Arc<CheckpointStore<DwalletCheckpointMessageKind>>,
     committee_store: Arc<CommitteeStore>,
 
     pub metrics: Arc<AuthorityMetrics>,
@@ -784,7 +784,7 @@ impl AuthorityState {
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         committee_store: Arc<CommitteeStore>,
-        checkpoint_store: Arc<CheckpointStore>,
+        dwallet_checkpoint_store: Arc<CheckpointStore<DwalletCheckpointMessageKind>>,
         prometheus_registry: &Registry,
         config: NodeConfig,
     ) -> Arc<Self> {
@@ -799,7 +799,7 @@ impl AuthorityState {
             perpetual_tables,
             execution_lock: RwLock::new(epoch),
             epoch_store: ArcSwap::new(epoch_store.clone()),
-            checkpoint_store,
+            dwallet_checkpoint_store,
             committee_store,
             metrics,
             config,
@@ -925,8 +925,8 @@ impl AuthorityState {
         Committee::clone(self.epoch_store_for_testing().committee())
     }
 
-    pub fn get_checkpoint_store(&self) -> &Arc<CheckpointStore> {
-        &self.checkpoint_store
+    pub fn get_dwallet_checkpoint_store(&self) -> &Arc<CheckpointStore<DwalletCheckpointMessageKind>> {
+        &self.dwallet_checkpoint_store
     }
 
     /// Ordinarily, protocol upgrades occur when 2f + 1 + (f *

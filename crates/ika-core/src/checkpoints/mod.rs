@@ -30,11 +30,7 @@ use ika_types::digests::{CheckpointContentsDigest, CheckpointMessageDigest, Mess
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::{
-    CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber,
-    CheckpointSignatureMessage, CheckpointTimestamp, TrustedCheckpointMessage,
-    VerifiedCheckpointMessage,
-};
+use ika_types::messages_checkpoint::{CertifiedCheckpointMessage, CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp, TrustedCheckpointMessage, VerifiedCheckpointMessage};
 use ika_types::messages_checkpoint::{
     SignedCheckpointMessage, TrustedDWalletCheckpointMessage, VerifiedDWalletCheckpointMessage,
 };
@@ -110,15 +106,22 @@ impl PendingCheckpoint {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BuilderCheckpointMessage {
-    pub checkpoint_message: CheckpointMessage,
+#[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
+pub struct BuilderCheckpointMessage<T> // = DwalletCheckpointMessageKind>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
+    pub checkpoint_message: CheckpointMessage<T>,
     // Height at which this checkpoint message was built. None for genesis checkpoint
     pub checkpoint_height: Option<CheckpointHeight>,
     pub position_in_commit: usize,
 }
 
 #[derive(DBMapUtils)]
-pub struct CheckpointStore {
+// #[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
+pub struct CheckpointStore<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     // /// Maps checkpoint contents digest to checkpoint contents
     // pub(crate) checkpoint_content: DBMap<CheckpointContentsDigest, CheckpointContents>,
     /// Maps checkpoint checkpoint message digest to checkpoint sequence number
@@ -137,7 +140,7 @@ pub struct CheckpointStore {
     /// Store locally computed checkpoint summaries so that we can detect forks and log useful
     /// information. Can be pruned as soon as we verify that we are in agreement with the latest
     /// certified checkpoint.
-    pub(crate) locally_computed_checkpoints: DBMap<CheckpointSequenceNumber, CheckpointMessage>,
+    pub(crate) locally_computed_checkpoints: DBMap<CheckpointSequenceNumber, CheckpointMessage<T>>,
 
     /// A map from epoch ID to the sequence number of the last checkpoint in that epoch.
     epoch_last_checkpoint_map: DBMap<EpochId, CheckpointSequenceNumber>,
@@ -148,7 +151,9 @@ pub struct CheckpointStore {
         DBMap<CheckpointWatermark, (CheckpointSequenceNumber, CheckpointMessageDigest)>,
 }
 
-impl CheckpointStore {
+impl<T> CheckpointStore<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+ {
     pub fn new(path: &Path) -> Arc<Self> {
         Arc::new(Self::open_tables_read_write(
             path.to_path_buf(),
@@ -158,7 +163,7 @@ impl CheckpointStore {
         ))
     }
 
-    pub fn open_readonly(path: &Path) -> CheckpointStoreReadOnly {
+    pub fn open_readonly(path: &Path) -> CheckpointStoreReadOnly<T> {
         Self::get_read_only_handle(
             path.to_path_buf(),
             None,
@@ -234,7 +239,7 @@ impl CheckpointStore {
     pub fn get_locally_computed_checkpoint(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<CheckpointMessage>, TypedStoreError> {
+    ) -> Result<Option<CheckpointMessage<T>>, TypedStoreError> {
         self.locally_computed_checkpoints.get(&sequence_number)
     }
 
@@ -260,7 +265,7 @@ impl CheckpointStore {
             .map(|(_, v)| v.into())
     }
 
-    pub fn get_latest_locally_computed_checkpoint(&self) -> Option<CheckpointMessage> {
+    pub fn get_latest_locally_computed_checkpoint(&self) -> Option<CheckpointMessage<T>> {
         self.locally_computed_checkpoints
             .unbounded_iter()
             .skip_to_last()
@@ -531,48 +536,57 @@ pub enum CheckpointWatermark {
     HighestPruned,
 }
 
-pub struct CheckpointBuilder {
+pub struct CheckpointBuilder<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+ {
     state: Arc<AuthorityState>,
-    tables: Arc<CheckpointStore>,
+    tables: Arc<CheckpointStore<T>>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     notify: Arc<Notify>,
     notify_aggregator: Arc<Notify>,
-    output: Box<dyn CheckpointOutput>,
+    output: Box<dyn CheckpointOutput<T>>,
     metrics: Arc<CheckpointMetrics>,
     max_messages_per_checkpoint: usize,
     max_checkpoint_size_bytes: usize,
     previous_epoch_last_checkpoint_sequence_number: u64,
 }
 
-pub struct CheckpointAggregator {
-    tables: Arc<CheckpointStore>,
+pub struct CheckpointAggregator<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
+    tables: Arc<CheckpointStore<T>>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     notify: Arc<Notify>,
-    current: Option<CheckpointSignatureAggregator>,
+    current: Option<CheckpointSignatureAggregator<T>>,
     output: Box<dyn CertifiedCheckpointMessageOutput>,
     state: Arc<AuthorityState>,
     metrics: Arc<CheckpointMetrics>,
 }
 
 // This holds information to aggregate signatures for one checkpoint
-pub struct CheckpointSignatureAggregator {
+pub struct CheckpointSignatureAggregator<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+ {
     next_index: u64,
-    checkpoint_message: CheckpointMessage,
+    checkpoint_message: CheckpointMessage<T>,
     digest: CheckpointMessageDigest,
     /// Aggregates voting stake for each signed checkpoint proposal by authority
-    signatures_by_digest: MultiStakeAggregator<CheckpointMessageDigest, CheckpointMessage, true>,
-    tables: Arc<CheckpointStore>,
+    signatures_by_digest: MultiStakeAggregator<CheckpointMessageDigest, CheckpointMessage<T>, true>,
+    tables: Arc<CheckpointStore<T>>,
     state: Arc<AuthorityState>,
     metrics: Arc<CheckpointMetrics>,
 }
 
-impl CheckpointBuilder {
+impl<T> CheckpointBuilder<T>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     fn new(
         state: Arc<AuthorityState>,
-        tables: Arc<CheckpointStore>,
+        tables: Arc<CheckpointStore<T>>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
-        output: Box<dyn CheckpointOutput>,
+        output: Box<dyn CheckpointOutput<T>>,
         notify_aggregator: Arc<Notify>,
         metrics: Arc<CheckpointMetrics>,
         max_messages_per_checkpoint: usize,
@@ -608,7 +622,7 @@ impl CheckpointBuilder {
         // Collect info about the most recently built checkpoint.
         let checkpoint_message = self
             .epoch_store
-            .last_built_checkpoint_message_builder()
+            .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
         let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
         let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
@@ -820,7 +834,7 @@ impl CheckpointBuilder {
     async fn write_checkpoints(
         &self,
         height: CheckpointHeight,
-        new_checkpoints: Vec<CheckpointMessage>,
+        new_checkpoints: Vec<CheckpointMessage<T>>,
     ) -> IkaResult {
         let _scope = monitored_scope("CheckpointBuilder::write_checkpoints");
         //let mut batch = self.tables.checkpoint_content.batch();
@@ -893,7 +907,7 @@ impl CheckpointBuilder {
 
         self.notify_aggregator.notify_one();
         self.epoch_store
-            .process_pending_checkpoint(height, new_checkpoints)?;
+            .process_pending_dwallet_checkpoint(height, new_checkpoints)?;
         Ok(())
     }
 
@@ -946,11 +960,11 @@ impl CheckpointBuilder {
         &self,
         all_messages: Vec<DwalletCheckpointMessageKind>,
         details: &PendingCheckpointInfo,
-    ) -> anyhow::Result<Vec<CheckpointMessage>> {
+    ) -> anyhow::Result<Vec<CheckpointMessage<T>>> {
         let _scope = monitored_scope("CheckpointBuilder::create_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
-        let mut last_checkpoint = self.epoch_store.last_built_checkpoint_message()?;
+        let mut last_checkpoint = self.epoch_store.last_built_dwallet_checkpoint_message()?;
         // if last_checkpoint.is_none() {
         //     let epoch = self.epoch_store.epoch();
         //     if epoch > 0 {
@@ -1170,9 +1184,11 @@ impl CheckpointBuilder {
     }
 }
 
-impl CheckpointAggregator {
+impl<T> CheckpointAggregator<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     fn new(
-        tables: Arc<CheckpointStore>,
+        tables: Arc<CheckpointStore<T>>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
         output: Box<dyn CertifiedCheckpointMessageOutput>,
@@ -1218,7 +1234,7 @@ impl CheckpointAggregator {
         Ok(())
     }
 
-    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedDWalletCheckpointMessage>> {
+    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedCheckpointMessage<T>>> {
         let _scope = monitored_scope("CheckpointAggregator");
         let mut result = vec![];
         'outer: loop {
@@ -1237,7 +1253,7 @@ impl CheckpointAggregator {
             } else {
                 let Some(checkpoint_message) = self
                     .epoch_store
-                    .get_built_checkpoint_message(next_to_certify)?
+                    .get_built_dwallet_checkpoint_message(next_to_certify)?
                 else {
                     return Ok(result);
                 };
@@ -1324,7 +1340,9 @@ impl CheckpointAggregator {
     }
 }
 
-impl CheckpointSignatureAggregator {
+impl<T> CheckpointSignatureAggregator<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     #[allow(clippy::result_unit_err)]
     pub fn try_aggregate(
         &mut self,
@@ -1617,20 +1635,23 @@ pub trait CheckpointServiceNotify {
 }
 
 /// This is a service used to communicate with other pieces of ika(for ex. authority)
-pub struct CheckpointService {
-    tables: Arc<CheckpointStore>,
+pub struct CheckpointService<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
+    tables: Arc<CheckpointStore<T>>,
     notify_builder: Arc<Notify>,
     notify_aggregator: Arc<Notify>,
     last_signature_index: Mutex<u64>,
     metrics: Arc<CheckpointMetrics>,
 }
 
-impl CheckpointService {
+impl<T> CheckpointService<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned, {
     pub fn spawn(
         state: Arc<AuthorityState>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<CheckpointStore<T>>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        checkpoint_output: Box<dyn CheckpointOutput>,
+        checkpoint_output: Box<dyn CheckpointOutput<T>>,
         certified_checkpoint_output: Box<dyn CertifiedCheckpointMessageOutput>,
         metrics: Arc<CheckpointMetrics>,
         max_messages_per_checkpoint: usize,
@@ -1703,7 +1724,9 @@ impl CheckpointService {
     }
 }
 
-impl CheckpointServiceNotify for CheckpointService {
+impl<T> CheckpointServiceNotify for CheckpointService<T> where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     fn notify_checkpoint_signature(
         &self,
         epoch_store: &AuthorityPerEpochStore,

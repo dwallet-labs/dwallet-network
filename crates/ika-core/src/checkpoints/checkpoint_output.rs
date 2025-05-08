@@ -18,12 +18,14 @@ use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
 #[async_trait]
-pub trait CheckpointOutput: Sync + Send + 'static {
+pub trait CheckpointOutput<T>: Sync + Send + 'static where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     async fn checkpoint_created(
         &self,
-        summary: &CheckpointMessage,
+        summary: &CheckpointMessage<T>,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        checkpoint_store: &Arc<CheckpointStore>,
+        checkpoint_store: &Arc<CheckpointStore<T>>,
     ) -> IkaResult;
 }
 
@@ -44,8 +46,10 @@ pub struct SubmitCheckpointToConsensus<T> {
 
 pub struct LogCheckpointOutput;
 
-impl LogCheckpointOutput {
-    pub fn boxed() -> Box<dyn CheckpointOutput> {
+impl<T> LogCheckpointOutput where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
+    pub fn boxed() -> Box<dyn CheckpointOutput<T>> {
         Box::new(Self)
     }
 
@@ -55,13 +59,13 @@ impl LogCheckpointOutput {
 }
 
 #[async_trait]
-impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
+impl<T: SubmitToConsensus, C: serde::Serialize + serde::de::DeserializeOwned> CheckpointOutput<C> for SubmitCheckpointToConsensus<T> {
     #[instrument(level = "debug", skip_all)]
     async fn checkpoint_created(
         &self,
-        checkpoint_message: &CheckpointMessage,
+        checkpoint_message: &CheckpointMessage<C>,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        checkpoint_store: &Arc<CheckpointStore>,
+        checkpoint_store: &Arc<CheckpointStore<C>>,
     ) -> IkaResult {
         LogCheckpointOutput
             .checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
@@ -117,12 +121,14 @@ impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
 }
 
 #[async_trait]
-impl CheckpointOutput for LogCheckpointOutput {
+impl<T> CheckpointOutput<T> for LogCheckpointOutput where
+    T: serde::Serialize + serde::de::DeserializeOwned,
+{
     async fn checkpoint_created(
         &self,
-        checkpoint_message: &CheckpointMessage,
+        checkpoint_message: &CheckpointMessage<T>,
         _epoch_store: &Arc<AuthorityPerEpochStore>,
-        _checkpoint_store: &Arc<CheckpointStore>,
+        _checkpoint_store: &Arc<CheckpointStore<T>>,
     ) -> IkaResult {
         trace!(
             "Including following transactions in checkpoint {}: {:#?}",
