@@ -59,20 +59,6 @@ export KEY_PAIRS_DIR="key-pairs"
 ROOT_ADDR=""
 # The file containing the validators (separator: newline).
 export VALIDATORS_FILE=""
-# Validator Docker image name.
-export IMAGE_NAME="ika:devnet-v0.0.6-arm64"
-# SUI fullnode URL.
-export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
-# Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
-# If it's not against localhost, set it to the remote sui RPC.
-#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-# SUI Faucet URL.
-export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-#export SUI_FAUCET_URL="http://localhost:9123/gas"
-# Default Ika epoch duration time.
-export EPOCH_DURATION_TIME_MS=86400000
 #export EPOCH_DURATION_TIME_MS=2400000
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
@@ -92,7 +78,6 @@ show_help() {
     echo "  --key-pairs-dir <directory>         Set the directory for key pairs. Default: key-pairs"
     echo "  --root-addr <address>               Set the root address. Default: 0x3e..."
     echo "  --validators-file <file>            Specify a file with validators."
-    echo "  --image-name <image>                Specify the Docker image name. Default: $IMAGE_NAME"
     echo "  --sui-faucet-url <url>              Set the SUI faucet URL. Default: $SUI_FAUCET_URL"
     echo "  --epoch-duration-time <time>        Set the epoch duration time. Default: $EPOCH_DURATION_TIME_MS"
     echo "  -h, --help                        Display this help message and exit."
@@ -111,7 +96,6 @@ while [[ "$#" -gt 0 ]]; do
         --key-pairs-dir) KEY_PAIRS_DIR="$2"; shift ;;
         --root-addr) ROOT_ADDR="$2"; shift ;;
         --validators-file) VALIDATORS_FILE="$2"; shift ;;
-        --image-name) IMAGE_NAME="$2"; shift ;;
         --sui-faucet-url) SUI_FAUCET_URL="$2"; shift ;;
         --epoch-duration-time) EPOCH_DURATION_TIME_MS="$2"; shift ;;
         -h|--help) show_help; exit 0 ;;
@@ -594,22 +578,4 @@ yq e ".\"p2p-config\".\"external-address\" = \"/dns/fullnode.$SUBDOMAIN/udp/8084
 
 # Replace SEED_PEERS with actual array from seed_peers.yaml
 yq e '."p2p-config"."seed-peers" = load("seed_peers.yaml")' -i "$FULLNODE_YAML_PATH"
-
-############################
-# Prepare Docker Compose file.
-############################
-DOCKER_COMPOSE="docker-compose.yaml"
-DOCKER_COMPOSE_PATH="$DOCKER_COMPOSE"
-cp ../docker-compose.template.yaml "$DOCKER_COMPOSE_PATH"
-
-# Replace DOMAIN_NAME_HERE with the provided domain name.
-yq e -i ".services.*.container_name |= sub(\"DOMAIN_NAME_HERE\"; \"$SUBDOMAIN\")" "$DOCKER_COMPOSE_PATH"
-
-# Replace DOMAIN_NAME_HERE with the provided domain name in volume paths.
-yq e -i "(.services.*.volumes[] | select(test(\".*DOMAIN_NAME_HERE.*\"))) |= sub(\"DOMAIN_NAME_HERE\"; \"$SUBDOMAIN\")" "$DOCKER_COMPOSE_PATH"
-
-# Replace IMAGE_NAME with the provided image name.
-yq e -i ".services.*.image = \"$IMAGE_NAME\"" "$DOCKER_COMPOSE_PATH"
-
-echo "$DOCKER_COMPOSE file has been created successfully."
 
