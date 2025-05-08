@@ -93,16 +93,17 @@ async function createNetworkServices(
         name: "ika-dns-service"
       },
       spec: {
+        clusterIP: "None",
         ports: [
           {
-            name: "tx-interface",
+            name: "tx-interface", 
             protocol: "TCP",
             port: 8080,
             targetPort: 8080
           },
           {
             name: "p2p-sync",
-            protocol: "UDP",
+            protocol: "UDP", 
             port: 8084,
             targetPort: 8084
           },
@@ -238,6 +239,8 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
       namespace: namespaceName
     },
     spec: {
+      hostname: 'fullnode',
+      subdomain: "ika-dns-service",
       containers: [
         {
           env: [
