@@ -15,7 +15,7 @@ use ika_types::execution_status::{
     TypeArgumentError,
 };
 use ika_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
-use ika_types::message::{MessageKind, SenderSignedData};
+use ika_types::message::{DwalletCheckpointMessageKind, SenderSignedData};
 use ika_types::messages_checkpoint::CertifiedDWalletCheckpointMessage;
 use ika_types::messages_grpc::ObjectInfoRequestKind;
 use ika_types::move_package::TypeOrigin;
@@ -234,7 +234,7 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_type::<CheckpointMessage>(&samples).unwrap();
 
     let sender_data = SenderSignedData::new(
-        MessageKind::new_with_gas_coins(
+        DwalletCheckpointMessageKind::new_with_gas_coins(
             TransactionKind::EndOfEpochTransaction(Vec::new()),
             IkaAddress::ZERO,
             Vec::new(),

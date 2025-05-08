@@ -77,7 +77,7 @@ pub struct Secp256K1NetworkKeyPublicOutputSlice {
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_secp256k1_inner.move`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
-pub enum MessageKind {
+pub enum DwalletCheckpointMessageKind {
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     DwalletEncryptedUserShare(EncryptedUserShareOutput),
@@ -88,19 +88,29 @@ pub enum MessageKind {
     DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
 }
 
-impl MessageKind {
+impl DwalletCheckpointMessageKind {
     pub fn name(&self) -> &'static str {
         match self {
-            MessageKind::DwalletMPCNetworkDKGOutput(_) => "DwalletMPCNetworkDKGOutput",
-            MessageKind::DwalletDKGFirstRoundOutput(_) => "DwalletDKGFirstRoundOutput",
-            MessageKind::DwalletDKGSecondRoundOutput(_) => "DwalletDKGSecondRoundOutput",
-            MessageKind::DwalletPresign(_) => "DwalletPresign",
-            MessageKind::DwalletSign(_) => "DwalletSign",
-            MessageKind::DwalletEncryptedUserShare(_) => "DwalletEncryptedUserShare",
-            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+            DwalletCheckpointMessageKind::DwalletMPCNetworkDKGOutput(_) => {
+                "DwalletMPCNetworkDKGOutput"
+            }
+            DwalletCheckpointMessageKind::DwalletDKGFirstRoundOutput(_) => {
+                "DwalletDKGFirstRoundOutput"
+            }
+            DwalletCheckpointMessageKind::DwalletDKGSecondRoundOutput(_) => {
+                "DwalletDKGSecondRoundOutput"
+            }
+            DwalletCheckpointMessageKind::DwalletPresign(_) => "DwalletPresign",
+            DwalletCheckpointMessageKind::DwalletSign(_) => "DwalletSign",
+            DwalletCheckpointMessageKind::DwalletEncryptedUserShare(_) => {
+                "DwalletEncryptedUserShare"
+            }
+            DwalletCheckpointMessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 "DwalletPartialSignatureVerificationOutput"
             }
-            MessageKind::DwalletMPCNetworkReshareOutput(_) => "DwalletMPCNetworkReshareOutput",
+            DwalletCheckpointMessageKind::DwalletMPCNetworkReshareOutput(_) => {
+                "DwalletMPCNetworkReshareOutput"
+            }
         }
     }
 
@@ -109,39 +119,39 @@ impl MessageKind {
     }
 }
 
-impl Display for MessageKind {
+impl Display for DwalletCheckpointMessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
+            DwalletCheckpointMessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
                     writer,
                     "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
                     output
                 )?;
             }
-            MessageKind::DwalletDKGFirstRoundOutput(_) => {
+            DwalletCheckpointMessageKind::DwalletDKGFirstRoundOutput(_) => {
                 writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
             }
-            MessageKind::DwalletDKGSecondRoundOutput(_) => {
+            DwalletCheckpointMessageKind::DwalletDKGSecondRoundOutput(_) => {
                 writeln!(writer, "MessageKind : DwalletDKGSecondRoundOutput")?;
             }
-            MessageKind::DwalletPresign(_) => {
+            DwalletCheckpointMessageKind::DwalletPresign(_) => {
                 writeln!(writer, "MessageKind : DwalletPresign")?;
             }
-            MessageKind::DwalletSign(_) => {
+            DwalletCheckpointMessageKind::DwalletSign(_) => {
                 writeln!(writer, "MessageKind : DwalletSign")?;
             }
-            MessageKind::DwalletEncryptedUserShare(_) => {
+            DwalletCheckpointMessageKind::DwalletEncryptedUserShare(_) => {
                 writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
             }
-            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+            DwalletCheckpointMessageKind::DwalletPartialSignatureVerificationOutput(_) => {
                 writeln!(
                     writer,
                     "MessageKind : DwalletPartialSignatureVerificationOutput"
                 )?;
             }
-            MessageKind::DwalletMPCNetworkReshareOutput(_) => {
+            DwalletCheckpointMessageKind::DwalletMPCNetworkReshareOutput(_) => {
                 writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
             }
         }

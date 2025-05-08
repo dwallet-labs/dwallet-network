@@ -7,7 +7,7 @@ use bytes::buf::Reader;
 use bytes::{Buf, Bytes};
 use futures::{StreamExt, TryStreamExt};
 use ika_config::node::ArchiveReaderConfig;
-use ika_types::message::MessageKind;
+use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::messages_checkpoint::{
     CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
 };
@@ -517,14 +517,14 @@ impl ArchiveReader {
     fn get_or_insert_verified_checkpoint<S>(
         store: &S,
         certified_checkpoint: CertifiedDWalletCheckpointMessage,
-    ) -> Result<VerifiedCheckpointMessage<MessageKind>>
+    ) -> Result<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>
     where
         S: WriteStore + Clone,
     {
         store
             .get_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedCheckpointMessage<MessageKind>, anyhow::Error>)
+            .map(Ok::<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>, anyhow::Error>)
             .unwrap_or_else(|| {
                 let verified_checkpoint =
                     VerifiedCheckpointMessage::new_unchecked(certified_checkpoint);
@@ -536,7 +536,9 @@ impl ArchiveReader {
                 store
                     .update_highest_verified_checkpoint(&verified_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedCheckpointMessage<MessageKind>, anyhow::Error>(verified_checkpoint)
+                Ok::<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>, anyhow::Error>(
+                    verified_checkpoint,
+                )
             })
             .map_err(|e| anyhow!("Failed to get verified checkpoint: {:?}", e))
     }

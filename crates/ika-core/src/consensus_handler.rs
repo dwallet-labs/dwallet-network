@@ -14,7 +14,7 @@ use consensus_core::{CommitConsumerMonitor, TransactionIndex, VerifiedBlock};
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
-use ika_types::message::MessageKind;
+use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::messages_consensus::{
     AuthorityIndex, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
 };
@@ -548,7 +548,7 @@ pub struct SequencedConsensusTransaction {
 #[derive(Debug, Clone)]
 pub enum SequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(MessageKind),
+    System(DwalletCheckpointMessageKind),
 }
 
 impl Serialize for SequencedConsensusTransactionKind {
@@ -572,7 +572,7 @@ impl<'de> Deserialize<'de> for SequencedConsensusTransactionKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum SerializableSequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(MessageKind),
+    System(DwalletCheckpointMessageKind),
 }
 
 impl From<&SequencedConsensusTransactionKind> for SerializableSequencedConsensusTransactionKind {

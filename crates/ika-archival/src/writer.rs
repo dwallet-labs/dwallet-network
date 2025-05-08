@@ -10,7 +10,7 @@ use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::message::MessageKind;
+use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::messages_checkpoint::{CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber};
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;

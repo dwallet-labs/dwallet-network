@@ -807,7 +807,7 @@ mod bcs_signable {
     {
     }
 
-    impl BcsSignable for crate::message::MessageKind {}
+    impl BcsSignable for crate::message::DwalletCheckpointMessageKind {}
 
     #[cfg(test)]
     impl BcsSignable for super::bcs_signable_test::Foo {}

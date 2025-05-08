@@ -6,7 +6,7 @@ use crate::epoch::committee_store::CommitteeStore;
 use ika_types::committee::Committee;
 use ika_types::committee::EpochId;
 use ika_types::error::IkaError;
-use ika_types::message::MessageKind;
+use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::messages_checkpoint::CheckpointContentsDigest;
 use ika_types::messages_checkpoint::CheckpointMessageDigest;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
@@ -42,7 +42,7 @@ impl RocksDbStore {
 
     pub fn get_last_executed_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, IkaError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, IkaError> {
         Ok(self.checkpoint_store.get_highest_executed_checkpoint()?)
     }
 }
@@ -51,7 +51,7 @@ impl ReadStore for RocksDbStore {
     fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, StorageError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, StorageError> {
         self.checkpoint_store
             .get_checkpoint_by_digest(digest)
             .map_err(Into::into)
@@ -60,7 +60,7 @@ impl ReadStore for RocksDbStore {
     fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, StorageError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, StorageError> {
         self.checkpoint_store
             .get_checkpoint_by_sequence_number(sequence_number)
             .map_err(Into::into)
@@ -68,7 +68,7 @@ impl ReadStore for RocksDbStore {
 
     fn get_highest_verified_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, StorageError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, StorageError> {
         self.checkpoint_store
             .get_highest_verified_checkpoint()
             .map_err(Into::into)
@@ -76,7 +76,7 @@ impl ReadStore for RocksDbStore {
 
     fn get_highest_synced_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, StorageError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, StorageError> {
         self.checkpoint_store
             .get_highest_synced_checkpoint()
             .map_err(Into::into)
@@ -104,7 +104,8 @@ impl ReadStore for RocksDbStore {
 
     fn get_latest_checkpoint(
         &self,
-    ) -> ika_types::storage::error::Result<VerifiedCheckpointMessage<MessageKind>> {
+    ) -> ika_types::storage::error::Result<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>
+    {
         self.checkpoint_store
             .get_highest_executed_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
@@ -117,7 +118,7 @@ impl ReadStore for RocksDbStore {
 impl WriteStore for RocksDbStore {
     fn insert_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), ika_types::storage::error::Error> {
         self.checkpoint_store
             .insert_verified_checkpoint(checkpoint)
@@ -126,7 +127,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_synced_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), ika_types::storage::error::Error> {
         let mut locked = self.highest_synced_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {
@@ -141,7 +142,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), ika_types::storage::error::Error> {
         let mut locked = self.highest_verified_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {

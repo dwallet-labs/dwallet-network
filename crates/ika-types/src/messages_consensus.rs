@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::AuthorityName;
-use crate::message::MessageKind;
+use crate::message::DwalletCheckpointMessageKind;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
@@ -114,7 +114,7 @@ impl Debug for AuthorityCapabilitiesV1 {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
-    CheckpointSignature(Box<CheckpointSignatureMessage<MessageKind>>),
+    CheckpointSignature(Box<CheckpointSignatureMessage<DwalletCheckpointMessageKind>>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
@@ -173,7 +173,9 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_checkpoint_signature_message(data: CheckpointSignatureMessage<MessageKind>) -> Self {
+    pub fn new_checkpoint_signature_message(
+        data: CheckpointSignatureMessage<DwalletCheckpointMessageKind>,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         data.checkpoint_message
             .auth_sig()

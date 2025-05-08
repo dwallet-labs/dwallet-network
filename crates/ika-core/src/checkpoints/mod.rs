@@ -28,7 +28,7 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::{CheckpointContentsDigest, CheckpointMessageDigest, MessageDigest};
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::message::MessageKind;
+use ika_types::message::DwalletCheckpointMessageKind;
 use ika_types::message_envelope::Message;
 use ika_types::messages_checkpoint::SignedCheckpointMessage;
 use ika_types::messages_checkpoint::{
@@ -77,7 +77,7 @@ pub enum PendingCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingCheckpointV1 {
-    pub messages: Vec<MessageKind>,
+    pub messages: Vec<DwalletCheckpointMessageKind>,
     pub details: PendingCheckpointInfo,
 }
 
@@ -94,7 +94,7 @@ impl PendingCheckpoint {
         }
     }
 
-    pub fn messages(&self) -> &Vec<MessageKind> {
+    pub fn messages(&self) -> &Vec<DwalletCheckpointMessageKind> {
         &self.as_v1().messages
     }
 
@@ -129,7 +129,7 @@ pub struct CheckpointStore {
     // full_checkpoint_content: DBMap<CheckpointSequenceNumber, FullCheckpointContents>,
     /// Stores certified checkpoints
     pub(crate) certified_checkpoints:
-        DBMap<CheckpointSequenceNumber, TrustedCheckpointMessage<MessageKind>>,
+        DBMap<CheckpointSequenceNumber, TrustedCheckpointMessage<DwalletCheckpointMessageKind>>,
     // /// Map from checkpoint digest to certified checkpoint
     // pub(crate) checkpoint_by_digest: DBMap<CheckpointMessageDigest, TrustedCheckpointMessage>,
     /// Store locally computed checkpoint summaries so that we can detect forks and log useful
@@ -209,7 +209,8 @@ impl CheckpointStore {
     pub fn get_checkpoint_by_digest(
         &self,
         digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, TypedStoreError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, TypedStoreError>
+    {
         let sequence = self.checkpoint_message_sequence_by_digest.get(digest)?;
         if let Some(sequence) = sequence {
             self.certified_checkpoints
@@ -223,7 +224,8 @@ impl CheckpointStore {
     pub fn get_checkpoint_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, TypedStoreError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, TypedStoreError>
+    {
         self.certified_checkpoints
             .get(&sequence_number)
             .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
@@ -252,7 +254,7 @@ impl CheckpointStore {
 
     pub fn get_latest_certified_checkpoint(
         &self,
-    ) -> Option<VerifiedCheckpointMessage<MessageKind>> {
+    ) -> Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>> {
         self.certified_checkpoints
             .unbounded_iter()
             .skip_to_last()
@@ -271,7 +273,8 @@ impl CheckpointStore {
     pub fn multi_get_checkpoint_by_sequence_number(
         &self,
         sequence_numbers: &[CheckpointSequenceNumber],
-    ) -> Result<Vec<Option<VerifiedCheckpointMessage<MessageKind>>>, TypedStoreError> {
+    ) -> Result<Vec<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>>, TypedStoreError>
+    {
         let checkpoints = self
             .certified_checkpoints
             .multi_get(sequence_numbers)?
@@ -291,7 +294,8 @@ impl CheckpointStore {
 
     pub fn get_highest_verified_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, TypedStoreError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, TypedStoreError>
+    {
         let highest_verified = if let Some(highest_verified) =
             self.watermarks.get(&CheckpointWatermark::HighestVerified)?
         {
@@ -304,7 +308,8 @@ impl CheckpointStore {
 
     pub fn get_highest_synced_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, TypedStoreError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, TypedStoreError>
+    {
         let highest_synced = if let Some(highest_synced) =
             self.watermarks.get(&CheckpointWatermark::HighestSynced)?
         {
@@ -329,7 +334,8 @@ impl CheckpointStore {
 
     pub fn get_highest_executed_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage<MessageKind>>, TypedStoreError> {
+    ) -> Result<Option<VerifiedCheckpointMessage<DwalletCheckpointMessageKind>>, TypedStoreError>
+    {
         let highest_executed = if let Some(highest_executed) =
             self.watermarks.get(&CheckpointWatermark::HighestExecuted)?
         {
@@ -432,7 +438,7 @@ impl CheckpointStore {
     // state-sync only things.
     pub fn insert_certified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), TypedStoreError> {
         debug!(
             checkpoint_seq = checkpoint.sequence_number(),
@@ -464,7 +470,7 @@ impl CheckpointStore {
     #[instrument(level = "debug", skip_all)]
     pub fn insert_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), TypedStoreError> {
         self.insert_certified_checkpoint(checkpoint)?;
         self.update_highest_verified_checkpoint(checkpoint)
@@ -472,7 +478,7 @@ impl CheckpointStore {
 
     pub fn update_highest_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), TypedStoreError> {
         if Some(*checkpoint.sequence_number())
             > self
@@ -494,7 +500,7 @@ impl CheckpointStore {
 
     pub fn update_highest_synced_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage<MessageKind>,
+        checkpoint: &VerifiedCheckpointMessage<DwalletCheckpointMessageKind>,
     ) -> Result<(), TypedStoreError> {
         debug!(
             checkpoint_seq = checkpoint.sequence_number(),
@@ -900,8 +906,8 @@ impl CheckpointBuilder {
     #[allow(clippy::type_complexity)]
     fn split_checkpoint_chunks(
         &self,
-        messages: Vec<MessageKind>,
-    ) -> anyhow::Result<Vec<Vec<MessageKind>>> {
+        messages: Vec<DwalletCheckpointMessageKind>,
+    ) -> anyhow::Result<Vec<Vec<DwalletCheckpointMessageKind>>> {
         let _guard = monitored_scope("CheckpointBuilder::split_checkpoint_chunks");
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
@@ -944,7 +950,7 @@ impl CheckpointBuilder {
     #[instrument(level = "debug", skip_all)]
     async fn create_checkpoints(
         &self,
-        all_messages: Vec<MessageKind>,
+        all_messages: Vec<DwalletCheckpointMessageKind>,
         details: &PendingCheckpointInfo,
     ) -> anyhow::Result<Vec<CheckpointMessage>> {
         let _scope = monitored_scope("CheckpointBuilder::create_checkpoints");

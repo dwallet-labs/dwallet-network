@@ -25,7 +25,7 @@ use tracing::warn;
 
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointMessageDigest;
-use crate::message::MessageKind;
+use crate::message::DwalletCheckpointMessageKind;
 
 pub type CheckpointSequenceNumber = u64;
 pub type CheckpointTimestamp = u64;
@@ -34,7 +34,7 @@ pub type CheckpointTimestamp = u64;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
-pub struct CheckpointMessage<T = MessageKind>
+pub struct CheckpointMessage<T = DwalletCheckpointMessageKind>
 where
     T: serde::Serialize + serde::de::DeserializeOwned,
 {
@@ -127,7 +127,7 @@ impl<T: serde::Serialize + serde::de::DeserializeOwned> Display for CheckpointMe
 pub type CheckpointMessageEnvelope<T: serde::Serialize + serde::de::DeserializeOwned, S> =
     Envelope<CheckpointMessage<T>, S>;
 pub type CertifiedDWalletCheckpointMessage =
-    CheckpointMessageEnvelope<MessageKind, AuthorityStrongQuorumSignInfo>;
+    CheckpointMessageEnvelope<DwalletCheckpointMessageKind, AuthorityStrongQuorumSignInfo>;
 pub type CertifiedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
     CheckpointMessageEnvelope<T, AuthorityStrongQuorumSignInfo>;
 pub type SignedCheckpointMessage<T: serde::Serialize + serde::de::DeserializeOwned> =
@@ -194,7 +194,7 @@ impl<T: serde::Serialize + serde::de::DeserializeOwned> VerifiedCheckpointMessag
 /// This is a message validators publish to consensus in order to sign checkpoint
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
-pub struct CheckpointSignatureMessage<T = MessageKind>
+pub struct CheckpointSignatureMessage<T = DwalletCheckpointMessageKind>
 where
     T: serde::Serialize + serde::de::DeserializeOwned,
 {
