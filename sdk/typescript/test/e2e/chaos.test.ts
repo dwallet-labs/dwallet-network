@@ -45,7 +45,7 @@ async function createConfigMap(
     );
     const compiled = Handlebars.compile(validator_config_template);
     const serviceBody = loadYaml(
-      compiled({ external_address: `<hostname>.<subdomain>.<namespace>.svc.cluster.local` })
+      compiled({ external_address: `ika-val-${i + 1}.ika-dns-service.${namespaceName}.svc.cluster.local` })
     );
     validatorsConfig[`validator${i + 1}_class-groups.key`] = fs.readFileSync(
       `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/class-groups.key`,
@@ -63,10 +63,7 @@ async function createConfigMap(
       `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/key-pairs/protocol.key`,
       "utf8"
     );
-    validatorsConfig[`validator${i + 1}.yaml`] = fs.readFileSync(
-      `/Users/itaylevy/code/dwallet-network/sdk/typescript/test/e2e/beta50.devnet.ika-network.net/val${i + 1}.beta50.devnet.ika-network.net/validator.yaml`,
-      "utf8"
-    );
+    validatorsConfig[`validator${i + 1}.yaml`] = serviceBody;
   }
 
   const configMap: V1ConfigMap = {
