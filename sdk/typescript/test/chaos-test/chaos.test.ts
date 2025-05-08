@@ -3,12 +3,9 @@ import path from 'path';
 import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
 import { describe, it } from 'vitest';
 
+import { CONFIG_MAP_NAME, NAMESPACE_NAME, NETWORK_SERVICE_NAME } from './globals';
 import { createNetworkServices } from './network-service';
 import { createPods } from './pods';
-
-const CONFIG_MAP_NAME = 'ika-chaos-test-config';
-const NETWORK_SERVICE_NAME = 'ika-dns-service';
-const NAMESPACE_NAME = 'ika';
 
 const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -84,10 +81,8 @@ describe('run chain chaos testing', () => {
 	it('create and deploy the config map', async () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
-		console.log(`Creating namespace: ${NAMESPACE_NAME}`);
 		await createNamespace(kc, NAMESPACE_NAME);
-		const configMap = await createConfigMap(kc, NAMESPACE_NAME, 4);
-		console.log(`ConfigMap created: ${configMap}`);
+		await createConfigMap(kc, NAMESPACE_NAME, 4);
 		await createPods(kc, NAMESPACE_NAME, 4);
 		await createNetworkServices(kc, NAMESPACE_NAME);
 	});

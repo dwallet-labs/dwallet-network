@@ -1,4 +1,5 @@
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
+import { NETWORK_SERVICE_NAME } from './globals';
 
 export async function createNetworkServices(kc: KubeConfig, namespaceName: string) {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -6,7 +7,7 @@ export async function createNetworkServices(kc: KubeConfig, namespaceName: strin
 		namespace: namespaceName,
 		body: {
 			metadata: {
-				name: 'ika-dns-service',
+				name: NETWORK_SERVICE_NAME,
 			},
 			spec: {
 				clusterIP: 'None',

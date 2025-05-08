@@ -1,5 +1,6 @@
 import type { KubeConfig, V1Pod } from '@kubernetes/client-node';
 import { CoreV1Api } from '@kubernetes/client-node';
+import { NETWORK_SERVICE_NAME } from './globals';
 
 export async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -14,7 +15,7 @@ export async function createPods(kc: KubeConfig, namespaceName: string, numOfVal
 			},
 			spec: {
 				hostname: `val${i + 1}`,
-				subdomain: 'ika-dns-service',
+				subdomain: NETWORK_SERVICE_NAME,
 				containers: [
 					{
 						env: [
@@ -47,7 +48,7 @@ export async function createPods(kc: KubeConfig, namespaceName: string, numOfVal
 		},
 		spec: {
 			hostname: 'fullnode',
-			subdomain: 'ika-dns-service',
+			subdomain: NETWORK_SERVICE_NAME,
 			containers: [
 				{
 					env: [
