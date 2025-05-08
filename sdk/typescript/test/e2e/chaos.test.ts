@@ -120,7 +120,9 @@ async function createNetworkServices(
             targetPort: 1337
           }
         ],
-        selector: {},
+        selector: {
+          "app": "validator"
+        },
         sessionAffinity: "None",
         ipFamilies: ["IPv4"],
         ipFamilyPolicy: "SingleStack",
@@ -136,7 +138,10 @@ async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators
     const pod: V1Pod = {
       metadata: {
         name: `ika-val-${i + 1}`,
-        namespace: namespaceName
+        namespace: namespaceName,
+        labels: {
+          "app": "validator"
+        }
       },
       spec: {
         hostname: `val${i + 1}`,
