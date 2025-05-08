@@ -92,7 +92,6 @@ async function createConfigMap(
 async function createNetworkServices(
   kc: KubeConfig,
   namespaceName: string,
-  numOfValidators: number
 ) {
   const k8sApi = kc.makeApiClient(CoreV1Api);
   await k8sApi.createNamespacedService({
@@ -374,7 +373,7 @@ describe("run chain chaos testing", () => {
     console.log(`ConfigMap created: ${configMap}`);
     await createPersistentVolumeClaims(kc, namespaceName, 4);
     await createPods(kc, namespaceName, 4);
-    await createNetworkServices(kc, namespaceName, 4);
+    await createNetworkServices(kc, namespaceName);
   });
 });
 
