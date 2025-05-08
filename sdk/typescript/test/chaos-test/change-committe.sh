@@ -1,40 +1,25 @@
 #!/bin/bash
 
-# f = 38
-# max vote = 10% of Total ~= 12
-# q(threshold) = 2f+1 = 77
-# n(total) = 3f+1 = 115
-# Configuration variables (change these values as needed)
-# For 38
-TOTAL_VOTING_POWER=4
-# For 26
-#TOTAL_VOTING_POWER=79
-# For 12
-#TOTAL_VOTING_POWER=37
-# TOTAL_VOTING_POWER*2/3 + 1
-# for 38
-QUORUM_THRESHOLD=3
-# for 26
-#QUORUM_THRESHOLD=53
-# for 12
-#QUORUM_THRESHOLD=25
-# Cap voting power of an individual validator at 10%.
-# for 38
-MAX_VOTING_POWER=1
-# for 26
-#MAX_VOTING_POWER=8
-# for 12
-#MAX_VOTING_POWER=4
-# Validity threshold for the committee.
-# f+1
-# for 38
-VALIDITY_THRESHOLD=2
-# for 26
-#VALIDITY_THRESHOLD=27
-# for 12
-#VALIDITY_THRESHOLD=13
+# Load environment variables from .env if not already set
+if [ -f .env ]; then
+  echo "Loading variables from .env"
+  while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    if [ -z "$key" ] || echo "$key" | grep -q '^#'; then
+      continue
+    fi
 
-pushd ../../
+    # Only export if not already set in environment
+    if [ -z "${!key}" ]; then
+      export "$key=$value"
+    fi
+  done < .env
+else
+  echo ".env file not found!"
+  exit 1
+fi
+
+pushd ../../../..
 
 # File paths.
 MOVE_FILE="crates/ika-move-packages/packages/ika_system/sources/system_v1/bls_committee.move"
