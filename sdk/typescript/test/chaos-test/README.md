@@ -24,4 +24,6 @@ First, run the following command from this directory
 ```bash
 cp ./publisher/ika_config.json ../../../../
 ```
-Now, make sure your
+Then, within `sdk/typescript/test/e2e/dwallet-mpc.test.ts`, make sure the `SUI_FULLNODE_URL` & `SUI_FAUCET_HOST` are pointing
+to the same addresses as your previously created `.env` file.
+Now you can run the test against your newly deployed Ika network! 🏂
