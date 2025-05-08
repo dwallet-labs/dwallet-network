@@ -26,7 +26,7 @@ consensus-config:
   #parameters: ~
 p2p-config:
   listen-address: 0.0.0.0:8084
-  external-address: {{external_address}} # UPDATE THIS
+  external-address: /dns/$HOSTNAME/udp/8084 # UPDATE THIS
   anemo-config:
     max-concurrent-connections: 100
   state-sync:
