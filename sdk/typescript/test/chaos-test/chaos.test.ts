@@ -1,7 +1,10 @@
-import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace, V1Pod } from '@kubernetes/client-node';
 import fs from 'fs';
 import path from 'path';
+import { CoreV1Api, KubeConfig, V1ConfigMap, V1Namespace } from '@kubernetes/client-node';
 import { describe, it } from 'vitest';
+
+import { createNetworkServices } from './network-service';
+import { createPods } from './pods';
 
 const CONFIG_MAP_NAME = 'ika-chaos-test-config';
 const NETWORK_SERVICE_NAME = 'ika-dns-service';
@@ -17,7 +20,7 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	await k8sApi.createNamespace({ body: namespaceBody });
 };
 
-async function createConfigMap(
+export async function createConfigMap(
 	kc: KubeConfig,
 	namespaceName: string,
 	numOfValidators: number,
@@ -74,127 +77,6 @@ async function createConfigMap(
 	return await k8sApi.createNamespacedConfigMap({
 		namespace: namespaceName,
 		body: configMap,
-	});
-}
-
-async function createNetworkServices(kc: KubeConfig, namespaceName: string) {
-	const k8sApi = kc.makeApiClient(CoreV1Api);
-	await k8sApi.createNamespacedService({
-		namespace: namespaceName,
-		body: {
-			metadata: {
-				name: 'ika-dns-service',
-			},
-			spec: {
-				clusterIP: 'None',
-				ports: [
-					{
-						name: 'tx-interface',
-						protocol: 'TCP',
-						port: 8080,
-						targetPort: 8080,
-					},
-					{
-						name: 'p2p-sync',
-						protocol: 'UDP',
-						port: 8084,
-						targetPort: 8084,
-					},
-					{
-						name: 'metrics',
-						protocol: 'TCP',
-						port: 9184,
-						targetPort: 9184,
-					},
-					{
-						name: 'admin',
-						protocol: 'TCP',
-						port: 1337,
-						targetPort: 1337,
-					},
-				],
-				selector: {
-					app: 'validator',
-				},
-				sessionAffinity: 'None',
-				ipFamilies: ['IPv4'],
-				ipFamilyPolicy: 'SingleStack',
-				internalTrafficPolicy: 'Cluster',
-			},
-		},
-	});
-}
-
-async function createPods(kc: KubeConfig, namespaceName: string, numOfValidators: number) {
-	const k8sApi = kc.makeApiClient(CoreV1Api);
-	for (let i = 0; i < numOfValidators; i++) {
-		const pod: V1Pod = {
-			metadata: {
-				name: `ika-val-${i + 1}`,
-				namespace: namespaceName,
-				labels: {
-					app: 'validator',
-				},
-			},
-			spec: {
-				hostname: `val${i + 1}`,
-				subdomain: 'ika-dns-service',
-				containers: [
-					{
-						env: [
-							{
-								name: 'RUST_LOG',
-								value: 'off,ika_node=info,ika_core=info',
-							},
-							{
-								name: 'RUST_MIN_STACK',
-								value: '16777216',
-							},
-						],
-						command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/validator.yaml'],
-						name: 'ika-node',
-						image: 'ika:devnet-v0.0.6-arm64',
-					},
-				],
-				restartPolicy: 'Always',
-			},
-		};
-		await k8sApi.createNamespacedPod({
-			namespace: namespaceName,
-			body: pod,
-		});
-	}
-	const fullnodePod = {
-		metadata: {
-			name: `ika-fullnode`,
-			namespace: namespaceName,
-		},
-		spec: {
-			hostname: 'fullnode',
-			subdomain: 'ika-dns-service',
-			containers: [
-				{
-					env: [
-						{
-							name: 'RUST_LOG',
-							value: 'off,ika_node=info,ika_core=info',
-						},
-						{
-							name: 'RUST_MIN_STACK',
-							value: '16777216',
-						},
-					],
-					command: ['/opt/ika/bin/ika-node', '--config-path', '/opt/ika/config/fullnode.yaml'],
-					name: 'ika-node',
-					image: 'ika:devnet-v0.0.6-arm64',
-				},
-			],
-			restartPolicy: 'Always',
-		},
-	};
-	await k8sApi.createNamespacedPod({
-		namespace: namespaceName,
-		body: fullnodePod,
 	});
 }
 
