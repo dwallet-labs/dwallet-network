@@ -258,6 +258,10 @@ rm -rf "$SUI_CONFIG_PATH"
 cargo build --bin ika-swarm-config
 cp ../../../../../target/debug/ika-swarm-config .
 
+# echo params to next call
+echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
+echo "SUI_FAUCET_URL=$SUI_FAUCET_URL"
+
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
