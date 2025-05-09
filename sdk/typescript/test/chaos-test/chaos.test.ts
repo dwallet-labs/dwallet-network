@@ -1,5 +1,5 @@
 import { CoreV1Api, KubeConfig, V1Namespace } from '@kubernetes/client-node';
-import { describe, it } from 'vitest';
+import { beforeAll, describe, it } from 'vitest';
 
 import { createConfigMap } from './config-map';
 import { NAMESPACE_NAME } from './globals';
@@ -17,6 +17,10 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 };
 
 describe('chaos tests', () => {
+	beforeAll(() => {
+		require('dotenv').config();
+	});
+
 	it('deploy the ika network from the current directory to the local kubernetes cluster', async () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
