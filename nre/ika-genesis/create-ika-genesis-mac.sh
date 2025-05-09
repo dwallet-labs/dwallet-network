@@ -257,7 +257,9 @@ cp ../../../target/debug/ika-swarm-config .
 ./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json --epoch-duration-ms "$EPOCH_DURATION_TIME_MS"
 
 export PUBLISHER_DIR=publisher
-
+echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
+echo "PUBLISHER_DIR=$PUBLISHER_DIR"
+exit 1
 mkdir -p $PUBLISHER_DIR
 mv ika_publish_config.json $PUBLISHER_DIR/
 cp -r "$SUI_CONFIG_PATH" $PUBLISHER_DIR/

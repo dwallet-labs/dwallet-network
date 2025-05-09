@@ -255,8 +255,8 @@ done
 ###############################
 rm -rf "$SUI_CONFIG_PATH"
 
-cargo build --bin ika-swarm-config --target-dir ./target
-cp ./target/debug/ika-swarm-config .
+cargo build --bin ika-swarm-config
+cp ../../../../../target/debug/ika-swarm-config .
 
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
@@ -268,6 +268,9 @@ cp ./target/debug/ika-swarm-config .
 ./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json --epoch-duration-ms "$EPOCH_DURATION_TIME_MS"
 
 export PUBLISHER_DIR=publisher
+echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
+echo "PUBLISHER_DIR=$PUBLISHER_DIR"
+exit 1
 
 mkdir -p $PUBLISHER_DIR
 mv ika_publish_config.json $PUBLISHER_DIR/
