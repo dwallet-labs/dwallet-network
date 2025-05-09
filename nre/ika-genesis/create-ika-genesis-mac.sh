@@ -183,7 +183,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     mkdir -p $SUI_CONFIG_PATH
 
     VALIDATOR_ACCOUNT_KEY_FILE=${VALIDATOR_HOSTNAME}.account.json
-    SUI_TEMPLATE_DIR=../sui-template
+    SUI_TEMPLATE_DIR=./sui-template
     SUI_CLIENT_YAML_FILE=client.yaml
     SUI_KEYSTORE_FILE=sui.keystore
     SUI_ALIASES_FILE=sui.aliases
