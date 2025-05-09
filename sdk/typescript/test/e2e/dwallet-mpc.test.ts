@@ -25,6 +25,8 @@ import {
 
 const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
 const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
+// const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
+// const SUI_FAUCET_HOST = getFaucetHost('localnet');
 
 const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
