@@ -531,8 +531,10 @@ rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
 cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
+echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
+echo "PUBLISHER_DIR=$PUBLISHER_DIR"
 ./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path $PUBLISHER_DIR/ika_publish_config.json
-
+echo hey5
 # This if the file name that the SDK is looking for.
 mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
