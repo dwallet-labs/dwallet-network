@@ -202,13 +202,22 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # Fetch the alias and change it (the --alias option is not working currently)
     SUI_CURRENT_ALIAS=$(jq -r '.[].alias' sui.aliases)
+    echo "hey"
     sui keytool update-alias "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
+    echo "hey1"
+    echo "SUBDOMAIN=$SUBDOMAIN"
+    echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL" 
+    echo "SUI_ADDR=$SUI_ADDR"
+    echo "SUI_CONFIG_PATH=$SUI_CONFIG_PATH"
+    echo "SUI_KEYSTORE_FILE=$SUI_KEYSTORE_FILE"
+    echo "SUI_CLIENT_YAML_FILE=$SUI_CLIENT_YAML_FILE"
+
     yq e -i ".envs[].alias = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".envs[].rpc = \"$SUI_FULLNODE_RPC_URL\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_address = \"$SUI_ADDR\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_env = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".keystore.File = \"$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE\"" "$SUI_CLIENT_YAML_FILE"
-
+    echo "hey2"
     popd > /dev/null
     cp -r $SUI_CONFIG_PATH "$VALIDATOR_DIR/$SUI_BACKUP_DIR"
     SENDER_SUI_ADDR=$SUI_ADDR
@@ -246,8 +255,8 @@ done
 ###############################
 rm -rf "$SUI_CONFIG_PATH"
 
-cargo build --bin ika-swarm-config
-cp ../../../target/debug/ika-swarm-config .
+cargo build --bin ika-swarm-config --target-dir ./target
+cp ./target/debug/ika-swarm-config .
 
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
