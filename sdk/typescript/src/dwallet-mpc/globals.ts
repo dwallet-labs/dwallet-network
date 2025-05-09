@@ -152,8 +152,11 @@ export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	);
 }
 
-export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDecryptionKey {
-	return obj?.fields?.network_dkg_public_output !== undefined;
+export function isActiveDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDecryptionKey {
+	return (
+		obj?.fields?.network_dkg_public_output !== undefined &&
+		obj?.fields?.state.variant !== 'AwaitingNetworkDKG'
+	);
 }
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
@@ -298,21 +301,30 @@ export async function getNetworkDecryptionKeyPublicOutputID(
 	networkDecryptionKeyId?: string | null,
 ): Promise<string> {
 	networkDecryptionKeyId = networkDecryptionKeyId ?? (await getNetworkDecryptionKeyID(c));
-	const networkDecryptionKey = await c.client.getObject({
-		id: networkDecryptionKeyId,
-		options: { showContent: true },
-	});
+	const startTime = Date.now();
 
-	if (
-		!networkDecryptionKey ||
-		!isMoveObject(networkDecryptionKey?.data?.content) ||
-		!isDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
-		!isMoveObject(networkDecryptionKey.data.content.fields.network_dkg_public_output)
-	) {
-		throw new Error(`invalid network decryption key object: ${networkDecryptionKeyId}`);
+	while (Date.now() - startTime <= c.timeout) {
+		const networkDecryptionKey = await c.client.getObject({
+			id: networkDecryptionKeyId,
+			options: { showContent: true },
+		});
+
+		if (
+			!networkDecryptionKey ||
+			!isMoveObject(networkDecryptionKey?.data?.content) ||
+			!isActiveDWalletNetworkDecryptionKey(networkDecryptionKey.data.content) ||
+			!isMoveObject(networkDecryptionKey.data.content.fields.network_dkg_public_output)
+		) {
+			continue;
+		}
+		return networkDecryptionKey.data.content.fields.network_dkg_public_output.fields.contents.fields
+			.id?.id;
 	}
-	return networkDecryptionKey.data.content.fields.network_dkg_public_output.fields.contents.fields
-		.id?.id;
+	throw new Error(
+		`timeout: unable to fetch valid network decryption key within timeout ${
+			c.timeout / (60 * 1000)
+		} minutes passed).`,
+	);
 }
 
 async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint8Array> {

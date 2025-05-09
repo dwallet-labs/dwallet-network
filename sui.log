@@ -1,0 +1,329 @@
+2025-04-23T15:56:22.666200Z  INFO sui_node: Initializing sui-node listening on /ip4/127.0.0.1/tcp/53555/http node=k#8dcff6d155040a656f4819b13111b52c5746a86ba72f395fbafe2ec3847d1e8140e624a751fdf6b5f2050bc7205cf9d30004c90b0c740affd326ce673cc2b23a2d24d53e2afeb286dfc668fd4060089d6d2b17b799dd36f90d332e54a7a338d4
+2025-04-23T15:56:22.666209Z  INFO sui_node: Initializing sui-node listening on /ip4/127.0.0.1/tcp/53569/http node=k#addeef94d898c88e40dbdeff91c5f105f9cf2c747fb6f2bc37ec03d6c91edb2e1a578cf544be8b0931e25f243d59b0c30d98a16ce3ba1d6cf1d7f50426992eb0adb3134b055be8140d2db5f25fb00d83f8e4222bf01fd6ac93a1ff4d79da58f2
+2025-04-23T15:56:22.666200Z  INFO sui_node: Initializing sui-node listening on /ip4/127.0.0.1/tcp/53541/http node=k#99f25ef61f8032b914636460982c5cc6f134ef1ddae76657f2cbfec1ebfc8d097374080df6fcf0dcb8bc4b0d8e0af5d80ebbff2b4c599f54f42d6312dfc314276078c1cc347ebbbec5198be258513f386b930d02c2749a803e2330955ebd1a10
+2025-04-23T15:56:22.666410Z  INFO sui_node: Initializing sui-node listening on /ip4/127.0.0.1/tcp/53583/http node=k#b3fd5efb5c872403a4ad13f1199513606d23354a845249aea157564c23ff3c15c6c9e652b72d740e8cacb93cbcc0686b0ec0cc0c1c760bfb42b436519fc5a8054b76533a97a9f23987d097ef96b1f2526bb2073fa10a7719941772347ef274f4
+2025-04-23T15:56:22.666405Z  INFO sui_node: populating config.supported_protocol_versions with default SupportedProtocolVersions { min: ProtocolVersion(1), max: ProtocolVersion(72) }
+2025-04-23T15:56:22.666426Z  INFO sui_node: Initializing sui-node listening on /ip4/127.0.0.1/tcp/53613/http node=k#afbf7c0325a45061a3d31163f88cb78bb07f456547ea0aa4465c037aec6b2535ec5ea10a800f82a9d5509fa1d425ddc10e35b894f1875c119107b12225992aa470f82f844627caba50dc47eea5e0d79c4d9b6d4cb603c053874defb267f75cc3
+2025-04-23T15:56:23.030862Z  INFO sui_node: created epoch store
+2025-04-23T15:56:23.030874Z  INFO sui_node: checking SUI conservation at genesis
+2025-04-23T15:56:23.030877Z  INFO sui_node: creating checkpoint store
+2025-04-23T15:56:23.030908Z  INFO sui_node: created epoch store
+2025-04-23T15:56:23.030916Z  INFO sui_node: checking SUI conservation at genesis
+2025-04-23T15:56:23.030918Z  INFO sui_node: creating checkpoint store
+2025-04-23T15:56:23.031842Z  INFO sui_node: created epoch store
+2025-04-23T15:56:23.031853Z  INFO sui_node: checking SUI conservation at genesis
+2025-04-23T15:56:23.031854Z  INFO sui_node: creating checkpoint store
+2025-04-23T15:56:23.032725Z  INFO sui_node: created epoch store
+2025-04-23T15:56:23.032729Z  INFO sui_node: checking SUI conservation at genesis
+2025-04-23T15:56:23.032731Z  INFO sui_node: creating checkpoint store
+2025-04-23T15:56:23.032771Z  INFO sui_node: created epoch store
+2025-04-23T15:56:23.032775Z  INFO sui_node: checking SUI conservation at genesis
+2025-04-23T15:56:23.035397Z  INFO sui_node: creating state sync store
+2025-04-23T15:56:23.035496Z  INFO sui_node: creating state sync store
+2025-04-23T15:56:23.036397Z  INFO sui_node: creating state sync store
+2025-04-23T15:56:23.037249Z  INFO sui_node: creating state sync store
+2025-04-23T15:56:23.039721Z  INFO sui_node: creating archive reader
+2025-04-23T15:56:23.039948Z  INFO sui_node: creating archive reader
+2025-04-23T15:56:23.040196Z  INFO sui_node: P2p network started on 127.0.0.1:53571 server_name="sui-af226ccb"
+2025-04-23T15:56:23.040200Z  INFO sui_node: P2p network started on 127.0.0.1:53585 server_name="sui-af226ccb"
+2025-04-23T15:56:23.040230Z  INFO sui_node: start state archival
+2025-04-23T15:56:23.040231Z  INFO sui_node: start state archival
+2025-04-23T15:56:23.040232Z  INFO sui_node: start snapshot upload
+2025-04-23T15:56:23.040232Z  INFO sui_node: start snapshot upload
+2025-04-23T15:56:23.040233Z  INFO sui_node: start db checkpoint
+2025-04-23T15:56:23.040233Z  INFO sui_node: start db checkpoint
+2025-04-23T15:56:23.040246Z  INFO sui_node: create authority state
+2025-04-23T15:56:23.040246Z  INFO sui_node: create authority state
+2025-04-23T15:56:23.040840Z  INFO sui_node: creating archive reader
+2025-04-23T15:56:23.041063Z  INFO sui_node: P2p network started on 127.0.0.1:53543 server_name="sui-af226ccb"
+2025-04-23T15:56:23.041085Z  INFO sui_node: start state archival
+2025-04-23T15:56:23.041087Z  INFO sui_node: start snapshot upload
+2025-04-23T15:56:23.041088Z  INFO sui_node: start db checkpoint
+2025-04-23T15:56:23.041093Z  INFO sui_node: create authority state
+2025-04-23T15:56:23.041686Z  INFO sui_node: creating archive reader
+2025-04-23T15:56:23.041880Z  INFO sui_node: P2p network started on 127.0.0.1:53557 server_name="sui-af226ccb"
+2025-04-23T15:56:23.041904Z  INFO sui_node: start state archival
+2025-04-23T15:56:23.041905Z  INFO sui_node: start snapshot upload
+2025-04-23T15:56:23.041906Z  INFO sui_node: start db checkpoint
+2025-04-23T15:56:23.041914Z  INFO sui_node: create authority state
+2025-04-23T15:56:23.042549Z  INFO sui_node: Listening to traffic on /ip4/127.0.0.1/tcp/53583/http
+2025-04-23T15:56:23.042548Z  INFO sui_node: Listening to traffic on /ip4/127.0.0.1/tcp/53569/http
+2025-04-23T15:56:23.042922Z  INFO sui_node: Listening to traffic on /ip4/127.0.0.1/tcp/53541/http
+2025-04-23T15:56:23.043799Z  INFO sui_node: Listening to traffic on /ip4/127.0.0.1/tcp/53555/http
+2025-04-23T15:56:23.051817Z  INFO sui_node: creating checkpoint store
+2025-04-23T15:56:23.056351Z  INFO sui_node: creating state sync store
+2025-04-23T15:56:23.056354Z  INFO sui_node: creating index store
+2025-04-23T15:56:23.105269Z  INFO sui_node: Starting JWK updater tasks with supported providers: [Apple, Arden, AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es")), AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")), AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8")), Credenza3, Facebook, FanTV, Google, Kakao, KarrierOne, Microsoft, Onefc, Playtron, Slack, TestIssuer, Threedos, Twitch] fetch_interval=3600s
+2025-04-23T15:56:23.105272Z  INFO sui_node: Starting JWK updater tasks with supported providers: [Apple, Arden, AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es")), AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")), AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8")), Credenza3, Facebook, FanTV, Google, Kakao, KarrierOne, Microsoft, Onefc, Playtron, Slack, TestIssuer, Threedos, Twitch] fetch_interval=3600s
+2025-04-23T15:56:23.105296Z  INFO sui_node: Starting JWK updater tasks with supported providers: [Apple, Arden, AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es")), AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")), AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8")), Credenza3, Facebook, FanTV, Google, Kakao, KarrierOne, Microsoft, Onefc, Playtron, Slack, TestIssuer, Threedos, Twitch] fetch_interval=3600s
+2025-04-23T15:56:23.105436Z  INFO sui_node: SuiNode started!
+2025-04-23T15:56:23.105449Z  INFO sui_node: SuiNode started!
+2025-04-23T15:56:23.105488Z  INFO sui_node: SuiNode started!
+2025-04-23T15:56:23.106702Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Apple
+2025-04-23T15:56:23.106702Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Apple
+2025-04-23T15:56:23.106706Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Apple
+2025-04-23T15:56:23.106721Z  INFO sui_node: Starting JWK updater tasks with supported providers: [Apple, Arden, AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es")), AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")), AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8")), Credenza3, Facebook, FanTV, Google, Kakao, KarrierOne, Microsoft, Onefc, Playtron, Slack, TestIssuer, Threedos, Twitch] fetch_interval=3600s
+2025-04-23T15:56:23.106900Z  INFO sui_node: SuiNode started!
+2025-04-23T15:56:23.107629Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Apple
+2025-04-23T15:56:23.124448Z  INFO sui_node: creating archive reader
+2025-04-23T15:56:23.124739Z  INFO sui_node: P2p network started on 127.0.0.1:53615 server_name="sui-af226ccb"
+2025-04-23T15:56:23.124766Z  INFO sui_node: start state archival
+2025-04-23T15:56:23.124768Z  INFO sui_node: start snapshot upload
+2025-04-23T15:56:23.124769Z  INFO sui_node: start db checkpoint
+2025-04-23T15:56:23.124778Z  INFO sui_node: create authority state
+2025-04-23T15:56:23.150277Z  INFO sui_node: using local db only for kv store
+2025-04-23T15:56:23.153910Z  INFO sui_node: Sui JSON-RPC server listening on 0.0.0.0:9000 local_addr=0.0.0.0:9000
+2025-04-23T15:56:23.153958Z  INFO sui_node: SuiNode started!
+2025-04-23T15:56:23.245596Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:23.284750Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:23.323325Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:23.362807Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:23.413838Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es"))
+2025-04-23T15:56:23.456332Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es"))
+2025-04-23T15:56:23.524289Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es"))
+2025-04-23T15:56:23.571034Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("eu-west-3", "eu-west-3_gGVCx53Es"))
+2025-04-23T15:56:23.638386Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:23.685118Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:23.748611Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:23.790818Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:23.857868Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8"))
+2025-04-23T15:56:23.900101Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8"))
+2025-04-23T15:56:23.973860Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8"))
+2025-04-23T15:56:24.016024Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_qPsZxYqd8"))
+2025-04-23T15:56:24.083472Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Credenza3
+2025-04-23T15:56:24.126464Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Credenza3
+2025-04-23T15:56:24.190526Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Credenza3
+2025-04-23T15:56:24.230387Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Credenza3
+2025-04-23T15:56:24.282495Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Facebook
+2025-04-23T15:56:24.321380Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Facebook
+2025-04-23T15:56:24.370447Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Facebook
+2025-04-23T15:56:24.409444Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Facebook
+2025-04-23T15:56:24.459180Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider FanTV
+2025-04-23T15:56:24.498225Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider FanTV
+2025-04-23T15:56:24.549862Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider FanTV
+2025-04-23T15:56:24.591401Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider FanTV
+2025-04-23T15:56:24.643513Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Google
+2025-04-23T15:56:24.682698Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Google
+2025-04-23T15:56:24.732573Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Google
+2025-04-23T15:56:24.772872Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Google
+2025-04-23T15:56:24.823538Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Kakao
+2025-04-23T15:56:24.862126Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Kakao
+2025-04-23T15:56:24.909980Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Kakao
+2025-04-23T15:56:24.948591Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Kakao
+2025-04-23T15:56:24.998219Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider KarrierOne
+2025-04-23T15:56:25.037062Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider KarrierOne
+2025-04-23T15:56:25.086738Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider KarrierOne
+2025-04-23T15:56:25.125422Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider KarrierOne
+2025-04-23T15:56:25.175323Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Microsoft
+2025-04-23T15:56:25.214820Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Microsoft
+2025-04-23T15:56:25.265350Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Microsoft
+2025-04-23T15:56:25.305223Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Microsoft
+2025-04-23T15:56:25.356433Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Onefc
+2025-04-23T15:56:25.397230Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Onefc
+2025-04-23T15:56:25.449571Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Onefc
+2025-04-23T15:56:25.490028Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Onefc
+2025-04-23T15:56:25.538088Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Playtron
+2025-04-23T15:56:25.577081Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Playtron
+2025-04-23T15:56:25.626569Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Playtron
+2025-04-23T15:56:25.665256Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Playtron
+2025-04-23T15:56:25.714448Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Slack
+2025-04-23T15:56:25.753573Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Slack
+2025-04-23T15:56:25.804044Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Slack
+2025-04-23T15:56:25.841771Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Slack
+2025-04-23T15:56:25.892368Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider TestIssuer
+2025-04-23T15:56:25.931824Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider TestIssuer
+2025-04-23T15:56:25.981678Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider TestIssuer
+2025-04-23T15:56:26.019974Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider TestIssuer
+2025-04-23T15:56:26.068898Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Threedos
+2025-04-23T15:56:26.111034Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Threedos
+2025-04-23T15:56:26.169615Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Threedos
+2025-04-23T15:56:26.220120Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Threedos
+2025-04-23T15:56:26.276491Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Twitch
+2025-04-23T15:56:26.321591Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Twitch
+2025-04-23T15:56:26.387332Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Twitch
+2025-04-23T15:56:26.428105Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Twitch
+2025-04-23T15:56:26.512436Z  INFO sui_node: submitting capabilities to consensus transaction=ConsensusTransaction { tracking_id: [178, 227, 234, 23, 66, 119, 17, 74], kind: CapabilityNotificationV2(AuthorityCapabilities { authority: k#b3fd5efb.., generation: 1745423786512, supported_protocol_versions: SupportedProtocolVersionsWithHashes { versions: [(ProtocolVersion(72), Hdp5jtX2AWSDkVtkT2JuBd6sDP38ShEZe33jUqWvSWfT)] }, available_system_packages: [(0x0000000000000000000000000000000000000000000000000000000000000001, SequenceNumber(1), o#CXB4ybNBWeUXNEBz5vRMiN1EzU9EyVsFheNGHFTHvy5o), (0x0000000000000000000000000000000000000000000000000000000000000002, SequenceNumber(2), o#AzCt9QvipZL43WDsX397wWdAqT7r6VP63hcaQAtSQuFV), (0x0000000000000000000000000000000000000000000000000000000000000003, SequenceNumber(2), o#BBJwegG6pJ9jum8yfEzczran1a4Whq9KF492An62eHLY), (0x000000000000000000000000000000000000000000000000000000000000dee9, SequenceNumber(2), o#8zmTpp4Q6ojb7gAKDnWtLVThiGbtBrQUY3nkw61zkSbb), (0x000000000000000000000000000000000000000000000000000000000000000b, SequenceNumber(2), o#8n5pFCMXLR5ecYHJVZ5dzonzRck6aY33xSv9fc3kqzc6)] }) }
+2025-04-23T15:56:26.554415Z  INFO sui_node: submitting capabilities to consensus transaction=ConsensusTransaction { tracking_id: [179, 124, 99, 222, 174, 163, 49, 29], kind: CapabilityNotificationV2(AuthorityCapabilities { authority: k#99f25ef6.., generation: 1745423786554, supported_protocol_versions: SupportedProtocolVersionsWithHashes { versions: [(ProtocolVersion(72), Hdp5jtX2AWSDkVtkT2JuBd6sDP38ShEZe33jUqWvSWfT)] }, available_system_packages: [(0x0000000000000000000000000000000000000000000000000000000000000001, SequenceNumber(1), o#CXB4ybNBWeUXNEBz5vRMiN1EzU9EyVsFheNGHFTHvy5o), (0x0000000000000000000000000000000000000000000000000000000000000002, SequenceNumber(2), o#AzCt9QvipZL43WDsX397wWdAqT7r6VP63hcaQAtSQuFV), (0x0000000000000000000000000000000000000000000000000000000000000003, SequenceNumber(2), o#BBJwegG6pJ9jum8yfEzczran1a4Whq9KF492An62eHLY), (0x000000000000000000000000000000000000000000000000000000000000dee9, SequenceNumber(2), o#8zmTpp4Q6ojb7gAKDnWtLVThiGbtBrQUY3nkw61zkSbb), (0x000000000000000000000000000000000000000000000000000000000000000b, SequenceNumber(2), o#8n5pFCMXLR5ecYHJVZ5dzonzRck6aY33xSv9fc3kqzc6)] }) }
+2025-04-23T15:56:26.561428Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/v2.0/", kid: "X-yzFPFMdWtJQ1oJXiGRVnn061ezrvZz596xN3mCfyQ" }
+2025-04-23T15:56:26.584642Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/v2.0/", kid: "X-yzFPFMdWtJQ1oJXiGRVnn061ezrvZz596xN3mCfyQ" }
+2025-04-23T15:56:26.587330Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "23f7a3583796f97129e5418f9b2136fcc0a96462" }
+2025-04-23T15:56:26.587371Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "c37da75c9fbe18c2ce9125b9aa1f300dcb31e8d9" }
+2025-04-23T15:56:26.626020Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "23f7a3583796f97129e5418f9b2136fcc0a96462" }
+2025-04-23T15:56:26.626049Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "c37da75c9fbe18c2ce9125b9aa1f300dcb31e8d9" }
+2025-04-23T15:56:26.641167Z  INFO sui_node: submitting capabilities to consensus transaction=ConsensusTransaction { tracking_id: [2, 195, 20, 158, 121, 34, 113, 47], kind: CapabilityNotificationV2(AuthorityCapabilities { authority: k#addeef94.., generation: 1745423786641, supported_protocol_versions: SupportedProtocolVersionsWithHashes { versions: [(ProtocolVersion(72), Hdp5jtX2AWSDkVtkT2JuBd6sDP38ShEZe33jUqWvSWfT)] }, available_system_packages: [(0x0000000000000000000000000000000000000000000000000000000000000001, SequenceNumber(1), o#CXB4ybNBWeUXNEBz5vRMiN1EzU9EyVsFheNGHFTHvy5o), (0x0000000000000000000000000000000000000000000000000000000000000002, SequenceNumber(2), o#AzCt9QvipZL43WDsX397wWdAqT7r6VP63hcaQAtSQuFV), (0x0000000000000000000000000000000000000000000000000000000000000003, SequenceNumber(2), o#BBJwegG6pJ9jum8yfEzczran1a4Whq9KF492An62eHLY), (0x000000000000000000000000000000000000000000000000000000000000dee9, SequenceNumber(2), o#8zmTpp4Q6ojb7gAKDnWtLVThiGbtBrQUY3nkw61zkSbb), (0x000000000000000000000000000000000000000000000000000000000000000b, SequenceNumber(2), o#8n5pFCMXLR5ecYHJVZ5dzonzRck6aY33xSv9fc3kqzc6)] }) }
+2025-04-23T15:56:26.678045Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/v2.0/", kid: "X-yzFPFMdWtJQ1oJXiGRVnn061ezrvZz596xN3mCfyQ" }
+2025-04-23T15:56:26.685435Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth.sui.io", kid: "sui-key-id" }
+2025-04-23T15:56:26.686178Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "JbFCSYl4Xp4UYEJHo7R0iwl/Xf3F5+z72stu8iH+QxY=" }
+2025-04-23T15:56:26.686195Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "FIqQqeRU1EQP75fBeds+wL2yczwvbDy1NF6T/f5Oe5o=" }
+2025-04-23T15:56:26.688114Z  INFO sui_node: submitting capabilities to consensus transaction=ConsensusTransaction { tracking_id: [51, 219, 185, 120, 237, 183, 204, 248], kind: CapabilityNotificationV2(AuthorityCapabilities { authority: k#8dcff6d1.., generation: 1745423786688, supported_protocol_versions: SupportedProtocolVersionsWithHashes { versions: [(ProtocolVersion(72), Hdp5jtX2AWSDkVtkT2JuBd6sDP38ShEZe33jUqWvSWfT)] }, available_system_packages: [(0x0000000000000000000000000000000000000000000000000000000000000001, SequenceNumber(1), o#CXB4ybNBWeUXNEBz5vRMiN1EzU9EyVsFheNGHFTHvy5o), (0x0000000000000000000000000000000000000000000000000000000000000002, SequenceNumber(2), o#AzCt9QvipZL43WDsX397wWdAqT7r6VP63hcaQAtSQuFV), (0x0000000000000000000000000000000000000000000000000000000000000003, SequenceNumber(2), o#BBJwegG6pJ9jum8yfEzczran1a4Whq9KF492An62eHLY), (0x000000000000000000000000000000000000000000000000000000000000dee9, SequenceNumber(2), o#8zmTpp4Q6ojb7gAKDnWtLVThiGbtBrQUY3nkw61zkSbb), (0x000000000000000000000000000000000000000000000000000000000000000b, SequenceNumber(2), o#8n5pFCMXLR5ecYHJVZ5dzonzRck6aY33xSv9fc3kqzc6)] }) }
+2025-04-23T15:56:26.715386Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "23f7a3583796f97129e5418f9b2136fcc0a96462" }
+2025-04-23T15:56:26.715406Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "c37da75c9fbe18c2ce9125b9aa1f300dcb31e8d9" }
+2025-04-23T15:56:26.724332Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth.sui.io", kid: "sui-key-id" }
+2025-04-23T15:56:26.727216Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "JbFCSYl4Xp4UYEJHo7R0iwl/Xf3F5+z72stu8iH+QxY=" }
+2025-04-23T15:56:26.727229Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "FIqQqeRU1EQP75fBeds+wL2yczwvbDy1NF6T/f5Oe5o=" }
+2025-04-23T15:56:26.739075Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "CNv0OI3RwqlHFEVnaoMAshCH2XE" }
+2025-04-23T15:56:26.739088Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "PoVKeirIOvmTyLQ9G9BenBwos7k" }
+2025-04-23T15:56:26.739095Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "_jNwjeSnvTTK8XEdr5QUPkBRLLo" }
+2025-04-23T15:56:26.739103Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "-cgAvjmmQ24Ks20zIpDB4SW894w" }
+2025-04-23T15:56:26.739114Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "Km8oaDUbb_pVUGsT38eHX87v078" }
+2025-04-23T15:56:26.739121Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "4pxhphrFjooBXV6t0JO_kpTQNl8" }
+2025-04-23T15:56:26.739127Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "dd55f7QP3HZky-ekQBDWKe7ADN0" }
+2025-04-23T15:56:26.761727Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "23f7a3583796f97129e5418f9b2136fcc0a96462" }
+2025-04-23T15:56:26.761744Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.google.com", kid: "c37da75c9fbe18c2ce9125b9aa1f300dcb31e8d9" }
+2025-04-23T15:56:26.778080Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.onepassport.onefc.com/de3ee5c1-5644-4113-922d-e8336569a462/v2.0/", kid: "X-yzFPFMdWtJQ1oJXiGRVnn061ezrvZz596xN3mCfyQ" }
+2025-04-23T15:56:26.778958Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "7c5d8c5630651691c6513f88a4634e3b5f5837b2" }
+2025-04-23T15:56:26.778980Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "86f12b5f5d9fe865c4bcf4310a9bc29edd121ba9" }
+2025-04-23T15:56:26.787510Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "JYhSOsHhDZrc5kfqQg8ujkHMTNY" }
+2025-04-23T15:56:26.787523Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "CNv0OI3RwqlHFEVnaoMAshCH2XE" }
+2025-04-23T15:56:26.787529Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "PoVKeirIOvmTyLQ9G9BenBwos7k" }
+2025-04-23T15:56:26.787536Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "-cgAvjmmQ24Ks20zIpDB4SW894w" }
+2025-04-23T15:56:26.787546Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "Km8oaDUbb_pVUGsT38eHX87v078" }
+2025-04-23T15:56:26.787553Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "4pxhphrFjooBXV6t0JO_kpTQNl8" }
+2025-04-23T15:56:26.787560Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "dd55f7QP3HZky-ekQBDWKe7ADN0" }
+2025-04-23T15:56:26.815251Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "7c5d8c5630651691c6513f88a4634e3b5f5837b2" }
+2025-04-23T15:56:26.815360Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "86f12b5f5d9fe865c4bcf4310a9bc29edd121ba9" }
+2025-04-23T15:56:26.815383Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "JbFCSYl4Xp4UYEJHo7R0iwl/Xf3F5+z72stu8iH+QxY=" }
+2025-04-23T15:56:26.815397Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "FIqQqeRU1EQP75fBeds+wL2yczwvbDy1NF6T/f5Oe5o=" }
+2025-04-23T15:56:26.815506Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth.sui.io", kid: "sui-key-id" }
+2025-04-23T15:56:26.816917Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://slack.com", kid: "mB2MAyKSn555isd0EbdhKx6nkyAi9xLq8rvCEb_nOyY" }
+2025-04-23T15:56:26.824881Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:26.876889Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://slack.com", kid: "mB2MAyKSn555isd0EbdhKx6nkyAi9xLq8rvCEb_nOyY" }
+2025-04-23T15:56:26.882292Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth.sui.io", kid: "sui-key-id" }
+2025-04-23T15:56:26.882525Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "JbFCSYl4Xp4UYEJHo7R0iwl/Xf3F5+z72stu8iH+QxY=" }
+2025-04-23T15:56:26.882535Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gGVCx53Es", kid: "FIqQqeRU1EQP75fBeds+wL2yczwvbDy1NF6T/f5Oe5o=" }
+2025-04-23T15:56:26.892451Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "JYhSOsHhDZrc5kfqQg8ujkHMTNY" }
+2025-04-23T15:56:26.892491Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "CNv0OI3RwqlHFEVnaoMAshCH2XE" }
+2025-04-23T15:56:26.892502Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "PoVKeirIOvmTyLQ9G9BenBwos7k" }
+2025-04-23T15:56:26.892513Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "_jNwjeSnvTTK8XEdr5QUPkBRLLo" }
+2025-04-23T15:56:26.892522Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "-cgAvjmmQ24Ks20zIpDB4SW894w" }
+2025-04-23T15:56:26.892532Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "Km8oaDUbb_pVUGsT38eHX87v078" }
+2025-04-23T15:56:26.892544Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "4pxhphrFjooBXV6t0JO_kpTQNl8" }
+2025-04-23T15:56:26.892551Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "dd55f7QP3HZky-ekQBDWKe7ADN0" }
+2025-04-23T15:56:26.901592Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "7c5d8c5630651691c6513f88a4634e3b5f5837b2" }
+2025-04-23T15:56:26.901615Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "86f12b5f5d9fe865c4bcf4310a9bc29edd121ba9" }
+2025-04-23T15:56:26.916435Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:26.948689Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:26.951719Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://slack.com", kid: "mB2MAyKSn555isd0EbdhKx6nkyAi9xLq8rvCEb_nOyY" }
+2025-04-23T15:56:26.954881Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "CNv0OI3RwqlHFEVnaoMAshCH2XE" }
+2025-04-23T15:56:26.954897Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "PoVKeirIOvmTyLQ9G9BenBwos7k" }
+2025-04-23T15:56:26.954905Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "_jNwjeSnvTTK8XEdr5QUPkBRLLo" }
+2025-04-23T15:56:26.954913Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "-cgAvjmmQ24Ks20zIpDB4SW894w" }
+2025-04-23T15:56:26.954920Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "Km8oaDUbb_pVUGsT38eHX87v078" }
+2025-04-23T15:56:26.954929Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "4pxhphrFjooBXV6t0JO_kpTQNl8" }
+2025-04-23T15:56:26.954944Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://login.microsoftonline.com/v2.0", kid: "dd55f7QP3HZky-ekQBDWKe7ADN0" }
+2025-04-23T15:56:26.960012Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:26.962456Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "E760D111C1A1296E6D1D85F7EB18DDBAA0EC2B4E" }
+2025-04-23T15:56:26.962479Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "B65FDCAA152E04ADE817314CF6A06F4ECABF4CFB" }
+2025-04-23T15:56:26.966152Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.fantv.world", kid: "PODsfgAn4twvCLjNt9QmEEiAcCa3Z6C10LxrDxvi3bA" }
+2025-04-23T15:56:26.969996Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "VHA/vY1d2h7X33DpZ6ZBDRfnCS/OIgiV7toCdxyEUDY=" }
+2025-04-23T15:56:26.970023Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "lGbuLXh42ChSJwrMUEBO2npnvMzdAHqOj6DNZieDuVA=" }
+2025-04-23T15:56:26.976643Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "VHA/vY1d2h7X33DpZ6ZBDRfnCS/OIgiV7toCdxyEUDY=" }
+2025-04-23T15:56:26.976669Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "lGbuLXh42ChSJwrMUEBO2npnvMzdAHqOj6DNZieDuVA=" }
+2025-04-23T15:56:26.981122Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:26.985840Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "7c5d8c5630651691c6513f88a4634e3b5f5837b2" }
+2025-04-23T15:56:26.985861Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://www.facebook.com", kid: "86f12b5f5d9fe865c4bcf4310a9bc29edd121ba9" }
+2025-04-23T15:56:26.994667Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://slack.com", kid: "mB2MAyKSn555isd0EbdhKx6nkyAi9xLq8rvCEb_nOyY" }
+2025-04-23T15:56:27.025686Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.fantv.world", kid: "PODsfgAn4twvCLjNt9QmEEiAcCa3Z6C10LxrDxvi3bA" }
+2025-04-23T15:56:27.028227Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "E760D111C1A1296E6D1D85F7EB18DDBAA0EC2B4E" }
+2025-04-23T15:56:27.028242Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "B65FDCAA152E04ADE817314CF6A06F4ECABF4CFB" }
+2025-04-23T15:56:27.071817Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:27.079959Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "VHA/vY1d2h7X33DpZ6ZBDRfnCS/OIgiV7toCdxyEUDY=" }
+2025-04-23T15:56:27.079977Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "lGbuLXh42ChSJwrMUEBO2npnvMzdAHqOj6DNZieDuVA=" }
+2025-04-23T15:56:27.083542Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "E760D111C1A1296E6D1D85F7EB18DDBAA0EC2B4E" }
+2025-04-23T15:56:27.083564Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "B65FDCAA152E04ADE817314CF6A06F4ECABF4CFB" }
+2025-04-23T15:56:27.088920Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.fantv.world", kid: "PODsfgAn4twvCLjNt9QmEEiAcCa3Z6C10LxrDxvi3bA" }
+2025-04-23T15:56:27.111154Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "VHA/vY1d2h7X33DpZ6ZBDRfnCS/OIgiV7toCdxyEUDY=" }
+2025-04-23T15:56:27.111179Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qPsZxYqd8", kid: "lGbuLXh42ChSJwrMUEBO2npnvMzdAHqOj6DNZieDuVA=" }
+2025-04-23T15:56:27.125208Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:27.139629Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.fantv.world", kid: "PODsfgAn4twvCLjNt9QmEEiAcCa3Z6C10LxrDxvi3bA" }
+2025-04-23T15:56:27.139701Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "E760D111C1A1296E6D1D85F7EB18DDBAA0EC2B4E" }
+2025-04-23T15:56:27.139714Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.karrier.one/", kid: "B65FDCAA152E04ADE817314CF6A06F4ECABF4CFB" }
+2025-04-23T15:56:27.165128Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "JG6oZkIBqQdkpnCnD479zFXgMA5_I7i-aHAV0MRwvDs" }
+2025-04-23T15:56:27.165150Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "nArTrOCdn42U6zyzuZmxBIGAuYQaNyuHwUkAycsQTw8" }
+2025-04-23T15:56:27.166248Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "JG6oZkIBqQdkpnCnD479zFXgMA5_I7i-aHAV0MRwvDs" }
+2025-04-23T15:56:27.166263Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "nArTrOCdn42U6zyzuZmxBIGAuYQaNyuHwUkAycsQTw8" }
+2025-04-23T15:56:27.236604Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:27.272090Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "dMlERBaFdK" }
+2025-04-23T15:56:27.272131Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rs0M3kOV9p" }
+2025-04-23T15:56:27.272141Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "Sf2lFqwkpX" }
+2025-04-23T15:56:27.272152Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "E6q83RB15n" }
+2025-04-23T15:56:27.272164Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rBRfVmqsjn" }
+2025-04-23T15:56:27.274053Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "JG6oZkIBqQdkpnCnD479zFXgMA5_I7i-aHAV0MRwvDs" }
+2025-04-23T15:56:27.274075Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "nArTrOCdn42U6zyzuZmxBIGAuYQaNyuHwUkAycsQTw8" }
+2025-04-23T15:56:27.292426Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "dMlERBaFdK" }
+2025-04-23T15:56:27.292447Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "E6q83RB15n" }
+2025-04-23T15:56:27.292455Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "Sf2lFqwkpX" }
+2025-04-23T15:56:27.292466Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rs0M3kOV9p" }
+2025-04-23T15:56:27.292478Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rBRfVmqsjn" }
+2025-04-23T15:56:27.350282Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "1fd66a18-7afd-4086-ba57-a8ca9b398406" }
+2025-04-23T15:56:27.350322Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "7388b63c-ba03-4fe3-85e3-6717f91d55b1" }
+2025-04-23T15:56:27.350336Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "e55421cb-cdbd-4791-a590-ad8ca798aa89" }
+2025-04-23T15:56:27.360572Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "JG6oZkIBqQdkpnCnD479zFXgMA5_I7i-aHAV0MRwvDs" }
+2025-04-23T15:56:27.360600Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://accounts.credenza3.com", kid: "nArTrOCdn42U6zyzuZmxBIGAuYQaNyuHwUkAycsQTw8" }
+2025-04-23T15:56:27.421168Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "Sf2lFqwkpX" }
+2025-04-23T15:56:27.421195Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "dMlERBaFdK" }
+2025-04-23T15:56:27.421214Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rs0M3kOV9p" }
+2025-04-23T15:56:27.421233Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "E6q83RB15n" }
+2025-04-23T15:56:27.421250Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rBRfVmqsjn" }
+2025-04-23T15:56:27.457076Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://id.twitch.tv/oauth2", kid: "1" }
+2025-04-23T15:56:27.457632Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "Sf2lFqwkpX" }
+2025-04-23T15:56:27.457661Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rs0M3kOV9p" }
+2025-04-23T15:56:27.457675Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "E6q83RB15n" }
+2025-04-23T15:56:27.457691Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "dMlERBaFdK" }
+2025-04-23T15:56:27.457719Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://appleid.apple.com", kid: "rBRfVmqsjn" }
+2025-04-23T15:56:27.458956Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "7388b63c-ba03-4fe3-85e3-6717f91d55b1" }
+2025-04-23T15:56:27.458985Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "e55421cb-cdbd-4791-a590-ad8ca798aa89" }
+2025-04-23T15:56:27.458998Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "1fd66a18-7afd-4086-ba57-a8ca9b398406" }
+2025-04-23T15:56:27.459264Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://id.twitch.tv/oauth2", kid: "1" }
+2025-04-23T15:56:27.467728Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "1fd66a18-7afd-4086-ba57-a8ca9b398406" }
+2025-04-23T15:56:27.467751Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "7388b63c-ba03-4fe3-85e3-6717f91d55b1" }
+2025-04-23T15:56:27.467768Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "e55421cb-cdbd-4791-a590-ad8ca798aa89" }
+2025-04-23T15:56:27.502006Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://id.twitch.tv/oauth2", kid: "1" }
+2025-04-23T15:56:27.504163Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "3f96980381e451efad0d2ddd30e3d3" }
+2025-04-23T15:56:27.504197Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "9f252dadd5f233f93d2fa528d12fea" }
+2025-04-23T15:56:27.544032Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://id.twitch.tv/oauth2", kid: "1" }
+2025-04-23T15:56:27.557299Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "3f96980381e451efad0d2ddd30e3d3" }
+2025-04-23T15:56:27.557331Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "9f252dadd5f233f93d2fa528d12fea" }
+2025-04-23T15:56:27.568321Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "7388b63c-ba03-4fe3-85e3-6717f91d55b1" }
+2025-04-23T15:56:27.568363Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "e55421cb-cdbd-4791-a590-ad8ca798aa89" }
+2025-04-23T15:56:27.568383Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://oauth2.playtron.one", kid: "1fd66a18-7afd-4086-ba57-a8ca9b398406" }
+2025-04-23T15:56:27.656931Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "3f96980381e451efad0d2ddd30e3d3" }
+2025-04-23T15:56:27.656962Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "9f252dadd5f233f93d2fa528d12fea" }
+2025-04-23T15:56:27.681349Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "3f96980381e451efad0d2ddd30e3d3" }
+2025-04-23T15:56:27.681378Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://kauth.kakao.com", kid: "9f252dadd5f233f93d2fa528d12fea" }
+2025-04-23T15:56:27.787781Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://auth.3dos.io", kid: "6d361dc9637a275eb585a915af26198ff0d97326ca13f4baf0e4805f72f2a9a0" }
+2025-04-23T15:56:27.848585Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://auth.3dos.io", kid: "6d361dc9637a275eb585a915af26198ff0d97326ca13f4baf0e4805f72f2a9a0" }
+2025-04-23T15:56:27.920503Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://auth.3dos.io", kid: "6d361dc9637a275eb585a915af26198ff0d97326ca13f4baf0e4805f72f2a9a0" }
+2025-04-23T15:56:27.965955Z  INFO jwk_updater_task{epoch=0}: sui_node: Submitting JWK to consensus: JwkId { iss: "https://auth.3dos.io", kid: "6d361dc9637a275eb585a915af26198ff0d97326ca13f4baf0e4805f72f2a9a0" }
+2025-04-23T15:56:56.826615Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:56.919143Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:56.950194Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:56.961461Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:56.982932Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:57.073528Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:57.128066Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:56:57.237899Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:56:57.305668Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:57.526021Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:57.535287Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:57.629888Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:57.652419Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:57.673414Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:56:57.676758Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:56:57.718796Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:57:27.306629Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:57:27.526918Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:57:27.537527Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:57:27.631495Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:57:27.654063Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:57:27.676125Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:57:27.720290Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A"))
+2025-04-23T15:57:27.745301Z  INFO jwk_updater_task{epoch=0}: sui_node: fetching JWK for provider Arden
+2025-04-23T15:57:27.834246Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:57:27.976358Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:57:28.070376Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:57:28.194079Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider Arden JWKRetrievalError
+2025-04-23T15:57:28.237097Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:57:28.290072Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:57:28.342607Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
+2025-04-23T15:57:28.366357Z  WARN jwk_updater_task{epoch=0}: sui_node: Error when fetching JWK for provider AwsTenant(("us-east-1", "us-east-1_LPSLCkC3A")) JWKRetrievalError
