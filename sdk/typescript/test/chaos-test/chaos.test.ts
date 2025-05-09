@@ -25,8 +25,8 @@ describe('chaos tests', () => {
 		const kc = new KubeConfig();
 		kc.loadFromDefault();
 		await createNamespace(kc, NAMESPACE_NAME);
-		await createConfigMap(kc, NAMESPACE_NAME, 4);
-		await createPods(kc, NAMESPACE_NAME, 4);
+		await createConfigMap(kc, NAMESPACE_NAME, Number(process.env.VALIDATOR_NUM));
+		await createPods(kc, NAMESPACE_NAME, Number(process.env.VALIDATOR_NUM));
 		await createNetworkServices(kc, NAMESPACE_NAME);
 	});
 });
