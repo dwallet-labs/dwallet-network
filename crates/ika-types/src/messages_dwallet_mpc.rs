@@ -349,9 +349,6 @@ pub struct MaliciousReport {
     pub session_id: ObjectID,
 }
 
-/// Represent a report that a session's cryptographic computation has failed with a threshold not reached error.
-/// 
-/// In this case, we wait 
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ThresholdNotReachedReport {
     pub session_id: ObjectID,
