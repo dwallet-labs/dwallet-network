@@ -306,11 +306,12 @@ impl DWalletMPCManager {
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
+        let committee = self.epoch_store()?.committee().clone();
         if self
             .threshold_not_reached_reports
             .entry(report.clone())
             .or_insert(StakeAggregator::new(
-                self.epoch_store()?.committee().clone(),
+                committee,
             ))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
