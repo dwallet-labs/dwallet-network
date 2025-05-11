@@ -396,7 +396,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
-    let res = match P::advance(
+    let res = match P::advance_with_guaranteed_output(
         session_id,
         party_id,
         access_threshold,
