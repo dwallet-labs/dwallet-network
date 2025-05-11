@@ -30,9 +30,11 @@ use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 use sui_types::base_types::ObjectID;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -258,6 +260,34 @@ pub(crate) fn advance_network_dkg(
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    let messages_party_ids: Vec<Vec<PartyID>> = messages
+        .iter()
+        .map(|m| m.keys().copied().collect())
+        .collect();
+    error!(?messages_party_ids, ?party_id, "advancing");
+    if party_id == 3 {
+        let res = match key_scheme {
+            DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
+                session_id,
+                1,
+                &weighted_threshold_access_structure,
+                messages,
+                bcs::from_bytes(public_input)?,
+                class_groups_decryption_key,
+            ),
+            DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
+                session_id,
+                1,
+                &weighted_threshold_access_structure,
+                messages,
+                bcs::from_bytes(public_input)?,
+                class_groups_decryption_key,
+            ),
+        }?;
+        return Ok(res);
+    } else if party_id == 4 && messages.len() <= 2 {
+        thread::sleep(Duration::from_secs(30));
+    }
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
             session_id,
