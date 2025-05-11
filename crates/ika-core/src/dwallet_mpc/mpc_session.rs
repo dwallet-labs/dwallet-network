@@ -87,6 +87,7 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
+    pub(crate) received_more_messages_since_last_retry: bool,
 }
 
 impl DWalletMPCSession {
@@ -111,6 +112,7 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
+            received_more_messages_since_last_retry: false,
         }
     }
 

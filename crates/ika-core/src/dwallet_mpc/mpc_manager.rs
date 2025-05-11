@@ -18,6 +18,7 @@ use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
+use crate::stake_aggregator::StakeAggregator;
 use class_groups::DecryptionKeyShare;
 use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
@@ -109,6 +110,8 @@ pub struct DWalletMPCManager {
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    pub(crate) threshold_not_reached_reports:
+        HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -207,6 +210,7 @@ impl DWalletMPCManager {
             next_epoch_committee_receiver,
             events_pending_for_network_key: vec![],
             dwallet_mpc_metrics,
+            threshold_not_reached_reports: Default::default(),
         })
     }
 
@@ -286,7 +290,41 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
+            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
+                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
+                    error!(
+                        "dWallet MPC session failed with threshold not reached with error: {:?}",
+                        err
+                    );
+                }
+            }
+        }
+    }
+
+    fn handle_threshold_not_reached_report(
+        &mut self,
+        report: ThresholdNotReachedReport,
+        origin_authority: AuthorityName,
+    ) -> DwalletMPCResult<()> {
+        if self
+            .threshold_not_reached_reports
+            .entry(report.clone())
+            .or_insert(StakeAggregator::new(
+                self.epoch_store()?.committee().clone(),
+            ))
+            .insert_generic(origin_authority, ())
+            .is_quorum_reached()
+        {
+            self.wait_for_more_messages_and_retry(report.session_id);
+            self.threshold_not_reached_reports.remove(&report);
+        }
+        Ok(())
+    }
+
+    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) {
+        if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+            session.received_more_messages_since_last_retry = false;
+            session.pending_quorum_for_highest_round_number -= 1;
         }
     }
 
