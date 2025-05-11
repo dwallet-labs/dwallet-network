@@ -310,9 +310,7 @@ impl DWalletMPCManager {
         if self
             .threshold_not_reached_reports
             .entry(report.clone())
-            .or_insert(StakeAggregator::new(
-                committee,
-            ))
+            .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
