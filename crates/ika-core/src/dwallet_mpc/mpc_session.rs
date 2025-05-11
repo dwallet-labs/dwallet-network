@@ -643,7 +643,7 @@ impl DWalletMPCSession {
         match self.status {
             MPCSessionStatus::Active => {
                 if self.pending_quorum_for_highest_round_number == 0
-                    || self
+                    || (self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
@@ -655,7 +655,7 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
-                        && self.received_more_messages_since_last_retry
+                        && self.received_more_messages_since_last_retry)
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
