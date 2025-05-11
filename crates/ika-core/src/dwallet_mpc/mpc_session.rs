@@ -309,9 +309,6 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
-    /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
-    /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
         let report_tx =
             self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
