@@ -484,7 +484,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         }
 
         if !valid_messages.is_empty() {
-            deserialized_results.insert(index + 1, valid_messages);
+            deserialized_results.insert(index, valid_messages);
         }
     }
     DeserializeMPCMessagesResponse {
