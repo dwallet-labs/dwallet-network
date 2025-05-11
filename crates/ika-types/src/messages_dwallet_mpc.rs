@@ -349,6 +349,19 @@ pub struct MaliciousReport {
     pub session_id: ObjectID,
 }
 
+/// Represents a report of malicious behavior in the dWallet MPC process.
+///
+/// This struct is used to record instances where validators identify malicious actors
+/// attempting to disrupt the protocol.
+/// It links the malicious actors to a specific MPC session.
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ThresholdNotReachedReport {
+    /// The unique identifier of the MPC session in which the malicious activity occurred.
+    pub session_id: ObjectID,
+    pub crypto_round_number: usize,
+    pub authority: AuthorityName,
+}
+
 impl MaliciousReport {
     /// Creates a new instance of a malicious report.
     pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {

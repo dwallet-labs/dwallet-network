@@ -33,10 +33,7 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
-};
+use ika_types::messages_dwallet_mpc::{AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState, SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent, ThresholdNotReachedReport};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
@@ -195,8 +192,7 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::TWOPCMPCThresholdNotReached(malicious_parties)) => {
-                error!(?malicious_parties, "session failed with malicious parties",);
+            Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
                 let base64_mpc_messages = general_purpose::STANDARD
                     .encode(bcs::to_bytes(&self.serialized_full_messages)?);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
@@ -222,7 +218,7 @@ impl DWalletMPCSession {
                 //     malicious_parties,
                 //     AdvanceResult::Failure,
                 // )
-                todo!()
+                self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
                 error!(?err, "failed to advance the MPC session");
@@ -299,6 +295,31 @@ impl DWalletMPCSession {
             self.session_id.clone(),
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
+        let epoch_store = self.epoch_store()?.clone();
+        let consensus_adapter = self.consensus_adapter.clone();
+        tokio_runtime_handle.spawn(async move {
+            if let Err(err) = consensus_adapter
+                .submit_to_consensus(&vec![report_tx], &epoch_store)
+                .await
+            {
+                error!("failed to submit an MPC message to consensus: {:?}", err);
+            }
+        });
+        Ok(())
+    }
+
+    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
+    /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
+    /// and to punish the validator who started the Sign IA report if they sent a faulty report.
+    fn report_threshold_not_reached(
+        &self,
+        tokio_runtime_handle: &Handle,
+    ) -> DwalletMPCResult<()> {
+        let report_tx = self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
+            session_id: self.session_id,
+            crypto_round_number: self.pending_quorum_for_highest_round_number,
+            authority: self.epoch_store()?.name,
+        })?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
         tokio_runtime_handle.spawn(async move {
@@ -502,6 +523,20 @@ impl DWalletMPCSession {
         Ok(
             ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
                 self.epoch_store()?.name,
+                report,
+            ),
+        )
+    }
+
+    /// Report that the session failed because of malicious actors.
+    /// Once a quorum of validators reports the same actor, it is considered malicious.
+    /// The session will be continued, and the malicious actors will be ignored.
+    fn new_dwallet_report_threshold_not_reached(
+        &self,
+        report: ThresholdNotReachedReport,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(
+            ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
                 report,
             ),
         )

@@ -416,7 +416,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached => {
-                    todo!("Handle threshold not reached error")
+                    return Err(DwalletMPCError::TWOPCMPCThresholdNotReached)
                 }
                 _ => Err(general_error),
             };
