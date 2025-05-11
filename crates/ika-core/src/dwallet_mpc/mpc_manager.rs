@@ -286,7 +286,7 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::ThresholdNotReachedReport(_) => {}
+            DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
         }
     }
 
