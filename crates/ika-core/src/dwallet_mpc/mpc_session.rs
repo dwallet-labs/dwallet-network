@@ -201,26 +201,26 @@ impl DWalletMPCSession {
                 Ok(())
             }
             Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
-                let base64_mpc_messages = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&self.serialized_full_messages)?);
-                let mpc_event_data = self.mpc_event_data.clone().unwrap();
-                let base64_mpc_public_input =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
-                let base64_mpc_init_protocol_data = general_purpose::STANDARD
-                    .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
-                let base64_mpc_session_type =
-                    general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
-                error!(
-                    messages=?base64_mpc_messages,
-                    public_input=?base64_mpc_public_input,
-                    init_protocol_data=?base64_mpc_init_protocol_data,
-                    session_type=?base64_mpc_session_type,
-                    session_id=?self.session_id,
-                    validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
-                    party_id=?self.party_id,
-                    "MPC session failed"
-                );
+                // let base64_mpc_messages = general_purpose::STANDARD
+                //     .encode(bcs::to_bytes(&self.serialized_full_messages)?);
+                // let mpc_event_data = self.mpc_event_data.clone().unwrap();
+                // let base64_mpc_public_input =
+                //     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.public_input)?);
+                // let base64_mpc_init_protocol_data = general_purpose::STANDARD
+                //     .encode(bcs::to_bytes(&mpc_event_data.init_protocol_data)?);
+                // let base64_mpc_session_type =
+                //     general_purpose::STANDARD.encode(bcs::to_bytes(&mpc_event_data.session_type)?);
+                // error!(
+                //     messages=?base64_mpc_messages,
+                //     public_input=?base64_mpc_public_input,
+                //     init_protocol_data=?base64_mpc_init_protocol_data,
+                //     session_type=?base64_mpc_session_type,
+                //     session_id=?self.session_id,
+                //     validator=?self.epoch_store()?.name,
+                //     crypto_round=?self.pending_quorum_for_highest_round_number,
+                //     party_id=?self.party_id,
+                //     "MPC session failed"
+                // );
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
