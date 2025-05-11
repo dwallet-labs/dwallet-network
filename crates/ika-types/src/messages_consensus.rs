@@ -183,7 +183,6 @@ impl ConsensusTransaction {
         }
     }
 
-    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_session_threshold_not_reached(
         authority: AuthorityName,
         report: ThresholdNotReachedReport,
