@@ -219,11 +219,6 @@ impl DWalletMPCSession {
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
-                // self.report_malicious_actors(
-                //     tokio_runtime_handle,
-                //     malicious_parties,
-                //     AdvanceResult::Failure,
-                // )
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
