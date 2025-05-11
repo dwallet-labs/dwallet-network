@@ -195,7 +195,7 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
+            Err(DwalletMPCError::TWOPCMPCThresholdNotReached(malicious_parties)) => {
                 error!(?malicious_parties, "session failed with malicious parties",);
                 let base64_mpc_messages = general_purpose::STANDARD
                     .encode(bcs::to_bytes(&self.serialized_full_messages)?);
