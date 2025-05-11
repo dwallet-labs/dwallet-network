@@ -451,7 +451,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
-    messages: Vec<HashMap<PartyID, M>>,
+    messages: HashMap<usize, HashMap<PartyID, M>>,
     malicious_parties: Vec<PartyID>,
 }
 
@@ -461,10 +461,10 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
-    let mut deserialized_results = Vec::new();
+    let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
 
-    for message_batch in &messages {
+    for (index, message_batch) in &messages.iter().enumerate() {
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
@@ -484,7 +484,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         }
 
         if !valid_messages.is_empty() {
-            deserialized_results.push(valid_messages);
+            deserialized_results.insert(index + 1, valid_messages);
         }
     }
     DeserializeMPCMessagesResponse {
