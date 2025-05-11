@@ -320,7 +320,6 @@ impl DWalletMPCSession {
             self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
                 session_id: self.session_id,
                 crypto_round_number: self.pending_quorum_for_highest_round_number,
-                authority: self.epoch_store()?.name,
             })?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
@@ -537,7 +536,12 @@ impl DWalletMPCSession {
         &self,
         report: ThresholdNotReachedReport,
     ) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(report))
+        Ok(
+            ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
+                self.epoch_store()?.name,
+                report,
+            ),
+        )
     }
 
     /// Stores a message in the serialized messages map.

@@ -39,7 +39,7 @@ pub enum ConsensusTransactionKey {
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    DWalletMPCThresholdNotReached(ThresholdNotReachedReport),
+    DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -72,8 +72,13 @@ impl Debug for ConsensusTransactionKey {
                     report,
                 )
             }
-            ConsensusTransactionKey::DWalletMPCThresholdNotReached(report) => {
-                write!(f, "DWalletMPCThresholdNotReached({:?})", report)
+            ConsensusTransactionKey::DWalletMPCThresholdNotReached(authority, report) => {
+                write!(
+                    f,
+                    "DWalletMPCThresholdNotReached({:?}, {:?})",
+                    authority.concise(),
+                    report,
+                )
             }
         }
     }
@@ -124,7 +129,7 @@ pub enum ConsensusTransactionKind {
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
-    DWalletMPCThresholdNotReached(ThresholdNotReachedReport),
+    DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
 }
 
 impl ConsensusTransaction {
@@ -180,6 +185,7 @@ impl ConsensusTransaction {
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_session_threshold_not_reached(
+        authority: AuthorityName,
         report: ThresholdNotReachedReport,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
@@ -187,7 +193,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(report),
+            kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
         }
     }
 
@@ -241,8 +247,8 @@ impl ConsensusTransaction {
                     report.clone(),
                 )
             }
-            ConsensusTransactionKind::DWalletMPCThresholdNotReached(report) => {
-                ConsensusTransactionKey::DWalletMPCThresholdNotReached(report.clone())
+            ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report) => {
+                ConsensusTransactionKey::DWalletMPCThresholdNotReached(*authority, report.clone())
             }
         }
     }

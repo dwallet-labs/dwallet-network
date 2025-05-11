@@ -131,7 +131,7 @@ pub enum DWalletMPCDBMessage {
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
-    ThresholdNotReachedReport(ThresholdNotReachedReport),
+    ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
 struct ReadySessionsResponse {

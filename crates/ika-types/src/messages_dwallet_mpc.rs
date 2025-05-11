@@ -359,7 +359,6 @@ pub struct ThresholdNotReachedReport {
     /// The unique identifier of the MPC session in which the malicious activity occurred.
     pub session_id: ObjectID,
     pub crypto_round_number: usize,
-    pub authority: AuthorityName,
 }
 
 impl MaliciousReport {
