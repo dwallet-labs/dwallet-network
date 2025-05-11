@@ -36,6 +36,7 @@ pub enum ConsensusTransactionKey {
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
+    DWalletMPCThresholdNotReached(ThresholdNotReachedReport),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -231,6 +232,9 @@ impl ConsensusTransaction {
                     *authority,
                     report.clone(),
                 )
+            }
+            ConsensusTransactionKind::DWalletMPCThresholdNotReached(report) => {
+                ConsensusTransactionKey::DWalletMPCThresholdNotReached(report.clone())
             }
         }
     }
