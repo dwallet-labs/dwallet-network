@@ -1,15 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-mod params_message_output;
 mod metrics;
+mod params_message_output;
 
 use crate::authority::AuthorityState;
-use crate::params_messages::params_message_output::{CertifiedParamsMessageOutput, ParamsMessageOutput};
+pub use crate::params_messages::metrics::ParamsMessageMetrics;
+use crate::params_messages::params_message_output::{
+    CertifiedParamsMessageOutput, ParamsMessageOutput,
+};
 pub use crate::params_messages::params_message_output::{
     LogParamsMessageOutput, SendParamsMessageToStateSync, SubmitParamsMessageToConsensus,
 };
-pub use crate::params_messages::metrics::ParamsMessageMetrics;
 use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
 use diffy::create_patch;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
@@ -26,11 +28,16 @@ use chrono::Utc;
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
-use ika_types::digests::{ParamsMessageContentsDigest, MessageDigest};
+use ika_types::digests::{MessageDigest, ParamsMessageContentsDigest};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message_envelope::Message;
-use ika_types::messages_params_messages::{CertifiedParamsMessage, ParamsMessage, ParamsMessageDigest, ParamsMessageSequenceNumber, ParamsMessageSignatureMessage, ParamsMessageTimestamp, TrustedParamsMessage, VerifiedParamsMessage};
 use ika_types::messages_consensus::ConsensusTransactionKey;
+use ika_types::messages_params_messages::ParamsMessageKind;
+use ika_types::messages_params_messages::{
+    CertifiedParamsMessage, ParamsMessage, ParamsMessageDigest, ParamsMessageSequenceNumber,
+    ParamsMessageSignatureMessage, ParamsMessageTimestamp, SignedParamsMessage,
+    TrustedParamsMessage, VerifiedParamsMessage,
+};
 use ika_types::sui::{SystemInner, SystemInnerTrait};
 use rand::rngs::OsRng;
 use rand::seq::SliceRandom;
@@ -49,7 +56,6 @@ use typed_store::{
     rocks::{DBMap, MetricConf},
     TypedStoreError,
 };
-use ika_types::messages_params_messages::{ParamsMessageKind};
 
 pub type ParamsMessageHeight = u64;
 
@@ -222,8 +228,9 @@ impl ParamsMessageStore {
     pub fn get_highest_verified_params_message(
         &self,
     ) -> Result<Option<VerifiedParamsMessage>, TypedStoreError> {
-        let highest_verified = if let Some(highest_verified) =
-            self.watermarks.get(&ParamsMessageWatermark::HighestVerified)?
+        let highest_verified = if let Some(highest_verified) = self
+            .watermarks
+            .get(&ParamsMessageWatermark::HighestVerified)?
         {
             highest_verified
         } else {
@@ -235,8 +242,9 @@ impl ParamsMessageStore {
     pub fn get_highest_synced_params_message(
         &self,
     ) -> Result<Option<VerifiedParamsMessage>, TypedStoreError> {
-        let highest_synced = if let Some(highest_synced) =
-            self.watermarks.get(&ParamsMessageWatermark::HighestSynced)?
+        let highest_synced = if let Some(highest_synced) = self
+            .watermarks
+            .get(&ParamsMessageWatermark::HighestSynced)?
         {
             highest_synced
         } else {
@@ -248,8 +256,9 @@ impl ParamsMessageStore {
     pub fn get_highest_executed_params_message_seq_number(
         &self,
     ) -> Result<Option<ParamsMessageSequenceNumber>, TypedStoreError> {
-        if let Some(highest_executed) =
-            self.watermarks.get(&ParamsMessageWatermark::HighestExecuted)?
+        if let Some(highest_executed) = self
+            .watermarks
+            .get(&ParamsMessageWatermark::HighestExecuted)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -260,8 +269,9 @@ impl ParamsMessageStore {
     pub fn get_highest_executed_params_message(
         &self,
     ) -> Result<Option<VerifiedParamsMessage>, TypedStoreError> {
-        let highest_executed = if let Some(highest_executed) =
-            self.watermarks.get(&ParamsMessageWatermark::HighestExecuted)?
+        let highest_executed = if let Some(highest_executed) = self
+            .watermarks
+            .get(&ParamsMessageWatermark::HighestExecuted)?
         {
             highest_executed
         } else {
@@ -296,11 +306,17 @@ impl ParamsMessageStore {
         let mut batch = self.certified_params_messages.batch();
         batch.insert_batch(
             &self.params_message_sequence_by_digest,
-            [(params_message.digest().clone(), params_message.sequence_number())],
+            [(
+                params_message.digest().clone(),
+                params_message.sequence_number(),
+            )],
         )?;
         batch.insert_batch(
             &self.certified_params_messages,
-            [(params_message.sequence_number(), params_message.serializable_ref())],
+            [(
+                params_message.sequence_number(),
+                params_message.serializable_ref(),
+            )],
         )?;
         batch.write()?;
 
@@ -457,7 +473,7 @@ impl ParamsMessageBuilder {
         // Collect info about the most recently built params_message.
         let params_message = self
             .epoch_store
-            .last_built_params_message_builder()
+            .last_built_params_message_message_builder()
             .expect("epoch should not have ended");
         let mut last_height = params_message.clone().and_then(|s| s.params_message_height);
         let mut last_timestamp = params_message.map(|s| s.params_message.timestamp_ms);
@@ -506,7 +522,10 @@ impl ParamsMessageBuilder {
                 .make_params_message(std::mem::take(&mut grouped_pending_params_messages))
                 .await
             {
-                error!("Error while making params_message, will retry in 1s: {:?}", e);
+                error!(
+                    "Error while making params_message, will retry in 1s: {:?}",
+                    e
+                );
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 self.metrics.params_message_errors.inc();
                 return;
@@ -652,7 +671,7 @@ impl ParamsMessageBuilder {
         let _scope = monitored_scope("ParamsMessageBuilder::create_params_messages");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
-        let mut last_params_message = self.epoch_store.last_built_params_message()?;
+        let mut last_params_message = self.epoch_store.last_built_params_message_message()?;
         // if last_params_message.is_none() {
         //     let epoch = self.epoch_store.epoch();
         //     if epoch > 0 {
@@ -717,8 +736,7 @@ impl ParamsMessageBuilder {
                 messages.len()
             );
 
-            let params_message =
-                ParamsMessage::new(epoch, sequence_number, messages, timestamp_ms);
+            let params_message = ParamsMessage::new(epoch, sequence_number, messages, timestamp_ms);
             params_message.report_params_message_age(&self.metrics.last_created_params_message_age);
             last_params_message = Some((sequence_number, params_message.clone()));
             params_messages.push(params_message);
@@ -889,7 +907,7 @@ impl ParamsMessageAggregator {
             } else {
                 let Some(params_message) = self
                     .epoch_store
-                    .get_built_params_message(next_to_certify)?
+                    .get_built_params_message_message(next_to_certify)?
                 else {
                     return Ok(result);
                 };
@@ -985,10 +1003,8 @@ impl ParamsMessageSignatureAggregator {
         let their_digest = *data.params_message.digest();
         let (_, signature) = data.params_message.into_data_and_sig();
         let author = signature.authority;
-        let envelope = SignedParamsMessage::new_from_data_and_sig(
-            self.params_message.clone(),
-            signature,
-        );
+        let envelope =
+            SignedParamsMessage::new_from_data_and_sig(self.params_message.clone(), signature);
         match self.signatures_by_digest.insert(their_digest, envelope) {
             // ignore repeated signatures
             InsertResult::Failed {

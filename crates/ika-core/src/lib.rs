@@ -15,10 +15,10 @@ pub mod consensus_validator;
 pub mod epoch;
 pub mod metrics;
 pub mod mysticeti_adapter;
+pub mod params_messages;
 mod scoring_decision;
 mod stake_aggregator;
 pub mod storage;
-pub mod params_messages;
 
 pub mod dwallet_mpc;
 pub mod sui_connector;

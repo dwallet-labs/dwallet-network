@@ -111,6 +111,7 @@ pub struct ValidatorComponents {
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
     checkpoint_service_tasks: JoinSet<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
+    params_message_metrics: Arc<ParamsMessageMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
 
     dwallet_mpc_service_exit: watch::Sender<()>,
@@ -184,6 +185,10 @@ use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::dwallet_mpc::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
+use ika_core::params_messages::{
+    ParamsMessageMetrics, ParamsMessageService, ParamsMessageStore, SendParamsMessageToStateSync,
+    SubmitParamsMessageToConsensus,
+};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -199,7 +204,6 @@ pub use simulator::set_jwk_injector;
 use simulator::*;
 use sui_types::execution_config_utils::to_binary_config;
 use tokio::sync::watch::Receiver;
-use ika_core::params_messages::{ParamsMessageMetrics, ParamsMessageService, ParamsMessageStore, SendParamsMessageToStateSync, SubmitParamsMessageToConsensus};
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -229,6 +233,7 @@ pub struct IkaNode {
     _state_archive_handle: Option<broadcast::Sender<()>>,
 
     shutdown_channel_tx: broadcast::Sender<Option<RunWithRange>>,
+    params_message_store: Arc<ParamsMessageStore>,
 }
 
 impl fmt::Debug for IkaNode {
@@ -375,6 +380,8 @@ impl IkaNode {
         info!("creating checkpoint store");
 
         let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
+        let params_message_store =
+            ParamsMessageStore::new(&config.db_path().join("params_messages"));
 
         info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
@@ -486,6 +493,7 @@ impl IkaNode {
                 committee_arc,
                 epoch_store.clone(),
                 checkpoint_store.clone(),
+                params_message_store.clone(),
                 state_sync_handle.clone(),
                 connection_monitor_status.clone(),
                 &registry_service,
@@ -519,6 +527,7 @@ impl IkaNode {
             _connection_monitor_handle: connection_monitor_handle,
             state_sync_handle,
             checkpoint_store,
+            params_message_store,
 
             end_of_epoch_channel,
             connection_monitor_status,
@@ -757,6 +766,7 @@ impl IkaNode {
         committee: Arc<Committee>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_store: Arc<CheckpointStore>,
+        params_message_store: Arc<ParamsMessageStore>,
         state_sync_handle: state_sync::Handle,
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
@@ -794,6 +804,8 @@ impl IkaNode {
         );
 
         let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
+        let params_message_metrics =
+            ParamsMessageMetrics::new(&registry_service.default_registry());
         let ika_tx_validator_metrics =
             IkaTxValidatorMetrics::new(&registry_service.default_registry());
 
@@ -802,11 +814,13 @@ impl IkaNode {
             state.clone(),
             consensus_adapter,
             checkpoint_store,
+            params_message_store,
             epoch_store,
             state_sync_handle,
             consensus_manager,
             consensus_store_pruner,
             checkpoint_metrics,
+            params_message_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
             previous_epoch_last_checkpoint_sequence_number,
@@ -847,16 +861,17 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let (params_message_service, params_message_service_tasks) = Self::start_params_message_service(
-            config,
-            consensus_adapter.clone(),
-            params_message_store,
-            epoch_store.clone(),
-            state.clone(),
-            state_sync_handle,
-            params_message_metrics.clone(),
-            previous_epoch_last_checkpoint_sequence_number,
-        );
+        let (params_message_service, params_message_service_tasks) =
+            Self::start_params_message_service(
+                config,
+                consensus_adapter.clone(),
+                params_message_store,
+                epoch_store.clone(),
+                state.clone(),
+                state_sync_handle,
+                params_message_metrics.clone(),
+                previous_epoch_last_checkpoint_sequence_number,
+            );
 
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
             epoch_store.clone(),
@@ -922,6 +937,7 @@ impl IkaNode {
             consensus_adapter,
             checkpoint_service_tasks,
             checkpoint_metrics,
+            params_message_metrics,
             ika_tx_validator_metrics,
             dwallet_mpc_service_exit,
         })
@@ -998,9 +1014,12 @@ impl IkaNode {
         });
 
         let certified_params_message_output = SendParamsMessageToStateSync::new(state_sync_handle);
-        let max_tx_per_params_message = epoch_store.protocol_config().max_messages_per_params_message();
-        let max_params_message_size_bytes =
-            epoch_store.protocol_config().max_params_message_size_bytes() as usize;
+        let max_tx_per_params_message = epoch_store
+            .protocol_config()
+            .max_messages_per_params_message();
+        let max_params_message_size_bytes = epoch_store
+            .protocol_config()
+            .max_params_message_size_bytes() as usize;
 
         ParamsMessageService::spawn(
             state.clone(),
@@ -1009,7 +1028,7 @@ impl IkaNode {
             params_message_output,
             Box::new(certified_params_message_output),
             params_message_metrics,
-            max_tx_per_params_message,
+            max_tx_per_params_message as usize,
             max_params_message_size_bytes,
             previous_epoch_last_params_message_sequence_number,
         )
@@ -1071,27 +1090,25 @@ impl IkaNode {
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
             if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
-                    let transaction = ConsensusTransaction::new_capability_notification_v1(
-                        AuthorityCapabilitiesV1::new(
-                            self.state.name,
-                            cur_epoch_store.get_chain_identifier().chain(),
-                            supported_versions,
-                            sui_client
-                                .get_available_move_packages()
-                                .await
-                                .map_err(|e| {
-                                    anyhow!("Cannot get available move packages: {:?}", e)
-                                })?,
-                        ),
-                    );
+                let transaction = ConsensusTransaction::new_capability_notification_v1(
+                    AuthorityCapabilitiesV1::new(
+                        self.state.name,
+                        cur_epoch_store.get_chain_identifier().chain(),
+                        supported_versions,
+                        sui_client
+                            .get_available_move_packages()
+                            .await
+                            .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                    ),
+                );
 
-                    if let Some(components) = &*self.validator_components.lock().await {
-                        info!(?transaction, "submitting capabilities to consensus");
-                        components
-                            .consensus_adapter
-                            .submit_to_consensus(&[transaction], &cur_epoch_store)
-                            .await?;
-                    }
+                if let Some(components) = &*self.validator_components.lock().await {
+                    info!(?transaction, "submitting capabilities to consensus");
+                    components
+                        .consensus_adapter
+                        .submit_to_consensus(&[transaction], &cur_epoch_store)
+                        .await?;
+                }
             }
 
             let stop_condition = self
@@ -1179,6 +1196,7 @@ impl IkaNode {
                 consensus_adapter,
                 mut checkpoint_service_tasks,
                 checkpoint_metrics,
+                params_message_metrics,
                 ika_tx_validator_metrics,
                 dwallet_mpc_service_exit,
             }) = self.validator_components.lock().await.take()
@@ -1222,11 +1240,13 @@ impl IkaNode {
                             self.state.clone(),
                             consensus_adapter,
                             self.checkpoint_store.clone(),
+                            self.params_message_store.clone(),
                             new_epoch_store.clone(),
                             self.state_sync_handle.clone(),
                             consensus_manager,
                             consensus_store_pruner,
                             checkpoint_metrics,
+                            params_message_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
@@ -1261,6 +1281,7 @@ impl IkaNode {
                             Arc::new(next_epoch_committee.clone()),
                             new_epoch_store.clone(),
                             self.checkpoint_store.clone(),
+                            self.params_message_store.clone(),
                             self.state_sync_handle.clone(),
                             self.connection_monitor_status.clone(),
                             &self.registry_service,
@@ -1337,12 +1358,13 @@ impl IkaNode {
         );
 
         let system_inner = sui_client.must_get_system_inner_object().await;
-        let next_version: Option<u64> = system_inner
-            .next_protocol_version();
+        let next_version: Option<u64> = system_inner.next_protocol_version();
         let current_version: u64 = system_inner.protocol_version();
 
-        let should_update_by_next_version = next_version.is_some() && next_version != Some(new_version);
-        let should_update_by_current_version = next_version.is_none() && current_version != new_version;
+        let should_update_by_next_version =
+            next_version.is_some() && next_version != Some(new_version.as_u64());
+        let should_update_by_current_version =
+            next_version.is_none() && current_version != new_version.as_u64();
 
         if should_update_by_next_version || should_update_by_current_version {
             info!(
@@ -1354,7 +1376,7 @@ impl IkaNode {
                 epoch_store.epoch(),
                 ParamsMessage {
                     epoch: epoch_store.epoch(),
-                    sequence_number: next_params_message_seq_num,
+                    sequence_number: next_version.unwrap(),
                     // todo : set real timestamp
                     // consensus_commit.commit_timestamp_ms(),
                     timestamp_ms: 0,

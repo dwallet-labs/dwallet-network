@@ -63,6 +63,7 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
+use crate::params_messages::{BuilderParamsMessage, ParamsMessageHeight, PendingParamsMessage};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -93,7 +94,8 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_params_messages::{
-    ParamsMessage, ParamsMessageKind, ParamsMessageSignatureMessage, SignedParamsMessage,
+    ParamsMessage, ParamsMessageKind, ParamsMessageSequenceNumber, ParamsMessageSignatureMessage,
+    SignedParamsMessage,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
@@ -415,6 +417,18 @@ pub struct AuthorityEpochTables {
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
     builder_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage>,
+
+    // #[default_options_override_fn = "pending_checkpoints_table_default_config"]
+    pending_params_messages: DBMap<ParamsMessageHeight, PendingParamsMessage>,
+
+    /// Stores pending signatures
+    /// The key in this table is checkpoint sequence number and an arbitrary integer
+    pending_params_message_signatures:
+        DBMap<(CheckpointSequenceNumber, u64), ParamsMessageSignatureMessage>,
+
+    /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
+    builder_params_message_v1: DBMap<CheckpointSequenceNumber, BuilderParamsMessage>,
+
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
@@ -527,6 +541,27 @@ impl AuthorityEpochTables {
         debug!("Scanning pending checkpoint signatures from {:?}", key);
         let iter = self
             .pending_checkpoint_signatures
+            .unbounded_iter()
+            .skip_to(&key)?;
+        Ok::<_, IkaError>(iter)
+    }
+
+    pub fn get_pending_params_message_signatures_iter(
+        &self,
+        params_message_seq: ParamsMessageSequenceNumber,
+        starting_index: u64,
+    ) -> IkaResult<
+        impl Iterator<
+                Item = (
+                    (ParamsMessageSequenceNumber, u64),
+                    ParamsMessageSignatureMessage,
+                ),
+            > + '_,
+    > {
+        let key = (params_message_seq, starting_index);
+        debug!("Scanning pending params_message signatures from {:?}", key);
+        let iter = self
+            .pending_params_message_signatures
             .unbounded_iter()
             .skip_to(&key)?;
         Ok::<_, IkaError>(iter)
@@ -1933,6 +1968,147 @@ impl AuthorityPerEpochStore {
             .insert(&(checkpoint_seq, index), info)?)
     }
 
+    pub(crate) fn write_pending_params_message(
+        &self,
+        output: &mut ConsensusCommitOutput,
+        params_message: &PendingParamsMessage,
+    ) -> IkaResult {
+        assert!(
+            self.get_pending_params_message(&params_message.height())?
+                .is_none(),
+            "Duplicate pending params_message notification at height {:?}",
+            params_message.height()
+        );
+
+        debug!(
+            params_message_commit_height = params_message.height(),
+            "Pending params_message has {} messages",
+            params_message.messages().len(),
+        );
+        trace!(
+            params_message_commit_height = params_message.height(),
+            "Messages for pending params_message: {:?}",
+            params_message.messages()
+        );
+
+        output.insert_pending_params_message(params_message.clone());
+
+        Ok(())
+    }
+
+    pub fn get_pending_params_messages(
+        &self,
+        last: Option<ParamsMessageHeight>,
+    ) -> IkaResult<Vec<(ParamsMessageHeight, PendingParamsMessage)>> {
+        let tables = self.tables()?;
+        let mut iter = tables.pending_params_messages.unbounded_iter();
+        if let Some(last_processed_height) = last {
+            iter = iter.skip_to(&(last_processed_height + 1))?;
+        }
+        Ok(iter.collect())
+    }
+
+    pub fn get_pending_params_message(
+        &self,
+        index: &ParamsMessageHeight,
+    ) -> IkaResult<Option<PendingParamsMessage>> {
+        Ok(self.tables()?.pending_params_messages.get(index)?)
+    }
+
+    pub fn process_pending_params_message(
+        &self,
+        commit_height: ParamsMessageHeight,
+        params_message_messages: Vec<ParamsMessage>,
+    ) -> IkaResult<()> {
+        let tables = self.tables()?;
+        // All created params_messages are inserted in builder_params_message_summary in a single batch.
+        // This means that upon restart we can use BuilderParamsMessageSummary::commit_height
+        // from the last built summary to resume building params_messages.
+        let mut batch = tables.pending_params_messages.batch();
+        for (position_in_commit, summary) in params_message_messages.into_iter().enumerate() {
+            let sequence_number = summary.sequence_number;
+            let summary = BuilderParamsMessage {
+                params_message: summary,
+                params_message_height: Some(commit_height),
+                position_in_commit,
+            };
+            batch.insert_batch(
+                &tables.builder_params_message_v1,
+                [(&sequence_number, summary)],
+            )?;
+        }
+
+        // find all pending params_messages <= commit_height and remove them
+        let iter = tables
+            .pending_params_messages
+            .safe_range_iter(0..=commit_height);
+        let keys = iter
+            .map(|c| c.map(|(h, _)| h))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        batch.delete_batch(&tables.pending_params_messages, &keys)?;
+
+        Ok(batch.write()?)
+    }
+
+    pub fn last_built_params_message_message_builder(
+        &self,
+    ) -> IkaResult<Option<BuilderParamsMessage>> {
+        Ok(self
+            .tables()?
+            .builder_params_message_v1
+            .unbounded_iter()
+            .skip_to_last()
+            .next()
+            .map(|(_, s)| s))
+    }
+
+    pub fn last_built_params_message_message(
+        &self,
+    ) -> IkaResult<Option<(ParamsMessageSequenceNumber, ParamsMessage)>> {
+        Ok(self
+            .tables()?
+            .builder_params_message_v1
+            .unbounded_iter()
+            .skip_to_last()
+            .next()
+            .map(|(seq, s)| (seq, s.params_message)))
+    }
+
+    pub fn get_built_params_message_message(
+        &self,
+        sequence: ParamsMessageSequenceNumber,
+    ) -> IkaResult<Option<ParamsMessage>> {
+        Ok(self
+            .tables()?
+            .builder_params_message_v1
+            .get(&sequence)?
+            .map(|s| s.params_message))
+    }
+
+    pub fn get_last_params_message_signature_index(&self) -> IkaResult<u64> {
+        Ok(self
+            .tables()?
+            .pending_params_message_signatures
+            .unbounded_iter()
+            .skip_to_last()
+            .next()
+            .map(|((_, index), _)| index)
+            .unwrap_or_default())
+    }
+
+    pub fn insert_params_message_signature(
+        &self,
+        params_message_seq: ParamsMessageSequenceNumber,
+        index: u64,
+        info: &ParamsMessageSignatureMessage,
+    ) -> IkaResult<()> {
+        Ok(self
+            .tables()?
+            .pending_params_message_signatures
+            .insert(&(params_message_seq, index), info)?)
+    }
+
     pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
@@ -1963,6 +2139,12 @@ impl AuthorityPerEpochStore {
             .set(self.epoch_open_time.elapsed().as_millis() as i64);
     }
 
+    pub(crate) fn record_epoch_first_params_message_creation_time_metric(&self) {
+        self.metrics
+            .epoch_first_params_message_created_time_since_epoch_begin_ms
+            .set(self.epoch_open_time.elapsed().as_millis() as i64);
+    }
+
     fn record_epoch_total_duration_metric(&self) {
         self.metrics.current_epoch.set(self.epoch() as i64);
         self.metrics
@@ -1979,6 +2161,7 @@ pub(crate) struct ConsensusCommitOutput {
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
     pending_checkpoints: Vec<PendingCheckpoint>,
+    pending_params_messages: Vec<PendingParamsMessage>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
@@ -2024,6 +2207,10 @@ impl ConsensusCommitOutput {
 
     fn insert_pending_checkpoint(&mut self, checkpoint: PendingCheckpoint) {
         self.pending_checkpoints.push(checkpoint);
+    }
+
+    fn insert_pending_params_message(&mut self, checkpoint: PendingParamsMessage) {
+        self.pending_params_messages.push(checkpoint);
     }
 
     pub fn write_to_batch(

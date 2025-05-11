@@ -106,8 +106,8 @@ impl ParamsMessageMetrics {
             )
             .unwrap(),
             highest_accumulated_epoch: register_int_gauge_with_registry!(
-                "highest_accumulated_epoch",
-                "Highest accumulated epoch",
+                "highest_accumulated_params_message_epoch",
+                "Highest accumulated params_message epoch",
                 registry
             )
             .unwrap(),

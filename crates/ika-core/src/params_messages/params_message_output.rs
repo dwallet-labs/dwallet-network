@@ -10,9 +10,12 @@ use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransaction;
+use ika_types::messages_params_messages::{
+    CertifiedParamsMessage, ParamsMessage, ParamsMessageSignatureMessage, SignedParamsMessage,
+    VerifiedParamsMessage,
+};
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
-use ika_types::messages_params_messages::{CertifiedParamsMessage, ParamsMessage, ParamsMessageSignatureMessage, SignedParamsMessage, VerifiedParamsMessage};
 
 #[async_trait]
 pub trait ParamsMessageOutput: Sync + Send + 'static {
@@ -26,10 +29,8 @@ pub trait ParamsMessageOutput: Sync + Send + 'static {
 
 #[async_trait]
 pub trait CertifiedParamsMessageOutput: Sync + Send + 'static {
-    async fn certified_params_message_created(
-        &self,
-        summary: &CertifiedParamsMessage,
-    ) -> IkaResult;
+    async fn certified_params_message_created(&self, summary: &CertifiedParamsMessage)
+        -> IkaResult;
 }
 
 pub struct SubmitParamsMessageToConsensus<T> {
