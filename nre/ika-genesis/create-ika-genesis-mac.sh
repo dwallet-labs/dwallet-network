@@ -183,7 +183,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     mkdir -p $SUI_CONFIG_PATH
 
     VALIDATOR_ACCOUNT_KEY_FILE=${VALIDATOR_HOSTNAME}.account.json
-    SUI_TEMPLATE_DIR=./sui-template
+    SUI_TEMPLATE_DIR=../sui-template
     SUI_CLIENT_YAML_FILE=client.yaml
     SUI_KEYSTORE_FILE=sui.keystore
     SUI_ALIASES_FILE=sui.aliases
@@ -257,9 +257,7 @@ cp ../../../target/debug/ika-swarm-config .
 ./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json --epoch-duration-ms "$EPOCH_DURATION_TIME_MS"
 
 export PUBLISHER_DIR=publisher
-echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
-echo "PUBLISHER_DIR=$PUBLISHER_DIR"
-exit 1
+
 mkdir -p $PUBLISHER_DIR
 mv ika_publish_config.json $PUBLISHER_DIR/
 cp -r "$SUI_CONFIG_PATH" $PUBLISHER_DIR/

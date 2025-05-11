@@ -1,5 +1,3 @@
-sdk/typescript/test/e2e/beta50.devnet.ika-network.net/
-nre/ika-genesis/ika-dns-service.ika.svc.cluster.local/
 # IDE
 **/.history/
 **/.vscode/
@@ -77,10 +75,7 @@ docs/content/references/framework/**
 
 lcov.info
 ika_config.json
-nre/ika-genesis/beta50.devnet.ika-network.net/
-nre/ika-genesis/ika
-node.tar
 
-# need to keep
+# Chaos test auto-generated files
 sdk/typescript/test/chaos-test/ika-dns-service.ika.svc.cluster.local
 sdk/typescript/test/chaos-test/ika
