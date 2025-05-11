@@ -478,15 +478,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    (
-                        bcs::from_bytes(
-                            &mpc_event_data
-                                .private_input
-                                .clone()
-                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
-                        )?,
-                        decryption_key_shares,
-                    ),
+                    decryption_key_shares,
                 )
             }
             _ => {
