@@ -114,6 +114,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             mpc_event_data,
             received_more_messages_since_last_retry: false,
+            attempts_count: 0,
         }
     }
 
