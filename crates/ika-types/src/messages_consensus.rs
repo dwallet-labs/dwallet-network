@@ -69,6 +69,9 @@ impl Debug for ConsensusTransactionKey {
                     report,
                 )
             }
+            ConsensusTransactionKey::DWalletMPCThresholdNotReached(_) => {
+                write!(f, "DWalletMPCThresholdNotReached")
+            }
         }
     }
 }
