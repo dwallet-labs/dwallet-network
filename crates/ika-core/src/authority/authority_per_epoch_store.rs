@@ -1171,10 +1171,10 @@ impl AuthorityPerEpochStore {
             }) => {
                 if transaction.sender_authority() != data.params_message.auth_sig().authority {
                     warn!(
-            "CheckpointSignature authority {} does not match its author from consensus {}",
-            data.params_message.auth_sig().authority,
-            transaction.certificate_author_index
-            );
+                        "ParamsMessage authority {} does not match its author from consensus {}",
+                        data.params_message.auth_sig().authority,
+                        transaction.certificate_author_index
+                    );
                     return None;
                 }
             }
@@ -1571,6 +1571,9 @@ impl AuthorityPerEpochStore {
                 // todo : what to do?
                 // collect signatures
                 // if quorum reached -> send message to state sync
+                // Yael -> notify the params service in here
+                // -> from there what should happen when we notify within the service?
+                // I should add this to the config
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {

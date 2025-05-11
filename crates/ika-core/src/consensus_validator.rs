@@ -3,6 +3,7 @@
 
 use std::sync::Arc;
 
+use crate::params_messages::ParamsMessageServiceNotify;
 use crate::{
     authority::{authority_per_epoch_store::AuthorityPerEpochStore, AuthorityState},
     checkpoints::CheckpointServiceNotify,
@@ -20,6 +21,7 @@ use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
+use mpc::Party;
 use mysten_metrics::monitored_scope;
 use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
 use sui_types::transaction::Transaction;
@@ -32,6 +34,7 @@ pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
     checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+    params_message_service: Arc<dyn ParamsMessageServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
 
@@ -40,6 +43,7 @@ impl IkaTxValidator {
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
         checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+        params_message_service: Arc<dyn ParamsMessageServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
         let epoch_store = authority_state.load_epoch_store_one_call_per_task().clone();
@@ -51,6 +55,7 @@ impl IkaTxValidator {
             authority_state,
             consensus_overload_checker,
             checkpoint_service,
+            params_message_service,
             metrics,
         }
     }

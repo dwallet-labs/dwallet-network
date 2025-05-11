@@ -110,6 +110,7 @@ pub struct ValidatorComponents {
     consensus_adapter: Arc<ConsensusAdapter>,
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
     checkpoint_service_tasks: JoinSet<()>,
+    params_message_service_tasks: JoinSet<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     params_message_metrics: Arc<ParamsMessageMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
@@ -868,7 +869,7 @@ impl IkaNode {
                 params_message_store,
                 epoch_store.clone(),
                 state.clone(),
-                state_sync_handle,
+                state_sync_handle.clone(),
                 params_message_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
             );
@@ -912,6 +913,7 @@ impl IkaNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
+            params_message_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,
             throughput_calculator,
@@ -926,6 +928,7 @@ impl IkaNode {
                     state.clone(),
                     consensus_adapter.clone(),
                     checkpoint_service.clone(),
+                    params_message_service.clone(),
                     ika_tx_validator_metrics.clone(),
                 ),
             )
@@ -936,6 +939,7 @@ impl IkaNode {
             consensus_store_pruner,
             consensus_adapter,
             checkpoint_service_tasks,
+            params_message_service_tasks,
             checkpoint_metrics,
             params_message_metrics,
             ika_tx_validator_metrics,
@@ -1195,6 +1199,7 @@ impl IkaNode {
                 consensus_store_pruner,
                 consensus_adapter,
                 mut checkpoint_service_tasks,
+                mut params_message_service_tasks, // Todo (yael): check this
                 checkpoint_metrics,
                 params_message_metrics,
                 ika_tx_validator_metrics,

@@ -37,6 +37,7 @@ use sui_types::{
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
+use crate::params_messages::{ParamsMessageService, ParamsMessageServiceNotify};
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -61,6 +62,7 @@ use typed_store::Map;
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
     checkpoint_service: Arc<CheckpointService>,
+    params_message_service: Arc<ParamsMessageService>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -70,6 +72,7 @@ impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<CheckpointService>,
+        params_message_service: Arc<ParamsMessageService>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -77,6 +80,7 @@ impl ConsensusHandlerInitializer {
         Self {
             state,
             checkpoint_service,
+            params_message_service,
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
