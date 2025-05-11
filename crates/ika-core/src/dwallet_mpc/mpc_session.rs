@@ -315,7 +315,7 @@ impl DWalletMPCSession {
             self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
                 session_id: self.session_id,
                 crypto_round_number: self.pending_quorum_for_highest_round_number,
-                attempt: self.attempts_count
+                attempt: self.attempts_count,
             })?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();

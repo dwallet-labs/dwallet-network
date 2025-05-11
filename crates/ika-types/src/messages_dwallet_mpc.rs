@@ -353,7 +353,7 @@ pub struct MaliciousReport {
 pub struct ThresholdNotReachedReport {
     pub session_id: ObjectID,
     pub crypto_round_number: usize,
-    pub attempt: usize
+    pub attempt: usize,
 }
 
 impl MaliciousReport {
