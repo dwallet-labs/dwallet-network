@@ -274,7 +274,7 @@ echo "SUI_FAUCET_URL=$SUI_FAUCET_URL"
 export PUBLISHER_DIR=publisher
 echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
 echo "PUBLISHER_DIR=$PUBLISHER_DIR"
-exit 1
+#exit 1
 
 mkdir -p $PUBLISHER_DIR
 mv ika_publish_config.json $PUBLISHER_DIR/

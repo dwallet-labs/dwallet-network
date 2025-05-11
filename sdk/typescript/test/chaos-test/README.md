@@ -28,7 +28,7 @@ Run the `"deploy the ika network from the current directory to the local kuberne
 ### 5. Run TS tests against the deployed Ika network
 First, run the following command from this directory
 ```bash
-cp ./publisher/ika_config.json ../../../../
+cp ./ika-dns-service.ika.svc.cluster.local/ika_publish_config.json ../../../../ika_config.json 
 ```
 Then, within `sdk/typescript/test/e2e/dwallet-mpc.test.ts`, make sure the `SUI_FULLNODE_URL` & `SUI_FAUCET_HOST` are pointing
 to the same addresses as your previously created `.env` file.
