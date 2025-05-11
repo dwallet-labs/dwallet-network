@@ -1047,7 +1047,7 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, ..),
+                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, ..),
                 ..
             }) => {
                 // When sending a `DWalletMPCSessionFailedWithMalicious`,
@@ -1402,7 +1402,7 @@ impl AuthorityPerEpochStore {
                     }) => Some(DWalletMPCDBMessage::Message(message.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind:
-                            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(
+                            ConsensusTransactionKind::DWalletMPCMaliciousReport(
                                 authority_name,
                                 report,
                             ),
@@ -1482,7 +1482,7 @@ impl AuthorityPerEpochStore {
                 .await
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..),
+                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

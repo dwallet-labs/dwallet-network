@@ -149,11 +149,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
-                    self.report_malicious_actors(
-                        tokio_runtime_handle,
-                        malicious_parties,
-                        AdvanceResult::Success,
-                    )?;
+                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
@@ -185,11 +181,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
-                    self.report_malicious_actors(
-                        tokio_runtime_handle,
-                        malicious_parties,
-                        AdvanceResult::Success,
-                    )?;
+                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
@@ -225,11 +217,12 @@ impl DWalletMPCSession {
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
-                self.report_malicious_actors(
-                    tokio_runtime_handle,
-                    malicious_parties,
-                    AdvanceResult::Failure,
-                )
+                // self.report_malicious_actors(
+                //     tokio_runtime_handle,
+                //     malicious_parties,
+                //     AdvanceResult::Failure,
+                // )
+                todo!()
             }
             Err(err) => {
                 error!(?err, "failed to advance the MPC session");
@@ -300,12 +293,10 @@ impl DWalletMPCSession {
         &self,
         tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
-        advance_result: AdvanceResult,
     ) -> DwalletMPCResult<()> {
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
             self.session_id.clone(),
-            advance_result,
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
         let epoch_store = self.epoch_store()?.clone();

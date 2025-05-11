@@ -118,7 +118,7 @@ pub enum ConsensusTransactionKind {
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
-    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
+    DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
 }
 
 impl ConsensusTransaction {
@@ -168,7 +168,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report),
+            kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, report),
         }
     }
 
@@ -216,7 +216,7 @@ impl ConsensusTransaction {
                     *authority,
                 )
             }
-            ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(authority, report) => {
+            ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, report) => {
                 ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
                     *authority,
                     report.clone(),

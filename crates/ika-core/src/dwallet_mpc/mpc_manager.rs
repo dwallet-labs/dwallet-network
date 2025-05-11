@@ -314,9 +314,7 @@ impl DWalletMPCManager {
         {
             return Ok(());
         }
-        let epoch_store = self.epoch_store()?;
-        let status = self
-            .malicious_handler
+        self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
         if self
             .malicious_handler
@@ -324,38 +322,6 @@ impl DWalletMPCManager {
         {
             self.recognized_self_as_malicious = true;
         }
-
-        match status {
-            // Quorum reached, remove the malicious parties from the session messages.
-            ReportStatus::QuorumReached => {
-                if report.advance_result == AdvanceResult::Success {
-                    // No need to re-perform the last step, as the advance was successful.
-                    return Ok(());
-                }
-                if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    // For every advance we increase the round number by 1,
-                    // so to re-run the same round, we decrease it by 1.
-                    session.pending_quorum_for_highest_round_number -= 1;
-                    // Remove malicious parties from the session messages.
-                    let round_messages = session
-                        .serialized_full_messages
-                        .get_mut(session.pending_quorum_for_highest_round_number)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: report.session_id,
-                        })?;
-
-                    self.malicious_handler
-                        .get_malicious_actors_ids(epoch_store)?
-                        .iter()
-                        .for_each(|malicious_actor| {
-                            round_messages.remove(malicious_actor);
-                        });
-                }
-            }
-            ReportStatus::WaitingForQuorum => {}
-            ReportStatus::OverQuorum => {}
-        }
-
         Ok(())
     }
 
