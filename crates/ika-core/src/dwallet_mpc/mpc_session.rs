@@ -545,6 +545,7 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        self.received_more_messages_since_last_retry = true;
         // This happens because we clear the session when it is finished, and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -657,6 +658,7 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
+                        && self.received_more_messages_since_last_retry
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
