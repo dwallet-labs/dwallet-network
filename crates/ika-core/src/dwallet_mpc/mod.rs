@@ -464,7 +464,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
 
-    for (index, message_batch) in &messages.iter().enumerate() {
+    for (index, message_batch) in messages.iter().enumerate() {
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
