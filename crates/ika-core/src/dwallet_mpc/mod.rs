@@ -415,17 +415,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
-                mpc::Error::ThresholdNotReached { honest_subset } => {
-                    let malicious_actors = messages
-                        .last()
-                        .ok_or(general_error)?
-                        .keys()
-                        .filter(|party_id| !honest_subset.contains(*party_id))
-                        .cloned()
-                        .collect();
-                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-                        malicious_actors,
-                    ))
+                mpc::Error::ThresholdNotReached => {
+                    todo!("Handle threshold not reached error")
                 }
                 _ => Err(general_error),
             };
