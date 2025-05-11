@@ -1,5 +1,7 @@
-import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
-import { NETWORK_SERVICE_NAME } from './globals';
+import type { KubeConfig } from '@kubernetes/client-node';
+import { CoreV1Api } from '@kubernetes/client-node';
+
+import { NETWORK_SERVICE_NAME } from './globals.js';
 
 export async function createNetworkServices(kc: KubeConfig, namespaceName: string) {
 	const k8sApi = kc.makeApiClient(CoreV1Api);

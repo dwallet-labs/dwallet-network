@@ -1,8 +1,8 @@
 import { CoreV1Api, KubeConfig, V1Namespace } from '@kubernetes/client-node';
-import { beforeAll, describe, it } from 'vitest';
+import { describe, it } from 'vitest';
 
 import { createConfigMap } from './config-map';
-import { NAMESPACE_NAME, TEST_ROOT_DIR } from './globals';
+import { NAMESPACE_NAME } from './globals';
 import { createNetworkServices } from './network-service';
 import { createPods } from './pods';
 
