@@ -523,9 +523,6 @@ impl DWalletMPCSession {
         )
     }
 
-    /// Report that the session failed because of malicious actors.
-    /// Once a quorum of validators reports the same actor, it is considered malicious.
-    /// The session will be continued, and the malicious actors will be ignored.
     fn new_dwallet_report_threshold_not_reached(
         &self,
         report: ThresholdNotReachedReport,
