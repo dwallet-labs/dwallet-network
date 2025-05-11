@@ -1064,6 +1064,23 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(report),
+                ..
+            }) => {
+                // When sending a `DWalletMPCSessionFailedWithMalicious`,
+                // the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != report.authority {
+                    warn!(
+                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
+                        report.authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
@@ -1483,6 +1500,10 @@ impl AuthorityPerEpochStore {
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

@@ -33,7 +33,11 @@ use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState, SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent, ThresholdNotReachedReport};
+use ika_types::messages_dwallet_mpc::{
+    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
+    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+    ThresholdNotReachedReport,
+};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 
@@ -311,15 +315,13 @@ impl DWalletMPCSession {
     /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
     /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
     /// and to punish the validator who started the Sign IA report if they sent a faulty report.
-    fn report_threshold_not_reached(
-        &self,
-        tokio_runtime_handle: &Handle,
-    ) -> DwalletMPCResult<()> {
-        let report_tx = self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
-            session_id: self.session_id,
-            crypto_round_number: self.pending_quorum_for_highest_round_number,
-            authority: self.epoch_store()?.name,
-        })?;
+    fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        let report_tx =
+            self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
+                session_id: self.session_id,
+                crypto_round_number: self.pending_quorum_for_highest_round_number,
+                authority: self.epoch_store()?.name,
+            })?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
         tokio_runtime_handle.spawn(async move {
@@ -535,11 +537,7 @@ impl DWalletMPCSession {
         &self,
         report: ThresholdNotReachedReport,
     ) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(
-            ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
-                report,
-            ),
-        )
+        Ok(ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(report))
     }
 
     /// Stores a message in the serialized messages map.

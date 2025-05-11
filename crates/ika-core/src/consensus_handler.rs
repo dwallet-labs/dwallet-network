@@ -534,6 +534,9 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCMaliciousReport(..) => {
             "dwallet_mpc_session_failed_with_malicious"
         }
+        ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
+            "dwallet_mpc_threshold_not_reached"
+        }
     }
 }
 

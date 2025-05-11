@@ -3,7 +3,10 @@
 
 use crate::crypto::AuthorityName;
 use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
-use crate::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo, ThresholdNotReachedReport};
+use crate::messages_dwallet_mpc::{
+    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
+    ThresholdNotReachedReport,
+};
 use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
 use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
@@ -70,11 +73,7 @@ impl Debug for ConsensusTransactionKey {
                 )
             }
             ConsensusTransactionKey::DWalletMPCThresholdNotReached(report) => {
-                write!(                
-                    f,
-                    "DWalletMPCThresholdNotReached({:?})",
-                    report
-                )
+                write!(f, "DWalletMPCThresholdNotReached({:?})", report)
             }
         }
     }
@@ -180,7 +179,9 @@ impl ConsensusTransaction {
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_session_threshold_not_reached(report: ThresholdNotReachedReport) -> Self {
+    pub fn new_dwallet_mpc_session_threshold_not_reached(
+        report: ThresholdNotReachedReport,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         report.session_id.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
