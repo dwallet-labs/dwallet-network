@@ -38,13 +38,7 @@ use ika_types::crypto::DefaultHash;
 use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent,
-    DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
-    StartEncryptedShareVerificationEvent, StartNetworkDKGEvent,
-    StartPartialSignaturesVerificationEvent, StartPresignFirstRoundEvent, StartSignEvent,
-};
+use ika_types::messages_dwallet_mpc::{AdvanceResult, DBSuiEvent, DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartEncryptedShareVerificationEvent, StartNetworkDKGEvent, StartPartialSignaturesVerificationEvent, StartPresignFirstRoundEvent, StartSignEvent, ThresholdNotReachedReport};
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -130,6 +124,7 @@ pub enum DWalletMPCDBMessage {
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
+    ThresholdNotReachedReport(ThresholdNotReachedReport),
 }
 
 struct ReadySessionsResponse {

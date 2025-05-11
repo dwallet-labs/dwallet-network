@@ -1418,6 +1418,10 @@ impl AuthorityPerEpochStore {
                         ..
                     }) => Some(DWalletMPCDBMessage::Message(message.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(report),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(report.clone())),
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind:
                             ConsensusTransactionKind::DWalletMPCMaliciousReport(
                                 authority_name,
