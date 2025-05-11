@@ -323,6 +323,7 @@ impl DWalletMPCManager {
     fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) {
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
+            session.attempts_count += 1;
             session.pending_quorum_for_highest_round_number -= 1;
         }
     }

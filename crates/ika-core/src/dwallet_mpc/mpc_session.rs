@@ -88,6 +88,7 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
     pub(crate) received_more_messages_since_last_retry: bool,
+    pub(crate) attempts_count: usize,
 }
 
 impl DWalletMPCSession {
@@ -113,6 +114,7 @@ impl DWalletMPCSession {
             weighted_threshold_access_structure,
             mpc_event_data,
             received_more_messages_since_last_retry: false,
+            attempts_count: 0,
         }
     }
 
@@ -314,6 +316,7 @@ impl DWalletMPCSession {
             self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
                 session_id: self.session_id,
                 crypto_round_number: self.pending_quorum_for_highest_round_number,
+                attempt: self.attempts_count,
             })?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
