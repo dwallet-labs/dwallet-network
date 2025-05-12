@@ -115,6 +115,9 @@ pub struct StateSyncConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_checkpoint_broadcast_channel_capacity: Option<usize>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synced_params_message_broadcast_channel_capacity: Option<usize>,
+
     /// Set the upper bound on the number of checkpoint headers to be downloaded concurrently.
     ///
     /// If unspecified, this will default to `400`.
@@ -196,6 +199,13 @@ impl StateSyncConfig {
 
         self.synced_checkpoint_broadcast_channel_capacity
             .unwrap_or(SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
+    }
+
+    pub fn synced_params_message_broadcast_channel_capacity(&self) -> usize {
+        const SYNCED_PARAMS_MESSAGE_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
+
+        self.synced_params_message_broadcast_channel_capacity
+            .unwrap_or(SYNCED_PARAMS_MESSAGE_BROADCAST_CHANNEL_CAPACITY)
     }
 
     pub fn checkpoint_header_download_concurrency(&self) -> usize {

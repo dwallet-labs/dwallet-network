@@ -90,8 +90,10 @@ pub use generated::{
     state_sync_server::{StateSync, StateSyncServer},
 };
 use ika_archival::reader::ArchiveReaderBalancer;
-use ika_types::digests::ChainIdentifier;
-use ika_types::messages_params_messages::VerifiedParamsMessage;
+use ika_types::digests::{ChainIdentifier, ParamsMessageDigest};
+use ika_types::messages_params_messages::{
+    CertifiedParamsMessage, ParamsMessageSequenceNumber, VerifiedParamsMessage,
+};
 pub use server::GetCheckpointAvailabilityResponse;
 pub use server::GetCheckpointMessageRequest;
 
@@ -103,6 +105,7 @@ pub use server::GetCheckpointMessageRequest;
 pub struct Handle {
     sender: mpsc::Sender<StateSyncMessage>,
     checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
+    params_message_event_sender: broadcast::Sender<VerifiedParamsMessage>,
 }
 
 impl Handle {
@@ -130,10 +133,9 @@ impl Handle {
         self.checkpoint_event_sender.subscribe()
     }
 
-    // todo (yael)
     pub async fn send_params_message(&self, params_message: VerifiedParamsMessage) {
         self.sender
-            .send(StateSyncMessage::VerifiedParamsMessage(Box::new(
+            .send(StateSyncMessage::VerifiedParamsMessageMessage(Box::new(
                 params_message,
             )))
             .await
@@ -146,6 +148,10 @@ struct PeerHeights {
     peers: HashMap<PeerId, PeerStateSyncInfo>,
     unprocessed_checkpoints: HashMap<CheckpointMessageDigest, CertifiedCheckpointMessage>,
     sequence_number_to_digest: HashMap<CheckpointSequenceNumber, CheckpointMessageDigest>,
+
+    unprocessed_params_message: HashMap<ParamsMessageDigest, CertifiedParamsMessage>,
+    sequence_number_to_digest_params_message:
+        HashMap<ParamsMessageSequenceNumber, ParamsMessageDigest>,
 
     // The amount of time to wait before retry if there are no peers to sync content from.
     wait_interval_when_no_peer_to_sync_content: Duration,
@@ -200,6 +206,24 @@ impl PeerHeights {
 
         info.height = std::cmp::max(Some(*checkpoint.sequence_number()), info.height);
         self.insert_checkpoint(checkpoint);
+
+        true
+    }
+
+    pub fn update_peer_info_with_params_message(
+        &mut self,
+        peer_id: PeerId,
+        params: CertifiedParamsMessage,
+    ) -> bool {
+        debug!("Update peer info with params message");
+
+        let info = match self.peers.get_mut(&peer_id) {
+            Some(info) if info.on_same_chain_as_us => info,
+            _ => return false,
+        };
+
+        info.height = std::cmp::max(Some(*params.sequence_number()), info.height);
+        self.insert_params_message(params);
 
         true
     }
@@ -269,6 +293,46 @@ impl PeerHeights {
         digest: &CheckpointMessageDigest,
     ) -> Option<&CertifiedCheckpointMessage> {
         self.unprocessed_checkpoints.get(digest)
+    }
+
+    pub fn cleanup_old_params_messages(&mut self, sequence_number: ParamsMessageSequenceNumber) {
+        self.unprocessed_params_message
+            .retain(|_digest, params_message| *params_message.sequence_number() > sequence_number);
+        self.sequence_number_to_digest_params_message
+            .retain(|&s, _digest| s > sequence_number);
+    }
+
+    // TODO: also record who gives this params_message info for peer quality measurement?
+    pub fn insert_params_message(&mut self, params_message: CertifiedParamsMessage) {
+        let digest = *params_message.digest();
+        let sequence_number = *params_message.sequence_number();
+        self.unprocessed_params_message
+            .insert(digest, params_message);
+        self.sequence_number_to_digest_params_message
+            .insert(sequence_number, digest);
+    }
+
+    pub fn remove_params_message(&mut self, digest: &ParamsMessageDigest) {
+        if let Some(params_message) = self.unprocessed_params_message.remove(digest) {
+            self.sequence_number_to_digest_params_message
+                .remove(params_message.sequence_number());
+        }
+    }
+
+    pub fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Option<&CertifiedParamsMessage> {
+        self.sequence_number_to_digest_params_message
+            .get(&sequence_number)
+            .and_then(|digest| self.get_params_message_by_digest(digest))
+    }
+
+    pub fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Option<&CertifiedParamsMessage> {
+        self.unprocessed_params_message.get(digest)
     }
 
     #[cfg(test)]
@@ -347,7 +411,7 @@ enum StateSyncMessage {
     SyncedCheckpoint(Box<VerifiedCheckpointMessage>),
 
     // todo (yael);
-    VerifiedParamsMessage(Box<VerifiedParamsMessage>),
+    VerifiedParamsMessageMessage(Box<VerifiedParamsMessage>),
 }
 
 struct StateSyncEventLoop<S> {
@@ -360,6 +424,10 @@ struct StateSyncEventLoop<S> {
     tasks: JoinSet<()>,
     sync_checkpoint_messages_task: Option<AbortHandle>,
     download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
+
+    // sync_checkpoint_messages_task: Option<AbortHandle>,
+    // download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
+    params_message_event_sender: broadcast::Sender<VerifiedParamsMessage>,
 
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
@@ -474,7 +542,9 @@ where
             StateSyncMessage::SyncedCheckpoint(checkpoint) => {
                 self.spawn_notify_peers_of_checkpoint(*checkpoint)
             }
-            StateSyncMessage::VerifiedParamsMessage(_) => todo!(),
+            StateSyncMessage::VerifiedParamsMessageMessage(msg) => {
+                self.handle_params_message_from_consensus(msg)
+            }
         }
     }
 
@@ -528,6 +598,60 @@ where
         let _ = self.checkpoint_event_sender.send(checkpoint.clone());
 
         self.spawn_notify_peers_of_checkpoint(checkpoint);
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn handle_params_message_from_consensus(&mut self, params_message: Box<VerifiedParamsMessage>) {
+        if *params_message.sequence_number() == 0 {
+            return;
+        }
+        // // Always check previous_digest matches in case there is a gap between
+        // // state sync and consensus.
+        // let prev_digest = *self.store.get_params_message_by_sequence_number(params_message.sequence_number().checked_sub(1).expect("exhausted u64"))
+        //     .expect("store operation should not fail")
+        //     .unwrap_or_else(|| panic!("Got params_message {} from consensus but cannot find params_message {} in certified_params_messages", params_message.sequence_number(), params_message.sequence_number() - 1))
+        //     .digest();
+        // if params_message.previous_digest != Some(prev_digest) {
+        //     panic!("paramsMessage {} from consensus has mismatched previous_digest, expected: {:?}, actual: {:?}", params_message.sequence_number(), Some(prev_digest), params_message.previous_digest);
+        // }
+
+        let latest_params_message_sequence_number = self
+            .store
+            .get_highest_verified_params_message()
+            .expect("store operation should not fail")
+            .map(|params_message| params_message.sequence_number().clone());
+
+        // If this is an older params_message, just ignore it
+        if latest_params_message_sequence_number.as_ref() >= Some(params_message.sequence_number())
+        {
+            return;
+        }
+
+        let params_message = *params_message;
+        let next_sequence_number = latest_params_message_sequence_number
+            .map(|s| s.checked_add(1).expect("exhausted u64"))
+            .unwrap_or(0);
+        if *params_message.sequence_number() > next_sequence_number {
+            debug!(
+                "consensus sent too new of a params_message, expecting: {}, got: {}",
+                next_sequence_number,
+                params_message.sequence_number()
+            );
+        }
+
+        self.store
+            .update_highest_verified_params_message(&params_message)
+            .expect("store operation should not fail");
+        self.store
+            .update_highest_synced_params_message(&params_message)
+            .expect("store operation should not fail");
+
+        // We don't care if no one is listening as this is a broadcast channel
+        let _ = self
+            .params_message_event_sender
+            .send(params_message.clone());
+
+        self.spawn_notify_peers_of_params_message(params_message);
     }
 
     fn handle_peer_event(
@@ -637,6 +761,16 @@ where
         );
         self.tasks.spawn(task);
     }
+
+    fn spawn_notify_peers_of_params_message(&mut self, params_message: VerifiedParamsMessage) {
+        let task = notify_peers_of_params_message(
+            self.network.clone(),
+            self.peer_heights.clone(),
+            params_message,
+            self.config.timeout(),
+        );
+        self.tasks.spawn(task);
+    }
 }
 
 async fn notify_peers_of_checkpoint(
@@ -655,6 +789,27 @@ async fn notify_peers_of_checkpoint(
         .map(|mut client| {
             let request = Request::new(checkpoint.inner().clone()).with_timeout(timeout);
             async move { client.push_checkpoint_message(request).await }
+        })
+        .collect::<Vec<_>>();
+    futures::future::join_all(futs).await;
+}
+
+async fn notify_peers_of_params_message(
+    network: anemo::Network,
+    peer_heights: Arc<RwLock<PeerHeights>>,
+    params_message: VerifiedParamsMessage,
+    timeout: Duration,
+) {
+    let futs = peer_heights
+        .read()
+        .unwrap()
+        .peers_on_same_chain()
+        // Filter out any peers who we aren't connected with
+        .flat_map(|(peer_id, _)| network.peer(*peer_id))
+        .map(StateSyncClient::new)
+        .map(|mut client| {
+            let request = Request::new(params_message.inner().clone()).with_timeout(timeout);
+            async move { client.push_params_message(request).await }
         })
         .collect::<Vec<_>>();
     futures::future::join_all(futs).await;

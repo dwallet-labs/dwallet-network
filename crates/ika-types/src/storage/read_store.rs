@@ -3,8 +3,9 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::CheckpointMessageDigest;
+use crate::digests::{CheckpointMessageDigest, ParamsMessageDigest};
 use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::messages_params_messages::{ParamsMessageSequenceNumber, VerifiedParamsMessage};
 use std::sync::Arc;
 
 pub trait ReadStore {
@@ -66,6 +67,29 @@ pub trait ReadStore {
         &self,
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>>;
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage>;
+
+    fn get_latest_params_message_sequence_number(&self) -> Result<ParamsMessageSequenceNumber> {
+        let latest_params_message = self.get_latest_params_message()?;
+        Ok(*latest_params_message.sequence_number())
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>>;
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>>;
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber>;
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>>;
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -109,6 +133,36 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>> {
         (*self).get_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+        (*self).get_latest_params_message()
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (*self).get_highest_verified_params_message()
+    }
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (*self).get_highest_synced_params_message()
+    }
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        (*self).get_lowest_available_params_message()
+    }
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (*self).get_params_message_by_digest(digest)
+    }
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (*self).get_params_message_by_sequence_number(sequence_number)
     }
 }
 
@@ -154,6 +208,36 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
     ) -> Result<Option<VerifiedCheckpointMessage>> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+        (**self).get_latest_params_message()
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_highest_verified_params_message()
+    }
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_highest_synced_params_message()
+    }
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        (**self).get_lowest_available_params_message()
+    }
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_params_message_by_digest(digest)
+    }
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_params_message_by_sequence_number(sequence_number)
+    }
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
@@ -197,5 +281,35 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+        (**self).get_latest_params_message()
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_highest_verified_params_message()
+    }
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_highest_synced_params_message()
+    }
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        (**self).get_lowest_available_params_message()
+    }
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_params_message_by_digest(digest)
+    }
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        (**self).get_params_message_by_sequence_number(sequence_number)
     }
 }

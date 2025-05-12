@@ -190,6 +190,35 @@ fn build_anemo_services(out_dir: &Path) {
                 .codec_path(codec_path)
                 .build(),
         )
+        .method(
+            anemo_build::manual::Method::builder()
+                .name("push_params_message")
+                .route_name("PushParamsMessage")
+                .request_type("ika_types::messages_params_messages::CertifiedParamsMessage")
+                .response_type("()")
+                .codec_path(codec_path)
+                .build(),
+        )
+        .method(
+            anemo_build::manual::Method::builder()
+                .name("get_params_message")
+                .route_name("GetParamsMessage")
+                .request_type("crate::state_sync::server::GetParamsMessageRequest")
+                .response_type(
+                    "Option<ika_types::messages_params_messages::CertifiedParamsMessage>",
+                )
+                .codec_path(codec_path)
+                .build(),
+        )
+        .method(
+            anemo_build::manual::Method::builder()
+                .name("get_params_message_availability")
+                .route_name("GetParamsMessageAvailability")
+                .request_type("()")
+                .response_type("crate::state_sync::server::GetParamsMessageAvailabilityResponse")
+                .codec_path(codec_path)
+                .build(),
+        )
         .build();
     anemo_build::manual::Builder::new()
         .out_dir(out_dir)

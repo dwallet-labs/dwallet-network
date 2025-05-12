@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{PeerHeights, StateSync, StateSyncMessage};
+use crate::state_sync::StateSyncMessage::VerifiedParamsMessageMessage;
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use ika_types::digests::ChainIdentifier;
+use ika_types::digests::{ChainIdentifier, ParamsMessageDigest};
+use ika_types::messages_params_messages::{
+    CertifiedParamsMessage, ParamsMessageSequenceNumber, VerifiedParamsMessage,
+};
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
     messages_checkpoint::{
@@ -27,6 +31,17 @@ pub enum GetCheckpointMessageRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetCheckpointAvailabilityResponse {
     pub(crate) highest_synced_checkpoint: Option<CertifiedCheckpointMessage>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
+pub enum GetParamsMessageRequest {
+    ByDigest(ParamsMessageDigest),
+    BySequenceNumber(ParamsMessageSequenceNumber),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GetParamsMessageAvailabilityResponse {
+    pub(crate) highest_synced_params_message: Option<CertifiedParamsMessage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -115,6 +130,78 @@ where
 
         Ok(Response::new(GetCheckpointAvailabilityResponse {
             highest_synced_checkpoint,
+        }))
+    }
+
+    async fn push_params_message(
+        &self,
+        request: Request<CertifiedParamsMessage>,
+    ) -> Result<Response<()>, Status> {
+        let peer_id = request
+            .peer_id()
+            .copied()
+            .ok_or_else(|| Status::internal("unable to query sender's PeerId"))?;
+
+        let params_message = request.into_inner();
+        if !self
+            .peer_heights
+            .write()
+            .unwrap()
+            .update_peer_info_with_params_message(peer_id, params_message.clone())
+        {
+            return Ok(Response::new(()));
+        }
+
+        let highest_verified_params_message = self
+            .store
+            .get_highest_verified_params_message()
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        let should_sync = highest_verified_params_message
+            .map(|c| *params_message.sequence_number() > c.sequence_number)
+            .unwrap_or(true);
+
+        // If this params_message is higher than our highest verified params_message notify the
+        // event loop to potentially sync it
+        if should_sync {
+            if let Some(sender) = self.sender.upgrade() {
+                sender.send(StateSyncMessage::StartSyncJob).await.unwrap();
+            }
+        }
+
+        Ok(Response::new(()))
+    }
+
+    async fn get_params_message(
+        &self,
+        request: Request<GetParamsMessageRequest>,
+    ) -> Result<Response<Option<CertifiedParamsMessage>>, Status> {
+        let params_message = match request.inner() {
+            GetParamsMessageRequest::ByDigest(digest) => {
+                self.store.get_params_message_by_digest(digest)
+            }
+            GetParamsMessageRequest::BySequenceNumber(sequence_number) => self
+                .store
+                .get_params_message_by_sequence_number(*sequence_number),
+        }
+        .map_err(|e| Status::internal(e.to_string()))?
+        .map(VerifiedParamsMessage::into_inner);
+
+        Ok(Response::new(params_message))
+    }
+
+    async fn get_params_message_availability(
+        &self,
+        _request: Request<()>,
+    ) -> Result<Response<GetParamsMessageAvailabilityResponse>, Status> {
+        let highest_synced_params_message = self
+            .store
+            .get_highest_synced_params_message()
+            .map_err(|e| Status::internal(e.to_string()))?
+            .map(VerifiedParamsMessage::into_inner);
+
+        Ok(Response::new(GetParamsMessageAvailabilityResponse {
+            highest_synced_params_message,
         }))
     }
 

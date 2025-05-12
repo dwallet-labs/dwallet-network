@@ -3,8 +3,12 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::{CheckpointContentsDigest, CheckpointMessageDigest};
+use crate::digests::{
+    CheckpointContentsDigest, CheckpointMessageDigest, ParamsMessageContentsDigest,
+    ParamsMessageDigest,
+};
 use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::messages_params_messages::{ParamsMessageSequenceNumber, VerifiedParamsMessage};
 use crate::storage::{ReadStore, WriteStore};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -74,6 +78,48 @@ impl ReadStore for SharedInMemoryStore {
     fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
         todo!()
     }
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        self.inner()
+            .get_params_message_by_digest(digest)
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        self.inner()
+            .get_highest_verified_params_message()
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        self.inner()
+            .get_highest_synced_params_message()
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        Ok(self.inner().get_lowest_available_params_message())
+    }
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        self.inner()
+            .get_params_message_by_sequence_number(sequence_number)
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+        todo!()
+    }
 }
 
 impl WriteStore for SharedInMemoryStore {
@@ -100,6 +146,29 @@ impl WriteStore for SharedInMemoryStore {
         Ok(())
     }
 
+    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
+        self.inner_mut().insert_params_message(params_message);
+        Ok(())
+    }
+
+    fn update_highest_synced_params_message(
+        &self,
+        params_message: &VerifiedParamsMessage,
+    ) -> Result<()> {
+        self.inner_mut()
+            .update_highest_synced_params_message(params_message);
+        Ok(())
+    }
+
+    fn update_highest_verified_params_message(
+        &self,
+        params_message: &VerifiedParamsMessage,
+    ) -> Result<()> {
+        self.inner_mut()
+            .update_highest_verified_params_message(params_message);
+        Ok(())
+    }
+
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {
         self.inner_mut().insert_committee(new_committee);
         Ok(())
@@ -123,6 +192,15 @@ pub struct InMemoryStore {
     epoch_to_committee: Vec<Committee>,
 
     lowest_checkpoint_number: CheckpointSequenceNumber,
+
+    highest_verified_params_message: Option<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
+    highest_synced_params_message: Option<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
+    params_messages: HashMap<ParamsMessageDigest, VerifiedParamsMessage>,
+    params_message_contents_digest_to_sequence_number:
+        HashMap<ParamsMessageContentsDigest, ParamsMessageSequenceNumber>,
+    params_message_sequence_number_to_digest:
+        HashMap<ParamsMessageSequenceNumber, ParamsMessageDigest>,
+    lowest_params_message_number: ParamsMessageSequenceNumber,
 }
 
 impl InMemoryStore {
@@ -157,6 +235,15 @@ impl InMemoryStore {
         digest: &CheckpointContentsDigest,
     ) -> Option<CheckpointSequenceNumber> {
         self.contents_digest_to_sequence_number.get(digest).copied()
+    }
+
+    pub fn get_params_message_sequence_number_by_contents_digest(
+        &self,
+        digest: &ParamsMessageContentsDigest,
+    ) -> Option<ParamsMessageSequenceNumber> {
+        self.params_message_contents_digest_to_sequence_number
+            .get(digest)
+            .copied()
     }
 
     pub fn get_highest_verified_checkpoint(&self) -> Option<&VerifiedCheckpointMessage> {
@@ -256,6 +343,105 @@ impl InMemoryStore {
             error!("committee was inserted into EpochCommitteeMap out of order");
         }
     }
+
+    pub fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Option<&VerifiedParamsMessage> {
+        self.params_messages.get(digest)
+    }
+
+    pub fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Option<&VerifiedParamsMessage> {
+        self.params_message_sequence_number_to_digest
+            .get(&sequence_number)
+            .and_then(|digest| self.get_params_message_by_digest(digest))
+    }
+
+    pub fn get_highest_verified_params_message(&self) -> Option<&VerifiedParamsMessage> {
+        self.highest_verified_params_message
+            .as_ref()
+            .and_then(|(_, digest)| self.get_params_message_by_digest(digest))
+    }
+
+    pub fn get_highest_synced_params_message(&self) -> Option<&VerifiedParamsMessage> {
+        self.highest_synced_params_message
+            .as_ref()
+            .and_then(|(_, digest)| self.get_params_message_by_digest(digest))
+    }
+
+    pub fn get_lowest_available_params_message(&self) -> ParamsMessageSequenceNumber {
+        self.lowest_params_message_number
+    }
+
+    pub fn set_lowest_available_params_message(
+        &mut self,
+        params_message_seq_num: ParamsMessageSequenceNumber,
+    ) {
+        self.lowest_params_message_number = params_message_seq_num;
+    }
+
+    pub fn insert_params_message(&mut self, params_message: &VerifiedParamsMessage) {
+        self.insert_certified_params_message(params_message);
+        let digest = *params_message.digest();
+        let sequence_number = *params_message.sequence_number();
+
+        if Some(sequence_number) > self.highest_verified_params_message.map(|x| x.0) {
+            self.highest_verified_params_message = Some((sequence_number, digest));
+        }
+    }
+
+    // This function simulates Consensus inserts certified params_message into the params_message store
+    // without bumping the highest_verified_params_message watermark.
+    pub fn insert_certified_params_message(&mut self, params_message: &VerifiedParamsMessage) {
+        let digest = *params_message.digest();
+        let sequence_number = *params_message.sequence_number();
+
+        self.params_messages.insert(digest, params_message.clone());
+        self.params_message_sequence_number_to_digest
+            .insert(sequence_number, digest);
+    }
+
+    pub fn update_highest_synced_params_message(&mut self, params_message: &VerifiedParamsMessage) {
+        if !self.params_messages.contains_key(params_message.digest()) {
+            panic!("store should already contain params_message");
+        }
+        if let Some(highest_synced_params_message) = self.highest_synced_params_message {
+            if highest_synced_params_message.0 >= params_message.sequence_number {
+                return;
+            }
+        }
+        self.highest_synced_params_message =
+            Some((*params_message.sequence_number(), *params_message.digest()));
+    }
+
+    pub fn update_highest_verified_params_message(
+        &mut self,
+        params_message: &VerifiedParamsMessage,
+    ) {
+        if !self.params_messages.contains_key(params_message.digest()) {
+            panic!("store should already contain params_message");
+        }
+        if let Some(highest_verified_params_message) = self.highest_verified_params_message {
+            if highest_verified_params_message.0 >= params_message.sequence_number {
+                return;
+            }
+        }
+        self.highest_verified_params_message =
+            Some((*params_message.sequence_number(), *params_message.digest()));
+    }
+
+    pub fn params_messages(&self) -> &HashMap<ParamsMessageDigest, VerifiedParamsMessage> {
+        &self.params_messages
+    }
+
+    pub fn params_message_sequence_number_to_digest(
+        &self,
+    ) -> &HashMap<ParamsMessageSequenceNumber, ParamsMessageDigest> {
+        &self.params_message_sequence_number_to_digest
+    }
 }
 
 // This store only keeps last checkpoint in memory which is all we need
@@ -275,18 +461,12 @@ impl SingleCheckpointSharedInMemoryStore {
 }
 
 impl ReadStore for SingleCheckpointSharedInMemoryStore {
-    fn get_checkpoint_by_digest(
-        &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_checkpoint_by_digest(digest)
+    fn get_committee(&self, epoch: EpochId) -> Result<Option<Arc<Committee>>> {
+        self.0.get_committee(epoch)
     }
 
-    fn get_checkpoint_by_sequence_number(
-        &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_checkpoint_by_sequence_number(sequence_number)
+    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+        todo!()
     }
 
     fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
@@ -301,12 +481,49 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_lowest_available_checkpoint()
     }
 
-    fn get_committee(&self, epoch: EpochId) -> Result<Option<Arc<Committee>>> {
-        self.0.get_committee(epoch)
+    fn get_checkpoint_by_digest(
+        &self,
+        digest: &CheckpointMessageDigest,
+    ) -> Result<Option<VerifiedCheckpointMessage>> {
+        self.0.get_checkpoint_by_digest(digest)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: CheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedCheckpointMessage>> {
+        self.0.get_checkpoint_by_sequence_number(sequence_number)
+    }
+
+    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
         todo!()
+    }
+
+    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        self.0.get_highest_verified_params_message()
+    }
+
+    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
+        self.0.get_highest_synced_params_message()
+    }
+
+    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        self.0.get_lowest_available_params_message()
+    }
+
+    fn get_params_message_by_digest(
+        &self,
+        digest: &ParamsMessageDigest,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        self.0.get_params_message_by_digest(digest)
+    }
+
+    fn get_params_message_by_sequence_number(
+        &self,
+        sequence_number: ParamsMessageSequenceNumber,
+    ) -> Result<Option<VerifiedParamsMessage>> {
+        self.0
+            .get_params_message_by_sequence_number(sequence_number)
     }
 }
 
@@ -334,6 +551,34 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         checkpoint: &VerifiedCheckpointMessage,
     ) -> Result<()> {
         self.0.update_highest_verified_checkpoint(checkpoint)?;
+        Ok(())
+    }
+
+    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
+        {
+            let mut locked = self.0 .0.write().unwrap();
+            locked.params_messages.clear();
+            locked.params_message_sequence_number_to_digest.clear();
+        }
+        self.0.insert_params_message(params_message)?;
+        Ok(())
+    }
+
+    fn update_highest_synced_params_message(
+        &self,
+        params_message: &VerifiedParamsMessage,
+    ) -> Result<()> {
+        self.0
+            .update_highest_synced_params_message(params_message)?;
+        Ok(())
+    }
+
+    fn update_highest_verified_params_message(
+        &self,
+        params_message: &VerifiedParamsMessage,
+    ) -> Result<()> {
+        self.0
+            .update_highest_verified_params_message(params_message)?;
         Ok(())
     }
 

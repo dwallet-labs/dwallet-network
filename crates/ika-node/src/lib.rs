@@ -385,7 +385,11 @@ impl IkaNode {
             ParamsMessageStore::new(&config.db_path().join("params_messages"));
 
         info!("Creating state sync store");
-        let state_sync_store = RocksDbStore::new(committee_store.clone(), checkpoint_store.clone());
+        let state_sync_store = RocksDbStore::new(
+            committee_store.clone(),
+            checkpoint_store.clone(),
+            params_message_store.clone(),
+        );
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
 
