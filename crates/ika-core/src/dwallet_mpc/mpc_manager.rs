@@ -332,7 +332,7 @@ impl DWalletMPCManager {
                 .report_malicious_actors(&party_ids_to_authority_names(
                     &session
                         .serialized_full_messages
-                        .get(&(session.next_round_to_advance - 1))
+                        .get(&(session.current_round - 1))
                         .unwrap_or(&HashMap::new())
                         .keys()
                         .cloned()
@@ -341,8 +341,8 @@ impl DWalletMPCManager {
                 )?);
             session
                 .serialized_full_messages
-                .remove(&(session.next_round_to_advance - 1));
-            session.next_round_to_advance -= 1;
+                .remove(&(session.current_round - 1));
+            session.current_round -= 1;
         }
         Ok(())
     }
@@ -547,7 +547,7 @@ impl DWalletMPCManager {
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
                     let session_clone = session.clone();
-                    session.next_round_to_advance += 1;
+                    session.current_round += 1;
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
