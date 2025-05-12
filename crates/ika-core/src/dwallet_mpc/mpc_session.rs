@@ -295,8 +295,7 @@ impl DWalletMPCSession {
         mut malicious_parties_ids: Vec<PartyID>,
     ) -> DwalletMPCResult<()> {
         // Makes sure all the validators report on the malicious actors in the same order without duplicates.
-        malicious_parties_ids.sort();
-        malicious_parties_ids.dedup();
+        malicious_parties_ids.deduplicate_and_sort();
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
             self.session_id.clone(),
