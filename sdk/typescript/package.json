@@ -106,7 +106,7 @@
 		"prepublishOnly": "pnpm build",
 		"size": "size-limit",
 		"analyze": "size-limit --why",
-		"prettier:check": "prettier -c --ignore-unknown .",
+		"prettier:check": "prettier -c \"**/*.ts\" --ignore-unknown",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"eslint:check": "eslint --max-warnings=0 .",
 		"eslint:fix": "pnpm run eslint:check --fix",
