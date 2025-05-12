@@ -339,7 +339,9 @@ impl DWalletMPCManager {
                         .collect::<Vec<PartyID>>(),
                     &*epoch_store,
                 )?);
-            session.serialized_full_messages.remove(&(session.next_round_to_advance - 1));
+            session
+                .serialized_full_messages
+                .remove(&(session.next_round_to_advance - 1));
             session.next_round_to_advance -= 1;
         }
         Ok(())
