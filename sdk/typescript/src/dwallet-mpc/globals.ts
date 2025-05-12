@@ -61,18 +61,31 @@ export async function getObjectWithType<TObject>(
 	objectID: string,
 	isObject: (obj: any) => obj is TObject,
 ): Promise<TObject> {
-	const obj = await conf.client.getObject({
-		id: objectID,
-		options: { showContent: true },
-	});
-	if (!isMoveObject(obj.data?.content)) {
-		throw new Error('Invalid object');
+	const startTime = Date.now();
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		const interval = 500;
+		await delay(interval);
+		const res = await conf.client.getObject({
+			id: objectID,
+			options: { showContent: true },
+		});
+
+		const objectData =
+			res.data?.content?.dataType === 'moveObject' && isObject(res.data.content.fields)
+				? (res.data.content.fields as TObject)
+				: null;
+
+		if (objectData) {
+			return objectData;
+		}
 	}
-	const objContent = obj.data?.content.fields;
-	if (!isObject(objContent)) {
-		throw new Error('Invalid object fields');
-	}
-	return objContent;
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 /**
@@ -289,7 +302,7 @@ export function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
 }
 
-interface ActiveDWallet {
+export interface ActiveDWallet {
 	state: {
 		fields: {
 			public_output: Uint8Array;

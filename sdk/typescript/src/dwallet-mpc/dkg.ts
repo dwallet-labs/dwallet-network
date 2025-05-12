@@ -9,7 +9,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { DWallet, EncryptedDWalletData } from './globals.js';
+import { DWallet, EncryptedDWalletData, fetchObjectWithType } from './globals.js';
 import {
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
@@ -109,6 +109,8 @@ export async function launchDKGSecondRound(
 		classGroupsSecpKeyPair.encryptionKey,
 		networkDecryptionKeyPublicOutput,
 	);
+
+	let activeDWallet = await getObjectWithType(conf, )
 
 	const completionEvent = await dkgSecondRoundMoveCall(
 		conf,
