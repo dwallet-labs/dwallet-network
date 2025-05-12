@@ -943,16 +943,18 @@ fun distribute_reward(
     adjusted_staking_reward_amounts: &vector<u64>,
     staking_rewards: &mut Balance<IKA>,
 ) {
+    let pending_active_set = self.pending_active_set.borrow_mut();
     let members = *self.active_committee.members();
     let length = members.length();
     let mut i = 0;
     while (i < length) {
         let validator_id = members[i].validator_id();
-        let validator = self.get_validator_mut(validator_id);
+        let validator = &mut self.validators[validator_id];
         let staking_reward_amount = adjusted_staking_reward_amounts[i];
         let validator_rewards = staking_rewards.split(staking_reward_amount);
 
         validator.advance_epoch(validator_rewards, new_epoch);
+        pending_active_set.update(validator_id, validator.ika_balance_at_epoch(new_epoch));
         i = i + 1;
     }
 }
