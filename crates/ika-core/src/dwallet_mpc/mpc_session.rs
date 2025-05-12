@@ -105,7 +105,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            serialized_full_messages: Default::default(),
+            serialized_full_messages: HashMap::new(),
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
@@ -594,7 +594,7 @@ impl DWalletMPCSession {
                         .is_authorized_subset(
                             &self
                                 .serialized_full_messages
-                                .get(self.pending_quorum_for_highest_round_number)
+                                .get(&self.pending_quorum_for_highest_round_number)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
