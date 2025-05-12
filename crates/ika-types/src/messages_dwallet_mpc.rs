@@ -352,7 +352,6 @@ pub struct MaliciousReport {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ThresholdNotReachedReport {
     pub session_id: ObjectID,
-    pub crypto_round_number: usize,
     pub attempt: usize,
 }
 
