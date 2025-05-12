@@ -327,17 +327,21 @@ impl DWalletMPCManager {
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
             session.attempts_count += 1;
+            // remove outputs of the previous round, as all validators should have failed
             self.malicious_handler
                 .report_malicious_actors(&party_ids_to_authority_names(
                     &session
                         .serialized_full_messages
-                        .get(&session.next_round_to_advance)
+                        .get(&(session.next_round_to_advance - 1))
                         .unwrap_or(&HashMap::new())
                         .keys()
                         .cloned()
                         .collect::<Vec<PartyID>>(),
                     &*epoch_store,
                 )?);
+            session
+                .serialized_full_messages
+                .remove(&(session.next_round_to_advance - 1));
             session.next_round_to_advance -= 1;
         }
         Ok(())
@@ -542,8 +546,9 @@ impl DWalletMPCManager {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
+                    let session_clone = session.clone();
                     session.next_round_to_advance += 1;
-                    Some((session.clone(), quorum_check_result.malicious_parties))
+                    Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
                 }

@@ -580,7 +580,8 @@ impl DWalletMPCSession {
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-        if message.round_number > self.next_round_to_advance {
+        // We should only receive outputs of previous rounds.
+        if message.round_number >= self.next_round_to_advance {
             warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
@@ -606,7 +607,7 @@ impl DWalletMPCSession {
                         .is_authorized_subset(
                             &self
                                 .serialized_full_messages
-                                .get(&self.next_round_to_advance)
+                                .get(&(self.next_round_to_advance - 1))
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
