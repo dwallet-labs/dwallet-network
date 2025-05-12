@@ -133,7 +133,7 @@ pub enum DWalletMPCDBMessage {
     /// We can receive new messages for this session with other validators
     /// and re-run the round again to make it succeed.
     /// AuthorityName is the name of the authority that reported the malicious parties.
-    SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
+    MaliciousReport(AuthorityName, MaliciousReport),
     ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
@@ -280,10 +280,8 @@ impl DWalletMPCManager {
                 error!(session_id=?session_id, "dwallet MPC session failed");
                 // TODO (#524): Handle failed MPC sessions
             }
-            DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) = self
-                    .handle_session_failed_with_malicious_parties_message(authority_name, report)
-                {
+            DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
+                if let Err(err) = self.handle_malicious_report(authority_name, report) {
                     error!(
                         "dWallet MPC session failed with malicious parties with error: {:?}",
                         err
@@ -343,7 +341,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn handle_session_failed_with_malicious_parties_message(
+    fn handle_malicious_report(
         &mut self,
         reporting_authority: AuthorityName,
         report: MaliciousReport,

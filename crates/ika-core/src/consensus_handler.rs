@@ -481,7 +481,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 DWalletMPCDBMessage::Message(_)
                 | DWalletMPCDBMessage::EndOfDelivery
                 | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::SessionFailedWithMaliciousParties(..)
+                | DWalletMPCDBMessage::MaliciousReport(..)
                 | DWalletMPCDBMessage::PerformCryptographicComputations
                 | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
             }

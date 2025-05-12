@@ -1423,7 +1423,7 @@ impl AuthorityPerEpochStore {
                                 report,
                             ),
                         ..
-                    }) => Some(DWalletMPCDBMessage::SessionFailedWithMaliciousParties(
+                    }) => Some(DWalletMPCDBMessage::MaliciousReport(
                         authority_name.clone(),
                         report.clone(),
                     )),
