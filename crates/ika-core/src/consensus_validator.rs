@@ -17,6 +17,7 @@ use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
 use ika_types::messages_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_params_messages::SignedParamsMessage;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
@@ -65,6 +66,10 @@ impl IkaTxValidator {
 
         let mut ckpt_messages = Vec::new();
         let mut ckpt_batch = Vec::new();
+
+        let mut params_messages = Vec::new();
+        let mut params_batch = Vec::new();
+
         for tx in txs.iter() {
             match tx {
                 ConsensusTransactionKind::CheckpointSignature(signature) => {
@@ -74,9 +79,10 @@ impl IkaTxValidator {
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
-                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..)
-                | ConsensusTransactionKind::ParamsMessageSignature(..) => {
-                    // todo
+                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {}
+                ConsensusTransactionKind::ParamsMessageSignature(signature) => {
+                    params_messages.push(signature.as_ref());
+                    params_batch.push(&signature.params_message);
                 }
             }
         }
@@ -96,6 +102,24 @@ impl IkaTxValidator {
         self.metrics
             .checkpoint_signatures_verified
             .inc_by(ckpt_count as u64);
+
+        let params_count = params_batch.len();
+
+        Self::batch_verify_all_certificates_and_params_messages(
+            epoch_store.committee(),
+            &params_batch,
+        )
+        .tap_err(|e| warn!("batch verification error: {}", e))?;
+
+        // All checkpoint sigs have been verified, forward them to the checkpoint service
+        for ckpt in params_messages {
+            self.params_message_service
+                .notify_params_message_signature(&epoch_store, ckpt)?;
+        }
+
+        self.metrics
+            .params_message_signatures_verified
+            .inc_by(params_count as u64);
         Ok(())
     }
 
@@ -114,6 +138,36 @@ impl IkaTxValidator {
     }
 
     fn batch_verify(committee: &Committee, checkpoints: &[&SignedCheckpointMessage]) -> IkaResult {
+        let mut obligation = VerificationObligation::default();
+
+        for ckpt in checkpoints {
+            let idx =
+                obligation.add_message(ckpt.data(), ckpt.epoch(), Intent::ika_app(ckpt.scope()));
+            ckpt.auth_sig()
+                .add_to_verification_obligation(committee, &mut obligation, idx)?;
+        }
+
+        Ok(obligation.verify_all()?)
+    }
+
+    /// Verifies all certificates - if any fail return error.
+    fn batch_verify_all_certificates_and_params_messages(
+        committee: &Committee,
+        checkpoints: &[&SignedParamsMessage],
+    ) -> IkaResult {
+        // certs.data() is assumed to be verified already by the caller.
+
+        for ckpt in checkpoints {
+            ckpt.data().verify_epoch(committee.epoch())?;
+        }
+
+        Self::batch_verify_params_messages(committee, checkpoints)
+    }
+
+    fn batch_verify_params_messages(
+        committee: &Committee,
+        checkpoints: &[&SignedParamsMessage],
+    ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
         for ckpt in checkpoints {
@@ -219,6 +273,7 @@ impl TransactionVerifier for IkaTxValidator {
 pub struct IkaTxValidatorMetrics {
     certificate_signatures_verified: IntCounter,
     checkpoint_signatures_verified: IntCounter,
+    params_message_signatures_verified: IntCounter,
 }
 
 impl IkaTxValidatorMetrics {
@@ -233,6 +288,12 @@ impl IkaTxValidatorMetrics {
             checkpoint_signatures_verified: register_int_counter_with_registry!(
                 "checkpoint_signatures_verified",
                 "Number of checkpoint verified in consensus batch verifier",
+                registry
+            )
+            .unwrap(),
+            params_message_signatures_verified: register_int_counter_with_registry!(
+                "params_message_signatures_verified",
+                "Number of params messages verified in consensus batch verifier",
                 registry
             )
             .unwrap(),

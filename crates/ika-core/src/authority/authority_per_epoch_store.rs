@@ -1208,6 +1208,7 @@ impl AuthorityPerEpochStore {
         transactions: Vec<SequencedConsensusTransaction>,
         consensus_stats: &ExecutionIndicesWithStats,
         checkpoint_service: &Arc<C>,
+        params_message_service: &Arc<ParamsMessageService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<Vec<MessageKind>> {
@@ -1252,6 +1253,7 @@ impl AuthorityPerEpochStore {
                 &mut output,
                 &consensus_transactions,
                 checkpoint_service,
+                params_message_service,
                 consensus_commit_info,
                 //&mut roots,
                 authority_metrics,
@@ -1577,9 +1579,7 @@ impl AuthorityPerEpochStore {
                     authority.concise()
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
-                // check if to send a transaction in here
                 let capabilities = self.get_capabilities_v1()?;
-                // first check for quorum than get the new version
                 if let Some((new_version, _)) = AuthorityState::is_protocol_version_supported_v1(
                     self.protocol_version(),
                     authority_capabilities
@@ -1599,28 +1599,17 @@ impl AuthorityPerEpochStore {
                     capabilities.clone(),
                     self.get_effective_buffer_stake_bps(),
                 ) {
-                    // create the SystemTrancatiocn here
+                    info!(
+                        validator=?self.name,
+                        protocol_version=?new_version,
+                        "Found version quorum from capabilities v1 {:?}",
+                        capabilities.first()
+                    );
                     return Ok(ConsensusCertificateResult::SystemTransaction(
                         ParamsMessageKind::NextConfigVersion(new_version),
                     ));
                 }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
-
-                // let system_inner = sui_client.must_get_system_inner_object().await;
-                // let next_version: Option<u64> = system_inner.next_protocol_version();
-                // let current_version: u64 = system_inner.protocol_version();
-                //
-                // let should_update_by_next_version =
-                //     next_version.is_some() && next_version != Some(new_version.as_u64());
-                // let should_update_by_current_version =
-                //     next_version.is_none() && current_version != new_version.as_u64();
-                //
-                // if should_update_by_next_version || should_update_by_current_version {
-                //     info!(
-                // "Found version quorum from capabilities v1 {:?}",
-                // capabilities.first()
-                // );
-                // }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::ParamsMessageSignature(data),

@@ -111,6 +111,7 @@ impl ConsensusHandlerInitializer {
         ConsensusHandler::new(
             self.epoch_store.clone(),
             self.checkpoint_service.clone(),
+            self.params_message_service.clone(),
             self.low_scoring_authorities.clone(),
             consensus_committee,
             self.state.metrics.clone(),
@@ -132,6 +133,7 @@ pub struct ConsensusHandler<C> {
     /// checking chain consistency, and accumulating per-epoch consensus output stats.
     last_consensus_stats: ExecutionIndicesWithStats,
     checkpoint_service: Arc<C>,
+    params_message_service: Arc<ParamsMessageService>,
     /// Reputation scores used by consensus adapter that we update, forwarded from consensus
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     /// The consensus committee used to do stake computations for deciding set of low scoring authorities
@@ -151,6 +153,7 @@ impl<C> ConsensusHandler<C> {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_service: Arc<C>,
+        params_message_service: Arc<ParamsMessageService>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
@@ -169,6 +172,7 @@ impl<C> ConsensusHandler<C> {
             epoch_store,
             last_consensus_stats,
             checkpoint_service,
+            params_message_service,
             low_scoring_authorities,
             committee,
             metrics,
@@ -375,6 +379,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 all_transactions,
                 &self.last_consensus_stats,
                 &self.checkpoint_service,
+                &self.params_message_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
             )
