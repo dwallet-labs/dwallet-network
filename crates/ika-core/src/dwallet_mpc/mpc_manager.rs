@@ -327,7 +327,8 @@ impl DWalletMPCManager {
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
             session.attempts_count += 1;
-            // remove outputs of the previous round, as all validators should have failed
+            // We got an `TWOPCMPCThresholdNotReached` error, and a quorum agreement on it, so necessarily all parties that sent a message for the last executed round are malicious (as the round aborted with error, and no message was generated.)
+           // Remove these messages, and mark the senders as malicious.
             self.malicious_handler
                 .report_malicious_actors(&party_ids_to_authority_names(
                     &session
