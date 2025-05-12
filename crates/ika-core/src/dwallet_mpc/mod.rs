@@ -462,6 +462,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = HashMap::new();
+    // TODO (#1015): Use a HashSet when reporting malicious actors.
     let mut malicious_parties = Vec::new();
 
     for (index, message_batch) in messages.iter() {
