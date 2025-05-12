@@ -75,7 +75,7 @@ pub(super) struct DWalletMPCSession {
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
     /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
-    pub(super) serialized_full_messages: Vec<HashMap<PartyID, MPCMessage>>,
+    pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
@@ -104,7 +104,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            serialized_full_messages: vec![HashMap::new()],
+            serialized_full_messages: Default::default(),
             consensus_adapter,
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,

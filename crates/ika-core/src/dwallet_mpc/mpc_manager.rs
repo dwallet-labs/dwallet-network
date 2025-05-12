@@ -529,7 +529,9 @@ impl DWalletMPCManager {
                     let mut session_clone = session.clone();
                     session_clone
                         .serialized_full_messages
-                        .truncate(session.pending_quorum_for_highest_round_number);
+                        .retain(|round_number, _| {
+                            round_number < &session.pending_quorum_for_highest_round_number
+                        });
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
