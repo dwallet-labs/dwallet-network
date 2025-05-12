@@ -121,7 +121,7 @@ impl DWalletMPCSession {
 
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
-        self.serialized_full_messages = Default::default();
+        self.serialized_full_messages = HashMap::new();
     }
 
     /// Returns the epoch store.
