@@ -83,7 +83,7 @@ pub(super) struct DWalletMPCSession {
     pub(super) session_id: ObjectID,
     /// The current MPC round number of the session.
     /// Starts at 0 and increments by one each time we advance the session.
-    pub(super) pending_quorum_for_highest_round_number: usize,
+    pub(super) next_round_to_advance: usize,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
@@ -110,7 +110,7 @@ impl DWalletMPCSession {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_id,
-            pending_quorum_for_highest_round_number: 0,
+            next_round_to_advance: 1,
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
@@ -218,7 +218,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.next_round_to_advance,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -242,7 +242,7 @@ impl DWalletMPCSession {
                     session_type=?base64_mpc_session_type,
                     session_id=?self.session_id,
                     validator=?self.epoch_store()?.name,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.next_round_to_advance,
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
@@ -343,7 +343,7 @@ impl DWalletMPCSession {
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
-            crypto_round=?self.pending_quorum_for_highest_round_number,
+            crypto_round=?self.next_round_to_advance,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
@@ -354,7 +354,7 @@ impl DWalletMPCSession {
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     validator=?self.epoch_store()?.name,
                     session_id=?self.session_id,
-                    crypto_round=?self.pending_quorum_for_highest_round_number,
+                    crypto_round=?self.next_round_to_advance,
                     "Advancing DKG first party",
                 );
                 let public_input = bcs::from_bytes(public_input)?;
@@ -507,7 +507,7 @@ impl DWalletMPCSession {
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
-            self.pending_quorum_for_highest_round_number,
+            self.next_round_to_advance,
         ))
     }
 
@@ -577,7 +577,7 @@ impl DWalletMPCSession {
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
-        if message.round_number > self.pending_quorum_for_highest_round_number {
+        if message.round_number > self.next_round_to_advance {
             warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
@@ -597,13 +597,13 @@ impl DWalletMPCSession {
     pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
-                if self.pending_quorum_for_highest_round_number == 0
+                if self.next_round_to_advance == 1
                     || (self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
                                 .serialized_full_messages
-                                .get(&self.pending_quorum_for_highest_round_number)
+                                .get(&self.next_round_to_advance)
                                 .unwrap_or(&HashMap::new())
                                 .keys()
                                 .cloned()
