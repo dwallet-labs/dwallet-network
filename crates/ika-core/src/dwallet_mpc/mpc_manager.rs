@@ -322,12 +322,25 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) {
+    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
+        let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
             session.attempts_count += 1;
+            self.malicious_handler
+                .report_malicious_actors(&party_ids_to_authority_names(
+                    &session
+                        .serialized_full_messages
+                        .get(&session.pending_quorum_for_highest_round_number)
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<PartyID>>(),
+                    &*epoch_store,
+                )?);
             session.pending_quorum_for_highest_round_number -= 1;
         }
+        Ok(())
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -532,10 +545,7 @@ impl DWalletMPCManager {
                     session.pending_quorum_for_highest_round_number += 1;
                     let mut session_clone = session.clone();
                     session_clone
-                        .serialized_full_messages
-                        .retain(|round_number, _| {
-                            round_number < &session.pending_quorum_for_highest_round_number
-                        });
+                        .serialized_full_messages;
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
