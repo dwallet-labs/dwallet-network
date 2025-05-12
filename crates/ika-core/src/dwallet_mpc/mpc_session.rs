@@ -8,13 +8,13 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
+use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
 use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use group::helpers::DeduplicateAndSort;
 use tokio::runtime::Handle;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
@@ -293,7 +293,7 @@ impl DWalletMPCSession {
     fn report_malicious_actors(
         &self,
         tokio_runtime_handle: &Handle,
-        mut malicious_parties_ids: Vec<PartyID>,
+        malicious_parties_ids: Vec<PartyID>,
     ) -> DwalletMPCResult<()> {
         // Makes sure all the validators report on the malicious actors in the same order without duplicates.
         let malicious_parties_ids = malicious_parties_ids.deduplicate_and_sort();
