@@ -202,26 +202,34 @@ export async function fetchObjectWithType<TObject>(
 	objectType: string,
 	isObject: (obj: any) => obj is TObject,
 	objectId: string,
-) {
-	const res = await conf.client.getObject({
-		id: objectId,
-		options: { showContent: true },
-	});
+): Promise<TObject> {
+	const startTime = Date.now();
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		const interval = 500;
+		await delay(interval);
+		const res = await conf.client.getObject({
+			id: objectId,
+			options: { showContent: true },
+		});
 
-	const objectData =
-		res.data?.content?.dataType === 'moveObject' &&
-		res.data?.content.type === objectType &&
-		isObject(res.data.content.fields)
-			? (res.data.content.fields as TObject)
-			: null;
+		const objectData =
+			res.data?.content?.dataType === 'moveObject' &&
+			res.data?.content.type === objectType &&
+			isObject(res.data.content.fields)
+				? (res.data.content.fields as TObject)
+				: null;
 
-	if (!objectData) {
-		throw new Error(
-			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
-		);
+		if (objectData) {
+			return objectData;
+		}
 	}
-
-	return objectData;
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an object of type ${objectType} within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 interface StartSessionEvent {
