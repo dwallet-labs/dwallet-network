@@ -14,6 +14,7 @@ use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
+use group::helpers::DeduplicateAndSort;
 use tokio::runtime::Handle;
 use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
