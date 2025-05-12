@@ -577,6 +577,16 @@ impl DWalletMPCSession {
         let source_party_id = self
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
+        if message.round_number > self.pending_quorum_for_highest_round_number {
+            warn!(
+                session_id=?message.session_id,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                crypto_round_number=?message.round_number,
+                "Received a message for a future round",
+            );
+            return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+        }
         self.serialized_full_messages
             .entry(message.round_number)
             .or_insert(HashMap::new())
