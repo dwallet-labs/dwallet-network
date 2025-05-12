@@ -4,6 +4,7 @@
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
+use crate::params_messages::ParamsMessageStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
@@ -17,6 +18,7 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
+use ika_types::messages_params_messages::ParamsMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
@@ -51,6 +53,7 @@ pub enum StopReason {
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
     checkpoint_store: Arc<CheckpointStore>,
+    params_message_store: Arc<ParamsMessageStore>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
@@ -63,6 +66,7 @@ where
     pub fn new(
         ika_system_package_id: ObjectID,
         checkpoint_store: Arc<CheckpointStore>,
+        params_message_store: Arc<ParamsMessageStore>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,
         metrics: Arc<SuiConnectorMetrics>,
@@ -70,6 +74,7 @@ where
         Self {
             ika_system_package_id,
             checkpoint_store,
+            params_message_store,
             sui_notifier,
             sui_client,
             metrics,
@@ -225,6 +230,7 @@ where
         let mut interval = time::interval(Duration::from_millis(120));
 
         let mut last_submitted_checkpoint: Option<u64> = None;
+        let mut last_submitted_params_message: Option<u64> = None;
 
         loop {
             interval.tick().await;
@@ -252,8 +258,19 @@ where
                 .map(|s| s + 1)
                 .unwrap_or(0);
 
+            let last_processed_params_message_sequence_number: Option<u64> =
+                ika_system_state_inner.last_processed_params_message_sequence_number();
+            let next_params_message_sequence_number = last_processed_params_message_sequence_number
+                .map(|s| s + 1)
+                .unwrap_or(0);
+
             if last_submitted_checkpoint.is_some()
                 && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            {
+                continue;
+            }
+            if last_submitted_params_message.is_some()
+                && last_submitted_params_message.unwrap() >= next_checkpoint_sequence_number
             {
                 continue;
             }
@@ -282,7 +299,7 @@ where
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
 
-                        let task = Self::handle_execution_task(
+                        let task = Self::handle_checkpoint_execution_task(
                             self.ika_system_package_id,
                             dwallet_2pc_mpc_secp256k1_id,
                             signature,
@@ -300,6 +317,51 @@ where
                             }
                             Err(err) => {
                                 error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                            }
+                        };
+                    }
+                }
+
+                if let Ok(Some(params_message)) = self
+                    .params_message_store
+                    .get_params_message_by_sequence_number(next_params_message_sequence_number)
+                {
+                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
+                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                    {
+                        let active_members: BlsCommittee = ika_system_state_inner
+                            .validator_set()
+                            .clone()
+                            .active_committee;
+                        let auth_sig = params_message.auth_sig();
+                        let signature = auth_sig.signature.as_bytes().to_vec();
+                        let signers_bitmap =
+                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
+                        let message =
+                            bcs::to_bytes::<ParamsMessage>(&params_message.into_message())
+                                .expect("Serializing params_message message cannot fail");
+
+                        info!("Signers_bitmap: {:?}", signers_bitmap);
+
+                        let task = Self::handle_params_message_execution_task(
+                            self.ika_system_package_id,
+                            dwallet_2pc_mpc_secp256k1_id,
+                            signature,
+                            signers_bitmap,
+                            message,
+                            &sui_notifier,
+                            &self.sui_client,
+                            &self.metrics,
+                        )
+                        .await;
+                        match task {
+                            Ok(_) => {
+                                last_submitted_params_message =
+                                    Some(next_params_message_sequence_number);
+                                info!("Sui transaction successfully executed for params_message sequence number: {}", next_params_message_sequence_number);
+                            }
+                            Err(err) => {
+                                error!("Sui transaction execution failed for params_message sequence number: {}, error: {}", next_params_message_sequence_number, err);
                             }
                         };
                     }
@@ -506,7 +568,100 @@ where
         Ok(())
     }
 
-    async fn handle_execution_task(
+    async fn handle_checkpoint_execution_task(
+        ika_system_package_id: ObjectID,
+        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        signature: Vec<u8>,
+        signers_bitmap: Vec<u8>,
+        message: Vec<u8>,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+        _metrics: &Arc<SuiConnectorMetrics>,
+    ) -> IkaResult<()> {
+        let mut ptb = ProgrammableTransactionBuilder::new();
+
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        if gas_coins.len() > 1 {
+            info!("More than one gas coin was found, merging them into one gas coin.");
+            let coins: IkaResult<Vec<_>> = gas_coins
+                .iter()
+                .skip(1)
+                .map(|c| {
+                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                        .map_err(|e| {
+                            IkaError::SuiConnectorInternalError(format!(
+                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                            ))
+                        })
+                })
+                .collect();
+
+            let coins = coins?;
+
+            ptb.command(sui_types::transaction::Command::MergeCoins(
+                Argument::GasCoin,
+                coins,
+            ));
+        }
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+
+        let dwallet_2pc_mpc_secp256k1_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+            .await;
+
+        info!(
+            "`signers_bitmap` @ handle_execution_task: {:?}",
+            signers_bitmap
+        );
+
+        let messages = Self::break_down_checkpoint_message(message);
+        let mut args = vec![
+            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signature`: {e}"
+                ))
+            })?),
+            CallArg::Pure(bcs::to_bytes(&signers_bitmap).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signers_bitmap`: {e}"
+                ))
+            })?),
+        ];
+        args.extend(messages);
+
+        ptb.move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
+            vec![],
+            args,
+        )
+        .map_err(|e| {
+            IkaError::SuiConnectorInternalError(format!(
+                "Can't ProgrammableTransactionBuilder::move_call: {e}"
+            ))
+        })?;
+
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn handle_params_message_execution_task(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
         signature: Vec<u8>,
