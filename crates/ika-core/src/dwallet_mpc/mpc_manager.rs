@@ -305,25 +305,42 @@ impl DWalletMPCManager {
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
         let committee = self.epoch_store()?.committee().clone();
-        if self
+        let current_voters_for_report = self
             .threshold_not_reached_reports
             .entry(report.clone())
-            .or_insert(StakeAggregator::new(committee))
+            .or_insert(StakeAggregator::new(committee));
+        if current_voters_for_report.has_quorum() {
+            // do nothing, quorum has already been reached
+            return Ok(());
+        }
+        if current_voters_for_report
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
             self.wait_for_more_messages_and_retry(report.session_id);
-            self.threshold_not_reached_reports.remove(&report);
         }
         Ok(())
     }
 
-    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) {
+    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
+        let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
             session.attempts_count += 1;
-            session.pending_quorum_for_highest_round_number -= 1;
+            self.malicious_handler
+                .report_malicious_actors(&party_ids_to_authority_names(
+                    &session
+                        .serialized_full_messages
+                        .get(&session.next_round_to_advance)
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<PartyID>>(),
+                    &*epoch_store,
+                )?);
+            session.next_round_to_advance -= 1;
         }
+        Ok(())
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -525,14 +542,8 @@ impl DWalletMPCManager {
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
-                    session.pending_quorum_for_highest_round_number += 1;
-                    let mut session_clone = session.clone();
-                    session_clone
-                        .serialized_full_messages
-                        .retain(|round_number, _| {
-                            round_number < &session.pending_quorum_for_highest_round_number
-                        });
-                    Some((session_clone, quorum_check_result.malicious_parties))
+                    session.next_round_to_advance += 1;
+                    Some((session.clone(), quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
