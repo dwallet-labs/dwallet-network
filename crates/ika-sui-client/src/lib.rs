@@ -708,18 +708,33 @@ where
         system_inner: &SystemInner,
     ) -> EpochStartSystem {
         loop {
-            let Ok(Ok(ika_system_state)) = retry_with_max_elapsed_time!(
+            match retry_with_max_elapsed_time!(
                 self.get_epoch_start_system(&system_inner),
                 Duration::from_secs(30)
-            ) else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["get_epoch_start_system_until_success"])
-                    .inc();
-                error!("Failed to get epoch start system until success");
-                continue;
-            };
-            return ika_system_state;
+            ) {
+                // todo(zeev): clean this func.
+                Ok(Ok(ika_system_state)) => return ika_system_state,
+                Ok(Err(err)) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .inc();
+                    error!(
+                        ?err,
+                        "Received error from `get_epoch_start_system`. Retrying...",
+                    );
+                }
+                Err(err) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .inc();
+                    error!(
+                        ?err,
+                        "Received error from `get_epoch_start_system` retry wrapper. Retrying...",
+                    );
+                }
+            }
         }
     }
 

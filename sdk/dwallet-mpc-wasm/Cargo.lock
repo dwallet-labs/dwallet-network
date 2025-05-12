@@ -429,7 +429,7 @@ dependencies = [
 
 [[package]]
 name = "dwallet-mpc-centralized-party"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "bcs",
@@ -450,7 +450,7 @@ dependencies = [
 
 [[package]]
 name = "dwallet-mpc-types"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "bcs",
@@ -1489,7 +1489,7 @@ dependencies = [
 
 [[package]]
 name = "shared_wasm_class_groups"
-version = "1.0.0"
+version = "1.0.0-itn2-v1"
 dependencies = [
  "anyhow",
  "base64 0.21.7",
