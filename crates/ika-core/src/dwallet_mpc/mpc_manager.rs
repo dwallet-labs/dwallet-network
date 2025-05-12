@@ -543,10 +543,7 @@ impl DWalletMPCManager {
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
                     session.pending_quorum_for_highest_round_number += 1;
-                    let mut session_clone = session.clone();
-                    session_clone
-                        .serialized_full_messages;
-                    Some((session_clone, quorum_check_result.malicious_parties))
+                    Some((session.clone(), quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
