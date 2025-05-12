@@ -9,11 +9,14 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import { DWallet, EncryptedDWalletData, fetchObjectWithType } from './globals.js';
 import {
+	ActiveDWallet,
 	delay,
+	DWallet,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	EncryptedDWalletData,
 	fetchCompletedEvent,
+	fetchObjectWithType,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -72,18 +75,18 @@ export async function createDWallet(
 		networkDecryptionKeyPublicOutput,
 		classGroupsSecpKeyPair,
 	);
-	await acceptEncryptedUserShare(conf, dwalletOutput.completionEvent);
+	await acceptEncryptedUserShare(conf, dwalletOutput.dwallet);
 	return {
 		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: dwalletOutput.secretShare,
-		output: dwalletOutput.completionEvent.public_output,
-		encrypted_secret_share_id: dwalletOutput.completionEvent.encrypted_user_secret_key_share_id,
+		output: dwalletOutput.dwallet.state.fields.public_output,
+		encrypted_secret_share_id: dwalletOutput.dwallet.,
 	};
 }
 
 interface SecondResult {
-	completionEvent: CompletedDKGSecondRoundEvent;
+	dwallet: ActiveDWallet;
 	secretShare: Uint8Array;
 }
 
@@ -110,7 +113,11 @@ export async function launchDKGSecondRound(
 		networkDecryptionKeyPublicOutput,
 	);
 
-	let activeDWallet = await getObjectWithType(conf, )
+	let activeDWallet = await getObjectWithType(
+		conf,
+		firstRoundOutputResult.dwalletID,
+		isActiveDWallet,
+	);
 
 	const completionEvent = await dkgSecondRoundMoveCall(
 		conf,
@@ -121,7 +128,7 @@ export async function launchDKGSecondRound(
 		centralizedPublicOutput,
 	);
 	return {
-		completionEvent,
+		dwallet: completionEvent,
 		secretShare: centralizedSecretKeyShare,
 	};
 }
