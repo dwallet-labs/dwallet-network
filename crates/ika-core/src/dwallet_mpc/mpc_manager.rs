@@ -305,10 +305,15 @@ impl DWalletMPCManager {
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
         let committee = self.epoch_store()?.committee().clone();
-        if self
+        let current_voters_for_report = self
             .threshold_not_reached_reports
             .entry(report.clone())
-            .or_insert(StakeAggregator::new(committee))
+            .or_insert(StakeAggregator::new(committee));
+        if current_voters_for_report.has_quorum() {
+            // do nothing, quorum has already been reached
+            return Ok(());
+        }
+        if current_voters_for_report
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
