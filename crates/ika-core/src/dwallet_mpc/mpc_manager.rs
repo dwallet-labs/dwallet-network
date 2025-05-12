@@ -318,7 +318,6 @@ impl DWalletMPCManager {
             .is_quorum_reached()
         {
             self.wait_for_more_messages_and_retry(report.session_id);
-            self.threshold_not_reached_reports.remove(&report);
         }
         Ok(())
     }
