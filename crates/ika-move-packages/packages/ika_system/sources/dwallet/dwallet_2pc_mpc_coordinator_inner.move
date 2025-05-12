@@ -292,9 +292,17 @@ public struct DWallet has key, store {
 
     created_at_epoch: u64,
 
-    /// The elliptic curve used for the dWallet:
-    /// 0 - secp256k1
+    /// The elliptic curve used for the dWallet.
     curve: u8,
+
+    /// If not set, the user secret key shares is not public, and the user will need to
+    /// keep it encrypted using encrypted user secret key shares. It is 
+    /// the case where we have zero trust for the dWallet becuase the
+    /// user particiation is required.
+    /// If set, the user secret key shares is public, the network can sign
+    /// without the user participation. In this case, it is trust minimalized
+    /// security for the user.
+    public_user_secret_key_shares: Option<vector<u8>>,
 
     /// The ID of the capability associated with this dWallet.
     dwallet_cap_id: ID,
@@ -604,6 +612,27 @@ public struct AcceptReEncryptedUserShareEvent has copy, drop, store {
 }
 // END OF ENCRYPTED USER SHARE TYPES
 
+
+public struct MakeDWalletUserSecretKeySharesPublicRequestEvent has copy, drop, store {
+    public_user_secret_key_shares: vector<u8>,
+
+    public_output: vector<u8>,
+
+    curve: u8,
+
+    dwallet_id: ID,
+
+    dwallet_network_decryption_key_id: ID,
+}
+
+public struct CompletedMakeDWalletUserSecretKeySharesPublicEvent has copy, drop, store {
+    dwallet_id: ID,
+}
+
+public struct RejectedMakeDWalletUserSecretKeySharesPublicEvent has copy, drop, store {
+    dwallet_id: ID,
+}
+
 // PRESIGN TYPES
 
 /// Event emitted to initiate the first round of a Presign session.
@@ -784,6 +813,7 @@ const EInvalidCurve: u64 = 17;
 const EInvalidSignatureAlgorithm: u64 = 18;
 const ECurvePaused: u64 = 19;
 const ESignatureAlgorithmPaused: u64 = 20;
+const EDWalletUserSecretKeySharesAlreadyPublic: u64 = 21;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -1242,6 +1272,7 @@ public(package) fun request_dwallet_dkg_first_round(
         id,
         created_at_epoch: self.current_epoch,
         curve,
+        public_user_secret_key_shares: option::none(),
         dwallet_cap_id,
         dwallet_network_decryption_key_id,
         encrypted_user_secret_key_shares: object_table::new(ctx),
@@ -1665,6 +1696,74 @@ public(package) fun accept_encrypted_user_share(
             encryption_key_address,
         }
     );
+}
+
+/// Requests to make the user secret key shares of a dWallet public.
+/// *IMPORTANT*: If you make the dWallet user secret key shares public, you remove
+/// the zero trust security of the dWallet and you can't revert it.
+///
+/// This function emits a `MakeDWalletUserSecretKeySharesPublicRequestEvent` event to initiate the
+/// process of making the user secret key shares of a dWallet public. It charges the initiator for
+/// the operation and creates a new event to record the request.
+///
+/// ### Parameters
+/// - `dwallet_id`: The ID of the dWallet to make the user secret key shares public.
+/// - `public_user_secret_key_shares`: The public user secret key shares to be made public.
+/// - `payment_ika`: The IKA payment for the operation.
+/// - `payment_sui`: The SUI payment for the operation.
+/// - `ctx`: The transaction context.
+public(package) fun request_make_dwallet_user_secret_key_shares_public(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_id: ID,
+    public_user_secret_key_shares: vector<u8>,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext,
+) {
+    let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
+    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let curve = dwallet.curve;
+    assert!(dwallet.public_user_secret_key_shares.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
+
+    let pricing = self.pricing.make_dwallet_user_secret_key_shares_public();
+
+    event::emit(
+        self.charge_and_create_current_epoch_dwallet_event(
+            dwallet_network_decryption_key_id,
+            pricing,
+            payment_ika,
+            payment_sui,
+            MakeDWalletUserSecretKeySharesPublicRequestEvent {
+                public_user_secret_key_shares,
+                public_output,
+                curve,
+                dwallet_id,
+                dwallet_network_decryption_key_id,
+            },
+            ctx,
+        )
+    );
+}
+
+public(package) fun respond_make_dwallet_user_secret_key_shares_public(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_id: ID,
+    public_user_secret_key_shares: vector<u8>,
+    rejected: bool,
+    session_sequence_number: u64,
+) {
+    self.remove_session_and_charge<MakeDWalletUserSecretKeySharesPublicRequestEvent>(session_sequence_number);
+    let dwallet = self.get_dwallet_mut(dwallet_id);
+    if (rejected) {
+        event::emit(RejectedMakeDWalletUserSecretKeySharesPublicEvent {
+            dwallet_id,
+        });
+    } else {
+        dwallet.public_user_secret_key_shares.fill(public_user_secret_key_shares);
+        event::emit(CompletedMakeDWalletUserSecretKeySharesPublicEvent {
+            dwallet_id,
+        });
+    }
 }
 
 /// Starts a batched presign session.

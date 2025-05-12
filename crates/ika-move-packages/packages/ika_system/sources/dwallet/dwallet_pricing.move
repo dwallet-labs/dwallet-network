@@ -40,6 +40,7 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
     sign: PricingPerOperation,
     future_sign: PricingPerOperation,
     sign_with_partial_user_signature: PricingPerOperation,
+    make_dwallet_user_secret_key_shares_public: PricingPerOperation,
 }
 
 /// Creates a new [`DWalletPricing2PcMpcSecp256K1`] object.
@@ -124,6 +125,11 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     partial_sign_computation_ika: u64,
     partial_sign_gas_fee_reimbursement_sui: u64,
 
+    // Make DWallet User Secret Key Shares Public Pricing
+    make_dwallet_user_secret_key_shares_public_consensus_validation_ika: u64,
+    make_dwallet_user_secret_key_shares_public_computation_ika: u64,
+    make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64,
+
     ctx: &mut TxContext
 ): DWalletPricing2PcMpcSecp256K1 {
     DWalletPricing2PcMpcSecp256K1 {
@@ -162,6 +168,11 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
             consensus_validation_ika: partial_sign_consensus_validation_ika,
             computation_ika: partial_sign_computation_ika,
             gas_fee_reimbursement_sui: partial_sign_gas_fee_reimbursement_sui,
+        },
+        make_dwallet_user_secret_key_shares_public: PricingPerOperation {
+            consensus_validation_ika: make_dwallet_user_secret_key_shares_public_consensus_validation_ika,
+            computation_ika: make_dwallet_user_secret_key_shares_public_computation_ika,
+            gas_fee_reimbursement_sui: make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui,
         },
     }
 }
@@ -209,6 +220,11 @@ public fun future_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperatio
 /// Returns `PricingPerOperation` for the ECDSA sign with partial user signature.
 public fun sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.sign_with_partial_user_signature
+}
+
+/// Returns `PricingPerOperation` for the make dWallet user secret key shares public.
+public fun make_dwallet_user_secret_key_shares_public(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.make_dwallet_user_secret_key_shares_public
 }
 
 /// Getter for the consensus_validation_ika field of a PricingPerOperation.
