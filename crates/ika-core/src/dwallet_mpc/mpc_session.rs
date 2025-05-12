@@ -82,7 +82,8 @@ pub(super) struct DWalletMPCSession {
     epoch_id: EpochId,
     pub(super) session_id: ObjectID,
     /// The current MPC round number of the session.
-    /// Starts at 0 and increments by one each time we advance the session.
+    /// Starts at `1` and increments after each advance the session.
+    /// Decremented only upon an `TWOPCMPCThresholdNotReached` Error.
     pub(super) next_round_to_advance: usize,
     party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
