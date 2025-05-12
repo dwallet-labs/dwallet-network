@@ -41,7 +41,7 @@ use typed_store::{
 use super::epoch_start_configuration::EpochStartConfigTrait;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use crate::authority::AuthorityMetrics;
+use crate::authority::{AuthorityMetrics, AuthorityState};
 use crate::checkpoints::{
     BuilderCheckpointMessage, CheckpointHeight, CheckpointServiceNotify, EpochStats,
     PendingCheckpoint, PendingCheckpointInfo, PendingCheckpointV1,
@@ -63,7 +63,10 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::params_messages::{BuilderParamsMessage, ParamsMessageHeight, PendingParamsMessage};
+use crate::params_messages::{
+    BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify,
+    PendingParamsMessage,
+};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -105,6 +108,7 @@ use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
+use schemars::_private::NoSerialize;
 use std::str::FromStr;
 use std::time::Duration;
 use sui_macros::fail_point;
@@ -171,6 +175,8 @@ pub enum ConsensusCertificateResult {
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
+
+    SystemTransaction(ParamsMessageKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -1299,6 +1305,7 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transactions: &[VerifiedSequencedConsensusTransaction],
         checkpoint_service: &Arc<C>,
+        params_message_service: &Arc<ParamsMessageService>,
         consensus_commit_info: &ConsensusCommitInfo,
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
@@ -1309,6 +1316,8 @@ impl AuthorityPerEpochStore {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
 
         let mut verified_certificates = VecDeque::with_capacity(transactions.len() + 1);
+        let mut verified_param_message_certificates =
+            VecDeque::with_capacity(transactions.len() + 1);
         let mut notifications = Vec::with_capacity(transactions.len());
 
         let mut cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
@@ -1323,6 +1332,7 @@ impl AuthorityPerEpochStore {
                     output,
                     tx,
                     checkpoint_service,
+                    params_message_service,
                     consensus_commit_info.round,
                     authority_metrics,
                 )
@@ -1331,6 +1341,10 @@ impl AuthorityPerEpochStore {
                 ConsensusCertificateResult::IkaTransaction(cert) => {
                     notifications.push(key.clone());
                     verified_certificates.push_back(cert);
+                }
+                ConsensusCertificateResult::SystemTransaction(cert) => {
+                    notifications.push(key.clone());
+                    verified_param_message_certificates.push_back(cert);
                 }
                 // This is a special transaction needed for NetworkDKG to bypass TX
                 // size limits.
@@ -1509,6 +1523,7 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transaction: &VerifiedSequencedConsensusTransaction,
         checkpoint_service: &Arc<C>,
+        params_message_service: &Arc<ParamsMessageService>, // should i do this generic as the checkpoint service?
         commit_round: Round,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<ConsensusCertificateResult> {
@@ -1553,27 +1568,65 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotificationV1(capabilities),
+                kind: ConsensusTransactionKind::CapabilityNotificationV1(authority_capabilities),
                 ..
             }) => {
-                let authority = capabilities.authority;
+                let authority = authority_capabilities.authority;
                 debug!(
                     "Received CapabilityNotificationV1 from {:?}",
                     authority.concise()
                 );
-                self.record_capabilities_v1(capabilities)?;
+                self.record_capabilities_v1(authority_capabilities)?;
+                // check if to send a transaction in here
+                let capabilities = self.get_capabilities_v1()?;
+                // first check for quorum than get the new version
+                if let Some((new_version, _)) = AuthorityState::is_protocol_version_supported_v1(
+                    self.protocol_version(),
+                    authority_capabilities
+                        .supported_protocol_versions
+                        .versions
+                        .iter()
+                        .max_by(|(protocol_version_a, _), (protocol_version_b, _)| {
+                            protocol_version_a.cmp(&protocol_version_b)
+                        })
+                        .map(|(protocol_version, _)| protocol_version.clone())
+                        .unwrap_or_else(|| {
+                            warn!("No supported protocol versions found in capabilities");
+                            self.protocol_version()
+                        }),
+                    self.protocol_config(),
+                    self.committee(),
+                    capabilities.clone(),
+                    self.get_effective_buffer_stake_bps(),
+                ) {
+                    // create the SystemTrancatiocn here
+                    return Ok(ConsensusCertificateResult::SystemTransaction(
+                        ParamsMessageKind::NextConfigVersion(new_version),
+                    ));
+                }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
+
+                // let system_inner = sui_client.must_get_system_inner_object().await;
+                // let next_version: Option<u64> = system_inner.next_protocol_version();
+                // let current_version: u64 = system_inner.protocol_version();
+                //
+                // let should_update_by_next_version =
+                //     next_version.is_some() && next_version != Some(new_version.as_u64());
+                // let should_update_by_current_version =
+                //     next_version.is_none() && current_version != new_version.as_u64();
+                //
+                // if should_update_by_next_version || should_update_by_current_version {
+                //     info!(
+                // "Found version quorum from capabilities v1 {:?}",
+                // capabilities.first()
+                // );
+                // }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::ParamsMessageSignature(data),
                 ..
             }) => {
-                // todo : what to do?
-                // collect signatures
-                // if quorum reached -> send message to state sync
-                // Yael -> notify the params service in here
-                // -> from there what should happen when we notify within the service?
-                // I should add this to the config
+                params_message_service.notify_params_message_signature(self, data)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
