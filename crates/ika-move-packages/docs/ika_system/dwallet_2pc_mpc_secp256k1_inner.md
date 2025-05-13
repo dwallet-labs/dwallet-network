@@ -1277,6 +1277,11 @@ It contains all necessary data to ensure proper continuation of the process.
 
 <dl>
 <dt>
+<code>encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
@@ -3837,6 +3842,7 @@ used to verify the signature on the public output.
         payment_ika,
         payment_sui,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent">DWalletDKGSecondRoundRequestEvent</a> {
+            encrypted_user_secret_key_share_id,
             dwallet_id: dwallet_cap.dwallet_id,
             first_round_output,
             centralized_public_key_share_and_proof,

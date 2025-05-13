@@ -1,6 +1,9 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { create_dkg_centralized_output, encrypt_secret_share } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	create_dkg_centralized_output,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
@@ -35,16 +38,13 @@ interface StartDKGFirstRoundEvent {
 
 interface StartDKGSecondRoundEvent {
 	event_data: {
-		encrypted_user_secret_key_share_id: string
+		encrypted_user_secret_key_share_id: string;
 	};
 	session_id: string;
 }
 
 function isStartDKGSecondRoundEvent(obj: any): obj is StartDKGSecondRoundEvent {
-	return (
-		!!obj?.event_data?.encrypted_user_secret_key_share_id &&
-		!!obj?.session_id
-	);
+	return !!obj?.event_data?.encrypted_user_secret_key_share_id && !!obj?.session_id;
 }
 
 interface DKGSecondRoundMoveResponse {
@@ -53,7 +53,7 @@ interface DKGSecondRoundMoveResponse {
 }
 
 interface DKGSecondRoundResponse {
-	move_response: DKGSecondRoundMoveResponse,
+	move_response: DKGSecondRoundMoveResponse;
 	secretShare: Uint8Array;
 }
 
@@ -88,7 +88,8 @@ export async function createDWallet(
 	);
 	await acceptEncryptedUserShare(conf, {
 		dwallet_id: secondRoundResponse.move_response.dwallet.id.id,
-		encrypted_user_secret_key_share_id: secondRoundResponse.,
+		encrypted_user_secret_key_share_id:
+			secondRoundResponse.move_response.encrypted_user_secret_key_share_id,
 	});
 	return {
 		dwalletID: firstRoundOutputResult.dwalletID,
@@ -140,7 +141,6 @@ export async function launchDKGSecondRound(
 		secretShare: centralizedSecretKeyShare,
 	};
 }
-
 
 export async function dkgSecondRoundMoveCall(
 	conf: Config,
@@ -213,7 +213,8 @@ export async function dkgSecondRoundMoveCall(
 	const dwallet = await getObjectWithType(conf, firstRoundOutputResult.dwalletID, isActiveDWallet);
 	return {
 		dwallet,
-		encrypted_user_secret_key_share_id: startSessionEvent.event_data.encrypted_user_secret_key_share_id,
+		encrypted_user_secret_key_share_id:
+			startSessionEvent.event_data.encrypted_user_secret_key_share_id,
 	};
 }
 
