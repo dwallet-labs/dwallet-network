@@ -220,16 +220,7 @@ export interface ActiveDWallet {
 			public_output: Uint8Array;
 		};
 	};
-	/// Unique identifier for the dWallet.
 	id: { id: string };
-
-	created_at_epoch: number;
-
-	/// The ID of the capability associated with this dWallet.
-	dwallet_cap_id: string;
-
-	/// The MPC network decryption key id that is used to decrypt this dWallet.
-	dwallet_network_decryption_key_id: string;
 }
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {
