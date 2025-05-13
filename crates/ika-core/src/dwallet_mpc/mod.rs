@@ -305,7 +305,7 @@ fn sign_session_public_input(
     let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
-        &deserialized_event.event_data.dwallet_mpc_network_key_id,
+        &deserialized_event.event_data.dwallet_network_decryption_key_id,
     )?;
 
     let expected_decrypters = get_expected_decrypters(
@@ -603,7 +603,7 @@ pub(crate) async fn session_input_from_event(
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                &deserialized_event.event_data.dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
@@ -633,7 +633,7 @@ pub(crate) async fn session_input_from_event(
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                &deserialized_event.event_data.dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
@@ -655,7 +655,7 @@ pub(crate) async fn session_input_from_event(
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                &deserialized_event.event_data.dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
@@ -670,7 +670,7 @@ pub(crate) async fn session_input_from_event(
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
-                &deserialized_event.event_data.dwallet_mpc_network_key_id,
+                &deserialized_event.event_data.dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))

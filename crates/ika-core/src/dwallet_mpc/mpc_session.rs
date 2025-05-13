@@ -378,9 +378,9 @@ impl DWalletMPCSession {
                                 .clone(),
                             encryption_key: event_data.event_data.encryption_key.clone(),
                             encryption_key_id: event_data.event_data.encryption_key_id.clone(),
-                            dwallet_mpc_network_key_id: event_data
+                            dwallet_network_decryption_key_id: event_data
                                 .event_data
-                                .dwallet_mpc_network_key_id
+                                .dwallet_network_decryption_key_id
                                 .clone(),
                             curve: event_data.event_data.curve,
 

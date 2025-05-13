@@ -534,7 +534,7 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
     signer_public_key: vector<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_mpc_network_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
     curve: u8,
@@ -595,7 +595,7 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     signer_public_key: vector<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_mpc_network_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
     curve: u8,
@@ -647,7 +647,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     encrypted_user_secret_key_share_id: ID,
 
     source_encrypted_user_secret_key_share_id: ID,
-    dwallet_mpc_network_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 
     curve: u8,
 }
@@ -814,7 +814,7 @@ public struct FutureSignRequestEvent has copy, drop, store {
     signature_algorithm: u8,
     hash_scheme: u8,
     message_centralized_signature: vector<u8>,
-    dwallet_mpc_network_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 }
 
 public struct CompletedFutureSignEvent has copy, drop, store {
@@ -1545,7 +1545,7 @@ public(package) fun request_dwallet_dkg_second_round(
             encryption_key_address,
             user_public_output,
             signer_public_key,
-            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+            dwallet_network_decryption_key_id,
             curve: dwallet.curve,
         },
         ctx,
@@ -1670,7 +1670,7 @@ public(package) fun request_re_encrypt_user_share_for(
 
     let dwallet = self.get_dwallet_mut(dwallet_id);
     let public_output = *dwallet.validate_active_and_get_public_output();
-    let dwallet_mpc_network_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     let curve = dwallet.curve;
 
     assert!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), EInvalidSource);
@@ -1688,7 +1688,6 @@ public(package) fun request_re_encrypt_user_share_for(
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
     dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
 
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
     let pricing = self.pricing.re_encrypt_user_share();
 
     event::emit(
@@ -1705,7 +1704,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 encryption_key_id: destination_encryption_key_id,
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
-                dwallet_mpc_network_key_id,
+                dwallet_network_decryption_key_id,
                 curve,
             },
             ctx,
@@ -1872,7 +1871,7 @@ public(package) fun request_imported_key_dwallet_verification(
             encryption_key_address,
             user_public_output,
             signer_public_key,
-            dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+            dwallet_network_decryption_key_id,
             curve,
         },
         ctx,
@@ -2076,7 +2075,7 @@ public(package) fun request_presign(
                 dwallet_id: option::some(dwallet_id),
                 presign_id,
                 dwallet_public_output: option::some(public_output),
-                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id,
+                dwallet_network_decryption_key_id,
                 curve,
                 signature_algorithm,
             },
@@ -2137,7 +2136,7 @@ public(package) fun request_global_presign(
                 dwallet_id: option::none(),
                 presign_id,
                 dwallet_public_output: option::none(),
-                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id,
+                dwallet_network_decryption_key_id,
                 curve,
                 signature_algorithm,
             },
@@ -2480,7 +2479,7 @@ public(package) fun request_future_sign(
                 signature_algorithm,
                 hash_scheme,
                 message_centralized_signature,
-                dwallet_mpc_network_key_id: dwallet_network_decryption_key_id,
+                dwallet_network_decryption_key_id,
         },
         ctx,
     );

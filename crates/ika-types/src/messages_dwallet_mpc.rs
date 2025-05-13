@@ -253,7 +253,7 @@ pub struct EncryptedShareVerificationRequestEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
-    pub dwallet_mpc_network_key_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
     pub curve: u8,
 }
 
@@ -280,7 +280,7 @@ pub struct FutureSignRequestEvent {
     pub signature_algorithm: u8,
     pub hash_scheme: u8,
     pub message_centralized_signature: Vec<u8>,
-    pub dwallet_mpc_network_key_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
 }
 
 impl DWalletMPCEventTrait for FutureSignRequestEvent {
@@ -315,7 +315,7 @@ pub struct DWalletDKGSecondRoundRequestEvent {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
-    pub dwallet_mpc_network_key_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
     pub curve: u8,
 }
 
@@ -446,7 +446,7 @@ pub struct SignRequestEvent {
     /// Hashed messages to Sign.
     pub message: Vec<u8>,
     /// The dWallet mpc network key version
-    pub dwallet_mpc_network_key_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
     pub presign_id: ObjectID,
 
     /// The presign protocol output as bytes.

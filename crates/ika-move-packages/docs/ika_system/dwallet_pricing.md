@@ -29,6 +29,7 @@ The DKG operation is split into two separate rounds:
 -  [Function `future_sign`](#(ika_system=0x0)_dwallet_pricing_future_sign)
 -  [Function `sign_with_partial_user_signature`](#(ika_system=0x0)_dwallet_pricing_sign_with_partial_user_signature)
 -  [Function `make_dwallet_user_secret_key_shares_public`](#(ika_system=0x0)_dwallet_pricing_make_dwallet_user_secret_key_shares_public)
+-  [Function `imported_key_dwallet_verification`](#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification)
 -  [Function `consensus_validation_ika`](#(ika_system=0x0)_dwallet_pricing_consensus_validation_ika)
 -  [Function `computation_ika`](#(ika_system=0x0)_dwallet_pricing_computation_ika)
 -  [Function `gas_fee_reimbursement_sui`](#(ika_system=0x0)_dwallet_pricing_gas_fee_reimbursement_sui)
@@ -155,6 +156,11 @@ Each operation is represented by its own <code><a href="../ika_system/dwallet_pr
 </dt>
 <dd>
 </dd>
+<dt>
+<code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification">imported_key_dwallet_verification</a>: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">dwallet_pricing::PricingPerOperation</a></code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -220,7 +226,7 @@ Initializes pricing data for each operation by providing values for the three pr
 A newly created instance of <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(dkg_first_round_consensus_validation_ika: u64, dkg_first_round_computation_ika: u64, dkg_first_round_gas_fee_reimbursement_sui: u64, dkg_second_round_consensus_validation_ika: u64, dkg_second_round_computation_ika: u64, dkg_second_round_gas_fee_reimbursement_sui: u64, re_encrypt_consensus_validation_ika: u64, re_encrypt_computation_ika: u64, re_encrypt_gas_fee_reimbursement_sui: u64, presign_consensus_validation_ika: u64, presign_computation_ika: u64, presign_gas_fee_reimbursement_sui: u64, sign_consensus_validation_ika: u64, sign_computation_ika: u64, sign_gas_fee_reimbursement_sui: u64, future_sign_consensus_validation_ika: u64, future_sign_computation_ika: u64, future_sign_gas_fee_reimbursement_sui: u64, partial_sign_consensus_validation_ika: u64, partial_sign_computation_ika: u64, partial_sign_gas_fee_reimbursement_sui: u64, make_dwallet_user_secret_key_shares_public_consensus_validation_ika: u64, make_dwallet_user_secret_key_shares_public_computation_ika: u64, make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">create_dwallet_pricing_2pc_mpc_secp256k1</a>(dkg_first_round_consensus_validation_ika: u64, dkg_first_round_computation_ika: u64, dkg_first_round_gas_fee_reimbursement_sui: u64, dkg_second_round_consensus_validation_ika: u64, dkg_second_round_computation_ika: u64, dkg_second_round_gas_fee_reimbursement_sui: u64, re_encrypt_consensus_validation_ika: u64, re_encrypt_computation_ika: u64, re_encrypt_gas_fee_reimbursement_sui: u64, presign_consensus_validation_ika: u64, presign_computation_ika: u64, presign_gas_fee_reimbursement_sui: u64, sign_consensus_validation_ika: u64, sign_computation_ika: u64, sign_gas_fee_reimbursement_sui: u64, future_sign_consensus_validation_ika: u64, future_sign_computation_ika: u64, future_sign_gas_fee_reimbursement_sui: u64, partial_sign_consensus_validation_ika: u64, partial_sign_computation_ika: u64, partial_sign_gas_fee_reimbursement_sui: u64, make_dwallet_user_secret_key_shares_public_consensus_validation_ika: u64, make_dwallet_user_secret_key_shares_public_computation_ika: u64, make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64, imported_key_dwallet_verification_consensus_validation_ika: u64, imported_key_dwallet_verification_computation_ika: u64, imported_key_dwallet_verification_gas_fee_reimbursement_sui: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>
 </code></pre>
 
 
@@ -262,6 +268,10 @@ A newly created instance of <code><a href="../ika_system/dwallet_pricing.md#(ika
     make_dwallet_user_secret_key_shares_public_consensus_validation_ika: u64,
     make_dwallet_user_secret_key_shares_public_computation_ika: u64,
     make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64,
+    // Imported Key DWallet Verification Pricing
+    imported_key_dwallet_verification_consensus_validation_ika: u64,
+    imported_key_dwallet_verification_computation_ika: u64,
+    imported_key_dwallet_verification_gas_fee_reimbursement_sui: u64,
     ctx: &<b>mut</b> TxContext
 ): <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a> {
     <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a> {
@@ -305,6 +315,11 @@ A newly created instance of <code><a href="../ika_system/dwallet_pricing.md#(ika
             <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_consensus_validation_ika">consensus_validation_ika</a>: make_dwallet_user_secret_key_shares_public_consensus_validation_ika,
             <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_computation_ika">computation_ika</a>: make_dwallet_user_secret_key_shares_public_computation_ika,
             <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_gas_fee_reimbursement_sui">gas_fee_reimbursement_sui</a>: make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui,
+        },
+        <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification">imported_key_dwallet_verification</a>: <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a> {
+            <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_consensus_validation_ika">consensus_validation_ika</a>: imported_key_dwallet_verification_consensus_validation_ika,
+            <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_computation_ika">computation_ika</a>: imported_key_dwallet_verification_computation_ika,
+            <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_gas_fee_reimbursement_sui">gas_fee_reimbursement_sui</a>: imported_key_dwallet_verification_gas_fee_reimbursement_sui,
         },
     }
 }
@@ -536,6 +551,31 @@ Returns <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_make_dwallet_user_secret_key_shares_public">make_dwallet_user_secret_key_shares_public</a>(self: &<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a>): <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a> {
     self.<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_make_dwallet_user_secret_key_shares_public">make_dwallet_user_secret_key_shares_public</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification"></a>
+
+## Function `imported_key_dwallet_verification`
+
+Returns <code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a></code> for the imported key dWallet verification.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification">imported_key_dwallet_verification</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">dwallet_pricing::DWalletPricing2PcMpcSecp256K1</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">dwallet_pricing::PricingPerOperation</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification">imported_key_dwallet_verification</a>(self: &<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing2PcMpcSecp256K1">DWalletPricing2PcMpcSecp256K1</a>): <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">PricingPerOperation</a> {
+    self.<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_imported_key_dwallet_verification">imported_key_dwallet_verification</a>
 }
 </code></pre>
 

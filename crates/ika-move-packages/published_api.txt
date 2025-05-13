@@ -172,6 +172,9 @@ sign_with_partial_user_signature
 make_dwallet_user_secret_key_shares_public
 	public fun
 	0x0::dwallet_pricing
+imported_key_dwallet_verification
+	public fun
+	0x0::dwallet_pricing
 consensus_validation_ika
 	public fun
 	0x0::dwallet_pricing
@@ -191,6 +194,9 @@ DWalletSession
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCap
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+ImportedKeyDWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDecryptionKeyCap
@@ -247,7 +253,10 @@ CompletedDWalletNetworkDKGDecryptionKeyEvent
 DWalletDKGFirstRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDKGFirstdRoundEvent
+CompletedDWalletDKGFirstdRoundEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedDWalletDKGFirstRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDKGSecondRoundRequestEvent
@@ -257,6 +266,15 @@ CompletedDWalletDKGSecondRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedDWalletDKGSecondRoundEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletImportedKeyVerificationRequestEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedDWalletImportedKeyVerificationEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedDWalletImportedKeyVerificationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedShareVerificationRequestEvent
@@ -311,6 +329,9 @@ DWalletCheckpointInfoEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 MessageApproval
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+ImportedKeyMessageApproval
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDecryptionKeyState
@@ -391,6 +412,12 @@ register_encryption_key
 approve_message
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+approve_imported_key_message
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+validate_approve_message
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -421,6 +448,15 @@ respond_re_encrypt_user_share_for
 accept_encrypted_user_share
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+new_imported_key_dwallet
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_imported_key_dwallet_verification
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+respond_imported_key_dwallet_verification
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_make_dwallet_user_secret_key_shares_public
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -445,6 +481,9 @@ emit_sign_event
 request_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+request_imported_key_sign
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -457,7 +496,13 @@ verify_partial_user_signature_cap
 request_sign_with_partial_user_signatures
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-compare_partial_user_signatures_with_approvals
+request_imported_key_sign_with_partial_user_signatures
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+compare_partial_user_signatures_with_message_approvals
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+compare_partial_user_signatures_with_imported_key_message_approvals
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_sign
@@ -502,10 +547,19 @@ register_encryption_key
 approve_message
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+approve_imported_key_message
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_first_round
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_second_round
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+new_imported_key_dwallet
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+request_imported_key_dwallet_verification
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_re_encrypt_user_share_for
@@ -526,6 +580,9 @@ is_presign_valid
 request_sign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+request_imported_key_sign
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_future_sign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
@@ -535,7 +592,13 @@ verify_partial_user_signature_cap
 request_sign_with_partial_user_signatures
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-compare_partial_user_signatures_with_approvals
+request_imported_key_sign_with_partial_user_signatures
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+compare_partial_user_signatures_with_message_approvals
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+compare_partial_user_signatures_with_imported_key_message_approvals
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 migrate
