@@ -440,6 +440,7 @@ public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
 /// This event is emitted to notify Validators to begin the second round of the DKG.
 /// It contains all necessary data to ensure proper continuation of the process.
 public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
+    encrypted_user_secret_key_share_id: ID,
     /// The unique session identifier for the DWallet.
     dwallet_id: ID,
 
@@ -1356,6 +1357,7 @@ public(package) fun request_dwallet_dkg_second_round(
         payment_ika,
         payment_sui,
         DWalletDKGSecondRoundRequestEvent {
+            encrypted_user_secret_key_share_id,
             dwallet_id: dwallet_cap.dwallet_id,
             first_round_output,
             centralized_public_key_share_and_proof,
