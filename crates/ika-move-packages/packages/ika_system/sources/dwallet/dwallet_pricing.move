@@ -41,6 +41,7 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
     future_sign: PricingPerOperation,
     sign_with_partial_user_signature: PricingPerOperation,
     make_dwallet_user_secret_key_shares_public: PricingPerOperation,
+    imported_key_dwallet_verification: PricingPerOperation,
 }
 
 /// Creates a new [`DWalletPricing2PcMpcSecp256K1`] object.
@@ -130,6 +131,11 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     make_dwallet_user_secret_key_shares_public_computation_ika: u64,
     make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64,
 
+    // Imported Key DWallet Verification Pricing
+    imported_key_dwallet_verification_consensus_validation_ika: u64,
+    imported_key_dwallet_verification_computation_ika: u64,
+    imported_key_dwallet_verification_gas_fee_reimbursement_sui: u64,
+
     ctx: &mut TxContext
 ): DWalletPricing2PcMpcSecp256K1 {
     DWalletPricing2PcMpcSecp256K1 {
@@ -173,6 +179,11 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
             consensus_validation_ika: make_dwallet_user_secret_key_shares_public_consensus_validation_ika,
             computation_ika: make_dwallet_user_secret_key_shares_public_computation_ika,
             gas_fee_reimbursement_sui: make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui,
+        },
+        imported_key_dwallet_verification: PricingPerOperation {
+            consensus_validation_ika: imported_key_dwallet_verification_consensus_validation_ika,
+            computation_ika: imported_key_dwallet_verification_computation_ika,
+            gas_fee_reimbursement_sui: imported_key_dwallet_verification_gas_fee_reimbursement_sui,
         },
     }
 }
@@ -225,6 +236,11 @@ public fun sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1
 /// Returns `PricingPerOperation` for the make dWallet user secret key shares public.
 public fun make_dwallet_user_secret_key_shares_public(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
     self.make_dwallet_user_secret_key_shares_public
+}
+
+/// Returns `PricingPerOperation` for the imported key dWallet verification.
+public fun imported_key_dwallet_verification(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.imported_key_dwallet_verification
 }
 
 /// Getter for the consensus_validation_ika field of a PricingPerOperation.

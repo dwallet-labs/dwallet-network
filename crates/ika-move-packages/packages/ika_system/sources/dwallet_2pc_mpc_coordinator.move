@@ -14,8 +14,10 @@ use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     DWalletCoordinatorInner,
     DWalletNetworkDecryptionKeyCap,
     DWalletCap,
+    ImportedKeyDWalletCap,
     PresignCap,
     MessageApproval,
+    ImportedKeyMessageApproval,
     UnverifiedPartialUserSignatureCap,
     VerifiedPartialUserSignatureCap
 };
@@ -51,7 +53,6 @@ public(package) fun create_dwallet_coordinator(
         pricing,
         ctx,
     );
-        // TODO: remove this code!
     let mut self = DWalletCoordinator {
         id: object::new(ctx),
         version: VERSION,
@@ -137,6 +138,21 @@ public fun approve_message(
     )
 }
 
+public fun approve_imported_key_message(
+    self: &mut DWalletCoordinator,
+    imported_key_dwallet_cap: &ImportedKeyDWalletCap,
+    signature_algorithm: u8,
+    hash_scheme: u8,
+    message: vector<u8>
+): ImportedKeyMessageApproval {
+    self.inner().approve_imported_key_message(
+        imported_key_dwallet_cap,
+        signature_algorithm,
+        hash_scheme,
+        message,
+    )
+}
+
 public fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinator,
     dwallet_network_decryption_key_id: ID,
@@ -176,6 +192,44 @@ public fun request_dwallet_dkg_second_round(
         payment_ika,
         payment_sui,
         ctx
+    )
+}
+
+public fun new_imported_key_dwallet(
+    self: &mut DWalletCoordinator,
+    dwallet_network_decryption_key_id: ID,
+    curve: u8,
+    ctx: &mut TxContext
+): ImportedKeyDWalletCap {
+    self.inner_mut().new_imported_key_dwallet(
+        dwallet_network_decryption_key_id,
+        curve,
+        ctx,
+    )
+}
+
+public fun request_imported_key_dwallet_verification(
+    self: &mut DWalletCoordinator,
+    dwallet_cap: &ImportedKeyDWalletCap,
+    centralized_party_message: vector<u8>,
+    encrypted_centralized_secret_share_and_proof: vector<u8>,
+    encryption_key_address: address,
+    user_public_output: vector<u8>,
+    signer_public_key: vector<u8>,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext
+) {
+    self.inner_mut().request_imported_key_dwallet_verification(
+        dwallet_cap,
+        centralized_party_message,
+        encrypted_centralized_secret_share_and_proof,
+        encryption_key_address,
+        user_public_output,
+        signer_public_key,
+        payment_ika,
+        payment_sui,
+        ctx,
     )
 }
 
@@ -277,6 +331,25 @@ public fun request_sign(
     )
 }
 
+public fun request_imported_key_sign(
+    self: &mut DWalletCoordinator,
+    presign_cap: PresignCap,
+    message_approval: ImportedKeyMessageApproval,
+    message_centralized_signature: vector<u8>,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext
+) {
+    self.inner_mut().request_imported_key_sign(
+        message_approval,
+        presign_cap,
+        message_centralized_signature,
+        payment_ika,
+        payment_sui,
+        ctx
+    )
+}
+
 public fun request_future_sign(
     self: &mut DWalletCoordinator,
     dwallet_id: ID,
@@ -328,12 +401,41 @@ public fun request_sign_with_partial_user_signatures(
     )
 }
 
-public fun compare_partial_user_signatures_with_approvals(
+
+public fun request_imported_key_sign_with_partial_user_signatures(
+    self: &mut DWalletCoordinator,
+    partial_user_signature_cap: VerifiedPartialUserSignatureCap,
+    message_approval: ImportedKeyMessageApproval,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext
+) {
+    self.inner_mut().request_imported_key_sign_with_partial_user_signatures(
+        partial_user_signature_cap,
+        message_approval,
+        payment_ika,
+        payment_sui,
+        ctx,
+    )
+}
+
+public fun compare_partial_user_signatures_with_message_approvals(
     self: &DWalletCoordinator,
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
 ) {
-    self.inner().compare_partial_user_signatures_with_approvals(
+    self.inner().compare_partial_user_signatures_with_message_approvals(
+        partial_user_signature_cap,
+        message_approval,
+    )
+}
+
+public fun compare_partial_user_signatures_with_imported_key_message_approvals(
+    self: &DWalletCoordinator,
+    partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
+    message_approval: &ImportedKeyMessageApproval,
+) {
+    self.inner().compare_partial_user_signatures_with_imported_key_message_approvals(
         partial_user_signature_cap,
         message_approval,
     )
