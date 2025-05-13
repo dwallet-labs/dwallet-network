@@ -2067,15 +2067,17 @@ Distribute rewards to validators and stakers
     adjusted_staking_reward_amounts: &vector&lt;u64&gt;,
     staking_rewards: &<b>mut</b> Balance&lt;IKA&gt;,
 ) {
+    <b>let</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a> = self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut();
     <b>let</b> members = *self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members();
     <b>let</b> length = members.length();
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; length) {
         <b>let</b> validator_id = members[i].validator_id();
-        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
+        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = &<b>mut</b> self.validators[validator_id];
         <b>let</b> staking_reward_amount = adjusted_staking_reward_amounts[i];
         <b>let</b> validator_rewards = staking_rewards.split(staking_reward_amount);
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(validator_rewards, new_epoch);
+        <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.update(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.ika_balance_at_epoch(new_epoch));
         i = i + 1;
     }
 }

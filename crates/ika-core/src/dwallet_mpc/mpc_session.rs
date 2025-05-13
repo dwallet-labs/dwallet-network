@@ -35,7 +35,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, PresignRequestEvent,
+    SessionInfo, SessionType, EncryptedShareVerificationRequestEvent, PresignRequestEvent,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -370,7 +370,7 @@ impl DWalletMPCSession {
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
-                        &StartEncryptedShareVerificationEvent {
+                        &EncryptedShareVerificationRequestEvent {
                             decentralized_public_output: public_output.clone(),
                             encrypted_centralized_secret_share_and_proof: event_data
                                 .event_data
@@ -382,6 +382,7 @@ impl DWalletMPCSession {
                                 .event_data
                                 .dwallet_mpc_network_key_id
                                 .clone(),
+                            curve: event_data.event_data.curve,
 
                             // Fields not relevant for verification; passing empty values.
                             dwallet_id: ObjectID::new([0; 32]),

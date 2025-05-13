@@ -169,6 +169,9 @@ future_sign
 sign_with_partial_user_signature
 	public fun
 	0x0::dwallet_pricing
+make_dwallet_user_secret_key_shares_public
+	public fun
+	0x0::dwallet_pricing
 consensus_validation_ika
 	public fun
 	0x0::dwallet_pricing
@@ -266,6 +269,15 @@ RejectedEncryptedShareVerificationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 AcceptReEncryptedUserShareEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+MakeDWalletUserSecretKeySharesPublicRequestEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedMakeDWalletUserSecretKeySharesPublicEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedMakeDWalletUserSecretKeySharesPublicEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 PresignRequestEvent
@@ -407,6 +419,12 @@ respond_re_encrypt_user_share_for
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 accept_encrypted_user_share
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_make_dwallet_user_secret_key_shares_public
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+respond_make_dwallet_user_secret_key_shares_public
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_presign

@@ -109,6 +109,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
     sign: PricingPerOperation,
     future_sign: PricingPerOperation,
     sign_with_partial_user_signature: PricingPerOperation,
+    make_dwallet_user_secret_key_shares_public: PricingPerOperation,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type

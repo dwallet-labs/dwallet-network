@@ -23,7 +23,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEventTrait, DWalletMPCSuiEvent, IkaPackagesConfig, MPCProtocolInitData, SessionInfo,
-    DWalletDKGSecondRoundRequestEvent, StartEncryptedShareVerificationEvent, PresignRequestEvent,
+    DWalletDKGSecondRoundRequestEvent, EncryptedShareVerificationRequestEvent, PresignRequestEvent,
 };
 use jsonrpsee::core::Serialize;
 use k256::elliptic_curve::ops::Reduce;
@@ -180,11 +180,11 @@ pub(crate) fn session_info_from_event(
             ))
         }
         t if t
-            == &DWalletMPCSuiEvent::<StartEncryptedShareVerificationEvent>::type_(
+            == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
+            let deserialized_event: DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(start_encrypted_share_verification_session_info(
                 deserialized_event,
@@ -195,7 +195,7 @@ pub(crate) fn session_info_from_event(
 }
 
 fn start_encrypted_share_verification_session_info(
-    deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>,
+    deserialized_event: DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
@@ -646,11 +646,11 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t
-            == &DWalletMPCSuiEvent::<StartEncryptedShareVerificationEvent>::type_(
+            == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent> =
+            let deserialized_event: DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent> =
                 bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.

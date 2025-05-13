@@ -9,7 +9,7 @@ use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::StartEncryptedShareVerificationEvent;
+use ika_types::messages_dwallet_mpc::EncryptedShareVerificationRequestEvent;
 use std::marker::PhantomData;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::secp256k1;
@@ -22,7 +22,7 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 /// secret share, validates the signature on the dWallet's public share,
 /// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
-    verification_data: &StartEncryptedShareVerificationEvent,
+    verification_data: &EncryptedShareVerificationRequestEvent,
     protocol_public_parameters: &Vec<u8>,
 ) -> DwalletMPCResult<()> {
     verify_centralized_secret_key_share_proof(

@@ -59,7 +59,7 @@ pub enum MPCProtocolInitData {
     /// This is not a real MPC round,
     /// but we use it to start the verification process using the same events mechanism
     /// because the system does not support native functions.
-    EncryptedShareVerification(DWalletMPCSuiEvent<StartEncryptedShareVerificationEvent>),
+    EncryptedShareVerification(DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
@@ -234,11 +234,11 @@ impl<E: DWalletMPCEventTrait> DWalletMPCSuiEvent<E> {
     }
 }
 
-/// The Rust representation of the `StartEncryptedShareVerificationEvent` Move struct.
+/// The Rust representation of the `EncryptedShareVerificationRequestEvent` Move struct.
 /// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
 /// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartEncryptedShareVerificationEvent {
+pub struct EncryptedShareVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
@@ -254,9 +254,10 @@ pub struct StartEncryptedShareVerificationEvent {
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
     pub dwallet_mpc_network_key_id: ObjectID,
+    pub curve: u8,
 }
 
-impl DWalletMPCEventTrait for StartEncryptedShareVerificationEvent {
+impl DWalletMPCEventTrait for EncryptedShareVerificationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,

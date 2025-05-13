@@ -37,6 +37,9 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `CompletedEncryptedShareVerificationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedEncryptedShareVerificationEvent)
 -  [Struct `RejectedEncryptedShareVerificationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedEncryptedShareVerificationEvent)
 -  [Struct `AcceptReEncryptedUserShareEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_AcceptReEncryptedUserShareEvent)
+-  [Struct `MakeDWalletUserSecretKeySharesPublicRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent)
+-  [Struct `CompletedMakeDWalletUserSecretKeySharesPublicEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedMakeDWalletUserSecretKeySharesPublicEvent)
+-  [Struct `RejectedMakeDWalletUserSecretKeySharesPublicEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedMakeDWalletUserSecretKeySharesPublicEvent)
 -  [Struct `PresignRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignRequestEvent)
 -  [Struct `CompletedPresignEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedPresignEvent)
 -  [Struct `RejectedPresignEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedPresignEvent)
@@ -85,25 +88,27 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `request_re_encrypt_user_share_for`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_re_encrypt_user_share_for)
 -  [Function `respond_re_encrypt_user_share_for`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_re_encrypt_user_share_for)
 -  [Function `accept_encrypted_user_share`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_accept_encrypted_user_share)
+-  [Function `request_make_dwallet_user_secret_key_shares_public`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_make_dwallet_user_secret_key_shares_public)
+-  [Function `respond_make_dwallet_user_secret_key_shares_public`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_shares_public)
 -  [Function `request_presign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_presign)
 -  [Function `request_global_presign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_global_presign)
 -  [Function `respond_presign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_presign)
 -  [Function `is_presign_valid`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_is_presign_valid)
 -  [Function `emit_sign_event`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_emit_sign_event)
-    -  [Effects](#@Effects_24)
-    -  [Aborts](#@Aborts_25)
+    -  [Effects](#@Effects_25)
+    -  [Aborts](#@Aborts_26)
 -  [Function `request_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_sign)
-    -  [Effects](#@Effects_26)
-    -  [Aborts](#@Aborts_27)
-    -  [Parameters](#@Parameters_28)
-    -  [Type Parameters](#@Type_Parameters_29)
+    -  [Effects](#@Effects_27)
+    -  [Aborts](#@Aborts_28)
+    -  [Parameters](#@Parameters_29)
+    -  [Type Parameters](#@Type_Parameters_30)
 -  [Function `request_future_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_future_sign)
 -  [Function `respond_future_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_future_sign)
 -  [Function `verify_partial_user_signature_cap`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_verify_partial_user_signature_cap)
 -  [Function `request_sign_with_partial_user_signatures`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_sign_with_partial_user_signatures)
-        -  [Type Parameters](#@Type_Parameters_30)
-        -  [Parameters](#@Parameters_31)
-        -  [Notes](#@Notes_32)
+        -  [Type Parameters](#@Type_Parameters_31)
+        -  [Parameters](#@Parameters_32)
+        -  [Notes](#@Notes_33)
 -  [Function `compare_partial_user_signatures_with_approvals`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_compare_partial_user_signatures_with_approvals)
 -  [Function `respond_sign`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_sign)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_process_checkpoint_message_by_quorum)
@@ -875,8 +880,19 @@ created after the Distributed key generation (DKG) process.
 <code>curve: u8</code>
 </dt>
 <dd>
- The elliptic curve used for the dWallet:
- 0 - secp256k1
+ The elliptic curve used for the dWallet.
+</dd>
+<dt>
+<code>public_user_secret_key_shares: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ If not set, the user secret key shares is not public, and the user will need to
+ keep it encrypted using encrypted user secret key shares. It is
+ the case where we have zero trust for the dWallet becuase the
+ user particiation is required.
+ If set, the user secret key shares is public, the network can sign
+ without the user participation. In this case, it is trust minimalized
+ security for the user.
 </dd>
 <dt>
 <code>dwallet_cap_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
@@ -1585,6 +1601,11 @@ similar to the MPC processes.
 </dt>
 <dd>
 </dd>
+<dt>
+<code>curve: u8</code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -1696,6 +1717,104 @@ similar to the MPC processes.
 </dd>
 <dt>
 <code>encryption_key_address: <b>address</b></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent"></a>
+
+## Struct `MakeDWalletUserSecretKeySharesPublicRequestEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent">MakeDWalletUserSecretKeySharesPublicRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>public_user_secret_key_shares: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>public_output: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>curve: u8</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedMakeDWalletUserSecretKeySharesPublicEvent"></a>
+
+## Struct `CompletedMakeDWalletUserSecretKeySharesPublicEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedMakeDWalletUserSecretKeySharesPublicEvent">CompletedMakeDWalletUserSecretKeySharesPublicEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedMakeDWalletUserSecretKeySharesPublicEvent"></a>
+
+## Struct `RejectedMakeDWalletUserSecretKeySharesPublicEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedMakeDWalletUserSecretKeySharesPublicEvent">RejectedMakeDWalletUserSecretKeySharesPublicEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
 </dd>
@@ -2696,6 +2815,15 @@ Variant <code>User</code>
 
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic">EDWalletUserSecretKeySharesAlreadyPublic</a>: u64 = 21;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap"></a>
 
 
@@ -3677,6 +3805,7 @@ the beginning of the DKG process.
         id,
         created_at_epoch: self.current_epoch,
         curve,
+        public_user_secret_key_shares: option::none(),
         dwallet_cap_id,
         dwallet_network_decryption_key_id,
         encrypted_user_secret_key_shares: object_table::new(ctx),
@@ -4138,6 +4267,7 @@ which is captured by the blockchain to initiate the verification process.
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     <b>let</b> public_output = *dwallet.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_active_and_get_public_output">validate_active_and_get_public_output</a>();
     <b>let</b> dwallet_mpc_network_key_id = dwallet.dwallet_network_decryption_key_id;
+    <b>let</b> curve = dwallet.curve;
     <b>assert</b>!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidSource">EInvalidSource</a>);
     <b>let</b> encrypted_user_share = <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> {
         id: object::new(ctx),
@@ -4168,6 +4298,7 @@ which is captured by the blockchain to initiate the verification process.
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
                 dwallet_mpc_network_key_id,
+                curve,
             },
             ctx,
         )
@@ -4304,6 +4435,116 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
 
 </details>
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_make_dwallet_user_secret_key_shares_public"></a>
+
+## Function `request_make_dwallet_user_secret_key_shares_public`
+
+Requests to make the user secret key shares of a dWallet public.
+*IMPORTANT*: If you make the dWallet user secret key shares public, you remove
+the zero trust security of the dWallet and you can't revert it.
+
+This function emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent">MakeDWalletUserSecretKeySharesPublicRequestEvent</a></code> event to initiate the
+process of making the user secret key shares of a dWallet public. It charges the initiator for
+the operation and creates a new event to record the request.
+
+
+<a name="@Parameters_18"></a>
+
+##### Parameters
+
+- <code>dwallet_id</code>: The ID of the dWallet to make the user secret key shares public.
+- <code>public_user_secret_key_shares</code>: The public user secret key shares to be made public.
+- <code>payment_ika</code>: The IKA payment for the operation.
+- <code>payment_sui</code>: The SUI payment for the operation.
+- <code>ctx</code>: The transaction context.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_make_dwallet_user_secret_key_shares_public">request_make_dwallet_user_secret_key_shares_public</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_user_secret_key_shares: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_make_dwallet_user_secret_key_shares_public">request_make_dwallet_user_secret_key_shares_public</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
+    dwallet_id: ID,
+    public_user_secret_key_shares: vector&lt;u8&gt;,
+    payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
+    payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
+    ctx: &<b>mut</b> TxContext,
+) {
+    <b>let</b> (dwallet, public_output) = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_active_dwallet_and_public_output">get_active_dwallet_and_public_output</a>(dwallet_id);
+    <b>let</b> dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    <b>let</b> curve = dwallet.curve;
+    <b>assert</b>!(dwallet.public_user_secret_key_shares.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic">EDWalletUserSecretKeySharesAlreadyPublic</a>);
+    <b>let</b> pricing = self.pricing.make_dwallet_user_secret_key_shares_public();
+    event::emit(
+        self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_charge_and_create_current_epoch_dwallet_event">charge_and_create_current_epoch_dwallet_event</a>(
+            dwallet_network_decryption_key_id,
+            pricing,
+            payment_ika,
+            payment_sui,
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent">MakeDWalletUserSecretKeySharesPublicRequestEvent</a> {
+                public_user_secret_key_shares,
+                public_output,
+                curve,
+                dwallet_id,
+                dwallet_network_decryption_key_id,
+            },
+            ctx,
+        )
+    );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_shares_public"></a>
+
+## Function `respond_make_dwallet_user_secret_key_shares_public`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_shares_public">respond_make_dwallet_user_secret_key_shares_public</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_user_secret_key_shares: vector&lt;u8&gt;, rejected: bool, session_sequence_number: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_shares_public">respond_make_dwallet_user_secret_key_shares_public</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
+    dwallet_id: ID,
+    public_user_secret_key_shares: vector&lt;u8&gt;,
+    rejected: bool,
+    session_sequence_number: u64,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MakeDWalletUserSecretKeySharesPublicRequestEvent">MakeDWalletUserSecretKeySharesPublicRequestEvent</a>&gt;(session_sequence_number);
+    <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
+    <b>if</b> (rejected) {
+        event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedMakeDWalletUserSecretKeySharesPublicEvent">RejectedMakeDWalletUserSecretKeySharesPublicEvent</a> {
+            dwallet_id,
+        });
+    } <b>else</b> {
+        dwallet.public_user_secret_key_shares.fill(public_user_secret_key_shares);
+        event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedMakeDWalletUserSecretKeySharesPublicEvent">CompletedMakeDWalletUserSecretKeySharesPublicEvent</a> {
+            dwallet_id,
+        });
+    }
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_presign"></a>
 
 ## Function `request_presign`
@@ -4318,7 +4559,7 @@ validators to begin processing the first round of the presign process for each s
 - Each session is linked to the parent batch via <code>batch_session_id</code>.
 
 
-<a name="@Effects_18"></a>
+<a name="@Effects_19"></a>
 
 ##### Effects
 
@@ -4327,7 +4568,7 @@ validators to begin processing the first round of the presign process for each s
 - Emits a <code>RequestedPresignFirstRoundEvent</code> for each presign in the batch, with relevant details.
 
 
-<a name="@Parameters_19"></a>
+<a name="@Parameters_20"></a>
 
 ##### Parameters
 
@@ -4491,7 +4732,7 @@ It creates a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(
 emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedPresignEvent">CompletedPresignEvent</a></code>, and transfers the result to the initiating user.
 
 
-<a name="@Parameters_20"></a>
+<a name="@Parameters_21"></a>
 
 ##### Parameters
 
@@ -4503,21 +4744,21 @@ emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_s
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Emits_21"></a>
+<a name="@Emits_22"></a>
 
 ##### Emits
 
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedPresignEvent">CompletedPresignEvent</a></code>: Includes the initiator, dWallet ID, and presign ID.
 
 
-<a name="@Panics_22"></a>
+<a name="@Panics_23"></a>
 
 ##### Panics
 
 - Panics with <code>ENotSystemAddress</code> if the sender of the transaction is not the system address.
 
 
-<a name="@Effects_23"></a>
+<a name="@Effects_24"></a>
 
 ##### Effects
 
@@ -4618,7 +4859,7 @@ This function ensures that all messages have the correct approvals, calculates
 their hashes, and emits signing events.
 
 
-<a name="@Effects_24"></a>
+<a name="@Effects_25"></a>
 
 ### Effects
 
@@ -4628,7 +4869,7 @@ their hashes, and emits signing events.
 - Iterates through <code>signature_algorithm_data</code>, verifying approvals and emitting <code>RequestedSignEvent</code> for each.
 
 
-<a name="@Aborts_25"></a>
+<a name="@Aborts_26"></a>
 
 ### Aborts
 
@@ -4747,7 +4988,7 @@ providing all necessary metadata to ensure the integrity of the signing process.
 It validates the linkage between the <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWallet">DWallet</a></code>, <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">DWalletCap</a></code>, and <code>SignatureAlgorithmData</code> objects.
 
 
-<a name="@Effects_26"></a>
+<a name="@Effects_27"></a>
 
 ### Effects
 
@@ -4758,7 +4999,7 @@ It validates the linkage between the <code><a href="../ika_system/dwallet_2pc_mp
 - <code>RequestedSignEvent</code>: Includes details for each message signing process.
 
 
-<a name="@Aborts_27"></a>
+<a name="@Aborts_28"></a>
 
 ### Aborts
 
@@ -4767,7 +5008,7 @@ match the number of <code>signature_algorithm_data</code>.
 - **<code>EMissingApprovalOrWrongApprovalOrder</code>**: If the approvals are missing or provided in the incorrect order.
 
 
-<a name="@Parameters_28"></a>
+<a name="@Parameters_29"></a>
 
 ### Parameters
 
@@ -4778,7 +5019,7 @@ approvals for the messages, which are destroyed at the end of the transaction.
 which are unpacked and then destroyed at the end of the transaction.
 
 
-<a name="@Type_Parameters_29"></a>
+<a name="@Type_Parameters_30"></a>
 
 ### Type Parameters
 
@@ -5022,14 +5263,14 @@ This function takes a partial signature object, validates approvals for each mes
 and emits the necessary signing events.
 
 
-<a name="@Type_Parameters_30"></a>
+<a name="@Type_Parameters_31"></a>
 
 #### Type Parameters
 
 - <code>D</code>: Represents additional data fields specific for each implementation.
 
 
-<a name="@Parameters_31"></a>
+<a name="@Parameters_32"></a>
 
 #### Parameters
 
@@ -5038,7 +5279,7 @@ containing messages that require approval.
 - <code>message_approvals</code>: A list of approvals corresponding to the messages in <code>partial_signature</code>.
 - <code>ctx</code>: The transaction context.
 
-<a name="@Notes_32"></a>
+<a name="@Notes_33"></a>
 
 #### Notes
 
@@ -5153,7 +5394,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_33"></a>
+<a name="@Parameters_34"></a>
 
 ##### Parameters
 
@@ -5162,7 +5403,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_34"></a>
+<a name="@Requirements_35"></a>
 
 ##### Requirements
 
@@ -5170,7 +5411,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code>ENotSystemAddress</code>.
 
 
-<a name="@Events_35"></a>
+<a name="@Events_36"></a>
 
 ##### Events
 
@@ -5178,7 +5419,7 @@ the function will abort with <code>ENotSystemAddress</code>.
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_36"></a>
+<a name="@Errors_37"></a>
 
 ##### Errors
 
