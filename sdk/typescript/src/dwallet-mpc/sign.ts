@@ -20,6 +20,33 @@ export enum Hash {
 	SHA256 = 1,
 }
 
+interface ReadySignObject {
+	state: {
+		fields: {
+			signature: Uint8Array;
+		};
+	};
+}
+
+interface StartSignEvent {
+	event_data: {
+		sign_id: string;
+	};
+}
+
+interface StartFutureSignEvent {
+	event_data: {
+		partial_centralized_signed_message_id: string;
+	};
+}
+
+interface VerifiedECDSAPartialUserSignature {
+	state: {
+		variant: 'NetworkVerificationCompleted';
+	};
+	cap_id: string;
+}
+
 export async function sign(
 	conf: Config,
 	presignID: string,
@@ -94,14 +121,6 @@ export async function sign(
 	return await getObjectWithType(conf, startSessionEvent.event_data.sign_id, isReadySignObject);
 }
 
-interface ReadySignObject {
-	state: {
-		fields: {
-			signature: Uint8Array;
-		};
-	};
-}
-
 function isReadySignObject(obj: any): obj is ReadySignObject {
 	return (
 		obj?.state !== undefined &&
@@ -110,20 +129,8 @@ function isReadySignObject(obj: any): obj is ReadySignObject {
 	);
 }
 
-interface StartSignEvent {
-	event_data: {
-		sign_id: string;
-	};
-}
-
 function isStartSignEvent(event: any): event is StartSignEvent {
 	return event.event_data !== undefined && event.event_data.sign_id !== undefined;
-}
-
-interface StartFutureSignEvent {
-	event_data: {
-		partial_centralized_signed_message_id: string;
-	};
 }
 
 function isStartFutureSignEvent(event: any): event is StartFutureSignEvent {
@@ -210,13 +217,6 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		isVerifiedECDSAPartialUserSignature,
 	);
 	return partialSignature.cap_id;
-}
-
-interface VerifiedECDSAPartialUserSignature {
-	state: {
-		variant: 'NetworkVerificationCompleted';
-	};
-	cap_id: string;
 }
 
 function isVerifiedECDSAPartialUserSignature(obj: any): obj is VerifiedECDSAPartialUserSignature {
