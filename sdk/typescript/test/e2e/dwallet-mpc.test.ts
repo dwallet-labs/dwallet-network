@@ -67,8 +67,8 @@ describe('Test dWallet MPC', () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet}`);
-		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		const completedPresign = await presign(conf, dwallet.dwalletID);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 	});
 
 	it('should sign full flow', async () => {
@@ -78,13 +78,13 @@ describe('Test dWallet MPC', () => {
 		console.log(`dWallet has been created successfully: ${dwallet}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Presign...');
-		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		const completedPresign = await presign(conf, dwallet.dwalletID);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Sign...');
 		await sign(
 			conf,
-			presignCompletion.presign_id,
+			completedPresign.id.id,
 			dwallet.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwallet.secret_share,
@@ -100,13 +100,13 @@ describe('Test dWallet MPC', () => {
 		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
 		console.log('Starting Presign...');
-		const presignCompletion = await presign(conf, dwallet.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+		const completedPresign = await presign(conf, dwallet.dwalletID);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 		await delay(checkpointCreationTime);
 		const unverifiedECDSAPartialUserSignatureCapID =
 			await createUnverifiedECDSAPartialUserSignatureCap(
 				conf,
-				presignCompletion.presign_id,
+				completedPresign.id.id,
 				dwallet.dwallet_cap_id,
 				Buffer.from('hello world'),
 				dwallet.secret_share,
