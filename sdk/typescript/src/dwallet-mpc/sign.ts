@@ -5,14 +5,11 @@ import { Transaction } from '@mysten/sui/transactions';
 import {
 	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
-	fetchObjectWithType,
 	getDWalletSecpState,
 	getObjectWithType,
 	isActiveDWallet,
 	isDWalletCap,
 	isPresign,
-	isStartSessionEvent,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';

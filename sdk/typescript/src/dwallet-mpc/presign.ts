@@ -1,16 +1,13 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-import {
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
-	getDWalletSecpState,
-	getObjectWithType,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+
+
+import { DWALLET_ECDSA_K1_MOVE_MODULE_NAME, getDWalletSecpState, getObjectWithType, SUI_PACKAGE_ID } from './globals.js';
 import type { Config } from './globals.ts';
+
 
 interface CompletedPresignEvent {
 	presign_id: string;

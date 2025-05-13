@@ -245,55 +245,6 @@ export async function fetchObjectWithType<TObject>(
 	);
 }
 
-interface StartSessionEvent {
-	session_id: string;
-}
-
-export function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
-}
-
-export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
-	c: Config,
-	sessionID: string,
-	isEventFn: (parsedJson: any) => parsedJson is TEvent,
-	eventType: string = '',
-): Promise<TEvent> {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 500;
-		await delay(interval);
-
-		const { data } = await c.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - interval * 4).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-			limit: 1000,
-		});
-
-		const match = data.find(
-			(event) =>
-				(event.type === eventType || !eventType) &&
-				isEventFn(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
-		);
-
-		if (match) return match.parsedJson as TEvent;
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${eventType} within ${
-			c.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
-}
-
 export interface DWalletCap {
 	dwallet_id: string;
 }
