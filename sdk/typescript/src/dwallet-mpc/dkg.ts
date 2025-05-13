@@ -9,12 +9,10 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
+import type { ActiveDWallet, DWallet, EncryptedDWalletData } from './globals.js';
 import {
-	ActiveDWallet,
 	delay,
-	DWallet,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	EncryptedDWalletData,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -98,11 +96,6 @@ export async function createDWallet(
 		output: secondRoundResponse.move_response.dwallet.state.fields.public_output,
 		encrypted_secret_share_id: secondRoundResponse.move_response.encrypted_user_secret_key_share_id,
 	};
-}
-
-interface SecondResult {
-	dwallet: ActiveDWallet;
-	secretShare: Uint8Array;
 }
 
 export async function launchDKGSecondRound(

@@ -1,19 +1,14 @@
-;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Transaction } from '@mysten/sui/transactions';
 
-
-
-import { DWALLET_ECDSA_K1_MOVE_MODULE_NAME, getDWalletSecpState, getObjectWithType, SUI_PACKAGE_ID } from './globals.js';
+import {
+	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	getDWalletSecpState,
+	getObjectWithType,
+	SUI_PACKAGE_ID,
+} from './globals.js';
 import type { Config } from './globals.ts';
-
-
-interface CompletedPresignEvent {
-	presign_id: string;
-	session_id: string;
-	presign: Uint8Array;
-}
 
 interface CompletedPresign {
 	state: {
@@ -30,10 +25,6 @@ function isCompletedPresign(event: any): event is CompletedPresign {
 		event.state.fields !== undefined &&
 		event.state.fields.presign !== undefined
 	);
-}
-
-interface StartSessionEvent {
-	session_id: string;
 }
 
 export async function presign(conf: Config, dwallet_id: string): Promise<CompletedPresign> {
@@ -91,14 +82,4 @@ interface StartPresignEvent {
 
 function isStartPresignEvent(event: any): event is StartPresignEvent {
 	return event.event_data !== undefined && event.event_data.presign_id !== undefined;
-}
-
-function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
-	return (
-		event.presign_id !== undefined && event.presign !== undefined && event.session_id !== undefined
-	);
-}
-
-function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
 }

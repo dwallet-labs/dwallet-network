@@ -20,34 +20,6 @@ export enum Hash {
 	SHA256 = 1,
 }
 
-interface CompletedSignEvent {
-	session_id: string;
-	sign_id: string;
-	signature: Uint8Array;
-	is_future_sign: boolean;
-}
-
-interface CompletedFutureSignEvent {
-	session_id: string;
-	dwallet_id: string;
-	partial_centralized_signed_message_id: string;
-}
-
-function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
-	return (
-		obj && 'session_id' in obj && 'sign_id' in obj && 'signature' in obj && 'is_future_sign' in obj
-	);
-}
-
-function isCompletedFutureSignEvent(obj: any): obj is CompletedFutureSignEvent {
-	return (
-		obj &&
-		'session_id' in obj &&
-		'dwallet_id' in obj &&
-		'partial_centralized_signed_message_id' in obj
-	);
-}
-
 export async function sign(
 	conf: Config,
 	presignID: string,
