@@ -914,14 +914,6 @@ public(package) fun advance_epoch(
     return epoch_consensus_validation_fee_charged_ika
 }
 
-fun get_dwallet(
-    self: &DWalletCoordinatorInner,
-    dwallet_id: ID,
-): &DWallet {
-    assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
-    self.dwallets.borrow(dwallet_id)
-}
-
 fun get_dwallet_mut(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1328,9 +1320,8 @@ public(package) fun request_dwallet_dkg_second_round(
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let encryption_key = encryption_key.encryption_key;
-
+    let created_at_epoch: u64 = self.current_epoch;
     let dwallet = self.get_dwallet_mut(dwallet_cap.dwallet_id);
-
     let first_round_output = match (&dwallet.state) {
         DWalletState::AwaitingUser {
             first_round_output,
@@ -1340,7 +1331,7 @@ public(package) fun request_dwallet_dkg_second_round(
         _ => abort EWrongState
     };
 
-    let created_at_epoch = self.current_epoch;
+    
     let dwallet_id = dwallet.id.to_inner();
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
@@ -1419,7 +1410,6 @@ public(package) fun respond_dwallet_dkg_second_round(
     session_id: ID,
     rejected: bool,
     session_sequence_number: u64,
-    ctx: &mut TxContext
 ) {
     self.remove_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
     let dwallet = self.get_dwallet_mut(dwallet_id);
@@ -2172,7 +2162,6 @@ public(package) fun process_checkpoint_message_by_quorum(
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
-    ctx: &mut TxContext,
 ) {
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
@@ -2180,13 +2169,12 @@ public(package) fun process_checkpoint_message_by_quorum(
 
     self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_checkpoint_message(message, ctx);
+    self.process_checkpoint_message(message);
 }
 
 fun process_checkpoint_message(
     self: &mut DWalletCoordinatorInner,
     message: vector<u8>,
-    ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -2241,7 +2229,6 @@ fun process_checkpoint_message(
                     session_id,
                     rejected,
                     session_sequence_number,
-                    ctx,
                 );
             } else if (message_data_type == 2) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
