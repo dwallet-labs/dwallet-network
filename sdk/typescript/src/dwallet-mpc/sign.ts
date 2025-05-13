@@ -58,7 +58,7 @@ export async function sign(
 	secretKey: Uint8Array,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
-): Promise<CompletedSignEvent> {
+): Promise<ReadySignObject> {
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
@@ -118,16 +118,36 @@ export async function sign(
 		},
 	});
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	if (!isStartSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
-	return await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedSignEvent,
-		completedSignEventType,
+	return await getObjectWithType(conf, startSessionEvent.event_data.sign_id, isReadySignObject);
+}
+
+interface ReadySignObject {
+	state: {
+		fields: {
+			signature: Uint8Array;
+		};
+	};
+}
+
+function isReadySignObject(obj: any): obj is ReadySignObject {
+	return (
+		obj?.state !== undefined &&
+		obj.state.fields !== undefined &&
+		obj.state.fields.signature !== undefined
 	);
+}
+
+interface StartSignEvent {
+	event_data: {
+		sign_id: string;
+	};
+}
+
+function isStartSignEvent(event: any): event is StartSignEvent {
+	return event.event_data !== undefined && event.event_data.sign_id !== undefined;
 }
 
 export async function createUnverifiedECDSAPartialUserSignatureCap(
