@@ -1,6 +1,7 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::CheckpointStore;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::params_messages::ParamsMessageStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
@@ -64,6 +65,7 @@ impl SuiConnectorService {
     pub async fn new(
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         checkpoint_store: Arc<CheckpointStore>,
+        params_message_store: Arc<ParamsMessageStore>,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
@@ -80,6 +82,7 @@ impl SuiConnectorService {
         let sui_executor = SuiExecutor::new(
             sui_connector_config.ika_system_package_id,
             checkpoint_store.clone(),
+            params_message_store.clone(),
             sui_notifier,
             sui_client.clone(),
             sui_connector_metrics.clone(),

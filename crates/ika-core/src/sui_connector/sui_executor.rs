@@ -27,6 +27,7 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
+use move_core_types::ident_str;
 use mysten_metrics::spawn_logged_monitored_task;
 use roaring::RoaringBitmap;
 use std::{collections::HashMap, sync::Arc};
@@ -259,7 +260,7 @@ where
                 .unwrap_or(0);
 
             let last_processed_params_message_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_params_message_sequence_number();
+                Some(ika_system_state_inner.last_processed_params_message_sequence_number());
             let next_params_message_sequence_number = last_processed_params_message_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
@@ -708,10 +709,11 @@ where
             "`signers_bitmap` @ handle_execution_task: {:?}",
             signers_bitmap
         );
+        let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(ika_system_state_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
                     "can't serialize `signature`: {e}"
@@ -727,8 +729,8 @@ where
 
         ptb.move_call(
             ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
+            SYSTEM_MODULE_NAME.into(),
+            ident_str!("process_params_message_by_quorum").into(),
             vec![],
             args,
         )

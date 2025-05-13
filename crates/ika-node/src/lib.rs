@@ -400,6 +400,7 @@ impl IkaNode {
             SuiConnectorService::new(
                 perpetual_tables.clone(),
                 checkpoint_store.clone(),
+                params_message_store.clone(),
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
