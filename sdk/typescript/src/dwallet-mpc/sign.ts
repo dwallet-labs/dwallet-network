@@ -6,6 +6,7 @@ import {
 	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
+	fetchObjectWithType,
 	getDWalletSecpState,
 	getObjectWithType,
 	isActiveDWallet,
@@ -298,7 +299,7 @@ export async function completeFutureSign(
 	message: Uint8Array,
 	hash = Hash.KECCAK256,
 	verifyECDSAPartialUserSignatureCapID: string,
-): Promise<CompletedSignEvent> {
+): Promise<ReadySignObject> {
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
 
@@ -344,14 +345,8 @@ export async function completeFutureSign(
 		},
 	});
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	if (!isStartSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
-	return await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedSignEvent,
-		completedSignEventType,
-	);
+	return await getObjectWithType(conf, startSessionEvent.event_data.sign_id, isReadySignObject);
 }
