@@ -19,6 +19,12 @@ interface CompletedPresign {
 	id: { id: string };
 }
 
+interface StartPresignEvent {
+	event_data: {
+		presign_id: string;
+	};
+}
+
 function isCompletedPresign(event: any): event is CompletedPresign {
 	return (
 		event.state !== undefined &&
@@ -72,12 +78,6 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	}
 
 	return await getObjectWithType(conf, startSessionEvent.event_data.presign_id, isCompletedPresign);
-}
-
-interface StartPresignEvent {
-	event_data: {
-		presign_id: string;
-	};
 }
 
 function isStartPresignEvent(event: any): event is StartPresignEvent {
