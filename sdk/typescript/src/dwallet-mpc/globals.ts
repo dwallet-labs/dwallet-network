@@ -309,7 +309,7 @@ export interface ActiveDWallet {
 		};
 	};
 	/// Unique identifier for the dWallet.
-	id: string;
+	id: { id: string };
 
 	created_at_epoch: number;
 
