@@ -622,8 +622,8 @@ where
                     .with_label_values(&["must_get_system_inner_object"])
                     .inc();
                 error!(
-                    "failed to get system inner object: {:?}",
-                    self.ika_system_object_id
+                    system_object_id=%self.ika_system_object_id,
+                    "failed to get system inner object",
                 );
                 continue;
             };
@@ -708,18 +708,33 @@ where
         system_inner: &SystemInner,
     ) -> EpochStartSystem {
         loop {
-            let Ok(Ok(ika_system_state)) = retry_with_max_elapsed_time!(
+            match retry_with_max_elapsed_time!(
                 self.get_epoch_start_system(&system_inner),
                 Duration::from_secs(30)
-            ) else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["get_epoch_start_system_until_success"])
-                    .inc();
-                error!("Failed to get epoch start system until success");
-                continue;
-            };
-            return ika_system_state;
+            ) {
+                // todo(zeev): clean this func.
+                Ok(Ok(ika_system_state)) => return ika_system_state,
+                Ok(Err(err)) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .inc();
+                    error!(
+                        ?err,
+                        "Received error from `get_epoch_start_system`. Retrying...",
+                    );
+                }
+                Err(err) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .inc();
+                    error!(
+                        ?err,
+                        "Received error from `get_epoch_start_system` retry wrapper. Retrying...",
+                    );
+                }
+            }
         }
     }
 
@@ -1050,8 +1065,8 @@ impl SuiClientInner for SuiSdkClient {
                     .await?
             } else {
                 warn!(
-                    "reconfiguration output for current epoch {:?} not found",
-                    key.current_epoch
+                    key=?key.current_epoch,
+                    "reconfiguration output for the current epoch wasn't found"
                 );
                 vec![]
             };
@@ -1311,17 +1326,20 @@ impl SuiClientInner for SuiSdkClient {
             }
         }
 
-        let dynamic_field_response = self
-            .read_api()
-            .multi_get_object_with_options(
-                validator_dynamic_ids.clone(),
-                SuiObjectDataOptions::bcs_lossless(),
-            )
-            .await?;
+        let mut dynamic_fields_agg = Vec::new();
+        // There is a limit in sui called "DEFAULT_RPC_QUERY_MAX_RESULT_LIMIT" which is set to 50.
+        for chunk in validator_dynamic_ids.chunks(50) {
+            let objects = self
+                .read_api()
+                .multi_get_object_with_options(chunk.to_vec(), SuiObjectDataOptions::bcs_lossless())
+                .await?;
+
+            dynamic_fields_agg.extend(objects);
+        }
+
         let mut validators = Vec::new();
-        for (dynamic_field, object_id) in dynamic_field_response
-            .iter()
-            .zip(validator_dynamic_ids.iter())
+        for (dynamic_field, object_id) in
+            dynamic_fields_agg.iter().zip(validator_dynamic_ids.iter())
         {
             let resp = dynamic_field.object().map_err(|e| {
                 Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))

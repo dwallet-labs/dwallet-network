@@ -144,6 +144,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<OutputVerificationResult> {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
+            mpc_protocol=?session_info.mpc_round,
             session_id=?session_info.session_id,
             from_authority=?origin_authority,
             receiving_authority=?self.epoch_store()?.name,

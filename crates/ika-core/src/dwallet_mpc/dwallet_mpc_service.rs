@@ -34,7 +34,7 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{watch, Notify};
 use tokio::task::yield_now;
 use tokio::time;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -136,14 +136,17 @@ impl DWalletMPCService {
                             session_id=?session_info.session_id,
                             session_type=?session_info.session_type,
                             mpc_round=?session_info.mpc_round,
-                            "Successfully processed missed event from Sui"
+                            "Successfully processed a missed event from Sui"
                         );
                     }
                     Ok(None) => {
                         warn!("Received an event that does not trigger the start of an MPC flow");
                     }
                     Err(e) => {
-                        error!("Error processing a missed event: {}", e);
+                        error!(
+                            erorr=?e,
+                            "error while processing a missed event"
+                        );
                     }
                 }
             }
@@ -188,11 +191,11 @@ impl DWalletMPCService {
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
-                    error!("DWalletMPCService exit signal received");
+                    warn!("DWalletMPCService exit signal received");
                     break;
                 }
                 Err(err) => {
-                    error!("Failed to check DWalletMPCService exit signal: {:?}", err);
+                    warn!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
                     break;
                 }
                 Ok(false) => (),
@@ -209,14 +212,14 @@ impl DWalletMPCService {
             }
             self.update_network_keys().await;
 
-            info!("Running DWalletMPCService loop");
+            debug!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager
                 .cryptographic_computations_orchestrator
                 .check_for_completed_computations();
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                error!("Failed to load DB tables from epoch store");
+                warn!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self
@@ -224,7 +227,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
             for session_id in completed_sessions {
@@ -241,7 +244,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC events from the local DB");
                 continue;
             };
             for event in events_from_sui {
