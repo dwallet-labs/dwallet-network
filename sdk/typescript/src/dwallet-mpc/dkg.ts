@@ -51,7 +51,7 @@ interface DKGSecondRoundMoveResponse {
 }
 
 interface DKGSecondRoundResponse {
-	move_response: DKGSecondRoundMoveResponse;
+	moveResponse: DKGSecondRoundMoveResponse;
 	secretShare: Uint8Array;
 }
 
@@ -85,16 +85,16 @@ export async function createDWallet(
 		classGroupsSecpKeyPair,
 	);
 	await acceptEncryptedUserShare(conf, {
-		dwallet_id: secondRoundResponse.move_response.dwallet.id.id,
+		dwallet_id: secondRoundResponse.moveResponse.dwallet.id.id,
 		encrypted_user_secret_key_share_id:
-			secondRoundResponse.move_response.encrypted_user_secret_key_share_id,
+			secondRoundResponse.moveResponse.encrypted_user_secret_key_share_id,
 	});
 	return {
 		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
 		secret_share: secondRoundResponse.secretShare,
-		output: secondRoundResponse.move_response.dwallet.state.fields.public_output,
-		encrypted_secret_share_id: secondRoundResponse.move_response.encrypted_user_secret_key_share_id,
+		output: secondRoundResponse.moveResponse.dwallet.state.fields.public_output,
+		encrypted_secret_share_id: secondRoundResponse.moveResponse.encrypted_user_secret_key_share_id,
 	};
 }
 
@@ -130,7 +130,7 @@ export async function launchDKGSecondRound(
 		centralizedPublicOutput,
 	);
 	return {
-		move_response: secondRoundMoveResponse,
+		moveResponse: secondRoundMoveResponse,
 		secretShare: centralizedSecretKeyShare,
 	};
 }

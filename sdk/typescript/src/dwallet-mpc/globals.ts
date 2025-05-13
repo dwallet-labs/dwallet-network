@@ -154,10 +154,6 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
 }
 
-export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
-	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
-}
-
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
@@ -208,41 +204,6 @@ export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> 
 		object_id: dwalletSecp256k1ObjID,
 		initial_shared_version: initialSharedVersion,
 	};
-}
-
-export async function fetchObjectWithType<TObject>(
-	conf: Config,
-	objectType: string,
-	isObject: (obj: any) => obj is TObject,
-	objectId: string,
-): Promise<TObject> {
-	const startTime = Date.now();
-	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 500;
-		await delay(interval);
-		const res = await conf.client.getObject({
-			id: objectId,
-			options: { showContent: true },
-		});
-
-		const objectData =
-			res.data?.content?.dataType === 'moveObject' &&
-			res.data?.content.type === objectType &&
-			isObject(res.data.content.fields)
-				? (res.data.content.fields as TObject)
-				: null;
-
-		if (objectData) {
-			return objectData;
-		}
-	}
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an object of type ${objectType} within ${
-			conf.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
 }
 
 export interface DWalletCap {

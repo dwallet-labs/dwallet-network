@@ -12,9 +12,7 @@ import type { Config, EncryptedDWalletData } from './globals.js';
 import {
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchObjectWithType,
 	getDWalletSecpState,
-	getEncryptionKeyMoveType,
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
@@ -92,11 +90,10 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
 	if (activeEncryptionKeyObjID) {
-		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
+		const activeEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
 			conf,
-			getEncryptionKeyMoveType(conf.ikaConfig.ika_system_package_id),
-			isEncryptionKey,
 			activeEncryptionKeyObjID,
+			isEncryptionKey,
 		);
 		if (isEqual(activeEncryptionKeyObj?.encryption_key, expectedEncryptionKey)) {
 			return {
