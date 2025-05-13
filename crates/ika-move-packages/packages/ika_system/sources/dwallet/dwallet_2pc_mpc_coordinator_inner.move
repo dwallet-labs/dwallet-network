@@ -173,6 +173,8 @@ public struct EncryptionKey has key, store {
 
     created_at_epoch: u64,
 
+    curve: u8,
+
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
@@ -885,6 +887,7 @@ const EInvalidSignatureAlgorithm: u64 = 18;
 const ECurvePaused: u64 = 19;
 const ESignatureAlgorithmPaused: u64 = 20;
 const EDWalletUserSecretKeySharesAlreadyPublic: u64 = 21;
+const EMismatchCurve: u64 = 22;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -1214,11 +1217,14 @@ public(package) fun get_active_encryption_key(
 /// Needed so the TX will get ordered in consensus before getting executed.
 public(package) fun register_encryption_key(
     self: &mut DWalletCoordinatorInner,
+    curve: u8,
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
     ctx: &mut TxContext
 ) {
+    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
+    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
     assert!(
         ed25519_verify(&encryption_key_signature, &signer_public_key, &encryption_key),
         EInvalidEncryptionKeySignature
@@ -1232,6 +1238,7 @@ public(package) fun register_encryption_key(
     self.encryption_keys.add(signer_address, EncryptionKey {
         id,
         created_at_epoch: self.current_epoch,
+        curve,
         encryption_key,
         encryption_key_signature,
         signer_public_key,
@@ -1511,10 +1518,13 @@ public(package) fun request_dwallet_dkg_second_round(
     ctx: &mut TxContext
 ) {
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
+    let encryption_key_curve = encryption_key.curve;
     let encryption_key_id = encryption_key.id.to_inner();
     let encryption_key = encryption_key.encryption_key;
 
     let dwallet = self.get_dwallet(dwallet_cap.dwallet_id);
+
+    assert!(encryption_key_curve == dwallet.curve, EMismatchCurve);
 
     let first_round_output = match (&dwallet.state) {
         DWalletState::AwaitingUserDKGVerificationInitiation {

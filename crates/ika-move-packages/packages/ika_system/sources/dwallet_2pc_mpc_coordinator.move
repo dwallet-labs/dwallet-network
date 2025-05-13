@@ -110,12 +110,14 @@ public fun get_active_encryption_key(
 
 public fun register_encryption_key(
     self: &mut DWalletCoordinator,
+    curve: u8,
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
     ctx: &mut TxContext
 ) {
     self.inner_mut().register_encryption_key(
+        curve,
         encryption_key,
         encryption_key_signature,
         signer_public_key,

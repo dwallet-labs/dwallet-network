@@ -193,6 +193,8 @@ async function registerEncryptionKey(
 				initialSharedVersion: dwalletState.initial_shared_version,
 				mutable: true,
 			}),
+			// TODO: select the correct curve
+			tx.pure(bcs.u8().serialize(0)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
 			tx.pure(
