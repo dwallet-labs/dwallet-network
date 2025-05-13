@@ -90,6 +90,7 @@ impl Container {
                     builder
                 }
             };
+            builder = builder.thread_stack_size(16 * 1024 * 1024);
             let runtime = builder.enable_all().build().unwrap();
 
             runtime.block_on(async move {
