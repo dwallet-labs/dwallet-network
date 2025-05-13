@@ -151,6 +151,19 @@ function isStartSignEvent(event: any): event is StartSignEvent {
 	return event.event_data !== undefined && event.event_data.sign_id !== undefined;
 }
 
+interface StartFutureSignEvent {
+	event_data: {
+		partial_centralized_signed_message_id: string;
+	};
+}
+
+function isStartFutureSignEvent(event: any): event is StartFutureSignEvent {
+	return (
+		event.event_data !== undefined &&
+		event.event_data.partial_centralized_signed_message_id !== undefined
+	);
+}
+
 export async function createUnverifiedECDSAPartialUserSignatureCap(
 	conf: Config,
 	presignID: string,
@@ -218,33 +231,32 @@ export async function createUnverifiedECDSAPartialUserSignatureCap(
 		},
 	});
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	if (!isStartFutureSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
 
-	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAFutureSignEvent`;
-	await fetchCompletedEvent(
+	const partialSignature = await getObjectWithType(
 		conf,
-		startSessionEvent.session_id,
-		isCompletedFutureSignEvent,
-		completedSignEventType,
+		startSessionEvent.event_data.partial_centralized_signed_message_id,
+		isVerifiedECDSAPartialUserSignature,
 	);
+	return partialSignature.cap_id;
+}
 
-	const objects = result.objectChanges!;
-	if (!objects) {
-		throw new Error('no objects created during request_ecdsa_future_sign call');
-	}
-	for (const obj of objects) {
-		if (
-			obj &&
-			'objectType' in obj &&
-			obj.objectType! ===
-				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::UnverifiedECDSAPartialUserSignatureCap`
-		) {
-			return obj.objectId;
-		}
-	}
-	throw new Error('no unverified object created');
+interface VerifiedECDSAPartialUserSignature {
+	state: {
+		variant: 'NetworkVerificationCompleted';
+	};
+	cap_id: string;
+}
+
+function isVerifiedECDSAPartialUserSignature(obj: any): obj is VerifiedECDSAPartialUserSignature {
+	return (
+		obj &&
+		'state' in obj &&
+		'variant' in obj.state &&
+		obj.state.variant === 'NetworkVerificationCompleted'
+	);
 }
 
 export async function verifyECFSASignWithPartialUserSignatures(
