@@ -88,6 +88,8 @@ pub(super) struct DWalletMPCSession {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
     pub(crate) received_more_messages_since_last_retry: bool,
+    // The *total* number of attempts to advance that failed in the session. 
+    // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
 }
 
