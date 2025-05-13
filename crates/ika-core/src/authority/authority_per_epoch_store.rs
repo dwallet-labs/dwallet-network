@@ -63,10 +63,7 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::params_messages::{
-    BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify,
-    PendingParamsMessage,
-};
+use crate::params_messages::{BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify, PendingParamsMessage, PendingParamsMessageInfo, PendingParamsMessageV1};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -1248,7 +1245,7 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (mut verified_messages, notifications) = self
+        let (mut verified_messages, mut params_message_verified_messages, notifications) = self
             .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
@@ -1273,6 +1270,17 @@ impl AuthorityPerEpochStore {
         });
         self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
 
+        let params_message_height = consensus_commit_info.round;
+
+        let pending_params_message = PendingParamsMessage::V1(PendingParamsMessageV1 {
+            messages: params_message_verified_messages.clone(),
+            details: PendingParamsMessageInfo {
+                timestamp_ms: consensus_commit_info.timestamp,
+                params_message_height,
+            },
+        });
+        self.write_pending_params_message(&mut output, &pending_params_message)?;
+
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
         batch.write()?;
@@ -1284,6 +1292,12 @@ impl AuthorityPerEpochStore {
             "Notifying checkpoint service about new pending checkpoint(s)",
         );
         checkpoint_service.notify_checkpoint()?;
+
+        debug!(
+            ?consensus_commit_info.round,
+            "Notifying params_message service about new pending checkpoint(s)",
+        );
+        params_message_service.notify_params_message()?;
 
         self.process_notifications(&notifications);
 
@@ -1312,7 +1326,8 @@ impl AuthorityPerEpochStore {
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<(
-        Vec<MessageKind>,                      // transactions to schedule
+        Vec<MessageKind>, // transactions to schedule
+        Vec<ParamsMessageKind>,
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
@@ -1408,7 +1423,7 @@ impl AuthorityPerEpochStore {
 
         let verified_certificates: Vec<_> = verified_certificates.into();
 
-        Ok((verified_certificates, notifications))
+        Ok((verified_certificates, verified_param_message_certificates.into(), notifications))
     }
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
@@ -1580,6 +1595,7 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
+                // TODO (yael) check we only send this once
                 if let Some((new_version, _)) = AuthorityState::is_protocol_version_supported_v1(
                     self.protocol_version(),
                     authority_capabilities

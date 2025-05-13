@@ -1098,25 +1098,29 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
-                let transaction = ConsensusTransaction::new_capability_notification_v1(
-                    AuthorityCapabilitiesV1::new(
-                        self.state.name,
-                        cur_epoch_store.get_chain_identifier().chain(),
-                        supported_versions,
-                        sui_client
-                            .get_available_move_packages()
-                            .await
-                            .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
-                    ),
-                );
+            let next_version: Option<u64> = system_inner.next_protocol_version();
+            if next_version.is_none()
+            {
+                if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
+                    let transaction = ConsensusTransaction::new_capability_notification_v1(
+                        AuthorityCapabilitiesV1::new(
+                            self.state.name,
+                            cur_epoch_store.get_chain_identifier().chain(),
+                            supported_versions,
+                            sui_client
+                                .get_available_move_packages()
+                                .await
+                                .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                        ),
+                    );
 
-                if let Some(components) = &*self.validator_components.lock().await {
-                    info!(?transaction, "submitting capabilities to consensus");
-                    components
-                        .consensus_adapter
-                        .submit_to_consensus(&[transaction], &cur_epoch_store)
-                        .await?;
+                    if let Some(components) = &*self.validator_components.lock().await {
+                        info!(?transaction, "submitting capabilities to consensus");
+                        components
+                            .consensus_adapter
+                            .submit_to_consensus(&[transaction], &cur_epoch_store)
+                            .await?;
+                    }
                 }
             }
 
