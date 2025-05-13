@@ -333,7 +333,7 @@ async fn start(
     if ika_network_config_not_exists {
         swarm.network_config.save(&network_config_path)?;
     }
-    if let Err(err) = rayon::ThreadPoolBuilder::new()
+    if let Err(err) =  rayon::ThreadPoolBuilder::new()
         .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
         .build_global()
     {
