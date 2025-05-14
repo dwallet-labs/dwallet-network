@@ -147,6 +147,9 @@ pub enum DwalletMPCError {
     #[error("waiting for network key with ID: {0}")]
     WaitingForNetworkKey(ObjectID),
 
+    #[error("the dwallet secret does not match the dwallet output")]
+    DWalletSecretNotMatchedDWalletOutput,
+
     #[error(
         "decryption key epoch out of sync: {key_id:?} expected epoch: {expected_epoch} but got: {actual_epoch}"
     )]
