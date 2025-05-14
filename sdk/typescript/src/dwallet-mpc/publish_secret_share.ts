@@ -1,5 +1,5 @@
 import { bcs } from '@mysten/bcs';
-import { Transaction } from '@mysten/sui';
+import { Transaction } from '@mysten/sui/transactions';
 
 import {
 	Config,
