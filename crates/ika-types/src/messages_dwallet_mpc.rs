@@ -85,6 +85,9 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 write!(f, "DecryptionKeyReshare")
             }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
+            }
         }
     }
 }
@@ -105,6 +108,9 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 write!(f, "DecryptionKeyReshare")
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
         }
     }
