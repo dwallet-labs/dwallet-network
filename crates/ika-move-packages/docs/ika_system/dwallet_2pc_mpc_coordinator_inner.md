@@ -327,35 +327,35 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
  The last checkpoint sequence number processed in the previous epoch.
 </dd>
 <dt>
-<code>supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;&gt;</code>
+<code>supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;</code>
 </dt>
 <dd>
  A nested map of supported curves to signature algorithms to hash schemes.
  e.g. secp256k1 -> (ecdsa -> [sha256, keccak256])
 </dd>
 <dt>
-<code>paused_curves: vector&lt;u8&gt;</code>
+<code>paused_curves: vector&lt;u32&gt;</code>
 </dt>
 <dd>
  A list of paused curves in case of emergency.
  e.g. [secp256k1]
 </dd>
 <dt>
-<code>paused_signature_algorithms: vector&lt;u8&gt;</code>
+<code>paused_signature_algorithms: vector&lt;u32&gt;</code>
 </dt>
 <dd>
  A list of paused signature algorithms in case of emergency.
  e.g. [ecdsa]
 </dd>
 <dt>
-<code>paused_hash_schemes: vector&lt;u8&gt;</code>
+<code>paused_hash_schemes: vector&lt;u32&gt;</code>
 </dt>
 <dd>
  A list of paused hash schemes in case of emergency.
  e.g. [sha256, keccak256]
 </dd>
 <dt>
-<code>signature_algorithms_allowed_global_presign: vector&lt;u8&gt;</code>
+<code>signature_algorithms_allowed_global_presign: vector&lt;u32&gt;</code>
 </dt>
 <dd>
  A list of signature algorithms that are allowed for global presign.
@@ -637,7 +637,7 @@ and accessing this information, ensuring secure, end-to-end encryption.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
 </dd>
@@ -863,17 +863,17 @@ the blockchain can sign both transactions, and the exchange is completed.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>hash_scheme: u8</code>
+<code>hash_scheme: u32</code>
 </dt>
 <dd>
 </dd>
@@ -929,7 +929,7 @@ created after the Distributed key generation (DKG) process.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
@@ -1054,13 +1054,13 @@ This struct links the results of both presign rounds to a specific dWallet ID.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
  The signature algorithm for the presign.
@@ -1364,7 +1364,7 @@ initiate the first round of the DKG.
  The MPC network decryption key id that is used to decrypt associated dWallet.
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
@@ -1526,7 +1526,7 @@ It contains all necessary data to ensure proper continuation of the process.
  The MPC network decryption key id that is used to decrypt associated dWallet.
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
@@ -1694,7 +1694,7 @@ Emitted to notify the centralized party.
  The MPC network decryption key id that is used to decrypt associated dWallet.
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
@@ -1842,7 +1842,7 @@ similar to the MPC processes.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
 </dd>
@@ -1992,7 +1992,7 @@ similar to the MPC processes.
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
 </dd>
@@ -2114,13 +2114,13 @@ and DKG process.
  The MPC network decryption key id that is used to decrypt associated dWallet.
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The curve used for the presign.
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
  The signature algorithm for the presign.
@@ -2260,19 +2260,19 @@ specific to each Digital Signature Algorithm.
  The output from the dWallet DKG process used in this session.
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
  The elliptic curve used for the dWallet.
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
  The signature algorithm used for the signing process.
 </dd>
 <dt>
-<code>hash_scheme: u8</code>
+<code>hash_scheme: u32</code>
 </dt>
 <dd>
 </dd>
@@ -2361,17 +2361,17 @@ Event emitted when a [<code>PartialCentralizedSignedMessages</code>] object is c
 <dd>
 </dd>
 <dt>
-<code>curve: u8</code>
+<code>curve: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>hash_scheme: u8</code>
+<code>hash_scheme: u32</code>
 </dt>
 <dd>
 </dd>
@@ -2621,12 +2621,12 @@ associated with this approval.
 <dd>
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>hash_scheme: u8</code>
+<code>hash_scheme: u32</code>
 </dt>
 <dd>
 </dd>
@@ -2662,12 +2662,12 @@ associated with this approval.
 <dd>
 </dd>
 <dt>
-<code>signature_algorithm: u8</code>
+<code>signature_algorithm: u32</code>
 </dt>
 <dd>
 </dd>
 <dt>
-<code>hash_scheme: u8</code>
+<code>hash_scheme: u32</code>
 </dt>
 <dd>
 </dd>
@@ -3956,7 +3956,7 @@ Get the active encryption key ID by its address.
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve">validate_supported_curve</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u8)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve">validate_supported_curve</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u32)
 </code></pre>
 
 
@@ -3967,7 +3967,7 @@ Get the active encryption key ID by its address.
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve">validate_supported_curve</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    curve: u8,
+    curve: u32,
 ) {
     <b>assert</b>!(self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidCurve">EInvalidCurve</a>);
     <b>assert</b>!(!self.paused_curves.contains(&curve), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECurvePaused">ECurvePaused</a>);
@@ -3984,7 +3984,7 @@ Get the active encryption key ID by its address.
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm">validate_supported_curve_and_signature_algorithm</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u8, signature_algorithm: u8)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm">validate_supported_curve_and_signature_algorithm</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u32, signature_algorithm: u32)
 </code></pre>
 
 
@@ -3995,8 +3995,8 @@ Get the active encryption key ID by its address.
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm">validate_supported_curve_and_signature_algorithm</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    curve: u8,
-    signature_algorithm: u8,
+    curve: u32,
+    signature_algorithm: u32,
 ) {
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve">validate_supported_curve</a>(curve);
     <b>let</b> supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
@@ -4015,7 +4015,7 @@ Get the active encryption key ID by its address.
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm_and_hash_scheme">validate_supported_curve_and_signature_algorithm_and_hash_scheme</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u8, signature_algorithm: u8, hash_scheme: u8)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm_and_hash_scheme">validate_supported_curve_and_signature_algorithm_and_hash_scheme</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u32, signature_algorithm: u32, hash_scheme: u32)
 </code></pre>
 
 
@@ -4026,9 +4026,9 @@ Get the active encryption key ID by its address.
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm_and_hash_scheme">validate_supported_curve_and_signature_algorithm_and_hash_scheme</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    curve: u8,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    curve: u32,
+    signature_algorithm: u32,
+    hash_scheme: u32,
 ) {
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm">validate_supported_curve_and_signature_algorithm</a>(curve, signature_algorithm);
     <b>let</b> supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
@@ -4060,7 +4060,7 @@ centralized secret key share.
 Needed so the TX will get ordered in consensus before getting executed.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_encryption_key">register_encryption_key</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u8, encryption_key: vector&lt;u8&gt;, encryption_key_signature: vector&lt;u8&gt;, signer_public_key: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_encryption_key">register_encryption_key</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, curve: u32, encryption_key: vector&lt;u8&gt;, encryption_key_signature: vector&lt;u8&gt;, signer_public_key: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -4071,7 +4071,7 @@ Needed so the TX will get ordered in consensus before getting executed.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_encryption_key">register_encryption_key</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    curve: u8,
+    curve: u32,
     encryption_key: vector&lt;u8&gt;,
     encryption_key_signature: vector&lt;u8&gt;,
     signer_public_key: vector&lt;u8&gt;,
@@ -4112,7 +4112,7 @@ Needed so the TX will get ordered in consensus before getting executed.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_message">approve_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>, signature_algorithm: u8, hash_scheme: u8, message: vector&lt;u8&gt;): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_message">approve_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>, signature_algorithm: u32, hash_scheme: u32, message: vector&lt;u8&gt;): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>
 </code></pre>
 
 
@@ -4124,8 +4124,8 @@ Needed so the TX will get ordered in consensus before getting executed.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_message">approve_message</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_cap: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">DWalletCap</a>,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector&lt;u8&gt;
 ): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">MessageApproval</a> {
     <b>let</b> dwallet_id = dwallet_cap.dwallet_id;
@@ -4151,7 +4151,7 @@ Needed so the TX will get ordered in consensus before getting executed.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_imported_key_message">approve_imported_key_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, imported_key_dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>, signature_algorithm: u8, hash_scheme: u8, message: vector&lt;u8&gt;): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_imported_key_message">approve_imported_key_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, imported_key_dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>, signature_algorithm: u32, hash_scheme: u32, message: vector&lt;u8&gt;): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>
 </code></pre>
 
 
@@ -4163,8 +4163,8 @@ Needed so the TX will get ordered in consensus before getting executed.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_approve_imported_key_message">approve_imported_key_message</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     imported_key_dwallet_cap: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">ImportedKeyDWalletCap</a>,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector&lt;u8&gt;
 ): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">ImportedKeyMessageApproval</a> {
     <b>let</b> dwallet_id = imported_key_dwallet_cap.dwallet_id;
@@ -4190,7 +4190,7 @@ Needed so the TX will get ordered in consensus before getting executed.
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_approve_message">validate_approve_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u8, hash_scheme: u8): bool
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_approve_message">validate_approve_message</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u32, hash_scheme: u32): bool
 </code></pre>
 
 
@@ -4202,8 +4202,8 @@ Needed so the TX will get ordered in consensus before getting executed.
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_approve_message">validate_approve_message</a>(
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
 ): bool {
     <b>let</b> (dwallet, _) = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_active_dwallet_and_public_output">get_active_dwallet_and_public_output</a>(dwallet_id);
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve_and_signature_algorithm_and_hash_scheme">validate_supported_curve_and_signature_algorithm_and_hash_scheme</a>(dwallet.curve, signature_algorithm, hash_scheme);
@@ -4242,7 +4242,7 @@ the beginning of the DKG process.
 - Emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGFirstRoundRequestEvent">DWalletDKGFirstRoundRequestEvent</a></code>.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u8, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>
 </code></pre>
 
 
@@ -4254,7 +4254,7 @@ the beginning of the DKG process.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
+    curve: u32,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -4920,7 +4920,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_new_imported_key_dwallet">new_imported_key_dwallet</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u8, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_new_imported_key_dwallet">new_imported_key_dwallet</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>
 </code></pre>
 
 
@@ -4932,7 +4932,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_new_imported_key_dwallet">new_imported_key_dwallet</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
+    curve: u32,
     ctx: &<b>mut</b> TxContext
 ): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">ImportedKeyDWalletCap</a> {
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_supported_curve">validate_supported_curve</a>(curve);
@@ -5245,7 +5245,7 @@ validators to begin processing the first round of the presign process for each s
 - <code>ctx</code>: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_presign">request_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u8, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_presign">request_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>
 </code></pre>
 
 
@@ -5257,7 +5257,7 @@ validators to begin processing the first round of the presign process for each s
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_presign">request_presign</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_id: ID,
-    signature_algorithm: u8,
+    signature_algorithm: u32,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -5316,7 +5316,7 @@ validators to begin processing the first round of the presign process for each s
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_global_presign">request_global_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u8, signature_algorithm: u8, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_global_presign">request_global_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_decryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, signature_algorithm: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>
 </code></pre>
 
 
@@ -5328,8 +5328,8 @@ validators to begin processing the first round of the presign process for each s
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_global_presign">request_global_presign</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
-    signature_algorithm: u8,
+    curve: u32,
+    signature_algorithm: u32,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -5517,7 +5517,7 @@ It checks the presign is valid and removes it, thus assuring it is never used tw
 Finally it emits the sign event.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_and_initiate_sign">validate_and_initiate_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">dwallet_pricing::PricingPerOperation</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u8, hash_scheme: u8, message: vector&lt;u8&gt;, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>, message_centralized_signature: vector&lt;u8&gt;, is_future_sign: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): bool
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_validate_and_initiate_sign">validate_and_initiate_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_PricingPerOperation">dwallet_pricing::PricingPerOperation</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u32, hash_scheme: u32, message: vector&lt;u8&gt;, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>, message_centralized_signature: vector&lt;u8&gt;, is_future_sign: bool, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): bool
 </code></pre>
 
 
@@ -5532,8 +5532,8 @@ Finally it emits the sign event.
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector&lt;u8&gt;,
     presign_cap: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">PresignCap</a>,
     message_centralized_signature: vector&lt;u8&gt;,
@@ -5778,7 +5778,7 @@ See the docs of [<code>PartialCentralizedSignedMessages</code>] for
 more details on when this may be used.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_future_sign">request_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>, message: vector&lt;u8&gt;, hash_scheme: u8, message_centralized_signature: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPartialUserSignatureCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_future_sign">request_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">dwallet_2pc_mpc_coordinator_inner::PresignCap</a>, message: vector&lt;u8&gt;, hash_scheme: u32, message_centralized_signature: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPartialUserSignatureCap</a>
 </code></pre>
 
 
@@ -5792,7 +5792,7 @@ more details on when this may be used.
     dwallet_id: ID,
     presign_cap: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PresignCap">PresignCap</a>,
     message: vector&lt;u8&gt;,
-    hash_scheme: u8,
+    hash_scheme: u32,
     message_centralized_signature: vector&lt;u8&gt;,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
@@ -6484,7 +6484,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u8, vector&lt;u8&gt;&gt;&gt;)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;)
 </code></pre>
 
 
@@ -6495,7 +6495,7 @@ the function will abort with this error.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u8, VecMap&lt;u8, vector&lt;u8&gt;&gt;&gt;,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
 ) {
     self.supported_curves_to_signature_algorithms_to_hash_schemes = supported_curves_to_signature_algorithms_to_hash_schemes;
 }
@@ -6511,7 +6511,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, paused_curves: vector&lt;u8&gt;, paused_signature_algorithms: vector&lt;u8&gt;, paused_hash_schemes: vector&lt;u8&gt;)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, paused_curves: vector&lt;u32&gt;, paused_signature_algorithms: vector&lt;u32&gt;, paused_hash_schemes: vector&lt;u32&gt;)
 </code></pre>
 
 
@@ -6522,9 +6522,9 @@ the function will abort with this error.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_paused_curves_and_signature_algorithms">set_paused_curves_and_signature_algorithms</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    paused_curves: vector&lt;u8&gt;,
-    paused_signature_algorithms: vector&lt;u8&gt;,
-    paused_hash_schemes: vector&lt;u8&gt;,
+    paused_curves: vector&lt;u32&gt;,
+    paused_signature_algorithms: vector&lt;u32&gt;,
+    paused_hash_schemes: vector&lt;u32&gt;,
 ) {
     self.paused_curves = paused_curves;
     self.paused_signature_algorithms = paused_signature_algorithms;

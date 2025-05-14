@@ -630,7 +630,7 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
 public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
     self: &SystemInnerV1,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
@@ -640,9 +640,9 @@ public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes
 public(package) fun set_paused_curves_and_signature_algorithms(
     self: &SystemInnerV1,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
-    paused_curves: vector<u8>,
-    paused_signature_algorithms: vector<u8>,
-    paused_hash_schemes: vector<u8>,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);

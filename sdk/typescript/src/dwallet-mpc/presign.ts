@@ -39,7 +39,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 				mutable: true,
 			}),
 			tx.pure.id(dwallet_id),
-			tx.pure.u8(0),
+			tx.pure.u32(0),
 			emptyIKACoin,
 			tx.gas,
 		],

@@ -101,7 +101,7 @@ pub struct CentralizedDKGWasmResult {
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
-    key_scheme: u8,
+    key_scheme: u32,
     decentralized_first_round_public_output: SerializedWrappedMPCPublicOutput,
     session_id: String,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
@@ -163,12 +163,12 @@ pub fn create_dkg_output(
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
-    key_scheme: u8,
+    key_scheme: u32,
     decentralized_party_dkg_public_output: SerializedWrappedMPCPublicOutput,
     centralized_party_secret_key_share: SerializedWrappedMPCPublicOutput,
     presign: SerializedWrappedMPCPublicOutput,
     message: Vec<u8>,
-    hash_type: u8,
+    hash_type: u32,
 ) -> anyhow::Result<SignedMessage> {
     let decentralized_party_dkg_public_output =
         bcs::from_bytes(&decentralized_party_dkg_public_output)?;
@@ -242,7 +242,7 @@ pub fn advance_centralized_sign_party(
 
 fn protocol_public_parameters_by_key_scheme(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
-    key_scheme: u8,
+    key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
     let mpc_public_output: MPCPublicOutput =
         bcs::from_bytes(&network_decryption_key_public_output)?;
@@ -323,7 +323,7 @@ pub fn encrypt_secret_key_share_and_prove(
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u8,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
 
     let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<

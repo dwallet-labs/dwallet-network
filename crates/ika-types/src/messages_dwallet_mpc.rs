@@ -254,7 +254,7 @@ pub struct EncryptedShareVerificationRequestEvent {
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
-    pub curve: u8,
+    pub curve: u32,
 }
 
 impl DWalletMPCEventTrait for EncryptedShareVerificationRequestEvent {
@@ -276,9 +276,9 @@ pub struct FutureSignRequestEvent {
     pub message: Vec<u8>,
     pub presign: Vec<u8>,
     pub dkg_output: Vec<u8>,
-    pub curve: u8,
-    pub signature_algorithm: u8,
-    pub hash_scheme: u8,
+    pub curve: u32,
+    pub signature_algorithm: u32,
+    pub hash_scheme: u32,
     pub message_centralized_signature: Vec<u8>,
     pub dwallet_network_decryption_key_id: ObjectID,
 }
@@ -316,7 +316,7 @@ pub struct DWalletDKGSecondRoundRequestEvent {
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
     pub dwallet_network_decryption_key_id: ObjectID,
-    pub curve: u8,
+    pub curve: u32,
 }
 
 impl DWalletMPCEventTrait for DWalletDKGSecondRoundRequestEvent {
@@ -378,8 +378,8 @@ pub struct PresignRequestEvent {
     /// The DKG decentralized final output to use for the presign session.
     pub dwallet_public_output: Option<Vec<u8>>,
     pub dwallet_network_decryption_key_id: ObjectID,
-    pub curve: u8,
-    pub signature_algorithm: u8,
+    pub curve: u32,
+    pub signature_algorithm: u32,
 }
 
 impl DWalletMPCEventTrait for PresignRequestEvent {
@@ -415,7 +415,7 @@ pub struct DWalletDKGFirstRoundRequestEvent {
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
-    pub curve: u8,
+    pub curve: u32,
 }
 
 impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
@@ -440,9 +440,9 @@ pub struct SignRequestEvent {
     pub dwallet_id: ObjectID,
     /// The public output of the decentralized party in the dWallet DKG process.
     pub dwallet_decentralized_public_output: Vec<u8>,
-    pub curve: u8,
-    pub signature_algorithm: u8,
-    pub hash_scheme: u8,
+    pub curve: u32,
+    pub signature_algorithm: u32,
+    pub hash_scheme: u32,
     /// Hashed messages to Sign.
     pub message: Vec<u8>,
     /// The dWallet mpc network key version

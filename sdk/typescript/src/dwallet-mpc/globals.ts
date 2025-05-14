@@ -26,8 +26,8 @@ export interface Config {
 }
 
 export enum MPCKeyScheme {
-	Secp256k1 = 1,
-	Ristretto = 2,
+	Secp256k1 = 0,
+	Ristretto = 1,
 }
 
 /**

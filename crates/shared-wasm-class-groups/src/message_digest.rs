@@ -12,10 +12,10 @@ pub enum Hash {
     SHA256 = 1,
 }
 
-impl TryFrom<u8> for Hash {
+impl TryFrom<u32> for Hash {
     type Error = anyhow::Error;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Hash::KECCAK256),
             1 => Ok(Hash::SHA256),

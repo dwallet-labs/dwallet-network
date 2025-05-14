@@ -78,18 +78,18 @@ public struct DWalletCoordinatorInner has store {
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// A nested map of supported curves to signature algorithms to hash schemes.
     /// e.g. secp256k1 -> (ecdsa -> [sha256, keccak256])
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     /// A list of paused curves in case of emergency.
     /// e.g. [secp256k1]
-    paused_curves: vector<u8>,
+    paused_curves: vector<u32>,
     /// A list of paused signature algorithms in case of emergency.
     /// e.g. [ecdsa]
-    paused_signature_algorithms: vector<u8>,
+    paused_signature_algorithms: vector<u32>,
     /// A list of paused hash schemes in case of emergency.
     /// e.g. [sha256, keccak256]
-    paused_hash_schemes: vector<u8>,
+    paused_hash_schemes: vector<u32>,
     /// A list of signature algorithms that are allowed for global presign.
-    signature_algorithms_allowed_global_presign: vector<u8>,
+    signature_algorithms_allowed_global_presign: vector<u32>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -169,7 +169,7 @@ public struct EncryptionKey has key, store {
 
     created_at_epoch: u64,
 
-    curve: u8,
+    curve: u32,
 
     //TODO: make sure to include class gorup type and version inside the bytes with the rust code
     /// Serialized encryption key.
@@ -266,11 +266,11 @@ public struct PartialUserSignature has key, store {
 
     cap_id: ID,
 
-    curve: u8,
+    curve: u32,
 
-    signature_algorithm: u8,
+    signature_algorithm: u32,
 
-    hash_scheme: u8,
+    hash_scheme: u32,
 
     /// The messages that are being signed.
     message: vector<u8>,
@@ -296,7 +296,7 @@ public struct DWallet has key, store {
     created_at_epoch: u64,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 
     /// If not set, the user secret key shares is not public, and the user will need to
     /// keep it encrypted using encrypted user secret key shares. It is 
@@ -366,10 +366,10 @@ public struct Presign has key, store {
     created_at_epoch: u64,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 
     /// The signature algorithm for the presign.
-    signature_algorithm: u8,
+    signature_algorithm: u32,
 
     /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
     /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
@@ -481,7 +481,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 }
 
 /// An event emitted when the first round of the DKG process is completed.
@@ -541,7 +541,7 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 }
 
 /// Event emitted upon the completion of the second (and final) round of the
@@ -602,7 +602,7 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 }
 
 
@@ -653,7 +653,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     source_encrypted_user_secret_key_share_id: ID,
     dwallet_network_decryption_key_id: ID,
 
-    curve: u8,
+    curve: u32,
 }
 
 public struct CompletedEncryptedShareVerificationEvent has copy, drop, store {
@@ -693,7 +693,7 @@ public struct MakeDWalletUserSecretKeySharesPublicRequestEvent has copy, drop, s
 
     public_output: vector<u8>,
 
-    curve: u8,
+    curve: u32,
 
     dwallet_id: ID,
 
@@ -734,10 +734,10 @@ public struct PresignRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The curve used for the presign.
-    curve: u8,
+    curve: u32,
 
     /// The signature algorithm for the presign.
-    signature_algorithm: u8,
+    signature_algorithm: u32,
 }
 
 /// Event emitted when the presign batch is completed.
@@ -787,12 +787,12 @@ public struct SignRequestEvent has copy, drop, store {
     dwallet_public_output: vector<u8>,
 
     /// The elliptic curve used for the dWallet.
-    curve: u8,
+    curve: u32,
 
     /// The signature algorithm used for the signing process.
-    signature_algorithm: u8,
+    signature_algorithm: u32,
 
-    hash_scheme: u8,
+    hash_scheme: u32,
 
     /// The message to be signed in this session.
     message: vector<u8>,
@@ -821,9 +821,9 @@ public struct FutureSignRequestEvent has copy, drop, store {
     message: vector<u8>,
     presign: vector<u8>,
     dwallet_public_output: vector<u8>,
-    curve: u8,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    curve: u32,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message_centralized_signature: vector<u8>,
     dwallet_network_decryption_key_id: ID,
 }
@@ -1219,7 +1219,7 @@ public(package) fun get_active_encryption_key(
 
 fun validate_supported_curve(
     self: &DWalletCoordinatorInner,
-    curve: u8,
+    curve: u32,
 ) {
     assert!(self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), EInvalidCurve);
     assert!(!self.paused_curves.contains(&curve), ECurvePaused);
@@ -1227,8 +1227,8 @@ fun validate_supported_curve(
 
 fun validate_supported_curve_and_signature_algorithm(
     self: &DWalletCoordinatorInner,
-    curve: u8,
-    signature_algorithm: u8,
+    curve: u32,
+    signature_algorithm: u32,
 ) {
     self.validate_supported_curve(curve);
     let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
@@ -1238,9 +1238,9 @@ fun validate_supported_curve_and_signature_algorithm(
 
 fun validate_supported_curve_and_signature_algorithm_and_hash_scheme(
     self: &DWalletCoordinatorInner,
-    curve: u8,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    curve: u32,
+    signature_algorithm: u32,
+    hash_scheme: u32,
 ) {
     self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
     let supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
@@ -1259,7 +1259,7 @@ fun validate_supported_curve_and_signature_algorithm_and_hash_scheme(
 /// Needed so the TX will get ordered in consensus before getting executed.
 public(package) fun register_encryption_key(
     self: &mut DWalletCoordinatorInner,
-    curve: u8,
+    curve: u32,
     encryption_key: vector<u8>,
     encryption_key_signature: vector<u8>,
     signer_public_key: vector<u8>,
@@ -1305,15 +1305,15 @@ public(package) fun register_encryption_key(
 /// - **`message`**: The message that has been approved.
 public struct MessageApproval has store, drop {
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector<u8>,
 }
 
 public struct ImportedKeyMessageApproval has store, drop {
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector<u8>,
 }
 
@@ -1321,8 +1321,8 @@ public struct ImportedKeyMessageApproval has store, drop {
 public(package) fun approve_message(
     self: &DWalletCoordinatorInner,
     dwallet_cap: &DWalletCap,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector<u8>
 ): MessageApproval {
     let dwallet_id = dwallet_cap.dwallet_id;
@@ -1340,8 +1340,8 @@ public(package) fun approve_message(
 public(package) fun approve_imported_key_message(
     self: &DWalletCoordinatorInner,
     imported_key_dwallet_cap: &ImportedKeyDWalletCap,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector<u8>
 ): ImportedKeyMessageApproval {
     let dwallet_id = imported_key_dwallet_cap.dwallet_id;
@@ -1359,8 +1359,8 @@ public(package) fun approve_imported_key_message(
 fun validate_approve_message(
     self: &DWalletCoordinatorInner,
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
 ): bool {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
     self.validate_supported_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
@@ -1383,7 +1383,7 @@ fun validate_approve_message(
 public(package) fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
+    curve: u32,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
@@ -1847,7 +1847,7 @@ public(package) fun accept_encrypted_user_share(
 public(package) fun new_imported_key_dwallet(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
+    curve: u32,
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
     self.validate_supported_curve(curve);
@@ -2071,7 +2071,7 @@ public(package) fun respond_make_dwallet_user_secret_key_shares_public(
 public(package) fun request_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
-    signature_algorithm: u8,
+    signature_algorithm: u32,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
@@ -2131,8 +2131,8 @@ public(package) fun request_presign(
 public(package) fun request_global_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_decryption_key_id: ID,
-    curve: u8,
-    signature_algorithm: u8,
+    curve: u32,
+    signature_algorithm: u32,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
@@ -2267,8 +2267,8 @@ fun validate_and_initiate_sign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     dwallet_id: ID,
-    signature_algorithm: u8,
-    hash_scheme: u8,
+    signature_algorithm: u32,
+    hash_scheme: u32,
     message: vector<u8>,
     presign_cap: PresignCap,
     message_centralized_signature: vector<u8>,
@@ -2464,7 +2464,7 @@ public(package) fun request_future_sign(
     dwallet_id: ID,
     presign_cap: PresignCap,
     message: vector<u8>,
-    hash_scheme: u8,
+    hash_scheme: u32,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
@@ -2969,16 +2969,16 @@ fun process_checkpoint_message(
 
 public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
     self: &mut DWalletCoordinatorInner,
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
 ) {
     self.supported_curves_to_signature_algorithms_to_hash_schemes = supported_curves_to_signature_algorithms_to_hash_schemes;
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(
     self: &mut DWalletCoordinatorInner,
-    paused_curves: vector<u8>,
-    paused_signature_algorithms: vector<u8>,
-    paused_hash_schemes: vector<u8>,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
 ) {
     self.paused_curves = paused_curves;
     self.paused_signature_algorithms = paused_signature_algorithms;

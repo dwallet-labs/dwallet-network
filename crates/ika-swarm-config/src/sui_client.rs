@@ -344,10 +344,8 @@ pub async fn ika_set_dwallet_params(
         .get_object_ref(protocol_cap_id)
         .await?;
 
-    let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u8])?))?;
-    let zero_only_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u8]])?))?;
-    let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u8, 1u8]])?))?;
-
+    let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
+    let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
 
     let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
         id: ika_system_object_id,
@@ -366,15 +364,15 @@ pub async fn ika_set_dwallet_params(
         ident_str!("vec_map").into(),
         ident_str!("from_keys_values").into(),
         vec![
-            TypeTag::U8,
-            TypeTag::Vector(Box::new(TypeTag::U8)),
+            TypeTag::U32,
+            TypeTag::Vector(Box::new(TypeTag::U32)),
         ],
         vec![
             zero_key,
             zero_and_one_value
         ]
     );
-    
+
     let supported_signature_algorithms_to_hash_schemes_vec = ptb.programmable_move_call(
         MOVE_STDLIB_PACKAGE_ID,
         ident_str!("vector").into(),
@@ -385,8 +383,8 @@ pub async fn ika_set_dwallet_params(
                 module: ident_str!("vec_map").into(),
                 name: ident_str!("VecMap").into(),
                 type_params: vec![
-                    TypeTag::U8,
-                    TypeTag::Vector(Box::new(TypeTag::U8)),
+                    TypeTag::U32,
+                    TypeTag::Vector(Box::new(TypeTag::U32)),
                 ],
             })),
         ],
@@ -400,14 +398,14 @@ pub async fn ika_set_dwallet_params(
         ident_str!("vec_map").into(),
         ident_str!("from_keys_values").into(),
         vec![
-            TypeTag::U8,
+            TypeTag::U32,
             TypeTag::Struct(Box::new(StructTag {
                 address: SUI_FRAMEWORK_PACKAGE_ID.into(),
                 module: ident_str!("vec_map").into(),
                 name: ident_str!("VecMap").into(),
                 type_params: vec![
-                    TypeTag::U8,
-                    TypeTag::Vector(Box::new(TypeTag::U8)),
+                    TypeTag::U32,
+                    TypeTag::Vector(Box::new(TypeTag::U32)),
                 ],
             })),
         ],

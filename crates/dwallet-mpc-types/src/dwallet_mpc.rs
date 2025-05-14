@@ -120,11 +120,11 @@ pub struct NetworkDecryptionKeyPublicData {
     pub network_dkg_output: MPCPublicOutput,
 }
 
-#[repr(u8)]
+#[repr(u32)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKeyScheme {
-    Secp256k1 = 1,
-    Ristretto = 2,
+    Secp256k1 = 0,
+    Ristretto = 1,
 }
 
 // We can't import ika-types here since we import this module in there.
@@ -132,16 +132,16 @@ pub enum DWalletMPCNetworkKeyScheme {
 #[derive(Debug, Error, Clone)]
 pub enum DwalletNetworkMPCError {
     #[error("invalid DWalletMPCNetworkKey value: {0}")]
-    InvalidDWalletMPCNetworkKey(u8),
+    InvalidDWalletMPCNetworkKey(u32),
 }
 
-impl TryFrom<u8> for DWalletMPCNetworkKeyScheme {
+impl TryFrom<u32> for DWalletMPCNetworkKeyScheme {
     type Error = DwalletNetworkMPCError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
-            2 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
+            0 => Ok(DWalletMPCNetworkKeyScheme::Secp256k1),
+            1 => Ok(DWalletMPCNetworkKeyScheme::Ristretto),
             v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
         }
     }
