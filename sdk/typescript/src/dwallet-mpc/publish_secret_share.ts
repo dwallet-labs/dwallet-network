@@ -7,6 +7,8 @@ import {
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	fetchCompletedEvent,
 	getDWalletSecpState,
+	getObjectWithType,
+	isActiveDWallet,
 	SUI_PACKAGE_ID,
 } from './globals';
 
@@ -52,4 +54,23 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 			showEvents: true,
 		},
 	});
+	await getObjectWithType(conf, dwallet_id, isDWalletWithPublicUserSecretKeyShares);
+}
+
+interface DWalletWithPublicUserSecretKeyShares {
+	public_user_secret_key_shares: {
+		vec: [];
+	};
+}
+
+function isDWalletWithPublicUserSecretKeyShares(
+	obj: any,
+): obj is DWalletWithPublicUserSecretKeyShares {
+	return (
+		obj &&
+		obj.public_user_secret_key_shares !== null &&
+		'vec' in obj.public_user_secret_key_shares &&
+		Array.isArray(obj.public_user_secret_key_shares.vec) &&
+		obj.public_user_secret_key_shares.vec.length > 0
+	);
 }
