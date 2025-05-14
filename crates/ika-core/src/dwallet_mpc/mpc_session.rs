@@ -339,7 +339,7 @@ impl DWalletMPCSession {
         });
         Ok(())
     }
-    
+
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<
