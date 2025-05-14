@@ -22,10 +22,6 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1, PricingPerOpera
 use ika_system::bls_committee::{Self, BlsCommittee};
 use sui::vec_map::{Self, VecMap};
 
-// /// Supported hash schemes for message signing.
-//const KECCAK256: u8 = 0;
-//const SHA256: u8 = 1;
-
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
@@ -92,6 +88,9 @@ public struct DWalletCoordinatorInner has store {
     /// A list of paused signature algorithms in case of emergency.
     /// e.g. [ecdsa]
     paused_signature_algorithms: vector<u8>,
+    /// A list of paused hash schemes in case of emergency.
+    /// e.g. [sha256, keccak256]
+    paused_hash_schemes: vector<u8>,
     /// A list of signature algorithms that are allowed for global presign.
     signature_algorithms_allowed_global_presign: vector<u8>,
     /// Any extra fields that's not defined statically.
@@ -351,8 +350,13 @@ public enum DWalletState has copy, drop, store {
 
 public struct PresignCap has key, store {
     id: UID,
-    /// ID of the associated dWallet.
+    
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
     dwallet_id: Option<ID>,
+
+    /// The ID of the presign.
     presign_id: ID,
 }
 
@@ -367,11 +371,12 @@ public struct Presign has key, store {
     /// The elliptic curve used for the dWallet.
     curve: u8,
 
-    /// The signature algorithm for the presign:
-    /// 0 - ECDSA
+    /// The signature algorithm for the presign.
     signature_algorithm: u8,
 
-    /// ID of the associated dWallet.
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
     dwallet_id: Option<ID>,
 
     cap_id: ID,
@@ -716,9 +721,12 @@ public struct RejectedMakeDWalletUserSecretKeySharesPublicEvent has copy, drop, 
 /// the session to the corresponding dWallet
 /// and DKG process.
 public struct PresignRequestEvent has copy, drop, store {
-    /// ID of the associated dWallet.
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
     dwallet_id: Option<ID>,
 
+    /// The ID of the presign.
     presign_id: ID,
 
     /// The output produced by the DKG process,
@@ -740,7 +748,9 @@ public struct PresignRequestEvent has copy, drop, store {
 /// This event indicates the successful completion of a batched presign process.
 /// It provides details about the presign objects created and their associated metadata.
 public struct CompletedPresignEvent has copy, drop, store {
-    /// The ID of the dWallet associated with this batch.
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
     dwallet_id: Option<ID>,
 
     /// The session ID.
@@ -750,7 +760,9 @@ public struct CompletedPresignEvent has copy, drop, store {
 }
 
 public struct RejectedPresignEvent has copy, drop, store {
-    /// The ID of the dWallet associated with this batch.
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
     dwallet_id: Option<ID>,
 
     /// The session ID.
@@ -888,7 +900,9 @@ const ECurvePaused: u64 = 19;
 const ESignatureAlgorithmPaused: u64 = 20;
 const EDWalletUserSecretKeySharesAlreadyPublic: u64 = 21;
 const EMismatchCurve: u64 = 22;
-
+const EImportedKeyDWallet: u64 = 23;
+const ENotImportedKeyDWallet: u64 = 24;
+const EHashSchemePaused: u64 = 25;
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
 
@@ -934,6 +948,7 @@ public(package) fun create_dwallet_coordinator_inner(
         supported_signature_algorithms_to_hash_schemes: vec_map::empty(),
         paused_curves: vector[],
         paused_signature_algorithms: vector[],
+        paused_hash_schemes: vector[],
         signature_algorithms_allowed_global_presign: vector[],
         extra_fields: bag::new(ctx),
     }
@@ -1285,7 +1300,8 @@ public(package) fun approve_message(
     message: vector<u8>
 ): MessageApproval {
     let dwallet_id = dwallet_cap.dwallet_id;
-    self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
     let approval = MessageApproval {
         dwallet_id,
         signature_algorithm,
@@ -1303,7 +1319,8 @@ public(package) fun approve_imported_key_message(
     message: vector<u8>
 ): ImportedKeyMessageApproval {
     let dwallet_id = imported_key_dwallet_cap.dwallet_id;
-    self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
+    assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
     let approval = ImportedKeyMessageApproval {
         dwallet_id,
         signature_algorithm,
@@ -1318,7 +1335,7 @@ fun validate_approve_message(
     dwallet_id: ID,
     signature_algorithm: u8,
     hash_scheme: u8,
-) {
+): bool {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
     assert!(self.supported_curves_to_signature_algorithms.contains(&dwallet.curve), EInvalidCurve);
     let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms[&dwallet.curve];
@@ -1326,6 +1343,10 @@ fun validate_approve_message(
     assert!(self.supported_signature_algorithms_to_hash_schemes.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
     let supported_signature_algorithm_to_hash_schemes = self.supported_signature_algorithms_to_hash_schemes[&signature_algorithm];
     assert!(supported_signature_algorithm_to_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
+    assert!(!self.paused_curves.contains(&dwallet.curve), ECurvePaused);
+    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
+    assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
+    dwallet.is_imported_key_dwallet
 }
 
 /// Starts the first Distributed Key Generation (DKG) session.
@@ -1524,6 +1545,7 @@ public(package) fun request_dwallet_dkg_second_round(
 
     let dwallet = self.get_dwallet(dwallet_cap.dwallet_id);
 
+    assert!(!dwallet.is_imported_key_dwallet, EImportedKeyDWallet);
     assert!(encryption_key_curve == dwallet.curve, EMismatchCurve);
 
     let first_round_output = match (&dwallet.state) {
@@ -1854,6 +1876,7 @@ public(package) fun request_imported_key_dwallet_verification(
     let encryption_key = encryption_key.encryption_key;
 
     let dwallet = self.get_dwallet_mut(dwallet_cap.dwallet_id);
+    assert!(dwallet.is_imported_key_dwallet, ENotImportedKeyDWallet);
 
     dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingUserImportedKeyInitiation => {
@@ -2232,21 +2255,10 @@ public(package) fun is_presign_valid(
     }
 }
 
-/// Emits events to initiate the signing process for each message.
-///
-/// This function ensures that all messages have the correct approvals, calculates
-/// their hashes, and emits signing events.
-///
-/// # Effects
-/// - Checks that the number of `signature_algorithm_data` items matches `message_approvals`.
-/// - Generates a new session ID for batch signing.
-/// - Emits `RequestedBatchedSignEvent` containing session details and hashed messages.
-/// - Iterates through `signature_algorithm_data`, verifying approvals and emitting `RequestedSignEvent` for each.
-///
-/// # Aborts
-/// - **`EExtraDataAndMessagesLenMismatch`**: If `signature_algorithm_data` and `message_approvals` have different lengths.
-/// - **`EMissingApprovalOrWrongApprovalOrder`**: If message approvals are incorrect or missing.
-fun emit_sign_event(
+/// This function is a shared logic for both the normal and future sign flows.
+/// It checks the presign is valid and removes it, thus assuring it is never used twice.
+/// Finally it emits the sign event.
+fun validate_and_initiate_sign(
     self: &mut DWalletCoordinatorInner,
     pricing: PricingPerOperation,
     payment_ika: &mut Coin<IKA>,
@@ -2259,7 +2271,7 @@ fun emit_sign_event(
     message_centralized_signature: vector<u8>,
     is_future_sign: bool,
     ctx: &mut TxContext
-) {
+): bool {
     let created_at_epoch = self.current_epoch;
 
     assert!(self.presigns.contains(presign_cap.presign_id), EPresignNotExist);
@@ -2332,6 +2344,7 @@ fun emit_sign_event(
     });
 
     event::emit(emit_event);
+    dwallet.is_imported_key_dwallet
 }
 
 
@@ -2382,7 +2395,7 @@ public(package) fun request_sign(
 
     let pricing = self.pricing.sign();
 
-    self.emit_sign_event(
+    let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing,
         payment_ika,
         payment_sui,
@@ -2395,6 +2408,7 @@ public(package) fun request_sign(
         false,
         ctx
     );
+    assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
 
 public(package) fun request_imported_key_sign(
@@ -2415,7 +2429,7 @@ public(package) fun request_imported_key_sign(
 
     let pricing = self.pricing.sign();
 
-    self.emit_sign_event(
+    let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing,
         payment_ika,
         payment_sui,
@@ -2428,6 +2442,7 @@ public(package) fun request_imported_key_sign(
         false,
         ctx
     );
+    assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 }
 
 // TODO: add hash_scheme per message so we can validate that.
@@ -2448,6 +2463,8 @@ public(package) fun request_future_sign(
     ctx: &mut TxContext
 ): UnverifiedPartialUserSignatureCap {
     let pricing = self.pricing.future_sign();
+
+    assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 
     assert!(presign_cap.dwallet_id.is_none() || presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
 
@@ -2626,7 +2643,7 @@ public(package) fun request_sign_with_partial_user_signatures(
     } = message_approval;
 
     // Emit signing events to finalize the signing process.
-    self.emit_sign_event(
+    let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing,
         payment_ika,
         payment_sui,
@@ -2639,6 +2656,7 @@ public(package) fun request_sign_with_partial_user_signatures(
         true,
         ctx
     );
+    assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
 
 public(package) fun request_imported_key_sign_with_partial_user_signatures(
@@ -2684,7 +2702,7 @@ public(package) fun request_imported_key_sign_with_partial_user_signatures(
     } = message_approval;
 
     // Emit signing events to finalize the signing process.
-    self.emit_sign_event(
+    let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing,
         payment_ika,
         payment_sui,
@@ -2697,6 +2715,7 @@ public(package) fun request_imported_key_sign_with_partial_user_signatures(
         true,
         ctx
     );
+    assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 }
 
 /// Compares partial user signatures with message approvals to ensure they match.
@@ -2953,7 +2972,9 @@ public(package) fun set_paused_curves_and_signature_algorithms(
     self: &mut DWalletCoordinatorInner,
     paused_curves: vector<u8>,
     paused_signature_algorithms: vector<u8>,
+    paused_hash_schemes: vector<u8>,
 ) {
     self.paused_curves = paused_curves;
     self.paused_signature_algorithms = paused_signature_algorithms;
+    self.paused_hash_schemes = paused_hash_schemes;
 }

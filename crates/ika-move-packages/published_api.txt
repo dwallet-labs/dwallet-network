@@ -475,7 +475,7 @@ respond_presign
 is_presign_valid
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-emit_sign_event
+validate_and_initiate_sign
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_sign

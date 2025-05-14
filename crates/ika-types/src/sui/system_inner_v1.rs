@@ -143,6 +143,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub supported_signature_algorithms_to_hash_schemes: VecMap<u8, Vec<u8>>,
     pub paused_curves: Vec<u8>,
     pub paused_signature_algorithms: Vec<u8>,
+    pub paused_hash_schemes: Vec<u8>,
     pub signature_algorithms_allowed_global_presign: Vec<u8>,
     pub extra_fields: Bag,
 }

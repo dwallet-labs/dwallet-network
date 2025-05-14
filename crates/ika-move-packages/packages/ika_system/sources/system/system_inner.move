@@ -643,10 +643,11 @@ public(package) fun set_paused_curves_and_signature_algorithms(
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     paused_curves: vector<u8>,
     paused_signature_algorithms: vector<u8>,
+    paused_hash_schemes: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_coordinator_inner.set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms);
+    dwallet_2pc_mpc_coordinator_inner.set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms, paused_hash_schemes);
 }
 
 public(package) fun authorize_update_message_by_cap(

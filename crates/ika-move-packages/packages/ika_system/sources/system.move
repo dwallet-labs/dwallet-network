@@ -469,10 +469,11 @@ public fun set_paused_curves_and_signature_algorithms(
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     paused_curves: vector<u8>,
     paused_signature_algorithms: vector<u8>,
+    paused_hash_schemes: vector<u8>,
     protocol_cap: &ProtocolCap,
 ) {
     let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    self.inner_mut().set_paused_curves_and_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_curves, paused_signature_algorithms, protocol_cap);
+    self.inner_mut().set_paused_curves_and_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_curves, paused_signature_algorithms, paused_hash_schemes, protocol_cap);
 }
 
 // === Upgrades ===
