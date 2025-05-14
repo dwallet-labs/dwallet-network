@@ -25,6 +25,7 @@ export interface Config {
 	dWalletSeed: Uint8Array;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum MPCKeyScheme {
 	Secp256k1 = 1,
 	Ristretto = 2,
@@ -119,13 +120,6 @@ interface SharedObjectOwner {
 	};
 }
 
-/**
- * Represents a Move Address object owner.
- */
-interface AddressObjectOwner {
-	AddressOwner: string;
-}
-
 interface MoveObject {
 	fields: any;
 }
@@ -140,10 +134,6 @@ interface MoveDynamicField {
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
-}
-
-export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
-	return obj?.AddressOwner !== undefined;
 }
 
 export function isMoveObject(obj: any): obj is MoveObject {
