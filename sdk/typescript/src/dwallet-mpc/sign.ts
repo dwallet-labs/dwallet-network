@@ -185,10 +185,7 @@ export async function createUnverifiedPartialUserSignatureCap(
 			tx.gas,
 		],
 	});
-	tx.transferObjects(
-		[unverifiedPartialUserSignatureCap],
-		conf.suiClientKeypair.toSuiAddress(),
-	);
+	tx.transferObjects([unverifiedPartialUserSignatureCap], conf.suiClientKeypair.toSuiAddress());
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],

@@ -1,16 +1,13 @@
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config } from './globals.js';
 import {
-	Config,
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
 	getDWalletSecpState,
 	getObjectWithType,
-	isActiveDWallet,
 	SUI_PACKAGE_ID,
-} from './globals';
+} from './globals.js';
 
 export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 	conf: Config,
