@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
@@ -11,6 +12,16 @@ pub fn verify_secret_share(
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<bool> {
+    let secret_share: MPCPublicOutput = bcs::from_bytes(&secret_share)?;
+    let secret_share = match secret_share {
+        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+        _ => {
+            return Err(anyhow!(
+                "invalid centralized public output version: expected ClassGroups::V1, got {:?}",
+                secret_share
+            ));
+        }
+    };
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
