@@ -313,12 +313,15 @@ impl DWalletMPCSession {
         Ok(())
     }
 
+    /// Report that the session failed because the threshold was not reached.
+    /// This is submitted to the consensus,
+    /// in order to make sure that all the Validators agree that this session needs more messages.
     fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
-        let report_tx =
-            self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
-                session_id: self.session_id,
-                attempt: self.attempts_count,
-            })?;
+        let report = ThresholdNotReachedReport {
+            session_id: self.session_id,
+            attempt: self.attempts_count,
+        };
+        let report_tx = self.new_dwallet_report_threshold_not_reached(report)?;
         let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
         tokio_runtime_handle.spawn(async move {
@@ -326,7 +329,10 @@ impl DWalletMPCSession {
                 .submit_to_consensus(&vec![report_tx], &epoch_store)
                 .await
             {
-                error!("failed to submit an MPC message to consensus: {:?}", err);
+                error!(
+                    ?err,
+                    "failed to submit `threshold not reached` report to consensus"
+                );
             }
         });
         Ok(())

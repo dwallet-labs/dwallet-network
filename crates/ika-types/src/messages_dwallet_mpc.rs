@@ -349,12 +349,6 @@ pub struct MaliciousReport {
     pub session_id: ObjectID,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct ThresholdNotReachedReport {
-    pub session_id: ObjectID,
-    pub attempt: usize,
-}
-
 impl MaliciousReport {
     /// Creates a new instance of a malicious report.
     pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
@@ -363,6 +357,14 @@ impl MaliciousReport {
             session_id,
         }
     }
+}
+
+/// Represents a report indicating that the threshold for a specific session has not been reached.
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ThresholdNotReachedReport {
+    pub session_id: ObjectID,
+    /// Attempt is needed to make this message unique in consensus and to make it unique for a quorum.
+    pub attempt: usize,
 }
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_ecdsa_k1::StartPresignFirstRoundEvent`.
