@@ -260,7 +260,7 @@ public struct PartialUserSignature has key, store {
 
     created_at_epoch: u64,
 
-    presign_cap: PresignCap,
+    presign_cap: VerifiedPresignCap,
 
     dwallet_id: ID,
 
@@ -345,7 +345,19 @@ public enum DWalletState has copy, drop, store {
     }
 }
 
-public struct PresignCap has key, store {
+public struct UnverifiedPresignCap has key, store {
+    id: UID,
+    
+    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
+    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns, 
+    /// which can be used for any dWallet (under the same network key).
+    dwallet_id: Option<ID>,
+
+    /// The ID of the presign.
+    presign_id: ID,
+}
+
+public struct VerifiedPresignCap has key, store {
     id: UID,
     
     /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
@@ -2075,7 +2087,7 @@ public(package) fun request_presign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-): PresignCap {
+): UnverifiedPresignCap {
     let created_at_epoch = self.current_epoch;
 
     assert!(!self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
@@ -2091,7 +2103,7 @@ public(package) fun request_presign(
 
     let id = object::new(ctx);
     let presign_id = id.to_inner();
-    let cap = PresignCap {
+    let cap = UnverifiedPresignCap {
         id: object::new(ctx),
         dwallet_id: option::some(dwallet_id),
         presign_id,
@@ -2136,7 +2148,7 @@ public(package) fun request_global_presign(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
-): PresignCap {
+): UnverifiedPresignCap {
     let created_at_epoch = self.current_epoch;
 
     assert!(self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
@@ -2145,7 +2157,7 @@ public(package) fun request_global_presign(
 
     let id = object::new(ctx);
     let presign_id = id.to_inner();
-    let cap = PresignCap {
+    let cap = UnverifiedPresignCap {
         id: object::new(ctx),
         dwallet_id: option::none(),
         presign_id,
@@ -2246,16 +2258,42 @@ public(package) fun respond_presign(
 
 public(package) fun is_presign_valid(
     self: &DWalletCoordinatorInner,
-    presign_cap: &PresignCap,
+    cap: &UnverifiedPresignCap,
 ): bool {
-    let presign = self.presigns.borrow(presign_cap.presign_id);
-
+    let presign = self.presigns.borrow(cap.presign_id);
     match(&presign.state) {
         PresignState::Completed { .. } => {
-            true
+            cap.id.to_inner() == presign.cap_id
         },
         _ => false
     }
+}
+
+public(package) fun verify_presign_cap(
+    self: &mut DWalletCoordinatorInner,
+    cap: UnverifiedPresignCap,
+    ctx: &mut TxContext
+): VerifiedPresignCap {
+    let UnverifiedPresignCap {
+        id,
+        dwallet_id,
+        presign_id
+    } = cap;
+    let cap_id = id.to_inner();
+    id.delete();
+    let presign = self.presigns.borrow_mut(presign_id);
+    assert!(presign.cap_id == cap_id, EIncorrectCap);
+        match(&presign.state) {
+        PresignState::Completed { .. } => {},
+        _ => abort EUnverifiedCap
+    };
+    let cap = VerifiedPresignCap {
+        id: object::new(ctx),
+        dwallet_id,
+        presign_id,
+    };
+    presign.cap_id = cap.id.to_inner();
+    cap
 }
 
 /// This function is a shared logic for both the normal and future sign flows.
@@ -2270,7 +2308,7 @@ fun validate_and_initiate_sign(
     signature_algorithm: u32,
     hash_scheme: u32,
     message: vector<u8>,
-    presign_cap: PresignCap,
+    presign_cap: VerifiedPresignCap,
     message_centralized_signature: vector<u8>,
     is_future_sign: bool,
     ctx: &mut TxContext
@@ -2283,7 +2321,7 @@ fun validate_and_initiate_sign(
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
 
-    let PresignCap {
+    let VerifiedPresignCap {
         id,
         dwallet_id: presign_cap_dwallet_id,
         presign_id: presign_cap_presign_id,
@@ -2388,7 +2426,7 @@ fun validate_and_initiate_sign(
 public(package) fun request_sign(
     self: &mut DWalletCoordinatorInner,
     message_approval: MessageApproval,
-    presign_cap: PresignCap,
+    presign_cap: VerifiedPresignCap,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
@@ -2422,7 +2460,7 @@ public(package) fun request_sign(
 public(package) fun request_imported_key_sign(
     self: &mut DWalletCoordinatorInner,
     message_approval: ImportedKeyMessageApproval,
-    presign_cap: PresignCap,
+    presign_cap: VerifiedPresignCap,
     message_centralized_signature: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
@@ -2462,7 +2500,7 @@ public(package) fun request_imported_key_sign(
 public(package) fun request_future_sign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
-    presign_cap: PresignCap,
+    presign_cap: VerifiedPresignCap,
     message: vector<u8>,
     hash_scheme: u32,
     message_centralized_signature: vector<u8>,
@@ -2569,6 +2607,15 @@ public(package) fun respond_future_sign(
         _ => abort EWrongState
     }
 }
+
+public(package) fun is_partial_user_signature_valid(
+    self: &DWalletCoordinatorInner,
+    cap: &UnverifiedPartialUserSignatureCap,
+): bool {
+    let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow(cap.partial_centralized_signed_message_id);
+    partial_centralized_signed_message.cap_id == cap.id.to_inner() && partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted
+}
+
 public(package) fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedPartialUserSignatureCap,
@@ -2607,7 +2654,7 @@ public(package) fun verify_partial_user_signature_cap(
 /// ## Notes
 /// - See [`PartialUserSignature`] documentation for more details on usage scenarios.
 /// - The function ensures that messages and approvals have a one-to-one correspondence before proceeding.
-public(package) fun request_sign_with_partial_user_signatures(
+public(package) fun request_sign_with_partial_user_signature(
     self: &mut DWalletCoordinatorInner,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
     message_approval: MessageApproval,
@@ -2618,8 +2665,9 @@ public(package) fun request_sign_with_partial_user_signatures(
 
     let pricing = self.pricing.sign_with_partial_user_signature();
 
-    // Ensure that each message has a corresponding approval; otherwise, abort.
-    self.compare_partial_user_signatures_with_message_approvals(&partial_user_signature_cap, &message_approval);
+    // Ensure that each partial user signature has a corresponding message approval; otherwise, abort.
+    let is_match = self.match_partial_user_signature_with_message_approval(&partial_user_signature_cap, &message_approval);
+    assert!(is_match, EMessageApprovalMismatch);
 
     let VerifiedPartialUserSignatureCap {
         id,
@@ -2667,7 +2715,7 @@ public(package) fun request_sign_with_partial_user_signatures(
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
 
-public(package) fun request_imported_key_sign_with_partial_user_signatures(
+public(package) fun request_imported_key_sign_with_partial_user_signature(
     self: &mut DWalletCoordinatorInner,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
     message_approval: ImportedKeyMessageApproval,
@@ -2677,8 +2725,9 @@ public(package) fun request_imported_key_sign_with_partial_user_signatures(
 ) {
     let pricing = self.pricing.sign_with_partial_user_signature();
 
-    // Ensure that each message has a corresponding approval; otherwise, abort.
-    self.compare_partial_user_signatures_with_imported_key_message_approvals(&partial_user_signature_cap, &message_approval);
+    // Ensure that each partial user signature has a corresponding imported key message approval; otherwise, abort.
+    let is_match = self.match_partial_user_signature_with_imported_key_message_approval(&partial_user_signature_cap, &message_approval);
+    assert!(is_match, EMessageApprovalMismatch);
 
     let VerifiedPartialUserSignatureCap {
         id,
@@ -2726,40 +2775,36 @@ public(package) fun request_imported_key_sign_with_partial_user_signatures(
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 }
 
-/// Compares partial user signatures with message approvals to ensure they match.
-/// This function can be called by the user to verify that the messages and approvals match,
-/// before calling the `sign_with_partial_centralized_message_signatures` function.
-public(package) fun compare_partial_user_signatures_with_message_approvals(
+/// Matches partial user signature with message approval to ensure they are consistent.
+/// This function can be called by the user to verify before calling
+/// the `request_sign_with_partial_user_signature` function.
+public(package) fun match_partial_user_signature_with_message_approval(
     self: &DWalletCoordinatorInner,
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &MessageApproval,
-) {
+): bool {
     let partial_signature = self.partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
-    assert!(
-        partial_signature.dwallet_id == message_approval.dwallet_id &&
-        partial_signature.message == message_approval.message &&
-        partial_signature.signature_algorithm == message_approval.signature_algorithm &&
-        partial_signature.hash_scheme == message_approval.hash_scheme
-    , EMessageApprovalMismatch);
+    partial_signature.dwallet_id == message_approval.dwallet_id &&
+    partial_signature.message == message_approval.message &&
+    partial_signature.signature_algorithm == message_approval.signature_algorithm &&
+    partial_signature.hash_scheme == message_approval.hash_scheme
 }
 
-/// Compares partial user signatures with imported key message approvals to ensure they match.
-/// This function can be called by the user to verify that the messages and approvals match,
-/// before calling the `sign_with_partial_centralized_message_signatures` function.
-public(package) fun compare_partial_user_signatures_with_imported_key_message_approvals(
+/// Matches partial user signature with imported key message approval to ensure they are consistent.
+/// This function can be called by the user to verify before calling
+/// the `request_imported_key_sign_with_partial_user_signatures` function.
+public(package) fun match_partial_user_signature_with_imported_key_message_approval(
     self: &DWalletCoordinatorInner,
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
     message_approval: &ImportedKeyMessageApproval,
-) {
+): bool {
     let partial_signature = self.partial_centralized_signed_messages.borrow(partial_user_signature_cap.partial_centralized_signed_message_id);
 
-    assert!(
-        partial_signature.dwallet_id == message_approval.dwallet_id &&
-        partial_signature.message == message_approval.message &&
-        partial_signature.signature_algorithm == message_approval.signature_algorithm &&
-        partial_signature.hash_scheme == message_approval.hash_scheme
-    , EMessageApprovalMismatch);
+    partial_signature.dwallet_id == message_approval.dwallet_id &&
+    partial_signature.message == message_approval.message &&
+    partial_signature.signature_algorithm == message_approval.signature_algorithm &&
+    partial_signature.hash_scheme == message_approval.hash_scheme
 }
 
 /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.

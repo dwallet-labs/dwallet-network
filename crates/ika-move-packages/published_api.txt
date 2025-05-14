@@ -223,7 +223,10 @@ PartialUserSignature
 DWallet
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-PresignCap
+UnverifiedPresignCap
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+VerifiedPresignCap
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 Presign
@@ -484,6 +487,9 @@ respond_presign
 is_presign_valid
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+verify_presign_cap
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 validate_and_initiate_sign
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -499,19 +505,22 @@ request_future_sign
 respond_future_sign
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+is_partial_user_signature_valid
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 verify_partial_user_signature_cap
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_sign_with_partial_user_signatures
+request_sign_with_partial_user_signature
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_imported_key_sign_with_partial_user_signatures
+request_imported_key_sign_with_partial_user_signature
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-compare_partial_user_signatures_with_message_approvals
+match_partial_user_signature_with_message_approval
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-compare_partial_user_signatures_with_imported_key_message_approvals
+match_partial_user_signature_with_imported_key_message_approval
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_sign
@@ -586,6 +595,9 @@ request_global_presign
 is_presign_valid
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+verify_presign_cap
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_sign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
@@ -595,19 +607,22 @@ request_imported_key_sign
 request_future_sign
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+is_partial_user_signature_valid
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 verify_partial_user_signature_cap
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-request_sign_with_partial_user_signatures
+request_sign_with_partial_user_signature
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-request_imported_key_sign_with_partial_user_signatures
+request_imported_key_sign_with_partial_user_signature
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-compare_partial_user_signatures_with_message_approvals
+match_partial_user_signature_with_message_approval
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-compare_partial_user_signatures_with_imported_key_message_approvals
+match_partial_user_signature_with_imported_key_message_approval
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 migrate
