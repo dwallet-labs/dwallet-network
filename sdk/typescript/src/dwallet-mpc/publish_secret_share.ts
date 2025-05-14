@@ -63,7 +63,7 @@ interface DWalletWithPublicUserSecretKeyShares {
 	};
 }
 
-function isDWalletWithPublicUserSecretKeyShares(
+export function isDWalletWithPublicUserSecretKeyShares(
 	obj: any,
 ): obj is DWalletWithPublicUserSecretKeyShares {
 	return (

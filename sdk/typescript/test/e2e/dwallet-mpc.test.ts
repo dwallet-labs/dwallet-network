@@ -13,9 +13,13 @@ import {
 	Config,
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
+	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
-import { makeDWalletUserSecretKeySharesPublicRequestEvent } from '../../src/dwallet-mpc/publish_secret_share';
+import {
+	isDWalletWithPublicUserSecretKeyShares,
+	makeDWalletUserSecretKeySharesPublicRequestEvent,
+} from '../../src/dwallet-mpc/publish_secret_share';
 import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
@@ -106,6 +110,12 @@ describe('Test dWallet MPC', () => {
 			dwallet.dwalletID,
 			dwallet.secret_share,
 		);
+		const secretShare = await getObjectWithType(
+			conf,
+			dwallet.dwalletID,
+			isDWalletWithPublicUserSecretKeyShares,
+		);
+		console.log(`secretShare: ${secretShare}`);
 	});
 
 	it('should complete future sign', async () => {
