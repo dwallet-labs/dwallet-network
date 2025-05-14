@@ -12,6 +12,8 @@ pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_coordinator_inner");
 pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGFirstRoundRequestEvent");
+pub const DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT: &IdentStr =
+    ident_str!("MakeDWalletUserSecretKeySharesPublicRequestEvent");
 // TODO (#650): Rename Move structs
 pub const DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGSecondRoundRequestEvent");

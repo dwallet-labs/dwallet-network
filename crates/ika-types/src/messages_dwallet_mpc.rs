@@ -4,13 +4,14 @@ use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    DWALLET_MPC_EVENT_STRUCT_NAME, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
-    SIGN_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
+    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
+    SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
-    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
 };
 use group::PartyID;
 use move_core_types::account_address::AccountAddress;
@@ -33,6 +34,7 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
+    MakeDWalletUserSecretKeySharesPublicRequest(DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>),
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
     /// The second round of the DKG protocol.
@@ -425,6 +427,29 @@ impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
         StructTag {
             address: *packages_config.ika_system_package_id,
             name: DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGFirstRoundRequestEvent`.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
+    pub public_user_secret_key_shares: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub curve: u8,
+    pub dwallet_id: ObjectID,
+    pub dwallet_network_decryption_key_id: ObjectID,
+}
+
+impl DWalletMPCEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
+    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
+        StructTag {
+            address: *packages_config.ika_system_package_id,
+            name: DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
