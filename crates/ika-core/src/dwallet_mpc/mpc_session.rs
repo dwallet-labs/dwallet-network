@@ -498,14 +498,14 @@ impl DWalletMPCSession {
                 ) {
                     Ok(is_valid) => match is_valid {
                         true => Ok(AsynchronousRoundResult::Finalize {
-                            public_output: init_event.event_data.public_output.clone(),
+                            public_output: init_event
+                                .event_data
+                                .public_user_secret_key_shares
+                                .clone(),
                             private_output: vec![],
                             malicious_parties: vec![],
                         }),
-                        false => {
-                            error!("wtf why");
-                            Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput)
-                        }
+                        false => Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput),
                     },
                     Err(err) => {
                         error!(
