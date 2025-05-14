@@ -34,7 +34,9 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
-    MakeDWalletUserSecretKeySharesPublicRequest(DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>),
+    MakeDWalletUserSecretKeySharesPublicRequest(
+        DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
+    ),
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
     /// The second round of the DKG protocol.

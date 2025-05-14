@@ -9,13 +9,27 @@ use ika_move_packages::IkaMovePackage;
 use ika_types::ika_coin::IKACoin;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
-use ika_types::sui::{ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System, ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME, CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME, INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SET_SUPPORTED_CURVES_AND_SIGNATURE_ALGORITHMS_AND_HASH_SCHEMES_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME};
+use ika_types::sui::{
+    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
+    ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
+    DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
+    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
+    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME,
+    SET_SUPPORTED_CURVES_AND_SIGNATURE_ALGORITHMS_AND_HASH_SCHEMES_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
+};
+use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-use move_core_types::ident_str;
 use sui::client_commands::{
     estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
     SuiClientCommandResult,
@@ -252,9 +266,12 @@ pub async fn init_ika_on_sui(
         dwallet_2pc_mpc_coordinator_id,
         dwallet_2pc_mpc_coordinator_initial_shared_version,
         protocol_cap_id,
-    ).await?;
+    )
+    .await?;
 
-    println!("Running `system::set_supported_curves_and_signature_algorithms_and_hash_schemes` done.");
+    println!(
+        "Running `system::set_supported_curves_and_signature_algorithms_and_hash_schemes` done."
+    );
 
     ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
         publisher_address,
@@ -348,7 +365,6 @@ pub async fn ika_set_dwallet_params(
     let zero_only_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u8]])?))?;
     let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u8, 1u8]])?))?;
 
-
     let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
         id: ika_system_object_id,
         initial_shared_version: init_system_shared_version,
@@ -365,28 +381,16 @@ pub async fn ika_set_dwallet_params(
         SUI_FRAMEWORK_PACKAGE_ID,
         ident_str!("vec_map").into(),
         ident_str!("from_keys_values").into(),
-        vec![
-            TypeTag::U8,
-            TypeTag::Vector(Box::new(TypeTag::U8)),
-        ],
-        vec![
-            zero_key,
-            zero_only_value
-        ]
+        vec![TypeTag::U8, TypeTag::Vector(Box::new(TypeTag::U8))],
+        vec![zero_key, zero_only_value],
     );
 
     let supported_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
         SUI_FRAMEWORK_PACKAGE_ID,
         ident_str!("vec_map").into(),
         ident_str!("from_keys_values").into(),
-        vec![
-            TypeTag::U8,
-            TypeTag::Vector(Box::new(TypeTag::U8)),
-        ],
-        vec![
-            zero_key,
-            zero_and_one_value
-        ]
+        vec![TypeTag::U8, TypeTag::Vector(Box::new(TypeTag::U8))],
+        vec![zero_key, zero_and_one_value],
     );
 
     let protocol_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(

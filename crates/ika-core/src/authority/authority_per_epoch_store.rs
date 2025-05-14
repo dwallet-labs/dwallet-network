@@ -73,9 +73,9 @@ use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
-    SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
+    MakeDWalletUserSecretKeySharesPublicOutput, MessageKind, PartialSignatureVerificationOutput,
+    PresignOutput, Secp256K1NetworkKeyPublicOutputSlice, SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -87,8 +87,8 @@ use ika_types::messages_consensus::{
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
-    SessionType, PresignRequestEvent,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, PresignRequestEvent,
+    SessionInfo, SessionType,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
@@ -1736,6 +1736,22 @@ impl AuthorityPerEpochStore {
                     .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::MakeDWalletUserSecretKeySharesPublic(
+                    MakeDWalletUserSecretKeySharesPublicOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec(),
+                        public_user_secret_key_shares: output,
+                        rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
         }
     }

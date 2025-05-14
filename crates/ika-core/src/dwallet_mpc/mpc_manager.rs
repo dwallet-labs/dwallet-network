@@ -39,7 +39,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, PresignRequestEvent,
+    MaliciousReport, PresignRequestEvent, SessionInfo, SessionType,
 };
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -362,8 +362,9 @@ impl DWalletMPCManager {
             public_input,
             private_input,
             decryption_share: match session_info.mpc_round {
-                MPCProtocolInitData::Sign(init_event) => self
-                    .get_decryption_key_shares(&init_event.event_data.dwallet_network_decryption_key_id)?,
+                MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
+                    &init_event.event_data.dwallet_network_decryption_key_id,
+                )?,
                 MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
                     .get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,

@@ -356,7 +356,9 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
@@ -412,7 +414,9 @@ where
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
@@ -468,7 +472,9 @@ where
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
@@ -546,7 +552,9 @@ where
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
         let dwallet_2pc_mpc_coordinator_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_2pc_mpc_coordinator_id)
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         info!(

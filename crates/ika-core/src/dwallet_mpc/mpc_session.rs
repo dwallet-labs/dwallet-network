@@ -34,8 +34,8 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, SessionType, EncryptedShareVerificationRequestEvent, PresignRequestEvent,
+    AdvanceResult, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
