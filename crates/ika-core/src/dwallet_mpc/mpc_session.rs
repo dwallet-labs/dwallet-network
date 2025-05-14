@@ -75,14 +75,15 @@ pub(super) struct DWalletMPCSession {
     pub(super) status: MPCSessionStatus,
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
-    /// Vec[Round1: Map{Validator1->Message, Validator2->Message}, Round2: Map{Validator1->Message} ...]
+    /// HashMap{R1: Map{Validator1->Message, Validator2->Message}, R2: Map{Validator1->Message} ...}
     pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     pub(super) session_id: ObjectID,
     /// The current MPC round number of the session.
-    /// Starts at `1` and increments after each advance the session.
+    /// Starts at `1` and increments after each advance of the session.
+    /// In round `1` We start the flow, without messages, from the event trigger.
     /// Decremented only upon an `TWOPCMPCThresholdNotReached` Error.
     pub(super) current_round: usize,
     party_id: PartyID,
@@ -552,7 +553,7 @@ impl DWalletMPCSession {
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         self.received_more_messages_since_last_advance = true;
-        // This happens because we clear the session when it is finished, and change the status,
+        // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
             warn!(

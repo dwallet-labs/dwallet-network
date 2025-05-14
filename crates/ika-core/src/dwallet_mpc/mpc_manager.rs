@@ -312,14 +312,15 @@ impl DWalletMPCManager {
             .or_insert(StakeAggregator::new(committee));
         // We already have a quorum for this report.
         if current_voters_for_report.has_quorum() {
-            // do nothing, quorum has already been reached
+            // Do nothing, quorum has already been reached.
             return Ok(());
         }
         if current_voters_for_report
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
-            self.prepare_for_round_retry(report.session_id);
+            // Quorum has been reached, we can report the malicious actors.
+            self.prepare_for_round_retry(report.session_id)?;
         }
         Ok(())
     }
@@ -329,22 +330,31 @@ impl DWalletMPCManager {
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_advance = false;
             session.attempts_count += 1;
-            // We got an `TWOPCMPCThresholdNotReached` error, and a quorum agreement on it, so necessarily all parties that sent a message for the last executed round are malicious (as the round aborted with error, and no message was generated.)
-            // Remove these messages, and mark the senders as malicious.
+            // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
+            // So all parties that sent a regular MPC Message for the last executed
+            // round are malicious—as the round aborted with the error `TWOPCMPCThresholdNotReached`.
+            // All honest parties should report that there is a quorum for `ThresholdNotReached`.
+            // We must then remove these messages and mark the senders as malicious.
+            // Note that the current round was already incremented
+            // since we received the quorum for `ThresholdNotReached`
+            // on the previous round,
+            // but no messages were sent for the current round.
+            let previous_failed_with_malicious_round = session.current_round - 1;
+            let malicious_party_ids = &session
+                .serialized_full_messages
+                .get(&(previous_failed_with_malicious_round))
+                .unwrap_or(&HashMap::new())
+                .keys()
+                .cloned()
+                .collect::<Vec<PartyID>>();
+            let malicious_authorities =
+                party_ids_to_authority_names(malicious_party_ids, &epoch_store);
             self.malicious_handler
-                .report_malicious_actors(&party_ids_to_authority_names(
-                    &session
-                        .serialized_full_messages
-                        .get(&(session.current_round - 1))
-                        .unwrap_or(&HashMap::new())
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<PartyID>>(),
-                    &*epoch_store,
-                )?);
+                .report_malicious_actors(&malicious_authorities?);
             session
                 .serialized_full_messages
-                .remove(&(session.current_round - 1));
+                .remove(&(previous_failed_with_malicious_round));
+            // Decrement the current round, as we are going to retry the previous round.
             session.current_round -= 1;
         }
         Ok(())
