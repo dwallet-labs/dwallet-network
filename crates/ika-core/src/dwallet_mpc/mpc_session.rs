@@ -608,12 +608,16 @@ impl DWalletMPCSession {
     pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
         match self.status {
             MPCSessionStatus::Active => {
+                // MPC First round doesn't require a threshold of messages to advance.
+                // This is the round after the MPC event.
                 if self.current_round == 1
                     || (self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
                                 .serialized_full_messages
+                                // Check if we have the threshold of messages for the previous round
+                                // to advance to the next round.
                                 .get(&(self.current_round - 1))
                                 .unwrap_or(&HashMap::new())
                                 .keys()
