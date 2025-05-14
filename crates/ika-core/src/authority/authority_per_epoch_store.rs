@@ -63,7 +63,10 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::params_messages::{BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify, PendingParamsMessage, PendingParamsMessageInfo, PendingParamsMessageV1};
+use crate::params_messages::{
+    BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify,
+    PendingParamsMessage, PendingParamsMessageInfo, PendingParamsMessageV1,
+};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -1208,7 +1211,7 @@ impl AuthorityPerEpochStore {
         params_message_service: &Arc<ParamsMessageService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<Vec<MessageKind>> {
+    ) -> IkaResult<(Vec<MessageKind>, Vec<ParamsMessageKind>)> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
@@ -1301,7 +1304,7 @@ impl AuthorityPerEpochStore {
 
         self.process_notifications(&notifications);
 
-        Ok(verified_messages)
+        Ok((verified_messages, params_message_verified_messages))
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
@@ -1360,6 +1363,7 @@ impl AuthorityPerEpochStore {
                     verified_certificates.push_back(cert);
                 }
                 ConsensusCertificateResult::SystemTransaction(cert) => {
+                    println!("System transaction");
                     notifications.push(key.clone());
                     verified_param_message_certificates.push_back(cert);
                 }
@@ -1423,7 +1427,11 @@ impl AuthorityPerEpochStore {
 
         let verified_certificates: Vec<_> = verified_certificates.into();
 
-        Ok((verified_certificates, verified_param_message_certificates.into(), notifications))
+        Ok((
+            verified_certificates,
+            verified_param_message_certificates.into(),
+            notifications,
+        ))
     }
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
@@ -1595,7 +1603,6 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
-                // TODO (yael) check we only send this once
                 if let Some((new_version, _)) = AuthorityState::is_protocol_version_supported_v1(
                     self.protocol_version(),
                     authority_capabilities
@@ -1621,11 +1628,12 @@ impl AuthorityPerEpochStore {
                         "Found version quorum from capabilities v1 {:?}",
                         capabilities.first()
                     );
-                    return Ok(ConsensusCertificateResult::SystemTransaction(
+                    Ok(ConsensusCertificateResult::SystemTransaction(
                         ParamsMessageKind::NextConfigVersion(new_version),
-                    ));
+                    ))
+                } else {
+                    Ok(ConsensusCertificateResult::ConsensusMessage)
                 }
-                Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::ParamsMessageSignature(data),
@@ -2333,6 +2341,13 @@ impl ConsensusCommitOutput {
         batch.insert_batch(
             &tables.pending_checkpoints,
             self.pending_checkpoints
+                .into_iter()
+                .map(|cp| (cp.height(), cp)),
+        )?;
+
+        batch.insert_batch(
+            &tables.pending_params_messages,
+            self.pending_params_messages
                 .into_iter()
                 .map(|cp| (cp.height(), cp)),
         )?;

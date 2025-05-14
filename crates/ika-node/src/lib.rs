@@ -1099,8 +1099,7 @@ impl IkaNode {
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
             let next_version: Option<u64> = system_inner.next_protocol_version();
-            if next_version.is_none()
-            {
+            if next_version.is_none() {
                 if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
                     let transaction = ConsensusTransaction::new_capability_notification_v1(
                         AuthorityCapabilitiesV1::new(
@@ -1110,7 +1109,9 @@ impl IkaNode {
                             sui_client
                                 .get_available_move_packages()
                                 .await
-                                .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                                .map_err(|e| {
+                                    anyhow!("Cannot get available move packages: {:?}", e)
+                                })?,
                         ),
                     );
 
@@ -1208,7 +1209,7 @@ impl IkaNode {
                 consensus_store_pruner,
                 consensus_adapter,
                 mut checkpoint_service_tasks,
-                mut params_message_service_tasks, // Todo (yael): check this
+                mut params_message_service_tasks,
                 checkpoint_metrics,
                 params_message_metrics,
                 ika_tx_validator_metrics,
@@ -1230,6 +1231,17 @@ impl IkaNode {
                     }
                 }
                 info!("Checkpoint service has shut down.");
+
+                params_message_service_tasks.abort_all();
+                while let Some(result) = params_message_service_tasks.join_next().await {
+                    if let Err(err) = result {
+                        if err.is_panic() {
+                            std::panic::resume_unwind(err.into_panic());
+                        }
+                        warn!("Error in params_message service task: {:?}", err);
+                    }
+                }
+                info!("params_message service has shut down.");
 
                 consensus_manager.shutdown().await;
                 info!("Consensus has shut down.");

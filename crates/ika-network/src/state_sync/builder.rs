@@ -6,6 +6,7 @@ use super::{
     server::{CheckpointMessageDownloadLimitLayer, Server},
     Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
 };
+use crate::state_sync::server::ParamsMessageDownloadLimitLayer;
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::{inflight_limit, rate_limit};
 use ika_archival::reader::ArchiveReaderBalancer;
@@ -173,6 +174,7 @@ where
                 metrics,
                 archive_readers,
                 chain_identifier,
+                param_message_download_limit_layer: None,
             },
             server,
         )
@@ -184,6 +186,7 @@ pub struct UnstartedStateSync<S> {
     pub(super) handle: Handle,
     pub(super) mailbox: mpsc::Receiver<StateSyncMessage>,
     pub(super) download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
+    pub(super) param_message_download_limit_layer: Option<ParamsMessageDownloadLimitLayer>,
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
     pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
@@ -203,6 +206,7 @@ where
             handle,
             mailbox,
             download_limit_layer,
+            param_message_download_limit_layer,
             store,
             peer_heights,
             checkpoint_event_sender,
@@ -221,6 +225,8 @@ where
                 sync_checkpoint_messages_task: None,
                 download_limit_layer,
                 params_message_event_sender,
+                sync_params_messages_task: None,
+                param_message_download_limit_layer,
                 store,
                 peer_heights,
                 checkpoint_event_sender,
@@ -229,6 +235,7 @@ where
                 archive_readers,
                 sync_checkpoint_from_archive_task: None,
                 chain_identifier,
+                sync_param_message_from_archive_task: None,
             },
             handle,
         )

@@ -84,6 +84,9 @@ mod tests;
 
 use self::{metrics::Metrics, server::CheckpointMessageDownloadLimitLayer};
 pub use crate::state_sync::server::GetChainIdentifierResponse;
+use crate::state_sync::server::{
+    GetParamsMessageAvailabilityResponse, GetParamsMessageRequest, ParamsMessageDownloadLimitLayer,
+};
 pub use builder::{Builder, UnstartedStateSync};
 pub use generated::{
     state_sync_client::StateSyncClient,
@@ -141,6 +144,12 @@ impl Handle {
             .await
             .unwrap()
     }
+
+    pub fn subscribe_to_synced_params_messages(
+        &self,
+    ) -> broadcast::Receiver<VerifiedParamsMessage> {
+        self.params_message_event_sender.subscribe()
+    }
 }
 
 struct PeerHeights {
@@ -175,6 +184,19 @@ impl PeerHeights {
     }
 
     pub fn highest_known_checkpoint_sequence_number(&self) -> Option<CheckpointSequenceNumber> {
+        self.peers
+            .values()
+            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
+            .max()?
+    }
+
+    pub fn highest_known_params_message(&self) -> Option<&CertifiedParamsMessage> {
+        self.highest_known_params_message_sequence_number()
+            .and_then(|s| self.sequence_number_to_digest_params_message.get(&s))
+            .and_then(|digest| self.unprocessed_params_message.get(digest))
+    }
+
+    pub fn highest_known_params_message_sequence_number(&self) -> Option<CheckpointSequenceNumber> {
         self.peers
             .values()
             .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
@@ -350,6 +372,7 @@ impl PeerHeights {
 struct PeerBalancer {
     peers: VecDeque<(anemo::Peer, PeerStateSyncInfo)>,
     requested_checkpoint: Option<CheckpointSequenceNumber>,
+    requested_params_message: Option<ParamsMessageSequenceNumber>,
 }
 
 impl PeerBalancer {
@@ -372,11 +395,17 @@ impl PeerBalancer {
                 .map(|(_, peer, info)| (peer, info))
                 .collect(),
             requested_checkpoint: None,
+            requested_params_message: None,
         }
     }
 
     pub fn with_checkpoint(mut self, checkpoint: CheckpointSequenceNumber) -> Self {
         self.requested_checkpoint = Some(checkpoint);
+        self
+    }
+
+    pub fn with_params_message(mut self, params_message: ParamsMessageSequenceNumber) -> Self {
+        self.requested_params_message = Some(params_message);
         self
     }
 }
@@ -410,8 +439,9 @@ enum StateSyncMessage {
     // synced at the same time, only the highest checkpoint is sent.
     SyncedCheckpoint(Box<VerifiedCheckpointMessage>),
 
-    // todo (yael);
     VerifiedParamsMessageMessage(Box<VerifiedParamsMessage>),
+
+    SyncedParamsMessage(Box<VerifiedParamsMessage>),
 }
 
 struct StateSyncEventLoop<S> {
@@ -427,8 +457,6 @@ struct StateSyncEventLoop<S> {
 
     // sync_checkpoint_messages_task: Option<AbortHandle>,
     // download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
-    params_message_event_sender: broadcast::Sender<VerifiedParamsMessage>,
-
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
     checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
@@ -438,6 +466,11 @@ struct StateSyncEventLoop<S> {
     archive_readers: ArchiveReaderBalancer,
     sync_checkpoint_from_archive_task: Option<AbortHandle>,
     chain_identifier: ChainIdentifier,
+
+    params_message_event_sender: broadcast::Sender<VerifiedParamsMessage>,
+    sync_params_messages_task: Option<AbortHandle>,
+    param_message_download_limit_layer: Option<ParamsMessageDownloadLimitLayer>,
+    sync_param_message_from_archive_task: Option<AbortHandle>,
 }
 
 impl<S> StateSyncEventLoop<S>
@@ -452,6 +485,7 @@ where
         info!("State-Synchronizer started");
 
         self.config.pinned_checkpoints.sort();
+        self.config.pinned_params_messages.sort();
 
         let mut interval = tokio::time::interval(self.config.interval_period());
         let mut peer_events = {
@@ -470,6 +504,13 @@ where
             self.metrics.clone(),
         ));
 
+        let (_sender, receiver) = oneshot::channel();
+        tokio::spawn(update_params_message_watermark_metrics(
+            receiver,
+            self.store.clone(),
+            self.metrics.clone(),
+        ));
+
         // Start archive based checkpoint content sync loop.
         // TODO: Consider switching to sync from archive only on startup.
         // Right now because the peer set is fixed at startup, a node may eventually
@@ -481,6 +522,13 @@ where
             sync_checkpoint_messages_from_archive(self.archive_readers.clone(), self.store.clone());
         let task_handle = self.tasks.spawn(task);
         self.sync_checkpoint_from_archive_task = Some(task_handle);
+
+        let task = sync_params_message_messages_from_archive(
+            self.archive_readers.clone(),
+            self.store.clone(),
+        );
+        let task_handle = self.tasks.spawn(task);
+        self.sync_param_message_from_archive_task = Some(task_handle);
 
         // Start main loop.
         loop {
@@ -522,10 +570,19 @@ where
                     if matches!(&self.sync_checkpoint_from_archive_task, Some(t) if t.is_finished()) {
                         panic!("sync_checkpoint_from_archive task unexpectedly terminated")
                     }
+
+                    if matches!(&self.sync_params_messages_task, Some(t) if t.is_finished()) {
+                        self.sync_params_messages_task = None;
+                    }
+
+                    if matches!(&self.sync_param_message_from_archive_task, Some(t) if t.is_finished()) {
+                        panic!("sync_params_message_from_archive task unexpectedly terminated")
+                    }
                 },
             }
 
             self.maybe_start_checkpoint_summary_sync_task();
+            self.maybe_start_params_message_summary_sync_task();
         }
 
         info!("State-Synchronizer ended");
@@ -534,7 +591,10 @@ where
     fn handle_message(&mut self, message: StateSyncMessage) {
         debug!("Received message: {:?}", message);
         match message {
-            StateSyncMessage::StartSyncJob => self.maybe_start_checkpoint_summary_sync_task(),
+            StateSyncMessage::StartSyncJob => {
+                self.maybe_start_checkpoint_summary_sync_task();
+                self.maybe_start_params_message_summary_sync_task();
+            }
             StateSyncMessage::VerifiedCheckpointMessage(checkpoint) => {
                 self.handle_checkpoint_from_consensus(checkpoint)
             }
@@ -544,6 +604,9 @@ where
             }
             StateSyncMessage::VerifiedParamsMessageMessage(msg) => {
                 self.handle_params_message_from_consensus(msg)
+            }
+            StateSyncMessage::SyncedParamsMessage(msg) => {
+                self.spawn_notify_peers_of_params_message(*msg)
             }
         }
     }
@@ -682,6 +745,14 @@ where
         if let Some(peer) = self.network.peer(peer_id) {
             let task = get_latest_from_peer(
                 self.chain_identifier,
+                peer.clone(),
+                self.peer_heights.clone(),
+                self.config.timeout(),
+            );
+            self.tasks.spawn(task);
+
+            let task = get_latest_from_peer_params_message(
+                self.chain_identifier,
                 peer,
                 self.peer_heights.clone(),
                 self.config.timeout(),
@@ -700,6 +771,18 @@ where
         self.tasks.spawn(task);
 
         if let Some(layer) = self.download_limit_layer.as_ref() {
+            layer.maybe_prune_map();
+        }
+
+        let task = query_peers_for_their_latest_params_message(
+            self.network.clone(),
+            self.peer_heights.clone(),
+            self.weak_sender.clone(),
+            self.config.timeout(),
+        );
+        self.tasks.spawn(task);
+
+        if let Some(layer) = self.param_message_download_limit_layer.as_ref() {
             layer.maybe_prune_map();
         }
     }
@@ -749,6 +832,54 @@ where
             });
             let task_handle = self.tasks.spawn(task);
             self.sync_checkpoint_messages_task = Some(task_handle);
+        }
+    }
+
+    fn maybe_start_params_message_summary_sync_task(&mut self) {
+        // Only run one sync task at a time
+        if self.sync_params_messages_task.is_some() {
+            return;
+        }
+
+        let highest_processed_params_message = self
+            .store
+            .get_highest_verified_params_message()
+            .expect("store operation should not fail");
+
+        let highest_known_params_message = self
+            .peer_heights
+            .read()
+            .unwrap()
+            .highest_known_params_message()
+            .cloned();
+
+        if highest_processed_params_message
+            .as_ref()
+            .map(|x| x.sequence_number())
+            < highest_known_params_message
+                .as_ref()
+                .map(|x| x.sequence_number())
+        {
+            // start sync job
+            let task = sync_to_params_message(
+                self.network.clone(),
+                self.store.clone(),
+                self.peer_heights.clone(),
+                self.metrics.clone(),
+                self.config.pinned_params_messages.clone(),
+                self.config.params_message_header_download_concurrency(),
+                self.config.timeout(),
+                // The if condition should ensure that this is Some
+                highest_known_params_message.unwrap(),
+            )
+            .map(|result| match result {
+                Ok(()) => {}
+                Err(e) => {
+                    debug!("error syncing params_message {e}");
+                }
+            });
+            let task_handle = self.tasks.spawn(task);
+            self.sync_params_messages_task = Some(task_handle);
         }
     }
 
@@ -1148,6 +1279,362 @@ where
 
                 if let Some(highest_synced_checkpoint) = highest_synced_checkpoint {
                 metrics.set_highest_synced_checkpoint(highest_synced_checkpoint.sequence_number);
+                }
+             },
+            _ = &mut recv => break,
+        }
+    }
+    Ok(())
+}
+
+async fn get_latest_from_peer_params_message(
+    our_chain_identifier: ChainIdentifier,
+    peer: anemo::Peer,
+    peer_heights: Arc<RwLock<PeerHeights>>,
+    timeout: Duration,
+) {
+    let peer_id = peer.peer_id();
+    let mut client = StateSyncClient::new(peer);
+
+    let info = {
+        let maybe_info = peer_heights.read().unwrap().peers.get(&peer_id).copied();
+
+        if let Some(info) = maybe_info {
+            info
+        } else {
+            let request = Request::new(()).with_timeout(timeout);
+            let response = client
+                .get_chain_identifier(request)
+                .await
+                .map(Response::into_inner);
+
+            let info = match response {
+                Ok(GetChainIdentifierResponse { chain_identifier }) => PeerStateSyncInfo {
+                    chain_identifier,
+                    on_same_chain_as_us: our_chain_identifier == chain_identifier,
+                    height: None,
+                },
+                Err(status) => {
+                    trace!("get_chain_identifier request failed: {status:?}");
+                    return;
+                }
+            };
+            peer_heights
+                .write()
+                .unwrap()
+                .insert_peer_info(peer_id, info);
+            info
+        }
+    };
+
+    // Bail early if this node isn't on the same chain as us
+    if !info.on_same_chain_as_us {
+        trace!(?info, "Peer {peer_id} not on same chain as us");
+        return;
+    }
+    let Some(highest_params_message) =
+        query_peer_for_latest_info_params_message(&mut client, timeout).await
+    else {
+        return;
+    };
+    peer_heights
+        .write()
+        .unwrap()
+        .update_peer_info_with_params_message(peer_id, highest_params_message);
+}
+
+/// Queries a peer for their highest_synced_params_message and low params_message watermark
+async fn query_peer_for_latest_info_params_message(
+    client: &mut StateSyncClient<anemo::Peer>,
+    timeout: Duration,
+) -> Option<CertifiedParamsMessage> {
+    let request = Request::new(()).with_timeout(timeout);
+    let response = client
+        .get_params_message_availability(request)
+        .await
+        .map(Response::into_inner);
+    match response {
+        Ok(GetParamsMessageAvailabilityResponse {
+            highest_synced_params_message,
+        }) => highest_synced_params_message,
+        Err(status) => {
+            trace!("get_params_message_availability request failed: {status:?}");
+            None
+        }
+    }
+}
+
+#[instrument(level = "debug", skip_all)]
+async fn query_peers_for_their_latest_params_message(
+    network: anemo::Network,
+    peer_heights: Arc<RwLock<PeerHeights>>,
+    sender: mpsc::WeakSender<StateSyncMessage>,
+    timeout: Duration,
+) {
+    let peer_heights = &peer_heights;
+    let futs = peer_heights
+        .read()
+        .unwrap()
+        .peers_on_same_chain()
+        // Filter out any peers who we aren't connected with
+        .flat_map(|(peer_id, _info)| network.peer(*peer_id))
+        .map(|peer| {
+            let peer_id = peer.peer_id();
+            let mut client = StateSyncClient::new(peer);
+
+            async move {
+                let response =
+                    query_peer_for_latest_info_params_message(&mut client, timeout).await;
+                match response {
+                    Some(highest_params_message) => peer_heights
+                        .write()
+                        .unwrap()
+                        .update_peer_info_with_params_message(
+                            peer_id,
+                            highest_params_message.clone(),
+                        )
+                        .then_some(highest_params_message),
+                    None => None,
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    debug!("Query {} peers for latest params_message", futs.len());
+
+    let params_messages = futures::future::join_all(futs).await.into_iter().flatten();
+
+    let highest_params_message =
+        params_messages.max_by_key(|params_message| *params_message.sequence_number());
+
+    let our_highest_params_message = peer_heights
+        .read()
+        .unwrap()
+        .highest_known_params_message()
+        .cloned();
+
+    debug!(
+        "Our highest params_message {:?}, peers highest params_message {:?}",
+        our_highest_params_message
+            .as_ref()
+            .map(|c| c.sequence_number()),
+        highest_params_message.as_ref().map(|c| c.sequence_number())
+    );
+
+    let _new_params_message = match (highest_params_message, our_highest_params_message) {
+        (Some(theirs), None) => theirs,
+        (Some(theirs), Some(ours)) if theirs.sequence_number() > ours.sequence_number() => theirs,
+        _ => return,
+    };
+
+    if let Some(sender) = sender.upgrade() {
+        let _ = sender.send(StateSyncMessage::StartSyncJob).await;
+    }
+}
+
+async fn sync_to_params_message<S>(
+    network: anemo::Network,
+    store: S,
+    peer_heights: Arc<RwLock<PeerHeights>>,
+    metrics: Metrics,
+    pinned_params_messages: Vec<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
+    params_message_header_download_concurrency: usize,
+    timeout: Duration,
+    params_message: CertifiedParamsMessage,
+) -> Result<()>
+where
+    S: WriteStore,
+{
+    metrics.set_highest_known_params_message(*params_message.sequence_number());
+
+    let mut current = store
+        .get_highest_verified_params_message()
+        .expect("store operation should not fail");
+    let current_sequence_number = current.as_ref().map(|c| c.sequence_number);
+    if current_sequence_number.as_ref() >= Some(params_message.sequence_number()) {
+        return Err(anyhow::anyhow!(
+            "target params_message {} is older than highest verified params_message {:?}",
+            params_message.sequence_number(),
+            current_sequence_number,
+        ));
+    }
+
+    let peer_balancer = PeerBalancer::new(&network, peer_heights.clone());
+    // range of the next sequence_numbers to fetch
+    let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(0)
+        ..=*params_message.sequence_number())
+        .map(|next| {
+            let peers = peer_balancer.clone().with_params_message(next);
+            let peer_heights = peer_heights.clone();
+            let pinned_params_messages = &pinned_params_messages;
+            async move {
+                if let Some(params_message) = peer_heights
+                    .read()
+                    .unwrap()
+                    .get_params_message_by_sequence_number(next)
+                {
+                    return (Some(params_message.to_owned()), next, None);
+                }
+
+                // Iterate through peers trying each one in turn until we're able to
+                // successfully get the target params_message
+                for mut peer in peers {
+                    let request = Request::new(GetParamsMessageRequest::BySequenceNumber(next))
+                        .with_timeout(timeout);
+                    if let Some(params_message) = peer
+                        .get_params_message(request)
+                        .await
+                        .tap_err(|e| trace!("{e:?}"))
+                        .ok()
+                        .and_then(Response::into_inner)
+                        .tap_none(|| trace!("peer unable to help sync"))
+                    {
+                        // peer didn't give us a params_message with the height that we requested
+                        if *params_message.sequence_number() != next {
+                            tracing::debug!(
+                                "peer returned params_message with wrong sequence number: expected {next}, got {}",
+                                params_message.sequence_number()
+                            );
+                            continue;
+                        }
+
+                        // peer gave us a params_message whose digest does not match pinned digest
+                        let params_message_digest = params_message.digest();
+                        if let Ok(pinned_digest_index) = pinned_params_messages.binary_search_by_key(
+                            params_message.sequence_number(),
+                            |(seq_num, _digest)| *seq_num
+                        ) {
+                            if pinned_params_messages[pinned_digest_index].1 != *params_message_digest {
+                                tracing::debug!(
+                                    "peer returned params_message with digest that does not match pinned digest: expected {:?}, got {:?}",
+                                    pinned_params_messages[pinned_digest_index].1,
+                                    params_message_digest
+                                );
+                                continue;
+                            }
+                        }
+
+                        // Insert in our store in the event that things fail and we need to retry
+                        peer_heights
+                            .write()
+                            .unwrap()
+                            .insert_params_message(params_message.clone());
+                        return (Some(params_message), next, Some(peer.inner().peer_id()));
+                    }
+                }
+                (None, next, None)
+            }
+        })
+        .pipe(futures::stream::iter)
+        .buffered(params_message_header_download_concurrency);
+
+    while let Some((maybe_params_message, next, maybe_peer_id)) = request_stream.next().await {
+        assert_eq!(
+            current
+                .map(|s| s
+                    .sequence_number()
+                    .clone()
+                    .checked_add(1)
+                    .expect("exhausted u64"))
+                .unwrap_or(0),
+            next
+        );
+
+        // We can't verify the params_message
+        let params_message = maybe_params_message
+            .map(VerifiedParamsMessage::new_unchecked)
+            .ok_or_else(|| {
+                anyhow::anyhow!("no peers were able to help sync params_message {next}")
+            })?;
+
+        debug!(params_message_seq = ?params_message.sequence_number(), "verified params_message summary");
+        if let Some(params_message_summary_age_metric) =
+            metrics.params_message_summary_age_metrics()
+        {
+            params_message.report_params_message_age(params_message_summary_age_metric);
+        }
+
+        current = Some(params_message.clone());
+        // Insert the newly verified params_message into our store, which will bump our highest
+        // verified params_message watermark as well.
+        store
+            .insert_params_message(&params_message)
+            .expect("store operation should not fail");
+    }
+
+    peer_heights
+        .write()
+        .unwrap()
+        .cleanup_old_params_messages(*params_message.sequence_number());
+
+    Ok(())
+}
+
+async fn sync_params_message_messages_from_archive<S>(
+    archive_readers: ArchiveReaderBalancer,
+    store: S,
+) where
+    S: WriteStore + Clone + Send + Sync + 'static,
+{
+    loop {
+        let highest_synced = store
+            .get_highest_synced_params_message()
+            .expect("store operation should not fail")
+            .map(|params_message| params_message.sequence_number)
+            .unwrap_or(0);
+        debug!("Syncing params_message messages from archive, highest_synced: {highest_synced}");
+        let start = highest_synced
+            .checked_add(1)
+            .expect("ParamsMessage seq num overflow");
+        let params_message_range = start..u64::MAX;
+        if let Some(archive_reader) = archive_readers
+            .pick_one_random(params_message_range.clone())
+            .await
+        {
+            let action_counter = Arc::new(AtomicU64::new(0));
+            let params_message_counter = Arc::new(AtomicU64::new(0));
+            if let Err(err) = archive_reader
+                .read(
+                    store.clone(),
+                    params_message_range,
+                    action_counter.clone(),
+                    params_message_counter.clone(),
+                )
+                .await
+            {
+                warn!("State sync from archive failed with error: {:?}", err);
+            } else {
+                info!("State sync from archive is complete. ParamsMessages downloaded = {:?}, Txns downloaded = {:?}", params_message_counter.load(Ordering::Relaxed), action_counter.load(Ordering::Relaxed));
+            }
+        } else {
+            debug!("Failed to find an archive reader to complete the state sync request");
+        }
+        tokio::time::sleep(Duration::from_secs(5)).await;
+    }
+}
+
+async fn update_params_message_watermark_metrics<S>(
+    mut recv: oneshot::Receiver<()>,
+    store: S,
+    metrics: Metrics,
+) -> Result<()>
+where
+    S: WriteStore + Clone + Send + Sync,
+{
+    let mut interval = tokio::time::interval(Duration::from_secs(5));
+    loop {
+        tokio::select! {
+             _now = interval.tick() => {
+                let highest_verified_params_message = store.get_highest_verified_params_message()
+                    .expect("store operation should not fail");
+                if let Some(highest_verified_params_message) = highest_verified_params_message {
+                    metrics.set_highest_verified_params_message(highest_verified_params_message.sequence_number);
+                }
+                let highest_synced_params_message = store.get_highest_synced_params_message()
+                    .expect("store operation should not fail");
+
+                if let Some(highest_synced_params_message) = highest_synced_params_message {
+                metrics.set_highest_synced_params_message(highest_synced_params_message.sequence_number);
                 }
              },
             _ = &mut recv => break,

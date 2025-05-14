@@ -3,7 +3,9 @@
 
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
+use ika_types::digests::ParamsMessageDigest;
 use ika_types::messages_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
+use ika_types::messages_params_messages::ParamsMessageSequenceNumber;
 use serde::{Deserialize, Serialize};
 use sui_types::multiaddr::Multiaddr;
 
@@ -115,9 +117,6 @@ pub struct StateSyncConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_checkpoint_broadcast_channel_capacity: Option<usize>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub synced_params_message_broadcast_channel_capacity: Option<usize>,
-
     /// Set the upper bound on the number of checkpoint headers to be downloaded concurrently.
     ///
     /// If unspecified, this will default to `400`.
@@ -179,6 +178,36 @@ pub struct StateSyncConfig {
     /// If unspecified, this will set to default value
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wait_interval_when_no_peer_to_sync_content_ms: Option<u64>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub pinned_params_messages: Vec<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synced_params_message_broadcast_channel_capacity: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params_message_header_download_concurrency: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params_message_content_download_concurrency: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params_message_content_download_tx_concurrency: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params_message_content_timeout_ms: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub push_params_message_message_rate_limit: Option<NonZeroU32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_params_message_message_rate_limit: Option<NonZeroU32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_params_message_message_inflight_limit: Option<usize>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_params_message_message_per_params_message_limit: Option<usize>,
 }
 
 impl StateSyncConfig {
@@ -213,6 +242,13 @@ impl StateSyncConfig {
 
         self.checkpoint_header_download_concurrency
             .unwrap_or(CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
+    }
+
+    pub fn params_message_header_download_concurrency(&self) -> usize {
+        const PARAMS_MESSAGE_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
+
+        self.params_message_header_download_concurrency
+            .unwrap_or(PARAMS_MESSAGE_HEADER_DOWNLOAD_CONCURRENCY)
     }
 
     pub fn checkpoint_content_download_concurrency(&self) -> usize {

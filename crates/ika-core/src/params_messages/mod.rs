@@ -700,6 +700,14 @@ impl ParamsMessageBuilder {
             all_messages.len(),
         );
 
+        if (all_messages.len() != 0) {
+            info!(
+                "ParamsMessageBuilder::create_params_messages: {} messages to be included in params_message",
+                all_messages.len()
+            );
+
+            println!("{:?}", all_messages);
+        }
         let chunks = self.split_params_message_chunks(all_messages)?;
         let chunks_count = chunks.len();
 

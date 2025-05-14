@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{PeerHeights, StateSync, StateSyncMessage};
-use crate::state_sync::StateSyncMessage::VerifiedParamsMessageMessage;
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
@@ -294,6 +293,108 @@ where
                 let semaphore_entry = inflight_per_checkpoint
                     .entry(*req.body())
                     .or_insert_with(|| Arc::new(Semaphore::new(max_inflight_per_checkpoint)));
+                semaphore_entry.value().clone()
+            };
+            let permit = semaphore.try_acquire_owned().map_err(|e| match e {
+                tokio::sync::TryAcquireError::Closed => {
+                    anemo::rpc::Status::new(StatusCode::InternalServerError)
+                }
+                tokio::sync::TryAcquireError::NoPermits => {
+                    anemo::rpc::Status::new(StatusCode::TooManyRequests)
+                }
+            })?;
+
+            struct SemaphoreExtension(#[allow(unused)] OwnedSemaphorePermit);
+            inner.call(req).await.map(move |mut response| {
+                // Insert permit as extension so it's not dropped until the response is sent.
+                response
+                    .extensions_mut()
+                    .insert(Arc::new(SemaphoreExtension(permit)));
+                response
+            })
+        };
+        Box::pin(fut)
+    }
+}
+
+#[derive(Clone)]
+pub(super) struct ParamsMessageDownloadLimitLayer {
+    inflight_per_params_message: Arc<DashMap<GetParamsMessageRequest, Arc<Semaphore>>>,
+    max_inflight_per_params_message: usize,
+}
+
+impl ParamsMessageDownloadLimitLayer {
+    pub(super) fn new(max_inflight_per_params_message: usize) -> Self {
+        Self {
+            inflight_per_params_message: Arc::new(DashMap::new()),
+            max_inflight_per_params_message,
+        }
+    }
+
+    pub(super) fn maybe_prune_map(&self) {
+        const PRUNE_THRESHOLD: usize = 5000;
+        if self.inflight_per_params_message.len() >= PRUNE_THRESHOLD {
+            self.inflight_per_params_message.retain(|_, semaphore| {
+                semaphore.available_permits() < self.max_inflight_per_params_message
+            });
+        }
+    }
+}
+
+impl<S> tower::layer::Layer<S> for ParamsMessageDownloadLimitLayer {
+    type Service = ParamsMessageDownloadLimit<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        ParamsMessageDownloadLimit {
+            inner,
+            inflight_per_params_message: self.inflight_per_params_message.clone(),
+            max_inflight_per_params_message: self.max_inflight_per_params_message,
+        }
+    }
+}
+
+/// Middleware for adding a per-params_message limit to the number of inflight GetParamsMessageContent
+/// requests.
+#[derive(Clone)]
+pub(super) struct ParamsMessageDownloadLimit<S> {
+    inner: S,
+    inflight_per_params_message: Arc<DashMap<GetParamsMessageRequest, Arc<Semaphore>>>,
+    max_inflight_per_params_message: usize,
+}
+
+impl<S> tower::Service<Request<GetParamsMessageRequest>>
+    for crate::state_sync::server::ParamsMessageDownloadLimit<S>
+where
+    S: tower::Service<
+            Request<GetParamsMessageRequest>,
+            Response = Response<Option<CertifiedParamsMessage>>,
+            Error = Status,
+        >
+        + 'static
+        + Clone
+        + Send,
+    <S as tower::Service<Request<GetParamsMessageRequest>>>::Future: Send,
+    Request<GetParamsMessageRequest>: 'static + Send + Sync,
+{
+    type Response = Response<Option<CertifiedParamsMessage>>;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request<GetParamsMessageRequest>) -> Self::Future {
+        let inflight_per_params_message = self.inflight_per_params_message.clone();
+        let max_inflight_per_params_message = self.max_inflight_per_params_message;
+        let mut inner = self.inner.clone();
+
+        let fut = async move {
+            let semaphore = {
+                let semaphore_entry = inflight_per_params_message
+                    .entry(*req.body())
+                    .or_insert_with(|| Arc::new(Semaphore::new(max_inflight_per_params_message)));
                 semaphore_entry.value().clone()
             };
             let permit = semaphore.try_acquire_owned().map_err(|e| match e {

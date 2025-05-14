@@ -373,7 +373,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
 
-        let executable_transactions = self
+        let (executable_transactions, params_message_executable_transactions) = self
             .epoch_store
             .process_consensus_transactions_and_commit_boundary(
                 all_transactions,
@@ -387,8 +387,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .expect("Unrecoverable error in consensus handler");
 
         // update the calculated throughput
-        self.throughput_calculator
-            .add_transactions(timestamp, executable_transactions.len() as u64);
+        self.throughput_calculator.add_transactions(
+            timestamp,
+            (executable_transactions.len() + params_message_executable_transactions.len()) as u64,
+        );
 
         fail_point_if!("correlated-crash-after-consensus-commit-boundary", || {
             let key = [commit_sub_dag_index, self.epoch_store.epoch()];
