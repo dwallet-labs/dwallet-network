@@ -295,7 +295,8 @@ impl DWalletMPCSession {
         tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
     ) -> DwalletMPCResult<()> {
-        // Makes sure all the validators report on the malicious actors in the same order without duplicates.
+        // Makes sure all the validators report on the malicious
+        // actors in the same order without duplicates.
         let malicious_parties_ids = malicious_parties_ids.deduplicate_and_sort();
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
