@@ -10,7 +10,11 @@ import {
 	SUI_PACKAGE_ID,
 } from './globals';
 
-export async function presign(conf: Config, dwallet_id: string, secret_share: Uint8Array) {
+export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
+	conf: Config,
+	dwallet_id: string,
+	secret_share: Uint8Array,
+) {
 	const tx = new Transaction();
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -48,5 +52,4 @@ export async function presign(conf: Config, dwallet_id: string, secret_share: Ui
 			showEvents: true,
 		},
 	});
-
 }
