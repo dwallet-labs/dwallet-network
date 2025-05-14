@@ -294,6 +294,7 @@ impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent {
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
+    pub encrypted_user_secret_key_share_id: ObjectID,
     pub dwallet_id: ObjectID,
     /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
