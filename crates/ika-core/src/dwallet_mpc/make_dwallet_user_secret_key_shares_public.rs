@@ -1,8 +1,10 @@
 use anyhow::anyhow;
+use class_groups::Secp256k1EncryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use group::{CyclicGroupElement, GroupElement};
+use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, PlaintextSpaceGroupElement};
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
@@ -37,6 +39,12 @@ pub fn verify_secret_share(
 fn cg_secp256k1_public_key_share_from_secret_share(
     secret_key_share: Vec<u8>,
 ) -> anyhow::Result<group::secp256k1::GroupElement> {
+    let plaintext: <Secp256k1EncryptionKey as AdditivelyHomomorphicEncryptionKey<
+        SCALAR_LIMBS,
+    >>::PlaintextSpaceGroupElement = bcs::from_bytes(&secret_key_share)?;
+    let secret_key_share = crypto_bigint::U256::from(&plaintext.value())
+        .to_be_bytes()
+        .to_vec();
     let public_parameters = group::secp256k1::group_element::PublicParameters::default();
     let generator_group_element =
         group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
