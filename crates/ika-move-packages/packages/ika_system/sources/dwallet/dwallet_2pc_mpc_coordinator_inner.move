@@ -76,12 +76,9 @@ public struct DWalletCoordinatorInner has store {
     last_processed_checkpoint_sequence_number: Option<u64>,
     /// The last checkpoint sequence number processed in the previous epoch.
     previous_epoch_last_checkpoint_sequence_number: u64,
-    /// A map of supported curves to their corresponding signature algorithms.
-    /// e.g. secp256k1 -> [ecdsa]
-    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
-    /// A map of supported signature algorithms to their corresponding hash schemes.
-    /// e.g. ecdsa -> [sha256, keccak256]
-    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+    /// A nested map of supported curves to signature algorithms to hash schemes.
+    /// e.g. secp256k1 -> (ecdsa -> [sha256, keccak256])
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
     /// A list of paused curves in case of emergency.
     /// e.g. [secp256k1]
     paused_curves: vector<u8>,
@@ -163,7 +160,7 @@ public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
 /// Encryption keys facilitate secure data transfer between accounts on the
 /// Ika by ensuring that sensitive information remains confidential during transmission.
 /// Each address on the Ika is associated with a unique encryption key.
-/// When an external party intends to send encrypted data to a particular account, they use the recipient’s
+/// When an external party intends to send encrypted data to a particular account, they use the recipient's
 /// encryption key to encrypt the data. The recipient is then the sole entity capable of decrypting
 /// and accessing this information, ensuring secure, end-to-end encryption.
 public struct EncryptionKey has key, store {
@@ -944,8 +941,7 @@ public(package) fun create_dwallet_coordinator_inner(
         completed_system_sessions_count: 0,
         started_system_sessions_count: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
-        supported_curves_to_signature_algorithms: vec_map::empty(),
-        supported_signature_algorithms_to_hash_schemes: vec_map::empty(),
+        supported_curves_to_signature_algorithms_to_hash_schemes: vec_map::empty(),
         paused_curves: vector[],
         paused_signature_algorithms: vector[],
         paused_hash_schemes: vector[],
@@ -1221,6 +1217,37 @@ public(package) fun get_active_encryption_key(
     self.encryption_keys.borrow(address).id.to_inner()
 }
 
+fun validate_supported_curve(
+    self: &DWalletCoordinatorInner,
+    curve: u8,
+) {
+    assert!(self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), EInvalidCurve);
+    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
+}
+
+fun validate_supported_curve_and_signature_algorithm(
+    self: &DWalletCoordinatorInner,
+    curve: u8,
+    signature_algorithm: u8,
+) {
+    self.validate_supported_curve(curve);
+    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
+    assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
+    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
+}
+
+fun validate_supported_curve_and_signature_algorithm_and_hash_scheme(
+    self: &DWalletCoordinatorInner,
+    curve: u8,
+    signature_algorithm: u8,
+    hash_scheme: u8,
+) {
+    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
+    let supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
+    assert!(supported_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
+    assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
+}
+
 /// Registers an encryption key to be used later for encrypting a
 /// centralized secret key share.
 ///
@@ -1238,8 +1265,7 @@ public(package) fun register_encryption_key(
     signer_public_key: vector<u8>,
     ctx: &mut TxContext
 ) {
-    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
-    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
+    self.validate_supported_curve(curve);
     assert!(
         ed25519_verify(&encryption_key_signature, &signer_public_key, &encryption_key),
         EInvalidEncryptionKeySignature
@@ -1337,15 +1363,7 @@ fun validate_approve_message(
     hash_scheme: u8,
 ): bool {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
-    assert!(self.supported_curves_to_signature_algorithms.contains(&dwallet.curve), EInvalidCurve);
-    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms[&dwallet.curve];
-    assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-    assert!(self.supported_signature_algorithms_to_hash_schemes.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-    let supported_signature_algorithm_to_hash_schemes = self.supported_signature_algorithms_to_hash_schemes[&signature_algorithm];
-    assert!(supported_signature_algorithm_to_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
-    assert!(!self.paused_curves.contains(&dwallet.curve), ECurvePaused);
-    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
-    assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
+    self.validate_supported_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
     dwallet.is_imported_key_dwallet
 }
 
@@ -1370,8 +1388,7 @@ public(package) fun request_dwallet_dkg_first_round(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
-    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
-    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
+    self.validate_supported_curve(curve);
     
     let pricing = self.pricing.dkg_first_round();
 
@@ -1833,8 +1850,7 @@ public(package) fun new_imported_key_dwallet(
     curve: u8,
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
-    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
-    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
+    self.validate_supported_curve(curve);
     
     assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
     let id = object::new(ctx);
@@ -2068,13 +2084,7 @@ public(package) fun request_presign(
 
     let curve = dwallet.curve;
 
-    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
-    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms[&curve];
-    assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-    assert!(self.supported_signature_algorithms_to_hash_schemes.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-
-    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
-    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
+    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
 
@@ -2131,14 +2141,7 @@ public(package) fun request_global_presign(
 
     assert!(self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
-    assert!(self.supported_curves_to_signature_algorithms.contains(&curve), EInvalidCurve);
-    let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms[&curve];
-    assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-    assert!(self.supported_signature_algorithms_to_hash_schemes.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
-
-    assert!(!self.paused_curves.contains(&curve), ECurvePaused);
-    assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
-
+    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
 
     let id = object::new(ctx);
     let presign_id = id.to_inner();
@@ -2279,6 +2282,7 @@ fun validate_and_initiate_sign(
 
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
+
     let PresignCap {
         id,
         dwallet_id: presign_cap_dwallet_id,
@@ -2308,6 +2312,7 @@ fun validate_and_initiate_sign(
     assert!(presign_cap_id == cap_id, EPresignNotExist);
     assert!(presign_id == presign_cap_presign_id, EPresignNotExist);
     assert!(presign_cap_dwallet_id == presign_dwallet_id, EPresignNotExist);
+    assert!(dwallet.curve == curve, EDWalletMismatch);
 
     let id = object::new(ctx);
     let sign_id = id.to_inner();
@@ -2342,9 +2347,12 @@ fun validate_and_initiate_sign(
         session_id,
         state: SignState::Requested,
     });
+    let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
+    self.validate_supported_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+
 
     event::emit(emit_event);
-    dwallet.is_imported_key_dwallet
+    is_imported_key_dwallet
 }
 
 
@@ -2959,13 +2967,11 @@ fun process_checkpoint_message(
     self.total_messages_processed = self.total_messages_processed + i;
 }
 
-public(package) fun set_supported_curves_and_signature_algorithms_and_hash_schemes(
+public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
     self: &mut DWalletCoordinatorInner,
-    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
-    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
 ) {
-    self.supported_curves_to_signature_algorithms = supported_curves_to_signature_algorithms;
-    self.supported_signature_algorithms_to_hash_schemes = supported_signature_algorithms_to_hash_schemes;
+    self.supported_curves_to_signature_algorithms_to_hash_schemes = supported_curves_to_signature_algorithms_to_hash_schemes;
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(

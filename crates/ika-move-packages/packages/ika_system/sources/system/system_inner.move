@@ -627,15 +627,14 @@ public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
     self.dwallet_2pc_mpc_coordinator_network_decryption_keys.push_back(key_cap);
 }
 
-public(package) fun set_supported_curves_and_signature_algorithms_and_hash_schemes(
+public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
     self: &SystemInnerV1,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
-    supported_curves_to_signature_algorithms: VecMap<u8, vector<u8>>,
-    supported_signature_algorithms_to_hash_schemes: VecMap<u8, vector<u8>>,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u8, VecMap<u8, vector<u8>>>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_coordinator_inner.set_supported_curves_and_signature_algorithms_and_hash_schemes(supported_curves_to_signature_algorithms, supported_signature_algorithms_to_hash_schemes);
+    dwallet_2pc_mpc_coordinator_inner.set_supported_curves_to_signature_algorithms_to_hash_schemes(supported_curves_to_signature_algorithms_to_hash_schemes);
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(
