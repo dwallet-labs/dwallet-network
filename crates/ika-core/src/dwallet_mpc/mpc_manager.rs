@@ -129,11 +129,12 @@ pub enum DWalletMPCDBMessage {
     /// This message is being sent every five seconds by the dWallet MPC Service,
     /// to skip redundant advancements that have already been completed by other validators.
     PerformCryptographicComputations,
-    /// A message indicating that a session failed due to malicious parties.
-    /// We can receive new messages for this session with other validators
-    /// and re-run the round again to make it succeed.
+
+    /// A message that continas a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     MaliciousReport(AuthorityName, MaliciousReport),
+    /// A meesage indicating that some of the parteis were malicous,
+    /// but we can still retry once we recieve more messages.
     ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
@@ -283,16 +284,16 @@ impl DWalletMPCManager {
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
                 if let Err(err) = self.handle_malicious_report(authority_name, report) {
                     error!(
-                        "dWallet MPC session failed with malicious parties with error: {:?}",
-                        err
+                        ?err,
+                        "dWallet MPC session failed with malicious parties with error",
                     );
                 }
             }
             DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
                 if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
                     error!(
-                        "dWallet MPC session failed with threshold not reached with error: {:?}",
-                        err
+                        ?err,
+                        "dWallet MPC session failed — threshold not reached with error",
                     );
                 }
             }
@@ -309,6 +310,7 @@ impl DWalletMPCManager {
             .threshold_not_reached_reports
             .entry(report.clone())
             .or_insert(StakeAggregator::new(committee));
+        // We already have a quorum for this report.
         if current_voters_for_report.has_quorum() {
             // do nothing, quorum has already been reached
             return Ok(());
@@ -317,12 +319,12 @@ impl DWalletMPCManager {
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
-            self.wait_for_more_messages_and_retry(report.session_id);
+            self.prepare_for_round_retry(report.session_id);
         }
         Ok(())
     }
 
-    fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
+    fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
             session.received_more_messages_since_last_retry = false;
@@ -544,6 +546,7 @@ impl DWalletMPCManager {
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
                 if quorum_check_result.is_ready {
+                    session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.

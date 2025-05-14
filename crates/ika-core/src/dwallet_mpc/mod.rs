@@ -396,6 +396,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
+    // When a `ThresholdNotReached` error is received, the system now waits for additional messages
+    // (including those from previous rounds) and retries.
     let res = match P::advance_with_guaranteed_output(
         session_id,
         party_id,
@@ -451,6 +453,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
+    /// round -> {party -> message}
     messages: HashMap<usize, HashMap<PartyID, M>>,
     malicious_parties: Vec<PartyID>,
 }
@@ -462,7 +465,6 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = HashMap::new();
-    // TODO (#1015): Use a HashSet when reporting malicious actors.
     let mut malicious_parties = Vec::new();
 
     for (index, message_batch) in messages.iter() {

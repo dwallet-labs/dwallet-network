@@ -89,7 +89,9 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
-    pub(crate) received_more_messages_since_last_retry: bool,
+    pub(crate) received_more_messages_since_last_advance: bool,
+    // The *total* number of attempts to advance that failed in the session.
+    // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
 }
 
@@ -115,7 +117,7 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
-            received_more_messages_since_last_retry: false,
+            received_more_messages_since_last_advance: false,
             attempts_count: 0,
         }
     }
@@ -308,6 +310,31 @@ impl DWalletMPCSession {
                 .await
             {
                 error!("failed to submit an MPC message to consensus: {:?}", err);
+            }
+        });
+        Ok(())
+    }
+
+    /// Report that the session failed because the threshold was not reached.
+    /// This is submitted to the consensus,
+    /// in order to make sure that all the Validators agree that this session needs more messages.
+    fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        let report = ThresholdNotReachedReport {
+            session_id: self.session_id,
+            attempt: self.attempts_count,
+        };
+        let report_tx = self.new_dwallet_report_threshold_not_reached(report)?;
+        let epoch_store = self.epoch_store()?.clone();
+        let consensus_adapter = self.consensus_adapter.clone();
+        tokio_runtime_handle.spawn(async move {
+            if let Err(err) = consensus_adapter
+                .submit_to_consensus(&vec![report_tx], &epoch_store)
+                .await
+            {
+                error!(
+                    ?err,
+                    "failed to submit `threshold not reached` report to consensus"
+                );
             }
         });
         Ok(())
@@ -612,7 +639,7 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
-                        && self.received_more_messages_since_last_retry)
+                        && self.received_more_messages_since_last_advance)
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
