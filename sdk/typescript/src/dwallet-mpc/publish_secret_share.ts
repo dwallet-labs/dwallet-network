@@ -68,9 +68,7 @@ function isDWalletWithPublicUserSecretKeyShares(
 ): obj is DWalletWithPublicUserSecretKeyShares {
 	return (
 		obj &&
-		obj.public_user_secret_key_shares !== null &&
-		'vec' in obj.public_user_secret_key_shares &&
-		Array.isArray(obj.public_user_secret_key_shares.vec) &&
+		Array.isArray(obj.public_user_secret_key_shares) &&
 		obj.public_user_secret_key_shares.vec.length > 0
 	);
 }
