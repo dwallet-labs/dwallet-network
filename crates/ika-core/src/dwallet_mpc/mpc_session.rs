@@ -348,9 +348,9 @@ impl DWalletMPCSession {
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
-        let public_input_from_event = &mpc_event_data.public_input;
+        let encoded_public_input = &mpc_event_data.public_input;
         let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
-        let mpc_protocol = mpc_event_data.init_protocol_data.to_string();
+        let mpc_protocol_name = mpc_event_data.init_protocol_data.to_string();
 
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DKGFirst(..) => {
@@ -361,7 +361,7 @@ impl DWalletMPCSession {
                     crypto_round=?self.pending_quorum_for_highest_round_number,
                     "Advancing DKG first party",
                 );
-                let public_input = bcs::from_bytes(public_input_from_event)?;
+                let public_input = bcs::from_bytes(encoded_public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
@@ -370,15 +370,15 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     None,
-                    public_input_from_event,
-                    mpc_protocol,
+                    encoded_public_input,
+                    mpc_protocol_name,
                     party_to_authority_map,
                     None,
                 )
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
-                    bcs::from_bytes(public_input_from_event)?;
+                    bcs::from_bytes(encoded_public_input)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
@@ -387,8 +387,8 @@ impl DWalletMPCSession {
                     public_input.clone(),
                     (),
                     None,
-                    public_input_from_event,
-                    mpc_protocol,
+                    encoded_public_input,
+                    mpc_protocol_name,
                     party_to_authority_map,
                     None,
                 )?;
@@ -418,7 +418,7 @@ impl DWalletMPCSession {
                 Ok(result)
             }
             MPCProtocolInitData::Presign(..) => {
-                let public_input = bcs::from_bytes(public_input_from_event)?;
+                let public_input = bcs::from_bytes(encoded_public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
@@ -427,14 +427,14 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     None,
-                    public_input_from_event,
-                    mpc_protocol,
+                    encoded_public_input,
+                    mpc_protocol_name,
                     party_to_authority_map,
                     None,
                 )
             }
             MPCProtocolInitData::Sign(..) => {
-                let public_input = bcs::from_bytes(public_input_from_event)?;
+                let public_input = bcs::from_bytes(encoded_public_input)?;
 
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
@@ -450,8 +450,8 @@ impl DWalletMPCSession {
                     public_input,
                     mpc_event_data.decryption_shares.clone(),
                     None,
-                    public_input_from_event,
-                    mpc_protocol,
+                    encoded_public_input,
+                    mpc_protocol_name,
                     party_to_authority_map,
                     Some(&decryption_key_shares),
                 )
@@ -460,7 +460,7 @@ impl DWalletMPCSession {
                 session_id,
                 &self.weighted_threshold_access_structure,
                 self.party_id,
-                public_input_from_event,
+                encoded_public_input,
                 key_scheme,
                 self.serialized_full_messages.clone(),
                 bcs::from_bytes(
@@ -469,8 +469,8 @@ impl DWalletMPCSession {
                         .clone()
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
-                public_input_from_event,
-                mpc_protocol,
+                encoded_public_input,
+                mpc_protocol_name,
                 party_to_authority_map,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
@@ -500,7 +500,7 @@ impl DWalletMPCSession {
                     &event_data.event_data.dkg_output,
                     &event_data.event_data.presign,
                     &event_data.event_data.message_centralized_signature,
-                    &bcs::from_bytes(public_input_from_event)?,
+                    &bcs::from_bytes(encoded_public_input)?,
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -510,7 +510,7 @@ impl DWalletMPCSession {
                 })
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                let public_input = bcs::from_bytes(public_input_from_event)?;
+                let public_input = bcs::from_bytes(encoded_public_input)?;
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
                     .iter()
@@ -532,8 +532,8 @@ impl DWalletMPCSession {
                         decryption_key_shares.clone(),
                     ),
                     mpc_event_data.private_input.clone(),
-                    public_input_from_event,
-                    mpc_protocol,
+                    encoded_public_input,
+                    mpc_protocol_name,
                     party_to_authority_map,
                     Some(&decryption_key_shares),
                 )

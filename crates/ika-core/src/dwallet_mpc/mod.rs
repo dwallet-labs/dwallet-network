@@ -398,9 +398,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     serialized_messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-    // todo(zeev): rename
-    // This is actually the ClassGroupsKeyPairAndProof, not needed on all cases.
-    encoded_private_input: MPCPrivateInput,
+    // The ClassGroupsKeyPairAndProof, not needed for all protocols.
+    encoded_class_groups_key_pair_and_proof: MPCPrivateInput,
     encoded_public_input: &MPCPublicInput,
     mpc_protocol_name: String,
     party_to_authority_map: HashMap<PartyID, AuthorityName>,
@@ -423,7 +422,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             encoded_public_input,
             mpc_protocol_name,
             &party_to_authority_map,
-            encoded_private_input,
+            encoded_class_groups_key_pair_and_proof,
             decryption_key_shares,
             &malicious_parties,
         );
@@ -756,7 +755,7 @@ fn write_mpc_session_logs_to_disk(
     encoded_public_input: &MPCPublicInput,
     mpc_protocol_name: String,
     party_to_authority_map: &HashMap<PartyID, AuthorityName>,
-    encoded_private_input: MPCPrivateInput,
+    encoded_class_groups_key_pair_and_proof: MPCPrivateInput,
     decryption_key_shares: Option<&HashMap<PartyID, SecretKeyShareSizedInteger>>,
     malicious_parties: &[PartyID],
 ) {
@@ -786,7 +785,7 @@ fn write_mpc_session_logs_to_disk(
         "public_input": encoded_public_input,
         "mpc_protocol": mpc_protocol_name,
         "party_to_authority_map": party_to_authority_map,
-        "class_groups_key_pair_and_proof": encoded_private_input,
+        "class_groups_key_pair_and_proof": encoded_class_groups_key_pair_and_proof,
         "decryption_key_shares": decryption_key_shares,
         "malicious_parties": malicious_parties,
     });

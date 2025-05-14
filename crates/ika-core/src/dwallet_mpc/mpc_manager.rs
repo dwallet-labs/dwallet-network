@@ -236,6 +236,7 @@ impl DWalletMPCManager {
             .await
         {
             if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
+                // This is not an error, we are waiting for the network key to be updated.
                 info!(
                     ?err,
                     session_info=?event.session_info,
@@ -245,7 +246,6 @@ impl DWalletMPCManager {
                 );
                 self.events_pending_for_network_key
                     .push((event.event, event.session_info));
-                // todo(zeev): move this to main also.
                 return;
             }
             error!(?err, "failed to handle event with error");
