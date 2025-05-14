@@ -396,7 +396,9 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
-    let res = match P::advance(
+    // When a `ThresholdNotReached` error is received, the system now waits for additional messages
+    // (including those from previous rounds) and retries.
+    let res = match P::advance_with_guaranteed_output(
         session_id,
         party_id,
         access_threshold,
@@ -415,17 +417,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
-                mpc::Error::ThresholdNotReached { honest_subset } => {
-                    let malicious_actors = messages
-                        .last()
-                        .ok_or(general_error)?
-                        .keys()
-                        .filter(|party_id| !honest_subset.contains(*party_id))
-                        .cloned()
-                        .collect();
-                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-                        malicious_actors,
-                    ))
+                mpc::Error::ThresholdNotReached => {
+                    return Err(DwalletMPCError::TWOPCMPCThresholdNotReached)
                 }
                 _ => Err(general_error),
             };
@@ -460,7 +453,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
-    messages: Vec<HashMap<PartyID, M>>,
+    /// round -> {party -> message}
+    messages: HashMap<usize, HashMap<PartyID, M>>,
     malicious_parties: Vec<PartyID>,
 }
 
@@ -470,10 +464,10 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
-    let mut deserialized_results = Vec::new();
+    let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
 
-    for message_batch in &messages {
+    for (index, message_batch) in messages.iter().enumerate() {
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
@@ -493,7 +487,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         }
 
         if !valid_messages.is_empty() {
-            deserialized_results.push(valid_messages);
+            deserialized_results.insert(index, valid_messages);
         }
     }
     DeserializeMPCMessagesResponse {

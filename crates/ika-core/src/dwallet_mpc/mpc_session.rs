@@ -36,6 +36,7 @@ use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
     SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
+    ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -86,6 +87,10 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
+    pub(crate) received_more_messages_since_last_advance: bool,
+    // The *total* number of attempts to advance that failed in the session.
+    // Used to make `ThresholdNotReachedReport` unique.
+    pub(crate) attempts_count: usize,
 }
 
 impl DWalletMPCSession {
@@ -110,6 +115,8 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
+            received_more_messages_since_last_advance: false,
+            attempts_count: 0,
         }
     }
 
@@ -149,11 +156,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
-                    self.report_malicious_actors(
-                        tokio_runtime_handle,
-                        malicious_parties,
-                        AdvanceResult::Success,
-                    )?;
+                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let message = self.new_dwallet_mpc_message(message)?;
                 tokio_runtime_handle.spawn(async move {
@@ -185,11 +188,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
-                    self.report_malicious_actors(
-                        tokio_runtime_handle,
-                        malicious_parties,
-                        AdvanceResult::Success,
-                    )?;
+                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(public_output.clone())?;
@@ -203,8 +202,7 @@ impl DWalletMPCSession {
                 });
                 Ok(())
             }
-            Err(DwalletMPCError::SessionFailedWithMaliciousParties(malicious_parties)) => {
-                error!(?malicious_parties, "session failed with malicious parties",);
+            Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
                 let base64_mpc_messages = general_purpose::STANDARD
                     .encode(bcs::to_bytes(&self.serialized_full_messages)?);
                 let mpc_event_data = self.mpc_event_data.clone().unwrap();
@@ -225,11 +223,7 @@ impl DWalletMPCSession {
                     party_id=?self.party_id,
                     "MPC session failed"
                 );
-                self.report_malicious_actors(
-                    tokio_runtime_handle,
-                    malicious_parties,
-                    AdvanceResult::Failure,
-                )
+                self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
                 error!(?err, "failed to advance the MPC session");
@@ -300,12 +294,10 @@ impl DWalletMPCSession {
         &self,
         tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
-        advance_result: AdvanceResult,
     ) -> DwalletMPCResult<()> {
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
             self.session_id.clone(),
-            advance_result,
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
         let epoch_store = self.epoch_store()?.clone();
@@ -316,6 +308,31 @@ impl DWalletMPCSession {
                 .await
             {
                 error!("failed to submit an MPC message to consensus: {:?}", err);
+            }
+        });
+        Ok(())
+    }
+
+    /// Report that the session failed because the threshold was not reached.
+    /// This is submitted to the consensus,
+    /// in order to make sure that all the Validators agree that this session needs more messages.
+    fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        let report = ThresholdNotReachedReport {
+            session_id: self.session_id,
+            attempt: self.attempts_count,
+        };
+        let report_tx = self.new_dwallet_report_threshold_not_reached(report)?;
+        let epoch_store = self.epoch_store()?.clone();
+        let consensus_adapter = self.consensus_adapter.clone();
+        tokio_runtime_handle.spawn(async move {
+            if let Err(err) = consensus_adapter
+                .submit_to_consensus(&vec![report_tx], &epoch_store)
+                .await
+            {
+                error!(
+                    ?err,
+                    "failed to submit `threshold not reached` report to consensus"
+                );
             }
         });
         Ok(())
@@ -478,15 +495,7 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    (
-                        bcs::from_bytes(
-                            &mpc_event_data
-                                .private_input
-                                .clone()
-                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
-                        )?,
-                        decryption_key_shares,
-                    ),
+                    decryption_key_shares,
                 )
             }
             _ => {
@@ -518,6 +527,18 @@ impl DWalletMPCSession {
     ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(
             ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
+                self.epoch_store()?.name,
+                report,
+            ),
+        )
+    }
+
+    fn new_dwallet_report_threshold_not_reached(
+        &self,
+        report: ThresholdNotReachedReport,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(
+            ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
                 self.epoch_store()?.name,
                 report,
             ),
@@ -568,6 +589,7 @@ impl DWalletMPCSession {
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
+                self.received_more_messages_since_last_advance = true;
                 // Received a message for a round that was already processed.
                 if self.pending_quorum_for_highest_round_number != message.round_number {
                     // TODO: fix this properly, this is just a temporary hot-patch
@@ -596,6 +618,7 @@ impl DWalletMPCSession {
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
             None if message.round_number == current_round => {
+                self.received_more_messages_since_last_advance = true;
                 info!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
@@ -628,7 +651,7 @@ impl DWalletMPCSession {
         match self.status {
             MPCSessionStatus::Active => {
                 if self.pending_quorum_for_highest_round_number == 0
-                    || self
+                    || (self
                         .weighted_threshold_access_structure
                         .is_authorized_subset(
                             &self
@@ -640,6 +663,7 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
+                        && self.received_more_messages_since_last_advance)
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
