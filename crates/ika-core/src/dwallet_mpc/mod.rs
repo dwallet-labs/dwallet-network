@@ -559,6 +559,13 @@ pub(crate) async fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
+        t if t
+            == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
+            packages_config,
+        ) =>
+            {
+                Ok((vec![], None))
+            }
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
