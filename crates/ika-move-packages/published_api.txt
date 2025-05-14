@@ -562,6 +562,9 @@ new_imported_key_dwallet
 request_imported_key_dwallet_verification
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+request_make_dwallet_user_secret_key_shares_public
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_re_encrypt_user_share_for
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
