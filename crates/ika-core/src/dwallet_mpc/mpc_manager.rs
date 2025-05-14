@@ -324,7 +324,6 @@ impl DWalletMPCManager {
 
     fn wait_for_more_messages_and_retry(&mut self, session_id: ObjectID) {
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-            session.received_more_messages_since_last_retry = false;
             session.attempts_count += 1;
             session.pending_quorum_for_highest_round_number -= 1;
         }
@@ -526,6 +525,7 @@ impl DWalletMPCManager {
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
                 if quorum_check_result.is_ready {
+                    session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.

@@ -87,7 +87,7 @@ pub(super) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
-    pub(crate) received_more_messages_since_last_retry: bool,
+    pub(crate) received_more_messages_since_last_advance: bool,
     // The *total* number of attempts to advance that failed in the session.
     // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
@@ -115,7 +115,7 @@ impl DWalletMPCSession {
             party_id,
             weighted_threshold_access_structure,
             mpc_event_data,
-            received_more_messages_since_last_retry: false,
+            received_more_messages_since_last_advance: false,
             attempts_count: 0,
         }
     }
@@ -543,7 +543,6 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.received_more_messages_since_last_retry = true;
         // This happens because we clear the session when it is finished, and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -584,6 +583,7 @@ impl DWalletMPCSession {
 
         match self.serialized_full_messages.get_mut(message.round_number) {
             Some(party_to_msg) => {
+                self.received_more_messages_since_last_advance = true;
                 // Received a message for a round that was already processed.
                 if self.pending_quorum_for_highest_round_number != message.round_number {
                     // TODO: fix this properly, this is just a temporary hot-patch
@@ -612,6 +612,7 @@ impl DWalletMPCSession {
                 party_to_msg.insert(source_party_id, message.message.clone());
             }
             None if message.round_number == current_round => {
+                self.received_more_messages_since_last_advance = true;
                 info!(
                     session_id=?message.session_id,
                     from_authority=?message.authority,
@@ -656,7 +657,7 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
-                        && self.received_more_messages_since_last_retry)
+                        && self.received_more_messages_since_last_advance)
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
