@@ -4,13 +4,15 @@
 
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
-    Manifest, CHECKPOINT_FILE_SUFFIX, CHECKPOINT_MESSAGE_FILE_MAGIC, EPOCH_DIR_PREFIX, MAGIC_BYTES,
+    Manifest, ParamsMessageUpdates, CHECKPOINT_FILE_SUFFIX, CHECKPOINT_MESSAGE_FILE_MAGIC,
+    EPOCH_DIR_PREFIX, MAGIC_BYTES, PARAMS_MESSAGE_FILE_MAGIC, PARAMS_MESSAGE_FILE_SUFFIX,
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
 use ika_types::messages_checkpoint::{CertifiedCheckpointMessage, CheckpointSequenceNumber};
+use ika_types::messages_params_messages::{CertifiedParamsMessage, ParamsMessageSequenceNumber};
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
@@ -31,6 +33,7 @@ use tracing::{debug, info};
 
 pub struct ArchiveMetrics {
     pub latest_checkpoint_archived: IntGauge,
+    pub latest_params_message_archived: IntGauge,
 }
 
 impl ArchiveMetrics {
@@ -39,6 +42,12 @@ impl ArchiveMetrics {
             latest_checkpoint_archived: register_int_gauge_with_registry!(
                 "latest_checkpoint_archived",
                 "Latest checkpoint to have archived to the remote store",
+                registry
+            )
+            .unwrap(),
+            latest_params_message_archived: register_int_gauge_with_registry!(
+                "latest_params_message_archived",
+                "Latest params message to have archived to the remote store",
                 registry
             )
             .unwrap(),
@@ -167,6 +176,7 @@ impl CheckpointWriter {
             FileType::CheckpointMessage,
             self.epoch_num,
             self.checkpoint_range.clone(),
+            self.checkpoint_range.clone(), // todo (yael) fix this
         )?;
         Ok(file_metadata)
     }
@@ -254,6 +264,213 @@ impl CheckpointWriter {
     }
 }
 
+struct ParamsMessageWriter {
+    root_dir_path: PathBuf,
+    epoch_num: u64,
+    params_message_range: Range<u64>,
+    wbuf: BufWriter<File>,
+    sender: Sender<ParamsMessageUpdates>,
+    params_message_buf_offset: usize,
+    file_compression: FileCompression,
+    storage_format: StorageFormat,
+    manifest: Manifest,
+    last_commit_instant: Instant,
+    commit_duration: Duration,
+    commit_file_size: usize,
+}
+
+impl ParamsMessageWriter {
+    fn new(
+        root_dir_path: PathBuf,
+        file_compression: FileCompression,
+        storage_format: StorageFormat,
+        sender: Sender<ParamsMessageUpdates>,
+        manifest: Manifest,
+        commit_duration: Duration,
+        commit_file_size: usize,
+    ) -> Result<Self> {
+        let epoch_num = manifest.epoch_num();
+        let params_message_sequence_num = manifest.next_params_message_seq_num();
+        let epoch_dir = root_dir_path.join(format!("{}{epoch_num}", EPOCH_DIR_PREFIX));
+        if epoch_dir.exists() {
+            fs::remove_dir_all(&epoch_dir)?;
+        }
+        fs::create_dir_all(&epoch_dir)?;
+        let params_message_file = Self::next_file(
+            &epoch_dir,
+            params_message_sequence_num,
+            PARAMS_MESSAGE_FILE_SUFFIX,
+            PARAMS_MESSAGE_FILE_MAGIC,
+            storage_format,
+            file_compression,
+        )?;
+        Ok(ParamsMessageWriter {
+            root_dir_path,
+            epoch_num,
+            params_message_range: params_message_sequence_num..params_message_sequence_num,
+            wbuf: BufWriter::new(params_message_file),
+            params_message_buf_offset: 0,
+            sender,
+            file_compression,
+            storage_format,
+            manifest,
+            last_commit_instant: Instant::now(),
+            commit_duration,
+            commit_file_size,
+        })
+    }
+
+    pub fn write(&mut self, params_message_message: CertifiedParamsMessage) -> Result<()> {
+        match self.storage_format {
+            StorageFormat::Blob => self.write_as_blob(params_message_message),
+        }
+    }
+
+    pub fn write_as_blob(&mut self, params_message_message: CertifiedParamsMessage) -> Result<()> {
+        assert_eq!(
+            params_message_message.sequence_number,
+            self.params_message_range.end
+        );
+
+        if params_message_message.epoch()
+            == self
+                .epoch_num
+                .checked_add(1)
+                .context("Epoch num overflow")?
+        {
+            self.cut()?;
+            self.update_to_next_epoch();
+            if self.epoch_dir().exists() {
+                fs::remove_dir_all(self.epoch_dir())?;
+            }
+            fs::create_dir_all(self.epoch_dir())?;
+            self.reset()?;
+        }
+
+        assert_eq!(params_message_message.epoch, self.epoch_num);
+
+        let contents_blob = Blob::encode(&params_message_message, BlobEncoding::Bcs)?;
+        let blob_size = contents_blob.size();
+        let cut_new_params_message_file = (self.params_message_buf_offset + blob_size)
+            > self.commit_file_size
+            || (self.last_commit_instant.elapsed() > self.commit_duration);
+        if cut_new_params_message_file {
+            self.cut()?;
+            self.reset()?;
+        }
+
+        self.params_message_buf_offset += contents_blob.write(&mut self.wbuf)?;
+
+        self.params_message_range.end = self
+            .params_message_range
+            .end
+            .checked_add(1)
+            .context("ParamsMessage sequence num overflow")?;
+        Ok(())
+    }
+    fn finalize(&mut self) -> Result<FileMetadata> {
+        self.wbuf.flush()?;
+        self.wbuf.get_ref().sync_data()?;
+        let off = self.wbuf.get_ref().stream_position()?;
+        self.wbuf.get_ref().set_len(off)?;
+        let file_path = self.epoch_dir().join(format!(
+            "{}.{PARAMS_MESSAGE_FILE_SUFFIX}",
+            self.params_message_range.start
+        ));
+        self.compress(&file_path)?;
+        let file_metadata = create_file_metadata(
+            &file_path,
+            FileType::ParamsMessage,
+            self.epoch_num,
+            self.params_message_range.clone(),
+            self.params_message_range.clone(), // todo (yael) fix this
+        )?;
+        Ok(file_metadata)
+    }
+
+    fn cut(&mut self) -> Result<()> {
+        if !self.params_message_range.is_empty() {
+            let params_message_file_metadata = self.finalize()?;
+            let params_message_updates = ParamsMessageUpdates::new(
+                self.epoch_num,
+                self.params_message_range.end,
+                params_message_file_metadata,
+                &mut self.manifest,
+            );
+            info!("ParamsMessage file cut for: {:?}", params_message_updates);
+            self.sender.blocking_send(params_message_updates)?;
+        }
+        Ok(())
+    }
+
+    fn compress(&self, source: &Path) -> Result<()> {
+        if self.file_compression == FileCompression::None {
+            return Ok(());
+        }
+        let mut input = File::open(source)?;
+        let tmp_file_name = source.with_extension("tmp");
+        let mut output = File::create(&tmp_file_name)?;
+        compress(&mut input, &mut output)?;
+        fs::rename(tmp_file_name, source)?;
+        Ok(())
+    }
+
+    fn next_file(
+        dir_path: &Path,
+        params_message_sequence_num: u64,
+        suffix: &str,
+        magic_bytes: u32,
+        storage_format: StorageFormat,
+        file_compression: FileCompression,
+    ) -> Result<File> {
+        let next_file_path = dir_path.join(format!("{params_message_sequence_num}.{suffix}"));
+        let mut f = File::create(next_file_path.clone())?;
+        let mut metab = [0u8; MAGIC_BYTES];
+        BigEndian::write_u32(&mut metab, magic_bytes);
+        let n = f.write(&metab)?;
+        drop(f);
+        f = OpenOptions::new().append(true).open(next_file_path)?;
+        f.seek(SeekFrom::Start(n as u64))?;
+        f.write_u8(storage_format.into())?;
+        f.write_u8(file_compression.into())?;
+        Ok(f)
+    }
+
+    fn create_new_files(&mut self) -> Result<()> {
+        let f = Self::next_file(
+            &self.epoch_dir(),
+            self.params_message_range.start,
+            PARAMS_MESSAGE_FILE_SUFFIX,
+            PARAMS_MESSAGE_FILE_MAGIC,
+            self.storage_format,
+            self.file_compression,
+        )?;
+        self.params_message_buf_offset = MAGIC_BYTES;
+        self.wbuf = BufWriter::new(f);
+        Ok(())
+    }
+
+    fn reset(&mut self) -> Result<()> {
+        self.reset_params_message_range();
+        self.create_new_files()?;
+        self.reset_last_commit_ts();
+        Ok(())
+    }
+    fn reset_last_commit_ts(&mut self) {
+        self.last_commit_instant = Instant::now();
+    }
+    fn reset_params_message_range(&mut self) {
+        self.params_message_range = self.params_message_range.end..self.params_message_range.end
+    }
+    fn epoch_dir(&self) -> PathBuf {
+        self.root_dir_path
+            .join(format!("{}{}", EPOCH_DIR_PREFIX, self.epoch_num))
+    }
+    fn update_to_next_epoch(&mut self) {
+        self.epoch_num = self.epoch_num.checked_add(1).unwrap();
+    }
+}
+
 /// ArchiveWriter archives history by tailing checkpoints writing them to a local staging dir and
 /// simultaneously uploading them to a remote object store
 pub struct ArchiveWriter {
@@ -291,7 +508,7 @@ impl ArchiveWriter {
 
     pub async fn start<S>(&self, store: S) -> Result<tokio::sync::broadcast::Sender<()>>
     where
-        S: WriteStore + Send + Sync + 'static,
+        S: Clone + WriteStore + Send + Sync + 'static,
     {
         let remote_archive_is_empty = self
             .remote_object_store
@@ -302,7 +519,7 @@ impl ArchiveWriter {
             .is_empty();
         let manifest = if remote_archive_is_empty {
             // Start from genesis
-            Manifest::new(0, 0)
+            Manifest::new(0, 0, 0)
         } else {
             read_manifest(self.remote_object_store.clone())
                 .await
@@ -310,12 +527,14 @@ impl ArchiveWriter {
         };
         let start_checkpoint_sequence_number = manifest.next_checkpoint_seq_num();
         let (sender, receiver) = mpsc::channel::<CheckpointUpdates>(100);
+        let (sender_params_message, receiver_params_message) =
+            mpsc::channel::<ParamsMessageUpdates>(100);
         let checkpoint_writer = CheckpointWriter::new(
             self.local_staging_dir_root.clone(),
             self.file_compression,
             self.storage_format,
             sender,
-            manifest,
+            manifest.clone(),
             self.commit_duration,
             self.commit_file_size,
         )
@@ -326,18 +545,43 @@ impl ArchiveWriter {
             self.local_object_store.clone(),
             self.local_staging_dir_root.clone(),
             receiver,
+            receiver_params_message,
             kill_sender.subscribe(),
             self.archive_metrics.clone(),
         ));
+        let store_clone = store.clone();
+        let kill_receiver_clone = kill_receiver.resubscribe();
         tokio::task::spawn(async move {
             Self::start_tailing_checkpoints(
                 start_checkpoint_sequence_number,
                 checkpoint_writer,
+                store_clone,
+                kill_receiver_clone,
+            )
+            .await
+        });
+
+        let start_params_message_sequence_number = manifest.next_params_message_seq_num();
+        let params_message_writer = ParamsMessageWriter::new(
+            self.local_staging_dir_root.clone(),
+            self.file_compression,
+            self.storage_format,
+            sender_params_message,
+            manifest,
+            self.commit_duration,
+            self.commit_file_size,
+        )
+        .expect("Failed to create params_message writer");
+        tokio::task::spawn(async move {
+            Self::start_tailing_params_messages(
+                start_params_message_sequence_number,
+                params_message_writer,
                 store,
                 kill_receiver,
             )
             .await
         });
+
         Ok(kill_sender)
     }
 
@@ -372,11 +616,43 @@ impl ArchiveWriter {
         Ok(())
     }
 
+    async fn start_tailing_params_messages<S>(
+        start_params_message_sequence_number: ParamsMessageSequenceNumber,
+        mut params_message_writer: ParamsMessageWriter,
+        store: S,
+        mut kill: tokio::sync::broadcast::Receiver<()>,
+    ) -> Result<()>
+    where
+        S: WriteStore + Send + Sync + 'static,
+    {
+        let mut params_message_sequence_number = start_params_message_sequence_number;
+        info!("Starting params_message tailing from sequence number: {params_message_sequence_number}");
+
+        while kill.try_recv().is_err() {
+            if let Some(params_message_message) = store
+                .get_params_message_by_sequence_number(params_message_sequence_number)
+                .map_err(|_| anyhow!("Failed to read params_message message from store"))?
+            {
+                params_message_writer.write(params_message_message.into_inner())?;
+                params_message_sequence_number = params_message_sequence_number
+                    .checked_add(1)
+                    .context("params_message seq number overflow")?;
+                // There is more params_messages to tail, so continue without sleeping
+                continue;
+            }
+            // ParamsMessage with `params_message_sequence_number` is not available to read from store yet,
+            // sleep for sometime and then retry
+            tokio::time::sleep(Duration::from_secs(3)).await;
+        }
+        Ok(())
+    }
+
     async fn start_syncing_with_remote(
         remote_object_store: Arc<DynObjectStore>,
         local_object_store: Arc<DynObjectStore>,
         local_staging_root_dir: PathBuf,
         mut update_receiver: Receiver<CheckpointUpdates>,
+        mut update_receiver_params_message: Receiver<ParamsMessageUpdates>,
         mut kill: tokio::sync::broadcast::Receiver<()>,
         metrics: Arc<ArchiveMetrics>,
     ) -> Result<()> {
@@ -414,6 +690,42 @@ impl ArchiveWriter {
                         .await
                         .expect("Updating manifest should not fail");
                         metrics.latest_checkpoint_archived.set(latest_checkpoint_seq_num as i64)
+                    } else {
+                        info!("Terminating archive sync loop");
+                        break;
+                    }
+                },
+                updates = update_receiver_params_message.recv() => {
+                    if let Some(params_message_updates) = updates {
+                        info!("Received params_message update: {:?}", params_message_updates);
+                        let latest_params_message_seq_num = params_message_updates.manifest.next_params_message_seq_num();
+                        let summary_file_path = params_message_updates.summary_file_path();
+                        Self::sync_file_to_remote(
+                            local_staging_root_dir.clone(),
+                            summary_file_path,
+                            local_object_store.clone(),
+                            remote_object_store.clone()
+                        )
+                        .await
+                        .expect("Syncing params_message summary should not fail");
+
+                        let content_file_path = params_message_updates.content_file_path();
+                        Self::sync_file_to_remote(
+                            local_staging_root_dir.clone(),
+                            content_file_path,
+                            local_object_store.clone(),
+                            remote_object_store.clone()
+                        )
+                        .await
+                        .expect("Syncing params_message content should not fail");
+
+                        write_manifest(
+                            params_message_updates.manifest,
+                            remote_object_store.clone()
+                        )
+                        .await
+                        .expect("Updating manifest should not fail");
+                        metrics.latest_params_message_archived.set(latest_params_message_seq_num as i64)
                     } else {
                         info!("Terminating archive sync loop");
                         break;

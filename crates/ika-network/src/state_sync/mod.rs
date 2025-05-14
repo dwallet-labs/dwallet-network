@@ -1594,7 +1594,7 @@ async fn sync_params_message_messages_from_archive<S>(
             let action_counter = Arc::new(AtomicU64::new(0));
             let params_message_counter = Arc::new(AtomicU64::new(0));
             if let Err(err) = archive_reader
-                .read(
+                .read_params_messages(
                     store.clone(),
                     params_message_range,
                     action_counter.clone(),

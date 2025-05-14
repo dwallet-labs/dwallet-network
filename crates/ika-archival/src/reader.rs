@@ -1,7 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::{read_manifest, FileMetadata, FileType, Manifest, CHECKPOINT_MESSAGE_FILE_MAGIC};
+use crate::{
+    read_manifest, FileMetadata, FileType, Manifest, CHECKPOINT_MESSAGE_FILE_MAGIC,
+    PARAMS_MESSAGE_FILE_MAGIC,
+};
 use anyhow::{anyhow, Context, Result};
 use bytes::buf::Reader;
 use bytes::{Buf, Bytes};
@@ -9,6 +12,9 @@ use futures::{StreamExt, TryStreamExt};
 use ika_config::node::ArchiveReaderConfig;
 use ika_types::messages_checkpoint::{
     CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+};
+use ika_types::messages_params_messages::{
+    CertifiedParamsMessage, ParamsMessageSequenceNumber, VerifiedParamsMessage,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -31,6 +37,7 @@ use tracing::info;
 pub struct ArchiveReaderMetrics {
     pub archive_actions_read: IntCounterVec,
     pub archive_checkpoints_read: IntCounterVec,
+    pub archive_params_message_read: IntCounterVec,
 }
 
 impl ArchiveReaderMetrics {
@@ -46,6 +53,13 @@ impl ArchiveReaderMetrics {
             archive_checkpoints_read: register_int_counter_vec_with_registry!(
                 "archive_checkpoints_read",
                 "Number of checkpoints read from archive",
+                &["bucket"],
+                registry
+            )
+            .unwrap(),
+            archive_params_message_read: register_int_counter_vec_with_registry!(
+                "archive_params_message_read",
+                "Number of params messages read from archive",
                 &["bucket"],
                 registry
             )
@@ -150,7 +164,7 @@ impl ArchiveReader {
             config.remote_store_config.make().map(Arc::new)?
         };
         let (sender, recv) = oneshot::channel();
-        let manifest = Arc::new(Mutex::new(Manifest::new(0, 0)));
+        let manifest = Arc::new(Mutex::new(Manifest::new(0, 0, 0)));
         // Start a background tokio task to keep local manifest in sync with remote
         Self::spawn_manifest_sync_task(remote_object_store.clone(), manifest.clone(), recv);
         Ok(ArchiveReader {
@@ -616,6 +630,136 @@ impl ArchiveReader {
         Ok(checkpoints_filtered)
     }
 
+    pub async fn latest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+        let manifest = self.manifest.lock().await.clone();
+        manifest
+            .next_params_message_seq_num()
+            .checked_sub(1)
+            .context("No params_message data in archive")
+    }
+
+    fn insert_certified_params_message<S>(
+        store: &S,
+        certified_params_message: CertifiedParamsMessage,
+    ) -> Result<()>
+    where
+        S: WriteStore + Clone,
+    {
+        store
+            .insert_params_message(
+                VerifiedParamsMessage::new_unchecked(certified_params_message).borrow(),
+            )
+            .map_err(|e| anyhow!("Failed to insert params_message: {e}"))
+    }
+
+    /// Insert params_message params_message if it doesn't already exist (without verifying it)
+    fn get_or_insert_verified_params_message<S>(
+        store: &S,
+        certified_params_message: CertifiedParamsMessage,
+    ) -> Result<VerifiedParamsMessage>
+    where
+        S: WriteStore + Clone,
+    {
+        store
+            .get_params_message_by_sequence_number(certified_params_message.sequence_number)
+            .map_err(|e| anyhow!("Store op failed: {e}"))?
+            .map(Ok::<VerifiedParamsMessage, anyhow::Error>)
+            .unwrap_or_else(|| {
+                let verified_params_message =
+                    VerifiedParamsMessage::new_unchecked(certified_params_message);
+                // Insert params_message message
+                store
+                    .insert_params_message(&verified_params_message)
+                    .map_err(|e| anyhow!("Failed to insert params_message: {e}"))?;
+                // Update highest verified params_message watermark
+                store
+                    .update_highest_verified_params_message(&verified_params_message)
+                    .expect("store operation should not fail");
+                Ok::<VerifiedParamsMessage, anyhow::Error>(verified_params_message)
+            })
+            .map_err(|e| anyhow!("Failed to get verified params_message: {:?}", e))
+    }
+
+    async fn get_params_message_files_for_range(
+        &self,
+        params_message_range: Range<ParamsMessageSequenceNumber>,
+    ) -> Result<(Vec<FileMetadata>, usize, usize)> {
+        let manifest = self.manifest.lock().await.clone();
+
+        let latest_available_params_message = manifest
+            .next_params_message_seq_num()
+            .checked_sub(1)
+            .context("ParamsMessage seq num underflow")?;
+
+        if params_message_range.start > latest_available_params_message {
+            return Err(anyhow!(
+                "Latest available params_message is: {}",
+                latest_available_params_message
+            ));
+        }
+
+        let params_message_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+
+        let start_index = match params_message_files
+            .binary_search_by_key(&params_message_range.start, |s| {
+                s.params_message_seq_range.start
+            }) {
+            Ok(index) => index,
+            Err(index) => index - 1,
+        };
+
+        let end_index = match params_message_files
+            .binary_search_by_key(&params_message_range.end, |s| {
+                s.params_message_seq_range.start
+            }) {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+
+        Ok((params_message_files, start_index, end_index))
+    }
+
+    async fn get_params_message_files_for_list(
+        &self,
+        params_messages: Vec<ParamsMessageSequenceNumber>,
+    ) -> Result<Vec<FileMetadata>> {
+        assert!(!params_messages.is_empty());
+        let manifest = self.manifest.lock().await.clone();
+        let latest_available_params_message = manifest
+            .next_params_message_seq_num()
+            .checked_sub(1)
+            .context("ParamsMessage seq num underflow")?;
+
+        let mut ordered_params_messages = params_messages;
+        ordered_params_messages.sort();
+        if *ordered_params_messages.first().unwrap() > latest_available_params_message {
+            return Err(anyhow!(
+                "Latest available params_message is: {}",
+                latest_available_params_message
+            ));
+        }
+
+        let params_message_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+
+        let mut params_messages_filtered = vec![];
+        for params_message in ordered_params_messages.iter() {
+            let index = params_message_files
+                .binary_search_by(|s| {
+                    if params_message < &s.params_message_seq_range.start {
+                        std::cmp::Ordering::Greater
+                    } else if params_message >= &s.params_message_seq_range.end {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Equal
+                    }
+                })
+                .expect("Archive does not contain params_message {params_message}");
+            params_messages_filtered.push(params_message_files[index].clone());
+        }
+
+        Ok(params_messages_filtered)
+    }
+
     fn spawn_manifest_sync_task<S: ObjectStoreGetExt + Clone>(
         remote_store: S,
         manifest: Arc<Mutex<Manifest>>,
@@ -636,5 +780,100 @@ impl ArchiveReader {
             info!("Terminating the manifest sync loop");
             Ok::<(), anyhow::Error>(())
         });
+    }
+
+    pub async fn read_params_messages<S>(
+        &self,
+        store: S,
+        params_message_range: Range<ParamsMessageSequenceNumber>,
+        action_counter: Arc<AtomicU64>,
+        params_message_counter: Arc<AtomicU64>,
+    ) -> Result<()>
+    where
+        S: WriteStore + Clone,
+    {
+        let manifest = self.manifest.lock().await.clone();
+
+        let latest_available_params_message = manifest
+            .next_params_message_seq_num()
+            .checked_sub(1)
+            .context("Params message seq num underflow")?;
+
+        if params_message_range.start > latest_available_params_message {
+            return Err(anyhow!(
+                "Latest available params message is: {}",
+                latest_available_params_message
+            ));
+        }
+
+        let files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+
+        let start_index = match files.binary_search_by_key(&params_message_range.start, |c| {
+            c.params_message_seq_range.start
+        }) {
+            Ok(index) => index,
+            Err(index) => index - 1,
+        };
+
+        let end_index = match files.binary_search_by_key(&params_message_range.end, |c| {
+            c.params_message_seq_range.start
+        }) {
+            Ok(index) => index,
+            Err(index) => index,
+        };
+
+        let remote_object_store = self.remote_object_store.clone();
+        futures::stream::iter(files.iter())
+            .enumerate()
+            .filter(|(index, _c)| future::ready(*index >= start_index && *index < end_index))
+            .map(|(_, params_message_metadata)| {
+                let remote_object_store = remote_object_store.clone();
+                async move {
+                    let params_message_data =
+                        get(&remote_object_store, &params_message_metadata.file_path()).await?;
+                    Ok::<Bytes, anyhow::Error>(params_message_data)
+                }
+            })
+            .boxed()
+            .buffered(self.concurrency)
+            .try_for_each(|params_message_data| {
+                let result: Result<(), anyhow::Error> =
+                    make_iterator::<CertifiedParamsMessage, Reader<Bytes>>(
+                        PARAMS_MESSAGE_FILE_MAGIC,
+                        params_message_data.reader(),
+                    )
+                    .and_then(|params_message_iter| {
+                        params_message_iter
+                            .filter(|p| {
+                                p.sequence_number >= params_message_range.start
+                                    && p.sequence_number < params_message_range.end
+                            })
+                            .try_for_each(|params_message| {
+                                let size = params_message.messages.len();
+                                let verified_params_message =
+                                    Self::get_or_insert_verified_params_message(
+                                        &store,
+                                        params_message,
+                                    )?;
+                                // Update highest synced watermark
+                                store
+                                    .update_highest_synced_params_message(&verified_params_message)
+                                    .map_err(|e| anyhow!("Failed to update watermark: {e}"))?;
+                                action_counter.fetch_add(size as u64, Ordering::Relaxed);
+                                self.archive_reader_metrics
+                                    .archive_actions_read
+                                    .with_label_values(&[&self.bucket])
+                                    .inc_by(size as u64);
+                                params_message_counter.fetch_add(1, Ordering::Relaxed);
+                                self.archive_reader_metrics
+                                    .archive_params_message_read
+                                    .with_label_values(&[&self.bucket])
+                                    .inc_by(1);
+                                Ok::<(), anyhow::Error>(())
+                            })
+                    });
+                futures::future::ready(result)
+            })
+            .await
     }
 }
