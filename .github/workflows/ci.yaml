@@ -52,10 +52,10 @@ jobs:
       - name: Configure git with personal access token
         run: |
           git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
-      - name: Install Rust ${{ env.rust_nightly }}
+      - name: Install Rust ${{ env.rust_stable }}
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.rust_nightly }}
+          toolchain: 1.81
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
       - name: Fmt Check
