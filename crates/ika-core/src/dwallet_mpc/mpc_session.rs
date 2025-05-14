@@ -339,26 +339,7 @@ impl DWalletMPCSession {
         });
         Ok(())
     }
-
-    fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
-        let report_tx =
-            self.new_dwallet_report_threshold_not_reached(ThresholdNotReachedReport {
-                session_id: self.session_id,
-                attempt: self.attempts_count,
-            })?;
-        let epoch_store = self.epoch_store()?.clone();
-        let consensus_adapter = self.consensus_adapter.clone();
-        tokio_runtime_handle.spawn(async move {
-            if let Err(err) = consensus_adapter
-                .submit_to_consensus(&vec![report_tx], &epoch_store)
-                .await
-            {
-                error!("failed to submit an MPC message to consensus: {:?}", err);
-            }
-        });
-        Ok(())
-    }
-
+    
     fn advance_specific_party(
         &self,
     ) -> DwalletMPCResult<

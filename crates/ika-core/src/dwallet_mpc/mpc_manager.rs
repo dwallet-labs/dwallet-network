@@ -327,7 +327,7 @@ impl DWalletMPCManager {
     fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-            session.received_more_messages_since_last_retry = false;
+            session.received_more_messages_since_last_advance = false;
             session.attempts_count += 1;
             // We got an `TWOPCMPCThresholdNotReached` error, and a quorum agreement on it, so necessarily all parties that sent a message for the last executed round are malicious (as the round aborted with error, and no message was generated.)
             // Remove these messages, and mark the senders as malicious.

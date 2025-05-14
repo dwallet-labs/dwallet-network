@@ -1070,7 +1070,7 @@ impl AuthorityPerEpochStore {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         ?authority,
-                        certificate_author_index=?transaction.certificate_author_index
+                        certificate_author_index=?transaction.certificate_author_index,
                         "DWalletMPCSessionFailedWithMalicious: authority does not match its author from consensus",
                     );
                     return None;
