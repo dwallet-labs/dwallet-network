@@ -1101,7 +1101,6 @@ impl IkaNode {
         sui_client: Arc<SuiConnectorClient>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
-        let system_inner = sui_client.must_get_system_inner_object().await;
         loop {
             let run_with_range = self.config.run_with_range;
 
@@ -1171,7 +1170,6 @@ impl IkaNode {
                     );
                 }
             }
-
             let dwallet_coordinator_inner =
                 sui_client.must_get_dwallet_coordinator_inner_v1().await;
             let previous_epoch_last_checkpoint_sequence_number =
@@ -1379,64 +1377,6 @@ impl IkaNode {
 
         new_epoch_store
     }
-
-    // async fn check_and_notify_new_protocol_version(
-    //     &self,
-    //     epoch_store: Arc<AuthorityPerEpochStore>,
-    //     sui_client: Arc<SuiConnectorClient>,
-    // ) -> Result<()> {
-    //     let capabilities = epoch_store.get_capabilities_v1()?;
-    //     let (new_version, _) = AuthorityState::choose_protocol_version_and_system_packages_v1(
-    //         epoch_store.protocol_version(),
-    //         epoch_store.protocol_config(),
-    //         epoch_store.committee(),
-    //         capabilities.clone(),
-    //         epoch_store.get_effective_buffer_stake_bps(),
-    //     );
-    //
-    //     let system_inner = sui_client.must_get_system_inner_object().await;
-    //     let next_version: Option<u64> = system_inner.next_protocol_version();
-    //     let current_version: u64 = system_inner.protocol_version();
-    //
-    //     let should_update_by_next_version =
-    //         next_version.is_some() && next_version != Some(new_version.as_u64());
-    //     let should_update_by_current_version =
-    //         next_version.is_none() && current_version != new_version.as_u64();
-    //
-    //     if should_update_by_next_version || should_update_by_current_version {
-    //         info!(
-    //             "Found version quorum from capabilities v1 {:?}",
-    //             capabilities.first()
-    //         );
-    //         let signer = self.state.secret.clone();
-    //         let summary = SignedIkaSystemCheckpoint::new(
-    //             epoch_store.epoch(),
-    //             IkaSystemCheckpoint {
-    //                 epoch: epoch_store.epoch(),
-    //                 sequence_number: next_version.unwrap(),
-    //                 // todo : set real timestamp
-    //                 // consensus_commit.commit_timestamp_ms(),
-    //                 timestamp_ms: 0,
-    //                 messages: vec![IkaSystemCheckpointKind::NextConfigVersion(new_version)],
-    //             },
-    //             &*signer,
-    //             self.state.name,
-    //         );
-    //
-    //         let message = IkaSystemCheckpointSignatureMessage {
-    //             ika_system_checkpoint: summary,
-    //         };
-    //         let transaction = ConsensusTransaction::new_ika_system_checkpoint_signature_message(message);
-    //         if let Some(components) = &*self.validator_components.lock().await {
-    //             info!(?transaction, "submitting capabilities to consensus");
-    //             components
-    //                 .consensus_adapter
-    //                 .submit_to_consensus(&[transaction], &epoch_store)
-    //                 .await?;
-    //         }
-    //     }
-    //     Ok(())
-    // }
 
     pub fn get_config(&self) -> &NodeConfig {
         &self.config

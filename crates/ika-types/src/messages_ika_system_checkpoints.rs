@@ -44,7 +44,6 @@ pub struct IkaSystemCheckpoint {
     /// IkaSystemCheckpoint timestamps are monotonic, but not strongly monotonic - subsequent
     /// ika_system_checkpoints can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: IkaSystemCheckpointTimestamp,
-    // todo : check with omer if it is okay to remove the vector
     pub messages: Vec<IkaSystemCheckpointKind>,
 }
 
@@ -120,7 +119,7 @@ impl Display for IkaSystemCheckpoint {
 // IkaSystemCheckpoints are signed by an authority and 2f+1 form a
 // certificate that others can use to catch up. The actual
 // content of the digest must at the very least commit to
-// the set of transactions contained in the certificate but
+// the set of transactions contained in the certificate, but
 // we might extend this to contain roots of merkle trees,
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.

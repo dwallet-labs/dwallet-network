@@ -280,10 +280,6 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
                     .await;
-                println!(
-                    "next_checkpoint_sequence_number: {:?}",
-                    next_checkpoint_sequence_number
-                );
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
@@ -328,10 +324,6 @@ where
                     }
                 }
 
-                println!(
-                    "next_ika_system_checkpoint_sequence_number: {:?}",
-                    next_ika_system_checkpoint_sequence_number
-                );
                 if let Ok(Some(ika_system_checkpoint)) = self
                     .ika_system_checkpoint_store
                     .get_ika_system_checkpoint_by_sequence_number(
@@ -358,7 +350,6 @@ where
 
                         let task = Self::handle_ika_system_checkpoint_execution_task(
                             self.ika_system_package_id,
-                            dwallet_2pc_mpc_secp256k1_id,
                             signature,
                             signers_bitmap,
                             message,
@@ -676,7 +667,6 @@ where
 
     async fn handle_ika_system_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,

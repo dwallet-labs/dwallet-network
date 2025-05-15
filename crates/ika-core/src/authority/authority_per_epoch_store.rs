@@ -425,22 +425,24 @@ pub struct AuthorityEpochTables {
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
     builder_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage>,
 
-    // #[default_options_override_fn = "pending_checkpoints_table_default_config"]
+    #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_ika_system_checkpoints: DBMap<IkaSystemCheckpointHeight, PendingIkaSystemCheckpoint>,
 
     /// Stores pending signatures
-    /// The key in this table is checkpoint sequence number and an arbitrary integer
+    /// The key in this table is ika system checkpoint sequence number and an arbitrary integer
     pending_ika_system_checkpoint_signatures:
         DBMap<(CheckpointSequenceNumber, u64), IkaSystemCheckpointSignatureMessage>,
 
-    /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
+    /// Maps sequence number to ika system checkpoint summary, used by IkaSystemCheckpointBuilder to build checkpoint within epoch
     builder_ika_system_checkpoint_v1: DBMap<CheckpointSequenceNumber, BuilderIkaSystemCheckpoint>,
 
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
-    /// max version can't be same as the max version
-    next_protocol_config_sent: DBMap<ProtocolVersion, ()>,
+    /// Record the every protocol config version sent to the authority at the current epoch.
+    /// This is used to check if the authority has already sent the protocol config version,
+    /// so it not to be sent again.
+    protocol_config_version_sent: DBMap<ProtocolVersion, ()>,
 
     /// Contains a single key, which overrides the value of
     /// ProtocolConfig::buffer_stake_for_protocol_upgrade_bps
@@ -1031,32 +1033,25 @@ impl AuthorityPerEpochStore {
         Ok(result?)
     }
 
-    pub fn record_next_protocol_config_sent(&self, protocol_version: ProtocolVersion) -> IkaResult {
+    pub fn record_protocol_config_version_sent(
+        &self,
+        protocol_version: ProtocolVersion,
+    ) -> IkaResult {
         self.tables()?
-            .next_protocol_config_sent
+            .protocol_config_version_sent
             .insert(&protocol_version, &())?;
         Ok(())
     }
 
-    pub fn last_next_protocol_config_sent(&self) -> IkaResult<Option<ProtocolVersion>> {
+    pub fn last_protocol_config_version_sent(&self) -> IkaResult<Option<ProtocolVersion>> {
         Ok(self
             .tables()?
-            .next_protocol_config_sent
+            .protocol_config_version_sent
             .unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(s, _)| s))
     }
-
-    // pub fn is_next_protocol_config_sent_exist(
-    //     &self,
-    //     protocol_version: ProtocolVersion,
-    // ) -> IkaResult<bool> {
-    //     Ok(self
-    //         .tables()?
-    //         .next_protocol_config_sent
-    //         .contains_key(&protocol_version)?)
-    // }
 
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
@@ -1325,7 +1320,7 @@ impl AuthorityPerEpochStore {
             .for_each(|message| {
                 if let IkaSystemCheckpointKind::NextConfigVersion(version) = message {
                     if let Ok(tables) = self.tables() {
-                        if let Err(e) = tables.next_protocol_config_sent.insert(version, &()) {
+                        if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
                             warn!(
                                 ?e,
                                 "Failed to insert next protocol config version into the table"
@@ -1674,7 +1669,7 @@ impl AuthorityPerEpochStore {
                     capabilities.clone(),
                     self.get_effective_buffer_stake_bps(),
                 ) {
-                    let last_version_sent = self.last_next_protocol_config_sent()?;
+                    let last_version_sent = self.last_protocol_config_version_sent()?;
                     if last_version_sent.is_none() || last_version_sent != Some(new_version) {
                         info!(
                             validator=?self.name,

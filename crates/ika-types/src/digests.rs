@@ -612,18 +612,18 @@ impl fmt::UpperHex for MessageDigest {
 }
 
 impl TryFrom<&[u8]> for MessageDigest {
-    type Error = crate::error::IkaError;
+    type Error = IkaError;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, crate::error::IkaError> {
+    fn try_from(bytes: &[u8]) -> Result<Self, IkaError> {
         let arr: [u8; 32] = bytes
             .try_into()
-            .map_err(|_| crate::error::IkaError::InvalidMessageDigest)?;
+            .map_err(|_| IkaError::InvalidMessageDigest)?;
         Ok(Self::new(arr))
     }
 }
 
 impl TryFrom<Vec<u8>> for MessageDigest {
-    type Error = crate::error::IkaError;
+    type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
         Digest::try_from(bytes).map(MessageDigest)
@@ -735,7 +735,7 @@ impl DWalletMPCOutputDigest {
 )]
 pub struct IkaSystemCheckpointDigest(Digest);
 
-impl crate::digests::IkaSystemCheckpointDigest {
+impl IkaSystemCheckpointDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -765,63 +765,63 @@ impl crate::digests::IkaSystemCheckpointDigest {
     }
 }
 
-impl AsRef<[u8]> for crate::digests::IkaSystemCheckpointDigest {
+impl AsRef<[u8]> for IkaSystemCheckpointDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for crate::digests::IkaSystemCheckpointDigest {
+impl AsRef<[u8; 32]> for IkaSystemCheckpointDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl From<crate::digests::IkaSystemCheckpointDigest> for [u8; 32] {
-    fn from(digest: crate::digests::IkaSystemCheckpointDigest) -> Self {
+impl From<IkaSystemCheckpointDigest> for [u8; 32] {
+    fn from(digest: IkaSystemCheckpointDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for crate::digests::IkaSystemCheckpointDigest {
+impl From<[u8; 32]> for IkaSystemCheckpointDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl TryFrom<Vec<u8>> for crate::digests::IkaSystemCheckpointDigest {
+impl TryFrom<Vec<u8>> for IkaSystemCheckpointDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(crate::digests::IkaSystemCheckpointDigest)
+        Digest::try_from(bytes).map(IkaSystemCheckpointDigest)
     }
 }
 
-impl fmt::Display for crate::digests::IkaSystemCheckpointDigest {
+impl fmt::Display for IkaSystemCheckpointDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for crate::digests::IkaSystemCheckpointDigest {
+impl fmt::Debug for IkaSystemCheckpointDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("CheckpointDigest").field(&self.0).finish()
     }
 }
 
-impl fmt::LowerHex for crate::digests::IkaSystemCheckpointDigest {
+impl fmt::LowerHex for IkaSystemCheckpointDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for crate::digests::IkaSystemCheckpointDigest {
+impl fmt::UpperHex for IkaSystemCheckpointDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
 
-impl std::str::FromStr for crate::digests::IkaSystemCheckpointDigest {
+impl std::str::FromStr for IkaSystemCheckpointDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -831,14 +831,14 @@ impl std::str::FromStr for crate::digests::IkaSystemCheckpointDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(crate::digests::IkaSystemCheckpointDigest::new(result))
+        Ok(IkaSystemCheckpointDigest::new(result))
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct IkaSystemCheckpointContentsDigest(Digest);
 
-impl crate::digests::IkaSystemCheckpointContentsDigest {
+impl IkaSystemCheckpointContentsDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -868,45 +868,45 @@ impl crate::digests::IkaSystemCheckpointContentsDigest {
     }
 }
 
-impl AsRef<[u8]> for crate::digests::IkaSystemCheckpointContentsDigest {
+impl AsRef<[u8]> for IkaSystemCheckpointContentsDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for crate::digests::IkaSystemCheckpointContentsDigest {
+impl AsRef<[u8; 32]> for IkaSystemCheckpointContentsDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<Vec<u8>> for crate::digests::IkaSystemCheckpointContentsDigest {
+impl TryFrom<Vec<u8>> for IkaSystemCheckpointContentsDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(crate::digests::IkaSystemCheckpointContentsDigest)
+        Digest::try_from(bytes).map(IkaSystemCheckpointContentsDigest)
     }
 }
 
-impl From<crate::digests::IkaSystemCheckpointContentsDigest> for [u8; 32] {
-    fn from(digest: crate::digests::IkaSystemCheckpointContentsDigest) -> Self {
+impl From<IkaSystemCheckpointContentsDigest> for [u8; 32] {
+    fn from(digest: IkaSystemCheckpointContentsDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for crate::digests::IkaSystemCheckpointContentsDigest {
+impl From<[u8; 32]> for IkaSystemCheckpointContentsDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl fmt::Display for crate::digests::IkaSystemCheckpointContentsDigest {
+impl fmt::Display for IkaSystemCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for crate::digests::IkaSystemCheckpointContentsDigest {
+impl fmt::Debug for IkaSystemCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("IkaSystemCheckpointContentsDigest")
             .field(&self.0)
@@ -914,7 +914,7 @@ impl fmt::Debug for crate::digests::IkaSystemCheckpointContentsDigest {
     }
 }
 
-impl std::str::FromStr for crate::digests::IkaSystemCheckpointContentsDigest {
+impl std::str::FromStr for IkaSystemCheckpointContentsDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -924,19 +924,17 @@ impl std::str::FromStr for crate::digests::IkaSystemCheckpointContentsDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(crate::digests::IkaSystemCheckpointContentsDigest::new(
-            result,
-        ))
+        Ok(IkaSystemCheckpointContentsDigest::new(result))
     }
 }
 
-impl fmt::LowerHex for crate::digests::IkaSystemCheckpointContentsDigest {
+impl fmt::LowerHex for IkaSystemCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for crate::digests::IkaSystemCheckpointContentsDigest {
+impl fmt::UpperHex for IkaSystemCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }

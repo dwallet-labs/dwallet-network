@@ -92,7 +92,7 @@ const CHECKPOINT_FILE_SUFFIX: &str = "ika_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
-pub const PARAMS_MESSAGE_FILE_MAGIC: u32 = 0x0000DEAD;
+pub const PARAMS_MESSAGE_FILE_MAGIC: u32 = 0x0000ABCD;
 const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
 
 #[derive(
@@ -172,62 +172,10 @@ impl Manifest {
             Manifest::V1(manifest) => manifest.next_checkpoint_seq_num,
         }
     }
-    pub fn next_checkpoint_after_epoch(&self, epoch_num: u64) -> u64 {
-        match self {
-            Manifest::V1(manifest) => {
-                let mut summary_files: Vec<_> = manifest
-                    .file_metadata
-                    .clone()
-                    .into_iter()
-                    .filter(|f| f.file_type == FileType::CheckpointMessage)
-                    .collect();
-                summary_files.sort_by_key(|f| f.checkpoint_seq_range.start);
-                assert!(summary_files
-                    .windows(2)
-                    .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
-                assert_eq!(summary_files.first().unwrap().checkpoint_seq_range.start, 0);
-                summary_files
-                    .iter()
-                    .find(|f| f.epoch_num > epoch_num)
-                    .map(|f| f.checkpoint_seq_range.start)
-                    .unwrap_or(u64::MAX)
-            }
-        }
-    }
 
     pub fn next_ika_system_checkpoint_seq_num(&self) -> u64 {
         match self {
             Manifest::V1(manifest) => manifest.next_ika_system_checkpoint_seq_num,
-        }
-    }
-    pub fn next_ika_system_checkpoint_after_epoch(&self, epoch_num: u64) -> u64 {
-        match self {
-            Manifest::V1(manifest) => {
-                let mut summary_files: Vec<_> = manifest
-                    .file_metadata
-                    .clone()
-                    .into_iter()
-                    .filter(|f| f.file_type == FileType::IkaSystemCheckpoint)
-                    .collect();
-                summary_files.sort_by_key(|f| f.ika_system_checkpoint_seq_range.start);
-                assert!(summary_files
-                    .windows(2)
-                    .all(|w| w[1].ika_system_checkpoint_seq_range.start
-                        == w[0].ika_system_checkpoint_seq_range.end));
-                assert_eq!(
-                    summary_files
-                        .first()
-                        .unwrap()
-                        .ika_system_checkpoint_seq_range
-                        .start,
-                    0
-                );
-                summary_files
-                    .iter()
-                    .find(|f| f.epoch_num > epoch_num)
-                    .map(|f| f.ika_system_checkpoint_seq_range.start)
-                    .unwrap_or(u64::MAX)
-            }
         }
     }
 
@@ -553,104 +501,5 @@ where
         .map(|c| c.sequence_number)
         .unwrap_or(0);
     info!("Highest verified checkpoint: {}", end);
-    Ok(())
-}
-
-pub async fn verify_archive_with_local_store_ika_system_checkpoint<S>(
-    store: S,
-    remote_store_config: ObjectStoreConfig,
-    concurrency: usize,
-    interactive: bool,
-) -> Result<()>
-where
-    S: WriteStore + Clone + Send + 'static,
-{
-    let metrics = ArchiveReaderMetrics::new(&Registry::default());
-    let config = ArchiveReaderConfig {
-        remote_store_config,
-        download_concurrency: NonZeroUsize::new(concurrency).unwrap(),
-        use_for_pruning_watermark: false,
-    };
-    let archive_reader = ArchiveReader::new(config, &metrics)?;
-    archive_reader.sync_manifest_once().await?;
-    let latest_ika_system_checkpoint_in_archive = archive_reader
-        .latest_available_ika_system_checkpoint()
-        .await?;
-    info!(
-        "Latest available ika_system_checkpoint in archive store: {}",
-        latest_ika_system_checkpoint_in_archive
-    );
-    let latest_ika_system_checkpoint = store
-        .get_highest_synced_ika_system_checkpoint()
-        .map_err(|_| anyhow!("Failed to read highest synced ika_system_checkpoint"))?
-        .map(|c| c.sequence_number)
-        .unwrap_or(0);
-    info!("Highest synced ika_system_checkpoint in db: {latest_ika_system_checkpoint}");
-    let action_counter = Arc::new(AtomicU64::new(0));
-    let ika_system_checkpoint_counter = Arc::new(AtomicU64::new(0));
-    let progress_bar = if interactive {
-        let progress_bar = ProgressBar::new(latest_ika_system_checkpoint_in_archive).with_style(
-            ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")
-                .unwrap(),
-        );
-        let cloned_progress_bar = progress_bar.clone();
-        let cloned_counter = action_counter.clone();
-        let cloned_ika_system_checkpoint_counter = ika_system_checkpoint_counter.clone();
-        let instant = Instant::now();
-        tokio::spawn(async move {
-            loop {
-                let total_ika_system_checkpoints_loaded =
-                    cloned_ika_system_checkpoint_counter.load(Ordering::Relaxed);
-                let total_ika_system_checkpoints_per_sec =
-                    total_ika_system_checkpoints_loaded as f64 / instant.elapsed().as_secs_f64();
-                let total_txns_per_sec =
-                    cloned_counter.load(Ordering::Relaxed) as f64 / instant.elapsed().as_secs_f64();
-                cloned_progress_bar.set_position(
-                    latest_ika_system_checkpoint + total_ika_system_checkpoints_loaded,
-                );
-                cloned_progress_bar.set_message(format!(
-                    "ika_system_checkpoints/s: {}, txns/s: {}",
-                    total_ika_system_checkpoints_per_sec, total_txns_per_sec
-                ));
-                tokio::time::sleep(Duration::from_secs(1)).await;
-            }
-        });
-        Some(progress_bar)
-    } else {
-        let cloned_store = store.clone();
-        tokio::spawn(async move {
-            loop {
-                let latest_ika_system_checkpoint = cloned_store
-                    .get_highest_synced_ika_system_checkpoint()
-                    .map_err(|_| anyhow!("Failed to read highest synced ika_system_checkpoint"))?
-                    .map(|c| c.sequence_number)
-                    .unwrap_or(0);
-                let percent =
-                    (latest_ika_system_checkpoint * 100) / latest_ika_system_checkpoint_in_archive;
-                info!("done = {percent}%");
-                tokio::time::sleep(Duration::from_secs(60)).await;
-                if percent >= 100 {
-                    break;
-                }
-            }
-            Ok::<(), anyhow::Error>(())
-        });
-        None
-    };
-    archive_reader
-        .read_ika_system_checkpoints(
-            store.clone(),
-            (latest_ika_system_checkpoint + 1)..u64::MAX,
-            action_counter,
-            ika_system_checkpoint_counter,
-        )
-        .await?;
-    progress_bar.iter().for_each(|p| p.finish_and_clear());
-    let end = store
-        .get_highest_synced_ika_system_checkpoint()
-        .map_err(|_| anyhow!("Failed to read watermark"))?
-        .map(|c| c.sequence_number)
-        .unwrap_or(0);
-    info!("Highest verified ika_system_checkpoint: {}", end);
     Ok(())
 }

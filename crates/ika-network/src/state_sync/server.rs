@@ -364,7 +364,7 @@ pub(super) struct IkaSystemCheckpointDownloadLimit<S> {
 }
 
 impl<S> tower::Service<Request<GetIkaSystemCheckpointRequest>>
-    for crate::state_sync::server::IkaSystemCheckpointDownloadLimit<S>
+    for IkaSystemCheckpointDownloadLimit<S>
 where
     S: tower::Service<
             Request<GetIkaSystemCheckpointRequest>,
@@ -402,11 +402,9 @@ where
             };
             let permit = semaphore.try_acquire_owned().map_err(|e| match e {
                 tokio::sync::TryAcquireError::Closed => {
-                    anemo::rpc::Status::new(StatusCode::InternalServerError)
+                    Status::new(StatusCode::InternalServerError)
                 }
-                tokio::sync::TryAcquireError::NoPermits => {
-                    anemo::rpc::Status::new(StatusCode::TooManyRequests)
-                }
+                tokio::sync::TryAcquireError::NoPermits => Status::new(StatusCode::TooManyRequests),
             })?;
 
             struct SemaphoreExtension(#[allow(unused)] OwnedSemaphorePermit);

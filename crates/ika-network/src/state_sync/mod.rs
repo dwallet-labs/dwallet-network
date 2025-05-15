@@ -473,8 +473,6 @@ struct StateSyncEventLoop<S> {
     sync_checkpoint_messages_task: Option<AbortHandle>,
     download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
 
-    // sync_checkpoint_messages_task: Option<AbortHandle>,
-    // download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
     checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
@@ -632,8 +630,6 @@ where
     // Handle a checkpoint that we received from consensus
     #[instrument(level = "debug", skip_all)]
     fn handle_checkpoint_from_consensus(&mut self, checkpoint: Box<VerifiedCheckpointMessage>) {
-        println!("handle_checkpoint_from_consensus");
-        println!("checkpoint seq num: {:?}", checkpoint.sequence_number);
         if *checkpoint.sequence_number() == 0 {
             return;
         }
@@ -688,19 +684,8 @@ where
         &mut self,
         ika_system_checkpoint: Box<VerifiedIkaSystemCheckpoint>,
     ) {
-        println!("handle_ika_system_checkpoint_from_consensus");
-        println!("ika_system_checkpoint: {:?}", ika_system_checkpoint);
         // if *ika_system_checkpoint.sequence_number() == 0 {
         //     return;
-        // }
-        // // Always check previous_digest matches in case there is a gap between
-        // // state sync and consensus.
-        // let prev_digest = *self.store.get_ika_system_checkpoint_by_sequence_number(ika_system_checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
-        //     .expect("store operation should not fail")
-        //     .unwrap_or_else(|| panic!("Got ika_system_checkpoint {} from consensus but cannot find ika_system_checkpoint {} in certified_ika_system_checkpoints", ika_system_checkpoint.sequence_number(), ika_system_checkpoint.sequence_number() - 1))
-        //     .digest();
-        // if ika_system_checkpoint.previous_digest != Some(prev_digest) {
-        //     panic!("paramsMessage {} from consensus has mismatched previous_digest, expected: {:?}, actual: {:?}", ika_system_checkpoint.sequence_number(), Some(prev_digest), ika_system_checkpoint.previous_digest);
         // }
 
         let latest_ika_system_checkpoint_sequence_number = self
