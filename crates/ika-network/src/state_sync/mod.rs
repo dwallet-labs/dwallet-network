@@ -651,6 +651,11 @@ async fn get_latest_from_peer(
     peer_heights: Arc<RwLock<PeerHeights>>,
     timeout: Duration,
 ) {
+    info!(
+        peer_id = ?peer.peer_id(),
+        chain_identifier = ?our_chain_identifier,
+        "Querying peer for latest checkpoint"
+    );
     let peer_id = peer.peer_id();
     let mut client = StateSyncClient::new(peer);
 
