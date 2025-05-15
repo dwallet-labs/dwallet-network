@@ -42,10 +42,10 @@ use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
-/// The result of the check if the session is ready to advance.
+/// Represents the result of checking whether the session is ready to advance.
 ///
-/// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
-/// while performing the check.
+/// This structure contains a flag indicating if the session is ready to advance,
+/// and a list of malicious parties detected during the check.
 pub(crate) struct ReadyToAdvanceCheckResult {
     pub(crate) is_ready: bool,
     pub(crate) malicious_parties: Vec<PartyID>,
