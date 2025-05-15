@@ -194,7 +194,7 @@ async function registerEncryptionKey(
 				mutable: true,
 			}),
 			// TODO: select the correct curve
-			tx.pure(bcs.u8().serialize(0)),
+			tx.pure.u32(0),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKeySignature)),
 			tx.pure(

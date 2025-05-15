@@ -13,7 +13,7 @@ use wasm_bindgen::JsValue;
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
     network_decryption_key_public_output: Vec<u8>,
-    key_scheme: u8,
+    key_scheme: u32,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
@@ -114,12 +114,12 @@ pub fn public_keys_from_dkg_output(dkg_output: Vec<u8>) -> Result<JsValue, JsErr
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
     network_decryption_key_public_output: Vec<u8>,
-    key_scheme: u8,
+    key_scheme: u32,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_dkg_secret_output: Vec<u8>,
     presign: Vec<u8>,
     message: Vec<u8>,
-    hash_type: u8,
+    hash_type: u32,
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
         network_decryption_key_public_output,

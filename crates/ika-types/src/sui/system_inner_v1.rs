@@ -139,11 +139,11 @@ pub struct DWalletCoordinatorInnerV1 {
     pub total_messages_processed: u64,
     pub last_processed_checkpoint_sequence_number: Option<u64>,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
-    pub supported_curves_to_signature_algorithms: VecMap<u8, Vec<u8>>,
-    pub supported_signature_algorithms_to_hash_schemes: VecMap<u8, Vec<u8>>,
-    pub paused_curves: Vec<u8>,
-    pub paused_signature_algorithms: Vec<u8>,
-    pub signature_algorithms_allowed_global_presign: Vec<u8>,
+    pub supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, Vec<u32>>>,
+    pub paused_curves: Vec<u32>,
+    pub paused_signature_algorithms: Vec<u32>,
+    pub paused_hash_schemes: Vec<u32>,
+    pub signature_algorithms_allowed_global_presign: Vec<u32>,
     pub extra_fields: Bag,
 }
 

@@ -25,7 +25,7 @@ import {
 	createUnverifiedPartialUserSignatureCap,
 	Hash,
 	sign,
-	verifyECFSASignWithPartialUserSignatures,
+	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -138,7 +138,7 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 		);
 		await delay(checkpointCreationTime);
-		const verifiedPartialUserSignatureCapID = await verifyECFSASignWithPartialUserSignatures(
+		const verifiedPartialUserSignatureCapID = await verifySignWithPartialUserSignatures(
 			conf,
 			unverifiedPartialUserSignatureCapID!,
 		);
