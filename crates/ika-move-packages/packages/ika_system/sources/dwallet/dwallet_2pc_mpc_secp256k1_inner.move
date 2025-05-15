@@ -151,7 +151,7 @@ public struct EncryptionKey has key, store {
 
     created_at_epoch: u64,
 
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    //TODO: make sure to include class group type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
 
@@ -199,7 +199,7 @@ public enum EncryptedUserSecretKeyShareState has copy, drop, store {
     AwaitingNetworkVerification,
     NetworkVerificationCompleted,
     NetworkVerificationRejected,
-    KeyHolderSiged {
+    KeyHolderSigned {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
@@ -428,7 +428,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
+public struct CompletedDKGFirstRoundEvent has copy, drop, store {
     /// The unique session identifier for the DKG process.
     dwallet_id: ID,
 
@@ -646,7 +646,7 @@ public struct ECDSASignRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The presign object ID, this ID will
-    /// be used as the singature MPC protocol ID.
+    /// be used as the signature MPC protocol ID.
     presign_id: ID,
 
     /// The presign protocol output as bytes.
@@ -710,7 +710,7 @@ public struct RejectedECDSASignEvent has copy, drop, store {
 }
 
 /// Event containing system-level checkpoint information, emitted during
-/// the checkpoint submmision message.
+/// the checkpoint submission message.
 public struct SystemCheckpointInfoEvent has copy, drop, store {
     epoch: u64,
     sequence_number: u64,
@@ -1324,7 +1324,7 @@ public(package) fun respond_dwallet_dkg_first_round(
                 });
                 DWalletState::NetworkRejectedFirstRound
             } else {
-                event::emit(CompletedDKGFirstdRoundEvent {
+                event::emit(CompletedDKGFirstRoundEvent {
                 dwallet_id,
                 first_round_output,
             });
@@ -1632,7 +1632,7 @@ public(package) fun accept_encrypted_user_share(
     let dwallet = self.get_dwallet_mut(dwallet_id);
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
     encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSiged {
+        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSigned {
             user_output_signature
         },
         _ => abort EWrongState
@@ -1663,7 +1663,7 @@ public(package) fun accept_encrypted_user_share(
 /// - Emits a `RequestedPresignFirstRoundEvent` for each presign in the batch, with relevant details.
 ///
 /// ### Parameters
-/// - `dwallet_id`: The dWallet's ID to resquest presign.
+/// - `dwallet_id`: The dWallet's ID to request presign.
 /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 public(package) fun request_ecdsa_presign(
     self: &mut DWalletCoordinatorInner,
