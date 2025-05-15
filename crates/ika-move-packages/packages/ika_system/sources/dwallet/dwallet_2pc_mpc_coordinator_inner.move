@@ -28,6 +28,23 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
     self.locked_last_session_to_complete_in_current_epoch = true;
 }
 
+/// A shared object that holds all the Ika system object used to manage dWallets:
+/// 
+/// Most importantly, the `dwallets` themselves, which holds the public key and public key shares,
+/// and the encryption of the network's share under the network's threshold encryption key. 
+/// The encryption of the network's secret key share for every dWallet points to an encryption key in `dwallet_network_encryption_keys`,
+/// which also stores the encrypted decryption key shares of each validator and their public verification keys.
+/// 
+/// For the user side, the secret key share is stored encrypted to the user encryption key (in `encryption_keys`) inside the dWallet,
+/// together with a signature on the public key (shares).
+/// Together, these constitute the necessairy information to create a signature with the user.
+/// 
+/// Next, `presigns` holds the outputs of the Presign protocol which are later used for the signing protocol, 
+/// and `partial_centralized_signed_messages` holds the partial signatures of users awaiting for a future sign once a `MessageApproval` is presented.
+/// 
+/// Additionally, this structure holds management infromation, like the `previous_committee` and `active_committee` comittees,
+/// information regarding `pricing`, all the `sessions` and the `next_session_sequence_number` that will be used for the next session,
+/// and various other fields, like the supported and paused curves, signing algorithms and hashes.
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
@@ -51,8 +68,8 @@ public struct DWalletCoordinatorInner has store {
     /// The key is the ID of `DWallet`.
     dwallets: ObjectTable<ID, DWallet>,
     // TODO: change it to versioned
-    /// The key is the ID of `DWalletNetworkDecryptionKey`.
-    dwallet_network_decryption_keys: ObjectTable<ID, DWalletNetworkDecryptionKey>,
+    /// The key is the ID of `DWalletNetworkEncryptionKey`.
+    dwallet_network_encryption_keys: ObjectTable<ID, DWalletNetworkEncryptionKey>,
     // TODO: change it to versioned
     /// A table mapping user addresses to encryption key object IDs.
     encryption_keys: ObjectTable<address, EncryptionKey>,
@@ -77,13 +94,14 @@ public struct DWalletCoordinatorInner has store {
     /// The last checkpoint sequence number processed in the previous epoch.
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// A nested map of supported curves to signature algorithms to hash schemes.
-    /// e.g. secp256k1 -> (ecdsa -> [sha256, keccak256])
+    /// e.g. secp256k1 -> [(ecdsa -> [sha256, keccak256]), (schnorr -> [sha256])]
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    // TODO(@Omer): paused_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     /// A list of paused curves in case of emergency.
-    /// e.g. [secp256k1]
+    /// e.g. [secp256k1, ristretto]
     paused_curves: vector<u32>,
     /// A list of paused signature algorithms in case of emergency.
-    /// e.g. [ecdsa]
+    /// e.g. [ecdsa, schnorr]
     paused_signature_algorithms: vector<u32>,
     /// A list of paused hash schemes in case of emergency.
     /// e.g. [sha256, keccak256]
@@ -96,12 +114,14 @@ public struct DWalletCoordinatorInner has store {
 
 public struct DWalletSessionEventKey has copy, drop, store {}
 
+/// An Ika MPC session.
 public struct DWalletSession has key, store {
     id: UID,
 
     session_sequence_number: u64,
 
-    dwallet_network_decryption_key_id: ID,
+    // TODO(@Omer): this should be an `Option<>`, as non-dWallet MPC sessions might not be related to any network encryption key.
+    dwallet_network_encryption_key_id: ID,
 
     /// The fees paid for consensus validation in IKA.
     consensus_validation_fee_charged_ika: Balance<IKA>,
@@ -126,25 +146,31 @@ public struct ImportedKeyDWalletCap has key, store {
 }
 
 /// Represents a capability granting control over a specific dWallet network decryption key.
-public struct DWalletNetworkDecryptionKeyCap has key, store {
+public struct DWalletNetworkEncryptionKeyCap has key, store {
     id: UID,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
-/// `DWalletNetworkDecryptionKey` represents a network decryption key of
-/// the homomorphically encrypted network share.
-public struct DWalletNetworkDecryptionKey has key, store {
+/// `DWalletNetworkEncryptionKey` represents a (threshold) encryption key owned by the network.
+/// It stores the `network_dkg_public_output`, which in turn stores the encryption key itself.
+/// Before the first reconfiguration (which happens at every epoch switch,) 
+/// `network_dkg_public_output` also holds the encryption of the current decryption key shares 
+/// (encrypted to each validator's encryption key, and decrypted by them whenever they start)  
+/// and the public verification keys of all validators, from which the public parameters of the threshold encryption scheme
+/// can be generated. 
+/// After the first reconfiguration, `reconfiguration_public_outputs` holds this information updated for the `current_epoch`.
+public struct DWalletNetworkEncryptionKey has key, store {
     id: UID,
-    dwallet_network_decryption_key_cap_id: ID,
+    dwallet_network_encryption_key_cap_id: ID,
     current_epoch: u64,
     reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
     network_dkg_public_output: TableVec<vector<u8>>,
     /// The fees paid for computation in IKA.
     computation_fee_charged_ika: Balance<IKA>,
-    state: DWalletNetworkDecryptionKeyState,
+    state: DWalletNetworkEncryptionKeyState,
 }
 
-public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
+public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
     /// Reconfiguration request was sent to the network, but didn't finish yet.
@@ -154,15 +180,15 @@ public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
     NetworkReconfigurationCompleted,
 }
 
-
 /// Represents an encryption key used to encrypt a dWallet centralized (user) secret key share.
 ///
 /// Encryption keys facilitate secure data transfer between accounts on the
 /// Ika by ensuring that sensitive information remains confidential during transmission.
+/// 
 /// Each address on the Ika is associated with a unique encryption key.
-/// When an external party intends to send encrypted data to a particular account, they use the recipient's
-/// encryption key to encrypt the data. The recipient is then the sole entity capable of decrypting
-/// and accessing this information, ensuring secure, end-to-end encryption.
+/// When a user intends to send encrypted data (i.e. when sharing the secret key share to grant access and/or transfer a dWallet) to another user,
+/// they use the recipient's encryption key to encrypt the data. 
+/// The recipient is then the sole entity capable of decrypting and accessing this information, ensuring secure, end-to-end encryption.
 public struct EncryptionKey has key, store {
     /// Unique identifier for the `EncryptionKey`.
     id: UID,
@@ -176,6 +202,7 @@ public struct EncryptionKey has key, store {
     encryption_key: vector<u8>,
 
     /// Signature for the encryption key, signed by the `signer_public_key`.
+    /// Used to verify the data originated from the `signer_address`.
     encryption_key_signature: vector<u8>,
 
     /// The public key that was used to sign the `encryption_key`.
@@ -202,6 +229,7 @@ public struct EncryptedUserSecretKeyShare has key, store {
 
     /// The encrypted centralized secret key share along with a cryptographic proof
     /// that the encryption corresponds to the dWallet's secret key share.
+    // TODO(@Omer): once we verify the proof, I don't see a need to save it. In fact, I modified the code to not return the proof after verification, just the encryption.
     encrypted_centralized_secret_share_and_proof: vector<u8>,
 
     /// The ID of the `EncryptionKey` object used to encrypt the secret share.
@@ -311,7 +339,7 @@ public struct DWallet has key, store {
     dwallet_cap_id: ID,
 
     /// The MPC network decryption key id that is used to decrypt this dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     is_imported_key_dwallet: bool,
 
@@ -455,15 +483,15 @@ public struct CreatedEncryptionKeyEvent has copy, drop, store {
 }
 
 public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+       dwallet_network_encryption_key_id: ID,
 }
 
 /// An event emitted when the first round of the DKG process is completed.
@@ -473,7 +501,7 @@ public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+       dwallet_network_encryption_key_id: ID,
 }
 
 // DKG TYPES
@@ -490,7 +518,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
     dwallet_cap_id: ID,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
     curve: u32,
@@ -551,7 +579,7 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
     signer_public_key: vector<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
     curve: u32,
@@ -612,7 +640,7 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     signer_public_key: vector<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
     curve: u32,
@@ -664,7 +692,7 @@ public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
     encrypted_user_secret_key_share_id: ID,
 
     source_encrypted_user_secret_key_share_id: ID,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     curve: u32,
 }
@@ -710,7 +738,7 @@ public struct MakeDWalletUserSecretKeySharesPublicRequestEvent has copy, drop, s
 
     dwallet_id: ID,
 
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 public struct CompletedMakeDWalletUserSecretKeySharesPublicEvent has copy, drop, store {
@@ -744,7 +772,7 @@ public struct PresignRequestEvent has copy, drop, store {
     dwallet_public_output: Option<vector<u8>>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     /// The curve used for the presign.
     curve: u32,
@@ -811,7 +839,7 @@ public struct SignRequestEvent has copy, drop, store {
     message: vector<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 
     /// The presign object ID, this ID will
     /// be used as the singature MPC protocol ID.
@@ -838,7 +866,7 @@ public struct FutureSignRequestEvent has copy, drop, store {
     signature_algorithm: u32,
     hash_scheme: u32,
     message_centralized_signature: vector<u8>,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 public struct CompletedFutureSignEvent has copy, drop, store {
@@ -892,7 +920,7 @@ const EDWalletMismatch: u64 = 1;
 const EDWalletInactive: u64 = 2;
 const EDWalletNotExists: u64 = 3;
 const EWrongState: u64 = 4;
-const EDWalletNetworkDecryptionKeyNotExist: u64 = 5;
+const EDWalletNetworkEncryptionKeyNotExist: u64 = 5;
 const EInvalidEncryptionKeySignature: u64 = 6;
 const EMessageApprovalMismatch: u64 = 7;
 const EInvalidHashScheme: u64 = 8;
@@ -901,7 +929,7 @@ const EPresignNotExist: u64 = 10;
 const EIncorrectCap: u64 = 11;
 const EUnverifiedCap: u64 = 12;
 const EInvalidSource: u64 =13;
-const EDWalletNetworkDecryptionKeyNotActive: u64 = 14;
+const EDWalletNetworkEncryptionKeyNotActive: u64 = 14;
 const EInvalidPresign: u64 = 15;
 const ECannotAdvanceEpoch: u64 = 16;
 const EInvalidCurve: u64 = 17;
@@ -940,7 +968,7 @@ public(package) fun create_dwallet_coordinator_inner(
         max_active_sessions_buffer: 100,
         locked_last_session_to_complete_in_current_epoch: false,
         dwallets: object_table::new(ctx),
-        dwallet_network_decryption_keys: object_table::new(ctx),
+        dwallet_network_encryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
         presigns: object_table::new(ctx),
         partial_centralized_signed_messages: object_table::new(ctx),
@@ -963,126 +991,126 @@ public(package) fun create_dwallet_coordinator_inner(
     }
 }
 
-public(package) fun request_dwallet_network_decryption_key_dkg(
+public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext
-): DWalletNetworkDecryptionKeyCap {
+): DWalletNetworkEncryptionKeyCap {
     let id = object::new(ctx);
-    let dwallet_network_decryption_key_id = id.to_inner();
-    let cap = DWalletNetworkDecryptionKeyCap {
+    let dwallet_network_encryption_key_id = id.to_inner();
+    let cap = DWalletNetworkEncryptionKeyCap {
         id: object::new(ctx),
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
     };
-    self.dwallet_network_decryption_keys.add(dwallet_network_decryption_key_id, DWalletNetworkDecryptionKey {
+    self.dwallet_network_encryption_keys.add(dwallet_network_encryption_key_id, DWalletNetworkEncryptionKey {
         id,
-        dwallet_network_decryption_key_cap_id: object::id(&cap),
+        dwallet_network_encryption_key_cap_id: object::id(&cap),
         current_epoch: self.current_epoch,
         reconfiguration_public_outputs: sui::table::new(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
-        state: DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG,
+        state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
     });
     event::emit(self.create_system_dwallet_event(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         DWalletNetworkDKGDecryptionKeyRequestEvent {
-            dwallet_network_decryption_key_id
+            dwallet_network_encryption_key_id
         },
         ctx,
     ));
     cap
 }
 
-public(package) fun respond_dwallet_network_decryption_key_dkg(
+public(package) fun respond_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     network_public_output: vector<u8>,
     is_last_chunk: bool,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
+    dwallet_network_encryption_key.network_dkg_public_output.push_back(network_public_output);
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
             if (is_last_chunk) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                    dwallet_network_decryption_key_id,
+                    dwallet_network_encryption_key_id,
                 });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
             } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             }
         },
         _ => abort EWrongState
     };
 }
 
-public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
+public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     public_output: vector<u8>,
     is_last_chunk: bool,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
+    let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
     next_reconfiguration_public_output.push_back(public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration => {
             if (is_last_chunk) {
                 event::emit(CompletedDWalletDecryptionKeyReshareEvent {
-                    dwallet_network_decryption_key_id,
+                    dwallet_network_encryption_key_id,
                 });
-                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+                DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration
             } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
             }
         },
         _ => abort EWrongState
     };
 }
 
-public(package) fun advance_epoch_dwallet_network_decryption_key(
+public(package) fun advance_epoch_dwallet_network_encryption_key(
     self: &mut DWalletCoordinatorInner,
-    cap: &DWalletNetworkDecryptionKeyCap,
+    cap: &DWalletNetworkEncryptionKeyCap,
 ): Balance<IKA> {
-    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(
-        cap.dwallet_network_decryption_key_id
+    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(
+        cap.dwallet_network_encryption_key_id
     );
-    assert!(dwallet_network_decryption_key.dwallet_network_decryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
-    assert!(dwallet_network_decryption_key.state == DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration, EWrongState);
-    dwallet_network_decryption_key.current_epoch = dwallet_network_decryption_key.current_epoch + 1;
-    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::NetworkReconfigurationCompleted;
+    assert!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
+    assert!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration, EWrongState);
+    dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;
+    dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted;
     let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
-    epoch_computation_fee_charged_ika.join(dwallet_network_decryption_key.computation_fee_charged_ika.withdraw_all());
+    epoch_computation_fee_charged_ika.join(dwallet_network_encryption_key.computation_fee_charged_ika.withdraw_all());
     return epoch_computation_fee_charged_ika
 }
 
 public(package) fun emit_start_reshare_event(
-    self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkDecryptionKeyCap, ctx: &mut TxContext
+    self: &mut DWalletCoordinatorInner, key_cap: &DWalletNetworkEncryptionKeyCap, ctx: &mut TxContext
 ) {
-    let dwallet_network_decryption_key = self.get_active_dwallet_network_decryption_key(key_cap.dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
-    dwallet_network_decryption_key.reconfiguration_public_outputs.add(dwallet_network_decryption_key.current_epoch + 1, table_vec::empty(ctx));
+    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(key_cap.dwallet_network_encryption_key_id);
+    dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_encryption_key.reconfiguration_public_outputs.add(dwallet_network_encryption_key.current_epoch + 1, table_vec::empty(ctx));
     event::emit(self.create_system_dwallet_event(
-        key_cap.dwallet_network_decryption_key_id,
+        key_cap.dwallet_network_encryption_key_id,
         DWalletDecryptionKeyReshareRequestEvent {
-            dwallet_network_decryption_key_id: key_cap.dwallet_network_decryption_key_id
+            dwallet_network_encryption_key_id: key_cap.dwallet_network_encryption_key_id
         },
         ctx,
     ));
 }
 
-fun get_active_dwallet_network_decryption_key(
+fun get_active_dwallet_network_encryption_key(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
-): &mut DWalletNetworkDecryptionKey {
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    assert!(dwallet_network_decryption_key.state != DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG, EDWalletNetworkDecryptionKeyNotActive);
-    dwallet_network_decryption_key
+    dwallet_network_encryption_key_id: ID,
+): &mut DWalletNetworkEncryptionKey {
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
+    assert!(dwallet_network_encryption_key.state != DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG, EDWalletNetworkEncryptionKeyNotActive);
+    dwallet_network_encryption_key
 }
 
 public(package) fun advance_epoch(
@@ -1142,14 +1170,14 @@ fun validate_active_and_get_public_output(
 
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     pricing: PricingPerOperation,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     event_data: E,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
 
     let computation_fee_charged_ika = payment_ika.split(pricing.computation_ika(), ctx).into_balance();
 
@@ -1160,7 +1188,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let session = DWalletSession {
         id: object::new(ctx),
         session_sequence_number,
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         consensus_validation_fee_charged_ika,
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
@@ -1185,11 +1213,11 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
 
 fun create_system_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     event_data: E,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
     self.started_system_sessions_count = self.started_system_sessions_count + 1;
 
     let event = DWalletEvent {
@@ -1395,7 +1423,7 @@ fun validate_approve_message(
 /// - Emits a `DWalletDKGFirstRoundRequestEvent`.
 public(package) fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
@@ -1405,7 +1433,7 @@ public(package) fun request_dwallet_dkg_first_round(
 
     let pricing = self.pricing.dkg_first_round();
 
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
     let dwallet_cap = DWalletCap {
@@ -1419,21 +1447,21 @@ public(package) fun request_dwallet_dkg_first_round(
         curve,
         public_user_secret_key_shares: option::none(),
         dwallet_cap_id,
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         is_imported_key_dwallet: false,
         encrypted_user_secret_key_shares: object_table::new(ctx),
         signs: object_table::new(ctx),
         state: DWalletState::DKGRequested,
     });
     event::emit(self.charge_and_create_current_epoch_dwallet_event(
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
         DWalletDKGFirstRoundRequestEvent {
             dwallet_id,
             dwallet_cap_id,
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             curve,
         },
         ctx,
@@ -1476,14 +1504,14 @@ fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordina
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
         consensus_validation_fee_charged_ika,
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         id,
         ..
     } = session;
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     let _: DWalletEvent<E> = self.session_start_events.remove(id.to_inner());
     object::delete(id);
-    dwallet_network_decryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
+    dwallet_network_encryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
     self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
 }
@@ -1589,7 +1617,7 @@ public(package) fun request_dwallet_dkg_second_round(
 
     let dwallet_id = dwallet.id.to_inner();
 
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
     let encrypted_user_share = EncryptedUserSecretKeyShare {
         id: object::new(ctx),
@@ -1606,7 +1634,7 @@ public(package) fun request_dwallet_dkg_second_round(
     let pricing = self.pricing.dkg_second_round();
 
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
@@ -1622,7 +1650,7 @@ public(package) fun request_dwallet_dkg_second_round(
             encryption_key_address,
             user_public_output,
             signer_public_key,
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             curve: dwallet.curve,
         },
         ctx,
@@ -1733,7 +1761,7 @@ public(package) fun request_re_encrypt_user_share_for(
 
     let dwallet = self.get_dwallet_mut(dwallet_id);
     let public_output = *dwallet.validate_active_and_get_public_output();
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
     assert!(dwallet.encrypted_user_secret_key_shares.contains(source_encrypted_user_secret_key_share_id), EInvalidSource);
@@ -1755,7 +1783,7 @@ public(package) fun request_re_encrypt_user_share_for(
 
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             pricing,
             payment_ika,
             payment_sui,
@@ -1767,7 +1795,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 encryption_key_id: destination_encryption_key_id,
                 encrypted_user_secret_key_share_id,
                 source_encrypted_user_secret_key_share_id,
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
                 curve,
             },
             ctx,
@@ -1860,13 +1888,13 @@ public(package) fun accept_encrypted_user_share(
 
 public(package) fun new_imported_key_dwallet(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
     self.validate_supported_curve(curve);
 
-    assert!(self.dwallet_network_decryption_keys.contains(dwallet_network_decryption_key_id), EDWalletNetworkDecryptionKeyNotExist);
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
     let dwallet_cap = ImportedKeyDWalletCap {
@@ -1880,7 +1908,7 @@ public(package) fun new_imported_key_dwallet(
         curve,
         public_user_secret_key_shares: option::none(),
         dwallet_cap_id,
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         is_imported_key_dwallet: true,
         encrypted_user_secret_key_shares: object_table::new(ctx),
         signs: object_table::new(ctx),
@@ -1914,13 +1942,13 @@ public(package) fun request_imported_key_dwallet_verification(
         },
         _ => abort EWrongState
     };
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
     let pricing = self.pricing.imported_key_dwallet_verification();
 
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
@@ -1934,7 +1962,7 @@ public(package) fun request_imported_key_dwallet_verification(
             encryption_key_address,
             user_public_output,
             signer_public_key,
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             curve,
         },
         ctx,
@@ -2020,7 +2048,7 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
     ctx: &mut TxContext,
 ) {
     let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
     assert!(dwallet.public_user_secret_key_shares.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
 
@@ -2028,7 +2056,7 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
 
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             pricing,
             payment_ika,
             payment_sui,
@@ -2037,7 +2065,7 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
                 public_output,
                 curve,
                 dwallet_id,
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
             },
             ctx,
         )
@@ -2100,7 +2128,7 @@ public(package) fun request_presign(
 
     self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
 
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
 
     let id = object::new(ctx);
@@ -2124,7 +2152,7 @@ public(package) fun request_presign(
 
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             pricing,
             payment_ika,
             payment_sui,
@@ -2132,7 +2160,7 @@ public(package) fun request_presign(
                 dwallet_id: option::some(dwallet_id),
                 presign_id,
                 dwallet_public_output: option::some(public_output),
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
                 curve,
                 signature_algorithm,
             },
@@ -2144,7 +2172,7 @@ public(package) fun request_presign(
 
 public(package) fun request_global_presign(
     self: &mut DWalletCoordinatorInner,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     signature_algorithm: u32,
     payment_ika: &mut Coin<IKA>,
@@ -2178,7 +2206,7 @@ public(package) fun request_global_presign(
 
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             pricing,
             payment_ika,
             payment_sui,
@@ -2186,7 +2214,7 @@ public(package) fun request_global_presign(
                 dwallet_id: option::none(),
                 presign_id,
                 dwallet_public_output: option::none(),
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
                 curve,
                 signature_algorithm,
             },
@@ -2356,9 +2384,9 @@ fun validate_and_initiate_sign(
 
     let id = object::new(ctx);
     let sign_id = id.to_inner();
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
@@ -2370,7 +2398,7 @@ fun validate_and_initiate_sign(
             signature_algorithm,
             hash_scheme,
             message,
-            dwallet_network_decryption_key_id,
+            dwallet_network_encryption_key_id,
             presign_id,
             presign,
             message_centralized_signature,
@@ -2517,7 +2545,7 @@ public(package) fun request_future_sign(
     assert!(presign_cap.dwallet_id.is_none() || presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
 
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
-    let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
     assert!(self.presigns.contains(presign_cap.presign_id), EPresignNotExist);
@@ -2540,7 +2568,7 @@ public(package) fun request_future_sign(
     };
     let signature_algorithm = presign_obj.signature_algorithm;
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
@@ -2554,7 +2582,7 @@ public(package) fun request_future_sign(
                 signature_algorithm,
                 hash_scheme,
                 message_centralized_signature,
-                dwallet_network_decryption_key_id,
+                dwallet_network_encryption_key_id,
         },
         ctx,
     );
@@ -2994,15 +3022,15 @@ fun process_checkpoint_message(
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_presign(dwallet_id, presign_id, session_id, presign, rejected, session_sequence_number);
             } else if (message_data_type == 6) {
-                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
+                self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, is_last);
             } else if (message_data_type == 7) {
-                let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last);
+                self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last);
             };
         i = i + 1;
     };
