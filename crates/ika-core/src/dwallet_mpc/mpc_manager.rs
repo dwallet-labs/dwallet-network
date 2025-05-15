@@ -297,6 +297,14 @@ impl DWalletMPCManager {
                     );
                 }
             }
+            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
+                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
+                    error!(
+                        "dWallet MPC session failed with threshold not reached with error: {:?}",
+                        err
+                    );
+                }
+            }
         }
     }
 
@@ -339,21 +347,20 @@ impl DWalletMPCManager {
             // since we received the quorum for `ThresholdNotReached`
             // on the previous round,
             // but no messages were sent for the current round.
-            let previous_failed_with_malicious_round = session.current_round - 1;
-            let malicious_party_ids = &session
-                .serialized_full_messages
-                .get(&(previous_failed_with_malicious_round))
-                .unwrap_or(&HashMap::new())
-                .keys()
-                .cloned()
-                .collect::<Vec<PartyID>>();
-            let malicious_authorities =
-                party_ids_to_authority_names(malicious_party_ids, &epoch_store);
             self.malicious_handler
-                .report_malicious_actors(&malicious_authorities?);
+                .report_malicious_actors(&party_ids_to_authority_names(
+                    &session
+                        .serialized_full_messages
+                        .get(&(session.current_round - 1))
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<PartyID>>(),
+                    &*epoch_store,
+                )?);
             session
                 .serialized_full_messages
-                .remove(&(previous_failed_with_malicious_round));
+                .remove(&(session.current_round - 1));
             // Decrement the current round, as we are going to retry the previous round.
             session.current_round -= 1;
         }

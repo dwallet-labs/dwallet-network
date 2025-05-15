@@ -1077,6 +1077,18 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
@@ -1413,6 +1425,10 @@ impl AuthorityPerEpochStore {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
                     }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
                         ..

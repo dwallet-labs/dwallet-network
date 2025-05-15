@@ -8,6 +8,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
+use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
 use k256::elliptic_curve::pkcs8::der::Encode;
@@ -298,6 +299,9 @@ impl DWalletMPCSession {
         tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
     ) -> DwalletMPCResult<()> {
+        // Makes sure all the validators report on the malicious
+        // actors in the same order without duplicates.
+        let malicious_parties_ids = malicious_parties_ids.deduplicate_and_sort();
         let report = MaliciousReport::new(
             party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
             self.session_id.clone(),
