@@ -179,7 +179,6 @@ impl CheckpointWriter {
             FileType::CheckpointMessage,
             self.epoch_num,
             self.checkpoint_range.clone(),
-            self.checkpoint_range.clone(), // todo (yael) fix this
         )?;
         Ok(file_metadata)
     }
@@ -393,7 +392,6 @@ impl IkaSystemCheckpointWriter {
             FileType::IkaSystemCheckpoint,
             self.epoch_num,
             self.ika_system_checkpoint_range.clone(),
-            self.ika_system_checkpoint_range.clone(), // todo (yael) fix this
         )?;
         Ok(file_metadata)
     }

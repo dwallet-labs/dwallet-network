@@ -85,23 +85,22 @@ use tracing::{error, info};
 ///├──────────────────────────────┤
 ///│      sha3 <32 bytes>         │
 ///└──────────────────────────────┘
-pub const CHECKPOINT_MESSAGE_FILE_MAGIC: u32 = 0x0000DEAD;
+pub const IKA_SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000C0DE;
+pub const CHECKPOINT_MESSAGE_FILE_MAGIC: u32 = 0x00000DAD;
 const MANIFEST_FILE_MAGIC: u32 = 0x00C0FFEE;
 const MAGIC_BYTES: usize = 4;
-const CHECKPOINT_FILE_SUFFIX: &str = "ika_checkpoint";
+const IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "ika_system_checkpoint";
+const CHECKPOINT_FILE_SUFFIX: &str = "dwallet_coordinator_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
-
-pub const IKA_SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000ABCD;
-const IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize, TryFromPrimitive, IntoPrimitive,
 )]
 #[repr(u8)]
 pub enum FileType {
-    CheckpointMessage = 0,
-    IkaSystemCheckpoint = 1,
+    IkaSystemCheckpoint = 0,
+    CheckpointMessage = 1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -109,7 +108,6 @@ pub struct FileMetadata {
     pub file_type: FileType,
     pub epoch_num: u64,
     pub checkpoint_seq_range: Range<u64>,
-    pub ika_system_checkpoint_seq_range: Range<u64>,
     pub sha3_digest: [u8; 32],
 }
 
@@ -123,7 +121,7 @@ impl FileMetadata {
             )),
             FileType::IkaSystemCheckpoint => dir_path.child(&*format!(
                 "{}.{IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX}",
-                self.ika_system_checkpoint_seq_range.start
+                self.checkpoint_seq_range.start
             )),
         }
     }
@@ -270,14 +268,12 @@ pub fn create_file_metadata(
     file_type: FileType,
     epoch_num: u64,
     checkpoint_seq_range: Range<u64>,
-    ika_system_checkpoint_seq_range: Range<u64>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum(file_path)?;
     let file_metadata = FileMetadata {
         file_type,
         epoch_num,
         checkpoint_seq_range,
-        ika_system_checkpoint_seq_range,
         sha3_digest,
     };
     Ok(file_metadata)
@@ -288,14 +284,12 @@ pub fn create_file_metadata_from_bytes(
     file_type: FileType,
     epoch_num: u64,
     checkpoint_seq_range: Range<u64>,
-    ika_system_checkpoint_seq_range: Range<u64>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum_for_bytes(bytes)?;
     let file_metadata = FileMetadata {
         file_type,
         epoch_num,
         checkpoint_seq_range,
-        ika_system_checkpoint_seq_range,
         sha3_digest,
     };
     Ok(file_metadata)

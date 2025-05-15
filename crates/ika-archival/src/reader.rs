@@ -707,7 +707,7 @@ impl ArchiveReader {
 
         let start_index = match ika_system_checkpoint_files
             .binary_search_by_key(&ika_system_checkpoint_range.start, |s| {
-                s.ika_system_checkpoint_seq_range.start
+                s.checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index - 1,
@@ -715,7 +715,7 @@ impl ArchiveReader {
 
         let end_index = match ika_system_checkpoint_files
             .binary_search_by_key(&ika_system_checkpoint_range.end, |s| {
-                s.ika_system_checkpoint_seq_range.start
+                s.checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index,
@@ -751,9 +751,9 @@ impl ArchiveReader {
         for ika_system_checkpoint in ordered_ika_system_checkpoints.iter() {
             let index = ika_system_checkpoint_files
                 .binary_search_by(|s| {
-                    if ika_system_checkpoint < &s.ika_system_checkpoint_seq_range.start {
+                    if ika_system_checkpoint < &s.checkpoint_seq_range.start {
                         std::cmp::Ordering::Greater
-                    } else if ika_system_checkpoint >= &s.ika_system_checkpoint_seq_range.end {
+                    } else if ika_system_checkpoint >= &s.checkpoint_seq_range.end {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Equal
@@ -816,14 +816,14 @@ impl ArchiveReader {
 
         let start_index = match files
             .binary_search_by_key(&ika_system_checkpoint_range.start, |c| {
-                c.ika_system_checkpoint_seq_range.start
+                c.checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index - 1,
         };
 
         let end_index = match files.binary_search_by_key(&ika_system_checkpoint_range.end, |c| {
-            c.ika_system_checkpoint_seq_range.start
+            c.checkpoint_seq_range.start
         }) {
             Ok(index) => index,
             Err(index) => index,
