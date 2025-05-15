@@ -261,56 +261,89 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
                     .await;
-                if let Ok(Some(checkpoint_message)) = self
+                match self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
-                    self.metrics.checkpoint_write_requests_total.inc();
-                    self.metrics
-                        .next_checkpoint_sequence
-                        .set(next_checkpoint_sequence_number as i64);
-                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-                    {
-                        let active_members: BlsCommittee = ika_system_state_inner
-                            .validator_set()
-                            .clone()
-                            .active_committee;
-                        let auth_sig = checkpoint_message.auth_sig();
-                        let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap =
-                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message =
-                            bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
+                    Ok(Some(checkpoint_message)) => {
+                        info!(
+                            "Processing checkpoint sequence number: {}",
+                            next_checkpoint_sequence_number
+                        );
+                        self.metrics.checkpoint_write_requests_total.inc();
+                        self.metrics
+                            .next_checkpoint_sequence
+                            .set(next_checkpoint_sequence_number as i64);
+
+                        match ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id() {
+                            Some(dwallet_2pc_mpc_secp256k1_id) => {
+                                let active_members: BlsCommittee = ika_system_state_inner
+                                    .validator_set()
+                                    .clone()
+                                    .active_committee;
+                                let auth_sig = checkpoint_message.auth_sig().clone();
+                                let signature = auth_sig.signature.as_bytes().to_vec();
+                                let signers_bitmap = Self::calculate_signers_bitmap(
+                                    &auth_sig.signers_map,
+                                    &active_members,
+                                );
+                                let message = bcs::to_bytes::<CheckpointMessage>(
+                                    &checkpoint_message.into_message(),
+                                )
                                 .expect("Serializing checkpoint message cannot fail");
 
-                        info!("Signers_bitmap: {:?}", signers_bitmap);
+                                info!(
+                                    "Processing checkpoint with {} signers",
+                                    auth_sig.signers_map.len()
+                                );
+                                info!("Signers_bitmap: {:?}", signers_bitmap);
 
-                        let task = Self::handle_execution_task(
-                            self.ika_system_package_id,
-                            dwallet_2pc_mpc_secp256k1_id,
-                            signature,
-                            signers_bitmap,
-                            message,
-                            &sui_notifier,
-                            &self.sui_client,
-                            &self.metrics,
-                        )
-                        .await;
-                        match task {
-                            Ok(_) => {
-                                self.metrics.checkpoint_writes_success_total.inc();
-                                self.metrics
-                                    .last_written_checkpoint_sequence
-                                    .set(next_checkpoint_sequence_number as i64);
-                                last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
-                                info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                                let task = Self::handle_execution_task(
+                                    self.ika_system_package_id,
+                                    dwallet_2pc_mpc_secp256k1_id,
+                                    signature,
+                                    signers_bitmap,
+                                    message,
+                                    &sui_notifier,
+                                    &self.sui_client,
+                                    &self.metrics,
+                                )
+                                .await;
+                                match task {
+                                    Ok(_) => {
+                                        self.metrics.checkpoint_writes_success_total.inc();
+                                        self.metrics
+                                            .last_written_checkpoint_sequence
+                                            .set(next_checkpoint_sequence_number as i64);
+                                        last_submitted_checkpoint =
+                                            Some(next_checkpoint_sequence_number);
+                                        info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                                    }
+                                    Err(err) => {
+                                        self.metrics.checkpoint_writes_failure_total.inc();
+                                        error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                                    }
+                                };
                             }
-                            Err(err) => {
-                                self.metrics.checkpoint_writes_failure_total.inc();
-                                error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                            None => {
+                                info!(
+                                    "No dwallet_2pc_mpc_secp256k1_id found for checkpoint {}",
+                                    next_checkpoint_sequence_number
+                                );
                             }
-                        };
+                        }
+                    }
+                    Ok(None) => {
+                        info!(
+                            "No checkpoint found for sequence number: {}",
+                            next_checkpoint_sequence_number
+                        );
+                    }
+                    Err(e) => {
+                        info!(
+                            "Failed to get checkpoint {}: {}",
+                            next_checkpoint_sequence_number, e
+                        );
                     }
                 }
             }
