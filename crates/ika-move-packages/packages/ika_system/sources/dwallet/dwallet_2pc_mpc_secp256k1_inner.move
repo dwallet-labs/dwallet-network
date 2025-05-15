@@ -127,13 +127,13 @@ public struct DWalletNetworkDecryptionKey has key, store {
 }
 
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
-    AwaitingNetworkDKG,
-    NetworkDKGCompleted,
-    /// Reconfiguration request was sent to the network, but didn't finish yet.
-    AwaitingNetworkReconfiguration,
-    /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    AwaitingNextEpochReconfiguration,
-    NetworkReconfigurationCompleted,
+        AwaitingNetworkDKG,
+        NetworkDKGCompleted,
+        /// Reconfiguration request was sent to the network, but didn't finish yet.
+        AwaitingNetworkReconfiguration,
+        /// Reconfiguration request finished, but we didn't switch an epoch yet.
+        AwaitingNextEpochReconfiguration,
+        NetworkReconfigurationCompleted,
 }
 
 
@@ -151,7 +151,7 @@ public struct EncryptionKey has key, store {
 
     created_at_epoch: u64,
 
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    //TODO: make sure to include class group type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
 
@@ -194,12 +194,11 @@ public struct EncryptedUserSecretKeyShare has key, store {
 
     state: EncryptedUserSecretKeyShareState,
 }
-
 public enum EncryptedUserSecretKeyShareState has copy, drop, store {
-    AwaitingNetworkVerification,
-    NetworkVerificationCompleted,
-    NetworkVerificationRejected,
-    KeyHolderSiged {
+        AwaitingNetworkVerification,
+        NetworkVerificationCompleted,
+        NetworkVerificationRejected,
+        KeyHolderSigned {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
@@ -256,9 +255,9 @@ public struct ECDSAPartialUserSignature has key, store {
 }
 
 public enum ECDSAPartialUserSignatureState has copy, drop, store {
-    AwaitingNetworkVerification,
-    NetworkVerificationCompleted,
-    NetworkVerificationRejected
+        AwaitingNetworkVerification,
+        NetworkVerificationCompleted,
+        NetworkVerificationRejected
 }
 
 /// `DWallet` represents a decentralized wallet (dWallet) that is
@@ -286,13 +285,14 @@ public struct DWallet has key, store {
 }
 
 public enum DWalletState has copy, drop, store {
-    Requested,
-    AwaitingUser {
+        Requested,
+        AwaitingUser {
         first_round_output: vector<u8>,
     },
-    AwaitingNetworkVerification,
-    NetworkRejectedSecondRound,
-    Active {
+        AwaitingNetworkVerification,
+        NetworkRejectedFirstRound,
+        NetworkRejectedSecondRound,
+        Active {
         /// The output of the DKG process.
         public_output: vector<u8>,
     }
@@ -322,9 +322,9 @@ public struct ECDSAPresign has key, store {
 }
 
 public enum ECDSAPresignState has copy, drop, store {
-    Requested,
-    NetworkRejected,
-    Completed {
+        Requested,
+        NetworkRejected,
+        Completed {
         presign: vector<u8>,
     }
 }
@@ -346,9 +346,9 @@ public struct ECDSASign has key, store {
 }
 
 public enum ECDSASignState has copy, drop, store {
-    Requested,
-    NetworkRejected,
-    Completed {
+        Requested,
+        NetworkRejected,
+        Completed {
         signature: vector<u8>,
     }
 }
@@ -358,10 +358,10 @@ public enum ECDSASignState has copy, drop, store {
 /// the session will get completed.
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
 public enum SessionType has copy, drop, store {
-    User {
+        User {
         sequence_number: u64,
     },
-    System
+        System
 }
 
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
@@ -391,7 +391,7 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
 }
 
 public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 }
 
 /// An event emitted when the first round of the DKG process is completed.
@@ -401,7 +401,7 @@ public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 }
 
 // DKG TYPES
@@ -427,12 +427,17 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
+public struct CompletedDKGFirstRoundEvent has copy, drop, store {
     /// The unique session identifier for the DKG process.
     dwallet_id: ID,
 
     /// The decentralized public output data produced by the first round of the DKG process.
     first_round_output: vector<u8>,
+}
+
+public struct RejectedDWalletDKGSFirstRoundEvent has copy, drop, store {
+    /// The identifier of the dWallet created as a result of the DKG process.
+    dwallet_id: ID,
 }
 
 /// Event emitted to initiate the second round of the DKG process.
@@ -502,8 +507,6 @@ public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
 // END OF DKG TYPES
 
 // ENCRYPTED USER SHARE TYPES
-
-
 
 /// Event emitted to start an encrypted dWallet centralized (user) key share
 /// verification process.
@@ -641,7 +644,7 @@ public struct ECDSASignRequestEvent has copy, drop, store {
     dwallet_network_decryption_key_id: ID,
 
     /// The presign object ID, this ID will
-    /// be used as the singature MPC protocol ID.
+    /// be used as the signature MPC protocol ID.
     presign_id: ID,
 
     /// The presign protocol output as bytes.
@@ -705,7 +708,7 @@ public struct RejectedECDSASignEvent has copy, drop, store {
 }
 
 /// Event containing system-level checkpoint information, emitted during
-/// the checkpoint submmision message.
+/// the checkpoint submission message.
 public struct SystemCheckpointInfoEvent has copy, drop, store {
     epoch: u64,
     sequence_number: u64,
@@ -808,25 +811,40 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     dwallet_network_decryption_key_id: ID,
     network_public_output: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
-            if (is_last_chunk) {
-                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-            } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            }
-        },
-        _ => abort EWrongState
-    };
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(
+        dwallet_network_decryption_key_id
+    );
+    if (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_decryption_key_id,
+            DWalletNetworkDKGDecryptionKeyRequestEvent {
+                dwallet_network_decryption_key_id,
+            },
+            ctx,
+        ));
+    } else {
+        dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
+        dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+                if (is_last_chunk) {
+                    event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                        dwallet_network_decryption_key_id,
+                    });
+                    DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                } else {
+                    DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                }
+            },
+                _ => abort EWrongState
+        };
+    }
 }
 
 public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
@@ -834,26 +852,39 @@ public(package) fun respond_dwallet_network_decryption_key_reconfiguration(
     dwallet_network_decryption_key_id: ID,
     public_output: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
     let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
-    let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
-    next_reconfiguration_public_output.push_back(public_output);
-    dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-        DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
-            if (is_last_chunk) {
-                event::emit(CompletedDWalletDecryptionKeyReshareEvent {
-                    dwallet_network_decryption_key_id,
-                });
-                DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
-            } else {
-                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
-            }
-        },
-        _ => abort EWrongState
-    };
+    if (rejected) {
+        dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration;
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_decryption_key_id,
+            DWalletDecryptionKeyReshareRequestEvent {
+                dwallet_network_decryption_key_id,
+            },
+            ctx,
+        ));
+    } else {
+        let next_reconfiguration_public_output = dwallet_network_decryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_decryption_key.current_epoch + 1);
+            next_reconfiguration_public_output.push_back(public_output);
+            dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration => {
+                    if (is_last_chunk) {
+                            event::emit(CompletedDWalletDecryptionKeyReshareEvent {
+                                dwallet_network_decryption_key_id,
+                            });
+                            DWalletNetworkDecryptionKeyState::AwaitingNextEpochReconfiguration
+                        } else {
+                            DWalletNetworkDecryptionKeyState::AwaitingNetworkReconfiguration
+                        }
+                    },
+                _ => abort EWrongState
+            };
+    }
 }
 
 public(package) fun advance_epoch_dwallet_network_decryption_key(
@@ -932,7 +963,7 @@ fun validate_active_and_get_public_output(
         } => {
             public_output
         },
-        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedSecondRound => abort EDWalletInactive,
+        DWalletState::Requested | DWalletState::AwaitingUser { .. } | DWalletState::AwaitingNetworkVerification | DWalletState::NetworkRejectedFirstRound | DWalletState::NetworkRejectedSecondRound => abort EDWalletInactive,
     }
 }
 
@@ -1140,7 +1171,7 @@ public fun approve_message(
 fun is_supported_hash_scheme(val: u8): bool {
     return match (val) {
             KECCAK256 | SHA256 => true,
-    _ => false,
+            _ => false,
     }
 }
 
@@ -1271,6 +1302,7 @@ public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
     first_round_output: vector<u8>,
+    rejected: bool,
     session_sequence_number: u64,
 ) {
     self.remove_session_and_charge<DWalletDKGFirstRoundRequestEvent>(session_sequence_number);
@@ -1278,12 +1310,19 @@ public(package) fun respond_dwallet_dkg_first_round(
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.state = match (dwallet.state) {
         DWalletState::Requested => {
-            event::emit(CompletedDKGFirstdRoundEvent {
+            if (rejected) {
+                event::emit(RejectedDWalletDKGSFirstRoundEvent {
+                    dwallet_id,
+                });
+                DWalletState::NetworkRejectedFirstRound
+            } else {
+                event::emit(CompletedDKGFirstRoundEvent {
                 dwallet_id,
                 first_round_output,
             });
             DWalletState::AwaitingUser {
                 first_round_output
+            }
             }
         },
         _ => abort EWrongState
@@ -1585,7 +1624,7 @@ public(package) fun accept_encrypted_user_share(
     let dwallet = self.get_dwallet_mut(dwallet_id);
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
     encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSiged {
+        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSigned {
             user_output_signature
         },
         _ => abort EWrongState
@@ -1616,7 +1655,7 @@ public(package) fun accept_encrypted_user_share(
 /// - Emits a `RequestedPresignFirstRoundEvent` for each presign in the batch, with relevant details.
 ///
 /// ### Parameters
-/// - `dwallet_id`: The dWallet's ID to resquest presign.
+/// - `dwallet_id`: The dWallet's ID to request presign.
 /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 public(package) fun request_ecdsa_presign(
     self: &mut DWalletCoordinatorInner,
@@ -2164,6 +2203,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
+    ctx: &mut TxContext,
 ) {
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
@@ -2171,12 +2211,13 @@ public(package) fun process_checkpoint_message_by_quorum(
 
     self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_checkpoint_message(message);
+    self.process_checkpoint_message(message, ctx);
 }
 
 fun process_checkpoint_message(
     self: &mut DWalletCoordinatorInner,
     message: vector<u8>,
+    ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -2215,8 +2256,9 @@ fun process_checkpoint_message(
             if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
+                let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
-                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, session_sequence_number);
+                self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, rejected, session_sequence_number);
             } else if (message_data_type == 1) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -2285,12 +2327,14 @@ fun process_checkpoint_message(
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_dkg(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             } else if (message_data_type == 7) {
                 let dwallet_network_decryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_decryption_key_reconfiguration(dwallet_network_decryption_key_id, public_output, is_last, rejected, ctx);
             };
         i = i + 1;
     };

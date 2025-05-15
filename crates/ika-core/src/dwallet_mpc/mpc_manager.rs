@@ -242,18 +242,22 @@ impl DWalletMPCManager {
             .handle_event(event.event.clone(), event.session_info.clone())
             .await
         {
-            if let DwalletMPCError::WaitingForNetworkKey(key_id) = err {
-                error!(
-                    ?err,
-                    session_info=?event.session_info,
-                    type=?event.event.type_,
-                    key_id=?key_id,
-                    "adding event to pending for the network key"
-                );
-                self.events_pending_for_network_key
-                    .push((event.event, event.session_info));
+            match err {
+                DwalletMPCError::WaitingForNetworkKey(key_id) => {
+                    info!(
+                        ?err,
+                        session_info=?event.session_info,
+                        type=?event.event.type_,
+                        key_id=?key_id,
+                        "Adding event to pending for the network key"
+                    );
+                    self.events_pending_for_network_key
+                        .push((event.event, event.session_info));
+                }
+                _ => {
+                    error!(?err, "failed to handle event with error");
+                }
             }
-            error!(?err, "failed to handle event with error");
         }
     }
 
