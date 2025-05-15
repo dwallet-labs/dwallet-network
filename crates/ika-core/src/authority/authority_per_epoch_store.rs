@@ -438,6 +438,9 @@ pub struct AuthorityEpochTables {
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
+    /// max version can't be same as the max version
+    next_protocol_config_sent: DBMap<ProtocolVersion, ()>,
+
     /// Contains a single key, which overrides the value of
     /// ProtocolConfig::buffer_stake_for_protocol_upgrade_bps
     override_protocol_upgrade_buffer_stake: DBMap<u64, u64>,
@@ -1024,6 +1027,33 @@ impl AuthorityPerEpochStore {
         Ok(result?)
     }
 
+    pub fn record_next_protocol_config_sent(&self, protocol_version: ProtocolVersion) -> IkaResult {
+        self.tables()?
+            .next_protocol_config_sent
+            .insert(&protocol_version, &())?;
+        Ok(())
+    }
+
+    pub fn last_next_protocol_config_sent(&self) -> IkaResult<Option<ProtocolVersion>> {
+        Ok(self
+            .tables()?
+            .next_protocol_config_sent
+            .unbounded_iter()
+            .skip_to_last()
+            .next()
+            .map(|(s, _)| s))
+    }
+
+    // pub fn is_next_protocol_config_sent_exist(
+    //     &self,
+    //     protocol_version: ProtocolVersion,
+    // ) -> IkaResult<bool> {
+    //     Ok(self
+    //         .tables()?
+    //         .next_protocol_config_sent
+    //         .contains_key(&protocol_version)?)
+    // }
+
     pub async fn user_certs_closed_notify(&self) {
         self.user_certs_closed_notify.wait().await
     }
@@ -1284,6 +1314,21 @@ impl AuthorityPerEpochStore {
         });
         self.write_pending_params_message(&mut output, &pending_params_message)?;
 
+        params_message_verified_messages.iter().for_each(|message| {
+            if let ParamsMessageKind::NextConfigVersion(version) = message {
+                if let Ok(tables) = self.tables() {
+                    if let Err(e) = tables.next_protocol_config_sent.insert(version, &()) {
+                        warn!(
+                            ?e,
+                            "Failed to insert next protocol config version into the table"
+                        );
+                    }
+                } else {
+                    warn!("Failed to insert params message digest into the table");
+                }
+            }
+        });
+
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
         batch.write()?;
@@ -1363,7 +1408,6 @@ impl AuthorityPerEpochStore {
                     verified_certificates.push_back(cert);
                 }
                 ConsensusCertificateResult::SystemTransaction(cert) => {
-                    println!("System transaction");
                     notifications.push(key.clone());
                     verified_param_message_certificates.push_back(cert);
                 }
@@ -1622,15 +1666,19 @@ impl AuthorityPerEpochStore {
                     capabilities.clone(),
                     self.get_effective_buffer_stake_bps(),
                 ) {
-                    info!(
-                        validator=?self.name,
-                        protocol_version=?new_version,
-                        "Found version quorum from capabilities v1 {:?}",
-                        capabilities.first()
-                    );
-                    Ok(ConsensusCertificateResult::SystemTransaction(
-                        ParamsMessageKind::NextConfigVersion(new_version),
-                    ))
+                    let last_version_sent = self.last_next_protocol_config_sent()?;
+                    if last_version_sent.is_none() || last_version_sent != Some(new_version) {
+                        info!(
+                            validator=?self.name,
+                            protocol_version=?new_version,
+                            "Found version quorum from capabilities v1 {:?}",
+                            capabilities.first()
+                        );
+                        return Ok(ConsensusCertificateResult::SystemTransaction(
+                            ParamsMessageKind::NextConfigVersion(new_version),
+                        ));
+                    }
+                    Ok(ConsensusCertificateResult::ConsensusMessage)
                 } else {
                     Ok(ConsensusCertificateResult::ConsensusMessage)
                 }

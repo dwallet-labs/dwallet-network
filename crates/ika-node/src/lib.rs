@@ -307,6 +307,8 @@ impl IkaNode {
         );
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
+        let previous_epoch_last_params_message_sequence_number =
+            latest_system_state.previous_epoch_last_params_message_sequence_number();
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
@@ -505,6 +507,7 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
+                previous_epoch_last_params_message_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
                 network_keys_receiver.clone(),
                 next_epoch_committee_receiver.clone(),
@@ -778,6 +781,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_params_message_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -830,6 +834,7 @@ impl IkaNode {
             ika_node_metrics,
             ika_tx_validator_metrics,
             previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_params_message_sequence_number,
             network_keys_receiver,
             next_epoch_committee_receiver,
             sui_client,
@@ -852,6 +857,7 @@ impl IkaNode {
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_params_message_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -876,7 +882,7 @@ impl IkaNode {
                 state.clone(),
                 state_sync_handle.clone(),
                 params_message_metrics.clone(),
-                previous_epoch_last_checkpoint_sequence_number,
+                previous_epoch_last_params_message_sequence_number,
             );
 
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
@@ -1098,30 +1104,25 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            let next_version: Option<u64> = system_inner.next_protocol_version();
-            if next_version.is_none() {
-                if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
-                    let transaction = ConsensusTransaction::new_capability_notification_v1(
-                        AuthorityCapabilitiesV1::new(
-                            self.state.name,
-                            cur_epoch_store.get_chain_identifier().chain(),
-                            supported_versions,
-                            sui_client
-                                .get_available_move_packages()
-                                .await
-                                .map_err(|e| {
-                                    anyhow!("Cannot get available move packages: {:?}", e)
-                                })?,
-                        ),
-                    );
+            if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
+                let transaction = ConsensusTransaction::new_capability_notification_v1(
+                    AuthorityCapabilitiesV1::new(
+                        self.state.name,
+                        cur_epoch_store.get_chain_identifier().chain(),
+                        supported_versions,
+                        sui_client
+                            .get_available_move_packages()
+                            .await
+                            .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                    ),
+                );
 
-                    if let Some(components) = &*self.validator_components.lock().await {
-                        info!(?transaction, "submitting capabilities to consensus");
-                        components
-                            .consensus_adapter
-                            .submit_to_consensus(&[transaction], &cur_epoch_store)
-                            .await?;
-                    }
+                if let Some(components) = &*self.validator_components.lock().await {
+                    info!(?transaction, "submitting capabilities to consensus");
+                    components
+                        .consensus_adapter
+                        .submit_to_consensus(&[transaction], &cur_epoch_store)
+                        .await?;
                 }
             }
 
@@ -1167,10 +1168,15 @@ impl IkaNode {
                     );
                 }
             }
+
             let dwallet_coordinator_inner =
                 sui_client.must_get_dwallet_coordinator_inner_v1().await;
             let previous_epoch_last_checkpoint_sequence_number =
                 dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
+
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let previous_epoch_last_params_message_sequence_number =
+                system_inner.previous_epoch_last_params_message_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();
@@ -1276,6 +1282,7 @@ impl IkaNode {
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
+                            previous_epoch_last_params_message_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
                             next_epoch_committee_receiver.clone(),
@@ -1313,6 +1320,7 @@ impl IkaNode {
                             &self.registry_service,
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
+                            previous_epoch_last_params_message_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
                             next_epoch_committee_receiver.clone(),

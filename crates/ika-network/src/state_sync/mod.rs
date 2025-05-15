@@ -614,6 +614,8 @@ where
     // Handle a checkpoint that we received from consensus
     #[instrument(level = "debug", skip_all)]
     fn handle_checkpoint_from_consensus(&mut self, checkpoint: Box<VerifiedCheckpointMessage>) {
+        println!("handle_checkpoint_from_consensus");
+        println!("checkpoint seq num: {:?}", checkpoint.sequence_number);
         if *checkpoint.sequence_number() == 0 {
             return;
         }
@@ -665,9 +667,11 @@ where
 
     #[instrument(level = "debug", skip_all)]
     fn handle_params_message_from_consensus(&mut self, params_message: Box<VerifiedParamsMessage>) {
-        if *params_message.sequence_number() == 0 {
-            return;
-        }
+        println!("handle_params_message_from_consensus");
+        println!("params_message: {:?}", params_message);
+        // if *params_message.sequence_number() == 0 {
+        //     return;
+        // }
         // // Always check previous_digest matches in case there is a gap between
         // // state sync and consensus.
         // let prev_digest = *self.store.get_params_message_by_sequence_number(params_message.sequence_number().checked_sub(1).expect("exhausted u64"))
@@ -685,10 +689,10 @@ where
             .map(|params_message| params_message.sequence_number().clone());
 
         // If this is an older params_message, just ignore it
-        if latest_params_message_sequence_number.as_ref() >= Some(params_message.sequence_number())
-        {
-            return;
-        }
+        // if latest_params_message_sequence_number.as_ref() >= Some(params_message.sequence_number())
+        // {
+        //     return;
+        // }
 
         let params_message = *params_message;
         let next_sequence_number = latest_params_message_sequence_number

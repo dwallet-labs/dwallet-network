@@ -93,9 +93,6 @@ pub struct AuthorityCapabilitiesV1 {
     pub authority: AuthorityName,
     /// Generation number set by sending authority. Used to determine which of multiple
     /// AuthorityCapabilities messages from the same authority is the most recent.
-    ///
-    /// (Currently, we just set this to the current time in milliseconds since the epoch, but this
-    /// should not be interpreted as a timestamp.)
     pub generation: u64,
 
     /// ProtocolVersions that the authority supports.

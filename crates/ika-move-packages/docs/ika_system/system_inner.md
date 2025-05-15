@@ -261,6 +261,11 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
+<code>previous_epoch_last_params_message_sequence_number: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>extra_fields: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
@@ -544,6 +549,7 @@ This function will be called only once in init.
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
         last_processed_params_message_sequence_number: option::none(),
+        previous_epoch_last_params_message_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state

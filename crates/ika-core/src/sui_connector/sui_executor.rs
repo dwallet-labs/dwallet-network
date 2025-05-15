@@ -260,7 +260,7 @@ where
                 .unwrap_or(0);
 
             let last_processed_params_message_sequence_number: Option<u64> =
-                Some(ika_system_state_inner.last_processed_params_message_sequence_number());
+                ika_system_state_inner.last_processed_params_message_sequence_number();
             let next_params_message_sequence_number = last_processed_params_message_sequence_number
                 .map(|s| s + 1)
                 .unwrap_or(0);
@@ -279,6 +279,10 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
                     .await;
+                println!(
+                    "next_checkpoint_sequence_number: {:?}",
+                    next_checkpoint_sequence_number
+                );
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
@@ -323,6 +327,10 @@ where
                     }
                 }
 
+                println!(
+                    "next_params_message_sequence_number: {:?}",
+                    next_params_message_sequence_number
+                );
                 if let Ok(Some(params_message)) = self
                     .params_message_store
                     .get_params_message_by_sequence_number(next_params_message_sequence_number)
@@ -701,18 +709,13 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
-            .await;
-
         info!(
             "`signers_bitmap` @ handle_execution_task: {:?}",
             signers_bitmap
         );
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
 
-        let messages = Self::break_down_checkpoint_message(message);
-        let mut args = vec![
+        let args = vec![
             CallArg::Object(ika_system_state_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
@@ -724,8 +727,12 @@ where
                     "can't serialize `signers_bitmap`: {e}"
                 ))
             })?),
+            CallArg::Pure(bcs::to_bytes(&message).map_err(|e| {
+                IkaError::SuiConnectorSerializationError(format!(
+                    "can't serialize `signers_bitmap`: {e}"
+                ))
+            })?),
         ];
-        args.extend(messages);
 
         ptb.move_call(
             ika_system_package_id,

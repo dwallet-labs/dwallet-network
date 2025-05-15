@@ -179,6 +179,11 @@ impl SharedInMemoryStore {
     pub fn insert_certified_checkpoint(&self, checkpoint: &VerifiedCheckpointMessage) {
         self.inner_mut().insert_certified_checkpoint(checkpoint);
     }
+
+    pub fn insert_certified_params_message(&self, params_message: &VerifiedParamsMessage) {
+        self.inner_mut()
+            .insert_certified_params_message(params_message);
+    }
 }
 
 #[derive(Debug, Default)]
@@ -207,11 +212,14 @@ impl InMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
+        params_message: VerifiedParamsMessage,
         committee: Committee,
     ) {
         self.insert_committee(committee);
         self.insert_checkpoint(&checkpoint);
+        self.insert_params_message(&params_message);
         self.update_highest_synced_checkpoint(&checkpoint);
+        self.update_highest_verified_params_message(&params_message);
     }
 
     pub fn get_checkpoint_by_digest(
@@ -453,10 +461,11 @@ impl SingleCheckpointSharedInMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
+        params_message: VerifiedParamsMessage,
         committee: Committee,
     ) {
         let mut locked = self.0 .0.write().unwrap();
-        locked.insert_genesis_state(checkpoint, committee);
+        locked.insert_genesis_state(checkpoint, params_message, committee);
     }
 }
 
