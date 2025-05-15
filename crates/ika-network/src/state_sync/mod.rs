@@ -684,9 +684,9 @@ where
         &mut self,
         ika_system_checkpoint: Box<VerifiedIkaSystemCheckpoint>,
     ) {
-        // if *ika_system_checkpoint.sequence_number() == 0 {
-        //     return;
-        // }
+        if *ika_system_checkpoint.sequence_number() == 0 {
+            return;
+        }
 
         let latest_ika_system_checkpoint_sequence_number = self
             .store
@@ -695,10 +695,11 @@ where
             .map(|ika_system_checkpoint| ika_system_checkpoint.sequence_number().clone());
 
         // If this is an older ika_system_checkpoint, just ignore it
-        // if latest_ika_system_checkpoint_sequence_number.as_ref() >= Some(ika_system_checkpoint.sequence_number())
-        // {
-        //     return;
-        // }
+        if latest_ika_system_checkpoint_sequence_number.as_ref()
+            >= Some(ika_system_checkpoint.sequence_number())
+        {
+            return;
+        }
 
         let ika_system_checkpoint = *ika_system_checkpoint;
         let next_sequence_number = latest_ika_system_checkpoint_sequence_number
