@@ -1047,7 +1047,7 @@ impl SuiClientInner for SuiSdkClient {
             || key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
         {
-            debug!(
+            info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
                 "Reconfiguration public output for key not is not ready for epoch",
