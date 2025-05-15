@@ -335,14 +335,15 @@ where
                     }
                     Ok(None) => {
                         info!(
-                            "No checkpoint found for sequence number: {}",
-                            next_checkpoint_sequence_number
+                            sequence_number = ?next_checkpoint_sequence_number,
+                            "No checkpoint found for sequence number"
                         );
                     }
                     Err(e) => {
-                        info!(
-                            "Failed to get checkpoint {}: {}",
-                            next_checkpoint_sequence_number, e
+                        error!(
+                            sequence_number = ?next_checkpoint_sequence_number,
+                            error = ?e,
+                            "Failed to get checkpoint"
                         );
                     }
                 }
