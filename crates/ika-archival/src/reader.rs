@@ -13,8 +13,8 @@ use ika_config::node::ArchiveReaderConfig;
 use ika_types::messages_checkpoint::{
     CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
 };
-use ika_types::messages_params_messages::{
-    CertifiedParamsMessage, ParamsMessageSequenceNumber, VerifiedParamsMessage,
+use ika_types::messages_ika_system_checkpoints::{
+    CertifiedIkaSystemCheckpoint, IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -37,7 +37,7 @@ use tracing::info;
 pub struct ArchiveReaderMetrics {
     pub archive_actions_read: IntCounterVec,
     pub archive_checkpoints_read: IntCounterVec,
-    pub archive_params_message_read: IntCounterVec,
+    pub archive_ika_system_checkpoint_read: IntCounterVec,
 }
 
 impl ArchiveReaderMetrics {
@@ -57,8 +57,8 @@ impl ArchiveReaderMetrics {
                 registry
             )
             .unwrap(),
-            archive_params_message_read: register_int_counter_vec_with_registry!(
-                "archive_params_message_read",
+            archive_ika_system_checkpoint_read: register_int_counter_vec_with_registry!(
+                "archive_ika_system_checkpoint_read",
                 "Number of params messages read from archive",
                 &["bucket"],
                 registry
@@ -630,134 +630,140 @@ impl ArchiveReader {
         Ok(checkpoints_filtered)
     }
 
-    pub async fn latest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+    pub async fn latest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
         let manifest = self.manifest.lock().await.clone();
         manifest
-            .next_params_message_seq_num()
+            .next_ika_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("No params_message data in archive")
+            .context("No ika_system_checkpoint data in archive")
     }
 
-    fn insert_certified_params_message<S>(
+    fn insert_certified_ika_system_checkpoint<S>(
         store: &S,
-        certified_params_message: CertifiedParamsMessage,
+        certified_ika_system_checkpoint: CertifiedIkaSystemCheckpoint,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
     {
         store
-            .insert_params_message(
-                VerifiedParamsMessage::new_unchecked(certified_params_message).borrow(),
+            .insert_ika_system_checkpoint(
+                VerifiedIkaSystemCheckpoint::new_unchecked(certified_ika_system_checkpoint)
+                    .borrow(),
             )
-            .map_err(|e| anyhow!("Failed to insert params_message: {e}"))
+            .map_err(|e| anyhow!("Failed to insert ika_system_checkpoint: {e}"))
     }
 
-    /// Insert params_message params_message if it doesn't already exist (without verifying it)
-    fn get_or_insert_verified_params_message<S>(
+    /// Insert ika_system_checkpoint ika_system_checkpoint if it doesn't already exist (without verifying it)
+    fn get_or_insert_verified_ika_system_checkpoint<S>(
         store: &S,
-        certified_params_message: CertifiedParamsMessage,
-    ) -> Result<VerifiedParamsMessage>
+        certified_ika_system_checkpoint: CertifiedIkaSystemCheckpoint,
+    ) -> Result<VerifiedIkaSystemCheckpoint>
     where
         S: WriteStore + Clone,
     {
         store
-            .get_params_message_by_sequence_number(certified_params_message.sequence_number)
+            .get_ika_system_checkpoint_by_sequence_number(
+                certified_ika_system_checkpoint.sequence_number,
+            )
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedParamsMessage, anyhow::Error>)
+            .map(Ok::<VerifiedIkaSystemCheckpoint, anyhow::Error>)
             .unwrap_or_else(|| {
-                let verified_params_message =
-                    VerifiedParamsMessage::new_unchecked(certified_params_message);
-                // Insert params_message message
+                let verified_ika_system_checkpoint =
+                    VerifiedIkaSystemCheckpoint::new_unchecked(certified_ika_system_checkpoint);
+                // Insert ika_system_checkpoint message
                 store
-                    .insert_params_message(&verified_params_message)
-                    .map_err(|e| anyhow!("Failed to insert params_message: {e}"))?;
-                // Update highest verified params_message watermark
+                    .insert_ika_system_checkpoint(&verified_ika_system_checkpoint)
+                    .map_err(|e| anyhow!("Failed to insert ika_system_checkpoint: {e}"))?;
+                // Update highest verified ika_system_checkpoint watermark
                 store
-                    .update_highest_verified_params_message(&verified_params_message)
+                    .update_highest_verified_ika_system_checkpoint(&verified_ika_system_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedParamsMessage, anyhow::Error>(verified_params_message)
+                Ok::<VerifiedIkaSystemCheckpoint, anyhow::Error>(verified_ika_system_checkpoint)
             })
-            .map_err(|e| anyhow!("Failed to get verified params_message: {:?}", e))
+            .map_err(|e| anyhow!("Failed to get verified ika_system_checkpoint: {:?}", e))
     }
 
-    async fn get_params_message_files_for_range(
+    async fn get_ika_system_checkpoint_files_for_range(
         &self,
-        params_message_range: Range<ParamsMessageSequenceNumber>,
+        ika_system_checkpoint_range: Range<IkaSystemCheckpointSequenceNumber>,
     ) -> Result<(Vec<FileMetadata>, usize, usize)> {
         let manifest = self.manifest.lock().await.clone();
 
-        let latest_available_params_message = manifest
-            .next_params_message_seq_num()
+        let latest_available_ika_system_checkpoint = manifest
+            .next_ika_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("ParamsMessage seq num underflow")?;
+            .context("IkaSystemCheckpoint seq num underflow")?;
 
-        if params_message_range.start > latest_available_params_message {
+        if ika_system_checkpoint_range.start > latest_available_ika_system_checkpoint {
             return Err(anyhow!(
-                "Latest available params_message is: {}",
-                latest_available_params_message
+                "Latest available ika_system_checkpoint is: {}",
+                latest_available_ika_system_checkpoint
             ));
         }
 
-        let params_message_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+        let ika_system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match params_message_files
-            .binary_search_by_key(&params_message_range.start, |s| {
-                s.params_message_seq_range.start
+        let start_index = match ika_system_checkpoint_files
+            .binary_search_by_key(&ika_system_checkpoint_range.start, |s| {
+                s.ika_system_checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index - 1,
         };
 
-        let end_index = match params_message_files
-            .binary_search_by_key(&params_message_range.end, |s| {
-                s.params_message_seq_range.start
+        let end_index = match ika_system_checkpoint_files
+            .binary_search_by_key(&ika_system_checkpoint_range.end, |s| {
+                s.ika_system_checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index,
         };
 
-        Ok((params_message_files, start_index, end_index))
+        Ok((ika_system_checkpoint_files, start_index, end_index))
     }
 
-    async fn get_params_message_files_for_list(
+    async fn get_ika_system_checkpoint_files_for_list(
         &self,
-        params_messages: Vec<ParamsMessageSequenceNumber>,
+        ika_system_checkpoints: Vec<IkaSystemCheckpointSequenceNumber>,
     ) -> Result<Vec<FileMetadata>> {
-        assert!(!params_messages.is_empty());
+        assert!(!ika_system_checkpoints.is_empty());
         let manifest = self.manifest.lock().await.clone();
-        let latest_available_params_message = manifest
-            .next_params_message_seq_num()
+        let latest_available_ika_system_checkpoint = manifest
+            .next_ika_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("ParamsMessage seq num underflow")?;
+            .context("IkaSystemCheckpoint seq num underflow")?;
 
-        let mut ordered_params_messages = params_messages;
-        ordered_params_messages.sort();
-        if *ordered_params_messages.first().unwrap() > latest_available_params_message {
+        let mut ordered_ika_system_checkpoints = ika_system_checkpoints;
+        ordered_ika_system_checkpoints.sort();
+        if *ordered_ika_system_checkpoints.first().unwrap() > latest_available_ika_system_checkpoint
+        {
             return Err(anyhow!(
-                "Latest available params_message is: {}",
-                latest_available_params_message
+                "Latest available ika_system_checkpoint is: {}",
+                latest_available_ika_system_checkpoint
             ));
         }
 
-        let params_message_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+        let ika_system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let mut params_messages_filtered = vec![];
-        for params_message in ordered_params_messages.iter() {
-            let index = params_message_files
+        let mut ika_system_checkpoints_filtered = vec![];
+        for ika_system_checkpoint in ordered_ika_system_checkpoints.iter() {
+            let index = ika_system_checkpoint_files
                 .binary_search_by(|s| {
-                    if params_message < &s.params_message_seq_range.start {
+                    if ika_system_checkpoint < &s.ika_system_checkpoint_seq_range.start {
                         std::cmp::Ordering::Greater
-                    } else if params_message >= &s.params_message_seq_range.end {
+                    } else if ika_system_checkpoint >= &s.ika_system_checkpoint_seq_range.end {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Equal
                     }
                 })
-                .expect("Archive does not contain params_message {params_message}");
-            params_messages_filtered.push(params_message_files[index].clone());
+                .expect("Archive does not contain ika_system_checkpoint {ika_system_checkpoint}");
+            ika_system_checkpoints_filtered.push(ika_system_checkpoint_files[index].clone());
         }
 
-        Ok(params_messages_filtered)
+        Ok(ika_system_checkpoints_filtered)
     }
 
     fn spawn_manifest_sync_task<S: ObjectStoreGetExt + Clone>(
@@ -782,41 +788,42 @@ impl ArchiveReader {
         });
     }
 
-    pub async fn read_params_messages<S>(
+    pub async fn read_ika_system_checkpoints<S>(
         &self,
         store: S,
-        params_message_range: Range<ParamsMessageSequenceNumber>,
+        ika_system_checkpoint_range: Range<IkaSystemCheckpointSequenceNumber>,
         action_counter: Arc<AtomicU64>,
-        params_message_counter: Arc<AtomicU64>,
+        ika_system_checkpoint_counter: Arc<AtomicU64>,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
     {
         let manifest = self.manifest.lock().await.clone();
 
-        let latest_available_params_message = manifest
-            .next_params_message_seq_num()
+        let latest_available_ika_system_checkpoint = manifest
+            .next_ika_system_checkpoint_seq_num()
             .checked_sub(1)
             .context("Params message seq num underflow")?;
 
-        if params_message_range.start > latest_available_params_message {
+        if ika_system_checkpoint_range.start > latest_available_ika_system_checkpoint {
             return Err(anyhow!(
                 "Latest available params message is: {}",
-                latest_available_params_message
+                latest_available_ika_system_checkpoint
             ));
         }
 
         let files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match files.binary_search_by_key(&params_message_range.start, |c| {
-            c.params_message_seq_range.start
-        }) {
+        let start_index = match files
+            .binary_search_by_key(&ika_system_checkpoint_range.start, |c| {
+                c.ika_system_checkpoint_seq_range.start
+            }) {
             Ok(index) => index,
             Err(index) => index - 1,
         };
 
-        let end_index = match files.binary_search_by_key(&params_message_range.end, |c| {
-            c.params_message_seq_range.start
+        let end_index = match files.binary_search_by_key(&ika_system_checkpoint_range.end, |c| {
+            c.ika_system_checkpoint_seq_range.start
         }) {
             Ok(index) => index,
             Err(index) => index,
@@ -826,47 +833,52 @@ impl ArchiveReader {
         futures::stream::iter(files.iter())
             .enumerate()
             .filter(|(index, _c)| future::ready(*index >= start_index && *index < end_index))
-            .map(|(_, params_message_metadata)| {
+            .map(|(_, ika_system_checkpoint_metadata)| {
                 let remote_object_store = remote_object_store.clone();
                 async move {
-                    let params_message_data =
-                        get(&remote_object_store, &params_message_metadata.file_path()).await?;
-                    Ok::<Bytes, anyhow::Error>(params_message_data)
+                    let ika_system_checkpoint_data = get(
+                        &remote_object_store,
+                        &ika_system_checkpoint_metadata.file_path(),
+                    )
+                    .await?;
+                    Ok::<Bytes, anyhow::Error>(ika_system_checkpoint_data)
                 }
             })
             .boxed()
             .buffered(self.concurrency)
-            .try_for_each(|params_message_data| {
+            .try_for_each(|ika_system_checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedParamsMessage, Reader<Bytes>>(
+                    make_iterator::<CertifiedIkaSystemCheckpoint, Reader<Bytes>>(
                         PARAMS_MESSAGE_FILE_MAGIC,
-                        params_message_data.reader(),
+                        ika_system_checkpoint_data.reader(),
                     )
-                    .and_then(|params_message_iter| {
-                        params_message_iter
+                    .and_then(|ika_system_checkpoint_iter| {
+                        ika_system_checkpoint_iter
                             .filter(|p| {
-                                p.sequence_number >= params_message_range.start
-                                    && p.sequence_number < params_message_range.end
+                                p.sequence_number >= ika_system_checkpoint_range.start
+                                    && p.sequence_number < ika_system_checkpoint_range.end
                             })
-                            .try_for_each(|params_message| {
-                                let size = params_message.messages.len();
-                                let verified_params_message =
-                                    Self::get_or_insert_verified_params_message(
+                            .try_for_each(|ika_system_checkpoint| {
+                                let size = ika_system_checkpoint.messages.len();
+                                let verified_ika_system_checkpoint =
+                                    Self::get_or_insert_verified_ika_system_checkpoint(
                                         &store,
-                                        params_message,
+                                        ika_system_checkpoint,
                                     )?;
                                 // Update highest synced watermark
                                 store
-                                    .update_highest_synced_params_message(&verified_params_message)
+                                    .update_highest_synced_ika_system_checkpoint(
+                                        &verified_ika_system_checkpoint,
+                                    )
                                     .map_err(|e| anyhow!("Failed to update watermark: {e}"))?;
                                 action_counter.fetch_add(size as u64, Ordering::Relaxed);
                                 self.archive_reader_metrics
                                     .archive_actions_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(size as u64);
-                                params_message_counter.fetch_add(1, Ordering::Relaxed);
+                                ika_system_checkpoint_counter.fetch_add(1, Ordering::Relaxed);
                                 self.archive_reader_metrics
-                                    .archive_params_message_read
+                                    .archive_ika_system_checkpoint_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(1);
                                 Ok::<(), anyhow::Error>(())

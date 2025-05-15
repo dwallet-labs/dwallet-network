@@ -192,30 +192,30 @@ fn build_anemo_services(out_dir: &Path) {
         )
         .method(
             anemo_build::manual::Method::builder()
-                .name("push_params_message")
-                .route_name("PushParamsMessage")
-                .request_type("ika_types::messages_params_messages::CertifiedParamsMessage")
+                .name("push_ika_system_checkpoint")
+                .route_name("PushIkaSystemCheckpoint")
+                .request_type("ika_types::messages_ika_system_checkpoints::CertifiedIkaSystemCheckpoint")
                 .response_type("()")
                 .codec_path(codec_path)
                 .build(),
         )
         .method(
             anemo_build::manual::Method::builder()
-                .name("get_params_message")
-                .route_name("GetParamsMessage")
-                .request_type("crate::state_sync::server::GetParamsMessageRequest")
+                .name("get_ika_system_checkpoint")
+                .route_name("GetIkaSystemCheckpoint")
+                .request_type("crate::state_sync::server::GetIkaSystemCheckpointRequest")
                 .response_type(
-                    "Option<ika_types::messages_params_messages::CertifiedParamsMessage>",
+                    "Option<ika_types::messages_ika_system_checkpoints::CertifiedIkaSystemCheckpoint>",
                 )
                 .codec_path(codec_path)
                 .build(),
         )
         .method(
             anemo_build::manual::Method::builder()
-                .name("get_params_message_availability")
-                .route_name("GetParamsMessageAvailability")
+                .name("get_ika_system_checkpoint_availability")
+                .route_name("GetIkaSystemCheckpointAvailability")
                 .request_type("()")
-                .response_type("crate::state_sync::server::GetParamsMessageAvailabilityResponse")
+                .response_type("crate::state_sync::server::GetIkaSystemCheckpointAvailabilityResponse")
                 .codec_path(codec_path)
                 .build(),
         )

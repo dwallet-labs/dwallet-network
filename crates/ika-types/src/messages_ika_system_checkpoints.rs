@@ -23,47 +23,47 @@ use sui_types::transaction::{Transaction, TransactionData};
 use tap::TapFallible;
 use tracing::warn;
 
-pub use crate::digests::ParamsMessageContentsDigest;
-pub use crate::digests::ParamsMessageDigest;
+pub use crate::digests::IkaSystemCheckpointContentsDigest;
+pub use crate::digests::IkaSystemCheckpointDigest;
 
-pub type ParamsMessageSequenceNumber = u64;
-pub type ParamsMessageTimestamp = u64;
+pub type IkaSystemCheckpointSequenceNumber = u64;
+pub type IkaSystemCheckpointTimestamp = u64;
 
-// The constituent parts of params_messages, signed and certified
+// The constituent parts of ika_system_checkpoints, signed and certified
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum ParamsMessageKind {
+pub enum IkaSystemCheckpointKind {
     NextConfigVersion(ProtocolVersion),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ParamsMessage {
+pub struct IkaSystemCheckpoint {
     pub epoch: EpochId,
-    pub sequence_number: ParamsMessageSequenceNumber,
-    /// Timestamp of the params_message - number of milliseconds from the Unix epoch
-    /// ParamsMessage timestamps are monotonic, but not strongly monotonic - subsequent
-    /// params_messages can have same timestamp if they originate from the same underlining consensus commit
-    pub timestamp_ms: ParamsMessageTimestamp,
+    pub sequence_number: IkaSystemCheckpointSequenceNumber,
+    /// Timestamp of the ika_system_checkpoint - number of milliseconds from the Unix epoch
+    /// IkaSystemCheckpoint timestamps are monotonic, but not strongly monotonic - subsequent
+    /// ika_system_checkpoints can have same timestamp if they originate from the same underlining consensus commit
+    pub timestamp_ms: IkaSystemCheckpointTimestamp,
     // todo : check with omer if it is okay to remove the vector
-    pub messages: Vec<ParamsMessageKind>,
+    pub messages: Vec<IkaSystemCheckpointKind>,
 }
 
-impl Message for ParamsMessage {
-    type DigestType = ParamsMessageDigest;
-    const SCOPE: IntentScope = IntentScope::ParamsMessage;
+impl Message for IkaSystemCheckpoint {
+    type DigestType = IkaSystemCheckpointDigest;
+    const SCOPE: IntentScope = IntentScope::IkaSystemCheckpoint;
 
     fn digest(&self) -> Self::DigestType {
-        ParamsMessageDigest::new(default_hash(self))
+        IkaSystemCheckpointDigest::new(default_hash(self))
     }
 }
 
-impl ParamsMessage {
+impl IkaSystemCheckpoint {
     pub fn new(
         epoch: EpochId,
-        sequence_number: ParamsMessageSequenceNumber,
-        messages: Vec<ParamsMessageKind>,
-        timestamp_ms: ParamsMessageTimestamp,
-    ) -> ParamsMessage {
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+        messages: Vec<IkaSystemCheckpointKind>,
+        timestamp_ms: IkaSystemCheckpointTimestamp,
+    ) -> IkaSystemCheckpoint {
         Self {
             epoch,
             sequence_number,
@@ -83,7 +83,7 @@ impl ParamsMessage {
         Ok(())
     }
 
-    pub fn sequence_number(&self) -> &ParamsMessageSequenceNumber {
+    pub fn sequence_number(&self) -> &IkaSystemCheckpointSequenceNumber {
         &self.sequence_number
     }
 
@@ -91,7 +91,7 @@ impl ParamsMessage {
         UNIX_EPOCH + Duration::from_millis(self.timestamp_ms)
     }
 
-    pub fn report_params_message_age(&self, metrics: &Histogram) {
+    pub fn report_ika_system_checkpoint_age(&self, metrics: &Histogram) {
         SystemTime::now()
             .duration_since(self.timestamp())
             .map(|latency| {
@@ -99,25 +99,25 @@ impl ParamsMessage {
             })
             .tap_err(|err| {
                 warn!(
-                    params_message_seq = self.sequence_number,
-                    "unable to compute params_message age: {}", err
+                    ika_system_checkpoint_seq = self.sequence_number,
+                    "unable to compute ika_system_checkpoint age: {}", err
                 )
             })
             .ok();
     }
 }
 
-impl Display for ParamsMessage {
+impl Display for IkaSystemCheckpoint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "ParamsMessageSummary {{ epoch: {:?}, seq: {:?}",
+            "IkaSystemCheckpointSummary {{ epoch: {:?}, seq: {:?}",
             self.epoch, self.sequence_number,
         )
     }
 }
 
-// ParamsMessages are signed by an authority and 2f+1 form a
+// IkaSystemCheckpoints are signed by an authority and 2f+1 form a
 // certificate that others can use to catch up. The actual
 // content of the digest must at the very least commit to
 // the set of transactions contained in the certificate but
@@ -125,29 +125,36 @@ impl Display for ParamsMessage {
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.
 
-pub type ParamsMessageEnvelope<S> = Envelope<ParamsMessage, S>;
-pub type CertifiedParamsMessage = ParamsMessageEnvelope<AuthorityStrongQuorumSignInfo>;
-pub type SignedParamsMessage = ParamsMessageEnvelope<AuthoritySignInfo>;
+pub type IkaSystemCheckpointEnvelope<S> = Envelope<IkaSystemCheckpoint, S>;
+pub type CertifiedIkaSystemCheckpoint = IkaSystemCheckpointEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type SignedIkaSystemCheckpoint = IkaSystemCheckpointEnvelope<AuthoritySignInfo>;
 
-pub type VerifiedParamsMessage = VerifiedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
-pub type TrustedParamsMessage = TrustedEnvelope<ParamsMessage, AuthorityStrongQuorumSignInfo>;
+pub type VerifiedIkaSystemCheckpoint =
+    VerifiedEnvelope<IkaSystemCheckpoint, AuthorityStrongQuorumSignInfo>;
+pub type TrustedIkaSystemCheckpoint =
+    TrustedEnvelope<IkaSystemCheckpoint, AuthorityStrongQuorumSignInfo>;
 
-impl CertifiedParamsMessage {
+impl CertifiedIkaSystemCheckpoint {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::ParamsMessage),
+            Intent::ika_app(IntentScope::IkaSystemCheckpoint),
             committee,
         )
     }
 
-    pub fn try_into_verified(self, committee: &Committee) -> IkaResult<VerifiedParamsMessage> {
+    pub fn try_into_verified(
+        self,
+        committee: &Committee,
+    ) -> IkaResult<VerifiedIkaSystemCheckpoint> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedParamsMessage::new_from_verified(self))
+        Ok(VerifiedIkaSystemCheckpoint::new_from_verified(self))
     }
 
-    pub fn into_summary_and_sequence(self) -> (ParamsMessageSequenceNumber, ParamsMessage) {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (IkaSystemCheckpointSequenceNumber, IkaSystemCheckpoint) {
         let summary = self.into_data();
         (summary.sequence_number, summary)
     }
@@ -157,12 +164,12 @@ impl CertifiedParamsMessage {
     }
 }
 
-impl SignedParamsMessage {
+impl SignedIkaSystemCheckpoint {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::ParamsMessage),
+            Intent::ika_app(IntentScope::IkaSystemCheckpoint),
             committee,
         )
     }
@@ -170,27 +177,30 @@ impl SignedParamsMessage {
     pub fn try_into_verified(
         self,
         committee: &Committee,
-    ) -> IkaResult<VerifiedEnvelope<ParamsMessage, AuthoritySignInfo>> {
+    ) -> IkaResult<VerifiedEnvelope<IkaSystemCheckpoint, AuthoritySignInfo>> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedEnvelope::<ParamsMessage, AuthoritySignInfo>::new_from_verified(self))
+        Ok(VerifiedEnvelope::<IkaSystemCheckpoint, AuthoritySignInfo>::new_from_verified(self))
     }
 }
 
-impl VerifiedParamsMessage {
-    pub fn into_summary_and_sequence(self) -> (ParamsMessageSequenceNumber, ParamsMessage) {
+impl VerifiedIkaSystemCheckpoint {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (IkaSystemCheckpointSequenceNumber, IkaSystemCheckpoint) {
         self.into_inner().into_summary_and_sequence()
     }
 }
 
-/// This is a message validators publish to consensus in order to sign params_message
+/// This is a message validators publish to consensus in order to sign ika_system_checkpoint
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ParamsMessageSignatureMessage {
-    pub params_message: SignedParamsMessage,
+pub struct IkaSystemCheckpointSignatureMessage {
+    pub ika_system_checkpoint: SignedIkaSystemCheckpoint,
 }
 
-impl ParamsMessageSignatureMessage {
+impl IkaSystemCheckpointSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.params_message.verify_authority_signatures(committee)
+        self.ika_system_checkpoint
+            .verify_authority_signatures(committee)
     }
 }
 
@@ -213,23 +223,24 @@ mod tests {
     ];
 
     #[test]
-    fn test_signed_params_message() {
+    fn test_signed_ika_system_checkpoint() {
         let mut rng = StdRng::from_seed(RNG_SEED);
         let (keys, committee) = make_committee_key(&mut rng);
         let (_, committee2) = make_committee_key(&mut rng);
 
-        let set = ParamsMessageContents::new_with_digests_only_for_tests([MessageDigest::random()]);
+        let set =
+            IkaSystemCheckpointContents::new_with_digests_only_for_tests([MessageDigest::random()]);
 
         // TODO: duplicated in a test below.
 
-        let signed_params_messages: Vec<_> = keys
+        let signed_ika_system_checkpoints: Vec<_> = keys
             .iter()
             .map(|k| {
                 let name = k.public().into();
 
-                SignedParamsMessage::new(
+                SignedIkaSystemCheckpoint::new(
                     committee.epoch,
-                    ParamsMessage::new(
+                    IkaSystemCheckpoint::new(
                         &ProtocolConfig::get_for_max_version_UNSAFE(),
                         committee.epoch,
                         1,
@@ -247,25 +258,26 @@ mod tests {
             })
             .collect();
 
-        signed_params_messages.iter().for_each(|c| {
+        signed_ika_system_checkpoints.iter().for_each(|c| {
             c.verify_authority_signatures(&committee)
                 .expect("signature ok")
         });
 
         // fails when not signed by member of committee
-        signed_params_messages
+        signed_ika_system_checkpoints
             .iter()
             .for_each(|c| assert!(c.verify_authority_signatures(&committee2).is_err()));
     }
 
     #[test]
-    fn test_certified_params_message() {
+    fn test_certified_ika_system_checkpoint() {
         let mut rng = StdRng::from_seed(RNG_SEED);
         let (keys, committee) = make_committee_key(&mut rng);
 
-        let set = ParamsMessageContents::new_with_digests_only_for_tests([MessageDigest::random()]);
+        let set =
+            IkaSystemCheckpointContents::new_with_digests_only_for_tests([MessageDigest::random()]);
 
-        let summary = ParamsMessage::new(
+        let summary = IkaSystemCheckpoint::new(
             &ProtocolConfig::get_for_max_version_UNSAFE(),
             committee.epoch,
             1,
@@ -283,30 +295,30 @@ mod tests {
             .map(|k| {
                 let name = k.public().into();
 
-                SignedParamsMessage::sign(committee.epoch, &summary, k, name)
+                SignedIkaSystemCheckpoint::sign(committee.epoch, &summary, k, name)
             })
             .collect();
 
-        let params_message_cert =
-            CertifiedParamsMessage::new(summary, sign_infos, &committee).expect("Cert is OK");
+        let ika_system_checkpoint_cert =
+            CertifiedIkaSystemCheckpoint::new(summary, sign_infos, &committee).expect("Cert is OK");
 
         // Signature is correct on proposal, and with same transactions
-        assert!(params_message_cert
+        assert!(ika_system_checkpoint_cert
             .verify_with_contents(&committee, Some(&set))
             .is_ok());
 
         // Make a bad proposal
-        let signed_params_messages: Vec<_> = keys
+        let signed_ika_system_checkpoints: Vec<_> = keys
             .iter()
             .map(|k| {
                 let name = k.public().into();
-                let set = ParamsMessageContents::new_with_digests_only_for_tests([
+                let set = IkaSystemCheckpointContents::new_with_digests_only_for_tests([
                     MessageDigest::random(),
                 ]);
 
-                SignedParamsMessage::new(
+                SignedIkaSystemCheckpoint::new(
                     committee.epoch,
-                    ParamsMessage::new(
+                    IkaSystemCheckpoint::new(
                         &ProtocolConfig::get_for_max_version_UNSAFE(),
                         committee.epoch,
                         1,
@@ -324,27 +336,33 @@ mod tests {
             })
             .collect();
 
-        let summary = signed_params_messages[0].data().clone();
-        let sign_infos = signed_params_messages
+        let summary = signed_ika_system_checkpoints[0].data().clone();
+        let sign_infos = signed_ika_system_checkpoints
             .into_iter()
             .map(|v| v.into_sig())
             .collect();
-        assert!(CertifiedParamsMessage::new(summary, sign_infos, &committee)
-            .unwrap()
-            .verify_authority_signatures(&committee)
-            .is_err())
+        assert!(
+            CertifiedIkaSystemCheckpoint::new(summary, sign_infos, &committee)
+                .unwrap()
+                .verify_authority_signatures(&committee)
+                .is_err()
+        )
     }
 
-    // Generate a ParamsMessageSummary from the input transaction digest. All the other fields in the generated
-    // ParamsMessageSummary will be the same. The generated ParamsMessageSummary can be used to test how input
-    // transaction digest affects ParamsMessageSummary.
-    fn generate_test_params_message_summary_from_digest(digest: MessageDigest) -> ParamsMessage {
-        ParamsMessage::new(
+    // Generate a IkaSystemCheckpointSummary from the input transaction digest. All the other fields in the generated
+    // IkaSystemCheckpointSummary will be the same. The generated IkaSystemCheckpointSummary can be used to test how input
+    // transaction digest affects IkaSystemCheckpointSummary.
+    fn generate_test_ika_system_checkpoint_summary_from_digest(
+        digest: MessageDigest,
+    ) -> IkaSystemCheckpoint {
+        IkaSystemCheckpoint::new(
             &ProtocolConfig::get_for_max_version_UNSAFE(),
             1,
             2,
             10,
-            &ParamsMessageContents::new_with_digests_only_for_tests([MessageDigest::new(digest)]),
+            &IkaSystemCheckpointContents::new_with_digests_only_for_tests([MessageDigest::new(
+                digest,
+            )]),
             None,
             GasCostSummary::default(),
             None,
@@ -353,10 +371,10 @@ mod tests {
         )
     }
 
-    // Tests that ConsensusCommitPrologue with different consensus commit digest will result in different params_message content.
+    // Tests that ConsensusCommitPrologue with different consensus commit digest will result in different ika_system_checkpoint content.
     #[test]
-    fn test_params_message_summary_with_different_consensus_digest() {
-        // First, tests that same consensus commit digest will produce the same params_message content.
+    fn test_ika_system_checkpoint_summary_with_different_consensus_digest() {
+        // First, tests that same consensus commit digest will produce the same ika_system_checkpoint content.
         {
             let t1 = VerifiedTransaction::new_consensus_commit_prologue_v3(
                 1,
@@ -372,12 +390,12 @@ mod tests {
                 ConsensusCommitDigest::default(),
                 Vec::new(),
             );
-            let c1 = generate_test_params_message_summary_from_digest(*t1.digest());
-            let c2 = generate_test_params_message_summary_from_digest(*t2.digest());
+            let c1 = generate_test_ika_system_checkpoint_summary_from_digest(*t1.digest());
+            let c2 = generate_test_ika_system_checkpoint_summary_from_digest(*t2.digest());
             assert_eq!(c1.digest(), c2.digest());
         }
 
-        // Next, tests that different consensus commit digests will produce the different params_message contents.
+        // Next, tests that different consensus commit digests will produce the different ika_system_checkpoint contents.
         {
             let t1 = VerifiedTransaction::new_consensus_commit_prologue_v3(
                 1,
@@ -393,8 +411,8 @@ mod tests {
                 ConsensusCommitDigest::random(),
                 Vec::new(),
             );
-            let c1 = generate_test_params_message_summary_from_digest(*t1.digest());
-            let c2 = generate_test_params_message_summary_from_digest(*t2.digest());
+            let c1 = generate_test_ika_system_checkpoint_summary_from_digest(*t1.digest());
+            let c2 = generate_test_ika_system_checkpoint_summary_from_digest(*t2.digest());
             assert_ne!(c1.digest(), c2.digest());
         }
     }

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use super::error::Result;
 use crate::committee::Committee;
 use crate::messages_checkpoint::VerifiedCheckpointMessage;
-use crate::messages_params_messages::VerifiedParamsMessage;
+use crate::messages_ika_system_checkpoints::VerifiedIkaSystemCheckpoint;
 use crate::storage::ReadStore;
 
 pub trait WriteStore: ReadStore {
@@ -20,14 +20,17 @@ pub trait WriteStore: ReadStore {
         checkpoint: &VerifiedCheckpointMessage,
     ) -> Result<()>;
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()>;
-    fn update_highest_synced_params_message(
+    fn insert_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()>;
-    fn update_highest_verified_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()>;
+    fn update_highest_verified_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()>;
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()>;
@@ -52,22 +55,25 @@ impl<T: WriteStore + ?Sized> WriteStore for &T {
         (*self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
-        (*self).insert_params_message(params_message)
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
+        (*self).insert_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (*self).update_highest_synced_params_message(params_message)
+        (*self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (*self).update_highest_verified_params_message(params_message)
+        (*self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {
@@ -94,22 +100,25 @@ impl<T: WriteStore + ?Sized> WriteStore for Box<T> {
         (**self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
-        (**self).insert_params_message(params_message)
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
+        (**self).insert_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_synced_params_message(params_message)
+        (**self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_verified_params_message(params_message)
+        (**self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {
@@ -136,22 +145,25 @@ impl<T: WriteStore + ?Sized> WriteStore for Arc<T> {
         (**self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
-        (**self).insert_params_message(params_message)
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
+        (**self).insert_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_synced_params_message(params_message)
+        (**self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_verified_params_message(params_message)
+        (**self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {

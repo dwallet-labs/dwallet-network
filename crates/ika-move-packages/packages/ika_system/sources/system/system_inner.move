@@ -67,8 +67,8 @@ public struct SystemInnerV1 has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
-    last_processed_params_message_sequence_number: Option<u64>,
-    previous_epoch_last_params_message_sequence_number: u64,
+    last_processed_ika_system_checkpoint_sequence_number: Option<u64>,
+    previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -92,7 +92,7 @@ public struct SystemProtocolCapVerifiedEvent has copy, drop {
 
 /// Event containing system-level checkpoint information, emitted during
 /// the checkpoint submmision message.
-public struct SystemParamsMessageInfoEvent has copy, drop {
+public struct SystemIkaSystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
     timestamp_ms: u64,
@@ -102,8 +102,8 @@ public struct SystemParamsMessageInfoEvent has copy, drop {
 const EBpsTooLarge: u64 = 1;
 const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
 const EActiveBlsCommitteeMustInitialize: u64 = 3;
-const EIncorrectEpochInParamsMessage: u64 = 4;
-const EWrongParamsMessageSequenceNumber: u64 = 5;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 4;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 5;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -145,8 +145,8 @@ public(package) fun create(
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
-        last_processed_params_message_sequence_number: option::none(),
-        previous_epoch_last_params_message_sequence_number: 0,
+        last_processed_ika_system_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_ika_system_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -678,17 +678,17 @@ public(package) fun commit_upgrade(
     old_package_id
 }
 
-public(package) fun process_params_message_by_cap(
+public(package) fun process_ika_system_checkpoint_by_cap(
     self: &mut SystemInnerV1,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
 )  {
     self.verify_cap(cap);
-    self.process_params_message(message, ctx);
+    self.process_ika_system_checkpoint(message, ctx);
 }
 
-public(package) fun process_params_message_by_quorum(
+public(package) fun process_ika_system_checkpoint_by_quorum(
     self: &mut SystemInnerV1,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
@@ -704,28 +704,28 @@ public(package) fun process_params_message_by_quorum(
 
     active_committee.verify_certificate(self.epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_params_message(message, ctx);
+    self.process_ika_system_checkpoint(message, ctx);
 }
 
-public(package) fun process_params_message(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
+public(package) fun process_ika_system_checkpoint(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
-    assert!(epoch == self.epoch, EIncorrectEpochInParamsMessage);
+    assert!(epoch == self.epoch, EIncorrectEpochInIkaSystemCheckpoint);
 
     let sequence_number = bcs_body.peel_u64();
 
-    if(self.last_processed_params_message_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongParamsMessageSequenceNumber);
-        self.last_processed_params_message_sequence_number.fill(sequence_number);
+    if(self.last_processed_ika_system_checkpoint_sequence_number.is_none()) {
+        assert!(sequence_number == 0, EWrongIkaSystemCheckpointSequenceNumber);
+        self.last_processed_ika_system_checkpoint_sequence_number.fill(sequence_number);
     } else {
-        assert!(sequence_number > 0 && *self.last_processed_params_message_sequence_number.borrow() + 1 == sequence_number, EWrongParamsMessageSequenceNumber);
-        self.last_processed_params_message_sequence_number.swap(sequence_number);
+        assert!(sequence_number > 0 && *self.last_processed_ika_system_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
+        self.last_processed_ika_system_checkpoint_sequence_number.swap(sequence_number);
     };
 
     let timestamp_ms = bcs_body.peel_u64();
 
-    event::emit(SystemParamsMessageInfoEvent {
+    event::emit(SystemIkaSystemCheckpointInfoEvent {
         epoch,
         sequence_number,
         timestamp_ms,

@@ -86,8 +86,8 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
-    pub last_processed_params_message_sequence_number: Option<u64>,
-    pub previous_epoch_last_params_message_sequence_number: u64,
+    pub last_processed_ika_system_checkpoint_sequence_number: Option<u64>,
+    pub previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -176,12 +176,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.next_protocol_version
     }
 
-    fn last_processed_params_message_sequence_number(&self) -> Option<u64> {
-        self.last_processed_params_message_sequence_number
+    fn last_processed_ika_system_checkpoint_sequence_number(&self) -> Option<u64> {
+        self.last_processed_ika_system_checkpoint_sequence_number
     }
 
-    fn previous_epoch_last_params_message_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_params_message_sequence_number
+    fn previous_epoch_last_ika_system_checkpoint_sequence_number(&self) -> u64 {
+        self.previous_epoch_last_ika_system_checkpoint_sequence_number
     }
 
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {

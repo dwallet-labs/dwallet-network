@@ -6,14 +6,14 @@ use super::{
     server::{CheckpointMessageDownloadLimitLayer, Server},
     Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
 };
-use crate::state_sync::server::ParamsMessageDownloadLimitLayer;
+use crate::state_sync::server::IkaSystemCheckpointDownloadLimitLayer;
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::{inflight_limit, rate_limit};
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_config::p2p::StateSyncConfig;
 use ika_types::digests::ChainIdentifier;
 use ika_types::messages_checkpoint::VerifiedCheckpointMessage;
-use ika_types::messages_params_messages::VerifiedParamsMessage;
+use ika_types::messages_ika_system_checkpoints::VerifiedIkaSystemCheckpoint;
 use ika_types::storage::WriteStore;
 use std::{
     collections::HashMap,
@@ -134,20 +134,20 @@ where
         let (sender, mailbox) = mpsc::channel(config.mailbox_capacity());
         let (checkpoint_event_sender, _receiver) =
             broadcast::channel(config.synced_checkpoint_broadcast_channel_capacity());
-        let (params_message_event_sender, _receiver) =
-            broadcast::channel(config.synced_params_message_broadcast_channel_capacity());
+        let (ika_system_checkpoint_event_sender, _receiver) =
+            broadcast::channel(config.synced_ika_system_checkpoint_broadcast_channel_capacity());
         let weak_sender = sender.downgrade();
         let handle = Handle {
             sender,
             checkpoint_event_sender: checkpoint_event_sender.clone(),
-            params_message_event_sender: params_message_event_sender.clone(),
+            ika_system_checkpoint_event_sender: ika_system_checkpoint_event_sender.clone(),
         };
         let peer_heights = PeerHeights {
             peers: HashMap::new(),
             unprocessed_checkpoints: HashMap::new(),
             sequence_number_to_digest: HashMap::new(),
-            unprocessed_params_message: HashMap::new(),
-            sequence_number_to_digest_params_message: HashMap::new(),
+            unprocessed_ika_system_checkpoint: HashMap::new(),
+            sequence_number_to_digest_ika_system_checkpoint: HashMap::new(),
             wait_interval_when_no_peer_to_sync_content: config
                 .wait_interval_when_no_peer_to_sync_content(),
         }
@@ -170,11 +170,11 @@ where
                 download_limit_layer: None,
                 peer_heights,
                 checkpoint_event_sender,
-                params_message_event_sender,
+                ika_system_checkpoint_event_sender,
                 metrics,
                 archive_readers,
                 chain_identifier,
-                param_message_download_limit_layer: None,
+                ika_system_checkpoint_download_limit_layer: None,
             },
             server,
         )
@@ -186,11 +186,12 @@ pub struct UnstartedStateSync<S> {
     pub(super) handle: Handle,
     pub(super) mailbox: mpsc::Receiver<StateSyncMessage>,
     pub(super) download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
-    pub(super) param_message_download_limit_layer: Option<ParamsMessageDownloadLimitLayer>,
+    pub(super) ika_system_checkpoint_download_limit_layer:
+        Option<IkaSystemCheckpointDownloadLimitLayer>,
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
     pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
-    pub(super) params_message_event_sender: broadcast::Sender<VerifiedParamsMessage>,
+    pub(super) ika_system_checkpoint_event_sender: broadcast::Sender<VerifiedIkaSystemCheckpoint>,
     pub(super) metrics: Metrics,
     pub(super) archive_readers: ArchiveReaderBalancer,
     pub(crate) chain_identifier: ChainIdentifier,
@@ -206,11 +207,11 @@ where
             handle,
             mailbox,
             download_limit_layer,
-            param_message_download_limit_layer,
+            ika_system_checkpoint_download_limit_layer,
             store,
             peer_heights,
             checkpoint_event_sender,
-            params_message_event_sender,
+            ika_system_checkpoint_event_sender,
             metrics,
             archive_readers,
             chain_identifier,
@@ -224,9 +225,9 @@ where
                 tasks: JoinSet::new(),
                 sync_checkpoint_messages_task: None,
                 download_limit_layer,
-                params_message_event_sender,
-                sync_params_messages_task: None,
-                param_message_download_limit_layer,
+                ika_system_checkpoint_event_sender,
+                sync_ika_system_checkpoints_task: None,
+                ika_system_checkpoint_download_limit_layer,
                 store,
                 peer_heights,
                 checkpoint_event_sender,
@@ -235,7 +236,7 @@ where
                 archive_readers,
                 sync_checkpoint_from_archive_task: None,
                 chain_identifier,
-                sync_param_message_from_archive_task: None,
+                sync_ika_system_checkpoint_from_archive_task: None,
             },
             handle,
         )

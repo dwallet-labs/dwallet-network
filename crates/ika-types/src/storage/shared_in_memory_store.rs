@@ -4,11 +4,13 @@
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
 use crate::digests::{
-    CheckpointContentsDigest, CheckpointMessageDigest, ParamsMessageContentsDigest,
-    ParamsMessageDigest,
+    CheckpointContentsDigest, CheckpointMessageDigest, IkaSystemCheckpointContentsDigest,
+    IkaSystemCheckpointDigest,
 };
 use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
-use crate::messages_params_messages::{ParamsMessageSequenceNumber, VerifiedParamsMessage};
+use crate::messages_ika_system_checkpoints::{
+    IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+};
 use crate::storage::{ReadStore, WriteStore};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -79,45 +81,51 @@ impl ReadStore for SharedInMemoryStore {
         todo!()
     }
 
-    fn get_params_message_by_digest(
+    fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
         self.inner()
-            .get_params_message_by_digest(digest)
+            .get_ika_system_checkpoint_by_digest(digest)
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.inner()
-            .get_highest_verified_params_message()
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.inner()
-            .get_highest_synced_params_message()
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
-        Ok(self.inner().get_lowest_available_params_message())
-    }
-
-    fn get_params_message_by_sequence_number(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
         self.inner()
-            .get_params_message_by_sequence_number(sequence_number)
+            .get_highest_verified_ika_system_checkpoint()
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+    fn get_highest_synced_ika_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.inner()
+            .get_highest_synced_ika_system_checkpoint()
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        Ok(self.inner().get_lowest_available_ika_system_checkpoint())
+    }
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.inner()
+            .get_ika_system_checkpoint_by_sequence_number(sequence_number)
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
         todo!()
     }
 }
@@ -146,26 +154,30 @@ impl WriteStore for SharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
-        self.inner_mut().insert_params_message(params_message);
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
+        self.inner_mut()
+            .insert_ika_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
         self.inner_mut()
-            .update_highest_synced_params_message(params_message);
+            .update_highest_synced_ika_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
         self.inner_mut()
-            .update_highest_verified_params_message(params_message);
+            .update_highest_verified_ika_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
@@ -180,9 +192,12 @@ impl SharedInMemoryStore {
         self.inner_mut().insert_certified_checkpoint(checkpoint);
     }
 
-    pub fn insert_certified_params_message(&self, params_message: &VerifiedParamsMessage) {
+    pub fn insert_certified_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) {
         self.inner_mut()
-            .insert_certified_params_message(params_message);
+            .insert_certified_ika_system_checkpoint(ika_system_checkpoint);
     }
 }
 
@@ -198,28 +213,30 @@ pub struct InMemoryStore {
 
     lowest_checkpoint_number: CheckpointSequenceNumber,
 
-    highest_verified_params_message: Option<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
-    highest_synced_params_message: Option<(ParamsMessageSequenceNumber, ParamsMessageDigest)>,
-    params_messages: HashMap<ParamsMessageDigest, VerifiedParamsMessage>,
-    params_message_contents_digest_to_sequence_number:
-        HashMap<ParamsMessageContentsDigest, ParamsMessageSequenceNumber>,
-    params_message_sequence_number_to_digest:
-        HashMap<ParamsMessageSequenceNumber, ParamsMessageDigest>,
-    lowest_params_message_number: ParamsMessageSequenceNumber,
+    highest_verified_ika_system_checkpoint:
+        Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest)>,
+    highest_synced_ika_system_checkpoint:
+        Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest)>,
+    ika_system_checkpoints: HashMap<IkaSystemCheckpointDigest, VerifiedIkaSystemCheckpoint>,
+    ika_system_checkpoint_contents_digest_to_sequence_number:
+        HashMap<IkaSystemCheckpointContentsDigest, IkaSystemCheckpointSequenceNumber>,
+    ika_system_checkpoint_sequence_number_to_digest:
+        HashMap<IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest>,
+    lowest_ika_system_checkpoint_number: IkaSystemCheckpointSequenceNumber,
 }
 
 impl InMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
-        params_message: VerifiedParamsMessage,
+        ika_system_checkpoint: VerifiedIkaSystemCheckpoint,
         committee: Committee,
     ) {
         self.insert_committee(committee);
         self.insert_checkpoint(&checkpoint);
-        self.insert_params_message(&params_message);
+        self.insert_ika_system_checkpoint(&ika_system_checkpoint);
         self.update_highest_synced_checkpoint(&checkpoint);
-        self.update_highest_verified_params_message(&params_message);
+        self.update_highest_verified_ika_system_checkpoint(&ika_system_checkpoint);
     }
 
     pub fn get_checkpoint_by_digest(
@@ -245,11 +262,11 @@ impl InMemoryStore {
         self.contents_digest_to_sequence_number.get(digest).copied()
     }
 
-    pub fn get_params_message_sequence_number_by_contents_digest(
+    pub fn get_ika_system_checkpoint_sequence_number_by_contents_digest(
         &self,
-        digest: &ParamsMessageContentsDigest,
-    ) -> Option<ParamsMessageSequenceNumber> {
-        self.params_message_contents_digest_to_sequence_number
+        digest: &IkaSystemCheckpointContentsDigest,
+    ) -> Option<IkaSystemCheckpointSequenceNumber> {
+        self.ika_system_checkpoint_contents_digest_to_sequence_number
             .get(digest)
             .copied()
     }
@@ -352,103 +369,131 @@ impl InMemoryStore {
         }
     }
 
-    pub fn get_params_message_by_digest(
+    pub fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Option<&VerifiedParamsMessage> {
-        self.params_messages.get(digest)
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+        self.ika_system_checkpoints.get(digest)
     }
 
-    pub fn get_params_message_by_sequence_number(
+    pub fn get_ika_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Option<&VerifiedParamsMessage> {
-        self.params_message_sequence_number_to_digest
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+        self.ika_system_checkpoint_sequence_number_to_digest
             .get(&sequence_number)
-            .and_then(|digest| self.get_params_message_by_digest(digest))
+            .and_then(|digest| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_verified_params_message(&self) -> Option<&VerifiedParamsMessage> {
-        self.highest_verified_params_message
+    pub fn get_highest_verified_ika_system_checkpoint(
+        &self,
+    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+        self.highest_verified_ika_system_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_params_message_by_digest(digest))
+            .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_synced_params_message(&self) -> Option<&VerifiedParamsMessage> {
-        self.highest_synced_params_message
+    pub fn get_highest_synced_ika_system_checkpoint(&self) -> Option<&VerifiedIkaSystemCheckpoint> {
+        self.highest_synced_ika_system_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_params_message_by_digest(digest))
+            .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_lowest_available_params_message(&self) -> ParamsMessageSequenceNumber {
-        self.lowest_params_message_number
+    pub fn get_lowest_available_ika_system_checkpoint(&self) -> IkaSystemCheckpointSequenceNumber {
+        self.lowest_ika_system_checkpoint_number
     }
 
-    pub fn set_lowest_available_params_message(
+    pub fn set_lowest_available_ika_system_checkpoint(
         &mut self,
-        params_message_seq_num: ParamsMessageSequenceNumber,
+        ika_system_checkpoint_seq_num: IkaSystemCheckpointSequenceNumber,
     ) {
-        self.lowest_params_message_number = params_message_seq_num;
+        self.lowest_ika_system_checkpoint_number = ika_system_checkpoint_seq_num;
     }
 
-    pub fn insert_params_message(&mut self, params_message: &VerifiedParamsMessage) {
-        self.insert_certified_params_message(params_message);
-        let digest = *params_message.digest();
-        let sequence_number = *params_message.sequence_number();
+    pub fn insert_ika_system_checkpoint(
+        &mut self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) {
+        self.insert_certified_ika_system_checkpoint(ika_system_checkpoint);
+        let digest = *ika_system_checkpoint.digest();
+        let sequence_number = *ika_system_checkpoint.sequence_number();
 
-        if Some(sequence_number) > self.highest_verified_params_message.map(|x| x.0) {
-            self.highest_verified_params_message = Some((sequence_number, digest));
+        if Some(sequence_number) > self.highest_verified_ika_system_checkpoint.map(|x| x.0) {
+            self.highest_verified_ika_system_checkpoint = Some((sequence_number, digest));
         }
     }
 
-    // This function simulates Consensus inserts certified params_message into the params_message store
-    // without bumping the highest_verified_params_message watermark.
-    pub fn insert_certified_params_message(&mut self, params_message: &VerifiedParamsMessage) {
-        let digest = *params_message.digest();
-        let sequence_number = *params_message.sequence_number();
+    // This function simulates Consensus inserts certified ika_system_checkpoint into the ika_system_checkpoint store
+    // without bumping the highest_verified_ika_system_checkpoint watermark.
+    pub fn insert_certified_ika_system_checkpoint(
+        &mut self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) {
+        let digest = *ika_system_checkpoint.digest();
+        let sequence_number = *ika_system_checkpoint.sequence_number();
 
-        self.params_messages.insert(digest, params_message.clone());
-        self.params_message_sequence_number_to_digest
+        self.ika_system_checkpoints
+            .insert(digest, ika_system_checkpoint.clone());
+        self.ika_system_checkpoint_sequence_number_to_digest
             .insert(sequence_number, digest);
     }
 
-    pub fn update_highest_synced_params_message(&mut self, params_message: &VerifiedParamsMessage) {
-        if !self.params_messages.contains_key(params_message.digest()) {
-            panic!("store should already contain params_message");
-        }
-        if let Some(highest_synced_params_message) = self.highest_synced_params_message {
-            if highest_synced_params_message.0 >= params_message.sequence_number {
-                return;
-            }
-        }
-        self.highest_synced_params_message =
-            Some((*params_message.sequence_number(), *params_message.digest()));
-    }
-
-    pub fn update_highest_verified_params_message(
+    pub fn update_highest_synced_ika_system_checkpoint(
         &mut self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) {
-        if !self.params_messages.contains_key(params_message.digest()) {
-            panic!("store should already contain params_message");
+        if !self
+            .ika_system_checkpoints
+            .contains_key(ika_system_checkpoint.digest())
+        {
+            panic!("store should already contain ika_system_checkpoint");
         }
-        if let Some(highest_verified_params_message) = self.highest_verified_params_message {
-            if highest_verified_params_message.0 >= params_message.sequence_number {
+        if let Some(highest_synced_ika_system_checkpoint) =
+            self.highest_synced_ika_system_checkpoint
+        {
+            if highest_synced_ika_system_checkpoint.0 >= ika_system_checkpoint.sequence_number {
                 return;
             }
         }
-        self.highest_verified_params_message =
-            Some((*params_message.sequence_number(), *params_message.digest()));
+        self.highest_synced_ika_system_checkpoint = Some((
+            *ika_system_checkpoint.sequence_number(),
+            *ika_system_checkpoint.digest(),
+        ));
     }
 
-    pub fn params_messages(&self) -> &HashMap<ParamsMessageDigest, VerifiedParamsMessage> {
-        &self.params_messages
+    pub fn update_highest_verified_ika_system_checkpoint(
+        &mut self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) {
+        if !self
+            .ika_system_checkpoints
+            .contains_key(ika_system_checkpoint.digest())
+        {
+            panic!("store should already contain ika_system_checkpoint");
+        }
+        if let Some(highest_verified_ika_system_checkpoint) =
+            self.highest_verified_ika_system_checkpoint
+        {
+            if highest_verified_ika_system_checkpoint.0 >= ika_system_checkpoint.sequence_number {
+                return;
+            }
+        }
+        self.highest_verified_ika_system_checkpoint = Some((
+            *ika_system_checkpoint.sequence_number(),
+            *ika_system_checkpoint.digest(),
+        ));
     }
 
-    pub fn params_message_sequence_number_to_digest(
+    pub fn ika_system_checkpoints(
         &self,
-    ) -> &HashMap<ParamsMessageSequenceNumber, ParamsMessageDigest> {
-        &self.params_message_sequence_number_to_digest
+    ) -> &HashMap<IkaSystemCheckpointDigest, VerifiedIkaSystemCheckpoint> {
+        &self.ika_system_checkpoints
+    }
+
+    pub fn ika_system_checkpoint_sequence_number_to_digest(
+        &self,
+    ) -> &HashMap<IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest> {
+        &self.ika_system_checkpoint_sequence_number_to_digest
     }
 }
 
@@ -461,11 +506,11 @@ impl SingleCheckpointSharedInMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
-        params_message: VerifiedParamsMessage,
+        ika_system_checkpoint: VerifiedIkaSystemCheckpoint,
         committee: Committee,
     ) {
         let mut locked = self.0 .0.write().unwrap();
-        locked.insert_genesis_state(checkpoint, params_message, committee);
+        locked.insert_genesis_state(checkpoint, ika_system_checkpoint, committee);
     }
 }
 
@@ -504,35 +549,41 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
         todo!()
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.0.get_highest_verified_params_message()
-    }
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.0.get_highest_synced_params_message()
-    }
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
-        self.0.get_lowest_available_params_message()
-    }
-
-    fn get_params_message_by_digest(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        self.0.get_params_message_by_digest(digest)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.0.get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_params_message_by_sequence_number(
+    fn get_highest_synced_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.0.get_highest_synced_ika_system_checkpoint()
+    }
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        self.0.get_lowest_available_ika_system_checkpoint()
+    }
+
+    fn get_ika_system_checkpoint_by_digest(
+        &self,
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.0.get_ika_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
         self.0
-            .get_params_message_by_sequence_number(sequence_number)
+            .get_ika_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -563,31 +614,36 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
         {
             let mut locked = self.0 .0.write().unwrap();
-            locked.params_messages.clear();
-            locked.params_message_sequence_number_to_digest.clear();
+            locked.ika_system_checkpoints.clear();
+            locked
+                .ika_system_checkpoint_sequence_number_to_digest
+                .clear();
         }
-        self.0.insert_params_message(params_message)?;
+        self.0.insert_ika_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
         self.0
-            .update_highest_synced_params_message(params_message)?;
+            .update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
         self.0
-            .update_highest_verified_params_message(params_message)?;
+            .update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 

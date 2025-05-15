@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use crate::params_messages::ParamsMessageServiceNotify;
+use crate::ika_system_checkpoints::IkaSystemCheckpointServiceNotify;
 use crate::{
     authority::{authority_per_epoch_store::AuthorityPerEpochStore, AuthorityState},
     checkpoints::CheckpointServiceNotify,
@@ -17,7 +17,7 @@ use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
 use ika_types::messages_checkpoint::SignedCheckpointMessage;
-use ika_types::messages_params_messages::SignedParamsMessage;
+use ika_types::messages_ika_system_checkpoints::SignedIkaSystemCheckpoint;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
@@ -35,7 +35,7 @@ pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
     checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
-    params_message_service: Arc<dyn ParamsMessageServiceNotify + Send + Sync>,
+    ika_system_checkpoint_service: Arc<dyn IkaSystemCheckpointServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
 
@@ -44,7 +44,7 @@ impl IkaTxValidator {
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
         checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
-        params_message_service: Arc<dyn ParamsMessageServiceNotify + Send + Sync>,
+        ika_system_checkpoint_service: Arc<dyn IkaSystemCheckpointServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
         let epoch_store = authority_state.load_epoch_store_one_call_per_task().clone();
@@ -56,7 +56,7 @@ impl IkaTxValidator {
             authority_state,
             consensus_overload_checker,
             checkpoint_service,
-            params_message_service,
+            ika_system_checkpoint_service,
             metrics,
         }
     }
@@ -67,7 +67,7 @@ impl IkaTxValidator {
         let mut ckpt_messages = Vec::new();
         let mut ckpt_batch = Vec::new();
 
-        let mut params_messages = Vec::new();
+        let mut ika_system_checkpoints = Vec::new();
         let mut params_batch = Vec::new();
 
         for tx in txs.iter() {
@@ -80,9 +80,9 @@ impl IkaTxValidator {
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
                 | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {}
-                ConsensusTransactionKind::ParamsMessageSignature(signature) => {
-                    params_messages.push(signature.as_ref());
-                    params_batch.push(&signature.params_message);
+                ConsensusTransactionKind::IkaSystemCheckpointSignature(signature) => {
+                    ika_system_checkpoints.push(signature.as_ref());
+                    params_batch.push(&signature.ika_system_checkpoint);
                 }
             }
         }
@@ -105,20 +105,20 @@ impl IkaTxValidator {
 
         let params_count = params_batch.len();
 
-        Self::batch_verify_all_certificates_and_params_messages(
+        Self::batch_verify_all_certificates_and_ika_system_checkpoints(
             epoch_store.committee(),
             &params_batch,
         )
         .tap_err(|e| warn!("batch verification error: {}", e))?;
 
         // All checkpoint sigs have been verified, forward them to the checkpoint service
-        for ckpt in params_messages {
-            self.params_message_service
-                .notify_params_message_signature(&epoch_store, ckpt)?;
+        for ckpt in ika_system_checkpoints {
+            self.ika_system_checkpoint_service
+                .notify_ika_system_checkpoint_signature(&epoch_store, ckpt)?;
         }
 
         self.metrics
-            .params_message_signatures_verified
+            .ika_system_checkpoint_signatures_verified
             .inc_by(params_count as u64);
         Ok(())
     }
@@ -151,9 +151,9 @@ impl IkaTxValidator {
     }
 
     /// Verifies all certificates - if any fail return error.
-    fn batch_verify_all_certificates_and_params_messages(
+    fn batch_verify_all_certificates_and_ika_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedParamsMessage],
+        checkpoints: &[&SignedIkaSystemCheckpoint],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -161,12 +161,12 @@ impl IkaTxValidator {
             ckpt.data().verify_epoch(committee.epoch())?;
         }
 
-        Self::batch_verify_params_messages(committee, checkpoints)
+        Self::batch_verify_ika_system_checkpoints(committee, checkpoints)
     }
 
-    fn batch_verify_params_messages(
+    fn batch_verify_ika_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedParamsMessage],
+        checkpoints: &[&SignedIkaSystemCheckpoint],
     ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
@@ -273,7 +273,7 @@ impl TransactionVerifier for IkaTxValidator {
 pub struct IkaTxValidatorMetrics {
     certificate_signatures_verified: IntCounter,
     checkpoint_signatures_verified: IntCounter,
-    params_message_signatures_verified: IntCounter,
+    ika_system_checkpoint_signatures_verified: IntCounter,
 }
 
 impl IkaTxValidatorMetrics {
@@ -291,8 +291,8 @@ impl IkaTxValidatorMetrics {
                 registry
             )
             .unwrap(),
-            params_message_signatures_verified: register_int_counter_with_registry!(
-                "params_message_signatures_verified",
+            ika_system_checkpoint_signatures_verified: register_int_counter_with_registry!(
+                "ika_system_checkpoint_signatures_verified",
                 "Number of params messages verified in consensus batch verifier",
                 registry
             )

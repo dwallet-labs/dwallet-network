@@ -54,33 +54,42 @@ impl Metrics {
         None
     }
 
-    pub fn set_highest_known_params_message(&self, sequence_number: CheckpointSequenceNumber) {
+    pub fn set_highest_known_ika_system_checkpoint(
+        &self,
+        sequence_number: CheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_known_params_message
+                .highest_known_ika_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn set_highest_verified_params_message(&self, sequence_number: CheckpointSequenceNumber) {
+    pub fn set_highest_verified_ika_system_checkpoint(
+        &self,
+        sequence_number: CheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_verified_params_message
+                .highest_verified_ika_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn set_highest_synced_params_message(&self, sequence_number: CheckpointSequenceNumber) {
+    pub fn set_highest_synced_ika_system_checkpoint(
+        &self,
+        sequence_number: CheckpointSequenceNumber,
+    ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_synced_params_message
+                .highest_synced_ika_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn params_message_summary_age_metrics(&self) -> Option<&Histogram> {
+    pub fn ika_system_checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
         if let Some(inner) = &self.0 {
-            return Some(&inner.params_message_summary_age);
+            return Some(&inner.ika_system_checkpoint_summary_age);
         }
         None
     }
@@ -92,10 +101,10 @@ struct Inner {
     highest_synced_checkpoint: IntGauge,
     checkpoint_summary_age: Histogram,
 
-    highest_known_params_message: IntGauge,
-    highest_verified_params_message: IntGauge,
-    highest_synced_params_message: IntGauge,
-    params_message_summary_age: Histogram,
+    highest_known_ika_system_checkpoint: IntGauge,
+    highest_verified_ika_system_checkpoint: IntGauge,
+    highest_synced_ika_system_checkpoint: IntGauge,
+    ika_system_checkpoint_summary_age: Histogram,
 }
 
 impl Inner {
@@ -129,26 +138,26 @@ impl Inner {
                 registry,
             )
             .unwrap(),
-            highest_known_params_message: register_int_gauge_with_registry!(
-                "highest_known_params_message",
+            highest_known_ika_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_known_ika_system_checkpoint",
                 "Highest known params message",
                 registry
             )
             .unwrap(),
-            highest_verified_params_message: register_int_gauge_with_registry!(
-                "highest_verified_params_message",
+            highest_verified_ika_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_verified_ika_system_checkpoint",
                 "Highest verified params message",
                 registry
             )
             .unwrap(),
-            highest_synced_params_message: register_int_gauge_with_registry!(
-                "highest_synced_params_message",
+            highest_synced_ika_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_synced_ika_system_checkpoint",
                 "Highest synced params message",
                 registry
             )
             .unwrap(),
-            params_message_summary_age: register_histogram_with_registry!(
-                "params_message_summary_age",
+            ika_system_checkpoint_summary_age: register_histogram_with_registry!(
+                "ika_system_checkpoint_summary_age",
                 "Age of params messages summaries when they arrive and are verified.",
                 mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
                 registry,

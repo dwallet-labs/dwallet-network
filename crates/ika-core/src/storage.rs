@@ -3,16 +3,18 @@
 
 use crate::checkpoints::CheckpointStore;
 use crate::epoch::committee_store::CommitteeStore;
-use crate::params_messages::ParamsMessageStore;
+use crate::ika_system_checkpoints::IkaSystemCheckpointStore;
 use ika_types::committee::Committee;
 use ika_types::committee::EpochId;
-use ika_types::digests::ParamsMessageDigest;
+use ika_types::digests::IkaSystemCheckpointDigest;
 use ika_types::error::IkaError;
 use ika_types::messages_checkpoint::CheckpointContentsDigest;
 use ika_types::messages_checkpoint::CheckpointMessageDigest;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::messages_checkpoint::VerifiedCheckpointMessage;
-use ika_types::messages_params_messages::{ParamsMessageSequenceNumber, VerifiedParamsMessage};
+use ika_types::messages_ika_system_checkpoints::{
+    IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+};
 use ika_types::storage::error::Error as StorageError;
 use ika_types::storage::error::Result;
 use ika_types::storage::ReadStore;
@@ -28,26 +30,26 @@ pub struct RocksDbStore {
     highest_verified_checkpoint: Arc<Mutex<Option<CheckpointSequenceNumber>>>,
     highest_synced_checkpoint: Arc<Mutex<Option<CheckpointSequenceNumber>>>,
 
-    params_message_store: Arc<ParamsMessageStore>,
-    // in memory params_message watermark sequence numbers
-    highest_verified_params_message: Arc<Mutex<Option<ParamsMessageSequenceNumber>>>,
-    highest_synced_params_message: Arc<Mutex<Option<ParamsMessageSequenceNumber>>>,
+    ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+    // in memory ika_system_checkpoint watermark sequence numbers
+    highest_verified_ika_system_checkpoint: Arc<Mutex<Option<IkaSystemCheckpointSequenceNumber>>>,
+    highest_synced_ika_system_checkpoint: Arc<Mutex<Option<IkaSystemCheckpointSequenceNumber>>>,
 }
 
 impl RocksDbStore {
     pub fn new(
         committee_store: Arc<CommitteeStore>,
         checkpoint_store: Arc<CheckpointStore>,
-        params_message_store: Arc<ParamsMessageStore>,
+        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
     ) -> Self {
         Self {
             committee_store,
             checkpoint_store,
             highest_verified_checkpoint: Arc::new(Mutex::new(None)),
             highest_synced_checkpoint: Arc::new(Mutex::new(None)),
-            params_message_store,
-            highest_verified_params_message: Arc::new(Mutex::new(None)),
-            highest_synced_params_message: Arc::new(Mutex::new(None)),
+            ika_system_checkpoint_store,
+            highest_verified_ika_system_checkpoint: Arc::new(Mutex::new(None)),
+            highest_synced_ika_system_checkpoint: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -124,31 +126,37 @@ impl ReadStore for RocksDbStore {
             })
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
-        self.params_message_store
-            .get_highest_executed_params_message()
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+        self.ika_system_checkpoint_store
+            .get_highest_executed_ika_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
             .ok_or_else(|| {
                 ika_types::storage::error::Error::missing("unable to get latest params message")
             })
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.params_message_store
-            .get_highest_verified_params_message()
+    fn get_highest_verified_ika_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.ika_system_checkpoint_store
+            .get_highest_verified_ika_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        self.params_message_store
-            .get_highest_synced_params_message()
+    fn get_highest_synced_ika_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.ika_system_checkpoint_store
+            .get_highest_synced_ika_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
         let highest_pruned_cp = self
-            .params_message_store
-            .get_highest_pruned_params_message_seq_number()
+            .ika_system_checkpoint_store
+            .get_highest_pruned_ika_system_checkpoint_seq_number()
             .map_err(ika_types::storage::error::Error::custom)?;
 
         if highest_pruned_cp == 0 {
@@ -158,21 +166,21 @@ impl ReadStore for RocksDbStore {
         }
     }
 
-    fn get_params_message_by_digest(
+    fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        self.params_message_store
-            .get_params_message_by_digest(digest)
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.ika_system_checkpoint_store
+            .get_ika_system_checkpoint_by_digest(digest)
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_params_message_by_sequence_number(
+    fn get_ika_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        self.params_message_store
-            .get_params_message_by_sequence_number(sequence_number)
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        self.ika_system_checkpoint_store
+            .get_ika_system_checkpoint_by_sequence_number(sequence_number)
             .map_err(ika_types::storage::error::Error::custom)
     }
 }
@@ -217,39 +225,42 @@ impl WriteStore for RocksDbStore {
         Ok(())
     }
 
-    fn insert_params_message(&self, params_message: &VerifiedParamsMessage) -> Result<()> {
-        self.params_message_store
-            .insert_verified_params_message(params_message)
+    fn insert_ika_system_checkpoint(
+        &self,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+    ) -> Result<()> {
+        self.ika_system_checkpoint_store
+            .insert_verified_ika_system_checkpoint(ika_system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn update_highest_synced_params_message(
+    fn update_highest_synced_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        let mut locked = self.highest_synced_params_message.lock();
-        if locked.is_some() && locked.unwrap() >= params_message.sequence_number {
+        let mut locked = self.highest_synced_ika_system_checkpoint.lock();
+        if locked.is_some() && locked.unwrap() >= ika_system_checkpoint.sequence_number {
             return Ok(());
         }
-        self.params_message_store
-            .update_highest_synced_params_message(params_message)
+        self.ika_system_checkpoint_store
+            .update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
-        *locked = Some(params_message.sequence_number);
+        *locked = Some(ika_system_checkpoint.sequence_number);
         Ok(())
     }
 
-    fn update_highest_verified_params_message(
+    fn update_highest_verified_ika_system_checkpoint(
         &self,
-        params_message: &VerifiedParamsMessage,
+        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
     ) -> Result<()> {
-        let mut locked = self.highest_verified_params_message.lock();
-        if locked.is_some() && locked.unwrap() >= params_message.sequence_number {
+        let mut locked = self.highest_verified_ika_system_checkpoint.lock();
+        if locked.is_some() && locked.unwrap() >= ika_system_checkpoint.sequence_number {
             return Ok(());
         }
-        self.params_message_store
-            .update_highest_verified_params_message(params_message)
+        self.ika_system_checkpoint_store
+            .update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
-        *locked = Some(params_message.sequence_number);
+        *locked = Some(ika_system_checkpoint.sequence_number);
         Ok(())
     }
 

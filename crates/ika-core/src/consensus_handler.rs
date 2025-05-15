@@ -37,7 +37,7 @@ use sui_types::{
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
-use crate::params_messages::{ParamsMessageService, ParamsMessageServiceNotify};
+use crate::ika_system_checkpoints::{IkaSystemCheckpointService, IkaSystemCheckpointServiceNotify};
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -62,7 +62,7 @@ use typed_store::Map;
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
     checkpoint_service: Arc<CheckpointService>,
-    params_message_service: Arc<ParamsMessageService>,
+    ika_system_checkpoint_service: Arc<IkaSystemCheckpointService>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -72,7 +72,7 @@ impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<CheckpointService>,
-        params_message_service: Arc<ParamsMessageService>,
+        ika_system_checkpoint_service: Arc<IkaSystemCheckpointService>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -80,7 +80,7 @@ impl ConsensusHandlerInitializer {
         Self {
             state,
             checkpoint_service,
-            params_message_service,
+            ika_system_checkpoint_service,
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
@@ -111,7 +111,7 @@ impl ConsensusHandlerInitializer {
         ConsensusHandler::new(
             self.epoch_store.clone(),
             self.checkpoint_service.clone(),
-            self.params_message_service.clone(),
+            self.ika_system_checkpoint_service.clone(),
             self.low_scoring_authorities.clone(),
             consensus_committee,
             self.state.metrics.clone(),
@@ -133,7 +133,7 @@ pub struct ConsensusHandler<C> {
     /// checking chain consistency, and accumulating per-epoch consensus output stats.
     last_consensus_stats: ExecutionIndicesWithStats,
     checkpoint_service: Arc<C>,
-    params_message_service: Arc<ParamsMessageService>,
+    ika_system_checkpoint_service: Arc<IkaSystemCheckpointService>,
     /// Reputation scores used by consensus adapter that we update, forwarded from consensus
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     /// The consensus committee used to do stake computations for deciding set of low scoring authorities
@@ -153,7 +153,7 @@ impl<C> ConsensusHandler<C> {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_service: Arc<C>,
-        params_message_service: Arc<ParamsMessageService>,
+        ika_system_checkpoint_service: Arc<IkaSystemCheckpointService>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
@@ -172,7 +172,7 @@ impl<C> ConsensusHandler<C> {
             epoch_store,
             last_consensus_stats,
             checkpoint_service,
-            params_message_service,
+            ika_system_checkpoint_service,
             low_scoring_authorities,
             committee,
             metrics,
@@ -373,13 +373,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
 
-        let (executable_transactions, params_message_executable_transactions) = self
+        let (executable_transactions, ika_system_checkpoint_executable_transactions) = self
             .epoch_store
             .process_consensus_transactions_and_commit_boundary(
                 all_transactions,
                 &self.last_consensus_stats,
                 &self.checkpoint_service,
-                &self.params_message_service,
+                &self.ika_system_checkpoint_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
             )
@@ -389,7 +389,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         // update the calculated throughput
         self.throughput_calculator.add_transactions(
             timestamp,
-            (executable_transactions.len() + params_message_executable_transactions.len()) as u64,
+            (executable_transactions.len() + ika_system_checkpoint_executable_transactions.len())
+                as u64,
         );
 
         fail_point_if!("correlated-crash-after-consensus-commit-boundary", || {
@@ -545,7 +546,9 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
             "dwallet_mpc_session_failed_with_malicious"
         }
-        ConsensusTransactionKind::ParamsMessageSignature(_) => "params_message_signature",
+        ConsensusTransactionKind::IkaSystemCheckpointSignature(_) => {
+            "ika_system_checkpoint_signature"
+        }
     }
 }
 

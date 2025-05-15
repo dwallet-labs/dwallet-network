@@ -63,9 +63,10 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::params_messages::{
-    BuilderParamsMessage, ParamsMessageHeight, ParamsMessageService, ParamsMessageServiceNotify,
-    PendingParamsMessage, PendingParamsMessageInfo, PendingParamsMessageV1,
+use crate::ika_system_checkpoints::{
+    BuilderIkaSystemCheckpoint, IkaSystemCheckpointHeight, IkaSystemCheckpointService,
+    IkaSystemCheckpointServiceNotify, PendingIkaSystemCheckpoint, PendingIkaSystemCheckpointInfo,
+    PendingIkaSystemCheckpointV1,
 };
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
@@ -96,9 +97,9 @@ use ika_types::messages_dwallet_mpc::{
     SessionType, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
-use ika_types::messages_params_messages::{
-    ParamsMessage, ParamsMessageKind, ParamsMessageSequenceNumber, ParamsMessageSignatureMessage,
-    SignedParamsMessage,
+use ika_types::messages_ika_system_checkpoints::{
+    IkaSystemCheckpoint, IkaSystemCheckpointKind, IkaSystemCheckpointSequenceNumber,
+    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
@@ -176,7 +177,7 @@ pub enum ConsensusCertificateResult {
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
 
-    SystemTransaction(ParamsMessageKind),
+    SystemTransaction(IkaSystemCheckpointKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -425,15 +426,15 @@ pub struct AuthorityEpochTables {
     builder_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage>,
 
     // #[default_options_override_fn = "pending_checkpoints_table_default_config"]
-    pending_params_messages: DBMap<ParamsMessageHeight, PendingParamsMessage>,
+    pending_ika_system_checkpoints: DBMap<IkaSystemCheckpointHeight, PendingIkaSystemCheckpoint>,
 
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
-    pending_params_message_signatures:
-        DBMap<(CheckpointSequenceNumber, u64), ParamsMessageSignatureMessage>,
+    pending_ika_system_checkpoint_signatures:
+        DBMap<(CheckpointSequenceNumber, u64), IkaSystemCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_params_message_v1: DBMap<CheckpointSequenceNumber, BuilderParamsMessage>,
+    builder_ika_system_checkpoint_v1: DBMap<CheckpointSequenceNumber, BuilderIkaSystemCheckpoint>,
 
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
@@ -555,22 +556,25 @@ impl AuthorityEpochTables {
         Ok::<_, IkaError>(iter)
     }
 
-    pub fn get_pending_params_message_signatures_iter(
+    pub fn get_pending_ika_system_checkpoint_signatures_iter(
         &self,
-        params_message_seq: ParamsMessageSequenceNumber,
+        ika_system_checkpoint_seq: IkaSystemCheckpointSequenceNumber,
         starting_index: u64,
     ) -> IkaResult<
         impl Iterator<
                 Item = (
-                    (ParamsMessageSequenceNumber, u64),
-                    ParamsMessageSignatureMessage,
+                    (IkaSystemCheckpointSequenceNumber, u64),
+                    IkaSystemCheckpointSignatureMessage,
                 ),
             > + '_,
     > {
-        let key = (params_message_seq, starting_index);
-        debug!("Scanning pending params_message signatures from {:?}", key);
+        let key = (ika_system_checkpoint_seq, starting_index);
+        debug!(
+            "Scanning pending ika_system_checkpoint signatures from {:?}",
+            key
+        );
         let iter = self
-            .pending_params_message_signatures
+            .pending_ika_system_checkpoint_signatures
             .unbounded_iter()
             .skip_to(&key)?;
         Ok::<_, IkaError>(iter)
@@ -1202,13 +1206,14 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ParamsMessageSignature(data),
+                kind: ConsensusTransactionKind::IkaSystemCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority() != data.params_message.auth_sig().authority {
+                if transaction.sender_authority() != data.ika_system_checkpoint.auth_sig().authority
+                {
                     warn!(
-                        "ParamsMessage authority {} does not match its author from consensus {}",
-                        data.params_message.auth_sig().authority,
+                        "IkaSystemCheckpoint authority {} does not match its author from consensus {}",
+                        data.ika_system_checkpoint.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -1238,10 +1243,10 @@ impl AuthorityPerEpochStore {
         transactions: Vec<SequencedConsensusTransaction>,
         consensus_stats: &ExecutionIndicesWithStats,
         checkpoint_service: &Arc<C>,
-        params_message_service: &Arc<ParamsMessageService>,
+        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<(Vec<MessageKind>, Vec<ParamsMessageKind>)> {
+    ) -> IkaResult<(Vec<MessageKind>, Vec<IkaSystemCheckpointKind>)> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
@@ -1278,12 +1283,12 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (mut verified_messages, mut params_message_verified_messages, notifications) = self
-            .process_consensus_transactions(
+        let (mut verified_messages, mut ika_system_checkpoint_verified_messages, notifications) =
+            self.process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
                 checkpoint_service,
-                params_message_service,
+                ika_system_checkpoint_service,
                 consensus_commit_info,
                 //&mut roots,
                 authority_metrics,
@@ -1303,31 +1308,34 @@ impl AuthorityPerEpochStore {
         });
         self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
 
-        let params_message_height = consensus_commit_info.round;
+        let ika_system_checkpoint_height = consensus_commit_info.round;
 
-        let pending_params_message = PendingParamsMessage::V1(PendingParamsMessageV1 {
-            messages: params_message_verified_messages.clone(),
-            details: PendingParamsMessageInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                params_message_height,
-            },
-        });
-        self.write_pending_params_message(&mut output, &pending_params_message)?;
+        let pending_ika_system_checkpoint =
+            PendingIkaSystemCheckpoint::V1(PendingIkaSystemCheckpointV1 {
+                messages: ika_system_checkpoint_verified_messages.clone(),
+                details: PendingIkaSystemCheckpointInfo {
+                    timestamp_ms: consensus_commit_info.timestamp,
+                    ika_system_checkpoint_height,
+                },
+            });
+        self.write_pending_ika_system_checkpoint(&mut output, &pending_ika_system_checkpoint)?;
 
-        params_message_verified_messages.iter().for_each(|message| {
-            if let ParamsMessageKind::NextConfigVersion(version) = message {
-                if let Ok(tables) = self.tables() {
-                    if let Err(e) = tables.next_protocol_config_sent.insert(version, &()) {
-                        warn!(
-                            ?e,
-                            "Failed to insert next protocol config version into the table"
-                        );
+        ika_system_checkpoint_verified_messages
+            .iter()
+            .for_each(|message| {
+                if let IkaSystemCheckpointKind::NextConfigVersion(version) = message {
+                    if let Ok(tables) = self.tables() {
+                        if let Err(e) = tables.next_protocol_config_sent.insert(version, &()) {
+                            warn!(
+                                ?e,
+                                "Failed to insert next protocol config version into the table"
+                            );
+                        }
+                    } else {
+                        warn!("Failed to insert params message digest into the table");
                     }
-                } else {
-                    warn!("Failed to insert params message digest into the table");
                 }
-            }
-        });
+            });
 
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
@@ -1343,13 +1351,13 @@ impl AuthorityPerEpochStore {
 
         debug!(
             ?consensus_commit_info.round,
-            "Notifying params_message service about new pending checkpoint(s)",
+            "Notifying ika_system_checkpoint service about new pending checkpoint(s)",
         );
-        params_message_service.notify_params_message()?;
+        ika_system_checkpoint_service.notify_ika_system_checkpoint()?;
 
         self.process_notifications(&notifications);
 
-        Ok((verified_messages, params_message_verified_messages))
+        Ok((verified_messages, ika_system_checkpoint_verified_messages))
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
@@ -1369,19 +1377,19 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transactions: &[VerifiedSequencedConsensusTransaction],
         checkpoint_service: &Arc<C>,
-        params_message_service: &Arc<ParamsMessageService>,
+        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<(
         Vec<MessageKind>, // transactions to schedule
-        Vec<ParamsMessageKind>,
+        Vec<IkaSystemCheckpointKind>,
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
 
         let mut verified_certificates = VecDeque::with_capacity(transactions.len() + 1);
-        let mut verified_param_message_certificates =
+        let mut verified_ika_system_checkpoint_certificates =
             VecDeque::with_capacity(transactions.len() + 1);
         let mut notifications = Vec::with_capacity(transactions.len());
 
@@ -1397,7 +1405,7 @@ impl AuthorityPerEpochStore {
                     output,
                     tx,
                     checkpoint_service,
-                    params_message_service,
+                    ika_system_checkpoint_service,
                     consensus_commit_info.round,
                     authority_metrics,
                 )
@@ -1409,7 +1417,7 @@ impl AuthorityPerEpochStore {
                 }
                 ConsensusCertificateResult::SystemTransaction(cert) => {
                     notifications.push(key.clone());
-                    verified_param_message_certificates.push_back(cert);
+                    verified_ika_system_checkpoint_certificates.push_back(cert);
                 }
                 // This is a special transaction needed for NetworkDKG to bypass TX
                 // size limits.
@@ -1473,7 +1481,7 @@ impl AuthorityPerEpochStore {
 
         Ok((
             verified_certificates,
-            verified_param_message_certificates.into(),
+            verified_ika_system_checkpoint_certificates.into(),
             notifications,
         ))
     }
@@ -1592,7 +1600,7 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transaction: &VerifiedSequencedConsensusTransaction,
         checkpoint_service: &Arc<C>,
-        params_message_service: &Arc<ParamsMessageService>, // should i do this generic as the checkpoint service?
+        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>, // should i do this generic as the checkpoint service?
         commit_round: Round,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<ConsensusCertificateResult> {
@@ -1675,7 +1683,7 @@ impl AuthorityPerEpochStore {
                             capabilities.first()
                         );
                         return Ok(ConsensusCertificateResult::SystemTransaction(
-                            ParamsMessageKind::NextConfigVersion(new_version),
+                            IkaSystemCheckpointKind::NextConfigVersion(new_version),
                         ));
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)
@@ -1684,10 +1692,10 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ParamsMessageSignature(data),
+                kind: ConsensusTransactionKind::IkaSystemCheckpointSignature(data),
                 ..
             }) => {
-                params_message_service.notify_params_message_signature(self, data)?;
+                ika_system_checkpoint_service.notify_ika_system_checkpoint_signature(self, data)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
@@ -2085,128 +2093,129 @@ impl AuthorityPerEpochStore {
             .insert(&(checkpoint_seq, index), info)?)
     }
 
-    pub(crate) fn write_pending_params_message(
+    pub(crate) fn write_pending_ika_system_checkpoint(
         &self,
         output: &mut ConsensusCommitOutput,
-        params_message: &PendingParamsMessage,
+        ika_system_checkpoint: &PendingIkaSystemCheckpoint,
     ) -> IkaResult {
         assert!(
-            self.get_pending_params_message(&params_message.height())?
+            self.get_pending_ika_system_checkpoint(&ika_system_checkpoint.height())?
                 .is_none(),
-            "Duplicate pending params_message notification at height {:?}",
-            params_message.height()
+            "Duplicate pending ika_system_checkpoint notification at height {:?}",
+            ika_system_checkpoint.height()
         );
 
         debug!(
-            params_message_commit_height = params_message.height(),
-            "Pending params_message has {} messages",
-            params_message.messages().len(),
+            ika_system_checkpoint_commit_height = ika_system_checkpoint.height(),
+            "Pending ika_system_checkpoint has {} messages",
+            ika_system_checkpoint.messages().len(),
         );
         trace!(
-            params_message_commit_height = params_message.height(),
-            "Messages for pending params_message: {:?}",
-            params_message.messages()
+            ika_system_checkpoint_commit_height = ika_system_checkpoint.height(),
+            "Messages for pending ika_system_checkpoint: {:?}",
+            ika_system_checkpoint.messages()
         );
 
-        output.insert_pending_params_message(params_message.clone());
+        output.insert_pending_ika_system_checkpoint(ika_system_checkpoint.clone());
 
         Ok(())
     }
 
-    pub fn get_pending_params_messages(
+    pub fn get_pending_ika_system_checkpoints(
         &self,
-        last: Option<ParamsMessageHeight>,
-    ) -> IkaResult<Vec<(ParamsMessageHeight, PendingParamsMessage)>> {
+        last: Option<IkaSystemCheckpointHeight>,
+    ) -> IkaResult<Vec<(IkaSystemCheckpointHeight, PendingIkaSystemCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_params_messages.unbounded_iter();
+        let mut iter = tables.pending_ika_system_checkpoints.unbounded_iter();
         if let Some(last_processed_height) = last {
             iter = iter.skip_to(&(last_processed_height + 1))?;
         }
         Ok(iter.collect())
     }
 
-    pub fn get_pending_params_message(
+    pub fn get_pending_ika_system_checkpoint(
         &self,
-        index: &ParamsMessageHeight,
-    ) -> IkaResult<Option<PendingParamsMessage>> {
-        Ok(self.tables()?.pending_params_messages.get(index)?)
+        index: &IkaSystemCheckpointHeight,
+    ) -> IkaResult<Option<PendingIkaSystemCheckpoint>> {
+        Ok(self.tables()?.pending_ika_system_checkpoints.get(index)?)
     }
 
-    pub fn process_pending_params_message(
+    pub fn process_pending_ika_system_checkpoint(
         &self,
-        commit_height: ParamsMessageHeight,
-        params_message_messages: Vec<ParamsMessage>,
+        commit_height: IkaSystemCheckpointHeight,
+        ika_system_checkpoint_messages: Vec<IkaSystemCheckpoint>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
-        // All created params_messages are inserted in builder_params_message_summary in a single batch.
-        // This means that upon restart we can use BuilderParamsMessageSummary::commit_height
-        // from the last built summary to resume building params_messages.
-        let mut batch = tables.pending_params_messages.batch();
-        for (position_in_commit, summary) in params_message_messages.into_iter().enumerate() {
+        // All created ika_system_checkpoints are inserted in builder_ika_system_checkpoint_summary in a single batch.
+        // This means that upon restart we can use BuilderIkaSystemCheckpointSummary::commit_height
+        // from the last built summary to resume building ika_system_checkpoints.
+        let mut batch = tables.pending_ika_system_checkpoints.batch();
+        for (position_in_commit, summary) in ika_system_checkpoint_messages.into_iter().enumerate()
+        {
             let sequence_number = summary.sequence_number;
-            let summary = BuilderParamsMessage {
-                params_message: summary,
-                params_message_height: Some(commit_height),
+            let summary = BuilderIkaSystemCheckpoint {
+                ika_system_checkpoint: summary,
+                ika_system_checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
-                &tables.builder_params_message_v1,
+                &tables.builder_ika_system_checkpoint_v1,
                 [(&sequence_number, summary)],
             )?;
         }
 
-        // find all pending params_messages <= commit_height and remove them
+        // find all pending ika_system_checkpoints <= commit_height and remove them
         let iter = tables
-            .pending_params_messages
+            .pending_ika_system_checkpoints
             .safe_range_iter(0..=commit_height);
         let keys = iter
             .map(|c| c.map(|(h, _)| h))
             .collect::<Result<Vec<_>, _>>()?;
 
-        batch.delete_batch(&tables.pending_params_messages, &keys)?;
+        batch.delete_batch(&tables.pending_ika_system_checkpoints, &keys)?;
 
         Ok(batch.write()?)
     }
 
-    pub fn last_built_params_message_message_builder(
+    pub fn last_built_ika_system_checkpoint_message_builder(
         &self,
-    ) -> IkaResult<Option<BuilderParamsMessage>> {
+    ) -> IkaResult<Option<BuilderIkaSystemCheckpoint>> {
         Ok(self
             .tables()?
-            .builder_params_message_v1
+            .builder_ika_system_checkpoint_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(_, s)| s))
     }
 
-    pub fn last_built_params_message_message(
+    pub fn last_built_ika_system_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(ParamsMessageSequenceNumber, ParamsMessage)>> {
+    ) -> IkaResult<Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpoint)>> {
         Ok(self
             .tables()?
-            .builder_params_message_v1
+            .builder_ika_system_checkpoint_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
-            .map(|(seq, s)| (seq, s.params_message)))
+            .map(|(seq, s)| (seq, s.ika_system_checkpoint)))
     }
 
-    pub fn get_built_params_message_message(
+    pub fn get_built_ika_system_checkpoint_message(
         &self,
-        sequence: ParamsMessageSequenceNumber,
-    ) -> IkaResult<Option<ParamsMessage>> {
+        sequence: IkaSystemCheckpointSequenceNumber,
+    ) -> IkaResult<Option<IkaSystemCheckpoint>> {
         Ok(self
             .tables()?
-            .builder_params_message_v1
+            .builder_ika_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.params_message))
+            .map(|s| s.ika_system_checkpoint))
     }
 
-    pub fn get_last_params_message_signature_index(&self) -> IkaResult<u64> {
+    pub fn get_last_ika_system_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
-            .pending_params_message_signatures
+            .pending_ika_system_checkpoint_signatures
             .unbounded_iter()
             .skip_to_last()
             .next()
@@ -2214,16 +2223,16 @@ impl AuthorityPerEpochStore {
             .unwrap_or_default())
     }
 
-    pub fn insert_params_message_signature(
+    pub fn insert_ika_system_checkpoint_signature(
         &self,
-        params_message_seq: ParamsMessageSequenceNumber,
+        ika_system_checkpoint_seq: IkaSystemCheckpointSequenceNumber,
         index: u64,
-        info: &ParamsMessageSignatureMessage,
+        info: &IkaSystemCheckpointSignatureMessage,
     ) -> IkaResult<()> {
         Ok(self
             .tables()?
-            .pending_params_message_signatures
-            .insert(&(params_message_seq, index), info)?)
+            .pending_ika_system_checkpoint_signatures
+            .insert(&(ika_system_checkpoint_seq, index), info)?)
     }
 
     pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
@@ -2256,9 +2265,9 @@ impl AuthorityPerEpochStore {
             .set(self.epoch_open_time.elapsed().as_millis() as i64);
     }
 
-    pub(crate) fn record_epoch_first_params_message_creation_time_metric(&self) {
+    pub(crate) fn record_epoch_first_ika_system_checkpoint_creation_time_metric(&self) {
         self.metrics
-            .epoch_first_params_message_created_time_since_epoch_begin_ms
+            .epoch_first_ika_system_checkpoint_created_time_since_epoch_begin_ms
             .set(self.epoch_open_time.elapsed().as_millis() as i64);
     }
 
@@ -2278,7 +2287,7 @@ pub(crate) struct ConsensusCommitOutput {
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
     pending_checkpoints: Vec<PendingCheckpoint>,
-    pending_params_messages: Vec<PendingParamsMessage>,
+    pending_ika_system_checkpoints: Vec<PendingIkaSystemCheckpoint>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
@@ -2326,8 +2335,8 @@ impl ConsensusCommitOutput {
         self.pending_checkpoints.push(checkpoint);
     }
 
-    fn insert_pending_params_message(&mut self, checkpoint: PendingParamsMessage) {
-        self.pending_params_messages.push(checkpoint);
+    fn insert_pending_ika_system_checkpoint(&mut self, checkpoint: PendingIkaSystemCheckpoint) {
+        self.pending_ika_system_checkpoints.push(checkpoint);
     }
 
     pub fn write_to_batch(
@@ -2394,8 +2403,8 @@ impl ConsensusCommitOutput {
         )?;
 
         batch.insert_batch(
-            &tables.pending_params_messages,
-            self.pending_params_messages
+            &tables.pending_ika_system_checkpoints,
+            self.pending_ika_system_checkpoints
                 .into_iter()
                 .map(|cp| (cp.height(), cp)),
         )?;

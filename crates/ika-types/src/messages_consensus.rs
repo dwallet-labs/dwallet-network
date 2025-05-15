@@ -6,7 +6,9 @@ use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMe
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
 };
-use crate::messages_params_messages::{ParamsMessageSequenceNumber, ParamsMessageSignatureMessage};
+use crate::messages_ika_system_checkpoints::{
+    IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointSignatureMessage,
+};
 use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -43,7 +45,7 @@ pub enum ConsensusTransactionKey {
     /// address of the initiating user.
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    ParamsMessageSignature(AuthorityName, ParamsMessageSequenceNumber),
+    IkaSystemCheckpointSignature(AuthorityName, IkaSystemCheckpointSequenceNumber),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -76,8 +78,13 @@ impl Debug for ConsensusTransactionKey {
                     report,
                 )
             }
-            ConsensusTransactionKey::ParamsMessageSignature(name, seq) => {
-                write!(f, "ParamsMessageSignature({:?}, {:?})", name.concise(), seq)
+            ConsensusTransactionKey::IkaSystemCheckpointSignature(name, seq) => {
+                write!(
+                    f,
+                    "IkaSystemCheckpointSignature({:?}, {:?})",
+                    name.concise(),
+                    seq
+                )
             }
         }
     }
@@ -151,7 +158,7 @@ pub enum ConsensusTransactionKind {
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    ParamsMessageSignature(Box<ParamsMessageSignatureMessage>),
+    IkaSystemCheckpointSignature(Box<IkaSystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -218,13 +225,18 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_params_message_signature_message(data: ParamsMessageSignatureMessage) -> Self {
+    pub fn new_ika_system_checkpoint_signature_message(
+        data: IkaSystemCheckpointSignatureMessage,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.params_message.auth_sig().signature.hash(&mut hasher);
+        data.ika_system_checkpoint
+            .auth_sig()
+            .signature
+            .hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::ParamsMessageSignature(Box::new(data)),
+            kind: ConsensusTransactionKind::IkaSystemCheckpointSignature(Box::new(data)),
         }
     }
 
@@ -275,10 +287,10 @@ impl ConsensusTransaction {
                     report.clone(),
                 )
             }
-            ConsensusTransactionKind::ParamsMessageSignature(data) => {
-                ConsensusTransactionKey::ParamsMessageSignature(
-                    data.params_message.auth_sig().authority,
-                    data.params_message.sequence_number,
+            ConsensusTransactionKind::IkaSystemCheckpointSignature(data) => {
+                ConsensusTransactionKey::IkaSystemCheckpointSignature(
+                    data.ika_system_checkpoint.auth_sig().authority,
+                    data.ika_system_checkpoint.sequence_number,
                 )
             }
         }

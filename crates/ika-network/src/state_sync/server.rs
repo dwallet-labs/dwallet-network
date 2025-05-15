@@ -5,9 +5,9 @@ use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use ika_types::digests::{ChainIdentifier, ParamsMessageDigest};
-use ika_types::messages_params_messages::{
-    CertifiedParamsMessage, ParamsMessageSequenceNumber, VerifiedParamsMessage,
+use ika_types::digests::{ChainIdentifier, IkaSystemCheckpointDigest};
+use ika_types::messages_ika_system_checkpoints::{
+    CertifiedIkaSystemCheckpoint, IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
 };
 use ika_types::{
     digests::{CheckpointContentsDigest, CheckpointMessageDigest},
@@ -33,14 +33,14 @@ pub struct GetCheckpointAvailabilityResponse {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
-pub enum GetParamsMessageRequest {
-    ByDigest(ParamsMessageDigest),
-    BySequenceNumber(ParamsMessageSequenceNumber),
+pub enum GetIkaSystemCheckpointRequest {
+    ByDigest(IkaSystemCheckpointDigest),
+    BySequenceNumber(IkaSystemCheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetParamsMessageAvailabilityResponse {
-    pub(crate) highest_synced_params_message: Option<CertifiedParamsMessage>,
+pub struct GetIkaSystemCheckpointAvailabilityResponse {
+    pub(crate) highest_synced_ika_system_checkpoint: Option<CertifiedIkaSystemCheckpoint>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -132,35 +132,35 @@ where
         }))
     }
 
-    async fn push_params_message(
+    async fn push_ika_system_checkpoint(
         &self,
-        request: Request<CertifiedParamsMessage>,
+        request: Request<CertifiedIkaSystemCheckpoint>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
             .copied()
             .ok_or_else(|| Status::internal("unable to query sender's PeerId"))?;
 
-        let params_message = request.into_inner();
+        let ika_system_checkpoint = request.into_inner();
         if !self
             .peer_heights
             .write()
             .unwrap()
-            .update_peer_info_with_params_message(peer_id, params_message.clone())
+            .update_peer_info_with_ika_system_checkpoint(peer_id, ika_system_checkpoint.clone())
         {
             return Ok(Response::new(()));
         }
 
-        let highest_verified_params_message = self
+        let highest_verified_ika_system_checkpoint = self
             .store
-            .get_highest_verified_params_message()
+            .get_highest_verified_ika_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        let should_sync = highest_verified_params_message
-            .map(|c| *params_message.sequence_number() > c.sequence_number)
+        let should_sync = highest_verified_ika_system_checkpoint
+            .map(|c| *ika_system_checkpoint.sequence_number() > c.sequence_number)
             .unwrap_or(true);
 
-        // If this params_message is higher than our highest verified params_message notify the
+        // If this ika_system_checkpoint is higher than our highest verified ika_system_checkpoint notify the
         // event loop to potentially sync it
         if should_sync {
             if let Some(sender) = self.sender.upgrade() {
@@ -171,36 +171,36 @@ where
         Ok(Response::new(()))
     }
 
-    async fn get_params_message(
+    async fn get_ika_system_checkpoint(
         &self,
-        request: Request<GetParamsMessageRequest>,
-    ) -> Result<Response<Option<CertifiedParamsMessage>>, Status> {
-        let params_message = match request.inner() {
-            GetParamsMessageRequest::ByDigest(digest) => {
-                self.store.get_params_message_by_digest(digest)
+        request: Request<GetIkaSystemCheckpointRequest>,
+    ) -> Result<Response<Option<CertifiedIkaSystemCheckpoint>>, Status> {
+        let ika_system_checkpoint = match request.inner() {
+            GetIkaSystemCheckpointRequest::ByDigest(digest) => {
+                self.store.get_ika_system_checkpoint_by_digest(digest)
             }
-            GetParamsMessageRequest::BySequenceNumber(sequence_number) => self
+            GetIkaSystemCheckpointRequest::BySequenceNumber(sequence_number) => self
                 .store
-                .get_params_message_by_sequence_number(*sequence_number),
+                .get_ika_system_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
-        .map(VerifiedParamsMessage::into_inner);
+        .map(VerifiedIkaSystemCheckpoint::into_inner);
 
-        Ok(Response::new(params_message))
+        Ok(Response::new(ika_system_checkpoint))
     }
 
-    async fn get_params_message_availability(
+    async fn get_ika_system_checkpoint_availability(
         &self,
         _request: Request<()>,
-    ) -> Result<Response<GetParamsMessageAvailabilityResponse>, Status> {
-        let highest_synced_params_message = self
+    ) -> Result<Response<GetIkaSystemCheckpointAvailabilityResponse>, Status> {
+        let highest_synced_ika_system_checkpoint = self
             .store
-            .get_highest_synced_params_message()
+            .get_highest_synced_ika_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
-            .map(VerifiedParamsMessage::into_inner);
+            .map(VerifiedIkaSystemCheckpoint::into_inner);
 
-        Ok(Response::new(GetParamsMessageAvailabilityResponse {
-            highest_synced_params_message,
+        Ok(Response::new(GetIkaSystemCheckpointAvailabilityResponse {
+            highest_synced_ika_system_checkpoint,
         }))
     }
 
@@ -318,65 +318,66 @@ where
 }
 
 #[derive(Clone)]
-pub(super) struct ParamsMessageDownloadLimitLayer {
-    inflight_per_params_message: Arc<DashMap<GetParamsMessageRequest, Arc<Semaphore>>>,
-    max_inflight_per_params_message: usize,
+pub(super) struct IkaSystemCheckpointDownloadLimitLayer {
+    inflight_per_ika_system_checkpoint: Arc<DashMap<GetIkaSystemCheckpointRequest, Arc<Semaphore>>>,
+    max_inflight_per_ika_system_checkpoint: usize,
 }
 
-impl ParamsMessageDownloadLimitLayer {
-    pub(super) fn new(max_inflight_per_params_message: usize) -> Self {
+impl IkaSystemCheckpointDownloadLimitLayer {
+    pub(super) fn new(max_inflight_per_ika_system_checkpoint: usize) -> Self {
         Self {
-            inflight_per_params_message: Arc::new(DashMap::new()),
-            max_inflight_per_params_message,
+            inflight_per_ika_system_checkpoint: Arc::new(DashMap::new()),
+            max_inflight_per_ika_system_checkpoint,
         }
     }
 
     pub(super) fn maybe_prune_map(&self) {
         const PRUNE_THRESHOLD: usize = 5000;
-        if self.inflight_per_params_message.len() >= PRUNE_THRESHOLD {
-            self.inflight_per_params_message.retain(|_, semaphore| {
-                semaphore.available_permits() < self.max_inflight_per_params_message
-            });
+        if self.inflight_per_ika_system_checkpoint.len() >= PRUNE_THRESHOLD {
+            self.inflight_per_ika_system_checkpoint
+                .retain(|_, semaphore| {
+                    semaphore.available_permits() < self.max_inflight_per_ika_system_checkpoint
+                });
         }
     }
 }
 
-impl<S> tower::layer::Layer<S> for ParamsMessageDownloadLimitLayer {
-    type Service = ParamsMessageDownloadLimit<S>;
+impl<S> tower::layer::Layer<S> for IkaSystemCheckpointDownloadLimitLayer {
+    type Service = IkaSystemCheckpointDownloadLimit<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        ParamsMessageDownloadLimit {
+        IkaSystemCheckpointDownloadLimit {
             inner,
-            inflight_per_params_message: self.inflight_per_params_message.clone(),
-            max_inflight_per_params_message: self.max_inflight_per_params_message,
+            inflight_per_ika_system_checkpoint: self.inflight_per_ika_system_checkpoint.clone(),
+            max_inflight_per_ika_system_checkpoint: self.max_inflight_per_ika_system_checkpoint,
         }
     }
 }
 
-/// Middleware for adding a per-params_message limit to the number of inflight GetParamsMessageContent
+/// Middleware for adding a per-ika_system_checkpoint limit to the number of inflight GetIkaSystemCheckpointContent
 /// requests.
 #[derive(Clone)]
-pub(super) struct ParamsMessageDownloadLimit<S> {
+pub(super) struct IkaSystemCheckpointDownloadLimit<S> {
     inner: S,
-    inflight_per_params_message: Arc<DashMap<GetParamsMessageRequest, Arc<Semaphore>>>,
-    max_inflight_per_params_message: usize,
+    inflight_per_ika_system_checkpoint: Arc<DashMap<GetIkaSystemCheckpointRequest, Arc<Semaphore>>>,
+    max_inflight_per_ika_system_checkpoint: usize,
 }
 
-impl<S> tower::Service<Request<GetParamsMessageRequest>>
-    for crate::state_sync::server::ParamsMessageDownloadLimit<S>
+impl<S> tower::Service<Request<GetIkaSystemCheckpointRequest>>
+    for crate::state_sync::server::IkaSystemCheckpointDownloadLimit<S>
 where
     S: tower::Service<
-            Request<GetParamsMessageRequest>,
-            Response = Response<Option<CertifiedParamsMessage>>,
+            Request<GetIkaSystemCheckpointRequest>,
+            Response = Response<Option<CertifiedIkaSystemCheckpoint>>,
             Error = Status,
         >
         + 'static
         + Clone
         + Send,
-    <S as tower::Service<Request<GetParamsMessageRequest>>>::Future: Send,
-    Request<GetParamsMessageRequest>: 'static + Send + Sync,
+    <S as tower::Service<Request<GetIkaSystemCheckpointRequest>>>::Future: Send,
+    Request<GetIkaSystemCheckpointRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<CertifiedParamsMessage>>;
+    type Response = Response<Option<CertifiedIkaSystemCheckpoint>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -385,16 +386,18 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<GetParamsMessageRequest>) -> Self::Future {
-        let inflight_per_params_message = self.inflight_per_params_message.clone();
-        let max_inflight_per_params_message = self.max_inflight_per_params_message;
+    fn call(&mut self, req: Request<GetIkaSystemCheckpointRequest>) -> Self::Future {
+        let inflight_per_ika_system_checkpoint = self.inflight_per_ika_system_checkpoint.clone();
+        let max_inflight_per_ika_system_checkpoint = self.max_inflight_per_ika_system_checkpoint;
         let mut inner = self.inner.clone();
 
         let fut = async move {
             let semaphore = {
-                let semaphore_entry = inflight_per_params_message
+                let semaphore_entry = inflight_per_ika_system_checkpoint
                     .entry(*req.body())
-                    .or_insert_with(|| Arc::new(Semaphore::new(max_inflight_per_params_message)));
+                    .or_insert_with(|| {
+                        Arc::new(Semaphore::new(max_inflight_per_ika_system_checkpoint))
+                    });
                 semaphore_entry.value().clone()
             };
             let permit = semaphore.try_acquire_owned().map_err(|e| match e {

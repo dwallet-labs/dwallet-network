@@ -58,7 +58,7 @@ impl Default for AppId {
 pub enum IntentScope {
     ProofOfPossession = 0, // Used as a signature representing an authority's proof of possession of its authority protocol key.
     CheckpointMessage = 1, // Used for an authority signature on a checkpoint.
-    ParamsMessage = 2,     // Used for an authority signature on a params message.
+    IkaSystemCheckpoint = 2, // Used for an authority signature on a params message.
     DiscoveryPeers = 3,    // Used for reporting peer addresses in discovery.
 }
 

@@ -475,23 +475,23 @@ public fun commit_upgrade(
     }
 }
 
-public fun process_params_message_by_cap(
+public fun process_ika_system_checkpoint_by_cap(
     self: &mut System,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_params_message_by_cap(cap, message, ctx);
+    self.inner_mut().process_ika_system_checkpoint_by_cap(cap, message, ctx);
 }
 
-public fun process_params_message_by_quorum(
+public fun process_ika_system_checkpoint_by_quorum(
     self: &mut System,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_params_message_by_quorum(signature, signers_bitmap, message, ctx);
+    self.inner_mut().process_ika_system_checkpoint_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the staking object to the new package id.

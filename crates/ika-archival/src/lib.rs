@@ -93,7 +93,7 @@ const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
 pub const PARAMS_MESSAGE_FILE_MAGIC: u32 = 0x0000DEAD;
-const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_params_message";
+const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize, TryFromPrimitive, IntoPrimitive,
@@ -101,7 +101,7 @@ const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_params_message";
 #[repr(u8)]
 pub enum FileType {
     CheckpointMessage = 0,
-    ParamsMessage,
+    IkaSystemCheckpoint,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -109,7 +109,7 @@ pub struct FileMetadata {
     pub file_type: FileType,
     pub epoch_num: u64,
     pub checkpoint_seq_range: Range<u64>,
-    pub params_message_seq_range: Range<u64>,
+    pub ika_system_checkpoint_seq_range: Range<u64>,
     pub sha3_digest: [u8; 32],
 }
 
@@ -121,9 +121,9 @@ impl FileMetadata {
                 "{}.{CHECKPOINT_FILE_SUFFIX}",
                 self.checkpoint_seq_range.start
             )),
-            FileType::ParamsMessage => dir_path.child(&*format!(
+            FileType::IkaSystemCheckpoint => dir_path.child(&*format!(
                 "{}.{CHECKPOINT_FILE_SUFFIX}",
-                self.params_message_seq_range.start
+                self.ika_system_checkpoint_seq_range.start
             )),
         }
     }
@@ -133,7 +133,7 @@ impl FileMetadata {
 pub struct ManifestV1 {
     pub archive_version: u8,
     pub next_checkpoint_seq_num: u64,
-    pub next_params_message_seq_num: u64,
+    pub next_ika_system_checkpoint_seq_num: u64,
     pub file_metadata: Vec<FileMetadata>,
     pub epoch: u64,
 }
@@ -144,11 +144,15 @@ pub enum Manifest {
 }
 
 impl Manifest {
-    pub fn new(epoch: u64, next_checkpoint_seq_num: u64, next_params_message_seq_num: u64) -> Self {
+    pub fn new(
+        epoch: u64,
+        next_checkpoint_seq_num: u64,
+        next_ika_system_checkpoint_seq_num: u64,
+    ) -> Self {
         Manifest::V1(ManifestV1 {
             archive_version: 1,
             next_checkpoint_seq_num,
-            next_params_message_seq_num,
+            next_ika_system_checkpoint_seq_num,
             file_metadata: vec![],
             epoch,
         })
@@ -191,37 +195,37 @@ impl Manifest {
         }
     }
 
-    pub fn next_params_message_seq_num(&self) -> u64 {
+    pub fn next_ika_system_checkpoint_seq_num(&self) -> u64 {
         match self {
-            Manifest::V1(manifest) => manifest.next_params_message_seq_num,
+            Manifest::V1(manifest) => manifest.next_ika_system_checkpoint_seq_num,
         }
     }
-    pub fn next_params_message_after_epoch(&self, epoch_num: u64) -> u64 {
+    pub fn next_ika_system_checkpoint_after_epoch(&self, epoch_num: u64) -> u64 {
         match self {
             Manifest::V1(manifest) => {
                 let mut summary_files: Vec<_> = manifest
                     .file_metadata
                     .clone()
                     .into_iter()
-                    .filter(|f| f.file_type == FileType::ParamsMessage)
+                    .filter(|f| f.file_type == FileType::IkaSystemCheckpoint)
                     .collect();
-                summary_files.sort_by_key(|f| f.params_message_seq_range.start);
+                summary_files.sort_by_key(|f| f.ika_system_checkpoint_seq_range.start);
                 assert!(summary_files
                     .windows(2)
-                    .all(|w| w[1].params_message_seq_range.start
-                        == w[0].params_message_seq_range.end));
+                    .all(|w| w[1].ika_system_checkpoint_seq_range.start
+                        == w[0].ika_system_checkpoint_seq_range.end));
                 assert_eq!(
                     summary_files
                         .first()
                         .unwrap()
-                        .params_message_seq_range
+                        .ika_system_checkpoint_seq_range
                         .start,
                     0
                 );
                 summary_files
                     .iter()
                     .find(|f| f.epoch_num > epoch_num)
-                    .map(|f| f.params_message_seq_range.start)
+                    .map(|f| f.ika_system_checkpoint_seq_range.start)
                     .unwrap_or(u64::MAX)
             }
         }
@@ -280,33 +284,33 @@ impl CheckpointUpdates {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-pub struct ParamsMessageUpdates {
-    params_message_file_metadata: FileMetadata,
+pub struct IkaSystemCheckpointUpdates {
+    ika_system_checkpoint_file_metadata: FileMetadata,
     manifest: Manifest,
 }
 
-impl ParamsMessageUpdates {
+impl IkaSystemCheckpointUpdates {
     pub fn new(
         epoch_num: u64,
-        params_message_sequence_number: u64,
-        params_message_file_metadata: FileMetadata,
+        ika_system_checkpoint_sequence_number: u64,
+        ika_system_checkpoint_file_metadata: FileMetadata,
         manifest: &mut Manifest,
     ) -> Self {
         manifest.update(
             epoch_num,
-            params_message_sequence_number,
-            params_message_file_metadata.clone(),
+            ika_system_checkpoint_sequence_number,
+            ika_system_checkpoint_file_metadata.clone(),
         );
-        ParamsMessageUpdates {
-            params_message_file_metadata,
+        IkaSystemCheckpointUpdates {
+            ika_system_checkpoint_file_metadata,
             manifest: manifest.clone(),
         }
     }
     pub fn content_file_path(&self) -> Path {
-        self.params_message_file_metadata.file_path()
+        self.ika_system_checkpoint_file_metadata.file_path()
     }
     pub fn summary_file_path(&self) -> Path {
-        self.params_message_file_metadata.file_path()
+        self.ika_system_checkpoint_file_metadata.file_path()
     }
     pub fn manifest_file_path(&self) -> Path {
         Path::from(MANIFEST_FILENAME)
@@ -318,14 +322,14 @@ pub fn create_file_metadata(
     file_type: FileType,
     epoch_num: u64,
     checkpoint_seq_range: Range<u64>,
-    params_message_seq_range: Range<u64>,
+    ika_system_checkpoint_seq_range: Range<u64>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum(file_path)?;
     let file_metadata = FileMetadata {
         file_type,
         epoch_num,
         checkpoint_seq_range,
-        params_message_seq_range,
+        ika_system_checkpoint_seq_range,
         sha3_digest,
     };
     Ok(file_metadata)
@@ -336,14 +340,14 @@ pub fn create_file_metadata_from_bytes(
     file_type: FileType,
     epoch_num: u64,
     checkpoint_seq_range: Range<u64>,
-    params_message_seq_range: Range<u64>,
+    ika_system_checkpoint_seq_range: Range<u64>,
 ) -> Result<FileMetadata> {
     let sha3_digest = compute_sha3_checksum_for_bytes(bytes)?;
     let file_metadata = FileMetadata {
         file_type,
         epoch_num,
         checkpoint_seq_range,
-        params_message_seq_range,
+        ika_system_checkpoint_seq_range,
         sha3_digest,
     };
     Ok(file_metadata)
@@ -552,7 +556,7 @@ where
     Ok(())
 }
 
-pub async fn verify_archive_with_local_store_params_message<S>(
+pub async fn verify_archive_with_local_store_ika_system_checkpoint<S>(
     store: S,
     remote_store_config: ObjectStoreConfig,
     concurrency: usize,
@@ -569,41 +573,44 @@ where
     };
     let archive_reader = ArchiveReader::new(config, &metrics)?;
     archive_reader.sync_manifest_once().await?;
-    let latest_params_message_in_archive = archive_reader.latest_available_params_message().await?;
+    let latest_ika_system_checkpoint_in_archive = archive_reader
+        .latest_available_ika_system_checkpoint()
+        .await?;
     info!(
-        "Latest available params_message in archive store: {}",
-        latest_params_message_in_archive
+        "Latest available ika_system_checkpoint in archive store: {}",
+        latest_ika_system_checkpoint_in_archive
     );
-    let latest_params_message = store
-        .get_highest_synced_params_message()
-        .map_err(|_| anyhow!("Failed to read highest synced params_message"))?
+    let latest_ika_system_checkpoint = store
+        .get_highest_synced_ika_system_checkpoint()
+        .map_err(|_| anyhow!("Failed to read highest synced ika_system_checkpoint"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);
-    info!("Highest synced params_message in db: {latest_params_message}");
+    info!("Highest synced ika_system_checkpoint in db: {latest_ika_system_checkpoint}");
     let action_counter = Arc::new(AtomicU64::new(0));
-    let params_message_counter = Arc::new(AtomicU64::new(0));
+    let ika_system_checkpoint_counter = Arc::new(AtomicU64::new(0));
     let progress_bar = if interactive {
-        let progress_bar = ProgressBar::new(latest_params_message_in_archive).with_style(
+        let progress_bar = ProgressBar::new(latest_ika_system_checkpoint_in_archive).with_style(
             ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")
                 .unwrap(),
         );
         let cloned_progress_bar = progress_bar.clone();
         let cloned_counter = action_counter.clone();
-        let cloned_params_message_counter = params_message_counter.clone();
+        let cloned_ika_system_checkpoint_counter = ika_system_checkpoint_counter.clone();
         let instant = Instant::now();
         tokio::spawn(async move {
             loop {
-                let total_params_messages_loaded =
-                    cloned_params_message_counter.load(Ordering::Relaxed);
-                let total_params_messages_per_sec =
-                    total_params_messages_loaded as f64 / instant.elapsed().as_secs_f64();
+                let total_ika_system_checkpoints_loaded =
+                    cloned_ika_system_checkpoint_counter.load(Ordering::Relaxed);
+                let total_ika_system_checkpoints_per_sec =
+                    total_ika_system_checkpoints_loaded as f64 / instant.elapsed().as_secs_f64();
                 let total_txns_per_sec =
                     cloned_counter.load(Ordering::Relaxed) as f64 / instant.elapsed().as_secs_f64();
-                cloned_progress_bar
-                    .set_position(latest_params_message + total_params_messages_loaded);
+                cloned_progress_bar.set_position(
+                    latest_ika_system_checkpoint + total_ika_system_checkpoints_loaded,
+                );
                 cloned_progress_bar.set_message(format!(
-                    "params_messages/s: {}, txns/s: {}",
-                    total_params_messages_per_sec, total_txns_per_sec
+                    "ika_system_checkpoints/s: {}, txns/s: {}",
+                    total_ika_system_checkpoints_per_sec, total_txns_per_sec
                 ));
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
@@ -613,12 +620,13 @@ where
         let cloned_store = store.clone();
         tokio::spawn(async move {
             loop {
-                let latest_params_message = cloned_store
-                    .get_highest_synced_params_message()
-                    .map_err(|_| anyhow!("Failed to read highest synced params_message"))?
+                let latest_ika_system_checkpoint = cloned_store
+                    .get_highest_synced_ika_system_checkpoint()
+                    .map_err(|_| anyhow!("Failed to read highest synced ika_system_checkpoint"))?
                     .map(|c| c.sequence_number)
                     .unwrap_or(0);
-                let percent = (latest_params_message * 100) / latest_params_message_in_archive;
+                let percent =
+                    (latest_ika_system_checkpoint * 100) / latest_ika_system_checkpoint_in_archive;
                 info!("done = {percent}%");
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 if percent >= 100 {
@@ -630,19 +638,19 @@ where
         None
     };
     archive_reader
-        .read_params_messages(
+        .read_ika_system_checkpoints(
             store.clone(),
-            (latest_params_message + 1)..u64::MAX,
+            (latest_ika_system_checkpoint + 1)..u64::MAX,
             action_counter,
-            params_message_counter,
+            ika_system_checkpoint_counter,
         )
         .await?;
     progress_bar.iter().for_each(|p| p.finish_and_clear());
     let end = store
-        .get_highest_synced_params_message()
+        .get_highest_synced_ika_system_checkpoint()
         .map_err(|_| anyhow!("Failed to read watermark"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);
-    info!("Highest verified params_message: {}", end);
+    info!("Highest verified ika_system_checkpoint: {}", end);
     Ok(())
 }

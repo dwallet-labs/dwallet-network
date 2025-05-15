@@ -3,9 +3,11 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::{CheckpointMessageDigest, ParamsMessageDigest};
+use crate::digests::{CheckpointMessageDigest, IkaSystemCheckpointDigest};
 use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
-use crate::messages_params_messages::{ParamsMessageSequenceNumber, VerifiedParamsMessage};
+use crate::messages_ika_system_checkpoints::{
+    IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+};
 use std::sync::Arc;
 
 pub trait ReadStore {
@@ -68,28 +70,36 @@ pub trait ReadStore {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>>;
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage>;
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint>;
 
-    fn get_latest_params_message_sequence_number(&self) -> Result<ParamsMessageSequenceNumber> {
-        let latest_params_message = self.get_latest_params_message()?;
-        Ok(*latest_params_message.sequence_number())
+    fn get_latest_ika_system_checkpoint_sequence_number(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        let latest_ika_system_checkpoint = self.get_latest_ika_system_checkpoint()?;
+        Ok(*latest_ika_system_checkpoint.sequence_number())
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>>;
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>>;
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber>;
-
-    fn get_params_message_by_digest(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>>;
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
 
-    fn get_params_message_by_sequence_number(
+    fn get_highest_synced_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>>;
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber>;
+
+    fn get_ika_system_checkpoint_by_digest(
+        &self,
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -135,34 +145,40 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
-        (*self).get_latest_params_message()
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+        (*self).get_latest_ika_system_checkpoint()
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (*self).get_highest_verified_params_message()
-    }
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (*self).get_highest_synced_params_message()
-    }
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
-        (*self).get_lowest_available_params_message()
-    }
-
-    fn get_params_message_by_digest(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (*self).get_params_message_by_digest(digest)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (*self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_params_message_by_sequence_number(
+    fn get_highest_synced_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (*self).get_params_message_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (*self).get_highest_synced_ika_system_checkpoint()
+    }
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        (*self).get_lowest_available_ika_system_checkpoint()
+    }
+
+    fn get_ika_system_checkpoint_by_digest(
+        &self,
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (*self).get_ika_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (*self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -209,34 +225,40 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
-        (**self).get_latest_params_message()
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+        (**self).get_latest_ika_system_checkpoint()
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_highest_verified_params_message()
-    }
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_highest_synced_params_message()
-    }
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
-        (**self).get_lowest_available_params_message()
-    }
-
-    fn get_params_message_by_digest(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_params_message_by_digest(digest)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_params_message_by_sequence_number(
+    fn get_highest_synced_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_params_message_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_highest_synced_ika_system_checkpoint()
+    }
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_ika_system_checkpoint()
+    }
+
+    fn get_ika_system_checkpoint_by_digest(
+        &self,
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_ika_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -283,33 +305,39 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_params_message(&self) -> Result<VerifiedParamsMessage> {
-        (**self).get_latest_params_message()
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+        (**self).get_latest_ika_system_checkpoint()
     }
 
-    fn get_highest_verified_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_highest_verified_params_message()
-    }
-
-    fn get_highest_synced_params_message(&self) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_highest_synced_params_message()
-    }
-
-    fn get_lowest_available_params_message(&self) -> Result<ParamsMessageSequenceNumber> {
-        (**self).get_lowest_available_params_message()
-    }
-
-    fn get_params_message_by_digest(
+    fn get_highest_verified_ika_system_checkpoint(
         &self,
-        digest: &ParamsMessageDigest,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_params_message_by_digest(digest)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_params_message_by_sequence_number(
+    fn get_highest_synced_ika_system_checkpoint(
         &self,
-        sequence_number: ParamsMessageSequenceNumber,
-    ) -> Result<Option<VerifiedParamsMessage>> {
-        (**self).get_params_message_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_highest_synced_ika_system_checkpoint()
+    }
+
+    fn get_lowest_available_ika_system_checkpoint(
+        &self,
+    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_ika_system_checkpoint()
+    }
+
+    fn get_ika_system_checkpoint_by_digest(
+        &self,
+        digest: &IkaSystemCheckpointDigest,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_ika_system_checkpoint_by_digest(digest)
+    }
+
+    fn get_ika_system_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: IkaSystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        (**self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
