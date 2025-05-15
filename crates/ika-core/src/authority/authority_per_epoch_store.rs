@@ -177,7 +177,7 @@ pub enum ConsensusCertificateResult {
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
 
-    SystemTransaction(IkaSystemCheckpointKind),
+    IkaSystemTransaction(IkaSystemCheckpointKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -1435,7 +1435,7 @@ impl AuthorityPerEpochStore {
                     notifications.push(key.clone());
                     verified_certificates.push_back(cert);
                 }
-                ConsensusCertificateResult::SystemTransaction(cert) => {
+                ConsensusCertificateResult::IkaSystemTransaction(cert) => {
                     notifications.push(key.clone());
                     verified_ika_system_checkpoint_certificates.push_back(cert);
                 }
@@ -1718,7 +1718,7 @@ impl AuthorityPerEpochStore {
                             "Found version quorum from capabilities v1 {:?}",
                             capabilities.first()
                         );
-                        return Ok(ConsensusCertificateResult::SystemTransaction(
+                        return Ok(ConsensusCertificateResult::IkaSystemTransaction(
                             IkaSystemCheckpointKind::NextConfigVersion(new_version),
                         ));
                     }
