@@ -258,6 +258,7 @@ where
                 continue;
             }
 
+            // todo(zeev): refactor this horrible code.
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &ika_system_state_inner)
                     .await;
