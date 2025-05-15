@@ -1575,9 +1575,9 @@ impl AuthorityPerEpochStore {
             validator=?self.name,
             mpc_protocol=?session_info.mpc_round,
             session_id=?session_info.session_id,
-            "creating session output checkpoint transaction"
+            "Creating session output checkpoint transaction"
         );
-        let (rejected, output) = match bcs::from_bytes(&output)? {
+        let (is_rejected, output) = match bcs::from_bytes(&output)? {
             MPCSessionPublicOutput::CompletedSuccessfully(output) => (false, output),
             MPCSessionPublicOutput::SessionFailed => (true, vec![]),
         };
@@ -1590,7 +1590,7 @@ impl AuthorityPerEpochStore {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
                     session_sequence_number: sequence_number,
-                    rejected,
+                    rejected: is_rejected,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -1611,7 +1611,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encryption_key_address
                         .to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1625,7 +1625,7 @@ impl AuthorityPerEpochStore {
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1640,7 +1640,7 @@ impl AuthorityPerEpochStore {
                     dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                     is_future_sign: init_event.event_data.is_future_sign,
                     sign_id: init_event.event_data.sign_id.to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1655,7 +1655,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encrypted_user_secret_key_share_id
                         .to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1672,7 +1672,7 @@ impl AuthorityPerEpochStore {
                             .event_data
                             .partial_centralized_signed_message_id
                             .to_vec(),
-                        rejected,
+                        rejected: is_rejected,
                         session_sequence_number: sequence_number,
                     },
                 );
@@ -1680,7 +1680,7 @@ impl AuthorityPerEpochStore {
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let slices = if rejected {
+                    let slices = if is_rejected {
                         vec![Secp256K1NetworkKeyPublicOutputSlice {
                             dwallet_network_decryption_key_id: init_event
                                 .event_data
@@ -1709,7 +1709,7 @@ impl AuthorityPerEpochStore {
                 }
             },
             MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
-                let slices = if rejected {
+                let slices = if is_rejected {
                     vec![Secp256K1NetworkKeyPublicOutputSlice {
                         dwallet_network_decryption_key_id: init_event
                             .event_data
