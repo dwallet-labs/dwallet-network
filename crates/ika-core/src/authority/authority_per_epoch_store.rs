@@ -1069,6 +1069,19 @@ impl AuthorityPerEpochStore {
             }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
+                        ?authority,
+                        certificate_author_index=?transaction.certificate_author_index,
+                        "DWalletMPCSessionFailedWithMalicious: authority does not match its author from consensus",
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
                         "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
@@ -1417,6 +1430,14 @@ impl AuthorityPerEpochStore {
                         ..
                     }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
+                        ..
+                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
+                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind:
                             ConsensusTransactionKind::DWalletMPCMaliciousReport(
                                 authority_name,
@@ -1630,14 +1651,9 @@ impl AuthorityPerEpochStore {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
-                    encrypted_centralized_secret_share_and_proof: bcs::to_bytes(
-                        &init_event_data
-                            .event_data
-                            .encrypted_centralized_secret_share_and_proof,
-                    )?,
-                    encryption_key_address: init_event_data
+                    encrypted_secret_share_id: init_event_data
                         .event_data
-                        .encryption_key_address
+                        .encrypted_user_secret_key_share_id
                         .to_vec(),
                     rejected,
                     session_sequence_number: sequence_number,
