@@ -205,7 +205,7 @@ impl DWalletMPCService {
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
                     authority=?self.epoch_store.name,
-                    "node has identified itself as malicious and is no longer participating in MPC protocols"
+                    "the node has identified itself as malicious and is no longer participating in MPC protocols"
                 );
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
@@ -219,7 +219,7 @@ impl DWalletMPCService {
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                warn!("failed to load DB tables from the epoch store");
+                error!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self

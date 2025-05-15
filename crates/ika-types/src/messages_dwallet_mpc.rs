@@ -296,6 +296,7 @@ impl DWalletMPCEventTrait for StartPartialSignaturesVerificationEvent {
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct StartDKGSecondRoundEvent {
+    pub encrypted_user_secret_key_share_id: ObjectID,
     pub dwallet_id: ObjectID,
     /// The output from the first round of the DKG process.
     pub first_round_output: Vec<u8>,
@@ -347,22 +348,22 @@ pub enum AdvanceResult {
 pub struct MaliciousReport {
     /// A list of authority names that have been identified as malicious actors.
     pub malicious_actors: Vec<AuthorityName>,
-    pub advance_result: AdvanceResult,
     /// The unique identifier of the MPC session in which the malicious activity occurred.
     pub session_id: ObjectID,
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct ThresholdNotReachedReport {
+    pub session_id: ObjectID,
+    pub attempt: usize,
+}
+
 impl MaliciousReport {
     /// Creates a new instance of a malicious report.
-    pub fn new(
-        malicious_actors: Vec<AuthorityName>,
-        session_id: ObjectID,
-        advance_result: AdvanceResult,
-    ) -> Self {
+    pub fn new(malicious_actors: Vec<AuthorityName>, session_id: ObjectID) -> Self {
         Self {
             malicious_actors,
             session_id,
-            advance_result,
         }
     }
 }
