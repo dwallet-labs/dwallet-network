@@ -338,6 +338,13 @@ where
                             sequence_number = ?next_checkpoint_sequence_number,
                             "No checkpoint found for sequence number"
                         );
+                        info!(
+                            highest_executed_checkpoint=?self.checkpoint_store.get_highest_executed_checkpoint(),
+                            highest_synced_checkpoint=?self.checkpoint_store.get_highest_synced_checkpoint(),
+                            highest_verified_checkpoint=?self.checkpoint_store.get_highest_verified_checkpoint(),
+                            highest_verified_checkpoint=?self.checkpoint_store.get_highest_executed_checkpoint_seq_number(),
+                            highest_pruned_checkpoint_seq_number=?self.checkpoint_store.get_highest_pruned_checkpoint_seq_number(),
+                        )
                     }
                     Err(e) => {
                         error!(
