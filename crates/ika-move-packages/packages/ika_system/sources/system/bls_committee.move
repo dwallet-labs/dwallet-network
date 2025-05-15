@@ -67,9 +67,10 @@ public(package) fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsC
         ),
     );
 
-    let quorum_threshold = (2 * members.length()).divide_and_round_up(3);
-    let validity_threshold = members.length().divide_and_round_up(3);
 
+    let quorum_threshold = (2 * (members.length() / 3)) + 1;
+    let validity_threshold = (members.length() / 3) + 1;
+    
     BlsCommittee {
         members,
         aggregated_protocol_pubkey,

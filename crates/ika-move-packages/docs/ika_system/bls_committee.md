@@ -279,8 +279,8 @@ Total voting power is equal to the number of members.
             &<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.map!(|member| member.protocol_pubkey),
         ),
     );
-    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a> = (2 * <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length()).divide_and_round_up(3);
-    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a> = <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length().divide_and_round_up(3);
+    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_quorum_threshold">quorum_threshold</a> = (2 * (<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length() / 3)) + 1;
+    <b>let</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_validity_threshold">validity_threshold</a> = (<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>.length() / 3) + 1;
     <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">BlsCommittee</a> {
         <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_members">members</a>,
         aggregated_protocol_pubkey,

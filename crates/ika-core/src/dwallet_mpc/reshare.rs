@@ -25,7 +25,6 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
     fn generate_public_input(
         committee: &Committee,
         new_committee: Committee,
-        protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
         network_dkg_public_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
@@ -54,7 +53,6 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     fn generate_public_input(
         current_committee: &Committee,
         upcoming_committee: Committee,
-        protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
         network_dkg_public_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
@@ -62,7 +60,6 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
         };
         let current_committee = current_committee.clone();
-        let quorum_threshold = current_committee.quorum_threshold();
 
         let current_access_structure =
             generate_access_structure_from_committee(&current_committee)?;
