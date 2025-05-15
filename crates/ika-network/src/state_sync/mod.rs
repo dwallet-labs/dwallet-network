@@ -130,6 +130,7 @@ impl Handle {
     }
 }
 
+#[derive(Debug)]
 struct PeerHeights {
     /// Table used to track the highest checkpoint for each of our peers.
     peers: HashMap<PeerId, PeerStateSyncInfo>,
@@ -402,6 +403,7 @@ where
 
         // Start main loop.
         loop {
+            info!(peer_heights=?self.peer_heights.read().unwrap(), "peer heights");
             tokio::select! {
                 now = interval.tick() => {
                     self.handle_tick(now.into_std());
