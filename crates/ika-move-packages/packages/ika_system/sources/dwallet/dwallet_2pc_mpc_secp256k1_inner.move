@@ -127,13 +127,13 @@ public struct DWalletNetworkDecryptionKey has key, store {
 }
 
 public enum DWalletNetworkDecryptionKeyState has copy, drop, store {
-    AwaitingNetworkDKG,
-    NetworkDKGCompleted,
-    /// Reconfiguration request was sent to the network, but didn't finish yet.
-    AwaitingNetworkReconfiguration,
-    /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    AwaitingNextEpochReconfiguration,
-    NetworkReconfigurationCompleted,
+        AwaitingNetworkDKG,
+        NetworkDKGCompleted,
+        /// Reconfiguration request was sent to the network, but didn't finish yet.
+        AwaitingNetworkReconfiguration,
+        /// Reconfiguration request finished, but we didn't switch an epoch yet.
+        AwaitingNextEpochReconfiguration,
+        NetworkReconfigurationCompleted,
 }
 
 
@@ -194,12 +194,11 @@ public struct EncryptedUserSecretKeyShare has key, store {
 
     state: EncryptedUserSecretKeyShareState,
 }
-
 public enum EncryptedUserSecretKeyShareState has copy, drop, store {
-    AwaitingNetworkVerification,
-    NetworkVerificationCompleted,
-    NetworkVerificationRejected,
-    KeyHolderSigned {
+        AwaitingNetworkVerification,
+        NetworkVerificationCompleted,
+        NetworkVerificationRejected,
+        KeyHolderSigned {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
@@ -256,9 +255,9 @@ public struct ECDSAPartialUserSignature has key, store {
 }
 
 public enum ECDSAPartialUserSignatureState has copy, drop, store {
-    AwaitingNetworkVerification,
-    NetworkVerificationCompleted,
-    NetworkVerificationRejected
+        AwaitingNetworkVerification,
+        NetworkVerificationCompleted,
+        NetworkVerificationRejected
 }
 
 /// `DWallet` represents a decentralized wallet (dWallet) that is
@@ -286,14 +285,14 @@ public struct DWallet has key, store {
 }
 
 public enum DWalletState has copy, drop, store {
-    Requested,
-    AwaitingUser {
+        Requested,
+        AwaitingUser {
         first_round_output: vector<u8>,
     },
-    AwaitingNetworkVerification,
-    NetworkRejectedFirstRound,
-    NetworkRejectedSecondRound,
-    Active {
+        AwaitingNetworkVerification,
+        NetworkRejectedFirstRound,
+        NetworkRejectedSecondRound,
+        Active {
         /// The output of the DKG process.
         public_output: vector<u8>,
     }
@@ -323,9 +322,9 @@ public struct ECDSAPresign has key, store {
 }
 
 public enum ECDSAPresignState has copy, drop, store {
-    Requested,
-    NetworkRejected,
-    Completed {
+        Requested,
+        NetworkRejected,
+        Completed {
         presign: vector<u8>,
     }
 }
@@ -347,9 +346,9 @@ public struct ECDSASign has key, store {
 }
 
 public enum ECDSASignState has copy, drop, store {
-    Requested,
-    NetworkRejected,
-    Completed {
+        Requested,
+        NetworkRejected,
+        Completed {
         signature: vector<u8>,
     }
 }
@@ -359,10 +358,10 @@ public enum ECDSASignState has copy, drop, store {
 /// the session will get completed.
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
 public enum SessionType has copy, drop, store {
-    User {
+        User {
         sequence_number: u64,
     },
-    System
+        System
 }
 
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
@@ -392,7 +391,7 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
 }
 
 public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 }
 
 /// An event emitted when the first round of the DKG process is completed.
@@ -402,7 +401,7 @@ public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
-       dwallet_network_decryption_key_id: ID,
+    dwallet_network_decryption_key_id: ID,
 }
 
 // DKG TYPES
@@ -507,8 +506,6 @@ public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
 // END OF DKG TYPES
 
 // ENCRYPTED USER SHARE TYPES
-
-
 
 /// Event emitted to start an encrypted dWallet centralized (user) key share
 /// verification process.
@@ -819,7 +816,9 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    let dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(
+        dwallet_network_decryption_key_id
+    );
     if (rejected) {
         dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
         event::emit(self.create_system_dwallet_event(
@@ -832,17 +831,17 @@ public(package) fun respond_dwallet_network_decryption_key_dkg(
     } else {
         dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
         dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-            DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG => {
                 if (is_last_chunk) {
-                        event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
-                            dwallet_network_decryption_key_id,
-                        });
-                        DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-                    } else {
-                        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-                    }
+                    event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                        dwallet_network_decryption_key_id,
+                    });
+                    DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                } else {
+                    DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                }
             },
-            _ => abort EWrongState
+                _ => abort EWrongState
         };
     }
 }
@@ -1179,7 +1178,7 @@ public fun approve_message(
 fun is_supported_hash_scheme(val: u8): bool {
     return match (val) {
             KECCAK256 | SHA256 => true,
-    _ => false,
+            _ => false,
     }
 }
 

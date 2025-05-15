@@ -29,7 +29,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `CompletedDWalletDecryptionKeyReshareEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDecryptionKeyReshareEvent)
 -  [Struct `CompletedDWalletNetworkDKGDecryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent)
 -  [Struct `DWalletDKGFirstRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGFirstRoundRequestEvent)
--  [Struct `CompletedDKGFirstdRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent)
+-  [Struct `CompletedDKGFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstRoundEvent)
 -  [Struct `RejectedDWalletDKGSFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_RejectedDWalletDKGSFirstRoundEvent)
 -  [Struct `DWalletDKGSecondRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent)
 -  [Struct `CompletedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDKGSecondRoundEvent)
@@ -1219,9 +1219,9 @@ initiate the first round of the DKG.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstRoundEvent"></a>
 
-## Struct `CompletedDKGFirstdRoundEvent`
+## Struct `CompletedDKGFirstRoundEvent`
 
 An event emitted when the first round of the DKG process is completed.
 
@@ -1231,7 +1231,7 @@ The user should catch this event to generate inputs for
 the second round and call the <code><a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_request_dwallet_dkg_second_round">request_dwallet_dkg_second_round</a>()</code> function.
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent">CompletedDKGFirstdRoundEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstRoundEvent">CompletedDKGFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -1846,7 +1846,7 @@ specific to each Digital Signature Algorithm.
 </dt>
 <dd>
  The presign object ID, this ID will
- be used as the singature MPC protocol ID.
+ be used as the signature MPC protocol ID.
 </dd>
 <dt>
 <code>presign: vector&lt;u8&gt;</code>
@@ -2095,7 +2095,7 @@ This event contains signatures for all signed messages in the batch.
 ## Struct `SystemCheckpointInfoEvent`
 
 Event containing system-level checkpoint information, emitted during
-the checkpoint submmision message.
+the checkpoint submission message.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> <b>has</b> <b>copy</b>, drop, store
@@ -2248,7 +2248,7 @@ Variant <code>AwaitingNetworkVerification</code>
 <dd>
 </dd>
 <dt>
-Variant <code>KeyHolderSiged</code>
+Variant <code>KeyHolderSigned</code>
 </dt>
 <dd>
 </dd>
@@ -2878,7 +2878,9 @@ Supported hash schemes for message signing.
     <b>if</b> (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(dwallet_network_decryption_key_id);
+    <b>let</b> dwallet_network_decryption_key = self.dwallet_network_decryption_keys.borrow_mut(
+        dwallet_network_decryption_key_id
+    );
     <b>if</b> (rejected) {
         dwallet_network_decryption_key.state = DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG;
         event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
@@ -2891,17 +2893,17 @@ Supported hash schemes for message signing.
     } <b>else</b> {
         dwallet_network_decryption_key.network_dkg_public_output.push_back(network_public_output);
         dwallet_network_decryption_key.state = match (&dwallet_network_decryption_key.state) {
-            DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
+                DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG =&gt; {
                 <b>if</b> (is_last_chunk) {
-                        event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
-                            dwallet_network_decryption_key_id,
-                        });
-                        DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-                    } <b>else</b> {
-                        DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-                    }
+                    event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
+                        dwallet_network_decryption_key_id,
+                    });
+                    DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+                } <b>else</b> {
+                    DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+                }
             },
-            _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
+                _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
         };
     }
 }
@@ -3572,7 +3574,7 @@ Checks if the given hash scheme is supported for message signing.
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_is_supported_hash_scheme">is_supported_hash_scheme</a>(val: u8): bool {
     <b>return</b> match (val) {
             <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_KECCAK256">KECCAK256</a> | <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_SHA256">SHA256</a> =&gt; <b>true</b>,
-    _ =&gt; <b>false</b>,
+            _ =&gt; <b>false</b>,
     }
 }
 </code></pre>
@@ -3835,7 +3837,7 @@ Validators call it, it's part of the blockchain logic.
                 });
                 DWalletState::NetworkRejectedFirstRound
             } <b>else</b> {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstdRoundEvent">CompletedDKGFirstdRoundEvent</a> {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDKGFirstRoundEvent">CompletedDKGFirstRoundEvent</a> {
                 dwallet_id,
                 first_round_output,
             });
@@ -4249,7 +4251,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     <b>let</b> encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
     encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted =&gt; EncryptedUserSecretKeyShareState::KeyHolderSiged {
+        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted =&gt; EncryptedUserSecretKeyShareState::KeyHolderSigned {
             user_output_signature
         },
         _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
@@ -4297,7 +4299,7 @@ validators to begin processing the first round of the presign process for each s
 
 ##### Parameters
 
-- <code>dwallet_id</code>: The dWallet's ID to resquest presign.
+- <code>dwallet_id</code>: The dWallet's ID to request presign.
 - <code>ctx</code>: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 
 
