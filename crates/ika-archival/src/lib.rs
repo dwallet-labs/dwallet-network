@@ -92,8 +92,8 @@ const CHECKPOINT_FILE_SUFFIX: &str = "ika_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
-pub const PARAMS_MESSAGE_FILE_MAGIC: u32 = 0x0000ABCD;
-const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
+pub const IKA_SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000ABCD;
+const IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
 
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize, TryFromPrimitive, IntoPrimitive,
@@ -101,7 +101,7 @@ const PARAMS_MESSAGE_FILE_SUFFIX: &str = "ika_ika_system_checkpoint";
 #[repr(u8)]
 pub enum FileType {
     CheckpointMessage = 0,
-    IkaSystemCheckpoint,
+    IkaSystemCheckpoint = 1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -122,7 +122,7 @@ impl FileMetadata {
                 self.checkpoint_seq_range.start
             )),
             FileType::IkaSystemCheckpoint => dir_path.child(&*format!(
-                "{}.{CHECKPOINT_FILE_SUFFIX}",
+                "{}.{IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX}",
                 self.ika_system_checkpoint_seq_range.start
             )),
         }

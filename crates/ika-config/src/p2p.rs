@@ -232,10 +232,10 @@ impl StateSyncConfig {
     }
 
     pub fn synced_ika_system_checkpoint_broadcast_channel_capacity(&self) -> usize {
-        const SYNCED_PARAMS_MESSAGE_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
+        const SYNCED_IKA_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
 
         self.synced_ika_system_checkpoint_broadcast_channel_capacity
-            .unwrap_or(SYNCED_PARAMS_MESSAGE_BROADCAST_CHANNEL_CAPACITY)
+            .unwrap_or(SYNCED_IKA_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
     pub fn checkpoint_header_download_concurrency(&self) -> usize {
@@ -246,10 +246,10 @@ impl StateSyncConfig {
     }
 
     pub fn ika_system_checkpoint_header_download_concurrency(&self) -> usize {
-        const PARAMS_MESSAGE_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
+        const IKA_SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
 
         self.ika_system_checkpoint_header_download_concurrency
-            .unwrap_or(PARAMS_MESSAGE_HEADER_DOWNLOAD_CONCURRENCY)
+            .unwrap_or(IKA_SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
     }
 
     pub fn checkpoint_content_download_concurrency(&self) -> usize {

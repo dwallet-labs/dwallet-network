@@ -3,7 +3,7 @@
 
 use crate::{
     read_manifest, FileMetadata, FileType, Manifest, CHECKPOINT_MESSAGE_FILE_MAGIC,
-    PARAMS_MESSAGE_FILE_MAGIC,
+    IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
 };
 use anyhow::{anyhow, Context, Result};
 use bytes::buf::Reader;
@@ -849,7 +849,7 @@ impl ArchiveReader {
             .try_for_each(|ika_system_checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
                     make_iterator::<CertifiedIkaSystemCheckpoint, Reader<Bytes>>(
-                        PARAMS_MESSAGE_FILE_MAGIC,
+                        IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
                         ika_system_checkpoint_data.reader(),
                     )
                     .and_then(|ika_system_checkpoint_iter| {

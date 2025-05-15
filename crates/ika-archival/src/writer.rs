@@ -5,7 +5,8 @@
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
     IkaSystemCheckpointUpdates, Manifest, CHECKPOINT_FILE_SUFFIX, CHECKPOINT_MESSAGE_FILE_MAGIC,
-    EPOCH_DIR_PREFIX, MAGIC_BYTES, PARAMS_MESSAGE_FILE_MAGIC, PARAMS_MESSAGE_FILE_SUFFIX,
+    EPOCH_DIR_PREFIX, IKA_SYSTEM_CHECKPOINT_FILE_MAGIC, IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
+    MAGIC_BYTES,
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context};
@@ -301,8 +302,8 @@ impl IkaSystemCheckpointWriter {
         let ika_system_checkpoint_file = Self::next_file(
             &epoch_dir,
             ika_system_checkpoint_sequence_num,
-            PARAMS_MESSAGE_FILE_SUFFIX,
-            PARAMS_MESSAGE_FILE_MAGIC,
+            IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
+            IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
             storage_format,
             file_compression,
         )?;
@@ -383,7 +384,7 @@ impl IkaSystemCheckpointWriter {
         let off = self.wbuf.get_ref().stream_position()?;
         self.wbuf.get_ref().set_len(off)?;
         let file_path = self.epoch_dir().join(format!(
-            "{}.{PARAMS_MESSAGE_FILE_SUFFIX}",
+            "{}.{IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX}",
             self.ika_system_checkpoint_range.start
         ));
         self.compress(&file_path)?;
@@ -453,8 +454,8 @@ impl IkaSystemCheckpointWriter {
         let f = Self::next_file(
             &self.epoch_dir(),
             self.ika_system_checkpoint_range.start,
-            PARAMS_MESSAGE_FILE_SUFFIX,
-            PARAMS_MESSAGE_FILE_MAGIC,
+            IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
+            IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
             self.storage_format,
             self.file_compression,
         )?;
