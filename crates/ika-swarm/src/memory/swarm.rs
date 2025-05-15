@@ -33,7 +33,7 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_macros::nondeterministic;
 use sui_types::object::Object;
 use tempfile::TempDir;
-use tracing::info;
+use tracing::{error, info};
 
 pub struct SwarmBuilder<R = OsRng> {
     rng: R,
@@ -196,6 +196,14 @@ impl<R> SwarmBuilder<R> {
 impl<R: rand::RngCore + rand::CryptoRng> SwarmBuilder<R> {
     /// Create the configured Swarm.
     pub async fn build(self) -> Result<Swarm, anyhow::Error> {
+        const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
+        if let Err(err) = rayon::ThreadPoolBuilder::new()
+            .stack_size(SIXTEEN_MEGA_BYTES)
+            .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
+            .build_global()
+        {
+            error!("Failed to create rayon thread pool: {:?}", err);
+        }
         let dir = if let Some(dir) = self.dir {
             SwarmDirectory::Persistent(dir)
         } else {

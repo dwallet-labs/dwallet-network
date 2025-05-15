@@ -93,37 +93,30 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     dkg_first_round_consensus_validation_ika: u64,
     dkg_first_round_computation_ika: u64,
     dkg_first_round_gas_fee_reimbursement_sui: u64,
-
     // DKG Second Round Pricing
     dkg_second_round_consensus_validation_ika: u64,
     dkg_second_round_computation_ika: u64,
     dkg_second_round_gas_fee_reimbursement_sui: u64,
-
     // Re-encrypt User Share Pricing
     re_encrypt_consensus_validation_ika: u64,
     re_encrypt_computation_ika: u64,
     re_encrypt_gas_fee_reimbursement_sui: u64,
-
     // ECDSA Presign Pricing
     ecdsa_presign_consensus_validation_ika: u64,
     ecdsa_presign_computation_ika: u64,
     ecdsa_presign_gas_fee_reimbursement_sui: u64,
-
     // ECDSA Sign Pricing
     ecdsa_sign_consensus_validation_ika: u64,
     ecdsa_sign_computation_ika: u64,
     ecdsa_sign_gas_fee_reimbursement_sui: u64,
-
     // ECDSA Future Sign Pricing
     ecdsa_future_sign_consensus_validation_ika: u64,
     ecdsa_future_sign_computation_ika: u64,
     ecdsa_future_sign_gas_fee_reimbursement_sui: u64,
-
     // ECDSA Sign with Partial User Signature Pricing
     ecdsa_partial_sign_consensus_validation_ika: u64,
     ecdsa_partial_sign_computation_ika: u64,
     ecdsa_partial_sign_gas_fee_reimbursement_sui: u64,
-
     ctx: &mut TxContext
 ): DWalletPricing2PcMpcSecp256K1 {
     DWalletPricing2PcMpcSecp256K1 {

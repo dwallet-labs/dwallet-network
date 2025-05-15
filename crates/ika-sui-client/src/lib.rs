@@ -667,11 +667,6 @@ where
             })?)
     }
 
-    pub async fn get_epoch_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))> {
-        let system_inner = self.must_get_system_inner_object().await;
-        system_inner.get_ika_active_committee()
-    }
-
     pub async fn get_network_decryption_key_with_full_data(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
@@ -1043,23 +1038,28 @@ impl SuiClientInner for SuiSdkClient {
         let network_dkg_public_output = self
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
-        let current_reconfiguration_public_output =
-            if let Ok(current_reconfiguration_public_output_id) = self
+
+        let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
+            || key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
+            || key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
+        {
+            info!(
+                key_id = ?key.id,
+                epoch = ?key.current_epoch,
+                "Reconfiguration public output for key not is not ready for epoch",
+            );
+            vec![]
+        } else {
+            let current_reconfiguration_public_output_id = self
                 .get_current_reconfiguration_public_output(
                     key.current_epoch,
                     key.reconfiguration_public_outputs.id,
                 )
-                .await
-            {
-                self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
-                    .await?
-            } else {
-                warn!(
-                    "reconfiguration output for current epoch {:?} not found",
-                    key.current_epoch
-                );
-                vec![]
-            };
+                .await?;
+
+            self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                .await?
+        };
 
         Ok(DWalletNetworkDecryptionKeyData {
             id: key.id,
