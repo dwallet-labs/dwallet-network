@@ -253,7 +253,7 @@ pub(crate) fn advance_network_dkg(
     party_id: PartyID,
     public_input: &[u8],
     key_scheme: &DWalletMPCNetworkKeyScheme,
-    messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
@@ -373,6 +373,9 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     if (key_data.current_reconfiguration_public_output.is_empty()) {
+        if key_data.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+            return Err(DwalletMPCError::WaitingForNetworkKey(key_data.id.clone()));
+        }
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,

@@ -112,16 +112,20 @@ where
             let system_inner = match system_inner {
                 SystemInner::V1(system_inner) => system_inner,
             };
-            let Some(new_next_committee) = system_inner.get_ika_next_epoch_committee() else {
+            let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
             };
+
+            let new_next_committee = system_inner.read_bls_committee(&new_next_bls_committee);
 
             let committee = match Self::new_committee(
                 sui_client.clone(),
                 &system_inner,
                 new_next_committee.clone(),
                 system_inner.epoch() + 1,
+                new_next_bls_committee.quorum_threshold,
+                new_next_bls_committee.validity_threshold,
             )
             .await
             {
@@ -145,6 +149,8 @@ where
         system_inner: &SystemInnerInit,
         committee: Vec<(ObjectID, (AuthorityName, StakeUnit))>,
         epoch: u64,
+        quorum_threshold: u64,
+        validity_threshold: u64,
     ) -> DwalletMPCResult<Committee> {
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
@@ -161,12 +167,14 @@ where
         let class_group_encryption_keys_and_proofs = committee
             .iter()
             .map(|(id, (name, _))| {
-                let class_groups = class_group_encryption_keys_and_proofs
-                    .get(id)
-                    .ok_or(DwalletMPCError::ValidatorIDNotFound(*id))?;
+                let validator_class_groups_public_key_and_proof =
+                    class_group_encryption_keys_and_proofs
+                        .get(id)
+                        .ok_or(DwalletMPCError::ValidatorIDNotFound(*id))?;
 
-                let class_groups_bytes = bcs::to_bytes(&class_groups)?;
-                Ok((*name, class_groups_bytes))
+                let validator_class_groups_public_key_and_proof =
+                    bcs::to_bytes(&validator_class_groups_public_key_and_proof)?;
+                Ok((*name, validator_class_groups_public_key_and_proof))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
@@ -177,11 +185,8 @@ where
                 .map(|(_, (name, stake))| (*name, *stake))
                 .collect(),
             class_group_encryption_keys_and_proofs,
-            system_inner.validator_set.active_committee.quorum_threshold,
-            system_inner
-                .validator_set
-                .active_committee
-                .validity_threshold,
+            quorum_threshold,
+            validity_threshold,
         ))
     }
 
@@ -202,11 +207,19 @@ where
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
-            let active_committee = sui_client.get_epoch_active_committee().await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let system_inner = match system_inner {
                 SystemInner::V1(system_inner) => system_inner,
             };
+            if network_decryption_keys
+                .iter()
+                .any(|(_, key)| key.current_epoch != system_inner.epoch())
+            {
+                warn!("The network decryption keys are not in the current epoch");
+                continue;
+            }
+            let active_bls_committee = system_inner.get_ika_active_committee();
+            let active_committee = system_inner.read_bls_committee(&active_bls_committee);
             let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache
@@ -221,6 +234,8 @@ where
                 &system_inner,
                 active_committee,
                 system_inner.epoch(),
+                active_bls_committee.quorum_threshold,
+                active_bls_committee.validity_threshold,
             )
             .await
             {
@@ -248,8 +263,14 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key);
-                        network_keys_cache.insert((key_id, system_inner.epoch()));
+                        all_network_keys_data.insert(key_id.clone(), key.clone());
+                        network_keys_cache.insert((key_id, key.epoch));
+                    }
+                    Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {
+                        // This is expected if the key is not yet available.
+                        // We can skip this key and continue to the next one.
+                        info!(key=?key_id, "Waiting for network decryption key data");
+                        continue 'sync_network_keys;
                     }
                     Err(err) => {
                         error!(

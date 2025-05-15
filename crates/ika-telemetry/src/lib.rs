@@ -75,7 +75,8 @@ pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool
         events: vec![telemetry_event],
     };
 
-    send_telemetry_event_impl(telemetry_payload).await
+    // todo(ika): enable this later with our own parameters if needed.
+    // send_telemetry_event_impl(telemetry_payload).await
 }
 
 async fn get_ip() -> String {

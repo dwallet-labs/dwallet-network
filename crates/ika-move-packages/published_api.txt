@@ -352,9 +352,6 @@ get_active_dwallet_network_decryption_key
 advance_epoch
 	public(package) fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-get_dwallet
-	fun
-	0x0::dwallet_2pc_mpc_secp256k1_inner
 get_dwallet_mut
 	fun
 	0x0::dwallet_2pc_mpc_secp256k1_inner
