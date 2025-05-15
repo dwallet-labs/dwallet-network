@@ -446,7 +446,7 @@ impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
 pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
     pub public_user_secret_key_shares: Vec<u8>,
     pub public_output: Vec<u8>,
-    pub curve: u8,
+    pub curve: u32,
     pub dwallet_id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
 }
