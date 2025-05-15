@@ -19,7 +19,7 @@ tempfile.workspace = true
 tonic-health.workspace = true
 tap.workspace = true
 prometheus.workspace = true
-
+rayon.workspace = true
 ika-config.workspace = true
 ika-swarm-config.workspace = true
 sui-macros.workspace = true
