@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { SuiClient } from '@mysten/sui/client';
-import { requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
@@ -23,12 +23,37 @@ import {
 	verifyECFSASignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
-const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
-const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
-// const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
-// const SUI_FAUCET_HOST = getFaucetHost('localnet');
+// const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
+// const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
+const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
+const SUI_FAUCET_HOST = getFaucetHost('localnet');
 
 const fiveMinutes = 100 * 60 * 1000;
+
+async function runDWalletFullFlowWithRandomSuiKeypair() {
+	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+	console.log('Creating dWallet...');
+	const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+	console.log(`dWallet has been created successfully: ${dwalletID}`);
+	await delay(checkpointCreationTime);
+	console.log('Running Presign...');
+	const presignCompletion = await presign(conf, dwalletID.dwalletID);
+	console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
+	await delay(checkpointCreationTime);
+	console.log('Running Sign...');
+	await sign(
+		conf,
+		presignCompletion.presign_id,
+		dwalletID.dwallet_cap_id,
+		Buffer.from('hello world'),
+		dwalletID.secret_share,
+		networkDecryptionKeyPublicOutput,
+		Hash.KECCAK256,
+	);
+}
+
+// async function
+
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -77,27 +102,16 @@ describe('Test dWallet MPC', () => {
 		const presignCompletion = await presign(conf, dwallet.dwalletID);
 		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
 	});
-
 	it('should sign full flow', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		console.log('Creating dWallet...');
-		const dwalletID = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwalletID}`);
-		await delay(checkpointCreationTime);
-		console.log('Running Presign...');
-		const presignCompletion = await presign(conf, dwalletID.dwalletID);
-		console.log(`presign has been created successfully: ${presignCompletion.presign_id}`);
-		await delay(checkpointCreationTime);
-		console.log('Running Sign...');
-		await sign(
-			conf,
-			presignCompletion.presign_id,
-			dwalletID.dwallet_cap_id,
-			Buffer.from('hello world'),
-			dwalletID.secret_share,
-			networkDecryptionKeyPublicOutput,
-			Hash.KECCAK256,
-		);
+		await runDWalletFullFlowWithRandomSuiKeypair(conf);
+	});
+
+	it('should run multiple full flows in parallel', async () => {
+		const numFlows = 5;
+		const flows = Array(numFlows)
+			.fill(null)
+			.map(() => runDWalletFullFlowWithRandomSuiKeypair(conf));
+		await Promise.all(flows);
 	});
 
 	it('should complete future sign', async () => {
