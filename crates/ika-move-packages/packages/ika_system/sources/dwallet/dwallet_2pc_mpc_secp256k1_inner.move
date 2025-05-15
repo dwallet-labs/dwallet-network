@@ -440,6 +440,7 @@ public struct CompletedDKGFirstdRoundEvent has copy, drop, store {
 /// This event is emitted to notify Validators to begin the second round of the DKG.
 /// It contains all necessary data to ensure proper continuation of the process.
 public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
+    encrypted_user_secret_key_share_id: ID,
     /// The unique session identifier for the DWallet.
     dwallet_id: ID,
 
@@ -914,14 +915,6 @@ public(package) fun advance_epoch(
     return epoch_consensus_validation_fee_charged_ika
 }
 
-fun get_dwallet(
-    self: &DWalletCoordinatorInner,
-    dwallet_id: ID,
-): &DWallet {
-    assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
-    self.dwallets.borrow(dwallet_id)
-}
-
 fun get_dwallet_mut(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1328,9 +1321,8 @@ public(package) fun request_dwallet_dkg_second_round(
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let encryption_key = encryption_key.encryption_key;
-
-    let dwallet = self.get_dwallet(dwallet_cap.dwallet_id);
-
+    let created_at_epoch: u64 = self.current_epoch;
+    let dwallet = self.get_dwallet_mut(dwallet_cap.dwallet_id);
     let first_round_output = match (&dwallet.state) {
         DWalletState::AwaitingUser {
             first_round_output,
@@ -1340,9 +1332,24 @@ public(package) fun request_dwallet_dkg_second_round(
         _ => abort EWrongState
     };
 
-    let pricing = self.pricing.dkg_second_round();
+    
+    let dwallet_id = dwallet.id.to_inner();
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+
+    let encrypted_user_share = EncryptedUserSecretKeyShare {
+        id: object::new(ctx),
+        created_at_epoch,
+        dwallet_id,
+        encrypted_centralized_secret_share_and_proof,
+        encryption_key_id,
+        encryption_key_address,
+        source_encrypted_user_secret_key_share_id: option::none(),
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+    };
+    let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+    let pricing = self.pricing.dkg_second_round();
 
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
         dwallet_network_decryption_key_id,
@@ -1350,6 +1357,7 @@ public(package) fun request_dwallet_dkg_second_round(
         payment_ika,
         payment_sui,
         DWalletDKGSecondRoundRequestEvent {
+            encrypted_user_secret_key_share_id,
             dwallet_id: dwallet_cap.dwallet_id,
             first_round_output,
             centralized_public_key_share_and_proof,
@@ -1400,17 +1408,12 @@ public(package) fun respond_dwallet_dkg_second_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
     public_output: vector<u8>,
-    encrypted_centralized_secret_share_and_proof: vector<u8>,
-    encryption_key_address: address,
+    encrypted_user_secret_key_share_id: ID,
     session_id: ID,
     rejected: bool,
     session_sequence_number: u64,
-    ctx: &mut TxContext
 ) {
     self.remove_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
-    let encryption_key = self.encryption_keys.borrow(encryption_key_address);
-    let encryption_key_id = encryption_key.id.to_inner();
-    let created_at_epoch = self.current_epoch;
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
     dwallet.state = match (&dwallet.state) {
@@ -1422,18 +1425,8 @@ public(package) fun respond_dwallet_dkg_second_round(
                 });
                 DWalletState::NetworkRejectedSecondRound
             } else {
-                let encrypted_user_share = EncryptedUserSecretKeyShare {
-                    id: object::new(ctx),
-                    created_at_epoch,
-                    dwallet_id,
-                    encrypted_centralized_secret_share_and_proof,
-                    encryption_key_id,
-                    encryption_key_address,
-                    source_encrypted_user_secret_key_share_id: option::none(),
-                    state: EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
-                };
-                let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
-                dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+                let encrypted_user_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
+                encrypted_user_share.state = EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
 
                 event::emit(CompletedDWalletDKGSecondRoundEvent {
                     dwallet_id,
@@ -2171,7 +2164,6 @@ public(package) fun process_checkpoint_message_by_quorum(
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
-    ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -2181,13 +2173,12 @@ public(package) fun process_checkpoint_message_by_quorum(
 
     self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_checkpoint_message(message, ctx);
+    self.process_checkpoint_message(message);
 }
 
 fun process_checkpoint_message(
     self: &mut DWalletCoordinatorInner,
     message: vector<u8>,
-    ctx: &mut TxContext,
 ) {
 
     let mut bcs_body = bcs::new(copy message);
@@ -2228,20 +2219,17 @@ fun process_checkpoint_message(
             } else if (message_data_type == 1) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
-                let encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                let encryption_key_address = sui::address::from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_second_round(
                     dwallet_id,
                     public_output,
-                    encrypted_centralized_secret_share_and_proof,
-                    encryption_key_address,
+                    encrypted_user_secret_key_share_id,
                     session_id,
                     rejected,
                     session_sequence_number,
-                    ctx,
                 );
             } else if (message_data_type == 2) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());

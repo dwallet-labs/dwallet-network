@@ -65,7 +65,6 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `emit_start_reshare_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_emit_start_reshare_event)
 -  [Function `get_active_dwallet_network_decryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_active_dwallet_network_decryption_key)
 -  [Function `advance_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_advance_epoch)
--  [Function `get_dwallet`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet)
 -  [Function `get_dwallet_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut)
 -  [Function `validate_active_and_get_public_output`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_validate_active_and_get_public_output)
 -  [Function `charge_and_create_current_epoch_dwallet_event`](#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_current_epoch_dwallet_event)
@@ -1277,6 +1276,11 @@ It contains all necessary data to ensure proper continuation of the process.
 
 
 <dl>
+<dt>
+<code>encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
 <dt>
 <code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
@@ -3051,34 +3055,6 @@ Supported hash schemes for message signing.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet"></a>
-
-## Function `get_dwallet`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet">get_dwallet</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet">dwallet_2pc_mpc_secp256k1_inner::DWallet</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet">get_dwallet</a>(
-    self: &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    dwallet_id: ID,
-): &<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet">DWallet</a> {
-    <b>assert</b>!(self.dwallets.contains(dwallet_id), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EDWalletNotExists">EDWalletNotExists</a>);
-    self.dwallets.borrow(dwallet_id)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut"></a>
 
 ## Function `get_dwallet_mut`
@@ -3835,7 +3811,8 @@ used to verify the signature on the public output.
     <b>let</b> encryption_key = self.encryption_keys.borrow(encryption_key_address);
     <b>let</b> encryption_key_id = encryption_key.id.to_inner();
     <b>let</b> encryption_key = encryption_key.encryption_key;
-    <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet">get_dwallet</a>(dwallet_cap.dwallet_id);
+    <b>let</b> created_at_epoch: u64 = self.current_epoch;
+    <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_cap.dwallet_id);
     <b>let</b> first_round_output = match (&dwallet.state) {
         DWalletState::AwaitingUser {
             first_round_output,
@@ -3844,14 +3821,28 @@ used to verify the signature on the public output.
         },
         _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EWrongState">EWrongState</a>
     };
-    <b>let</b> pricing = self.pricing.dkg_second_round();
+    <b>let</b> dwallet_id = dwallet.id.to_inner();
     <b>let</b> dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
+    <b>let</b> encrypted_user_share = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> {
+        id: object::new(ctx),
+        created_at_epoch,
+        dwallet_id,
+        encrypted_centralized_secret_share_and_proof,
+        encryption_key_id,
+        encryption_key_address,
+        source_encrypted_user_secret_key_share_id: option::none(),
+        state: EncryptedUserSecretKeyShareState::AwaitingNetworkVerification
+    };
+    <b>let</b> encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
+    dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+    <b>let</b> pricing = self.pricing.dkg_second_round();
     <b>let</b> emit_event = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_charge_and_create_current_epoch_dwallet_event">charge_and_create_current_epoch_dwallet_event</a>(
         dwallet_network_decryption_key_id,
         pricing,
         payment_ika,
         payment_sui,
         <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent">DWalletDKGSecondRoundRequestEvent</a> {
+            encrypted_user_secret_key_share_id,
             dwallet_id: dwallet_cap.dwallet_id,
             first_round_output,
             centralized_public_key_share_and_proof,
@@ -3915,7 +3906,7 @@ representing the decentralized computation result.
 - Freezes the created <code><a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWallet">DWallet</a></code> object to make it immutable.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool, session_sequence_number: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_output: vector&lt;u8&gt;, encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, session_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, rejected: bool, session_sequence_number: u64)
 </code></pre>
 
 
@@ -3928,17 +3919,12 @@ representing the decentralized computation result.
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_id: ID,
     public_output: vector&lt;u8&gt;,
-    encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;,
-    encryption_key_address: <b>address</b>,
+    encrypted_user_secret_key_share_id: ID,
     session_id: ID,
     rejected: bool,
     session_sequence_number: u64,
-    ctx: &<b>mut</b> TxContext
 ) {
     self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_remove_session_and_charge">remove_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletDKGSecondRoundRequestEvent">DWalletDKGSecondRoundRequestEvent</a>&gt;(session_sequence_number);
-    <b>let</b> encryption_key = self.encryption_keys.borrow(encryption_key_address);
-    <b>let</b> encryption_key_id = encryption_key.id.to_inner();
-    <b>let</b> created_at_epoch = self.current_epoch;
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkVerification =&gt; {
@@ -3949,18 +3935,8 @@ representing the decentralized computation result.
                 });
                 DWalletState::NetworkRejectedSecondRound
             } <b>else</b> {
-                <b>let</b> encrypted_user_share = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a> {
-                    id: object::new(ctx),
-                    created_at_epoch,
-                    dwallet_id,
-                    encrypted_centralized_secret_share_and_proof,
-                    encryption_key_id,
-                    encryption_key_address,
-                    source_encrypted_user_secret_key_share_id: option::none(),
-                    state: EncryptedUserSecretKeyShareState::NetworkVerificationCompleted
-                };
-                <b>let</b> encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
-                dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
+                <b>let</b> encrypted_user_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
+                encrypted_user_share.state = EncryptedUserSecretKeyShareState::NetworkVerificationCompleted;
                 event::emit(<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CompletedDWalletDKGSecondRoundEvent">CompletedDWalletDKGSecondRoundEvent</a> {
                     dwallet_id,
                     public_output,
@@ -5034,7 +5010,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -5048,14 +5024,13 @@ the function will abort with this error.
     signature: vector&lt;u8&gt;,
     signers_bitmap: vector&lt;u8&gt;,
     message: vector&lt;u8&gt;,
-    ctx: &<b>mut</b> TxContext,
 ) {
     <b>assert</b>!(!self.active_committee.members().is_empty(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>);
     <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>;
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&self.current_epoch));
     self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
-    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message, ctx);
+    self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(message);
 }
 </code></pre>
 
@@ -5069,7 +5044,7 @@ the function will abort with this error.
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>, message: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -5081,7 +5056,6 @@ the function will abort with this error.
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_process_checkpoint_message">process_checkpoint_message</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     message: vector&lt;u8&gt;,
-    ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> epoch = bcs_body.peel_u64();
@@ -5114,20 +5088,17 @@ the function will abort with this error.
             } <b>else</b> <b>if</b> (message_data_type == 1) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> public_output = bcs_body.peel_vec_u8();
-                <b>let</b> encrypted_centralized_secret_share_and_proof = bcs_body.peel_vec_u8();
-                <b>let</b> encryption_key_address = <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(bcs_body.peel_vec_u8());
                 <b>let</b> rejected = bcs_body.peel_bool();
                 <b>let</b> session_sequence_number = bcs_body.peel_u64();
                 self.<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(
                     dwallet_id,
                     public_output,
-                    encrypted_centralized_secret_share_and_proof,
-                    encryption_key_address,
+                    encrypted_user_secret_key_share_id,
                     session_id,
                     rejected,
                     session_sequence_number,
-                    ctx,
                 );
             } <b>else</b> <b>if</b> (message_data_type == 2) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());

@@ -79,7 +79,8 @@ impl IkaTxValidator {
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
-                | ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {}
+                | ConsensusTransactionKind::DWalletMPCMaliciousReport(..)
+                | ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {}
                 ConsensusTransactionKind::IkaSystemCheckpointSignature(signature) => {
                     ika_system_checkpoints.push(signature.as_ref());
                     params_batch.push(&signature.ika_system_checkpoint);

@@ -493,8 +493,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 DWalletMPCDBMessage::Message(_)
                 | DWalletMPCDBMessage::EndOfDelivery
                 | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::SessionFailedWithMaliciousParties(..)
-                | DWalletMPCDBMessage::PerformCryptographicComputations => {}
+                | DWalletMPCDBMessage::MaliciousReport(..)
+                | DWalletMPCDBMessage::PerformCryptographicComputations
+                | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
             }
         }
         Ok(())
@@ -543,8 +544,9 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
-        ConsensusTransactionKind::DWalletMPCSessionFailedWithMalicious(..) => {
-            "dwallet_mpc_session_failed_with_malicious"
+        ConsensusTransactionKind::DWalletMPCMaliciousReport(..) => "dwallet_mpc_malicious_report",
+        ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
+            "dwallet_mpc_threshold_not_reached"
         }
         ConsensusTransactionKind::IkaSystemCheckpointSignature(_) => {
             "ika_system_checkpoint_signature"

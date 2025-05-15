@@ -12,9 +12,7 @@ import type { Config, EncryptedDWalletData } from './globals.js';
 import {
 	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchObjectWithType,
 	getDWalletSecpState,
-	getEncryptionKeyMoveType,
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
@@ -40,7 +38,7 @@ interface CreatedEncryptionKeyEvent {
 }
 
 /**
- * A class groups Move encryption key object.
+ * A `class groups` Move encryption key object.
  */
 interface EncryptionKey {
 	encryption_key: Uint8Array;
@@ -92,11 +90,10 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 		conf.encryptedSecretShareSigningKeypair.toSuiAddress(),
 	);
 	if (activeEncryptionKeyObjID) {
-		const activeEncryptionKeyObj = await fetchObjectWithType<EncryptionKey>(
+		const activeEncryptionKeyObj = await getObjectWithType<EncryptionKey>(
 			conf,
-			getEncryptionKeyMoveType(conf.ikaConfig.ika_system_package_id),
-			isEncryptionKey,
 			activeEncryptionKeyObjID,
+			isEncryptionKey,
 		);
 		if (isEqual(activeEncryptionKeyObj?.encryption_key, expectedEncryptionKey)) {
 			return {
@@ -106,7 +103,7 @@ export async function getOrCreateClassGroupsKeyPair(conf: Config): Promise<Class
 			};
 		}
 		throw new Error(
-			'encryption key derived from the key pair does not match the one in the active encryption keys table',
+			'the encryption key derived from the key pair does not match the one in the active encryption keys table',
 		);
 	}
 
@@ -166,7 +163,7 @@ async function getActiveEncryptionKeyObjID(conf: Config, address: string): Promi
  * This function facilitates the storage of an encryption key as an immutable object
  * on the blockchain.
  * The key is signed with the provided key pair to ensure
- * cryptographic integrity, and validate it by the blockchain.
+ * cryptographic integrity and validate it by the blockchain.
  * Currently, only Class Groups encryption keys are supported.
  *
  * ### Parameters
@@ -235,8 +232,9 @@ function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent
  *
  * @param sourceConf - The key pair that currently owns the sourceDwallet that will
  * be encrypted for the destination.
- * @param destSuiPublicKey - The public key of the destination entity, used to encrypt the secret user key share.
+ * @param destSuiAddress - The sui network address of the destination entity, used to get the encryption key.
  * @param dWalletSecretShare - The secret user key share to encrypt.
+ * @param networkDecryptionKeyPublicOutput - The public output of the network decryption key.
  * @returns The encrypted secret user key share.
  * @throws Will throw an error if the destination public key does not have an active encryption key
  *         or if the encryption key is not valid (not signed by the destination's public key).
@@ -305,7 +303,7 @@ async function fetchPublicKeyByAddress(conf: Config, address: string): Promise<E
 }
 
 /**
- * Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+ * Transfers an encrypted dWallet user secret key share from a source entity to a destination entity.
  * This function emits an event with the encrypted user secret key share,
  * along with its cryptographic proof, to the blockchain.
  * The chain verifies that the encrypted data matches the expected secret key share
