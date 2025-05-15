@@ -228,12 +228,12 @@ impl DWalletMPCManager {
         {
             match err {
                 DwalletMPCError::WaitingForNetworkKey(key_id) => {
-                    warn!(
+                    info!(
                         ?err,
                         session_info=?event.session_info,
                         type=?event.event.type_,
                         key_id=?key_id,
-                        "adding event to pending for the network key"
+                        "Adding event to pending for the network key"
                     );
                     self.events_pending_for_network_key
                         .push((event.event, event.session_info));
