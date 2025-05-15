@@ -72,7 +72,6 @@ public struct System has key {
 
 const EWrongInnerVersion: u64 = 0;
 const EInvalidMigration: u64 = 1;
-const EHaveNotReachedEndEpochTime: u64 = 3;
 
 /// Flag to indicate the version of the ika system.
 const VERSION: u64 = 1;
@@ -430,9 +429,7 @@ public fun request_reconfig_mid_epoch(
 public fun request_lock_epoch_sessions(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock
 ) {
-    let inner = self.inner_mut();
-    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
-    dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
+    self.inner_mut().lock_last_active_session_sequence_number(dwallet_coordinator.inner_mut(), clock);
 }
 
 /// Advances the epoch to the next epoch.

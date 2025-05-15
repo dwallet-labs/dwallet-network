@@ -758,7 +758,7 @@ public(package) fun create_dwallet_coordinator_inner(
         last_session_to_complete_in_current_epoch: 0,
         // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
-        locked_last_session_to_complete_in_current_epoch: false,
+        locked_last_session_to_complete_in_current_epoch: true,
         dwallets: object_table::new(ctx),
         dwallet_network_decryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
