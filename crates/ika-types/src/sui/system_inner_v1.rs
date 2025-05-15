@@ -110,7 +110,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
     future_sign: PricingPerOperation,
     sign_with_partial_user_signature: PricingPerOperation,
     make_dwallet_user_secret_key_shares_public: PricingPerOperation,
-    imported_key_dwallet_verification: PricingPerOperation
+    imported_key_dwallet_verification: PricingPerOperation,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type
@@ -139,7 +139,8 @@ pub struct DWalletCoordinatorInnerV1 {
     pub total_messages_processed: u64,
     pub last_processed_checkpoint_sequence_number: Option<u64>,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
-    pub supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, Vec<u32>>>,
+    pub supported_curves_to_signature_algorithms_to_hash_schemes:
+        VecMap<u32, VecMap<u32, Vec<u32>>>,
     pub paused_curves: Vec<u32>,
     pub paused_signature_algorithms: Vec<u32>,
     pub paused_hash_schemes: Vec<u32>,

@@ -634,7 +634,8 @@ where
     pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
         loop {
             let system_inner = self.must_get_system_inner_object().await;
-            let Some(dwallet_2pc_mpc_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id()
+            let Some(dwallet_2pc_mpc_coordinator_id) =
+                system_inner.dwallet_2pc_mpc_coordinator_id()
             else {
                 error!("failed to get `dwallet_2pc_mpc_coordinator_id` when fetching dwallet coordinator inner");
                 tokio::time::sleep(Duration::from_secs(2)).await;
