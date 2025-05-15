@@ -282,7 +282,7 @@ impl DWalletMPCManager {
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
-                if let Err(err) = self.handle_malicious_report(authority_name, report){
+                if let Err(err) = self.handle_malicious_report(authority_name, report) {
                     error!(
                         ?err,
                         "dWallet MPC session failed with malicious parties with error",
@@ -336,7 +336,7 @@ impl DWalletMPCManager {
     fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-            session.received_more_messages_since_last_retry = false;
+            session.received_more_messages_since_last_advance = false;
             session.attempts_count += 1;
             // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
             // So all parties that sent a regular MPC Message for the last executed
@@ -351,7 +351,7 @@ impl DWalletMPCManager {
                 .report_malicious_actors(&party_ids_to_authority_names(
                     &session
                         .serialized_full_messages
-                        .get(&(session.next_round_to_advance - 1))
+                        .get(&(session.current_round - 1))
                         .unwrap_or(&HashMap::new())
                         .keys()
                         .cloned()
@@ -360,9 +360,9 @@ impl DWalletMPCManager {
                 )?);
             session
                 .serialized_full_messages
-                .remove(&(session.next_round_to_advance - 1));
+                .remove(&(session.current_round - 1));
             // Decrement the current round, as we are going to retry the previous round.
-            session.next_round_to_advance -= 1;
+            session.current_round -= 1;
         }
         Ok(())
     }
