@@ -342,8 +342,8 @@ where
                         info!(
                             highest_executed_checkpoint=?self.checkpoint_store.get_highest_executed_checkpoint(),
                             highest_synced_checkpoint=?self.checkpoint_store.get_highest_synced_checkpoint(),
-                            highest_verified_checkpoint=?self.checkpoint_store.get_highest_verified_checkpoint(),
-                            highest_verified_checkpoint=?self.checkpoint_store.get_highest_executed_checkpoint_seq_number(),
+                            // highest_verified_checkpoint=?self.checkpoint_store.get_highest_verified_checkpoint(),
+                            highest_verified_checkpoint_seq=?self.checkpoint_store.get_highest_executed_checkpoint_seq_number(),
                             highest_pruned_checkpoint_seq_number=?self.checkpoint_store.get_highest_pruned_checkpoint_seq_number(),
                         )
                     }
