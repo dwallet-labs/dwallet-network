@@ -547,7 +547,7 @@ public(package) fun process_mid_epoch(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reconfiguration_event(cap, ctx));
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
