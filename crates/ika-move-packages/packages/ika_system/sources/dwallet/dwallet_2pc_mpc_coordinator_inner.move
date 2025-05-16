@@ -333,7 +333,7 @@ public struct DWallet has key, store {
     /// If set, the user secret key shares is public, the network can sign
     /// without the user participation. In this case, it is trust minimalized
     /// security for the user.
-    public_user_secret_key_shares: Option<vector<u8>>,
+    public_user_secret_key_share: Option<vector<u8>>,
 
     /// The ID of the capability associated with this dWallet.
     dwallet_cap_id: ID,
@@ -730,7 +730,7 @@ public struct AcceptReEncryptedUserShareEvent has copy, drop, store {
 
 
 public struct MakeDWalletUserSecretKeySharesPublicRequestEvent has copy, drop, store {
-    public_user_secret_key_shares: vector<u8>,
+    public_user_secret_key_share: vector<u8>,
 
     public_output: vector<u8>,
 
@@ -1445,7 +1445,7 @@ public(package) fun request_dwallet_dkg_first_round(
         id,
         created_at_epoch: self.current_epoch,
         curve,
-        public_user_secret_key_shares: option::none(),
+        public_user_secret_key_share: option::none(),
         dwallet_cap_id,
         dwallet_network_encryption_key_id,
         is_imported_key_dwallet: false,
@@ -1906,7 +1906,7 @@ public(package) fun new_imported_key_dwallet(
         id,
         created_at_epoch: self.current_epoch,
         curve,
-        public_user_secret_key_shares: option::none(),
+        public_user_secret_key_share: option::none(),
         dwallet_cap_id,
         dwallet_network_encryption_key_id,
         is_imported_key_dwallet: true,
@@ -2035,14 +2035,14 @@ public(package) fun respond_imported_key_dwallet_verification(
 ///
 /// ### Parameters
 /// - `dwallet_id`: The ID of the dWallet to make the user secret key shares public.
-/// - `public_user_secret_key_shares`: The public user secret key shares to be made public.
+/// - `public_user_secret_key_share`: The public user secret key shares to be made public.
 /// - `payment_ika`: The IKA payment for the operation.
 /// - `payment_sui`: The SUI payment for the operation.
 /// - `ctx`: The transaction context.
-public(package) fun request_make_dwallet_user_secret_key_shares_public(
+public(package) fun request_make_dwallet_user_secret_key_share_public(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
-    public_user_secret_key_shares: vector<u8>,
+    public_user_secret_key_share: vector<u8>,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext,
@@ -2050,9 +2050,9 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
     let (dwallet, public_output) = self.get_active_dwallet_and_public_output(dwallet_id);
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
-    assert!(dwallet.public_user_secret_key_shares.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
+    assert!(dwallet.public_user_secret_key_share.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
 
-    let pricing = self.pricing.make_dwallet_user_secret_key_shares_public();
+    let pricing = self.pricing.make_dwallet_user_secret_key_share_public();
 
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
@@ -2061,7 +2061,7 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
             payment_ika,
             payment_sui,
             MakeDWalletUserSecretKeySharesPublicRequestEvent {
-                public_user_secret_key_shares,
+                public_user_secret_key_share,
                 public_output,
                 curve,
                 dwallet_id,
@@ -2072,10 +2072,10 @@ public(package) fun request_make_dwallet_user_secret_key_shares_public(
     );
 }
 
-public(package) fun respond_make_dwallet_user_secret_key_shares_public(
+public(package) fun respond_make_dwallet_user_secret_key_share_public(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
-    public_user_secret_key_shares: vector<u8>,
+    public_user_secret_key_share: vector<u8>,
     rejected: bool,
     session_sequence_number: u64,
 ) {
@@ -2086,7 +2086,7 @@ public(package) fun respond_make_dwallet_user_secret_key_shares_public(
             dwallet_id,
         });
     } else {
-        dwallet.public_user_secret_key_shares.fill(public_user_secret_key_shares);
+        dwallet.public_user_secret_key_share.fill(public_user_secret_key_share);
         event::emit(CompletedMakeDWalletUserSecretKeySharesPublicEvent {
             dwallet_id,
         });
