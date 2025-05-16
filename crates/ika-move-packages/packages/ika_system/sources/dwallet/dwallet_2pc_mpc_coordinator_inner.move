@@ -398,7 +398,8 @@ public struct VerifiedPresignCap has key, store {
 }
 
 /// A session of the Presign protocol. 
-/// When completed, holds a presign: a single-use precomputation that does not depend on the message, 
+/// When `state` is `PresignState::Completed`, holds a presign:
+/// a single-use precomputation that does not depend on the message, 
 /// used to speed up the (online) Sign protocol. 
 public struct PresignSession has key, store {
     /// Unique identifier for the presign object.
@@ -430,7 +431,7 @@ public enum PresignState has copy, drop, store {
     }
 }
 
-/// A Sign session. When completed, holds the signature. 
+/// A Sign session. When `state` is `SignState::Completed`, holds the `signature`. 
 public struct SignSession has key, store {
     id: UID,
 
