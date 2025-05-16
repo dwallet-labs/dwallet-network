@@ -1199,6 +1199,7 @@ fun get_dwallet(
     dwallet_id: ID,
 ): &DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
+
     self.dwallets.borrow(dwallet_id)
 }
 
@@ -1207,6 +1208,7 @@ fun get_dwallet_mut(
     dwallet_id: ID,
 ): &mut DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
+
     self.dwallets.borrow_mut(dwallet_id)
 }
 
@@ -1230,6 +1232,14 @@ fun validate_active_and_get_public_output(
     }
 }
 
+/// Creates a new MPC session and charges the user for it. 
+///
+/// Payment is done in both Ika (for the MPC computation by the Ika network) 
+/// and Sui (for storing the public output in Sui). 
+/// The payment is saved in the session object, for it is to be distributed only upon the completion of the session.
+///
+/// The newly created session has its sequence number set to `next_session_sequence_number`, which is then incremented.
+/// Finally, the last session to complete in current epoch is updated, if needed.
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -1255,6 +1265,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
     };
+
     let event = DWalletEvent {
         epoch: self.current_epoch,
         session_type: {
@@ -1265,6 +1276,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         session_id: object::id(&session),
         event_data,
     };
+
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
@@ -1273,8 +1285,13 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     event
 }
 
+/// Creates a new MPC session that serves the system (i.e. the Ika network).
+/// The current protocols that are supported for such is network DKG and Reconfiguration, 
+/// both of which are related to a particular `dwallet_network_encryption_key_id`.
+/// No funds are charged, since there is no user to charge.
 fun create_system_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
+    // TODO(@Omer): perhaps make it an option? what if we would want to add system sessions that aren't related to a particular network key?
     dwallet_network_encryption_key_id: ID,
     event_data: E,
     ctx: &mut TxContext,
@@ -1317,36 +1334,45 @@ public(package) fun get_active_encryption_key(
     self: &DWalletCoordinatorInner,
     address: address,
 ): ID {
+    // TODO(@Omer): what happens if address is not found? Shouldn't we check `contains` first?
     self.encryption_keys.borrow(address).id.to_inner()
 }
 
-fun validate_supported_curve(
+/// Validates the `curve` selection is both supported, and not paused.
+fun validate_curve(
     self: &DWalletCoordinatorInner,
     curve: u32,
 ) {
     assert!(self.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), EInvalidCurve);
+    // TODO(@omer): same structure of `supported_curves_to_signature_algorithms_to_hash_schemes` for paused.
     assert!(!self.paused_curves.contains(&curve), ECurvePaused);
 }
 
-fun validate_supported_curve_and_signature_algorithm(
+/// Validates the `curve` and `signature_algorithm` selection is supported, and not paused.
+fun validate_curve_and_signature_algorithm(
     self: &DWalletCoordinatorInner,
     curve: u32,
     signature_algorithm: u32,
 ) {
-    self.validate_supported_curve(curve);
+    self.validate_curve(curve);
     let supported_curve_to_signature_algorithms = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
+
+    // TODO(@omer): same structure of `supported_curves_to_signature_algorithms_to_hash_schemes` for paused.
     assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
     assert!(!self.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
 }
 
-fun validate_supported_curve_and_signature_algorithm_and_hash_scheme(
+/// Validates the `curve`, `signature_algorithm` and `hash_scheme` selection is supported, and not paused.
+fun validate_curve_and_signature_algorithm_and_hash_scheme(
     self: &DWalletCoordinatorInner,
     curve: u32,
     signature_algorithm: u32,
     hash_scheme: u32,
 ) {
-    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
+    self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
     let supported_hash_schemes = self.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
+
+    // TODO(@omer): same structure of `supported_curves_to_signature_algorithms_to_hash_schemes` for paused.
     assert!(supported_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
     assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 }
@@ -1368,7 +1394,7 @@ public(package) fun register_encryption_key(
     signer_public_key: vector<u8>,
     ctx: &mut TxContext
 ) {
-    self.validate_supported_curve(curve);
+    self.validate_curve(curve);
     assert!(
         ed25519_verify(&encryption_key_signature, &signer_public_key, &encryption_key),
         EInvalidEncryptionKeySignature
@@ -1396,15 +1422,13 @@ public(package) fun register_encryption_key(
     });
 }
 
-/// Represents a message that was approved as part of a dWallet process.
-///
-/// This struct binds the message to a specific `DWalletCap` for
-/// traceability and accountability within the system.
+/// Represents a message that was approved to be signed by the dWallet corresponding to `dwallet_id`.
 ///
 /// ### Fields
-/// - **`dwallet_cap_id`**: The identifier of the dWallet capability
+/// - **`dwallet_id`**: The identifier of the dWallet
 ///   associated with this approval.
-/// - **`hash_scheme`**: The message hash scheme.
+/// - **`hash_scheme`**: The message hash scheme to use for signing.
+/// - **`signature_algorithm`**: The signature algoirthm with which the message can be signed.
 /// - **`message`**: The message that has been approved.
 public struct MessageApproval has store, drop {
     dwallet_id: ID,
@@ -1413,6 +1437,14 @@ public struct MessageApproval has store, drop {
     message: vector<u8>,
 }
 
+/// Represents a message that was approved to be signed by the imported key dWallet corresponding to `dwallet_id`.
+///
+/// ### Fields
+/// - **`dwallet_id`**: The identifier of the dWallet
+///   associated with this approval.
+/// - **`hash_scheme`**: The message hash scheme to use for signing.
+/// - **`signature_algorithm`**: The signature algoirthm with which the message can be signed.
+/// - **`message`**: The message that has been approved.
 public struct ImportedKeyMessageApproval has store, drop {
     dwallet_id: ID,
     signature_algorithm: u32,
@@ -1420,7 +1452,8 @@ public struct ImportedKeyMessageApproval has store, drop {
     message: vector<u8>,
 }
 
-
+/// Approves `message` to be signed by the dWallet corresponding to `dwallet_cap`.
+/// Binds the approval for a specific `signature_algorithm` and `hash_scheme` choice.
 public(package) fun approve_message(
     self: &DWalletCoordinatorInner,
     dwallet_cap: &DWalletCap,
@@ -1429,17 +1462,22 @@ public(package) fun approve_message(
     message: vector<u8>
 ): MessageApproval {
     let dwallet_id = dwallet_cap.dwallet_id;
+
     let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
+
     let approval = MessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
         message,
     };
+
     approval
 }
 
+/// Approves `message` to be signed by the imported key dWallet corresponding to `imported_key_dwallet_cap`.
+/// Binds the approval for a specific `signature_algorithm` and `hash_scheme` choice.
 public(package) fun approve_imported_key_message(
     self: &DWalletCoordinatorInner,
     imported_key_dwallet_cap: &ImportedKeyDWalletCap,
@@ -1448,17 +1486,23 @@ public(package) fun approve_imported_key_message(
     message: vector<u8>
 ): ImportedKeyMessageApproval {
     let dwallet_id = imported_key_dwallet_cap.dwallet_id;
+
     let is_imported_key_dwallet = self.validate_approve_message(dwallet_id, signature_algorithm, hash_scheme);
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
+
     let approval = ImportedKeyMessageApproval {
         dwallet_id,
         signature_algorithm,
         hash_scheme,
         message,
     };
+
     approval
 }
 
+/// Perform shared validation for both the dWallet and imported key dWallet's variants of `approve_message()`.
+/// Verify the `curve`, `signature_algorithm` and `hash_scheme` choice, and that the dWallet exists.
+/// Returns whether this is an imported key dWallet, to be verified by the caller.
 fun validate_approve_message(
     self: &DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1466,7 +1510,9 @@ fun validate_approve_message(
     hash_scheme: u32,
 ): bool {
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
-    self.validate_supported_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
+
+    self.validate_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
+
     dwallet.is_imported_key_dwallet
 }
 
@@ -1491,7 +1537,7 @@ public(package) fun request_dwallet_dkg_first_round(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
-    self.validate_supported_curve(curve);
+    self.validate_curve(curve);
 
     let pricing = self.pricing.dkg_first_round();
 
@@ -1954,7 +2000,7 @@ public(package) fun new_imported_key_dwallet(
     curve: u32,
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
-    self.validate_supported_curve(curve);
+    self.validate_curve(curve);
 
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
     let id = object::new(ctx);
@@ -2188,7 +2234,7 @@ public(package) fun request_presign(
 
     let curve = dwallet.curve;
 
-    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
+    self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
 
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
@@ -2245,7 +2291,7 @@ public(package) fun request_global_presign(
 
     assert!(self.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
-    self.validate_supported_curve_and_signature_algorithm(curve, signature_algorithm);
+    self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
 
     let id = object::new(ctx);
     let presign_id = id.to_inner();
@@ -2478,7 +2524,7 @@ fun validate_and_initiate_sign(
         state: SignState::Requested,
     });
     let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
-    self.validate_supported_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+    self.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
 
 
     event::emit(emit_event);
