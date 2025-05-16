@@ -39,7 +39,7 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 /// together with a signature on the public key (shares).
 /// Together, these constitute the necessairy information to create a signature with the user.
 /// 
-/// Next, `presigns` holds the outputs of the Presign protocol which are later used for the signing protocol, 
+/// Next, `presign_sessions` holds the outputs of the Presign protocol which are later used for the signing protocol, 
 /// and `partial_centralized_signed_messages` holds the partial signatures of users awaiting for a future sign once a `MessageApproval` is presented.
 /// 
 /// Additionally, this structure holds management infromation, like the `previous_committee` and `active_committee` comittees,
@@ -73,8 +73,8 @@ public struct DWalletCoordinatorInner has store {
     // TODO: change it to versioned
     /// A table mapping user addresses to encryption key object IDs.
     encryption_keys: ObjectTable<address, EncryptionKey>,
-    /// A table mapping id to their presigns.
-    presigns: ObjectTable<ID, Presign>,
+    /// A table mapping id to their presign sessions.
+    presign_sessions: ObjectTable<ID, PresignSession>,
     /// A table mapping id to their partial centralized signed messages.
     partial_centralized_signed_messages: ObjectTable<ID, PartialUserSignature>,
     /// The computation IKA price per unit size for the current epoch.
@@ -346,7 +346,7 @@ public struct DWallet has key, store {
     /// A table mapping id to their encryption key object.
     encrypted_user_secret_key_shares: ObjectTable<ID, EncryptedUserSecretKeyShare>,
 
-    signs: ObjectTable<ID, Sign>,
+    sign_sessions: ObjectTable<ID, SignSession>,
 
     state: DWalletState,
 }
@@ -378,7 +378,7 @@ public struct UnverifiedPresignCap has key, store {
 
     /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
     /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// which can be used for any dWallet (under the same network key). Others, like ECDSA, must have this set.
     dwallet_id: Option<ID>,
 
     /// The ID of the presign.
@@ -390,16 +390,17 @@ public struct VerifiedPresignCap has key, store {
 
     /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
     /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// which can be used for any dWallet (under the same network key). Others, like ECDSA, must have this set.
     dwallet_id: Option<ID>,
 
     /// The ID of the presign.
     presign_id: ID,
 }
 
-/// Represents the result of the second and final presign round.
-/// This struct links the results of both presign rounds to a specific dWallet ID.
-public struct Presign has key, store {
+/// A session of the Presign protocol. 
+/// When completed, holds a presign: a single-use precomputation that does not depend on the message, 
+/// used to speed up the (online) Sign protocol. 
+public struct PresignSession has key, store {
     /// Unique identifier for the presign object.
     id: UID,
 
@@ -429,9 +430,8 @@ public enum PresignState has copy, drop, store {
     }
 }
 
-/// The output of a batched Sign session.
-public struct Sign has key, store {
-    /// A unique identifier for the batched sign output.
+/// A Sign session. When completed, holds the signature. 
+public struct SignSession has key, store {
     id: UID,
 
     created_at_epoch: u64,
@@ -970,7 +970,7 @@ public(package) fun create_dwallet_coordinator_inner(
         dwallets: object_table::new(ctx),
         dwallet_network_encryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
-        presigns: object_table::new(ctx),
+        presign_sessions: object_table::new(ctx),
         partial_centralized_signed_messages: object_table::new(ctx),
         pricing,
         gas_fee_reimbursement_sui: balance::zero(),
@@ -1450,7 +1450,7 @@ public(package) fun request_dwallet_dkg_first_round(
         dwallet_network_encryption_key_id,
         is_imported_key_dwallet: false,
         encrypted_user_secret_key_shares: object_table::new(ctx),
-        signs: object_table::new(ctx),
+        sign_sessions: object_table::new(ctx),
         state: DWalletState::DKGRequested,
     });
     event::emit(self.charge_and_create_current_epoch_dwallet_event(
@@ -1911,7 +1911,7 @@ public(package) fun new_imported_key_dwallet(
         dwallet_network_encryption_key_id,
         is_imported_key_dwallet: true,
         encrypted_user_secret_key_shares: object_table::new(ctx),
-        signs: object_table::new(ctx),
+        sign_sessions: object_table::new(ctx),
         state: DWalletState::AwaitingUserImportedKeyInitiation,
     });
     dwallet_cap
@@ -2138,7 +2138,7 @@ public(package) fun request_presign(
         dwallet_id: option::some(dwallet_id),
         presign_id,
     };
-    self.presigns.add(presign_id, Presign {
+    self.presign_sessions.add(presign_id, PresignSession {
         id,
         created_at_epoch,
         signature_algorithm,
@@ -2192,7 +2192,7 @@ public(package) fun request_global_presign(
         dwallet_id: option::none(),
         presign_id,
     };
-    self.presigns.add(presign_id, Presign {
+    self.presign_sessions.add(presign_id, PresignSession {
         id,
         created_at_epoch,
         signature_algorithm,
@@ -2259,7 +2259,7 @@ public(package) fun respond_presign(
 ) {
     self.remove_session_and_charge<PresignRequestEvent>(session_sequence_number);
 
-    let presign_obj = self.presigns.borrow_mut(presign_id);
+    let presign_obj = self.presign_sessions.borrow_mut(presign_id);
 
     presign_obj.state = match(presign_obj.state) {
         PresignState::Requested => {
@@ -2290,7 +2290,7 @@ public(package) fun is_presign_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPresignCap,
 ): bool {
-    let presign = self.presigns.borrow(cap.presign_id);
+    let presign = self.presign_sessions.borrow(cap.presign_id);
     match(&presign.state) {
         PresignState::Completed { .. } => {
             cap.id.to_inner() == presign.cap_id
@@ -2311,7 +2311,7 @@ public(package) fun verify_presign_cap(
     } = cap;
     let cap_id = id.to_inner();
     id.delete();
-    let presign = self.presigns.borrow_mut(presign_id);
+    let presign = self.presign_sessions.borrow_mut(presign_id);
     assert!(presign.cap_id == cap_id, EIncorrectCap);
         match(&presign.state) {
         PresignState::Completed { .. } => {},
@@ -2345,8 +2345,8 @@ fun validate_and_initiate_sign(
 ): bool {
     let created_at_epoch = self.current_epoch;
 
-    assert!(self.presigns.contains(presign_cap.presign_id), EPresignNotExist);
-    let presign = self.presigns.remove(presign_cap.presign_id);
+    assert!(self.presign_sessions.contains(presign_cap.presign_id), EPresignNotExist);
+    let presign = self.presign_sessions.remove(presign_cap.presign_id);
 
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
@@ -2358,7 +2358,7 @@ fun validate_and_initiate_sign(
     } = presign_cap;
     let presign_cap_id = id.to_inner();
     id.delete();
-    let Presign {
+    let PresignSession {
         id,
         created_at_epoch: _,
         dwallet_id: presign_dwallet_id,
@@ -2408,7 +2408,7 @@ fun validate_and_initiate_sign(
     );
     let session_id = emit_event.session_id;
     let dwallet = self.get_dwallet_mut(dwallet_id);
-    dwallet.signs.add(sign_id, Sign {
+    dwallet.sign_sessions.add(sign_id, SignSession {
         id,
         created_at_epoch,
         dwallet_id,
@@ -2548,9 +2548,9 @@ public(package) fun request_future_sign(
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
     let curve = dwallet.curve;
 
-    assert!(self.presigns.contains(presign_cap.presign_id), EPresignNotExist);
+    assert!(self.presign_sessions.contains(presign_cap.presign_id), EPresignNotExist);
 
-    let presign_obj = self.presigns.borrow(presign_cap.presign_id);
+    let presign_obj = self.presign_sessions.borrow(presign_cap.presign_id);
     assert!(presign_obj.curve == curve, EDWalletMismatch);
 
     let presign = match(presign_obj.state) {
@@ -2872,7 +2872,7 @@ public(package) fun respond_sign(
     self.remove_session_and_charge<SignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-    let sign = dwallet.signs.borrow_mut(sign_id);
+    let sign = dwallet.sign_sessions.borrow_mut(sign_id);
 
     sign.state = match(sign.state) {
         SignState::Requested => {
