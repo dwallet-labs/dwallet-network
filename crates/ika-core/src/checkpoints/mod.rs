@@ -608,7 +608,21 @@ impl CheckpointBuilder {
             .unbounded_iter()
             .map(|(seq, _)| seq)
             .collect_vec();
-        info!(checkpoints=?seqs, "Certified Checkpoints");
+
+        let builder_checkpoint_messages = self
+            .epoch_store
+            .tables()
+            .unwrap()
+            .builder_checkpoint_message_v1
+            .unbounded_iter()
+            .map(|(seq, s)| (seq, s.checkpoint_message))
+            .collect_vec();
+
+        // let last_builds = self.epoch_store.tables().unwrap().last
+        info!(checkpoints=?seqs,
+              builder_checkpoint_messages=?builder_checkpoint_messages,
+              "Certified Checkpoints V2"
+        );
 
         // Collect info about the most recently built checkpoint.
         let checkpoint_message = self

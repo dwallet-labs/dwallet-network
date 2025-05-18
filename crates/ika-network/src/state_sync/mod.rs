@@ -458,7 +458,7 @@ where
             StateSyncMessage::VerifiedCheckpointMessage(checkpoint) => {
                 self.handle_checkpoint_from_consensus(checkpoint)
             }
-            // After we've successfully synced a checkpoint we can notify our peers
+            // After we've successfully synced a checkpoint, we can notify our peers.
             StateSyncMessage::SyncedCheckpoint(checkpoint) => {
                 self.spawn_notify_peers_of_checkpoint(*checkpoint)
             }
@@ -468,6 +468,11 @@ where
     // Handle a checkpoint that we received from consensus
     #[instrument(level = "debug", skip_all)]
     fn handle_checkpoint_from_consensus(&mut self, checkpoint: Box<VerifiedCheckpointMessage>) {
+        info!(
+            sequnce_number=?checkpoint.sequence_number(),
+            "State Sync received a verified checkpoint from consensus"
+        );
+
         if *checkpoint.sequence_number() == 0 {
             return;
         }
@@ -511,7 +516,7 @@ where
             .update_highest_synced_checkpoint(&checkpoint)
             .expect("store operation should not fail");
 
-        // We don't care if no one is listening as this is a broadcast channel
+        // We don't care if no one is listening as this is a broadcast channel.
         let _ = self.checkpoint_event_sender.send(checkpoint.clone());
 
         self.spawn_notify_peers_of_checkpoint(checkpoint);
