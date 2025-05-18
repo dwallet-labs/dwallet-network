@@ -57,8 +57,8 @@ pub mod mpc_session;
 pub mod network_dkg;
 mod presign;
 
-mod make_dwallet_user_secret_key_shares_public;
 pub mod dwallet_mpc_metrics;
+mod make_dwallet_user_secret_key_shares_public;
 mod reshare;
 pub(crate) mod sign;
 

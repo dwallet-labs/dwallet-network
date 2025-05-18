@@ -39,7 +39,13 @@ use ika_types::crypto::DefaultHash;
 use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{AdvanceResult, DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent, DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport};
+use ika_types::messages_dwallet_mpc::{
+    AdvanceResult, DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
+    DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait,
+    DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent,
+    FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo,
+    SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
+};
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -416,19 +422,25 @@ impl DWalletMPCManager {
                     .received_events_start_decryption_key_reshare_count
                     .inc();
             }
-            t if t == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(packages_config) => {
+            t if t
+                == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
                 self.dwallet_mpc_metrics
                     .received_events_start_dwallet_dkg_first_round_count
                     .inc();
             }
-            t if t == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config) => {
+            t if t
+                == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
                 self.dwallet_mpc_metrics
                     .received_events_start_dwallet_dkg_second_round_count
                     .inc();
             }
-            t if t
-                == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) =>
-            {
+            t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
                 self.dwallet_mpc_metrics
                     .received_events_start_presign_count
                     .inc();
@@ -447,11 +459,7 @@ impl DWalletMPCManager {
                     .received_events_start_encrypted_share_verification_count
                     .inc();
             }
-            t if t
-                == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(
-                    packages_config,
-                ) =>
-            {
+            t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
                 self.dwallet_mpc_metrics
                     .received_events_start_partial_signature_verification_count
                     .inc();
