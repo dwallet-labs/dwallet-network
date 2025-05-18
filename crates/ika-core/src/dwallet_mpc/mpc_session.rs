@@ -509,20 +509,15 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
                 match verify_secret_share(
+                    &mpc_event_data.public_input,
                     init_event.event_data.public_user_secret_key_shares.clone(),
                     init_event.event_data.public_output.clone(),
                 ) {
-                    Ok(is_valid) => match is_valid {
-                        true => Ok(AsynchronousRoundResult::Finalize {
-                            public_output: init_event
-                                .event_data
-                                .public_user_secret_key_shares
-                                .clone(),
-                            private_output: vec![],
-                            malicious_parties: vec![],
-                        }),
-                        false => Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput),
-                    },
+                    Ok() => Ok(AsynchronousRoundResult::Finalize {
+                        public_output: init_event.event_data.public_user_secret_key_shares.clone(),
+                        private_output: vec![],
+                        malicious_parties: vec![],
+                    }),
                     Err(err) => {
                         error!(
                             ?err,

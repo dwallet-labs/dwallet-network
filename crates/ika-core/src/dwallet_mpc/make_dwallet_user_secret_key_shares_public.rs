@@ -11,9 +11,10 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(
+    protocol_public_parameters: &Vec<u8>,
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<()> {
     let secret_share: MPCPublicOutput = bcs::from_bytes(&secret_share)?;
     let secret_share = match secret_share {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
@@ -27,12 +28,12 @@ pub fn verify_secret_share(
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            // <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share()
-            let expected_public_key =
-                cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
-            let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-                bcs::from_bytes(&dkg_output)?;
-            Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
+            <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
+                bcs::from_bytes(protocol_public_parameters)?,
+                bcs::from_bytes(&dkg_output)?,
+                bcs::from_bytes(&secret_share)?,
+            )
+            .map_err(Into::into)
         }
     }
 }
