@@ -97,10 +97,17 @@ pub fn decrypt_user_share(
 /// Verifies that the given secret key share matches the given dWallet public key share.
 /// DKG output->centralized_party_public_key_share.
 #[wasm_bindgen]
-pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>, network_decryption_key_public_output: Vec<u8>) -> Result<JsValue, JsError> {
-    Ok(JsValue::from(
-        verify_secret_share(secret_share, dkg_output, network_decryption_key_public_output).map_err(to_js_err)?,
-    ))
+pub fn verify_user_share(
+    secret_share: Vec<u8>,
+    dkg_output: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
+) -> Result<(), JsError> {
+    verify_secret_share(
+        secret_share,
+        dkg_output,
+        network_decryption_key_public_output,
+    )
+    .map_err(to_js_err)
 }
 
 /// Derives the DWallet's public keys from the given DKG output.
