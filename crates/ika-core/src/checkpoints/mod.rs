@@ -615,7 +615,7 @@ impl CheckpointBuilder {
             .unwrap()
             .builder_checkpoint_message_v1
             .unbounded_iter()
-            .map(|(seq, s)| (seq, s.checkpoint_message))
+            .map(|(seq, s)| (seq, s.checkpoint_message.timestamp()))
             .collect_vec();
 
         let locally_seqs = self
