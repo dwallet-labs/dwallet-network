@@ -109,7 +109,7 @@ where
     ) -> Result<Response<GetCheckpointAvailabilityResponse>, Status> {
         let highest_synced_checkpoint = self
             .store
-            .get_highest_synced_checkpoint()
+            .get_highest_verified_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedCheckpointMessage::into_inner);
 
