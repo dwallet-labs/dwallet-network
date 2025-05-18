@@ -612,7 +612,7 @@ where
             .map(|result| match result {
                 Ok(()) => {}
                 Err(e) => {
-                    debug!("error syncing checkpoint {e}");
+                    info!("error syncing checkpoint {e}");
                 }
             });
             let task_handle = self.tasks.spawn(task);
@@ -764,7 +764,7 @@ async fn query_peers_for_their_latest_checkpoint(
         })
         .collect::<Vec<_>>();
 
-    debug!("Query {} peers for latest checkpoint", futs.len());
+    info!("Query {} peers for latest checkpoint", futs.len());
 
     let checkpoints = futures::future::join_all(futs).await.into_iter().flatten();
 
@@ -776,7 +776,7 @@ async fn query_peers_for_their_latest_checkpoint(
         .highest_known_checkpoint()
         .cloned();
 
-    debug!(
+    info!(
         "Our highest checkpoint {:?}, peers highest checkpoint {:?}",
         our_highest_checkpoint.as_ref().map(|c| c.sequence_number()),
         highest_checkpoint.as_ref().map(|c| c.sequence_number())
@@ -852,7 +852,7 @@ where
                     {
                         // peer didn't give us a checkpoint with the height that we requested
                         if *checkpoint.sequence_number() != next {
-                            tracing::debug!(
+                            warn!(
                                 "peer returned checkpoint with wrong sequence number: expected {next}, got {}",
                                 checkpoint.sequence_number()
                             );
@@ -866,7 +866,7 @@ where
                             |(seq_num, _digest)| *seq_num
                         ) {
                             if pinned_checkpoints[pinned_digest_index].1 != *checkpoint_digest {
-                                tracing::debug!(
+                                warn!(
                                     "peer returned checkpoint with digest that does not match pinned digest: expected {:?}, got {:?}",
                                     pinned_checkpoints[pinned_digest_index].1,
                                     checkpoint_digest
@@ -906,7 +906,7 @@ where
             .map(VerifiedCheckpointMessage::new_unchecked)
             .ok_or_else(|| anyhow::anyhow!("no peers were able to help sync checkpoint {next}"))?;
 
-        debug!(checkpoint_seq = ?checkpoint.sequence_number(), "verified checkpoint summary");
+        info!(checkpoint_seq = ?checkpoint.sequence_number(), "verified checkpoint summary");
         if let Some(checkpoint_summary_age_metric) = metrics.checkpoint_summary_age_metrics() {
             checkpoint.report_checkpoint_age(checkpoint_summary_age_metric);
         }
@@ -937,7 +937,7 @@ where
             .expect("store operation should not fail")
             .map(|checkpoint| checkpoint.sequence_number)
             .unwrap_or(0);
-        debug!("Syncing checkpoint messages from archive, highest_synced: {highest_synced}");
+        info!("Syncing checkpoint messages from archive, highest_synced: {highest_synced}");
         let start = highest_synced
             .checked_add(1)
             .expect("Checkpoint seq num overflow");

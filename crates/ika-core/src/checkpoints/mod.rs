@@ -431,7 +431,7 @@ impl CheckpointStore {
         &self,
         checkpoint: &VerifiedCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        debug!(
+        info!(
             checkpoint_seq = checkpoint.sequence_number(),
             "Inserting certified checkpoint",
         );
@@ -493,7 +493,7 @@ impl CheckpointStore {
         &self,
         checkpoint: &VerifiedCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        debug!(
+        info!(
             checkpoint_seq = checkpoint.sequence_number(),
             "Updating highest synced checkpoint",
         );
@@ -664,7 +664,7 @@ impl CheckpointBuilder {
             };
             grouped_pending_checkpoints.push(pending);
             if !can_build {
-                debug!(
+                info!(
                     checkpoint_commit_height = height,
                     ?last_timestamp,
                     ?current_timestamp,
@@ -676,7 +676,7 @@ impl CheckpointBuilder {
             // Min interval has elapsed, we can now coalesce and build a checkpoint.
             last_height = Some(height);
             last_timestamp = Some(current_timestamp);
-            debug!(
+            info!(
                 checkpoint_commit_height = height,
                 "Making checkpoint at commit height"
             );
@@ -690,7 +690,7 @@ impl CheckpointBuilder {
                 return;
             }
         }
-        debug!(
+        info!(
             "Waiting for more checkpoints from consensus after processing {last_height:?}; {} pending checkpoints left unprocessed until next interval",
             grouped_pending_checkpoints.len(),
         );
@@ -856,7 +856,7 @@ impl CheckpointBuilder {
         //     Vec::with_capacity(new_checkpoints.iter().map(|(_, c)| c.size()).sum());
 
         for checkpoint_message in &new_checkpoints {
-            debug!(
+            info!(
                 checkpoint_commit_height = height,
                 checkpoint_seq = checkpoint_message.sequence_number,
                 checkpoint_digest = ?checkpoint_message.digest(),
@@ -1061,7 +1061,7 @@ impl CheckpointBuilder {
         let chunks_count = chunks.len();
 
         let mut checkpoints = Vec::with_capacity(chunks_count);
-        debug!(
+        info!(
             ?last_checkpoint_seq,
             "Creating {} checkpoints with {} transactions", chunks_count, total,
         );
@@ -1222,22 +1222,23 @@ impl CheckpointAggregator {
     async fn run(mut self) {
         info!("Starting CheckpointAggregator");
         loop {
+            info!("CheckpointAggregator loop");
             if let Err(e) = self.run_and_notify().await {
                 error!(
-                    "Error while aggregating checkpoint, will retry in 1s: {:?}",
-                    e
+                    error=?e,
+                    "Error while aggregating checkpoint, will retry in 1s",
                 );
                 self.metrics.checkpoint_errors.inc();
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 continue;
             }
-
             let _ = timeout(Duration::from_secs(1), self.notify.notified()).await;
         }
     }
 
     async fn run_and_notify(&mut self) -> IkaResult {
         let checkpoint_messages = self.run_inner()?;
+        info!(checkpoints = checkpoint_messages.len(), "run_inner result");
         for checkpoint_message in checkpoint_messages {
             self.output
                 .certified_checkpoint_message_created(&checkpoint_message)
@@ -1279,6 +1280,7 @@ impl CheckpointAggregator {
                     .epoch_store
                     .get_built_checkpoint_message(next_to_certify)?
                 else {
+                    info!(checkpoints = result.len(), "Breaking run_inner loop");
                     return Ok(result);
                 };
                 self.current = Some(CheckpointSignatureAggregator {
@@ -1305,16 +1307,17 @@ impl CheckpointAggregator {
             )?;
             for ((seq, index), data) in iter {
                 if seq != current.checkpoint_message.sequence_number {
-                    debug!(
-                        checkpoint_seq =? current.checkpoint_message.sequence_number,
+                    info!(
+                        checkpoint_seq=?current.checkpoint_message.sequence_number,
                         "Not enough checkpoint signatures",
                     );
                     // No more signatures (yet) for this checkpoint
+                    info!(checkpoints=%result.len(), "Breaking run_inner loop");
                     return Ok(result);
                 }
-                debug!(
+                info!(
                     checkpoint_seq = current.checkpoint_message.sequence_number,
-                    "Processing signature for checkpoint (digest: {:?}) from {:?}",
+                    "Processing signature for a checkpoint (digest: {:?}) from {:?}",
                     current.checkpoint_message.digest(),
                     data.checkpoint_message.auth_sig().authority.concise()
                 );
@@ -1343,11 +1346,13 @@ impl CheckpointAggregator {
                         .report_checkpoint_age(&self.metrics.last_certified_checkpoint_age);
                     result.push(checkpoint_message.into_inner());
                     self.current = None;
+                    info!(checkpoints=%result.len(), "continue run_inner loop");
                     continue 'outer;
                 } else {
                     current.next_index = index + 1;
                 }
             }
+            info!(checkpoints=%result.len(), "Breaking run_inner loop");
             break;
         }
         Ok(result)
@@ -1758,7 +1763,7 @@ impl CheckpointServiceNotify for CheckpointService {
             .map(|x| *x.sequence_number())
         {
             if sequence <= highest_verified_checkpoint {
-                debug!(
+                info!(
                     checkpoint_seq = sequence,
                     "Ignore checkpoint signature from {} - already certified", signer,
                 );
@@ -1768,7 +1773,7 @@ impl CheckpointServiceNotify for CheckpointService {
                 return Ok(());
             }
         }
-        debug!(
+        info!(
             checkpoint_seq = sequence,
             "Received checkpoint signature, digest {} from {}",
             info.checkpoint_message.digest(),
