@@ -618,9 +618,17 @@ impl CheckpointBuilder {
             .map(|(seq, s)| (seq, s.checkpoint_message))
             .collect_vec();
 
+        let locally_seqs = self
+            .tables
+            .locally_computed_checkpoints
+            .unbounded_iter()
+            .map(|(seq, _)| seq)
+            .collect_vec();
+
         // let last_builds = self.epoch_store.tables().unwrap().last
         info!(checkpoints=?seqs,
               builder_checkpoint_messages=?builder_checkpoint_messages,
+              locally_seqs=?locally_seqs,
               "Certified Checkpoints V2"
         );
 
@@ -1248,7 +1256,7 @@ impl CheckpointAggregator {
                 // the rest of the network, and we've already received the
                 // certified checkpoint via StateSync. In this case, we reset
                 // the current signature aggregator to the next checkpoint to
-                // be certified
+                // be certified.
                 if current.checkpoint_message.sequence_number < next_to_certify {
                     self.current = None;
                     continue;
