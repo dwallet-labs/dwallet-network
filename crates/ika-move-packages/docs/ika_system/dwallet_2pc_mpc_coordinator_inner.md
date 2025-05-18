@@ -58,6 +58,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `DWalletCheckpointInfoEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCheckpointInfoEvent)
 -  [Struct `MessageApproval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval)
 -  [Struct `ImportedKeyMessageApproval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval)
+-  [Struct `NewImportedKeyDWalletEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_NewImportedKeyDWalletEvent)
 -  [Enum `DWalletNetworkEncryptionKeyState`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyState)
 -  [Enum `EncryptedUserSecretKeyShareState`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EncryptedUserSecretKeyShareState)
 -  [Enum `PartialUserSignatureState`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PartialUserSignatureState)
@@ -2777,6 +2778,37 @@ associated with this approval.
 
 </details>
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_NewImportedKeyDWalletEvent"></a>
+
+## Struct `NewImportedKeyDWalletEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_NewImportedKeyDWalletEvent">NewImportedKeyDWalletEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>dwallet_cap_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyState"></a>
 
 ## Enum `DWalletNetworkEncryptionKeyState`
@@ -5166,6 +5198,10 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
         encrypted_user_secret_key_shares: object_table::new(ctx),
         sign_sessions: object_table::new(ctx),
         state: DWalletState::AwaitingUserImportedKeyInitiation,
+    });
+    event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_NewImportedKeyDWalletEvent">NewImportedKeyDWalletEvent</a> {
+        dwallet_id,
+        dwallet_cap_id,
     });
     dwallet_cap
 }

@@ -2048,6 +2048,7 @@ public(package) fun accept_encrypted_user_share(
 
 public struct NewImportedKeyDWalletEvent has copy, drop {
     dwallet_id: ID,
+    dwallet_cap_id: ID,
 }
 
 public(package) fun new_imported_key_dwallet(
@@ -2080,6 +2081,7 @@ public(package) fun new_imported_key_dwallet(
     });
     event::emit(NewImportedKeyDWalletEvent {
         dwallet_id,
+        dwallet_cap_id,
     });
     dwallet_cap
 }
