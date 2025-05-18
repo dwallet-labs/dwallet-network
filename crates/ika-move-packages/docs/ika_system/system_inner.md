@@ -46,7 +46,7 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `active_committee`](#(ika_system=0x0)_system_inner_active_committee)
 -  [Function `next_epoch_active_committee`](#(ika_system=0x0)_system_inner_next_epoch_active_committee)
 -  [Function `verify_cap`](#(ika_system=0x0)_system_inner_verify_cap)
--  [Function `request_dwallet_network_decryption_key_dkg_by_cap`](#(ika_system=0x0)_system_inner_request_dwallet_network_decryption_key_dkg_by_cap)
+-  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap)
 -  [Function `set_supported_curves_to_signature_algorithms_to_hash_schemes`](#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms)
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_inner_authorize_update_message_by_cap)
@@ -250,7 +250,7 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
-<code>dwallet_2pc_mpc_coordinator_network_decryption_keys: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDecryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyCap</a>&gt;</code>
+<code>dwallet_2pc_mpc_coordinator_network_encryption_keys: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap</a>&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -462,7 +462,7 @@ This function will be called only once in init.
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
-        dwallet_2pc_mpc_coordinator_network_decryption_keys: vector[],
+        dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -492,8 +492,8 @@ This function will be called only once in init.
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> DWalletCoordinatorInner
 ): Balance&lt;IKA&gt; {
     <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| {
-        total_reward.join(<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.advance_epoch_dwallet_network_decryption_key(cap));
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| {
+        total_reward.join(<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.advance_epoch_dwallet_network_encryption_key(cap));
     });
     total_reward
 }
@@ -1357,7 +1357,7 @@ gas coins.
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_mid_epoch">process_mid_epoch</a>(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reconfiguration_event(cap, ctx));
 }
 </code></pre>
 
@@ -1629,13 +1629,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_request_dwallet_network_decryption_key_dkg_by_cap"></a>
+<a name="(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap"></a>
 
-## Function `request_dwallet_network_decryption_key_dkg_by_cap`
+## Function `request_dwallet_network_encryption_key_dkg_by_cap`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_dwallet_network_decryption_key_dkg_by_cap">request_dwallet_network_decryption_key_dkg_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap">request_dwallet_network_encryption_key_dkg_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1644,15 +1644,15 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_dwallet_network_decryption_key_dkg_by_cap">request_dwallet_network_decryption_key_dkg_by_cap</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap">request_dwallet_network_encryption_key_dkg_by_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &<b>mut</b> TxContext,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(cap);
-    <b>let</b> key_cap = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.request_dwallet_network_decryption_key_dkg(ctx);
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.push_back(key_cap);
+    <b>let</b> key_cap = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.request_dwallet_network_encryption_key_dkg(ctx);
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 </code></pre>
 

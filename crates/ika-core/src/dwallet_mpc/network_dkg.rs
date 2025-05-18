@@ -43,7 +43,7 @@ use twopc_mpc::ProtocolPublicParameters;
 pub struct DwalletMPCNetworkKeys {
     /// Holds all network (decryption) keys for the current network in encrypted form.
     /// This data is identical for all the Validator nodes.
-    pub(crate) network_decryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
+    pub(crate) network_encryption_keys: HashMap<ObjectID, NetworkDecryptionKeyPublicData>,
     pub(crate) validator_private_dec_key_data: ValidatorPrivateDecryptionKeyData,
 }
 
@@ -160,7 +160,7 @@ impl ValidatorPrivateDecryptionKeyData {
 impl DwalletMPCNetworkKeys {
     pub fn new(node_context: ValidatorPrivateDecryptionKeyData) -> Self {
         Self {
-            network_decryption_keys: Default::default(),
+            network_encryption_keys: Default::default(),
             validator_private_dec_key_data: node_context,
         }
     }
@@ -179,7 +179,7 @@ impl DwalletMPCNetworkKeys {
         key: &NetworkDecryptionKeyPublicData,
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
-        self.network_decryption_keys.insert(key_id, key.clone());
+        self.network_encryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
             .store_decryption_secret_shares(
                 key_id,
@@ -190,7 +190,7 @@ impl DwalletMPCNetworkKeys {
 
     pub fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
         Ok(self
-            .network_decryption_keys
+            .network_encryption_keys
             .get(key_id)
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .decryption_key_share_public_parameters
@@ -203,7 +203,7 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
         key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        let Some(result) = self.network_decryption_keys.get(key_id) else {
+        let Some(result) = self.network_encryption_keys.get(key_id) else {
             warn!(
                 "failed to fetch the network decryption key shares for key ID: {:?}",
                 key_id
@@ -238,7 +238,7 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<MPCPublicOutput> {
         Ok(self
-            .network_decryption_keys
+            .network_encryption_keys
             .get(key_id)
             .ok_or(DwalletMPCError::WaitingForNetworkKey(key_id.clone()))?
             .network_dkg_output

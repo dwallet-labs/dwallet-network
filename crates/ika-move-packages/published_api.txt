@@ -169,7 +169,7 @@ future_sign
 sign_with_partial_user_signature
 	public fun
 	0x0::dwallet_pricing
-make_dwallet_user_secret_key_shares_public
+make_dwallet_user_secret_key_share_public
 	public fun
 	0x0::dwallet_pricing
 imported_key_dwallet_verification
@@ -199,10 +199,10 @@ DWalletCap
 ImportedKeyDWalletCap
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletNetworkDecryptionKeyCap
+DWalletNetworkEncryptionKeyCap
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletNetworkDecryptionKey
+DWalletNetworkEncryptionKey
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptionKey
@@ -229,10 +229,10 @@ UnverifiedPresignCap
 VerifiedPresignCap
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-Presign
+PresignSession
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-Sign
+SignSession
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletEvent
@@ -289,16 +289,16 @@ CompletedEncryptedShareVerificationEvent
 RejectedEncryptedShareVerificationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-AcceptReEncryptedUserShareEvent
+AcceptEncryptedUserShareEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-MakeDWalletUserSecretKeySharesPublicRequestEvent
+MakeDWalletUserSecretKeySharePublicRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedMakeDWalletUserSecretKeySharesPublicEvent
+CompletedMakeDWalletUserSecretKeySharePublicEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-RejectedMakeDWalletUserSecretKeySharesPublicEvent
+RejectedMakeDWalletUserSecretKeySharePublicEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 PresignRequestEvent
@@ -337,7 +337,7 @@ MessageApproval
 ImportedKeyMessageApproval
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletNetworkDecryptionKeyState
+DWalletNetworkEncryptionKeyState
 	public enum
 	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedUserSecretKeyShareState
@@ -364,22 +364,22 @@ lock_last_active_session_sequence_number
 create_dwallet_coordinator_inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_dwallet_network_decryption_key_dkg
+request_dwallet_network_encryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_dwallet_network_decryption_key_dkg
+respond_dwallet_network_encryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_dwallet_network_decryption_key_reconfiguration
+respond_dwallet_network_encryption_key_reconfiguration
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-advance_epoch_dwallet_network_decryption_key
+advance_epoch_dwallet_network_encryption_key
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-emit_start_reshare_event
+emit_start_reconfiguration_event
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-get_active_dwallet_network_decryption_key
+get_active_dwallet_network_encryption_key
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 advance_epoch
@@ -409,13 +409,13 @@ get_active_dwallet_and_public_output_mut
 get_active_encryption_key
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-validate_supported_curve
+validate_curve
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-validate_supported_curve_and_signature_algorithm
+validate_curve_and_signature_algorithm
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-validate_supported_curve_and_signature_algorithm_and_hash_scheme
+validate_curve_and_signature_algorithm_and_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 register_encryption_key
@@ -433,13 +433,13 @@ validate_approve_message
 request_dwallet_dkg_first_round
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-update_last_session_to_complete_in_current_epoch
+update_last_user_initiated_session_to_complete_in_current_epoch
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-all_current_epoch_sessions_completed
+all_current_epoch_user_initiated_sessions_completed
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-remove_session_and_charge
+remove_user_initiated_session_and_charge
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_dkg_first_round
@@ -469,10 +469,10 @@ request_imported_key_dwallet_verification
 respond_imported_key_dwallet_verification
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_make_dwallet_user_secret_key_shares_public
+request_make_dwallet_user_secret_key_share_public
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-respond_make_dwallet_user_secret_key_shares_public
+respond_make_dwallet_user_secret_key_share_public
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_presign
@@ -550,7 +550,7 @@ share_dwallet_coordinator
 process_checkpoint_message_by_quorum
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-request_dwallet_network_decryption_key_dkg
+request_dwallet_network_encryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator
 advance_epoch
@@ -1417,7 +1417,7 @@ next_epoch_active_committee
 verify_cap
 	fun
 	0x0::system_inner
-request_dwallet_network_decryption_key_dkg_by_cap
+request_dwallet_network_encryption_key_dkg_by_cap
 	public(package) fun
 	0x0::system_inner
 set_supported_curves_to_signature_algorithms_to_hash_schemes
@@ -1525,7 +1525,7 @@ request_lock_epoch_sessions
 request_advance_epoch
 	public fun
 	0x0::system
-request_dwallet_network_decryption_key_dkg_by_cap
+request_dwallet_network_encryption_key_dkg_by_cap
 	public fun
 	0x0::system
 set_supported_curves_to_signature_algorithms_to_hash_schemes

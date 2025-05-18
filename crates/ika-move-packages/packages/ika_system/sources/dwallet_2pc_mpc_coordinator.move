@@ -12,7 +12,7 @@ use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     Self,
     DWalletCoordinatorInner,
-    DWalletNetworkDecryptionKeyCap,
+    DWalletNetworkEncryptionKeyCap,
     DWalletCap,
     ImportedKeyDWalletCap,
     UnverifiedPresignCap,
@@ -87,11 +87,11 @@ public fun process_checkpoint_message_by_quorum(
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message);
 }
 
-public(package) fun request_dwallet_network_decryption_key_dkg(
+public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinator,
     ctx: &mut TxContext
-): DWalletNetworkDecryptionKeyCap {
-    self.inner_mut().request_dwallet_network_decryption_key_dkg(ctx)
+): DWalletNetworkEncryptionKeyCap {
+    self.inner_mut().request_dwallet_network_encryption_key_dkg(ctx)
 }
 
 public(package) fun advance_epoch(

@@ -3,7 +3,7 @@
 
 use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
-use crate::sui::system_inner_v1::{BlsCommittee, DWalletNetworkDecryptionKeyCap};
+use crate::sui::system_inner_v1::{BlsCommittee, DWalletNetworkEncryptionKeyCap};
 use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
@@ -67,7 +67,7 @@ pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
     ident_str!("request_lock_epoch_sessions");
 pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
-    ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
+    ident_str!("request_dwallet_network_encryption_key_dkg_by_cap");
 pub const SET_SUPPORTED_CURVES_TO_SIGNATURE_ALGORITHMS_TO_HASH_SCHEMES_FUNCTION_NAME: &IdentStr =
     ident_str!("set_supported_curves_to_signature_algorithms_to_hash_schemes");
 pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
@@ -137,9 +137,9 @@ pub trait SystemInnerTrait {
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
     fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID>;
-    fn dwallet_2pc_mpc_coordinator_network_decryption_keys(
+    fn dwallet_2pc_mpc_coordinator_network_encryption_keys(
         &self,
-    ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
+    ) -> &Vec<DWalletNetworkEncryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee>;
     fn get_ika_active_committee(&self) -> BlsCommittee;
     fn read_bls_committee(

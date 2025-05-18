@@ -14,7 +14,7 @@ use ika_system::protocol_cap::ProtocolCap;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -65,7 +65,7 @@ public struct SystemInnerV1 has store {
     authorized_protocol_cap_ids: vector<ID>, 
     // TODO: maybe change that later
     dwallet_2pc_mpc_coordinator_id: Option<ID>,
-    dwallet_2pc_mpc_coordinator_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
+    dwallet_2pc_mpc_coordinator_network_encryption_keys: vector<DWalletNetworkEncryptionKeyCap>,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -130,7 +130,7 @@ public(package) fun create(
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
-        dwallet_2pc_mpc_coordinator_network_decryption_keys: vector[],
+        dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -141,8 +141,8 @@ public(package) fun advance_network_keys(
 ): Balance<IKA> {
     let mut total_reward = sui::balance::zero<IKA>();
 
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| {
-        total_reward.join(dwallet_2pc_mpc_coordinator.advance_epoch_dwallet_network_decryption_key(cap));
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| {
+        total_reward.join(dwallet_2pc_mpc_coordinator.advance_epoch_dwallet_network_encryption_key(cap));
     });
     total_reward
 }
@@ -547,7 +547,7 @@ public(package) fun process_mid_epoch(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reconfiguration_event(cap, ctx));
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
@@ -616,15 +616,15 @@ fun verify_cap(
     });
 }
 
-public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
+public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut SystemInnerV1,
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_decryption_key_dkg(ctx);
-    self.dwallet_2pc_mpc_coordinator_network_decryption_keys.push_back(key_cap);
+    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_encryption_key_dkg(ctx);
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 
 public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(

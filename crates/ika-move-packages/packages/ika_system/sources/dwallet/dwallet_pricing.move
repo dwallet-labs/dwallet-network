@@ -40,7 +40,7 @@ public struct DWalletPricing2PcMpcSecp256K1 has key, store {
     sign: PricingPerOperation,
     future_sign: PricingPerOperation,
     sign_with_partial_user_signature: PricingPerOperation,
-    make_dwallet_user_secret_key_shares_public: PricingPerOperation,
+    make_dwallet_user_secret_key_share_public: PricingPerOperation,
     imported_key_dwallet_verification: PricingPerOperation,
 }
 
@@ -126,10 +126,10 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
     partial_sign_computation_ika: u64,
     partial_sign_gas_fee_reimbursement_sui: u64,
 
-    // Make DWallet User Secret Key Shares Public Pricing
-    make_dwallet_user_secret_key_shares_public_consensus_validation_ika: u64,
-    make_dwallet_user_secret_key_shares_public_computation_ika: u64,
-    make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui: u64,
+    // Make DWallet User Secret Key Share Public Pricing
+    make_dwallet_user_secret_key_share_public_consensus_validation_ika: u64,
+    make_dwallet_user_secret_key_share_public_computation_ika: u64,
+    make_dwallet_user_secret_key_share_public_gas_fee_reimbursement_sui: u64,
 
     // Imported Key DWallet Verification Pricing
     imported_key_dwallet_verification_consensus_validation_ika: u64,
@@ -175,10 +175,10 @@ public fun create_dwallet_pricing_2pc_mpc_secp256k1(
             computation_ika: partial_sign_computation_ika,
             gas_fee_reimbursement_sui: partial_sign_gas_fee_reimbursement_sui,
         },
-        make_dwallet_user_secret_key_shares_public: PricingPerOperation {
-            consensus_validation_ika: make_dwallet_user_secret_key_shares_public_consensus_validation_ika,
-            computation_ika: make_dwallet_user_secret_key_shares_public_computation_ika,
-            gas_fee_reimbursement_sui: make_dwallet_user_secret_key_shares_public_gas_fee_reimbursement_sui,
+        make_dwallet_user_secret_key_share_public: PricingPerOperation {
+            consensus_validation_ika: make_dwallet_user_secret_key_share_public_consensus_validation_ika,
+            computation_ika: make_dwallet_user_secret_key_share_public_computation_ika,
+            gas_fee_reimbursement_sui: make_dwallet_user_secret_key_share_public_gas_fee_reimbursement_sui,
         },
         imported_key_dwallet_verification: PricingPerOperation {
             consensus_validation_ika: imported_key_dwallet_verification_consensus_validation_ika,
@@ -233,9 +233,9 @@ public fun sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1
     self.sign_with_partial_user_signature
 }
 
-/// Returns `PricingPerOperation` for the make dWallet user secret key shares public.
-public fun make_dwallet_user_secret_key_shares_public(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.make_dwallet_user_secret_key_shares_public
+/// Returns `PricingPerOperation` for the make dWallet user secret key share public.
+public fun make_dwallet_user_secret_key_share_public(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
+    self.make_dwallet_user_secret_key_share_public
 }
 
 /// Returns `PricingPerOperation` for the imported key dWallet verification.

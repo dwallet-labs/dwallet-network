@@ -85,7 +85,7 @@ pub struct SystemInnerV1 {
     pub computation_reward: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
-    pub dwallet_2pc_mpc_coordinator_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
+    pub dwallet_2pc_mpc_coordinator_network_encryption_keys: Vec<DWalletNetworkEncryptionKeyCap>,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -127,7 +127,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub locked_last_session_to_complete_in_current_epoch: bool,
     pub max_active_sessions_buffer: u64,
     pub dwallets: ObjectTable,
-    pub dwallet_network_decryption_keys: ObjectTable,
+    pub dwallet_network_encryption_keys: ObjectTable,
     pub encryption_keys: ObjectTable,
     pub presigns: ObjectTable,
     pub partial_centralized_signed_messages: ObjectTable,
@@ -195,10 +195,10 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.dwallet_2pc_mpc_coordinator_id
     }
 
-    fn dwallet_2pc_mpc_coordinator_network_decryption_keys(
+    fn dwallet_2pc_mpc_coordinator_network_encryption_keys(
         &self,
-    ) -> &Vec<DWalletNetworkDecryptionKeyCap> {
-        &self.dwallet_2pc_mpc_coordinator_network_decryption_keys
+    ) -> &Vec<DWalletNetworkEncryptionKeyCap> {
+        &self.dwallet_2pc_mpc_coordinator_network_encryption_keys
     }
 
     fn validator_set(&self) -> &ValidatorSetV1 {
@@ -251,9 +251,9 @@ pub struct ValidatorOperationCapV1 {
     pub validator_id: ObjectID,
 }
 
-/// Rust version of the Move ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyCap type
+/// Rust version of the Move ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletNetworkDecryptionKeyCap {
+pub struct DWalletNetworkEncryptionKeyCap {
     pub id: ObjectID,
     pub dwallet_network_decryption_key_id: ObjectID,
 }

@@ -97,7 +97,7 @@ interface IKASystemStateInner {
 		value: {
 			fields: {
 				dwallet_2pc_mpc_coordinator_id: string;
-				dwallet_2pc_mpc_coordinator_network_decryption_keys: Array<any>;
+				dwallet_2pc_mpc_coordinator_network_encryption_keys: Array<any>;
 			};
 		};
 	};
@@ -146,7 +146,7 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_decryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_encryption_keys !== undefined &&
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
@@ -295,12 +295,12 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('Invalid inner system state');
 	}
 
-	const network_decryption_keys =
+	const network_encryption_keys =
 		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_coordinator_network_decryption_keys;
+			.dwallet_2pc_mpc_coordinator_network_encryption_keys;
 	const decryptionKeyID =
-		network_decryption_keys[network_decryption_keys.length - 1]?.fields
-			?.dwallet_network_decryption_key_id;
+		network_encryption_keys[network_encryption_keys.length - 1]?.fields
+			?.dwallet_network_encryption_key_id;
 	if (!decryptionKeyID) {
 		throw new Error('No network decryption key found');
 	}

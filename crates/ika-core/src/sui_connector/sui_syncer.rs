@@ -200,7 +200,7 @@ where
         'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
-            let network_decryption_keys = sui_client
+            let network_encryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
@@ -211,7 +211,7 @@ where
             let system_inner = match system_inner {
                 SystemInner::V1(system_inner) => system_inner,
             };
-            if network_decryption_keys
+            if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
@@ -220,7 +220,7 @@ where
             }
             let active_bls_committee = system_inner.get_ika_active_committee();
             let active_committee = system_inner.read_bls_committee(&active_bls_committee);
-            let current_keys = system_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys();
+            let current_keys = system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache
                     .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
@@ -254,7 +254,7 @@ where
                     }
                 };
             let mut all_network_keys_data = HashMap::new();
-            for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
+            for (key_id, network_dec_key_shares) in network_encryption_keys.into_iter() {
                 match Self::fetch_and_init_network_key(
                     &sui_client,
                     &network_dec_key_shares,
