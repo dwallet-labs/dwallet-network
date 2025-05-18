@@ -2046,6 +2046,10 @@ public(package) fun accept_encrypted_user_share(
     );
 }
 
+public struct NewImportedKeyDWalletEvent has copy, drop {
+    dwallet_id: ID,
+}
+
 public(package) fun new_imported_key_dwallet(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -2073,6 +2077,9 @@ public(package) fun new_imported_key_dwallet(
         encrypted_user_secret_key_shares: object_table::new(ctx),
         sign_sessions: object_table::new(ctx),
         state: DWalletState::AwaitingUserImportedKeyInitiation,
+    });
+    event::emit(NewImportedKeyDWalletEvent {
+        dwallet_id,
     });
     dwallet_cap
 }

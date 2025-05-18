@@ -27,6 +27,7 @@ import {
 	sign,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
+import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -150,5 +151,9 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			verifiedPartialUserSignatureCapID,
 		);
+	});
+
+	it('should create an imported dWallet', async () => {
+		await createImportedDWallet(conf);
 	});
 });
