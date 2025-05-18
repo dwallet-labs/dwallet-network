@@ -15,7 +15,7 @@ interface NewImportedKeyDWalletEvent {
 }
 
 function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalletEvent {
-	return event.fields.dwallet_id !== undefined && event.fields.dwallet_cap_id !== undefined;
+	return event.dwallet_id !== undefined && event.dwallet_cap_id !== undefined;
 }
 
 /**
