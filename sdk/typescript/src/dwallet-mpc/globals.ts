@@ -25,6 +25,7 @@ export interface Config {
 	dWalletSeed: Uint8Array;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum MPCKeyScheme {
 	Secp256k1 = 0,
 	Ristretto = 1,
@@ -119,13 +120,6 @@ interface SharedObjectOwner {
 	};
 }
 
-/**
- * Represents a Move Address object owner.
- */
-interface AddressObjectOwner {
-	AddressOwner: string;
-}
-
 interface MoveObject {
 	fields: any;
 }
@@ -142,20 +136,12 @@ export interface SharedObjectData {
 	initial_shared_version: number;
 }
 
-export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
-	return obj?.AddressOwner !== undefined;
-}
-
 export function isMoveObject(obj: any): obj is MoveObject {
 	return obj?.fields !== undefined;
 }
 
 export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
-}
-
-export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
-	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
 }
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
@@ -210,82 +196,6 @@ export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> 
 	};
 }
 
-export async function fetchObjectWithType<TObject>(
-	conf: Config,
-	objectType: string,
-	isObject: (obj: any) => obj is TObject,
-	objectId: string,
-) {
-	const res = await conf.client.getObject({
-		id: objectId,
-		options: { showContent: true },
-	});
-
-	const objectData =
-		res.data?.content?.dataType === 'moveObject' &&
-		res.data?.content.type === objectType &&
-		isObject(res.data.content.fields)
-			? (res.data.content.fields as TObject)
-			: null;
-
-	if (!objectData) {
-		throw new Error(
-			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
-		);
-	}
-
-	return objectData;
-}
-
-interface StartSessionEvent {
-	session_id: string;
-}
-
-export function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
-}
-
-export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
-	c: Config,
-	sessionID: string,
-	isEventFn: (parsedJson: any) => parsedJson is TEvent,
-	eventType: string = '',
-): Promise<TEvent> {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 500;
-		await delay(interval);
-
-		const { data } = await c.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - interval * 4).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-			limit: 1000,
-		});
-
-		const match = data.find(
-			(event) =>
-				(event.type === eventType || !eventType) &&
-				isEventFn(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
-		);
-
-		if (match) return match.parsedJson as TEvent;
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${eventType} within ${
-			c.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
-}
-
 export interface DWalletCap {
 	dwallet_id: string;
 }
@@ -294,12 +204,13 @@ export function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
 }
 
-interface ActiveDWallet {
+export interface ActiveDWallet {
 	state: {
 		fields: {
 			public_output: Uint8Array;
 		};
 	};
+	id: { id: string };
 }
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {

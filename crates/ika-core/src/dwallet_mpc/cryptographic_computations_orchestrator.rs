@@ -17,9 +17,12 @@
 //! — Sends `Completed` notifications when computations finish
 //! — Updates the running sessions count accordingly
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -131,9 +134,18 @@ impl CryptographicComputationsOrchestrator {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
-    pub(super) fn spawn_session(&mut self, session: &DWalletMPCSession) -> DwalletMPCResult<()> {
+    pub(super) fn spawn_session(
+        &mut self,
+        session: &DWalletMPCSession,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let session = session.clone();
+        Self::update_started_computation_metric(
+            // Safe to unwrap here (event must exist before this).
+            &session.mpc_event_data.clone().unwrap().init_protocol_data,
+            dwallet_mpc_metrics.clone(),
+        );
         if let Err(err) = self
             .computation_channel_sender
             .send(ComputationUpdate::Started)
@@ -145,9 +157,17 @@ impl CryptographicComputationsOrchestrator {
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
+            let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!("failed to advance session with error: {:?}", err);
             };
+            let elapsed = start_advance.elapsed();
+            Self::update_completed_computation_metric(
+                // Safe to unwrap here (event must exist before this).
+                &session.mpc_event_data.unwrap().init_protocol_data,
+                dwallet_mpc_metrics.clone(),
+                elapsed.as_millis(),
+            );
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
                     "failed to send a finished computation message with error: {:?}",
@@ -156,5 +176,116 @@ impl CryptographicComputationsOrchestrator {
             }
         });
         Ok(())
+    }
+
+    fn update_started_computation_metric(
+        mpc_protocol_init_data: &MPCProtocolInitData,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    ) {
+        match &mpc_protocol_init_data {
+            MPCProtocolInitData::DKGFirst(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_dwallet_dkg_first_round
+                    .inc();
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_dwallet_dkg_second_round
+                    .inc();
+            }
+            MPCProtocolInitData::Presign(_) => {
+                dwallet_mpc_metrics.advance_calls_for_presign.inc();
+            }
+            MPCProtocolInitData::Sign(_) => {
+                dwallet_mpc_metrics.advance_calls_for_sign.inc();
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                dwallet_mpc_metrics.advance_calls_for_network_dkg.inc();
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_encrypted_share_verification
+                    .inc();
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_partial_signature_verification
+                    .inc();
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_decryption_key_reshare
+                    .inc();
+            }
+        }
+    }
+
+    fn update_completed_computation_metric(
+        mpc_protocol_init_data: &MPCProtocolInitData,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        computation_duration: u128,
+    ) {
+        match &mpc_protocol_init_data {
+            MPCProtocolInitData::DKGFirst(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_dwallet_dkg_first_round
+                    .inc();
+                dwallet_mpc_metrics
+                    .dwallet_dkg_first_round_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_dwallet_dkg_second_round
+                    .inc();
+                dwallet_mpc_metrics
+                    .dwallet_dkg_second_round_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::Presign(_) => {
+                dwallet_mpc_metrics.advance_completions_for_presign.inc();
+                dwallet_mpc_metrics
+                    .presign_last_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::Sign(_) => {
+                dwallet_mpc_metrics.advance_completions_for_sign.inc();
+                dwallet_mpc_metrics
+                    .sign_last_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_network_dkg
+                    .inc();
+                dwallet_mpc_metrics
+                    .network_dkg_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_encrypted_share_verification
+                    .inc();
+                dwallet_mpc_metrics
+                    .encrypted_share_verification_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_partial_signature_verification
+                    .inc();
+                dwallet_mpc_metrics
+                    .partial_signature_verification_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_decryption_key_reshare
+                    .inc();
+                dwallet_mpc_metrics
+                    .decryption_key_reshare_completion_duration
+                    .set(computation_duration as i64);
+            }
+        }
     }
 }

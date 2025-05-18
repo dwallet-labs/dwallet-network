@@ -140,8 +140,8 @@ pub trait SystemInnerTrait {
     fn dwallet_2pc_mpc_coordinator_network_decryption_keys(
         &self,
     ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
-    fn get_ika_next_epoch_committee(&self) -> Option<Vec<(ObjectID, (AuthorityName, StakeUnit))>>;
-    fn get_ika_active_committee(&self) -> Vec<(ObjectID, (AuthorityName, StakeUnit))>;
+    fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee>;
+    fn get_ika_active_committee(&self) -> BlsCommittee;
     fn read_bls_committee(
         &self,
         committee: &BlsCommittee,

@@ -58,6 +58,7 @@ pub mod network_dkg;
 mod presign;
 
 mod make_dwallet_user_secret_key_shares_public;
+pub mod dwallet_mpc_metrics;
 mod reshare;
 pub(crate) mod sign;
 
@@ -262,13 +263,15 @@ fn dkg_second_public_input(
     deserialized_event: DWalletDKGSecondRoundRequestEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(DKGSecondParty::generate_public_input(
-        protocol_public_parameters,
-        deserialized_event.first_round_output.clone(),
-        deserialized_event
-            .centralized_public_key_share_and_proof
-            .clone(),
-    )?)
+    Ok(
+        <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+            protocol_public_parameters,
+            deserialized_event.first_round_output.clone(),
+            deserialized_event
+                .centralized_public_key_share_and_proof
+                .clone(),
+        )?,
+    )
 }
 
 fn dkg_second_party_session_info(
@@ -431,7 +434,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
-    messages: Vec<HashMap<PartyID, MPCMessage>>,
+    messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<
@@ -442,7 +445,9 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties: _,
     } = deserialize_mpc_messages(messages);
 
-    let res = match P::advance(
+    // When a `ThresholdNotReached` error is received, the system now waits for additional messages
+    // (including those from previous rounds) and retries.
+    let res = match P::advance_with_guaranteed_output(
         session_id,
         party_id,
         access_threshold,
@@ -461,17 +466,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             ));
             return match e.into() {
                 // No threshold was reached, so we can't proceed.
-                mpc::Error::ThresholdNotReached { honest_subset } => {
-                    let malicious_actors = messages
-                        .last()
-                        .ok_or(general_error)?
-                        .keys()
-                        .filter(|party_id| !honest_subset.contains(*party_id))
-                        .cloned()
-                        .collect();
-                    Err(DwalletMPCError::SessionFailedWithMaliciousParties(
-                        malicious_actors,
-                    ))
+                mpc::Error::ThresholdNotReached => {
+                    return Err(DwalletMPCError::TWOPCMPCThresholdNotReached)
                 }
                 _ => Err(general_error),
             };
@@ -506,7 +502,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
-    messages: Vec<HashMap<PartyID, M>>,
+    /// round -> {party -> message}
+    messages: HashMap<usize, HashMap<PartyID, M>>,
     malicious_parties: Vec<PartyID>,
 }
 
@@ -514,12 +511,12 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    messages: Vec<HashMap<PartyID, MPCMessage>>,
+    messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
-    let mut deserialized_results = Vec::new();
+    let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
 
-    for message_batch in &messages {
+    for (index, message_batch) in messages.iter() {
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
@@ -539,7 +536,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         }
 
         if !valid_messages.is_empty() {
-            deserialized_results.push(valid_messages);
+            deserialized_results.insert(*index, valid_messages);
         }
     }
     DeserializeMPCMessagesResponse {
@@ -613,10 +610,9 @@ pub(crate) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                ReshareSecp256k1Party::generate_public_input(
+                <ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
-                    protocol_public_parameters,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
                         &deserialized_event
                             .event_data

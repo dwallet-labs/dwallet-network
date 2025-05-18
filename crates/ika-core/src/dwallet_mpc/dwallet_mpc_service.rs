@@ -5,6 +5,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 use crate::dwallet_mpc::session_info_from_event;
@@ -59,12 +60,14 @@ impl DWalletMPCService {
         sui_client: Arc<SuiConnectorClient>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
             next_epoch_committee_receiver,
             node_config,
+            dwallet_mpc_metrics,
         )
         .await;
         Self {
@@ -199,7 +202,7 @@ impl DWalletMPCService {
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
                     authority=?self.epoch_store.name,
-                    "node has identified itself as malicious and is no longer participating in MPC protocols"
+                    "the node has identified itself as malicious and is no longer participating in MPC protocols"
                 );
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
@@ -213,7 +216,7 @@ impl DWalletMPCService {
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                error!("Failed to load DB tables from epoch store");
+                error!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self
@@ -221,7 +224,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load DWallet MPC events from the local DB");
                 continue;
             };
             for session_id in completed_sessions {
@@ -238,7 +241,7 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("Failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC events from the local DB");
                 continue;
             };
             for event in events_from_sui {

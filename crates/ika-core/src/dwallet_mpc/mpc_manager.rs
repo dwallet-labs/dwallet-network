@@ -8,6 +8,7 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
     ComputationUpdate, CryptographicComputationsOrchestrator,
 };
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
@@ -17,6 +18,7 @@ use crate::dwallet_mpc::sign::{
     LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
 };
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
+use crate::stake_aggregator::StakeAggregator;
 use class_groups::DecryptionKeyShare;
 use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
@@ -37,10 +39,7 @@ use ika_types::crypto::DefaultHash;
 use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
-    MaliciousReport, PresignRequestEvent, SessionInfo, SessionType,
-};
+use ika_types::messages_dwallet_mpc::{AdvanceResult, DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent, DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport};
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -103,6 +102,9 @@ pub struct DWalletMPCManager {
     /// Once we get the network key, these events will continue.
     pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
+    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    pub(crate) threshold_not_reached_reports:
+        HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -120,11 +122,13 @@ pub enum DWalletMPCDBMessage {
     /// This message is being sent every five seconds by the dWallet MPC Service,
     /// to skip redundant advancements that have already been completed by other validators.
     PerformCryptographicComputations,
-    /// A message indicating that a session failed due to malicious parties.
-    /// We can receive new messages for this session with other validators
-    /// and re-run the round again to make it succeed.
+
+    /// A message that continas a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
-    SessionFailedWithMaliciousParties(AuthorityName, MaliciousReport),
+    MaliciousReport(AuthorityName, MaliciousReport),
+    /// A meesage indicating that some of the parteis were malicous,
+    /// but we can still retry once we recieve more messages.
+    ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
 struct ReadySessionsResponse {
@@ -139,12 +143,14 @@ impl DWalletMPCManager {
         epoch_store: Arc<AuthorityPerEpochStore>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self::try_new(
             consensus_adapter.clone(),
             epoch_store.clone(),
             next_epoch_committee_receiver,
             node_config.clone(),
+            dwallet_mpc_metrics,
         )
         .unwrap_or_else(|err| {
             error!(?err, "Failed to create DWalletMPCManager.");
@@ -158,6 +164,7 @@ impl DWalletMPCManager {
         epoch_store: Arc<AuthorityPerEpochStore>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
             epoch_store.get_weighted_threshold_access_structure()?;
@@ -196,6 +203,8 @@ impl DWalletMPCManager {
             network_keys: Box::new(dwallet_network_keys),
             next_epoch_committee_receiver,
             events_pending_for_network_key: vec![],
+            dwallet_mpc_metrics,
+            threshold_not_reached_reports: Default::default(),
         })
     }
 
@@ -265,17 +274,90 @@ impl DWalletMPCManager {
                 error!(session_id=?session_id, "dwallet MPC session failed");
                 // TODO (#524): Handle failed MPC sessions
             }
-            DWalletMPCDBMessage::SessionFailedWithMaliciousParties(authority_name, report) => {
-                if let Err(err) = self
-                    .handle_session_failed_with_malicious_parties_message(authority_name, report)
-                {
+            DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
+                if let Err(err) = self.handle_malicious_report(authority_name, report) {
                     error!(
-                        "dWallet MPC session failed with malicious parties with error: {:?}",
+                        ?err,
+                        "dWallet MPC session failed with malicious parties with error",
+                    );
+                }
+            }
+            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
+                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
+                    error!(
+                        ?err,
+                        "dWallet MPC session failed — threshold not reached with error",
+                    );
+                }
+            }
+            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
+                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
+                    error!(
+                        "dWallet MPC session failed with threshold not reached with error: {:?}",
                         err
                     );
                 }
             }
         }
+    }
+
+    fn handle_threshold_not_reached_report(
+        &mut self,
+        report: ThresholdNotReachedReport,
+        origin_authority: AuthorityName,
+    ) -> DwalletMPCResult<()> {
+        let committee = self.epoch_store()?.committee().clone();
+        let current_voters_for_report = self
+            .threshold_not_reached_reports
+            .entry(report.clone())
+            .or_insert(StakeAggregator::new(committee));
+        // We already have a quorum for this report.
+        if current_voters_for_report.has_quorum() {
+            // Do nothing, quorum has already been reached.
+            return Ok(());
+        }
+        if current_voters_for_report
+            .insert_generic(origin_authority, ())
+            .is_quorum_reached()
+        {
+            // Quorum has been reached, we can report the malicious actors.
+            self.prepare_for_round_retry(report.session_id)?;
+        }
+        Ok(())
+    }
+
+    fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
+        let epoch_store = self.epoch_store()?;
+        if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
+            session.received_more_messages_since_last_advance = false;
+            session.attempts_count += 1;
+            // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
+            // So all parties that sent a regular MPC Message for the last executed
+            // round are malicious—as the round aborted with the error `TWOPCMPCThresholdNotReached`.
+            // All honest parties should report that there is a quorum for `ThresholdNotReached`.
+            // We must then remove these messages and mark the senders as malicious.
+            // Note that the current round was already incremented
+            // since we received the quorum for `ThresholdNotReached`
+            // on the previous round,
+            // but no messages were sent for the current round.
+            self.malicious_handler
+                .report_malicious_actors(&party_ids_to_authority_names(
+                    &session
+                        .serialized_full_messages
+                        .get(&(session.current_round - 1))
+                        .unwrap_or(&HashMap::new())
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<PartyID>>(),
+                    &*epoch_store,
+                )?);
+            session
+                .serialized_full_messages
+                .remove(&(session.current_round - 1));
+            // Decrement the current round, as we are going to retry the previous round.
+            session.current_round -= 1;
+        }
+        Ok(())
     }
 
     /// Advance all the MPC sessions that either received enough messages
@@ -293,7 +375,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn handle_session_failed_with_malicious_parties_message(
+    fn handle_malicious_report(
         &mut self,
         reporting_authority: AuthorityName,
         report: MaliciousReport,
@@ -305,9 +387,7 @@ impl DWalletMPCManager {
         {
             return Ok(());
         }
-        let epoch_store = self.epoch_store()?;
-        let status = self
-            .malicious_handler
+        self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
         if self
             .malicious_handler
@@ -315,38 +395,69 @@ impl DWalletMPCManager {
         {
             self.recognized_self_as_malicious = true;
         }
+        Ok(())
+    }
 
-        match status {
-            // Quorum reached, remove the malicious parties from the session messages.
-            ReportStatus::QuorumReached => {
-                if report.advance_result == AdvanceResult::Success {
-                    // No need to re-perform the last step, as the advance was successful.
-                    return Ok(());
-                }
-                if let Some(mut session) = self.mpc_sessions.get_mut(&report.session_id) {
-                    // For every advance we increase the round number by 1,
-                    // so to re-run the same round, we decrease it by 1.
-                    session.pending_quorum_for_highest_round_number -= 1;
-                    // Remove malicious parties from the session messages.
-                    let round_messages = session
-                        .serialized_full_messages
-                        .get_mut(session.pending_quorum_for_highest_round_number)
-                        .ok_or(DwalletMPCError::MPCSessionNotFound {
-                            session_id: report.session_id,
-                        })?;
+    fn increment_metrics_for_event(&self, event: &DBSuiEvent) -> DwalletMPCResult<()> {
+        let packages_config = &self.epoch_store()?.packages_config;
 
-                    self.malicious_handler
-                        .get_malicious_actors_ids(epoch_store)?
-                        .iter()
-                        .for_each(|malicious_actor| {
-                            round_messages.remove(malicious_actor);
-                        });
-                }
+        match &event.type_ {
+            t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_network_dkg_count
+                    .inc();
             }
-            ReportStatus::WaitingForQuorum => {}
-            ReportStatus::OverQuorum => {}
+            t if t
+                == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_decryption_key_reshare_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_dwallet_dkg_first_round_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_dwallet_dkg_second_round_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_presign_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_sign_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_encrypted_share_verification_count
+                    .inc();
+            }
+            t if t
+                == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(
+                    packages_config,
+                ) =>
+            {
+                self.dwallet_mpc_metrics
+                    .received_events_start_partial_signature_verification_count
+                    .inc();
+            }
+            _ => {}
         }
-
         Ok(())
     }
 
@@ -355,6 +466,9 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
+        if let Err(err) = self.increment_metrics_for_event(&event) {
+            warn!(?err, "Failed to increment metrics for event...");
+        }
         let (public_input, private_input) = session_input_from_event(event, &self).await?;
         let mpc_event_data = Some(MPCEventData {
             session_type: session_info.session_type,
@@ -443,14 +557,12 @@ impl DWalletMPCManager {
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round();
                 if quorum_check_result.is_ready {
+                    session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
-                    session.pending_quorum_for_highest_round_number += 1;
-                    let mut session_clone = session.clone();
-                    session_clone
-                        .serialized_full_messages
-                        .truncate(session.pending_quorum_for_highest_round_number);
+                    let session_clone = session.clone();
+                    session.current_round += 1;
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
@@ -565,7 +677,7 @@ impl DWalletMPCManager {
             }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
-                .spawn_session(&oldest_pending_session)
+                .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,
