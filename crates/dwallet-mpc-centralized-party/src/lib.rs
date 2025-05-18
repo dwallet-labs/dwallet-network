@@ -240,6 +240,10 @@ pub fn advance_centralized_sign_party(
     }
 }
 
+fn create_imported_dwallet_centralized_step(network_decryption_key_public_output: SerializedWrappedMPCPublicOutput, dwallet_id: Vec<u8>) {
+    let dwallet_id = bcs::from_bytes(&dwallet_id).unwrap();
+}
+
 fn protocol_public_parameters_by_key_scheme(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
