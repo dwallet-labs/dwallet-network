@@ -245,7 +245,7 @@ type ImportSecretShareFirstStep =
 
 fn create_imported_dwallet_centralized_step(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
-    dwallet_id: Vec<u8>,
+    dwallet_id: String,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
@@ -258,8 +258,9 @@ fn create_imported_dwallet_centralized_step(
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
-    let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
+    let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
 
+    let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
     ImportSecretShareFirstStep::advance(
         (),
         &secret_key_share,
