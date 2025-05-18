@@ -513,7 +513,7 @@ impl DWalletMPCSession {
                     init_event.event_data.public_user_secret_key_shares.clone(),
                     init_event.event_data.public_output.clone(),
                 ) {
-                    Ok() => Ok(AsynchronousRoundResult::Finalize {
+                    Ok(..) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: init_event.event_data.public_user_secret_key_shares.clone(),
                         private_output: vec![],
                         malicious_parties: vec![],
