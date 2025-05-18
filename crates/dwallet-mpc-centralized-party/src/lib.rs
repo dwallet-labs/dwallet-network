@@ -37,7 +37,7 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
+type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
 pub type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 
 /// Contains the public keys of the DWallet.
