@@ -55,7 +55,7 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 }
 
 interface DWalletWithPublicUserSecretKeyShares {
-	public_user_secret_key_shares: {
+	public_user_secret_key_share: {
 		vec: [];
 	};
 }
