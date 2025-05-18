@@ -466,7 +466,11 @@ export async function decryptAndVerifyReceivedUserShare(
 	);
 	// Before validating this centralized output,
 	// we are making sure it was signed by us.
-	const isValid = verify_user_share(decryptedSecretShare, new Uint8Array(dwalletOutput), networkDecryptionKeyPublicOutput);
+	const isValid = verify_user_share(
+		decryptedSecretShare,
+		new Uint8Array(dwalletOutput),
+		networkDecryptionKeyPublicOutput,
+	);
 	if (!isValid) {
 		throw new Error('the decrypted key share does not match the dWallet public key share');
 	}

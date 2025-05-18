@@ -95,8 +95,8 @@ async function approveMessageTX(
 				mutable: true,
 			}),
 			tx.object(dwalletCapID),
-            tx.pure.u32(0),
-            tx.pure(bcs.u32().serialize(hash.valueOf())),
+			tx.pure.u32(0),
+			tx.pure(bcs.u32().serialize(hash.valueOf())),
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 		],
 	});

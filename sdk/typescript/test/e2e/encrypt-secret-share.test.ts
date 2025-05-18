@@ -60,7 +60,7 @@ describe('Test dWallet MPC', () => {
 			destConf,
 			encryptedDWalletData,
 			sourceConf.encryptedSecretShareSigningKeypair.toSuiAddress(),
-			networkDecryptionKeyPublicOutput
+			networkDecryptionKeyPublicOutput,
 		);
 		console.log(`decryptedSecretShare: ${decryptedSecretShare}`);
 		await acceptEncryptedUserShare(destConf, encryptedDWalletData);
