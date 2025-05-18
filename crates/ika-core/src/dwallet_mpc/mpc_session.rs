@@ -527,7 +527,7 @@ impl DWalletMPCSession {
                             ?err,
                             session_id=?self.session_id,
                             validator=?self.epoch_store()?.name,
-                            crypto_round=?self.pending_quorum_for_highest_round_number,
+                            crypto_round=?self.current_round,
                             "failed to verify secret share"
                         );
                         Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput)

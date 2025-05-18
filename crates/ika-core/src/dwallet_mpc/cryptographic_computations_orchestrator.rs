@@ -217,6 +217,11 @@ impl CryptographicComputationsOrchestrator {
                     .advance_calls_for_decryption_key_reshare
                     .inc();
             }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_make_dwallet_user_secret_key_shares_public
+                    .inc()
+            }
         }
     }
 
@@ -284,6 +289,14 @@ impl CryptographicComputationsOrchestrator {
                     .inc();
                 dwallet_mpc_metrics
                     .decryption_key_reshare_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_make_dwallet_user_secret_key_shares_public
+                    .inc();
+                dwallet_mpc_metrics
+                    .make_dwallet_user_secret_key_shares_public_completion_duration
                     .set(computation_duration as i64);
             }
         }

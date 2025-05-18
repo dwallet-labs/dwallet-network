@@ -27,7 +27,7 @@ pub fn verify_secret_share(
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share()
+            // <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share()
             let expected_public_key =
                 cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
             let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
