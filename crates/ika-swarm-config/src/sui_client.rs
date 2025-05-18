@@ -275,7 +275,7 @@ pub async fn init_ika_on_sui(
         "Running `system::set_supported_curves_to_signature_algorithms_to_hash_schemes` done."
     );
 
-    ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+    ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
         publisher_address,
         &mut context,
         client.clone(),
@@ -288,7 +288,7 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
-    println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
+    println!("Running `system::request_dwallet_network_encryption_key_dkg_by_cap` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -300,7 +300,7 @@ pub async fn init_ika_on_sui(
     ))
 }
 
-pub async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,

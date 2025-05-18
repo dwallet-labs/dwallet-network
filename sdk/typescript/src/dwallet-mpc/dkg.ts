@@ -29,7 +29,7 @@ interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
 		dwallet_cap_id: string;
-		dwallet_network_decryption_key_id: string;
+		dwallet_network_encryption_key_id: string;
 	};
 	session_id: string;
 }
@@ -68,7 +68,7 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 		!!obj?.event_data?.dwallet_id &&
 		!!obj?.session_id &&
 		!!obj?.event_data?.dwallet_cap_id &&
-		!!obj?.event_data?.dwallet_network_decryption_key_id
+		!!obj?.event_data?.dwallet_network_encryption_key_id
 	);
 }
 

@@ -22,7 +22,7 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
 use ika_types::sui::system_inner_v1::{
-    DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
+    DWalletCoordinatorInnerV1, DWalletNetworkEncryptionKeyCap, SystemInnerV1,
 };
 use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
@@ -361,16 +361,16 @@ where
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                let network_decryption_keys = self
+                let network_encryption_keys = self
                     .inner
-                    .get_network_decryption_keys(
-                        &ika_system_state_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys,
+                    .get_network_encryption_keys(
+                        &ika_system_state_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys,
                     )
                     .await
                     .unwrap_or_default();
 
-                let mut network_decryption_keys_data = HashMap::new();
-                for (key_id, key) in network_decryption_keys.iter() {
+                let mut network_encryption_keys_data = HashMap::new();
+                for (key_id, key) in network_encryption_keys.iter() {
                     let network_decryption_key = match self
                         .inner
                         .get_network_decryption_key_with_full_data(key)
@@ -383,7 +383,7 @@ where
                             )));
                         }
                     };
-                    network_decryption_keys_data.insert(key_id.clone(), network_decryption_key);
+                    network_encryption_keys_data.insert(key_id.clone(), network_decryption_key);
                 }
 
                 let validators_class_groups_public_key_and_proof = self
@@ -436,7 +436,7 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
-                    network_decryption_keys_data,
+                    network_encryption_keys_data,
                     ika_system_state_inner
                         .validator_set
                         .active_committee
@@ -659,12 +659,12 @@ where
         let system_inner = self.must_get_system_inner_object().await;
         Ok(self
             .inner
-            .get_network_decryption_keys(
-                system_inner.dwallet_2pc_mpc_coordinator_network_decryption_keys(),
+            .get_network_encryption_keys(
+                system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys(),
             )
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("can't get_network_decryption_keys: {e}"))
+                IkaError::SuiClientInternalError(format!("can't get_network_encryption_keys: {e}"))
             })?)
     }
 
@@ -764,9 +764,9 @@ pub trait SuiClientInner: Send + Sync {
         validators: &Vec<StakingPool>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
-    async fn get_network_decryption_keys(
+    async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
 
     async fn get_network_decryption_key_with_full_data(
@@ -999,11 +999,11 @@ impl SuiClientInner for SuiSdkClient {
         Ok(class_groups_public_keys_and_proofs)
     }
 
-    async fn get_network_decryption_keys(
+    async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
-        let mut network_decryption_keys = HashMap::new();
+        let mut network_encryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
             let dynamic_field_response = self
@@ -1022,14 +1022,14 @@ impl SuiClientInner for SuiSdkClient {
                 key_id
             )))?;
 
-            network_decryption_keys.insert(
+            network_encryption_keys.insert(
                 key_id,
                 bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes).map_err(
                     |e| Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e)),
                 )?,
             );
         }
-        Ok(network_decryption_keys)
+        Ok(network_encryption_keys)
     }
 
     async fn get_network_decryption_key_with_full_data(

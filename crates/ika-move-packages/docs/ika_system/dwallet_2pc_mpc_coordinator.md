@@ -9,7 +9,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 -  [Function `create_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_create_dwallet_coordinator)
 -  [Function `share_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_share_dwallet_coordinator)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_process_checkpoint_message_by_quorum)
--  [Function `request_dwallet_network_decryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_decryption_key_dkg)
+-  [Function `request_dwallet_network_encryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg)
 -  [Function `advance_epoch`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_advance_epoch)
 -  [Function `get_active_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_get_active_encryption_key)
 -  [Function `register_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_encryption_key)
@@ -264,13 +264,13 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_decryption_key_dkg"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg"></a>
 
-## Function `request_dwallet_network_decryption_key_dkg`
+## Function `request_dwallet_network_encryption_key_dkg`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_decryption_key_dkg">request_dwallet_network_decryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDecryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyCap</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap</a>
 </code></pre>
 
 
@@ -279,11 +279,11 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_decryption_key_dkg">request_dwallet_network_decryption_key_dkg</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     ctx: &<b>mut</b> TxContext
-): DWalletNetworkDecryptionKeyCap {
-    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_decryption_key_dkg">request_dwallet_network_decryption_key_dkg</a>(ctx)
+): DWalletNetworkEncryptionKeyCap {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(ctx)
 }
 </code></pre>
 

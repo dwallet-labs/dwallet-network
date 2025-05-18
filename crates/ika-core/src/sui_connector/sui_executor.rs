@@ -200,15 +200,15 @@ where
     }
 
     async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
-        let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
-            Ok(network_decryption_keys) => network_decryption_keys,
+        let network_encryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
+            Ok(network_encryption_keys) => network_encryption_keys,
             Err(e) => {
                 error!("failed to get dwallet MPC network keys: {e}");
                 return false;
             }
         };
 
-        for (_, key) in network_decryption_keys.iter() {
+        for (_, key) in network_encryption_keys.iter() {
             if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
                 return false;
             }

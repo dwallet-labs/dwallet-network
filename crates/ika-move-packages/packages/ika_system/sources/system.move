@@ -443,14 +443,14 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     inner_system.advance_epoch(inner_dwallet, clock, ctx);
 }
 
-public fun request_dwallet_network_decryption_key_dkg_by_cap(
+public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut System,
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
+    self.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
 }
 
 public fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
