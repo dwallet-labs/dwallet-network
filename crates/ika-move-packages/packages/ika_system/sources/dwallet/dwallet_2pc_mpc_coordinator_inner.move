@@ -25,7 +25,7 @@ use sui::vec_map::{Self, VecMap};
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
-    self.locked_last_session_to_complete_in_current_epoch = true;
+    self.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
 }
 
 /// A shared object that holds all the Ika system object used to manage dWallets:
@@ -49,18 +49,24 @@ public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
-    number_of_completed_sessions: u64,
+    number_of_completed_user_initiated_sessions: u64,
     started_system_sessions_count: u64,
     completed_system_sessions_count: u64,
-    /// The last session sequence number that an event was emitted for.
-    /// i.e, the user requested this session, and the event was emitted for it.
+    /// The sequence number to assign to the next user-requested session. 
+    /// Initialized to `1` and incremented at every new session creation.
     next_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
+    /// The validators of the Ika network must always begin sessions, 
+    /// when they become available to them, so long their sequence numebr is lesser or equal to this value.
+    /// Initialized to `0`, as when the system is initialized no user-requested session exists so none should be started 
+    /// and we shouldn't wait for any to complete before advancing epoch (until the first session is created),
+    /// and updated at every new session creation or completion, and when advancing epochs, 
+    /// to the latest session whilst assuring a maximum of `max_active_sessions_buffer` sessions to be completed in the current epoch.
     /// Validators should complete every session they start before switching epochs.
-    last_session_to_complete_in_current_epoch: u64,
-    /// Denotes whether the `last_session_to_complete_in_current_epoch` field is locked or not.
+    last_user_initiated_session_to_complete_in_current_epoch: u64,
+    /// Denotes whether the `last_user_initiated_session_to_complete_in_current_epoch` field is locked or not.
     /// This field gets locked before performing the epoch switch.
-    locked_last_session_to_complete_in_current_epoch: bool,
+    locked_last_user_initiated_session_to_complete_in_current_epoch: bool,
     /// The maximum number of active MPC sessions Ika nodes may run during an epoch.
     /// Validators should complete every session they start before switching epochs.
     max_active_sessions_buffer: u64,
@@ -962,12 +968,12 @@ public(package) fun create_dwallet_coordinator_inner(
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
-        number_of_completed_sessions: 0,
-        next_session_sequence_number: 0,
-        last_session_to_complete_in_current_epoch: 0,
+        number_of_completed_user_initiated_sessions: 0,
+        next_session_sequence_number: 1,
+        last_user_initiated_session_to_complete_in_current_epoch: 0,
         // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
-        locked_last_session_to_complete_in_current_epoch: false,
+        locked_last_user_initiated_session_to_complete_in_current_epoch: false,
         dwallets: object_table::new(ctx),
         dwallet_network_encryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -1168,21 +1174,23 @@ fun get_active_dwallet_network_encryption_key(
 /// and updates the required metadata for the next epoch's sessions manageement.
 ///
 /// Sets the current and previous comittees. 
+/// 
+/// Unlocks and updates `last_user_initiated_session_to_complete_in_current_epoch`.
 ///
 /// And finally increments the `current_epoch`.
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee
 ): Balance<IKA> {
-    assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
+    assert!(self.all_current_epoch_user_initiated_sessions_completed(), ECannotAdvanceEpoch);
 
     if (self.last_processed_checkpoint_sequence_number.is_some()) {
         let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
         self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
     };
 
-    self.locked_last_session_to_complete_in_current_epoch = false;
-    self.update_last_session_to_complete_in_current_epoch();
+    self.locked_last_user_initiated_session_to_complete_in_current_epoch = false;
+    self.update_last_user_initiated_session_to_complete_in_current_epoch();
 
     self.current_epoch = self.current_epoch + 1;
     
@@ -1280,7 +1288,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_start_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
-    self.update_last_session_to_complete_in_current_epoch();
+    self.update_last_user_initiated_session_to_complete_in_current_epoch();
 
     event
 }
@@ -1519,7 +1527,7 @@ fun validate_approve_message(
 /// Starts the first Distributed Key Generation (DKG) session.
 ///
 /// This function creates a new `DWalletCap` object,
-/// transfers it to the session initiator,
+/// transfers it to the session initiator (the user),
 /// and emits a `DWalletDKGFirstRoundRequestEvent` to signal
 /// the beginning of the DKG process.
 ///
@@ -1528,6 +1536,7 @@ fun validate_approve_message(
 /// ### Effects
 /// - Generates a new `DWalletCap` object.
 /// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
+/// - Creates a new `DWallet` object and inserts it into the `dwallets` map.
 /// - Emits a `DWalletDKGFirstRoundRequestEvent`.
 public(package) fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
@@ -1541,7 +1550,11 @@ public(package) fun request_dwallet_dkg_first_round(
 
     let pricing = self.pricing.dkg_first_round();
 
+    // TODO(@Omer): check the state of the dWallet (i.e., not waiting for dkg.)
+    // TODO(@Omer): I believe the best thing would be to always use the latest key. I'm not sure why the user should even supply the id.
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+
+    // Create a new `DWalletCap` object.
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
     let dwallet_cap = DWalletCap {
@@ -1549,6 +1562,10 @@ public(package) fun request_dwallet_dkg_first_round(
         dwallet_id,
     };
     let dwallet_cap_id = object::id(&dwallet_cap);
+
+    // Create a new `DWallet` object, 
+    // link it to the `dwallet_cap` we just created by id, 
+    // and insert it into the `dwallets` map.
     self.dwallets.add(dwallet_id, DWallet {
         id,
         created_at_epoch: self.current_epoch,
@@ -1561,6 +1578,9 @@ public(package) fun request_dwallet_dkg_first_round(
         sign_sessions: object_table::new(ctx),
         state: DWalletState::DKGRequested,
     });
+
+
+    // Emit an event to request the Ika network to start DKG for this dWallet.
     event::emit(self.charge_and_create_current_epoch_dwallet_event(
                 dwallet_network_encryption_key_id,
         pricing,
@@ -1574,39 +1594,51 @@ public(package) fun request_dwallet_dkg_first_round(
         },
         ctx,
     ));
+
     dwallet_cap
 }
 
-/// Updates the `last_session_to_complete_in_current_epoch` field.
-/// We do this to ensure that the last session to complete in the current epoch is equal
-/// to the desired completed sessions count.
-/// This is part of the epoch switch logic.
-fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
-    if (self.locked_last_session_to_complete_in_current_epoch) {
+/// Updates the `last_user_initiated_session_to_complete_in_current_epoch` field:
+///  - If we already locked this field, we do nothing.
+///  - Otherwise, we take the latest session whilst assuring 
+///    a maximum of `max_active_sessions_buffer` sessions to be completed in the current epoch.
+fun update_last_user_initiated_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
+    if (self.locked_last_user_initiated_session_to_complete_in_current_epoch) {
         return
     };
-    let new_last_session_to_complete_in_current_epoch = (
-        self.number_of_completed_sessions + self.max_active_sessions_buffer
+
+    let new_last_user_initiated_session_to_complete_in_current_epoch = (
+        self.number_of_completed_user_initiated_sessions + self.max_active_sessions_buffer
     ).min(
-        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
-        // as we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
-        self.next_session_sequence_number,
+        self.next_session_sequence_number - 1
     );
-    if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
+
+    // Sanity check: only update this field if we need to.
+    if (self.last_user_initiated_session_to_complete_in_current_epoch >= new_last_user_initiated_session_to_complete_in_current_epoch) {
         return
     };
-    self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
+    self.last_user_initiated_session_to_complete_in_current_epoch = new_last_user_initiated_session_to_complete_in_current_epoch;
 }
 
-public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
-    return self.locked_last_session_to_complete_in_current_epoch &&
-        self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
-        self.completed_system_sessions_count == self.started_system_sessions_count
+/// Check whether all the user-initiated session that should complete in the current epoch are in fact completed.
+/// This check is only relevant after `last_user_initiated_session_to_complete_in_current_epoch` is locked, and is called 
+/// as a requirement to advance the epoch.
+/// Session sequence numbers are sequential, so ch
+public(package) fun all_current_epoch_user_initiated_sessions_completed(self: &DWalletCoordinatorInner): bool {
+    return (self.locked_last_user_initiated_session_to_complete_in_current_epoch &&
+        (self.number_of_completed_user_initiated_sessions == self.last_user_initiated_session_to_complete_in_current_epoch) &&
+        (self.completed_system_sessions_count == self.started_system_sessions_count))
 }
 
-fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
-    self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
-    self.update_last_session_to_complete_in_current_epoch();
+/// Removes a user-initiated session, charging the pre-paid gas amounts in both Sui and Ika 
+/// to be later distributed as part of the consensus validation and gas reimburesement fees.
+///
+/// Increments `number_of_completed_user_initiated_sessions`.
+///
+/// Notice: never called for a system session.
+fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
+    self.number_of_completed_user_initiated_sessions = self.number_of_completed_user_initiated_sessions + 1;
+    self.update_last_user_initiated_session_to_complete_in_current_epoch();
     let session = self.sessions.remove(session_sequence_number);
     let DWalletSession {
         computation_fee_charged_ika,
@@ -1652,7 +1684,7 @@ public(package) fun respond_dwallet_dkg_first_round(
     rejected: bool,
     session_sequence_number: u64,
 ) {
-    self.remove_session_and_charge<DWalletDKGFirstRoundRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<DWalletDKGFirstRoundRequestEvent>(session_sequence_number);
 
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.state = match (dwallet.state) {
@@ -1805,7 +1837,7 @@ public(package) fun respond_dwallet_dkg_second_round(
     rejected: bool,
     session_sequence_number: u64,
 ) {
-    self.remove_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<DWalletDKGSecondRoundRequestEvent>(session_sequence_number);
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
     dwallet.state = match (&dwallet.state) {
@@ -1931,7 +1963,7 @@ public(package) fun respond_re_encrypt_user_share_for(
     rejected: bool,
     session_sequence_number: u64
 ) {
-    self.remove_session_and_charge<EncryptedShareVerificationRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<EncryptedShareVerificationRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
@@ -2090,7 +2122,7 @@ public(package) fun respond_imported_key_dwallet_verification(
     session_sequence_number: u64,
     ctx: &mut TxContext
 ) {
-    self.remove_session_and_charge<DWalletImportedKeyVerificationRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<DWalletImportedKeyVerificationRequestEvent>(session_sequence_number);
     let encryption_key = self.encryption_keys.borrow(encryption_key_address);
     let encryption_key_id = encryption_key.id.to_inner();
     let created_at_epoch = self.current_epoch;
@@ -2187,7 +2219,7 @@ public(package) fun respond_make_dwallet_user_secret_key_share_public(
     rejected: bool,
     session_sequence_number: u64,
 ) {
-    self.remove_session_and_charge<MakeDWalletUserSecretKeySharePublicRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<MakeDWalletUserSecretKeySharePublicRequestEvent>(session_sequence_number);
     let dwallet = self.get_dwallet_mut(dwallet_id);
     if (rejected) {
         event::emit(RejectedMakeDWalletUserSecretKeySharePublicEvent {
@@ -2365,7 +2397,7 @@ public(package) fun respond_presign(
     rejected: bool,
     session_sequence_number: u64
 ) {
-    self.remove_session_and_charge<PresignRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<PresignRequestEvent>(session_sequence_number);
 
     let presign_obj = self.presign_sessions.borrow_mut(presign_id);
 
@@ -2721,7 +2753,7 @@ public(package) fun respond_future_sign(
     rejected: bool,
     session_sequence_number: u64
 ) {
-    self.remove_session_and_charge<FutureSignRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<FutureSignRequestEvent>(session_sequence_number);
     let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
     assert!(partial_centralized_signed_message.presign_cap.dwallet_id.is_none() || partial_centralized_signed_message.presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EDWalletMismatch);
     partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
@@ -2977,7 +3009,7 @@ public(package) fun respond_sign(
     rejected: bool,
     session_sequence_number: u64
 ) {
-    self.remove_session_and_charge<SignRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<SignRequestEvent>(session_sequence_number);
     let (dwallet, _) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let sign = dwallet.sign_sessions.borrow_mut(sign_id);
