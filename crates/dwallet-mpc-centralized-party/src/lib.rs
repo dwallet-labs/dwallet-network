@@ -371,7 +371,7 @@ pub fn verify_secret_share(
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
     network_decryption_key_public_output: Vec<u8>,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
@@ -380,12 +380,12 @@ pub fn verify_secret_share(
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            <twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
+            Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
                 &protocol_public_params,
                 bcs::from_bytes(&dkg_output)?,
                 bcs::from_bytes(&secret_share)?,
             )
-                .map_err(Into::into)
+                .is_ok())
         }
     }
 }
