@@ -228,7 +228,9 @@ where
 
         loop {
             interval.tick().await;
-            info!("run epoch loop")
+            if rand::random::<u8>() % 11 == 9 {
+                info!("run epoch loop");
+            }
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {

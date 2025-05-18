@@ -676,7 +676,7 @@ impl CheckpointBuilder {
             // Min interval has elapsed, we can now coalesce and build a checkpoint.
             last_height = Some(height);
             last_timestamp = Some(current_timestamp);
-            info!(
+            debug!(
                 checkpoint_commit_height = height,
                 "Making checkpoint at commit height"
             );
@@ -1311,6 +1311,19 @@ impl CheckpointAggregator {
                         checkpoint_seq=?current.checkpoint_message.sequence_number,
                         "Not enough checkpoint signatures",
                     );
+
+                    let checkpoints_committee = self.current.as_ref().map(|current| {
+                        (
+                            current.checkpoint_message.sequence_number,
+                            current.signatures_by_digest.clone(),
+                        )
+                    });
+
+                    info!(
+                        current=?checkpoints_committee,
+                        "Checkpoint Agg Before Break",
+                    );
+
                     // No more signatures (yet) for this checkpoint
                     info!(checkpoints=%result.len(), "Breaking run_inner loop");
                     return Ok(result);
