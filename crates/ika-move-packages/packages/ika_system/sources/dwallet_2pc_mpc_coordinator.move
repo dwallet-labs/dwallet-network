@@ -243,7 +243,7 @@ public fun request_make_dwallet_user_secret_key_shares_public(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_make_dwallet_user_secret_key_shares_public(
+    self.inner_mut().request_make_dwallet_user_secret_key_share_public(
         dwallet_id,
         public_user_secret_key_shares,
         payment_ika,
