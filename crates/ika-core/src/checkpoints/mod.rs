@@ -476,7 +476,7 @@ impl CheckpointStore {
                 .get_highest_verified_checkpoint()?
                 .map(|x| *x.sequence_number())
         {
-            debug!(
+            info!(
                 checkpoint_seq = checkpoint.sequence_number(),
                 "Updating highest verified checkpoint",
             );
@@ -602,6 +602,14 @@ impl CheckpointBuilder {
     async fn maybe_build_checkpoints(&mut self) {
         let _scope = monitored_scope("BuildCheckpoints");
 
+        let seqs = self
+            .tables
+            .certified_checkpoints
+            .unbounded_iter()
+            .map(|(seq, _)| seq)
+            .collect_vec();
+        info!(checkpoints=?seqs, "Certified Checkpoints");
+
         // Collect info about the most recently built checkpoint.
         let checkpoint_message = self
             .epoch_store
@@ -666,7 +674,8 @@ impl CheckpointBuilder {
         );
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
+    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height
+    ))]
     async fn make_checkpoint(&self, pendings: Vec<PendingCheckpoint>) -> anyhow::Result<()> {
         let last_details = pendings.last().unwrap().details().clone();
 

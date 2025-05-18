@@ -497,7 +497,7 @@ where
             .map(|s| s.checked_add(1).expect("exhausted u64"))
             .unwrap_or(0);
         if *checkpoint.sequence_number() > next_sequence_number {
-            debug!(
+            warn!(
                 "consensus sent too new of a checkpoint, expecting: {}, got: {}",
                 next_sequence_number,
                 checkpoint.sequence_number()
