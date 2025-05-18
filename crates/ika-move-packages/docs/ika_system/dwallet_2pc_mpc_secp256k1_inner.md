@@ -202,14 +202,20 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 <code>next_session_sequence_number: u64</code>
 </dt>
 <dd>
- The last session sequence number that an event was emitted for.
- i.e, the user requested this session, and the event was emitted for it.
+ The sequence number to assign to the next user-requested session.
+ Initialized to <code>1</code> and incremented at every new session creation.
 </dd>
 <dt>
 <code>last_session_to_complete_in_current_epoch: u64</code>
 </dt>
 <dd>
  The last MPC session to process in the current epoch.
+ The validators of the Ika network must always begin sessions,
+ when they become available to them, so long their sequence number is lesser or equal to this value.
+ Initialized to <code>0</code>, as when the system is initialized no user-requested session exists so none should be started
+ and we shouldn't wait for any to complete before advancing epoch (until the first session is created),
+ and updated at every new session creation or completion, and when advancing epochs,
+ to the latest session whilst assuring a maximum of <code>max_active_sessions_buffer</code> sessions to be completed in the current epoch.
  Validators should complete every session they start before switching epochs.
 </dd>
 <dt>
@@ -2779,7 +2785,7 @@ Supported hash schemes for message signing.
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
         number_of_completed_sessions: 0,
-        next_session_sequence_number: 0,
+        next_session_sequence_number: 1,
         last_session_to_complete_in_current_epoch: 0,
         // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
@@ -3645,10 +3651,10 @@ the beginning of the DKG process.
 
 ## Function `update_last_session_to_complete_in_current_epoch`
 
-Updates the <code>last_session_to_complete_in_current_epoch</code> field.
-We do this to ensure that the last session to complete in the current epoch is equal
-to the desired completed sessions count.
-This is part of the epoch switch logic.
+Updates the <code>last_session_to_complete_in_current_epoch</code> field:
+- If we already locked this field, we do nothing.
+- Otherwise, we take the latest session whilst assuring
+a maximum of <code>max_active_sessions_buffer</code> sessions to be completed in the current epoch.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_update_last_session_to_complete_in_current_epoch">update_last_session_to_complete_in_current_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_secp256k1_inner::DWalletCoordinatorInner</a>)
@@ -3667,10 +3673,9 @@ This is part of the epoch switch logic.
     <b>let</b> new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
-        // <b>as</b> we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
-        self.next_session_sequence_number,
+        self.next_session_sequence_number - 1
     );
+    // Sanity check: only update this field <b>if</b> we need to.
     <b>if</b> (self.last_session_to_complete_in_current_epoch &gt;= new_last_session_to_complete_in_current_epoch) {
         <b>return</b>
     };
