@@ -228,6 +228,7 @@ where
 
         loop {
             interval.tick().await;
+            info!("run epoch loop")
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
@@ -252,6 +253,7 @@ where
                 .map(|s| s + 1)
                 .unwrap_or(0);
 
+            // todo(zeev): this should be in the notifier
             if last_submitted_checkpoint.is_some()
                 && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
             {
