@@ -38,10 +38,16 @@ public struct DWalletCoordinatorInner has store {
     number_of_completed_sessions: u64,
     started_system_sessions_count: u64,
     completed_system_sessions_count: u64,
-    /// The last session sequence number that an event was emitted for.
-    /// i.e, the user requested this session, and the event was emitted for it.
+    /// The sequence number to assign to the next user-requested session.
+    /// Initialized to `1` and incremented at every new session creation.
     next_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
+    /// The validators of the Ika network must always begin sessions,
+    /// when they become available to them, so long their sequence number is lesser or equal to this value.
+    /// Initialized to `0`, as when the system is initialized no user-requested session exists so none should be started
+    /// and we shouldn't wait for any to complete before advancing epoch (until the first session is created),
+    /// and updated at every new session creation or completion, and when advancing epochs,
+    /// to the latest session whilst assuring a maximum of `max_active_sessions_buffer` sessions to be completed in the current epoch.
     /// Validators should complete every session they start before switching epochs.
     last_session_to_complete_in_current_epoch: u64,
     /// Denotes whether the `last_session_to_complete_in_current_epoch` field is locked or not.
@@ -754,7 +760,7 @@ public(package) fun create_dwallet_coordinator_inner(
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
         number_of_completed_sessions: 0,
-        next_session_sequence_number: 0,
+        next_session_sequence_number: 1,
         last_session_to_complete_in_current_epoch: 0,
         // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
@@ -1230,21 +1236,22 @@ public(package) fun request_dwallet_dkg_first_round(
     dwallet_cap
 }
 
-/// Updates the `last_session_to_complete_in_current_epoch` field.
-/// We do this to ensure that the last session to complete in the current epoch is equal
-/// to the desired completed sessions count.
-/// This is part of the epoch switch logic.
+/// Updates the `last_session_to_complete_in_current_epoch` field:
+///  - If we already locked this field, we do nothing.
+///  - Otherwise, we take the latest session whilst assuring
+///    a maximum of `max_active_sessions_buffer` sessions to be completed in the current epoch.
 fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
     if (self.locked_last_session_to_complete_in_current_epoch) {
         return
     };
+
     let new_last_session_to_complete_in_current_epoch = (
         self.number_of_completed_sessions + self.max_active_sessions_buffer
     ).min(
-        // Setting it to the `next_session_sequence_number` and not `next_session_sequence_number - 1`,
-        // as we compare this index against the `number_of_completed_sessions` counter, that starts counting from 1.
-        self.next_session_sequence_number,
+        self.next_session_sequence_number - 1
     );
+
+    // Sanity check: only update this field if we need to.
     if (self.last_session_to_complete_in_current_epoch >= new_last_session_to_complete_in_current_epoch) {
         return
     };
