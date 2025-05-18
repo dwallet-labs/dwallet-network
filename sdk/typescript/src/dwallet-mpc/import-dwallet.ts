@@ -9,6 +9,15 @@ import {
 	SUI_PACKAGE_ID,
 } from './globals';
 
+interface NewImportedKeyDWalletEvent {
+	dwallet_id: string;
+	dwallet_cap_id: string;
+}
+
+function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalletEvent {
+	return event.fields.dwallet_id !== undefined && event.fields.dwallet_cap_id !== undefined;
+}
+
 /**
  * Create an imported dWallet & return the dWallet ID.
  */
@@ -37,5 +46,9 @@ export async function createImportedDWallet(conf: Config): Promise<string> {
 			showEvents: true,
 		},
 	});
-	return '';
+	const creationEvent = result.events?.at(0)?.parsedJson;
+	if (!isNewImportedKeyDWalletEvent(creationEvent)) {
+		throw new Error('Failed to create imported dWallet');
+	}
+	return creationEvent.dwallet_id;
 }
