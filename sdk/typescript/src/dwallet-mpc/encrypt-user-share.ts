@@ -467,7 +467,7 @@ export async function decryptAndVerifyReceivedUserShare(
 	// Before validating this centralized output,
 	// we are making sure it was signed by us.
 	const isValid = verify_user_share(
-		decryptedSecretShare,
+		new Uint8Array(decryptedSecretShare),
 		new Uint8Array(dwalletOutput),
 		networkDecryptionKeyPublicOutput,
 	);

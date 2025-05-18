@@ -429,9 +429,7 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
-        .to_be_bytes()
-        .to_vec();
+    let secret_share_bytes = bcs::to_bytes(&plaintext.value())?;
     Ok(secret_share_bytes)
 }
 
