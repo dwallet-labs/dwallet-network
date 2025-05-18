@@ -66,6 +66,6 @@ export function isDWalletWithPublicUserSecretKeyShares(
 	return (
 		obj &&
 		Array.isArray(obj.public_user_secret_key_share) &&
-		obj.public_user_secret_key_shares.length > 0
+		obj.public_user_secret_key_share.length > 0
 	);
 }
