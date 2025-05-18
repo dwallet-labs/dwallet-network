@@ -35,6 +35,7 @@ use twopc_mpc::secp256k1::class_groups::{
     EncryptionOfSecretShareProof, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
     NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
+use log::log;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
@@ -372,18 +373,26 @@ pub fn verify_secret_share(
     dkg_output: SerializedWrappedMPCPublicOutput,
     network_decryption_key_public_output: Vec<u8>,
 ) -> anyhow::Result<bool> {
+    console_log::init_with_level(log::Level::Debug).unwrap();
+    log::debug!("Debug log from WASM!");
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
+    log::debug!("1");
     let dkg_output = bcs::from_bytes(&dkg_output)?;
+    log::debug!("2");
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+            let dkg_output = bcs::from_bytes(&dkg_output)?;
+            log::debug!("3");
+            let secret_share = bcs::from_bytes(&secret_share)?;
+            log::debug!("4");
             Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
                 &protocol_public_params,
-                bcs::from_bytes(&dkg_output)?,
-                bcs::from_bytes(&secret_share)?,
+                dkg_output,
+                secret_share,
             )
                 .is_ok())
         }
