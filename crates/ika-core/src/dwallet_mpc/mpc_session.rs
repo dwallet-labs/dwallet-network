@@ -376,6 +376,7 @@ impl DWalletMPCSession {
                 )
                     .into();
                 crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+// we are using the dWallet ID as a unique session identifier, as no two dWallets will ever have the same ID or be used for any other import session.
                     dwallet_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
