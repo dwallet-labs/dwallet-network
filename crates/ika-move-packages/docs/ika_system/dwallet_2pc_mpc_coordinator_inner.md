@@ -36,7 +36,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `DWalletDKGSecondRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGSecondRoundRequestEvent)
 -  [Struct `CompletedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGSecondRoundEvent)
 -  [Struct `RejectedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletDKGSecondRoundEvent)
--  [Struct `DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent)
+-  [Struct `DWalletImportedKeyVerificationRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent)
 -  [Struct `CompletedDWalletImportedKeyVerificationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletImportedKeyVerificationEvent)
 -  [Struct `RejectedDWalletImportedKeyVerificationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletImportedKeyVerificationEvent)
 -  [Struct `EncryptedShareVerificationRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EncryptedShareVerificationRequestEvent)
@@ -1702,11 +1702,11 @@ Emitted to notify the centralized party.
 
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent"></a>
 
-## Struct `DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT`
+## Struct `DWalletImportedKeyVerificationRequestEvent`
 
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWalletImportedKeyVerificationRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -5271,7 +5271,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
         pricing,
         payment_ika,
         payment_sui,
-        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT</a> {
+        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWalletImportedKeyVerificationRequestEvent</a> {
             dwallet_id,
             encrypted_user_secret_key_share_id,
             centralized_party_message,
@@ -5319,7 +5319,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
     rejected: bool,
     session_sequence_number: u64,
 ) {
-    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_user_initiated_session_and_charge">remove_user_initiated_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT</a>&gt;(session_sequence_number);
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_user_initiated_session_and_charge">remove_user_initiated_session_and_charge</a>&lt;<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletImportedKeyVerificationRequestEvent">DWalletImportedKeyVerificationRequestEvent</a>&gt;(session_sequence_number);
     <b>let</b> dwallet = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_dwallet_mut">get_dwallet_mut</a>(dwallet_id);
     dwallet.state = match (&dwallet.state) {
         DWalletState::AwaitingNetworkImportedKeyVerification =&gt; {
@@ -6788,6 +6788,21 @@ the function will abort with this error.
                 <b>let</b> rejected = bcs_body.peel_bool();
                 <b>let</b> session_sequence_number = bcs_body.peel_u64();
                 self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_share_public">respond_make_dwallet_user_secret_key_share_public</a>(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+            } <b>else</b> <b>if</b> (message_data_type == 9) {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_imported_key_dwallet_verification">respond_imported_key_dwallet_verification</a>(
+                    dwallet_id,
+                    public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
+                    rejected,
+                    session_sequence_number
+                );
             };
         i = i + 1;
     };
