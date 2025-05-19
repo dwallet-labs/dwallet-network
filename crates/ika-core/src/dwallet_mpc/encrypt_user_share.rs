@@ -6,9 +6,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::EncryptedShareVerificationRequestEvent;
 use rand_core::OsRng;
 use twopc_mpc::dkg::Protocol;
-use twopc_mpc::secp256k1::class_groups::{
-    AsyncProtocol,
-};
+use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Verifies that the given encrypted secret key share matches the encryption of the dWallet's
 /// secret share, validates the signature on the dWallet's public share,
@@ -38,7 +36,7 @@ fn verify_centralized_secret_key_share_proof(
     match dkg_public_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_public_output)) => {
             <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_encryption_of_centralized_party_share_proof(
-                &bcs::from_bytes(&protocol_public_parameters)?, bcs::from_bytes(&dkg_public_output)?, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&encrypted_centralized_secret_share_and_proof)?, &mut OsRng).map_err(Into::into)?;
+                &bcs::from_bytes(&protocol_public_parameters)?, bcs::from_bytes(&dkg_public_output)?, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&encrypted_centralized_secret_share_and_proof)?, &mut OsRng).map_err(Into::<anyhow::Error>::into)?;
             Ok(())
         }
     }
