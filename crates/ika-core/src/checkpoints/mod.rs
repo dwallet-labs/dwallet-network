@@ -551,7 +551,7 @@ pub struct CheckpointAggregator {
     metrics: Arc<CheckpointMetrics>,
 }
 
-// This holds information to aggregate signatures for one checkpoint
+// This holds information to aggregate signatures for one checkpoint.
 pub struct CheckpointSignatureAggregator {
     next_index: u64,
     checkpoint_message: CheckpointMessage,
@@ -1305,6 +1305,18 @@ impl CheckpointAggregator {
                 current.checkpoint_message.sequence_number,
                 current.next_index,
             )?;
+            let iter = iter.collect_vec();
+
+            let iter_clone = iter
+                .iter()
+                .map(|((seq, index), _)| (seq, index))
+                .collect_vec();
+            let mut seq_index_count: HashMap<u64, usize> = HashMap::new();
+            for ((seq, _), _) in iter.clone() {
+                *seq_index_count.entry(seq).or_insert(0) += 1;
+            }
+            info!(seq_index_count=?seq_index_count, iter_clone=?iter_clone, "Checkpoint Agg iter seq counts");
+
             for ((seq, index), data) in iter {
                 if seq != current.checkpoint_message.sequence_number {
                     info!(
@@ -1315,7 +1327,9 @@ impl CheckpointAggregator {
                     let checkpoints_committee = self.current.as_ref().map(|current| {
                         (
                             current.checkpoint_message.sequence_number,
-                            current.signatures_by_digest.clone(),
+                            current.checkpoint_message.epoch,
+                            data.checkpoint_message,
+                            // current.signatures_by_digest.clone(),
                         )
                     });
 
@@ -1325,7 +1339,7 @@ impl CheckpointAggregator {
                     );
 
                     // No more signatures (yet) for this checkpoint
-                    info!(checkpoints=%result.len(), "Breaking run_inner loop");
+                    info!(checkpoints=%result.len(), "Breaking run_inner loop — not enough signs");
                     return Ok(result);
                 }
                 info!(
@@ -1797,7 +1811,8 @@ impl CheckpointServiceNotify for CheckpointService {
             .with_label_values(&[&signer.to_string()])
             .set(sequence as i64);
         // While it can be tempting to make last_signature_index into AtomicU64, this won't work
-        // We need to make sure we write to `pending_signatures` and trigger `notify_aggregator` without race conditions
+        // We need to make sure we write to `pending_signatures`
+        // and trigger `notify_aggregator` without race conditions.
         let mut index = self.last_signature_index.lock();
         *index += 1;
         epoch_store.insert_checkpoint_signature(sequence, *index, info)?;
