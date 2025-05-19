@@ -364,27 +364,17 @@ pub fn encrypt_secret_key_share_and_prove(
     encryption_key: Vec<u8>,
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
-    let _ = console_log::init_with_level(log::Level::Debug);
-    log::debug!("Debug log from WASM!");
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    log::debug!("1");
     let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
-    log::debug!("2");
     match secret_key_share {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
-            log::debug!("3");
             let encryption_key = bcs::from_bytes(&encryption_key)?;
-            log::debug!("4");
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
-            log::debug!("5");
-
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
-            log::debug!("6");
-
             Ok(bcs::to_bytes(&result)?)
         }
     }
