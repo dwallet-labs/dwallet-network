@@ -140,7 +140,7 @@ pub(crate) fn session_info_from_event(
             ) =>
         {
             Ok(Some(
-                make_dwallet_user_secret_key_shares_public_request_event_session_info(
+                dwallet_imported_key_verification_request_event_session_info(
                     deserialize_event_or_dynamic_field::<
                         DWalletImportedKeyVerificationRequestEvent,
                     >(&event.contents)?,
@@ -260,13 +260,13 @@ fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
 }
 
 fn dwallet_imported_key_verification_request_event_session_info(
-    deserialized_event: DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id.clone(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(
             deserialized_event,
         ),
     }

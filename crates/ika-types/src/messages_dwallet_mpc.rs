@@ -31,6 +31,9 @@ pub enum MPCProtocolInitData {
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
+    DWalletImportedKeyVerificationRequestEvent(
+        DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
+    ),
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
     /// The second round of the DKG protocol.
@@ -436,6 +439,7 @@ impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletImportedKeyVerificationRequestEvent {
     /// The unique session identifier for the DWallet.
     dwallet_id: ObjectID,
