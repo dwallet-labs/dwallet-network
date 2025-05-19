@@ -1258,12 +1258,8 @@ impl CheckpointAggregator {
             let checkpoints_committee = self.current.as_ref().map(|current| {
                 (
                     current.checkpoint_message.sequence_number,
-                    current
-                        .signatures_by_digest
-                        .clone()
-                        .committee
-                        .voting_rights
-                        .clone(),
+                    current.signatures_by_digest.clone().unique_key_count(),
+                    current.signatures_by_digest.clone().total_votes(),
                 )
             });
             info!(

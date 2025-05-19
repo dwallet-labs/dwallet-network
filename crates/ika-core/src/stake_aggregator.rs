@@ -225,7 +225,7 @@ impl<CertT> InsertResult<CertT> {
 #[derive(Debug, Clone)]
 pub struct MultiStakeAggregator<K, V, const STRENGTH: bool> {
     pub committee: Arc<Committee>,
-    stake_maps: HashMap<K, (V, StakeAggregator<AuthoritySignInfo, STRENGTH>)>,
+    pub stake_maps: HashMap<K, (V, StakeAggregator<AuthoritySignInfo, STRENGTH>)>,
 }
 
 impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH> {

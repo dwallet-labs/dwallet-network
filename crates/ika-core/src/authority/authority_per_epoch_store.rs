@@ -1713,6 +1713,7 @@ impl AuthorityPerEpochStore {
                             .into_iter()
                             .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
                             .collect();
+                        // todo(zeev): maybe write each message as a tx, instead of a bulk tx?
                         Ok(self.process_consensus_system_bulk_transaction(&messages))
                     }
                     DWalletMPCNetworkKeyScheme::Ristretto => {
