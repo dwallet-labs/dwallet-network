@@ -58,48 +58,48 @@ const MOVE_CALL_PREFIX: &str = "move_call";
 const MOVE_PACKAGE_PREFIX: &str = "move_package";
 
 #[derive(Parser, Clone, Debug)]
-#[clap(
+#[arg(
     name = "Sui Analytics Indexer",
     about = "Indexer service to upload data for the analytics pipeline.",
     rename_all = "kebab-case"
 )]
 pub struct AnalyticsIndexerConfig {
     /// The url of the checkpoint client to connect to.
-    #[clap(long)]
+    #[arg(long)]
     pub rest_url: String,
     /// The url of the metrics client to connect to.
-    #[clap(long, default_value = "127.0.0.1", global = true)]
+    #[arg(long, default_value = "127.0.0.1", global = true)]
     pub client_metric_host: String,
     /// The port of the metrics client to connect to.
-    #[clap(long, default_value = "8081", global = true)]
+    #[arg(long, default_value = "8081", global = true)]
     pub client_metric_port: u16,
     /// Directory to contain the temporary files for checkpoint entries.
-    #[clap(long, global = true, default_value = "/tmp")]
+    #[arg(long, global = true, default_value = "/tmp")]
     pub checkpoint_dir: PathBuf,
     /// Number of checkpoints to process before uploading to the datastore.
-    #[clap(long, default_value = "10000", global = true)]
+    #[arg(long, default_value = "10000", global = true)]
     pub checkpoint_interval: u64,
     /// Checkpoint sequence number to start the download from
-    #[clap(long, default_value = None, global = true)]
+    #[arg(long, default_value = None, global = true)]
     pub starting_checkpoint_seq_num: Option<u64>,
     /// Time to process in seconds before uploading to the datastore.
-    #[clap(long, default_value = "600", global = true)]
+    #[arg(long, default_value = "600", global = true)]
     pub time_interval_s: u64,
     // Remote object store where data gets written to
     #[command(flatten)]
     pub remote_store_config: ObjectStoreConfig,
     // Remote object store path prefix to use while writing
-    #[clap(long, default_value = None, global = true)]
+    #[arg(long, default_value = None, global = true)]
     pub remote_store_path_prefix: Option<Path>,
     // File format to store data in i.e. csv, parquet, etc
-    #[clap(long, value_enum, default_value = "csv", global = true)]
+    #[arg(long, value_enum, default_value = "csv", global = true)]
     pub file_format: FileFormat,
     // Type of data to write i.e. checkpoint, object, transaction, etc
-    #[clap(long, value_enum, long, global = true)]
+    #[arg(long, value_enum, long, global = true)]
     pub file_type: FileType,
     // Directory to contain the package cache for pipelines
-    #[clap(
-        long,
+    #[arg(
+    long,
         value_enum,
         long,
         global = true,

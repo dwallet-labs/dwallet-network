@@ -29,10 +29,10 @@ const MAX_UNIT_TEST_INSTRUCTIONS: u64 = 1_000_000;
 #[derive(Parser)]
 #[group(id = "sui-move-test")]
 pub struct Test {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub test: test::Test,
     /// If `true`, disable linters
-    #[clap(long, global = true)]
+    #[arg(long, global = true)]
     pub no_lint: bool,
 }
 

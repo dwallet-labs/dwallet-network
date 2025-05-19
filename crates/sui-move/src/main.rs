@@ -28,7 +28,7 @@ const GIT_REVISION: &str = {
 const VERSION: &str = const_str::concat!(env!("CARGO_PKG_VERSION"), "-", GIT_REVISION);
 
 #[derive(Parser)]
-#[clap(
+#[arg(
     name = env!("CARGO_BIN_NAME"),
     about = "Sui-Move CLI",
     rename_all = "kebab-case",
@@ -37,19 +37,19 @@ const VERSION: &str = const_str::concat!(env!("CARGO_PKG_VERSION"), "-", GIT_REV
 )]
 struct Args {
     /// Path to a package which the command should be run with respect to.
-    #[clap(long = "path", short = 'p', global = true)]
+    #[arg(long = "path", short = 'p', global = true)]
     pub package_path: Option<PathBuf>,
     /// If true, run the Move bytecode verifier on the bytecode from a successful build
-    #[clap(long = "path", short = 'p', global = true)]
+    #[arg(long = "path", short = 'p', global = true)]
     pub run_bytecode_verifier: bool,
     /// If true, print build diagnostics to stderr--no printing if false
-    #[clap(long = "path", short = 'p', global = true)]
+    #[arg(long = "path", short = 'p', global = true)]
     pub print_diags_to_stderr: bool,
     /// Package build options
-    #[clap(flatten)]
+    #[command(flatten)]
     pub build_config: MoveBuildConfig,
     /// Subcommands.
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub cmd: sui_move::Command,
 }
 

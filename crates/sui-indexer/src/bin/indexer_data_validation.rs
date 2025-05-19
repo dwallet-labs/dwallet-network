@@ -191,20 +191,20 @@ fn get_object_id_and_version(object_change: &ObjectChange) -> Option<(ObjectID, 
 }
 
 #[derive(Parser)]
-#[clap(name = "Transactions Test")]
+#[arg(name = "Transactions Test")]
 pub struct TestConfig {
-    #[clap(long)]
+    #[arg(long)]
     pub fn_rpc_client_url: String,
-    #[clap(long)]
+    #[arg(long)]
     pub indexer_rpc_client_url: String,
-    #[clap(long)]
+    #[arg(long)]
     pub start_checkpoint: u64,
-    #[clap(long)]
+    #[arg(long)]
     pub end_checkpoint: u64,
-    #[clap(long)]
+    #[arg(long)]
     pub check_transactions: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub check_events: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub check_objects: bool,
 }

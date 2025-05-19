@@ -13,7 +13,7 @@ const SUI_PKG_PATH: &str = "{ git = \"https://github.com/MystenLabs/sui.git\", s
 #[derive(Parser)]
 #[group(id = "sui-move-new")]
 pub struct New {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub new: new::New,
 }
 

@@ -18,7 +18,7 @@ use tempfile::TempDir;
 #[derive(Parser, Debug)]
 pub enum ProverOptions {
     // Pass through unknown commands to the prover Clap parser
-    #[clap(
+    #[command(
         external_subcommand,
         takes_value(true),
         multiple_values(true),
@@ -30,17 +30,17 @@ pub enum ProverOptions {
 /// Run the Move Prover on the package at `path`. If no path is provided defaults to current
 /// directory. Use `.. prove .. -- <options>` to pass on options to the prover.
 #[derive(Parser)]
-#[clap(name = "prove")]
+#[command(name = "prove")]
 pub struct Prove {
     /// The target filter used to prune the modules to verify. Modules with a name that contains
     /// this string will be part of verification.
-    #[clap(short = 't', long = "target")]
+    #[arg(short = 't', long = "target")]
     pub target_filter: Option<String>,
     /// Internal field indicating that this prover run is for a test.
-    #[clap(skip)]
+    #[arg(skip)]
     pub for_test: bool,
     /// Any options passed to the prover.
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub options: Option<ProverOptions>,
 }
 

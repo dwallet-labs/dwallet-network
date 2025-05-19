@@ -28,7 +28,7 @@ use move_symbol_pool::Symbol;
 use url::Url;
 
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Options {}
 
 fn main() {

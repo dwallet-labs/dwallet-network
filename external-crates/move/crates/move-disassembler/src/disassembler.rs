@@ -30,19 +30,19 @@ use move_ir_types::location::Loc;
 #[derive(Debug, Default, Parser)]
 pub struct DisassemblerOptions {
     /// Only print non-private functions
-    #[clap(long = "only-public")]
+    #[arg(long = "only-public")]
     pub only_externally_visible: bool,
 
     /// Print the bytecode for the instructions within the function.
-    #[clap(long = "print-code")]
+    #[arg(long = "print-code")]
     pub print_code: bool,
 
     /// Print the basic blocks of the bytecode.
-    #[clap(long = "print-basic-blocks")]
+    #[arg(long = "print-basic-blocks")]
     pub print_basic_blocks: bool,
 
     /// Print the locals inside each function body.
-    #[clap(long = "print-locals")]
+    #[arg(long = "print-locals")]
     pub print_locals: bool,
 }
 

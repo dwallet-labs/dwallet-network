@@ -9,14 +9,14 @@ use std::path::PathBuf;
 /// Generate error map for the package and its dependencies at `path` for use by the Move
 /// explanation tool.
 #[derive(Parser)]
-#[clap(name = "errmap")]
+#[command(name = "errmap")]
 pub struct Errmap {
     /// The prefix that all error reasons within modules will be prefixed with, e.g., "E" if
     /// all error reasons are "E_CANNOT_PERFORM_OPERATION", "E_CANNOT_ACCESS", etc.
-    #[clap(long)]
+    #[arg(long)]
     pub error_prefix: Option<String>,
     /// The file to serialize the generated error map to.
-    #[clap(long, default_value = "error_map")]
+    #[arg(long, default_value = "error_map")]
     pub output_file: PathBuf,
 }
 

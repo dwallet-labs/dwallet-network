@@ -37,70 +37,70 @@ use crate::{
 };
 
 #[derive(Debug, Parser, Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Default)]
-#[clap(about)]
+#[command(about)]
 pub struct BuildConfig {
     /// Compile in 'dev' mode. The 'dev-addresses' and 'dev-dependencies' fields will be used if
     /// this flag is set. This flag is useful for development of packages that expose named
     /// addresses that are not set to a specific value.
-    #[clap(name = "dev-mode", short = 'd', long = "dev", global = true)]
+    #[arg(name = "dev-mode", short = 'd', long = "dev", global = true)]
     pub dev_mode: bool,
 
     /// Compile in 'test' mode. The 'dev-addresses' and 'dev-dependencies' fields will be used
     /// along with any code in the 'tests' directory.
-    #[clap(name = "test-mode", long = "test", global = true)]
+    #[arg(name = "test-mode", long = "test", global = true)]
     pub test_mode: bool,
 
     /// Generate documentation for packages
-    #[clap(name = "generate-docs", long = "doc", global = true)]
+    #[arg(name = "generate-docs", long = "doc", global = true)]
     pub generate_docs: bool,
 
     /// Installation directory for compiled artifacts. Defaults to current directory.
-    #[clap(long = "install-dir", global = true)]
+    #[arg(long = "install-dir", global = true)]
     pub install_dir: Option<PathBuf>,
 
     /// Force recompilation of all packages
-    #[clap(name = "force-recompilation", long = "force", global = true)]
+    #[arg(name = "force-recompilation", long = "force", global = true)]
     pub force_recompilation: bool,
 
     /// Optional location to save the lock file to, if package resolution succeeds.
-    #[clap(skip)]
+    #[arg(skip)]
     pub lock_file: Option<PathBuf>,
 
     /// Only fetch dependency repos to MOVE_HOME
-    #[clap(long = "fetch-deps-only", global = true)]
+    #[arg(long = "fetch-deps-only", global = true)]
     pub fetch_deps_only: bool,
 
     /// Skip fetching latest git dependencies
-    #[clap(long = "skip-fetch-latest-git-deps", global = true)]
+    #[arg(long = "skip-fetch-latest-git-deps", global = true)]
     pub skip_fetch_latest_git_deps: bool,
 
     /// Default flavor for move compilation, if not specified in the package's config
-    #[clap(long = "default-move-flavor", global = true)]
+    #[arg(long = "default-move-flavor", global = true)]
     pub default_flavor: Option<Flavor>,
 
     /// Default edition for move compilation, if not specified in the package's config
-    #[clap(long = "default-move-edition", global = true)]
+    #[arg(long = "default-move-edition", global = true)]
     pub default_edition: Option<Edition>,
 
     /// If set, dependency packages are treated as root packages. Notably, this will remove
     /// warning suppression in dependency packages.
-    #[clap(long = "dependencies-are-root", global = true)]
+    #[arg(long = "dependencies-are-root", global = true)]
     pub deps_as_root: bool,
 
     /// If set, ignore any compiler warnings
-    #[clap(long = move_compiler::command_line::SILENCE_WARNINGS, global = true)]
+    #[arg(long = move_compiler::command_line::SILENCE_WARNINGS, global = true)]
     pub silence_warnings: bool,
 
     /// If set, warnings become errors
-    #[clap(long = move_compiler::command_line::WARNINGS_ARE_ERRORS, global = true)]
+    #[arg(long = move_compiler::command_line::WARNINGS_ARE_ERRORS, global = true)]
     pub warnings_are_errors: bool,
 
     /// Additional named address mapping. Useful for tools in rust
-    #[clap(skip)]
+    #[arg(skip)]
     pub additional_named_addresses: BTreeMap<String, AccountAddress>,
 
     /// If `true`, disable linters
-    #[clap(long, global = true)]
+    #[arg(long, global = true)]
     pub no_lint: bool,
 }
 

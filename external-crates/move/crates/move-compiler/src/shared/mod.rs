@@ -642,27 +642,27 @@ pub fn format_comma<T: fmt::Display, I: IntoIterator<Item = T>>(items: I) -> Str
 #[derive(Clone, Debug, Eq, PartialEq, Parser)]
 pub struct Flags {
     /// Compile in test mode
-    #[clap(
+    #[arg(
         short = cli::TEST_SHORT,
         long = cli::TEST,
     )]
     test: bool,
 
     /// Compile in verification mode
-    #[clap(
+    #[arg(
         short = cli::VERIFY_SHORT,
         long = cli::VERIFY,
     )]
     verify: bool,
 
     /// If set, warnings become errors.
-    #[clap(
+    #[arg(
         long = cli::WARNINGS_ARE_ERRORS,
     )]
     warnings_are_errors: bool,
 
     /// If set, all warnings are silenced
-    #[clap(
+    #[arg(
         long = cli::SILENCE_WARNINGS,
         short = cli::SILENCE_WARNINGS_SHORT,
     )]
@@ -670,7 +670,7 @@ pub struct Flags {
 
     /// If set, source files will not shadow dependency files. If the same file is passed to both,
     /// an error will be raised
-    #[clap(
+    #[arg(
         name = "SOURCES_SHADOW_DEPS",
         short = cli::SHADOW_SHORT,
         long = cli::SHADOW,
@@ -678,14 +678,14 @@ pub struct Flags {
     shadow: bool,
 
     /// Bytecode version.
-    #[clap(
+    #[arg(
         long = cli::BYTECODE_VERSION,
     )]
     bytecode_version: Option<u32>,
 
     /// Internal flag used by the model builder to maintain functions which would be otherwise
     /// included only in tests, without creating the unit test code regular tests do.
-    #[clap(skip)]
+    #[arg(skip)]
     keep_testing_functions: bool,
 }
 

@@ -45,7 +45,7 @@ struct SimpleVMTestAdapter<'a> {
 
 #[derive(Debug, Parser)]
 pub struct AdapterInitArgs {
-    #[clap(long = "edition")]
+    #[arg(long = "edition")]
     pub edition: Option<Edition>,
 }
 

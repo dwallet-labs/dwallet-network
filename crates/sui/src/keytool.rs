@@ -59,11 +59,11 @@ mod keytool_tests;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Subcommand)]
-#[clap(rename_all = "kebab-case")]
+#[command(rename_all = "kebab-case")]
 pub enum KeyToolCommand {
     /// Update an old alias to a new one.
     /// If a new alias is not provided, a random one will be generated.
-    #[clap(name = "update-alias")]
+    #[arg(name = "update-alias")]
     Alias {
         old_alias: String,
         /// The alias must start with a letter and can contain only letters, digits, hyphens (-), or underscores (_).
@@ -74,15 +74,15 @@ pub enum KeyToolCommand {
     Convert { value: String },
     /// Given a Base64 encoded transaction bytes, decode its components.
     DecodeTxBytes {
-        #[clap(long)]
+        #[arg(long)]
         tx_bytes: String,
     },
     /// Given a Base64 encoded MultiSig signature, decode its components.
     /// If tx_bytes is passed in, verify the multisig.
     DecodeMultiSig {
-        #[clap(long)]
+        #[arg(long)]
         multisig: MultiSig,
-        #[clap(long)]
+        #[arg(long)]
         tx_bytes: Option<String>,
     },
     /// Generate a new keypair with key scheme flag {ed25519 | secp256k1 | secp256r1}
@@ -108,7 +108,7 @@ pub enum KeyToolCommand {
     /// the tool will automatically generate one.
     Import {
         /// Sets an alias for this address. The alias must start with a letter and can contain only letters, digits, hyphens (-), or underscores (_).
-        #[clap(long)]
+        #[arg(long)]
         alias: Option<String>,
         input_string: String,
         key_scheme: SignatureScheme,
@@ -125,11 +125,11 @@ pub enum KeyToolCommand {
     /// To MultiSig Sui Address. Pass in a list of all public keys `flag || pk` in Base64.
     /// See `keytool list` for example public keys.
     MultiSigAddress {
-        #[clap(long)]
+        #[arg(long)]
         threshold: ThresholdUnit,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         pks: Vec<PublicKey>,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         weights: Vec<WeightUnit>,
     },
     /// Provides a list of participating signatures (`flag || sig || pk` encoded in Base64),
@@ -142,23 +142,23 @@ pub enum KeyToolCommand {
     /// e.g. for [pk1, pk2, pk3, pk4, pk5], [sig1, sig2, sig5] is valid, but
     /// [sig2, sig1, sig5] is invalid.
     MultiSigCombinePartialSig {
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         sigs: Vec<GenericSignature>,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         pks: Vec<PublicKey>,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         weights: Vec<WeightUnit>,
-        #[clap(long)]
+        #[arg(long)]
         threshold: ThresholdUnit,
     },
     MultiSigCombinePartialSigLegacy {
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         sigs: Vec<GenericSignature>,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         pks: Vec<PublicKey>,
-        #[clap(long, num_args(1..))]
+        #[arg(long, num_args(1..))]
         weights: Vec<WeightUnit>,
-        #[clap(long)]
+        #[arg(long)]
         threshold: ThresholdUnit,
     },
 
@@ -171,11 +171,11 @@ pub enum KeyToolCommand {
     /// of the BCS serialized transaction bytes itself and its intent. If intent is absent,
     /// default will be used.
     Sign {
-        #[clap(long)]
+        #[arg(long)]
         address: KeyIdentity,
-        #[clap(long)]
+        #[arg(long)]
         data: String,
-        #[clap(long)]
+        #[arg(long)]
         intent: Option<Intent>,
     },
     /// Creates a signature by leveraging AWS KMS. Pass in a key-id to leverage Amazon
@@ -185,13 +185,13 @@ pub enum KeyToolCommand {
     /// of the BCS serialized transaction bytes itself and its intent. If intent is absent,
     /// default will be used.
     SignKMS {
-        #[clap(long)]
+        #[arg(long)]
         data: String,
-        #[clap(long)]
+        #[arg(long)]
         keyid: String,
-        #[clap(long)]
+        #[arg(long)]
         intent: Option<Intent>,
-        #[clap(long)]
+        #[arg(long)]
         base64pk: String,
     },
     /// This takes [enum SuiKeyPair] of Base64 encoded of 33-byte `flag || privkey`). It
@@ -202,35 +202,35 @@ pub enum KeyToolCommand {
     /// Given the max_epoch, generate an OAuth url, ask user to paste the redirect with id_token, call salt server, then call the prover server,
     /// create a test transaction, use the ephemeral key to sign and execute it by assembling to a serialized zkLogin signature.
     ZkLoginSignAndExecuteTx {
-        #[clap(long)]
+        #[arg(long)]
         max_epoch: EpochId,
-        #[clap(long, default_value = "devnet")]
+        #[arg(long, default_value = "devnet")]
         network: String,
-        #[clap(long, default_value = "true")]
+        #[arg(long, default_value = "true")]
         fixed: bool, // if true, use a fixed kp generated from [0; 32] seed.
-        #[clap(long, default_value = "true")]
+        #[arg(long, default_value = "true")]
         test_multisig: bool, // if true, use a multisig address with zklogin and a traditional kp.
-        #[clap(long, default_value = "false")]
+        #[arg(long, default_value = "false")]
         sign_with_sk: bool, // if true, execute tx with the traditional sig (in the multisig), otherwise with the zklogin sig.
     },
 
     /// A workaround to the above command because sometimes token pasting does not work (for Facebook). All the inputs required here are printed from the command above.
     ZkLoginEnterToken {
-        #[clap(long)]
+        #[arg(long)]
         parsed_token: String,
-        #[clap(long)]
+        #[arg(long)]
         max_epoch: EpochId,
-        #[clap(long)]
+        #[arg(long)]
         jwt_randomness: String,
-        #[clap(long)]
+        #[arg(long)]
         kp_bigint: String,
-        #[clap(long)]
+        #[arg(long)]
         ephemeral_key_identifier: SuiAddress,
-        #[clap(long, default_value = "devnet")]
+        #[arg(long, default_value = "devnet")]
         network: String,
-        #[clap(long, default_value = "true")]
+        #[arg(long, default_value = "true")]
         test_multisig: bool,
-        #[clap(long, default_value = "false")]
+        #[arg(long, default_value = "false")]
         sign_with_sk: bool,
     },
 
@@ -240,19 +240,19 @@ pub enum KeyToolCommand {
     /// Example request: sui keytool zk-login-sig-verify --sig $SERIALIZED_ZKLOGIN_SIG --bytes $BYTES --intent-scope 0 --network devnet --curr-epoch 10
     ZkLoginSigVerify {
         /// The Base64 of the serialized zkLogin signature.
-        #[clap(long)]
+        #[arg(long)]
         sig: String,
         /// The Base64 of the BCS encoded TransactionData or PersonalMessage.
-        #[clap(long)]
+        #[arg(long)]
         bytes: Option<String>,
         /// Either 0 for TransactionData or 3 for PersonalMessage.
-        #[clap(long)]
+        #[arg(long)]
         intent_scope: u8,
         /// The current epoch for the network to verify the signature's max_epoch against.
-        #[clap(long)]
+        #[arg(long)]
         curr_epoch: Option<EpochId>,
         /// The network to verify the signature for, determines ZkLoginEnv.
-        #[clap(long, default_value = "devnet")]
+        #[arg(long, default_value = "devnet")]
         network: String,
     },
 
@@ -260,7 +260,7 @@ pub enum KeyToolCommand {
     /// and output a zkLogin signature with a fixed dev-only proof with fixed max epoch 10.
     ZkLoginInsecureSignPersonalMessage {
         /// The string of data to sign.
-        #[clap(long)]
+        #[arg(long)]
         data: String,
     },
 }

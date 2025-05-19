@@ -18,33 +18,33 @@ pub enum Env {
 
 #[derive(derivative::Derivative, Parser)]
 #[derivative(Debug)]
-#[clap(name = "", rename_all = "kebab-case")]
+#[arg(name = "", rename_all = "kebab-case")]
 pub struct ClusterTestOpt {
-    #[clap(value_enum)]
+    #[command(value_enum)]
     pub env: Env,
-    #[clap(long)]
+    #[arg(long)]
     pub faucet_address: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub fullnode_address: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub epoch_duration_ms: Option<u64>,
     /// URL for the indexer RPC server
-    #[clap(long)]
+    #[arg(long)]
     pub indexer_address: Option<String>,
     /// Use new version of indexer or not
-    #[clap(long)]
+    #[arg(long)]
     pub use_indexer_v2: bool,
     /// URL for the Indexer Postgres DB
-    #[clap(long)]
+    #[arg(long)]
     #[derivative(Debug(format_with = "obfuscated_pg_address"))]
     pub pg_address: Option<String>,
     /// TODO(gegao): remove this after indexer migration is complete.
-    #[clap(long)]
+    #[arg(long)]
     pub use_indexer_experimental_methods: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub config_dir: Option<PathBuf>,
     /// URL for the indexer RPC server
-    #[clap(long)]
+    #[arg(long)]
     pub graphql_address: Option<String>,
 }
 

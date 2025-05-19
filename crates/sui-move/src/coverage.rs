@@ -9,7 +9,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[group(id = "sui-move-coverage")]
 pub struct Coverage {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub coverage: coverage::Coverage,
 }
 

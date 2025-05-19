@@ -35,29 +35,29 @@ use worker::LazyNarwhalClient;
 /// should be passed. The benchmarking client will first try to connect to all of those nodes before start sending
 /// any transactions. That confirms the system is up and running and ready to start processing the transactions.
 #[derive(Parser)]
-#[clap(name = "Narwhal Stress Testing Framework")]
+#[command(name = "Narwhal Stress Testing Framework")]
 struct App {
     /// The network address of the node where to send txs. A url format is expected ex 'http://127.0.0.1:7000'
-    #[clap(long, value_parser = parse_url, global = true)]
+    #[arg(long, value_parser = parse_url, global = true)]
     addr: Url,
     /// The size of each transaciton in bytes
-    #[clap(long, default_value = "512", global = true)]
+    #[arg(long, default_value = "512", global = true)]
     size: usize,
     /// The rate (txs/s) at which to send the transactions
-    #[clap(long, default_value = "100", global = true)]
+    #[arg(long, default_value = "100", global = true)]
     rate: u64,
     /// Network addresses that must be reachable before starting the benchmark.
-    #[clap(long, value_delimiter = ',', value_parser = parse_url, global = true)]
+    #[arg(long, value_delimiter = ',', value_parser = parse_url, global = true)]
     nodes: Vec<Url>,
     /// Optional duration of the benchmark in seconds. If not provided the benchmark will run forever.
-    #[clap(long, global = true)]
+    #[arg(long, global = true)]
     duration: Option<u64>,
-    #[clap(long, default_value = "0.0.0.0", global = true)]
+    #[arg(long, default_value = "0.0.0.0", global = true)]
     client_metric_host: String,
-    #[clap(long, default_value = "8081", global = true)]
+    #[arg(long, default_value = "8081", global = true)]
     client_metric_port: u16,
     // Local or remote client operating mode.
-    #[clap(long, default_value = "remote", value_parser)]
+    #[arg(long, default_value = "remote", value_parser)]
     operating_mode: OperatingMode,
 }
 

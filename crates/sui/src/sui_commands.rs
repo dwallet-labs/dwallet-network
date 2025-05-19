@@ -40,119 +40,119 @@ use tracing::info;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]
-#[clap(rename_all = "kebab-case")]
+#[command(rename_all = "kebab-case")]
 pub enum SuiCommand {
     /// Start sui network.
-    #[clap(name = "start")]
+    #[arg(name = "start")]
     Start {
-        #[clap(long = "network.config")]
+        #[arg(long = "network.config")]
         config: Option<PathBuf>,
-        #[clap(long = "no-full-node")]
+        #[arg(long = "no-full-node")]
         no_full_node: bool,
     },
-    #[clap(name = "network")]
+    #[arg(name = "network")]
     Network {
-        #[clap(long = "network.config")]
+        #[arg(long = "network.config")]
         config: Option<PathBuf>,
-        #[clap(short, long, help = "Dump the public keys of all authorities")]
+        #[arg(short, long, help = "Dump the public keys of all authorities")]
         dump_addresses: bool,
     },
     /// Bootstrap and initialize a new sui network
-    #[clap(name = "genesis")]
+    #[arg(name = "genesis")]
     Genesis {
-        #[clap(long, help = "Start genesis with a given config file")]
+        #[arg(long, help = "Start genesis with a given config file")]
         from_config: Option<PathBuf>,
-        #[clap(
-            long,
+        #[arg(
+    long,
             help = "Build a genesis config, write it to the specified path, and exit"
         )]
         write_config: Option<PathBuf>,
-        #[clap(long)]
+        #[arg(long)]
         working_dir: Option<PathBuf>,
-        #[clap(short, long, help = "Forces overwriting existing configuration")]
+        #[arg(short, long, help = "Forces overwriting existing configuration")]
         force: bool,
-        #[clap(long = "epoch-duration-ms")]
+        #[arg(long = "epoch-duration-ms")]
         epoch_duration_ms: Option<u64>,
-        #[clap(
-            long,
+        #[arg(
+    long,
             value_name = "ADDR",
             num_args(1..),
             value_delimiter = ',',
             help = "A list of ip addresses to generate a genesis suitable for benchmarks"
         )]
         benchmark_ips: Option<Vec<String>>,
-        #[clap(
-            long,
+        #[arg(
+    long,
             help = "Creates an extra faucet configuration for sui-test-validator persisted runs."
         )]
         with_faucet: bool,
     },
     GenesisCeremony(Ceremony),
     /// Sui keystore tool.
-    #[clap(name = "keytool")]
+    #[arg(name = "keytool")]
     KeyTool {
-        #[clap(long)]
+        #[arg(long)]
         keystore_path: Option<PathBuf>,
         ///Return command outputs in json format
-        #[clap(long, global = true)]
+        #[arg(long, global = true)]
         json: bool,
         /// Subcommands.
-        #[clap(subcommand)]
+        #[command(subcommand)]
         cmd: KeyToolCommand,
     },
     /// Start Sui interactive console.
-    #[clap(name = "console")]
+    #[arg(name = "console")]
     Console {
         /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
-        #[clap(long = "client.config")]
+        #[arg(long = "client.config")]
         config: Option<PathBuf>,
     },
     /// Client for interacting with the Sui network.
-    #[clap(name = "client")]
+    #[arg(name = "client")]
     Client {
         /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
-        #[clap(long = "client.config")]
+        #[arg(long = "client.config")]
         config: Option<PathBuf>,
-        #[clap(subcommand)]
+        #[command(subcommand)]
         cmd: Option<SuiClientCommands>,
         /// Return command outputs in json format.
-        #[clap(long, global = true)]
+        #[arg(long, global = true)]
         json: bool,
-        #[clap(short = 'y', long = "yes")]
+        #[arg(short = 'y', long = "yes")]
         accept_defaults: bool,
     },
     /// A tool for validators and validator candidates.
-    #[clap(name = "validator")]
+    #[arg(name = "validator")]
     Validator {
         /// Sets the file storing the state of our user accounts (an empty one will be created if missing)
-        #[clap(long = "client.config")]
+        #[arg(long = "client.config")]
         config: Option<PathBuf>,
-        #[clap(subcommand)]
+        #[command(subcommand)]
         cmd: Option<SuiValidatorCommand>,
         /// Return command outputs in json format.
-        #[clap(long, global = true)]
+        #[arg(long, global = true)]
         json: bool,
-        #[clap(short = 'y', long = "yes")]
+        #[arg(short = 'y', long = "yes")]
         accept_defaults: bool,
     },
 
     /// Tool to build and test Move applications.
-    #[clap(name = "move")]
+    #[arg(name = "move")]
     Move {
         /// Path to a package which the command should be run with respect to.
-        #[clap(long = "path", short = 'p', global = true)]
+        #[arg(long = "path", short = 'p', global = true)]
         package_path: Option<PathBuf>,
         /// Package build options
-        #[clap(flatten)]
+        #[command(flatten)]
         build_config: BuildConfig,
         /// Subcommands.
-        #[clap(subcommand)]
+        #[command(subcommand)]
         cmd: sui_move::Command,
     },
 
     /// Tool for Fire Drill
     FireDrill {
-        #[clap(subcommand)]
+        #[command(subcommand)]
         fire_drill: FireDrill,
     },
 }

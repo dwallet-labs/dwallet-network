@@ -76,48 +76,48 @@ const IMPLEMENTED_METHODS: [&str; 9] = [
 ];
 
 #[derive(Parser, Clone, Debug)]
-#[clap(
+#[arg(
     name = "Sui indexer",
     about = "An off-fullnode service serving data from Sui protocol",
     rename_all = "kebab-case"
 )]
 pub struct IndexerConfig {
-    #[clap(long)]
+    #[arg(long)]
     pub db_url: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub db_user_name: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub db_password: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub db_host: Option<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub db_port: Option<u16>,
-    #[clap(long)]
+    #[arg(long)]
     pub db_name: Option<String>,
-    #[clap(long, default_value = "http://0.0.0.0:9000", global = true)]
+    #[arg(long, default_value = "http://0.0.0.0:9000", global = true)]
     pub rpc_client_url: String,
-    #[clap(long, default_value = "0.0.0.0", global = true)]
+    #[arg(long, default_value = "0.0.0.0", global = true)]
     pub client_metric_host: String,
-    #[clap(long, default_value = "9184", global = true)]
+    #[arg(long, default_value = "9184", global = true)]
     pub client_metric_port: u16,
-    #[clap(long, default_value = "0.0.0.0", global = true)]
+    #[arg(long, default_value = "0.0.0.0", global = true)]
     pub rpc_server_url: String,
-    #[clap(long, default_value = "9000", global = true)]
+    #[arg(long, default_value = "9000", global = true)]
     pub rpc_server_port: u16,
-    #[clap(long, num_args(1..))]
+    #[arg(long, num_args(1..))]
     pub migrated_methods: Vec<String>,
-    #[clap(long)]
+    #[arg(long)]
     pub reset_db: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub fullnode_sync_worker: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub rpc_server_worker: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub analytical_worker: bool,
     // NOTE: experimental only, do not use in production.
-    #[clap(long)]
+    #[arg(long)]
     pub skip_db_commit: bool,
-    #[clap(long)]
+    #[arg(long)]
     pub use_v2: bool,
 }
 

@@ -280,19 +280,19 @@ fn get_row_col_input(is_row: bool) -> u8 {
 
 // Clap command line args parser
 #[derive(Parser)]
-#[clap(
+#[arg(
     name = "tic-tac-toe",
     about = "A Byzantine fault tolerant Tic-Tac-Toe with low-latency finality and high throughput",
     rename_all = "kebab-case"
 )]
 struct TicTacToeOpts {
-    #[clap(long)]
+    #[arg(long)]
     game_package_id: ObjectID,
-    #[clap(long)]
+    #[arg(long)]
     keystore_path: Option<PathBuf>,
-    #[clap(long, default_value = "https://fullnode.devnet.sui.io:443")]
+    #[arg(long, default_value = "https://fullnode.devnet.sui.io:443")]
     rpc_server_url: String,
-    #[clap(subcommand)]
+    #[command(subcommand)]]
     subcommand: TicTacToeCommand,
 }
 
@@ -304,18 +304,18 @@ fn default_keystore_path() -> PathBuf {
 }
 
 #[derive(Subcommand)]
-#[clap(rename_all = "kebab-case")]
+#[command(rename_all = "kebab-case")]
 enum TicTacToeCommand {
     NewGame {
-        #[clap(long)]
+        #[arg(long)]
         player_x: Option<SuiAddress>,
-        #[clap(long)]
+        #[arg(long)]
         player_o: Option<SuiAddress>,
     },
     JoinGame {
-        #[clap(long)]
+        #[arg(long)]
         my_identity: SuiAddress,
-        #[clap(long)]
+        #[arg(long)]
         game_id: ObjectID,
     },
 }

@@ -10,19 +10,19 @@ use std::path::PathBuf;
 
 /// Disassemble the Move bytecode pointed to
 #[derive(Parser)]
-#[clap(name = "disassemble")]
+#[command(name = "disassemble")]
 pub struct Disassemble {
     /// Start a disassembled bytecode-to-source explorer
-    #[clap(long = "interactive")]
+    #[arg(long = "interactive")]
     pub interactive: bool,
     /// The package name. If not provided defaults to current package modules only
-    #[clap(long = "package")]
+    #[arg(long = "package")]
     pub package_name: Option<String>,
     /// The name of the module or script in the package to disassemble
-    #[clap(long = "name")]
+    #[arg(long = "name")]
     pub module_or_script_name: String,
     /// Also print the raw disassembly using Rust's Debug output, at the end.
-    #[clap(long = "Xdebug")]
+    #[arg(long = "Xdebug")]
     pub debug: bool,
 }
 

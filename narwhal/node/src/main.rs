@@ -78,7 +78,7 @@ enum Commands {
     /// Generate a committee, workers and the parameters config files of all validators
     /// from a list of initial peers. This is only suitable for benchmarks as it exposes all keys.
     BenchmarkGenesis {
-        #[clap(
+        #[arg(
             long,
             value_name = "ADDR",
             num_args(1..),
@@ -87,13 +87,13 @@ enum Commands {
         )]
         ips: Vec<String>,
         /// The working directory where the files will be generated.
-        #[clap(long, value_name = "FILE", default_value = "genesis")]
+        #[arg(long, value_name = "FILE", default_value = "genesis")]
         working_directory: PathBuf,
         /// The number of workers per authority
-        #[clap(long, value_name = "NUM", default_value = "1")]
+        #[arg(long, value_name = "NUM", default_value = "1")]
         num_workers: usize,
         /// The base port
-        #[clap(long, value_name = "PORT", default_value = "5000")]
+        #[arg(long, value_name = "PORT", default_value = "5000")]
         base_port: usize,
     },
     /// Save an encoded bls12381 keypair (Base64 encoded `privkey`) to file
@@ -155,22 +155,22 @@ enum NodeType {
     /// Run a primary & worker in the same process as part of benchmark
     Benchmark {
         /// The worker Id
-        #[clap(long, value_name = "NUM")]
+        #[arg(long, value_name = "NUM")]
         worker_id: WorkerId,
         /// The network address of the node where to send txs. A url format is expected ex 'http://127.0.0.1:7000'
-        #[clap(long, value_parser = parse_url, global = true)]
+        #[arg(long, value_parser = parse_url, global = true)]
         addr: Url,
         /// The size of each transaciton in bytes
-        #[clap(long, default_value = "512", global = true)]
+        #[arg(long, default_value = "512", global = true)]
         size: usize,
         /// The rate (txs/s) at which to send the transactions
-        #[clap(long, default_value = "100", global = true)]
+        #[arg(long, default_value = "100", global = true)]
         rate: u64,
         /// Optional duration of the benchmark in seconds. If not provided the benchmark will run forever.
-        #[clap(long, global = true)]
+        #[arg(long, global = true)]
         duration: Option<u64>,
         /// Network addresses that must be reachable before starting the benchmark.
-        #[clap(long, value_delimiter = ',', value_parser = parse_url, global = true)]
+        #[arg(long, value_delimiter = ',', value_parser = parse_url, global = true)]
         nodes: Vec<Url>,
     },
 }

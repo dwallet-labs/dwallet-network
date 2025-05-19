@@ -25,7 +25,7 @@ const GIT_REVISION: &str = {
 const VERSION: &str = const_str::concat!(env!("CARGO_PKG_VERSION"), "-", GIT_REVISION);
 
 #[derive(Parser)]
-#[clap(
+#[arg(
     name = env!("CARGO_BIN_NAME"),
     about = "A Byzantine fault tolerant chain with low-latency finality and high throughput",
     rename_all = "kebab-case",
@@ -34,7 +34,7 @@ const VERSION: &str = const_str::concat!(env!("CARGO_PKG_VERSION"), "-", GIT_REV
     propagate_version = true,
 )]
 struct Args {
-    #[clap(subcommand)]
+    #[command(subcommand)]]
     command: SuiCommand,
 }
 

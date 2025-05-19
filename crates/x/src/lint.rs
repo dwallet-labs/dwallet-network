@@ -19,7 +19,7 @@ static LICENSE_HEADER: &str = "Copyright (c) Mysten Labs, Inc.\n\
                                ";
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[clap(long)]
+    #[arg(long)]
     fail_fast: bool,
 }
 

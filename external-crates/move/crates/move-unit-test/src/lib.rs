@@ -31,22 +31,22 @@ use std::{
 const DEFAULT_EXECUTION_BOUND: u64 = 1_000_000;
 
 #[derive(Debug, Parser, Clone)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 pub struct UnitTestingConfig {
     /// Bound the gas limit for any one test. If using custom gas table, this is the max number of instructions.
-    #[clap(name = "gas-limit", short = 'i', long = "gas-limit")]
+    #[arg(name = "gas-limit", short = 'i', long = "gas-limit")]
     pub gas_limit: Option<u64>,
 
     /// A filter string to determine which unit tests to run
-    #[clap(name = "filter", short = 'f', long = "filter")]
+    #[arg(name = "filter", short = 'f', long = "filter")]
     pub filter: Option<String>,
 
     /// List all tests
-    #[clap(name = "list", short = 'l', long = "list")]
+    #[arg(name = "list", short = 'l', long = "list")]
     pub list: bool,
 
     /// Number of threads to use for running tests.
-    #[clap(
+    #[arg(
         name = "num-threads",
         default_value = "8",
         short = 't',
@@ -55,7 +55,7 @@ pub struct UnitTestingConfig {
     pub num_threads: usize,
 
     /// Dependency files
-    #[clap(
+    #[arg(
         name = "dependencies",
         long = "dependencies",
         short = 'd',
@@ -65,10 +65,10 @@ pub struct UnitTestingConfig {
     pub dep_files: Vec<String>,
 
     /// Report test statistics at the end of testing. CSV report generated if 'csv' passed
-    #[clap(name = "report-statistics", short = 's', long = "statistics")]
+    #[arg(name = "report-statistics", short = 's', long = "statistics")]
     pub report_statistics: Option<Option<String>>,
 
-    #[clap(
+    #[arg(
         name = "report_stacktrace_on_abort",
         short = 'r',
         long = "stacktrace_on_abort"
@@ -76,7 +76,7 @@ pub struct UnitTestingConfig {
     pub report_stacktrace_on_abort: bool,
 
     /// Named address mapping
-    #[clap(
+    #[arg(
         name = "NAMED_ADDRESSES",
         short = 'a',
         long = "addresses",
@@ -85,7 +85,7 @@ pub struct UnitTestingConfig {
     pub named_address_values: Vec<(String, NumericalAddress)>,
 
     /// Source files
-    #[clap(
+    #[arg(
         name = "sources",
         num_args(1..),
         action = clap::ArgAction::Append,
@@ -94,11 +94,11 @@ pub struct UnitTestingConfig {
 
     /// Use the stackless bytecode interpreter to run the tests and cross check its results with
     /// the execution result from Move VM.
-    #[clap(long = "stackless")]
+    #[arg(long = "stackless")]
     pub check_stackless_vm: bool,
 
     /// Verbose mode
-    #[clap(short = 'v', long = "verbose")]
+    #[arg(short = 'v', long = "verbose")]
     pub verbose: bool,
 }
 

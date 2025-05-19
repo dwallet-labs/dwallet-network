@@ -9,16 +9,16 @@ use move_core_types::{
     language_storage::ModuleId,
 };
 #[derive(Debug, Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Args {
     /// The location (module id) returned with a `MoveAbort` error
-    #[clap(long = "location", short = 'l')]
+    #[arg(long = "location", short = 'l')]
     location: String,
     /// The abort code returned with a `MoveAbort` error
-    #[clap(long = "abort-code", short = 'a')]
+    #[arg(long = "abort-code", short = 'a')]
     abort_code: u64,
     /// Path to the error code mapping file
-    #[clap(long = MOVE_ERROR_DESC_EXTENSION, short = 'e')]
+    #[arg(long = MOVE_ERROR_DESC_EXTENSION, short = 'e')]
     errmap_path: String,
 }
 

@@ -192,16 +192,16 @@ pub enum ToolCommand {
     #[command(name = "dump-packages")]
     DumpPackages {
         /// Connection information for the Indexer's Postgres DB.
-        #[clap(long, short)]
+        #[arg(long, short)]
         db_url: String,
 
         /// Path to a non-existent directory that can be created and filled with package information.
-        #[clap(long, short)]
+        #[arg(long, short)]
         output_dir: PathBuf,
 
         /// If false (default), log level will be overridden to "off", and output will be reduced to
         /// necessary status information.
-        #[clap(short, long = "verbose")]
+        #[arg(short, long = "verbose")]
         verbose: bool,
     },
 
@@ -254,67 +254,67 @@ pub enum ToolCommand {
         db_checkpoint_path: PathBuf,
     },
 
-    #[clap(name = "download-db-snapshot")]
+    #[arg(name = "download-db-snapshot")]
     DownloadDBSnapshot {
-        #[clap(long = "epoch")]
+        #[arg(long = "epoch")]
         epoch: u64,
-        #[clap(long = "genesis")]
+        #[arg(long = "genesis")]
         genesis: PathBuf,
-        #[clap(long = "path", default_value = "/tmp")]
+        #[arg(long = "path", default_value = "/tmp")]
         path: PathBuf,
         /// skip downloading checkpoints dir. Overridden to `true` if `--formal` flag specified
-        #[clap(long = "skip-checkpoints")]
+        #[arg(long = "skip-checkpoints")]
         skip_checkpoints: bool,
         /// skip downloading indexes dir. Overridden to `true` if `--formal` flag specified,
         /// as index staging is not yet supported for formal snapshots.
-        #[clap(long = "skip-indexes")]
+        #[arg(long = "skip-indexes")]
         skip_indexes: bool,
         /// Number of parallel downloads to perform. Defaults to a reasonable
         /// value based on number of available logical cores.
-        #[clap(long = "num-parallel-downloads")]
+        #[arg(long = "num-parallel-downloads")]
         num_parallel_downloads: Option<usize>,
         /// If true, restore from formal (slim, DB agnostic) snapshot. Note that this is only supported
         /// for protocol versions supporting `commit_root_state_digest`. For mainnet, this is
         /// epoch 20+, and for testnet this is epoch 12+
-        #[clap(long = "formal")]
+        #[arg(long = "formal")]
         formal: bool,
         /// If true, perform snapshot and checkpoint summary verification. Only
         /// applicable if `--formal` flag is specified. Defaults to true.
-        #[clap(long = "verify")]
+        #[arg(long = "verify")]
         verify: Option<bool>,
         /// Network to download snapshot for. Defaults to "mainnet".
         /// If `--snapshot-bucket` or `--archive-bucket` is not specified,
         /// the value of this flag is used to construct default bucket names.
-        #[clap(long = "network", default_value = "mainnet")]
+        #[arg(long = "network", default_value = "mainnet")]
         network: Chain,
         /// Snapshot bucket name. If not specified, defaults are
         /// based on value of `--network` and `--formal` flags.
-        #[clap(long = "snapshot-bucket")]
+        #[arg(long = "snapshot-bucket")]
         snapshot_bucket: Option<String>,
         /// Snapshot bucket type. Defaults to "gcs" if `--formal`
         /// flag specified, otherwise "s3".
-        #[clap(long = "snapshot-bucket-type")]
+        #[arg(long = "snapshot-bucket-type")]
         snapshot_bucket_type: Option<ObjectStoreType>,
         /// Path to snapshot directory on local filesystem.
         /// Only applicable if `--snapshot-bucket-type` is "file".
-        #[clap(long = "snapshot-path")]
+        #[arg(long = "snapshot-path")]
         snapshot_path: Option<PathBuf>,
         /// Archival bucket name. If not specified, defaults are
         /// based on value of `--network` and `--formal` flags.
-        #[clap(long = "archive-bucket")]
+        #[arg(long = "archive-bucket")]
         archive_bucket: Option<String>,
-        #[clap(long = "archive-bucket-type", default_value = "s3")]
+        #[arg(long = "archive-bucket-type", default_value = "s3")]
         archive_bucket_type: ObjectStoreType,
         /// If true, no authentication is needed for snapshot restores
-        #[clap(long = "no-sign-request")]
+        #[arg(long = "no-sign-request")]
         no_sign_request: bool,
         /// If false (default), log level will be overridden to "off",
         /// and output will be reduced to necessary status information.
-        #[clap(long = "verbose")]
+        #[arg(long = "verbose")]
         verbose: bool,
     },
 
-    #[clap(name = "replay")]
+    #[arg(name = "replay")]
     Replay {
         #[arg(long = "rpc")]
         rpc_url: Option<String>,

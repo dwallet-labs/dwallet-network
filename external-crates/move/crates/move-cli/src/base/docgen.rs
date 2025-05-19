@@ -9,49 +9,49 @@ use std::{fs, path::PathBuf};
 
 /// Generate javadoc style documentation for Move packages
 #[derive(Parser)]
-#[clap(name = "docgen")]
+#[command(name = "docgen")]
 pub struct Docgen {
     /// The level where we start sectioning. Often markdown sections are rendered with
     /// unnecessary large section fonts, setting this value high reduces the size
-    #[clap(long = "section-level-start", value_name = "HEADER_LEVEL")]
+    #[arg(long = "section-level-start", value_name = "HEADER_LEVEL")]
     pub section_level_start: Option<usize>,
     /// Whether to exclude private functions in the generated docs
-    #[clap(long = "exclude-private-fun")]
+    #[arg(long = "exclude-private-fun")]
     pub exclude_private_fun: bool,
     /// Whether to exclude specifications in the generated docs
-    #[clap(long = "exclude-specs")]
+    #[arg(long = "exclude-specs")]
     pub exclude_specs: bool,
     /// Whether to put specifications in the same section as a declaration or put them all
     /// into an independent section
-    #[clap(long = "independent-specs")]
+    #[arg(long = "independent-specs")]
     pub independent_specs: bool,
     /// Whether to exclude Move implementations
-    #[clap(long = "exclude-impl")]
+    #[arg(long = "exclude-impl")]
     pub exclude_impl: bool,
     /// Max depth to which sections are displayed in table-of-contents
-    #[clap(long = "toc-depth", value_name = "DEPTH")]
+    #[arg(long = "toc-depth", value_name = "DEPTH")]
     pub toc_depth: Option<usize>,
     /// Do not use collapsed sections (<details>) for impl and specs
-    #[clap(long = "no-collapsed-sections")]
+    #[arg(long = "no-collapsed-sections")]
     pub no_collapsed_sections: bool,
     /// In which directory to store output
-    #[clap(long = "output-directory", value_name = "PATH")]
+    #[arg(long = "output-directory", value_name = "PATH")]
     pub output_directory: Option<String>,
     /// A template for documentation generation. Can be multiple
-    #[clap(long = "template", short = 't', value_name = "FILE")]
+    #[arg(long = "template", short = 't', value_name = "FILE")]
     pub template: Vec<String>,
     /// An optional file containing reference definitions. The content of this file will
     /// be added to each generated markdown doc
-    #[clap(long = "references-file", value_name = "FILE")]
+    #[arg(long = "references-file", value_name = "FILE")]
     pub references_file: Option<String>,
     /// Whether to include dependency diagrams in the generated docs
-    #[clap(long = "include-dep-diagrams")]
+    #[arg(long = "include-dep-diagrams")]
     pub include_dep_diagrams: bool,
     /// Whether to include call diagrams in the generated docs
-    #[clap(long = "include-call-diagrams")]
+    #[arg(long = "include-call-diagrams")]
     pub include_call_diagrams: bool,
     /// If this is being compiled relative to a different place where it will be stored (output directory)
-    #[clap(long = "compile-relative-to-output-dir")]
+    #[arg(long = "compile-relative-to-output-dir")]
     pub compile_relative_to_output_dir: bool,
 }
 

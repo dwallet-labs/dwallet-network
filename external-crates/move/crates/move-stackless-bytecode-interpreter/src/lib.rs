@@ -43,11 +43,11 @@ use crate::concrete::{
 #[derive(Parser)]
 pub struct InterpreterOptions {
     /// The function to be executed, specified in the format of `addr::module_name::function_name`
-    #[clap(long = "entry", value_parser = parse_entrypoint)]
+    #[arg(long = "entry", value_parser = parse_entrypoint)]
     pub entrypoint: (ModuleId, Identifier),
 
     /// Possibly-empty list of signers for the execution
-    #[clap(
+    #[arg(
         long = "signers",
         value_parser = AccountAddress::from_hex_literal,
         num_args(1..),
@@ -55,7 +55,7 @@ pub struct InterpreterOptions {
     )]
     pub signers: Vec<AccountAddress>,
     /// Possibly-empty list of arguments passed to the transaction
-    #[clap(
+    #[arg(
         long = "args",
         value_parser = parse_transaction_argument,
         num_args(1..),
@@ -64,7 +64,7 @@ pub struct InterpreterOptions {
     pub args: Vec<TransactionArgument>,
     /// Possibly-empty list of type arguments passed to the transaction (e.g., `T` in
     /// `main<T>()`). Must match the type arguments kinds expected by `script_file`.
-    #[clap(
+    #[arg(
         long = "ty-args",
         value_parser = parse_type_tag,
         num_args(1..),
@@ -73,10 +73,10 @@ pub struct InterpreterOptions {
     pub ty_args: Vec<TypeTag>,
 
     /// Skip checking of expressions
-    #[clap(long = "no-expr-check")]
+    #[arg(long = "no-expr-check")]
     pub no_expr_check: bool,
     /// Level of verbosity
-    #[clap(short = 'v', long = "verbose")]
+    #[arg(short = 'v', long = "verbose")]
     pub verbose: Option<u64>,
 }
 

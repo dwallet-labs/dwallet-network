@@ -33,11 +33,11 @@ const GIT_REVISION: &str = {
 const VERSION: &str = const_str::concat!(env!("CARGO_PKG_VERSION"), "-", GIT_REVISION);
 
 #[derive(Parser)]
-#[clap(rename_all = "kebab-case")]
-#[clap(name = env!("CARGO_BIN_NAME"))]
-#[clap(version = VERSION)]
+#[command(rename_all = "kebab-case")]
+#[command(name = env!("CARGO_BIN_NAME"))]
+#[command(version = VERSION)]
 struct Args {
-    #[clap(long)]
+    #[arg(long)]
     pub config_path: PathBuf,
 }
 

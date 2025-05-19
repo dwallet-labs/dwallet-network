@@ -29,18 +29,18 @@ use std::path::PathBuf;
 type NativeFunctionRecord = (AccountAddress, Identifier, Identifier, NativeFunction);
 
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 pub struct Move {
     /// Path to a package which the command should be run with respect to.
-    #[clap(long = "path", short = 'p', global = true)]
+    #[arg(long = "path", short = 'p', global = true)]
     pub package_path: Option<PathBuf>,
 
     /// Print additional diagnostics if available.
-    #[clap(short = 'v', global = true)]
+    #[arg(short = 'v', global = true)]
     pub verbose: bool,
 
     /// Package build options
-    #[clap(flatten)]
+    #[command(flatten)]
     pub build_config: BuildConfig,
 }
 
@@ -49,10 +49,10 @@ pub struct Move {
 /// easier for other crates to extend `move-cli`
 #[derive(Parser)]
 pub struct MoveCLI {
-    #[clap(flatten)]
+    #[command(flatten)]
     pub move_args: Move,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub cmd: Command,
 }
 
@@ -68,13 +68,13 @@ pub enum Command {
     Prove(Prove),
     Test(Test),
     /// Execute a sandbox command.
-    #[clap(name = "sandbox")]
+    #[command(name = "sandbox")]
     Sandbox {
         /// Directory storing Move resources, events, and module bytecodes produced by module publishing
         /// and script execution.
-        #[clap(long, default_value = DEFAULT_STORAGE_DIR)]
+        #[arg(long, default_value = DEFAULT_STORAGE_DIR)]
         storage_dir: PathBuf,
-        #[clap(subcommand)]
+        #[command(subcommand)]
         cmd: sandbox::cli::SandboxCommand,
     },
 }

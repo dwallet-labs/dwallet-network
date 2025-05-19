@@ -52,32 +52,32 @@ pub enum EthClientCommands {
     #[command(name = "verify-message")]
     EthApproveMessage {
         /// Object of a [EthereumDWalletCap].
-        #[clap(long)]
+        #[arg(long)]
         eth_dwallet_cap_id: ObjectID,
         /// The Message (TX) to verify.
-        #[clap(long)]
+        #[arg(long)]
         message: String,
         /// The DWallet ID.
-        #[clap(long)]
+        #[arg(long)]
         dwallet_id: ObjectID,
         /// The Ethereum network.
-        #[clap(long)]
+        #[arg(long)]
         network: String,
         /// Gas object for gas payment.
-        #[clap(long)]
+        #[arg(long)]
         gas: Option<ObjectID>,
         /// Gas budget for this call.
-        #[clap(long)]
+        #[arg(long)]
         gas_budget: u64,
         /// Instead of executing the transaction, serialize the bcs bytes of
         /// the unsigned transaction data
         /// (TransactionData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_unsigned_transaction: bool,
         /// Instead of executing the transaction, serialize the bcs bytes of
         /// the signed transaction data
         /// (SenderSignedData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_signed_transaction: bool,
     },
 
@@ -85,23 +85,23 @@ pub enum EthClientCommands {
     #[command(name = "connect-eth-dwallet")]
     CreateEthDwallet {
         /// The ObjectID of the dWallet *cap*ability.
-        #[clap(long)]
+        #[arg(long)]
         dwallet_cap_id: ObjectID,
         /// The address of the gas object for gas payment.
-        #[clap(long)]
+        #[arg(long)]
         gas: Option<ObjectID>,
         /// Gas budget for this call
-        #[clap(long)]
+        #[arg(long)]
         gas_budget: u64,
         /// Instead of executing the transaction,
         /// serialize the bcs bytes of the unsigned transaction data
         /// (TransactionData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_unsigned_transaction: bool,
         /// Instead of executing the transaction,
         /// serialize the bcs bytes of the signed transaction data
         /// (SenderSignedData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_signed_transaction: bool,
     },
 
@@ -109,32 +109,32 @@ pub enum EthClientCommands {
     #[command(name = "init-eth-state")]
     InitEthState {
         /// The corresponding Ethereum network.
-        #[clap(long)]
+        #[arg(long)]
         network: String,
         /// The RPC to query checkpoint from.
-        #[clap(long)]
+        #[arg(long)]
         consensus_rpc: String,
         /// The address of the contract.
-        #[clap(long)]
+        #[arg(long)]
         contract_address: String,
         /// The slot of the Data structure that holds approved transactions in eth smart contract.
-        #[clap(long)]
+        #[arg(long)]
         contract_approved_tx_slot: u64,
         /// The address of the gas object for gas payment.
-        #[clap(long)]
+        #[arg(long)]
         gas: Option<ObjectID>,
         /// Gas budget for this call.
-        #[clap(long)]
+        #[arg(long)]
         gas_budget: u64,
         /// Instead of executing the transaction,
         /// serialize the bcs bytes of the unsigned transaction data
         /// (TransactionData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_unsigned_transaction: bool,
         /// Instead of executing the transaction,
         /// serialize the bcs bytes of the signed transaction data
         /// (SenderSignedData) using base64 encoding, and print out the string.
-        #[clap(long, required = false)]
+        #[arg(long, required = false)]
         serialize_signed_transaction: bool,
     },
 }
