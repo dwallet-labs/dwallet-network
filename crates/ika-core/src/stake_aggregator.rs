@@ -224,7 +224,7 @@ impl<CertT> InsertResult<CertT> {
 /// Once quorum is reached, the aggregated signature is returned.
 #[derive(Debug, Clone)]
 pub struct MultiStakeAggregator<K, V, const STRENGTH: bool> {
-    committee: Arc<Committee>,
+    pub committee: Arc<Committee>,
     stake_maps: HashMap<K, (V, StakeAggregator<AuthoritySignInfo, STRENGTH>)>,
 }
 
