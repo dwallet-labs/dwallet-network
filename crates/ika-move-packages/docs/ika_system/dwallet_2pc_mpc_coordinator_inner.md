@@ -5301,7 +5301,7 @@ It finalizes the process by storing the encrypted user share on-chain and emitti
                     encrypted_user_secret_key_share_id,
                     session_id,
                 });
-                DWalletState::Active {
+                DWalletState::AwaitingKeyHolderSignature {
                     public_output
                 }
             }

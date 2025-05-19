@@ -2178,7 +2178,7 @@ public(package) fun respond_imported_key_dwallet_verification(
                     encrypted_user_secret_key_share_id,
                     session_id,
                 });
-                DWalletState::Active {
+                DWalletState::AwaitingKeyHolderSignature {
                     public_output
                 }
             }
