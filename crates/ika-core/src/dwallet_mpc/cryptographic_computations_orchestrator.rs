@@ -222,6 +222,11 @@ impl CryptographicComputationsOrchestrator {
                     .advance_calls_for_make_dwallet_user_secret_key_shares_public
                     .inc()
             }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_dwallet_imported_key_verification_request
+                    .inc();
+            }
         }
     }
 
