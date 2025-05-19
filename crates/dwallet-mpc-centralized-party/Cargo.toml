@@ -19,6 +19,8 @@ rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 serde = { version = "1.0.217", features = ["derive"] }
 crypto-bigint.workspace = true
+log = "0.4.27"
+console_log = "1.0.0"
 
 [lints]
 workspace = true

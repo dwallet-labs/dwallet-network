@@ -336,10 +336,10 @@ pub fn generate_secp256k1_cg_keypair_from_seed_internal(
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
     let setup_parameters = get_setup_parameters_secp256k1();
-    let (encryption_key, decryption_key) =
+    let (encryption_scheme_public_parameters, decryption_key) =
         Secp256k1DecryptionKey::generate(setup_parameters, &mut rng)?;
     let decryption_key = bcs::to_bytes(&decryption_key.decryption_key)?;
-    let encryption_key = bcs::to_bytes(&encryption_key)?;
+    let encryption_key = bcs::to_bytes(&encryption_scheme_public_parameters.encryption_key)?;
     Ok((encryption_key, decryption_key))
 }
 
@@ -372,7 +372,18 @@ pub fn encrypt_secret_key_share_and_prove(
     let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
-            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&secret_key_share)?, &mut OsRng)?;
+            console_log::init_with_level(log::Level::Debug).unwrap();
+            log::debug!("Debug log from WASM!");
+
+            let encryption_key = bcs::from_bytes(&encryption_key)?;
+            log::debug!("1");
+            
+            let secret_key_share = bcs::from_bytes(&secret_key_share)?;
+            log::debug!("2");
+            
+            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
+            log::debug!("3");
+            
             Ok(bcs::to_bytes(&result)?)
         }
     }
