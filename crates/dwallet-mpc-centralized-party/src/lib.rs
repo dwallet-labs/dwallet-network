@@ -377,13 +377,13 @@ pub fn encrypt_secret_key_share_and_prove(
 
             let encryption_key = bcs::from_bytes(&encryption_key)?;
             log::debug!("1");
-            
+
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
             log::debug!("2");
-            
+
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
             log::debug!("3");
-            
+
             Ok(bcs::to_bytes(&result)?)
         }
     }
