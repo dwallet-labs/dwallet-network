@@ -73,6 +73,9 @@ type Secp256k1EncryptionKey = EncryptionKey<
     secp256k1::GroupElement,
 >;
 
+type ImportSecretShareFirstStep =
+<AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
+
 pub struct CentralizedDKGWasmResult {
     pub public_key_share_and_proof: Vec<u8>,
     pub public_output: Vec<u8>,
@@ -241,9 +244,6 @@ pub fn advance_centralized_sign_party(
         }
     }
 }
-
-type ImportSecretShareFirstStep =
-    <AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
 
 pub fn create_imported_dwallet_centralized_step_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
