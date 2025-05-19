@@ -21,7 +21,7 @@ use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
+use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty, DWalletImportedKeyVerificationParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
@@ -364,6 +364,17 @@ impl DWalletMPCSession {
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(event_data) => {
+                let public_input = bcs::from_bytes(public_input)?;
+                crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+                    session_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_full_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
                     mpc_protocol=?mpc_event_data.init_protocol_data,

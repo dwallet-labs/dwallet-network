@@ -11,6 +11,7 @@ use twopc_mpc::dkg::Protocol;
 
 /// This struct represents the initial round of the DKG protocol.
 pub(super) type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
+pub(super) type DWalletImportedKeyVerificationParty = <AsyncProtocol as Protocol>::TrustedDealerDKGDecentralizedParty;
 /// This struct represents the final round of the DKG protocol.
 pub(super) type DKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundParty;
 
