@@ -84,9 +84,9 @@ pub struct MakeDWalletUserSecretKeySharesPublicOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DWalletImportedKeyVerificationOutput {
-    pub dwallet_id: ObjectID,
+    pub dwallet_id: Vec<u8>,
     pub public_output: Vec<u8>,
-    pub encrypted_user_secret_key_share_id: ObjectID,
+    pub encrypted_user_secret_key_share_id: Vec<u8>,
     pub session_id: ObjectID,
     pub rejected: bool,
     pub session_sequence_number: u64,

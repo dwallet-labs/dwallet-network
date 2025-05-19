@@ -3208,6 +3208,21 @@ fun process_checkpoint_message(
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+            } else if (message_data_type == 9) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
+                self.respond_imported_key_dwallet_verification(
+                    dwallet_id,
+                    public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
+                    rejected,
+                    session_sequence_number
+                );
             };
         i = i + 1;
     };
