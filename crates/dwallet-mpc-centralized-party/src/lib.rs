@@ -245,6 +245,16 @@ pub fn advance_centralized_sign_party(
     }
 }
 
+pub fn sample_dwallet_secret_key() -> anyhow::Result<Vec<u8>> {
+    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    let secret_key_share = twopc_mpc::secp256k1::Scalar::sample(
+        &protocol_public_parameters
+            .as_ref()
+            .scalar_group_public_parameters,
+        &mut OsRng,
+    )?;
+}
+
 pub fn create_imported_dwallet_centralized_step_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
