@@ -81,14 +81,14 @@ pub fn centralized_public_share_from_decentralized_output(
 /// Decrypts the given encrypted user share using the given decryption key.
 #[wasm_bindgen]
 pub fn decrypt_user_share(
-    encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let decrypted_secret_share = decrypt_user_share_inner(
-        encryption_key,
         decryption_key,
         encrypted_user_share_and_proof,
+        network_decryption_key_public_output
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
