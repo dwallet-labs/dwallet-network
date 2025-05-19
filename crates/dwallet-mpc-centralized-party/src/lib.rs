@@ -74,7 +74,7 @@ type Secp256k1EncryptionKey = EncryptionKey<
 >;
 
 type ImportSecretShareFirstStep =
-<AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
 
 pub struct CentralizedDKGWasmResult {
     pub public_key_share_and_proof: Vec<u8>,
