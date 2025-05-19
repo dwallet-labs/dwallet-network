@@ -18,6 +18,12 @@ interface NewImportedKeyDWalletEvent {
 	dwallet_cap_id: string;
 }
 
+interface DWalletImportedKeyVerificationRequestEvent {
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
+}
+
 function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalletEvent {
 	return event.dwallet_id !== undefined && event.dwallet_cap_id !== undefined;
 }
@@ -130,12 +136,6 @@ export async function verifyImportedDWalletMoveCall(
 	}
 	await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	return startSessionEvent.event_data.encrypted_user_secret_key_share_id;
-}
-
-interface DWalletImportedKeyVerificationRequestEvent {
-	event_data: {
-		encrypted_user_secret_key_share_id: string;
-	};
 }
 
 function isDWalletImportedKeyVerificationRequestEvent(

@@ -1805,7 +1805,7 @@ impl AuthorityPerEpochStore {
                             .encrypted_user_secret_key_share_id
                             .to_vec()
                             .clone(),
-                        session_id: init_event.session_id.clone(),
+                        session_id: init_event.session_id.to_vec().clone(),
                         rejected,
                         session_sequence_number: sequence_number,
                     },
