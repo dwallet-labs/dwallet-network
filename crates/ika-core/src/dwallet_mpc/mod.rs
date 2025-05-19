@@ -17,7 +17,10 @@ use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletImportedKeyVerificationRequestEvent, SignRequestEvent};
+use ika_types::messages_dwallet_mpc::{
+    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletImportedKeyVerificationRequestEvent,
+    SignRequestEvent,
+};
 use ika_types::messages_dwallet_mpc::{
     DWalletDKGSecondRoundRequestEvent, DWalletMPCEventTrait, DWalletMPCSuiEvent,
     EncryptedShareVerificationRequestEvent, IkaPackagesConfig, MPCProtocolInitData,
@@ -141,9 +144,9 @@ pub(crate) fn session_info_from_event(
         {
             Ok(Some(
                 dwallet_imported_key_verification_request_event_session_info(
-                    deserialize_event_or_dynamic_field::<
-                        DWalletImportedKeyVerificationRequestEvent,
-                    >(&event.contents)?,
+                    deserialize_event_or_dynamic_field::<DWalletImportedKeyVerificationRequestEvent>(
+                        &event.contents,
+                    )?,
                 ),
             ))
         }
