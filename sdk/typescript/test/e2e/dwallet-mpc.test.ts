@@ -189,5 +189,6 @@ describe('Test dWallet MPC', () => {
 			public_output,
 			importedDWalletData.dwallet_id,
 		);
+		console.log(`encryptedSecretShareID: ${encryptedSecretShareID}`);
 	});
 });

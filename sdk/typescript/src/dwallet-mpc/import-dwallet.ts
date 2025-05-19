@@ -1,8 +1,8 @@
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import type { Config, SharedObjectData } from './globals.js';
 import {
-	Config,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
 	getInitialSharedVersion,
@@ -10,8 +10,7 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	SUI_PACKAGE_ID,
-	type SharedObjectData,
-} from './globals';
+} from './globals.js';
 
 interface NewImportedKeyDWalletEvent {
 	dwallet_id: string;
