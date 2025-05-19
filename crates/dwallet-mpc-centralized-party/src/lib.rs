@@ -243,7 +243,7 @@ pub fn advance_centralized_sign_party(
 type ImportSecretShareFirstStep =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
 
-fn create_imported_dwallet_centralized_step(
+pub fn create_imported_dwallet_centralized_step_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
 ) -> anyhow::Result<Vec<u8>> {
