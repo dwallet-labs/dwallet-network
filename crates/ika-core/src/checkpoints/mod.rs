@@ -1232,7 +1232,9 @@ impl CheckpointAggregator {
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 continue;
             }
-            let _ = timeout(Duration::from_secs(1), self.notify.notified()).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            // let _ = timeout(Duration::from_secs(1), self.notify.notified()).await;
+            info!("CheckpointAggregator end of loop");
         }
     }
 
@@ -1734,7 +1736,8 @@ impl CheckpointService {
             max_checkpoint_size_bytes,
             previous_epoch_last_checkpoint_sequence_number,
         );
-        tasks.spawn(monitored_future!(builder.run()));
+
+        tasks.spawn(monitored_future!(futures, builder.run(), "", DEBUG, true));
 
         let aggregator = CheckpointAggregator::new(
             checkpoint_store.clone(),
@@ -1744,7 +1747,14 @@ impl CheckpointService {
             state.clone(),
             metrics.clone(),
         );
-        tasks.spawn(monitored_future!(aggregator.run()));
+
+        tasks.spawn(monitored_future!(
+            futures,
+            aggregator.run(),
+            "",
+            DEBUG,
+            true
+        ));
 
         let last_signature_index = epoch_store
             .get_last_checkpoint_signature_index()
