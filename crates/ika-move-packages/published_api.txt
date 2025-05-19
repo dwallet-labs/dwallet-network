@@ -271,7 +271,7 @@ CompletedDWalletDKGSecondRoundEvent
 RejectedDWalletDKGSecondRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletImportedKeyVerificationRequestEvent
+DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedDWalletImportedKeyVerificationEvent

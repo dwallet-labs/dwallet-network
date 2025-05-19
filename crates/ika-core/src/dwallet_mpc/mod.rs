@@ -17,9 +17,7 @@ use group::PartyID;
 use ika_types::committee::{Committee, CommitteeTrait};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, SignRequestEvent,
-};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletImportedKeyVerificationRequestEvent, SignRequestEvent};
 use ika_types::messages_dwallet_mpc::{
     DWalletDKGSecondRoundRequestEvent, DWalletMPCEventTrait, DWalletMPCSuiEvent,
     EncryptedShareVerificationRequestEvent, IkaPackagesConfig, MPCProtocolInitData,
@@ -137,6 +135,19 @@ pub(crate) fn session_info_from_event(
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t
+            == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            Ok(Some(
+                make_dwallet_user_secret_key_shares_public_request_event_session_info(
+                    deserialize_event_or_dynamic_field::<
+                        DWalletImportedKeyVerificationRequestEvent,
+                    >(&event.contents)?,
+                ),
+            ))
+        }
+        t if t
             == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
                 packages_config,
             ) =>
@@ -236,6 +247,19 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
 }
 
 fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
+    deserialized_event: DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_id: deserialized_event.session_id.clone(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
+            deserialized_event,
+        ),
+    }
+}
+
+fn dwallet_imported_key_verification_request_event_session_info(
     deserialized_event: DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {

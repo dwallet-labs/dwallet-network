@@ -15,6 +15,8 @@ pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGFirstRoundRequestEvent");
 pub const DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT: &IdentStr =
     ident_str!("MakeDWalletUserSecretKeySharePublicRequestEvent");
+pub const DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT: &IdentStr =
+    ident_str!("DWalletImportedKeyVerificationRequestEvent");
 // TODO (#650): Rename Move structs
 pub const DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGSecondRoundRequestEvent");

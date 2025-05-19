@@ -623,7 +623,7 @@ public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
 // END OF DKG TYPES
 
 
-public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
+public struct DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT has copy, drop, store {
     /// The unique session identifier for the DWallet.
     dwallet_id: ID,
 
@@ -658,7 +658,6 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     /// The elliptic curve used for the dWallet.
     curve: u32,
 }
-
 
 public struct CompletedDWalletImportedKeyVerificationEvent has copy, drop, store {
     dwallet_id: ID,
@@ -2137,7 +2136,7 @@ public(package) fun request_imported_key_dwallet_verification(
         pricing,
         payment_ika,
         payment_sui,
-        DWalletImportedKeyVerificationRequestEvent {
+        DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT {
             dwallet_id,
             encrypted_user_secret_key_share_id,
             centralized_party_message,
@@ -2166,7 +2165,7 @@ public(package) fun respond_imported_key_dwallet_verification(
     rejected: bool,
     session_sequence_number: u64,
 ) {
-    self.remove_user_initiated_session_and_charge<DWalletImportedKeyVerificationRequestEvent>(session_sequence_number);
+    self.remove_user_initiated_session_and_charge<DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT>(session_sequence_number);
     let dwallet = self.get_dwallet_mut(dwallet_id);
 
     dwallet.state = match (&dwallet.state) {
