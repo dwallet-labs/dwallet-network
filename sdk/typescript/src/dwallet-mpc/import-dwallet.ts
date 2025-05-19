@@ -129,15 +129,17 @@ export async function verifyImportedDWalletMoveCall(
 		throw new Error('invalid start session event');
 	}
 	await getObjectWithType(conf, dwalletID, isActiveDWallet);
-	return startSessionEvent.encrypted_user_secret_key_share_id;
+	return startSessionEvent.event_data.encrypted_user_secret_key_share_id;
 }
 
 interface DWalletImportedKeyVerificationRequestEvent {
-	encrypted_user_secret_key_share_id: string;
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
 }
 
 function isDWalletImportedKeyVerificationRequestEvent(
 	event: any,
 ): event is DWalletImportedKeyVerificationRequestEvent {
-	return event.encrypted_user_secret_key_share_id !== undefined;
+	return event.event_data.encrypted_user_secret_key_share_id !== undefined;
 }
