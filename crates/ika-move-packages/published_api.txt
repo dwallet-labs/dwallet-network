@@ -1384,6 +1384,9 @@ advance_epoch
 process_mid_epoch
 	public(package) fun
 	0x0::system_inner
+lock_last_active_session_sequence_number
+	public(package) fun
+	0x0::system_inner
 epoch
 	public(package) fun
 	0x0::system_inner

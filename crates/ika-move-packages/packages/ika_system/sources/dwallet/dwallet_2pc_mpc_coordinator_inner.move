@@ -203,7 +203,7 @@ public struct EncryptionKey has key, store {
 
     curve: u32,
 
-    //TODO: make sure to include class gorup type and version inside the bytes with the rust code
+    //TODO: make sure to include class group type and version inside the bytes with the rust code
     /// Serialized encryption key.
     encryption_key: vector<u8>,
 
@@ -248,12 +248,11 @@ public struct EncryptedUserSecretKeyShare has key, store {
 
     state: EncryptedUserSecretKeyShareState,
 }
-
 public enum EncryptedUserSecretKeyShareState has copy, drop, store {
     AwaitingNetworkVerification,
     NetworkVerificationCompleted,
     NetworkVerificationRejected,
-    KeyHolderSiged {
+    KeyHolderSigned {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
         user_output_signature: vector<u8>,
@@ -502,7 +501,7 @@ public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
 }
 
 public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
-       dwallet_network_encryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 /// An event emitted when the first round of the DKG process is completed.
@@ -512,7 +511,7 @@ public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
 public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
-       dwallet_network_encryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
 }
 
 // DKG TYPES
@@ -674,8 +673,6 @@ public struct RejectedDWalletImportedKeyVerificationEvent has copy, drop, store 
 
 
 // ENCRYPTED USER SHARE TYPES
-
-
 
 /// Event emitted to start an encrypted dWallet centralized (user) key share
 /// verification process.
@@ -855,7 +852,7 @@ public struct SignRequestEvent has copy, drop, store {
     dwallet_network_encryption_key_id: ID,
 
     /// The presign object ID, this ID will
-    /// be used as the singature MPC protocol ID.
+    /// be used as the signature MPC protocol ID.
     presign_id: ID,
 
     /// The presign protocol output as bytes.
@@ -921,7 +918,7 @@ public struct RejectedSignEvent has copy, drop, store {
 }
 
 /// Event containing dwallet 2pc-mpc checkpoint information, emitted during
-/// the checkpoint submmision message.
+/// the checkpoint submission message.
 public struct DWalletCheckpointInfoEvent has copy, drop, store {
     epoch: u64,
     sequence_number: u64,
@@ -979,7 +976,7 @@ public(package) fun create_dwallet_coordinator_inner(
         last_user_initiated_session_to_complete_in_current_epoch: 0,
         // TODO (#856): Allow configuring the max_active_session_buffer field
         max_active_sessions_buffer: 100,
-        locked_last_user_initiated_session_to_complete_in_current_epoch: false,
+        locked_last_user_initiated_session_to_complete_in_current_epoch: true,
         dwallets: object_table::new(ctx),
         dwallet_network_encryption_keys: object_table::new(ctx),
         encryption_keys: object_table::new(ctx),
@@ -1051,20 +1048,29 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     dwallet_network_encryption_key_id: ID,
     network_public_output_chunk: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
-    // The DKG output can be large, so it is seperated into chunks.
-    // We should only update the count once, so we check it is the last chunk before we do.
     if (is_last_chunk) {
         self.completed_system_sessions_count = self.completed_system_sessions_count + 1;
     };
-
-    // Store this chunk as the last chunk in the network encryption public output chunks vector.
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
-    dwallet_network_encryption_key.network_dkg_public_output.push_back(network_public_output_chunk);
-
-    // Change state to complete and emit an event to signify that only if it is the last chunk.
-    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-        DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
+        dwallet_network_encryption_key_id
+    );
+    if (rejected) {
+        dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
+        // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_encryption_key_id,
+            DWalletNetworkDKGDecryptionKeyRequestEvent {
+                dwallet_network_encryption_key_id,
+            },
+            ctx,
+        ));
+    } else {
+        dwallet_network_encryption_key.network_dkg_public_output.push_back(network_public_output_chunk);
+        dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
             if (is_last_chunk) {
                 event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
                     dwallet_network_encryption_key_id,
@@ -1074,8 +1080,9 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
                 DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             }
         },
-        _ => abort EWrongState
-    };
+            _ => abort EWrongState
+        };
+    }
 }
 
 /// Complete the Recondiguration session
@@ -1088,6 +1095,8 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     dwallet_network_encryption_key_id: ID,
     public_output: vector<u8>,
     is_last_chunk: bool,
+    rejected: bool,
+    ctx: &mut TxContext,
 ) {
     // The Reconfiguration output can be large, so it is seperated into chunks.
     // We should only update the count once, so we check it is the last chunk before we do.
@@ -1097,23 +1106,35 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
 
     // Store this chunk as the last chunk in the chunks vector corresponding to the upcoming's epoch in the public outputs map.
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
-    let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
+    if (rejected) {
+        dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
+        // TODO(@scaly): should we empty next_reconfiguration_public_output?
+        event::emit(self.create_system_dwallet_event(
+            dwallet_network_encryption_key_id,
+            DWalletDecryptionKeyReshareRequestEvent {
+                dwallet_network_encryption_key_id,
+            },
+            ctx,
+        ));
+    } else {
 
+    let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
     // Change state to complete and emit an event to signify that only if it is the last chunk.
     next_reconfiguration_public_output.push_back(public_output);
     dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
         DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration => {
             if (is_last_chunk) {
-                event::emit(CompletedDWalletDecryptionKeyReshareEvent {
-                    dwallet_network_encryption_key_id,
-                });
-                DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration
-            } else {
-                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
-            }
-        },
+                    event::emit(CompletedDWalletDecryptionKeyReshareEvent {
+                        dwallet_network_encryption_key_id,
+                    });
+                    DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration
+                } else {
+                    DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
+                }
+            },
         _ => abort EWrongState
     };
+    }
 }
 
 /// Advance the `current_epoch` and `state` of the network encryption key corresponding to `cap`,
@@ -2030,7 +2051,7 @@ public(package) fun accept_encrypted_user_share(
 
     let encrypted_user_secret_key_share = dwallet.encrypted_user_secret_key_shares.borrow_mut(encrypted_user_secret_key_share_id);
     encrypted_user_secret_key_share.state = match (encrypted_user_secret_key_share.state) {
-        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSiged {
+        EncryptedUserSecretKeyShareState::NetworkVerificationCompleted => EncryptedUserSecretKeyShareState::KeyHolderSigned {
             user_output_signature
         },
         _ => abort EWrongState
@@ -2271,7 +2292,7 @@ public(package) fun respond_make_dwallet_user_secret_key_share_public(
 /// - Emits a `RequestedPresignFirstRoundEvent` for each presign in the batch, with relevant details.
 ///
 /// ### Parameters
-/// - `dwallet_id`: The dWallet's ID to resquest presign.
+/// - `dwallet_id`: The dWallet's ID to request presign.
 /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
 public(package) fun request_presign(
     self: &mut DWalletCoordinatorInner,
@@ -3065,6 +3086,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
+    ctx: &mut TxContext,
 ) {
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
@@ -3072,12 +3094,13 @@ public(package) fun process_checkpoint_message_by_quorum(
 
     self.active_committee.verify_certificate(self.current_epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_checkpoint_message(message);
+    self.process_checkpoint_message(message, ctx);
 }
 
 fun process_checkpoint_message(
     self: &mut DWalletCoordinatorInner,
     message: vector<u8>,
+    ctx: &mut TxContext,
 ) {
     assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
@@ -3115,9 +3138,7 @@ fun process_checkpoint_message(
             if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
-                let rejected = false;
-                // TODO: Use this once we have a proper way to reject the first round
-                //let rejected = bcs_body.peel_bool();
+                let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, rejected, session_sequence_number);
             } else if (message_data_type == 1) {
@@ -3188,12 +3209,14 @@ fun process_checkpoint_message(
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
             } else if (message_data_type == 7) {
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
             };
         i = i + 1;
     };
