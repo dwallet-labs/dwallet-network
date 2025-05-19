@@ -381,10 +381,10 @@ pub fn encrypt_secret_key_share_and_prove(
             log::debug!("4");
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
             log::debug!("5");
-            
+
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
             log::debug!("6");
-            
+
             Ok(bcs::to_bytes(&result)?)
         }
     }
@@ -419,21 +419,32 @@ pub fn verify_secret_share(
 
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
-    encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
+    network_decryption_key_public_output: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_decryption_key_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
     let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
-    let public_parameters: homomorphic_encryption::PublicParameters<
+    let decryption_key = bcs::from_bytes(&decryption_key)?;
+    let public_parameters = homomorphic_encryption::PublicParameters::<
         SCALAR_LIMBS,
-        Secp256k1EncryptionKey,
-    > = bcs::from_bytes(&encryption_key)?;
+        crate::Secp256k1EncryptionKey,
+    >::new_from_secret_key(
+        protocol_public_params
+            .encryption_scheme_public_parameters
+            .setup_parameters
+            .clone(),
+        decryption_key,
+    )?;
     let ciphertext = CiphertextSpaceGroupElement::new(
         encryption_of_discrete_log,
         &public_parameters.ciphertext_space_public_parameters(),
     )?;
 
-    let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key: DecryptionKey<
         SCALAR_LIMBS,
         SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
