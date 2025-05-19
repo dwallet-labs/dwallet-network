@@ -88,7 +88,7 @@ pub fn decrypt_user_share(
     let decrypted_secret_share = decrypt_user_share_inner(
         decryption_key,
         encrypted_user_share_and_proof,
-        network_decryption_key_public_output
+        network_decryption_key_public_output,
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
