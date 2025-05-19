@@ -17,10 +17,14 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
+	getDWalletSecpState,
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
-import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
+import {
+	createImportedDWallet,
+	verifyImportedDWalletMoveCall,
+} from '../../src/dwallet-mpc/import-dwallet';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	isDWalletWithPublicUserSecretKeyShares,
@@ -160,13 +164,13 @@ describe('Test dWallet MPC', () => {
 
 	it('should create an imported dWallet', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const dwalletID = await createImportedDWallet(conf);
-		console.log({ dwalletID });
+		const importedDWalletData = await createImportedDWallet(conf);
+		console.log({ importedDWalletData });
 
 		const [secret_share, public_output, outgoing_message] =
 			create_imported_dwallet_centralized_step(
 				networkDecryptionKeyPublicOutput,
-				dwalletID.slice(2),
+				importedDWalletData.dwallet_id.slice(2),
 			);
 		const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 
@@ -175,6 +179,15 @@ describe('Test dWallet MPC', () => {
 			classGroupsSecpKeyPair.encryptionKey,
 			networkDecryptionKeyPublicOutput,
 		);
-
+		const dwalletState = await getDWalletSecpState(conf);
+		const encryptedSecretShareID = await verifyImportedDWalletMoveCall(
+			conf,
+			dwalletState,
+			importedDWalletData.dwallet_cap_id,
+			outgoing_message,
+			encryptedUserShareAndProof,
+			public_output,
+			importedDWalletData.dwallet_id,
+		);
 	});
 });

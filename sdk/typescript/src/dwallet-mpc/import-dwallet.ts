@@ -25,7 +25,7 @@ function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalle
 /**
  * Create an imported dWallet & return the dWallet ID.
  */
-export async function createImportedDWallet(conf: Config): Promise<string> {
+export async function createImportedDWallet(conf: Config): Promise<NewImportedKeyDWalletEvent> {
 	const tx = new Transaction();
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf);
@@ -54,7 +54,7 @@ export async function createImportedDWallet(conf: Config): Promise<string> {
 	if (!isNewImportedKeyDWalletEvent(creationEvent)) {
 		throw new Error('Failed to create imported dWallet');
 	}
-	return creationEvent.dwallet_id;
+	return creationEvent;
 }
 
 export async function verifyImportedDWalletMoveCall(
