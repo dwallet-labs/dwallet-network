@@ -2,29 +2,20 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import {
-	create_imported_dwallet_centralized_step,
-	encrypt_secret_share,
-} from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	getDWalletSecpState,
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
-import {
-	createImportedDWallet,
-	verifyImportedDWalletMoveCall,
-} from '../../src/dwallet-mpc/import-dwallet';
+import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	isDWalletWithPublicUserSecretKeyShares,
@@ -163,32 +154,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create an imported dWallet', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const importedDWalletData = await createImportedDWallet(conf);
-		console.log({ importedDWalletData });
-
-		const [secret_share, public_output, outgoing_message] =
-			create_imported_dwallet_centralized_step(
-				networkDecryptionKeyPublicOutput,
-				importedDWalletData.dwallet_id.slice(2),
-			);
-		const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-
-		const encryptedUserShareAndProof = encrypt_secret_share(
-			secret_share,
-			classGroupsSecpKeyPair.encryptionKey,
-			networkDecryptionKeyPublicOutput,
-		);
-		const dwalletState = await getDWalletSecpState(conf);
-		const encryptedSecretShareID = await verifyImportedDWalletMoveCall(
-			conf,
-			dwalletState,
-			importedDWalletData.dwallet_cap_id,
-			outgoing_message,
-			encryptedUserShareAndProof,
-			public_output,
-			importedDWalletData.dwallet_id,
-		);
-		console.log(`encryptedSecretShareID: ${encryptedSecretShareID}`);
+		const dwallet = await createImportedDWallet(conf);
+		console.log({ dwallet });
 	});
 });

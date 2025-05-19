@@ -1,12 +1,19 @@
+import {
+	create_imported_dwallet_centralized_step,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config, SharedObjectData } from './globals.js';
+import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
+import type { Config, DWallet, SharedObjectData } from './globals.js';
 import {
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
+	getDWalletSecpState,
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
+	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
 	isActiveDWallet,
 	SUI_PACKAGE_ID,
@@ -27,10 +34,48 @@ function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalle
 	return event.dwallet_id !== undefined && event.dwallet_cap_id !== undefined;
 }
 
+export async function createImportedDWallet(conf: Config): Promise<DWallet> {
+	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+	const importedDWalletData = await createImportedDWalletMoveCall(conf);
+	console.log({ importedDWalletData });
+
+	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
+		networkDecryptionKeyPublicOutput,
+		importedDWalletData.dwallet_id.slice(2),
+	);
+	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+
+	const encryptedUserShareAndProof = encrypt_secret_share(
+		secret_share,
+		classGroupsSecpKeyPair.encryptionKey,
+		networkDecryptionKeyPublicOutput,
+	);
+	const dwalletState = await getDWalletSecpState(conf);
+	const encryptedSecretShareID = await verifyImportedDWalletMoveCall(
+		conf,
+		dwalletState,
+		importedDWalletData.dwallet_cap_id,
+		outgoing_message,
+		encryptedUserShareAndProof,
+		public_output,
+		importedDWalletData.dwallet_id,
+	);
+	const dwallet = await getObjectWithType(conf, importedDWalletData.dwallet_id, isActiveDWallet);
+	return {
+		dwalletID: importedDWalletData.dwallet_id,
+		dwallet_cap_id: importedDWalletData.dwallet_cap_id,
+		encrypted_secret_share_id: encryptedSecretShareID,
+		secret_share,
+		output: dwallet.state.fields.public_output,
+	};
+}
+
 /**
  * Create an imported dWallet & return the dWallet ID.
  */
-export async function createImportedDWallet(conf: Config): Promise<NewImportedKeyDWalletEvent> {
+export async function createImportedDWalletMoveCall(
+	conf: Config,
+): Promise<NewImportedKeyDWalletEvent> {
 	const tx = new Transaction();
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf);
