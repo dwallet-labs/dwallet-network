@@ -1798,11 +1798,11 @@ impl AuthorityPerEpochStore {
                 };
                 let tx = MessageKind::DWalletImportedKeyVerificationOutput(
                     DWalletImportedKeyVerificationOutput {
-                        dwallet_id: init_event.event_data.dwallet_id.clone(),
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
                         public_output: output,
                         encrypted_user_secret_key_share_id: init_event
                             .event_data
-                            .encrypted_user_secret_key_share_id
+                            .encrypted_user_secret_key_share_id.to_vec()
                             .clone(),
                         session_id: init_event.session_id.clone(),
                         rejected,
