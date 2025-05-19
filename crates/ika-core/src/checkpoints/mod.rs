@@ -615,7 +615,7 @@ impl CheckpointBuilder {
             .unwrap()
             .builder_checkpoint_message_v1
             .unbounded_iter()
-            .map(|(seq, s)| (seq, s.checkpoint_message.timestamp()))
+            .map(|(seq, s)| (seq, s.checkpoint_message.digest()))
             .collect_vec();
 
         let locally_seqs = self
@@ -1258,6 +1258,13 @@ impl CheckpointAggregator {
             let checkpoints_committee = self.current.as_ref().map(|current| {
                 (
                     current.checkpoint_message.sequence_number,
+                    current
+                        .signatures_by_digest
+                        .clone()
+                        .get_all_unique_values()
+                        .into_iter()
+                        .map(|(k, (_, v))| (k, v))
+                        .collect_vec(),
                     current.signatures_by_digest.clone().unique_key_count(),
                     current.signatures_by_digest.clone().total_votes(),
                 )
