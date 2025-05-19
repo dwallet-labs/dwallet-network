@@ -37,7 +37,6 @@ function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalle
 export async function createImportedDWallet(conf: Config): Promise<DWallet> {
 	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 	const importedDWalletData = await createImportedDWalletMoveCall(conf);
-	console.log({ importedDWalletData });
 
 	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
 		networkDecryptionKeyPublicOutput,
