@@ -34,8 +34,7 @@ use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
 use twopc_mpc::secp256k1::class_groups::{
-    EncryptionOfSecretShareProof, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -370,42 +369,11 @@ pub fn encrypt_secret_key_share_and_prove(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-
-    let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
-        SCALAR_LIMBS,
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        secp256k1::GroupElement,
-    >(
-        protocol_public_params
-            .scalar_group_public_parameters
-            .clone(),
-        protocol_public_params.group_public_parameters.clone(),
-        bcs::from_bytes(&encryption_key)?,
-    );
-    let randomness = class_groups::RandomnessSpaceGroupElement::<
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-    >::sample(
-        language_public_parameters
-            .encryption_scheme_public_parameters
-            .randomness_space_public_parameters(),
-        &mut OsRng,
-    )?;
-
     let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
-            let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
-            let witness = (parsed_secret_key_share, randomness).into();
-            let (proof, statements) = EncryptionOfSecretShareProof::prove(
-                &PhantomData,
-                &language_public_parameters,
-                vec![witness],
-                &mut OsRng,
-            )?;
-            // todo(scaly): why is it derived from statements?
-            let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
-            Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
+            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&secret_key_share)?, &mut OsRng)?;
+            Ok(bcs::to_bytes(&result)?)
         }
     }
 }
@@ -443,10 +411,7 @@ pub fn decrypt_user_share_inner(
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let (_, encryption_of_discrete_log): (
-        EncryptionOfSecretShareProof,
-        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-    ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let public_parameters: homomorphic_encryption::PublicParameters<
         SCALAR_LIMBS,
         Secp256k1EncryptionKey,
