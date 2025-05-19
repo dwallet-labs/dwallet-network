@@ -3,9 +3,9 @@
 
 use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
-    create_dkg_output, decrypt_user_share_inner, encrypt_secret_key_share_and_prove,
-    generate_secp256k1_cg_keypair_from_seed_internal, public_keys_from_dwallet_output,
-    verify_secret_share, create_imported_dwallet_centralized_step_inner,
+    create_dkg_output, create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
+    encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
+    public_keys_from_dwallet_output, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -23,13 +23,13 @@ pub fn create_dkg_centralized_output(
         decentralized_first_round_public_output,
         session_id,
     )
-        .map_err(|e| JsError::new(&e.to_string()))?;
+    .map_err(|e| JsError::new(&e.to_string()))?;
     serde_wasm_bindgen::to_value(&(
         dkg_centralized_result.public_key_share_and_proof.clone(),
         dkg_centralized_result.public_output.clone(),
         dkg_centralized_result.centralized_secret_output.clone(),
     ))
-        .map_err(|e| JsError::new(&e.to_string()))
+    .map_err(|e| JsError::new(&e.to_string()))
 }
 
 /// Derives a Secp256k1 class groups keypair from a given seed.
@@ -63,7 +63,7 @@ pub fn encrypt_secret_share(
         encryption_key,
         network_decryption_key_public_output,
     )
-        .map_err(to_js_err)?;
+    .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
@@ -90,7 +90,7 @@ pub fn decrypt_user_share(
         decryption_key,
         encrypted_user_share_and_proof,
     )
-        .map_err(to_js_err)?;
+    .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
 }
 
@@ -108,7 +108,7 @@ pub fn verify_user_share(
             dkg_output,
             network_decryption_key_public_output,
         )
-            .map_err(to_js_err)?,
+        .map_err(to_js_err)?,
     ))
 }
 
@@ -117,10 +117,13 @@ pub fn create_imported_dwallet_centralized_step(
     network_decryption_key_public_output: Vec<u8>,
     dwallet_id: String,
 ) -> Result<JsValue, JsError> {
-    Ok(serde_wasm_bindgen::to_value(&create_imported_dwallet_centralized_step_inner(
-        network_decryption_key_public_output,
-        dwallet_id,
-    ).map_err(to_js_err)?)?)
+    Ok(serde_wasm_bindgen::to_value(
+        &create_imported_dwallet_centralized_step_inner(
+            network_decryption_key_public_output,
+            dwallet_id,
+        )
+        .map_err(to_js_err)?,
+    )?)
 }
 
 /// Derives the DWallet's public keys from the given DKG output.
@@ -150,7 +153,7 @@ pub fn create_sign_centralized_output(
         message,
         hash_type,
     )
-        .map_err(|e| JsError::new(&e.to_string()))?;
+    .map_err(|e| JsError::new(&e.to_string()))?;
 
     serde_wasm_bindgen::to_value(&signed_message).map_err(|e| JsError::new(&e.to_string()))
 }
