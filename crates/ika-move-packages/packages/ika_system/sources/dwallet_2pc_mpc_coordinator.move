@@ -158,14 +158,14 @@ public fun approve_imported_key_message(
 
 public fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinator,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ): DWalletCap {
     self.inner_mut().request_dwallet_dkg_first_round(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         curve,
         payment_ika,
         payment_sui,
@@ -200,12 +200,12 @@ public fun request_dwallet_dkg_second_round(
 
 public fun new_imported_key_dwallet(
     self: &mut DWalletCoordinator,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
     self.inner_mut().new_imported_key_dwallet(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         curve,
         ctx,
     )
@@ -289,7 +289,7 @@ public fun request_presign(
 
 public fun request_global_presign(
     self: &mut DWalletCoordinator,
-    dwallet_network_decryption_key_id: ID,
+    dwallet_network_encryption_key_id: ID,
     curve: u32,
     signature_algorithm: u32,
     payment_ika: &mut Coin<IKA>,
@@ -297,7 +297,7 @@ public fun request_global_presign(
     ctx: &mut TxContext
 ): UnverifiedPresignCap {
     self.inner_mut().request_global_presign(
-        dwallet_network_decryption_key_id,
+        dwallet_network_encryption_key_id,
         curve,
         signature_algorithm,
         payment_ika,

@@ -241,16 +241,22 @@ DWalletEvent
 CreatedEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletNetworkDKGDecryptionKeyRequestEvent
+DWalletNetworkDKGEncryptionKeyRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletDecryptionKeyReshareRequestEvent
+CompletedDWalletNetworkDKGEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletDecryptionKeyReshareEvent
+RejectedDWalletNetworkDKGEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletNetworkDKGDecryptionKeyEvent
+DWalletEncryptionKeyReconfigurationRequestEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedDWalletEncryptionKeyReconfigurationEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedDWalletEncryptionKeyReconfigurationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDKGFirstRoundRequestEvent

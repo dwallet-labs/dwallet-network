@@ -27,7 +27,7 @@ use ika_types::messages_dwallet_mpc::{
     PresignRequestEvent, SessionInfo,
 };
 use ika_types::messages_dwallet_mpc::{
-    DWalletDecryptionKeyReshareRequestEvent, StartNetworkDKGEvent,
+    DWalletEncryptionKeyReconfigurationRequestEvent, StartNetworkDKGEvent,
 };
 use jsonrpsee::core::Serialize;
 use k256::elliptic_curve::ops::Reduce;
@@ -177,12 +177,13 @@ pub(crate) fn session_info_from_event(
             )?))
         }
         t if t
-            == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+            == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
-                deserialize_event_or_dynamic_field(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<
+                DWalletEncryptionKeyReconfigurationRequestEvent,
+            > = deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(
                 reshare::network_decryption_key_reshare_session_info_from_event(deserialized_event),
             ))
@@ -553,12 +554,13 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t
-            == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+            == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
-                deserialize_event_or_dynamic_field(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<
+                DWalletEncryptionKeyReconfigurationRequestEvent,
+            > = deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme

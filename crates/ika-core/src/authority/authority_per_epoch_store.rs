@@ -158,8 +158,6 @@ pub enum ConsensusCertificateResult {
     IkaTransaction(MessageKind),
     /// An executable transaction used for large output (e.g., network DKG).
     IkaBulkTransaction(Vec<MessageKind>),
-    /// A message was processed which updates randomness state.
-    RandomnessConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -1317,10 +1315,6 @@ impl AuthorityPerEpochStore {
                 //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
                 //     verified_certificates.push_back(cert);
                 // }
-                ConsensusCertificateResult::RandomnessConsensusMessage => {
-                    //randomness_state_updated = true;
-                    notifications.push(key.clone());
-                }
                 ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
                 ConsensusCertificateResult::IgnoredSystem => {
                     filter_roots = true;

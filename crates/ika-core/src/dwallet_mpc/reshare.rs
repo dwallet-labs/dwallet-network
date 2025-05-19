@@ -12,7 +12,8 @@ use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletDecryptionKeyReshareRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData,
+    SessionInfo,
 };
 use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
@@ -98,7 +99,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
 }
 
 pub(super) fn network_decryption_key_reshare_session_info_from_event(
-    deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),

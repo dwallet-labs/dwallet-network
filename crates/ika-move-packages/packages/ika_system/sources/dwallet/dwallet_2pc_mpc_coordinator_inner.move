@@ -21,6 +21,7 @@ use ika_system::address;
 use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1, PricingPerOperation};
 use ika_system::bls_committee::{Self, BlsCommittee};
 use sui::vec_map::{Self, VecMap};
+use sui::event::emit;
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
@@ -33,7 +34,7 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 /// Most importantly, the `dwallets` themselves, which holds the public key and public key shares,
 /// and the encryption of the network's share under the network's threshold encryption key.
 /// The encryption of the network's secret key share for every dWallet points to an encryption key in `dwallet_network_encryption_keys`,
-/// which also stores the encrypted decryption key shares of each validator and their public verification keys.
+/// which also stores the encrypted encryption key shares of each validator and their public verification keys.
 ///
 /// For the user side, the secret key share is stored encrypted to the user encryption key (in `encryption_keys`) inside the dWallet,
 /// together with a signature on the public key (shares).
@@ -102,7 +103,6 @@ public struct DWalletCoordinatorInner has store {
     /// A nested map of supported curves to signature algorithms to hash schemes.
     /// e.g. secp256k1 -> [(ecdsa -> [sha256, keccak256]), (schnorr -> [sha256])]
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    // TODO(@Omer): paused_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     /// A list of paused curves in case of emergency.
     /// e.g. [secp256k1, ristretto]
     paused_curves: vector<u32>,
@@ -126,7 +126,6 @@ public struct DWalletSession has key, store {
 
     session_sequence_number: u64,
 
-    // TODO(@Omer): this should be an `Option<>`, as non-dWallet MPC sessions might not be related to any network encryption key.
     dwallet_network_encryption_key_id: ID,
 
     /// The fees paid for consensus validation in IKA.
@@ -151,7 +150,7 @@ public struct ImportedKeyDWalletCap has key, store {
     dwallet_id: ID,
 }
 
-/// Represents a capability granting control over a specific dWallet network decryption key.
+/// Represents a capability granting control over a specific dWallet network encryption key.
 public struct DWalletNetworkEncryptionKeyCap has key, store {
     id: UID,
     dwallet_network_encryption_key_id: ID,
@@ -160,7 +159,7 @@ public struct DWalletNetworkEncryptionKeyCap has key, store {
 /// `DWalletNetworkEncryptionKey` represents a (threshold) encryption key owned by the network.
 /// It stores the `network_dkg_public_output`, which in turn stores the encryption key itself (divided to chunks, due to space limitations).
 /// Before the first reconfiguration (which happens at every epoch switch,)
-/// `network_dkg_public_output` also holds the encryption of the current decryption key shares
+/// `network_dkg_public_output` also holds the encryption of the current encryption key shares
 /// (encrypted to each validator's encryption key, and decrypted by them whenever they start)
 /// and the public verification keys of all validators, from which the public parameters of the threshold encryption scheme
 /// can be generated.
@@ -180,9 +179,13 @@ public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
     /// Reconfiguration request was sent to the network, but didn't finish yet.
-    AwaitingNetworkReconfiguration,
+    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
+    AwaitingNetworkReconfiguration {
+        is_first: bool,
+    },
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    AwaitingNextEpochReconfiguration,
+    /// We need to wait for the next epoch to update the reconfiguration public outputs.
+    AwaitingNextEpochToUpdateReconfiguration,
     NetworkReconfigurationCompleted,
 }
 
@@ -343,7 +346,7 @@ public struct DWallet has key, store {
     /// The ID of the capability associated with this dWallet.
     dwallet_cap_id: ID,
 
-    /// The MPC network decryption key id that is used to decrypt this dWallet.
+    /// The MPC network encryption key id that is used to encrypt this dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     is_imported_key_dwallet: bool,
@@ -492,17 +495,10 @@ public struct CreatedEncryptionKeyEvent has copy, drop, store {
     signer_address: address,
 }
 
-public struct DWalletNetworkDKGDecryptionKeyRequestEvent has copy, drop, store {
+public struct DWalletNetworkDKGEncryptionKeyRequestEvent has copy, drop, store {
     dwallet_network_encryption_key_id: ID,
 }
 
-public struct DWalletDecryptionKeyReshareRequestEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
 
 /// An event emitted when the first round of the DKG process is completed.
 ///
@@ -510,7 +506,23 @@ public struct CompletedDWalletDecryptionKeyReshareEvent has copy, drop, store {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDWalletNetworkDKGDecryptionKeyEvent has copy, drop, store {
+public struct CompletedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
+    dwallet_network_encryption_key_id: ID,
+}
+
+public struct RejectedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
+    dwallet_network_encryption_key_id: ID,
+}
+
+public struct DWalletEncryptionKeyReconfigurationRequestEvent has copy, drop, store {
+    dwallet_network_encryption_key_id: ID,
+}
+
+public struct CompletedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
+    dwallet_network_encryption_key_id: ID,
+}
+
+public struct RejectedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
     dwallet_network_encryption_key_id: ID,
 }
 
@@ -527,7 +539,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
     /// The identifier for the dWallet capability.
     dwallet_cap_id: ID,
 
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
@@ -588,7 +600,7 @@ public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
     /// used to verify the signature on the centralized public output.
     signer_public_key: vector<u8>,
 
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
@@ -651,7 +663,7 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     /// used to verify the signature on the centralized public output.
     signer_public_key: vector<u8>,
 
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     /// The elliptic curve used for the dWallet.
@@ -781,7 +793,7 @@ public struct PresignRequestEvent has copy, drop, store {
     /// used as input for the Presign session.
     dwallet_public_output: Option<vector<u8>>,
 
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     /// The curve used for the presign.
@@ -848,7 +860,7 @@ public struct SignRequestEvent has copy, drop, store {
     /// The message to be signed in this session.
     message: vector<u8>,
 
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
+    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
     /// The presign object ID, this ID will
@@ -951,6 +963,8 @@ const EMismatchCurve: u64 = 22;
 const EImportedKeyDWallet: u64 = 23;
 const ENotImportedKeyDWallet: u64 = 24;
 const EHashSchemePaused: u64 = 25;
+const EEncryptionKeyNotExist: u64 = 26;
+
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
 
@@ -1027,8 +1041,7 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
 
     // Emit an event to initiate the session in the Ika network.
     event::emit(self.create_system_dwallet_event(
-        dwallet_network_encryption_key_id,
-        DWalletNetworkDKGDecryptionKeyRequestEvent {
+        DWalletNetworkDKGEncryptionKeyRequestEvent {
             dwallet_network_encryption_key_id
         },
         ctx,
@@ -1060,9 +1073,11 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     if (rejected) {
         dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
         // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
-        event::emit(self.create_system_dwallet_event(
+        emit(RejectedDWalletNetworkDKGEncryptionKeyEvent {
             dwallet_network_encryption_key_id,
-            DWalletNetworkDKGDecryptionKeyRequestEvent {
+        });
+        event::emit(self.create_system_dwallet_event(
+            DWalletNetworkDKGEncryptionKeyRequestEvent {
                 dwallet_network_encryption_key_id,
             },
             ctx,
@@ -1072,7 +1087,7 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
         dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
             DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG => {
             if (is_last_chunk) {
-                event::emit(CompletedDWalletNetworkDKGDecryptionKeyEvent {
+                event::emit(CompletedDWalletNetworkDKGEncryptionKeyEvent {
                     dwallet_network_encryption_key_id,
                 });
                 DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
@@ -1107,11 +1122,18 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     // Store this chunk as the last chunk in the chunks vector corresponding to the upcoming's epoch in the public outputs map.
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     if (rejected) {
-        dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
+        dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first } => {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
+            },
+            _ => DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: false }
+        };
         // TODO(@scaly): should we empty next_reconfiguration_public_output?
-        event::emit(self.create_system_dwallet_event(
+        emit(RejectedDWalletEncryptionKeyReconfigurationEvent {
             dwallet_network_encryption_key_id,
-            DWalletDecryptionKeyReshareRequestEvent {
+        });
+        event::emit(self.create_system_dwallet_event(
+            DWalletEncryptionKeyReconfigurationRequestEvent {
                 dwallet_network_encryption_key_id,
             },
             ctx,
@@ -1122,14 +1144,14 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     // Change state to complete and emit an event to signify that only if it is the last chunk.
     next_reconfiguration_public_output.push_back(public_output);
     dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-        DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration => {
+        DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first } => {
             if (is_last_chunk) {
-                    event::emit(CompletedDWalletDecryptionKeyReshareEvent {
+                    event::emit(CompletedDWalletEncryptionKeyReconfigurationEvent {
                         dwallet_network_encryption_key_id,
                     });
-                    DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration
+                    DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration
                 } else {
-                    DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
+                    DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
                 }
             },
         _ => abort EWrongState
@@ -1150,7 +1172,7 @@ public(package) fun advance_epoch_dwallet_network_encryption_key(
 
     // Sanity checks: check the capability is the right one, and that the key is in the right state.
     assert!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
-    assert!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration, EWrongState);
+    assert!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration, EWrongState);
 
     // Advance the current epoch and state.
     dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;
@@ -1166,18 +1188,26 @@ public(package) fun advance_epoch_dwallet_network_encryption_key(
 public(package) fun emit_start_reconfiguration_event(
     self: &mut DWalletCoordinatorInner, cap: &DWalletNetworkEncryptionKeyCap, ctx: &mut TxContext
 ) {
+    assert!(self.dwallet_network_encryption_keys.contains(cap.dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+
     let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(cap.dwallet_network_encryption_key_id);
 
-    // Set the state as awaiting reconfiguration.
-    dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::NetworkDKGCompleted => {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: true }
+        },
+        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted => {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: false }
+        },
+        _ => return, // TODO(@scaly): should not happen, what do you think?
+    };
 
     // Initialize the chunks vector corresponding to the upcoming's epoch in the public outputs map.
     dwallet_network_encryption_key.reconfiguration_public_outputs.add(dwallet_network_encryption_key.current_epoch + 1, table_vec::empty(ctx));
 
     // Emit the event to the Ika network, requesting they start the reconfiguration session.
     event::emit(self.create_system_dwallet_event(
-        cap.dwallet_network_encryption_key_id,
-        DWalletDecryptionKeyReshareRequestEvent {
+        DWalletEncryptionKeyReconfigurationRequestEvent {
             dwallet_network_encryption_key_id: cap.dwallet_network_encryption_key_id
         },
         ctx,
@@ -1327,12 +1357,9 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
 /// No funds are charged, since there is no user to charge.
 fun create_system_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
-    // TODO(@Omer): perhaps make it an option? what if we would want to add system sessions that aren't related to a particular network key?
-    dwallet_network_encryption_key_id: ID,
     event_data: E,
     ctx: &mut TxContext,
 ): DWalletEvent<E> {
-    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
     self.started_system_sessions_count = self.started_system_sessions_count + 1;
 
     let event = DWalletEvent {
@@ -1370,7 +1397,7 @@ public(package) fun get_active_encryption_key(
     self: &DWalletCoordinatorInner,
     address: address,
 ): ID {
-    // TODO(@Omer): what happens if address is not found? Shouldn't we check `contains` first?
+    assert!(self.encryption_keys.contains(address), EEncryptionKeyNotExist);
     self.encryption_keys.borrow(address).id.to_inner()
 }
 

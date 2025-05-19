@@ -26,10 +26,12 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `SignSession`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SignSession)
 -  [Struct `DWalletEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent)
 -  [Struct `CreatedEncryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CreatedEncryptionKeyEvent)
--  [Struct `DWalletNetworkDKGDecryptionKeyRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGDecryptionKeyRequestEvent)
--  [Struct `DWalletDecryptionKeyReshareRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDecryptionKeyReshareRequestEvent)
--  [Struct `CompletedDWalletDecryptionKeyReshareEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDecryptionKeyReshareEvent)
--  [Struct `CompletedDWalletNetworkDKGDecryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent)
+-  [Struct `DWalletNetworkDKGEncryptionKeyRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGEncryptionKeyRequestEvent)
+-  [Struct `CompletedDWalletNetworkDKGEncryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGEncryptionKeyEvent)
+-  [Struct `RejectedDWalletNetworkDKGEncryptionKeyEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent)
+-  [Struct `DWalletEncryptionKeyReconfigurationRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEncryptionKeyReconfigurationRequestEvent)
+-  [Struct `CompletedDWalletEncryptionKeyReconfigurationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent)
+-  [Struct `RejectedDWalletEncryptionKeyReconfigurationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletEncryptionKeyReconfigurationEvent)
 -  [Struct `DWalletDKGFirstRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGFirstRoundRequestEvent)
 -  [Struct `CompletedDWalletDKGFirstdRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstdRoundEvent)
 -  [Struct `RejectedDWalletDKGFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletDKGFirstRoundEvent)
@@ -186,7 +188,7 @@ A shared object that holds all the Ika system object used to manage dWallets:
 Most importantly, the <code>dwallets</code> themselves, which holds the public key and public key shares,
 and the encryption of the network's share under the network's threshold encryption key.
 The encryption of the network's secret key share for every dWallet points to an encryption key in <code>dwallet_network_encryption_keys</code>,
-which also stores the encrypted decryption key shares of each validator and their public verification keys.
+which also stores the encrypted encryption key shares of each validator and their public verification keys.
 
 For the user side, the secret key share is stored encrypted to the user encryption key (in <code>encryption_keys</code>) inside the dWallet,
 together with a signature on the public key (shares).
@@ -541,7 +543,7 @@ Represents a capability granting control over a specific imported key dWallet.
 
 ## Struct `DWalletNetworkEncryptionKeyCap`
 
-Represents a capability granting control over a specific dWallet network decryption key.
+Represents a capability granting control over a specific dWallet network encryption key.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">DWalletNetworkEncryptionKeyCap</a> <b>has</b> key, store
@@ -576,7 +578,7 @@ Represents a capability granting control over a specific dWallet network decrypt
 <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKey">DWalletNetworkEncryptionKey</a></code> represents a (threshold) encryption key owned by the network.
 It stores the <code>network_dkg_public_output</code>, which in turn stores the encryption key itself (divided to chunks, due to space limitations).
 Before the first reconfiguration (which happens at every epoch switch,)
-<code>network_dkg_public_output</code> also holds the encryption of the current decryption key shares
+<code>network_dkg_public_output</code> also holds the encryption of the current encryption key shares
 (encrypted to each validator's encryption key, and decrypted by them whenever they start)
 and the public verification keys of all validators, from which the public parameters of the threshold encryption scheme
 can be generated.
@@ -991,7 +993,7 @@ created after the Distributed key generation (DKG) process.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt this dWallet.
+ The MPC network encryption key id that is used to encrypt this dWallet network secret key share.
 </dd>
 <dt>
 <code>is_imported_key_dwallet: bool</code>
@@ -1291,13 +1293,13 @@ and creates the corresponding <code><a href="../ika_system/dwallet_2pc_mpc_coord
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGDecryptionKeyRequestEvent"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGEncryptionKeyRequestEvent"></a>
 
-## Struct `DWalletNetworkDKGDecryptionKeyRequestEvent`
+## Struct `DWalletNetworkDKGEncryptionKeyRequestEvent`
 
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGEncryptionKeyRequestEvent">DWalletNetworkDKGEncryptionKeyRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -1317,61 +1319,9 @@ and creates the corresponding <code><a href="../ika_system/dwallet_2pc_mpc_coord
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDecryptionKeyReshareRequestEvent"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGEncryptionKeyEvent"></a>
 
-## Struct `DWalletDecryptionKeyReshareRequestEvent`
-
-
-
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
-</dt>
-<dd>
-</dd>
-</dl>
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDecryptionKeyReshareEvent"></a>
-
-## Struct `CompletedDWalletDecryptionKeyReshareEvent`
-
-
-
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDecryptionKeyReshareEvent">CompletedDWalletDecryptionKeyReshareEvent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
-</dt>
-<dd>
-</dd>
-</dl>
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent"></a>
-
-## Struct `CompletedDWalletNetworkDKGDecryptionKeyEvent`
+## Struct `CompletedDWalletNetworkDKGEncryptionKeyEvent`
 
 An event emitted when the first round of the DKG process is completed.
 
@@ -1381,7 +1331,111 @@ The user should catch this event to generate inputs for
 the second round and call the <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_dwallet_dkg_second_round">request_dwallet_dkg_second_round</a>()</code> function.
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGEncryptionKeyEvent">CompletedDWalletNetworkDKGEncryptionKeyEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent"></a>
+
+## Struct `RejectedDWalletNetworkDKGEncryptionKeyEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent">RejectedDWalletNetworkDKGEncryptionKeyEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEncryptionKeyReconfigurationRequestEvent"></a>
+
+## Struct `DWalletEncryptionKeyReconfigurationRequestEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEncryptionKeyReconfigurationRequestEvent">DWalletEncryptionKeyReconfigurationRequestEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent"></a>
+
+## Struct `CompletedDWalletEncryptionKeyReconfigurationEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent">CompletedDWalletEncryptionKeyReconfigurationEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletEncryptionKeyReconfigurationEvent"></a>
+
+## Struct `RejectedDWalletEncryptionKeyReconfigurationEvent`
+
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletEncryptionKeyReconfigurationEvent">RejectedDWalletEncryptionKeyReconfigurationEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -1437,7 +1491,7 @@ initiate the first round of the DKG.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt associated dWallet.
+ The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
 </dd>
 <dt>
 <code>curve: u32</code>
@@ -1604,7 +1658,7 @@ It contains all necessary data to ensure proper continuation of the process.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt associated dWallet.
+ The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
 </dd>
 <dt>
 <code>curve: u32</code>
@@ -1777,7 +1831,7 @@ Emitted to notify the centralized party.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt associated dWallet.
+ The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
 </dd>
 <dt>
 <code>curve: u32</code>
@@ -2197,7 +2251,7 @@ and DKG process.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt associated dWallet.
+ The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
 </dd>
 <dt>
 <code>curve: u32</code>
@@ -2372,7 +2426,7 @@ specific to each Digital Signature Algorithm.
 <code>dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
- The MPC network decryption key id that is used to decrypt associated dWallet.
+ The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
 </dd>
 <dt>
 <code>presign_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
@@ -2803,12 +2857,23 @@ Variant <code>AwaitingNetworkReconfiguration</code>
 </dt>
 <dd>
  Reconfiguration request was sent to the network, but didn't finish yet.
+ <code>is_first</code> is true if this is the first reconfiguration request, false otherwise.
 </dd>
+
+<dl>
 <dt>
-Variant <code>AwaitingNextEpochReconfiguration</code>
+<code>is_first: bool</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+<dt>
+Variant <code>AwaitingNextEpochToUpdateReconfiguration</code>
 </dt>
 <dd>
  Reconfiguration request finished, but we didn't switch an epoch yet.
+ We need to wait for the next epoch to update the reconfiguration public outputs.
 </dd>
 <dt>
 Variant <code>NetworkDKGCompleted</code>
@@ -3242,6 +3307,15 @@ Variant <code>User</code>
 
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist">EEncryptionKeyNotExist</a>: u64 = 26;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EHashSchemePaused"></a>
 
 
@@ -3538,8 +3612,7 @@ Start a Distributed Key Generation (DKG) session for the network (threshold) enc
     });
     // Emit an event to initiate the session in the Ika network.
     event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
-        dwallet_network_encryption_key_id,
-        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> {
+        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGEncryptionKeyRequestEvent">DWalletNetworkDKGEncryptionKeyRequestEvent</a> {
             dwallet_network_encryption_key_id
         },
         ctx,
@@ -3589,9 +3662,12 @@ with <code>is_last_chunk</code> set for the last call.
     );
     <b>if</b> (rejected) {
         dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
-        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+        // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
+        emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent">RejectedDWalletNetworkDKGEncryptionKeyEvent</a> {
             dwallet_network_encryption_key_id,
-            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGDecryptionKeyRequestEvent">DWalletNetworkDKGDecryptionKeyRequestEvent</a> {
+        });
+        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkDKGEncryptionKeyRequestEvent">DWalletNetworkDKGEncryptionKeyRequestEvent</a> {
                 dwallet_network_encryption_key_id,
             },
             ctx,
@@ -3601,7 +3677,7 @@ with <code>is_last_chunk</code> set for the last call.
         dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
             DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG =&gt; {
             <b>if</b> (is_last_chunk) {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGDecryptionKeyEvent">CompletedDWalletNetworkDKGDecryptionKeyEvent</a> {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletNetworkDKGEncryptionKeyEvent">CompletedDWalletNetworkDKGEncryptionKeyEvent</a> {
                     dwallet_network_encryption_key_id,
                 });
                 DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
@@ -3655,31 +3731,39 @@ with <code>is_last_chunk</code> set for the last call.
     // Store this chunk <b>as</b> the last chunk in the chunks vector corresponding to the upcoming's epoch in the <b>public</b> outputs map.
     <b>let</b> dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     <b>if</b> (rejected) {
-        dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
-        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+        dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first } =&gt; {
+                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
+            },
+            _ =&gt; DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: <b>false</b> }
+        };
+        // TODO(@scaly): should we empty next_reconfiguration_public_output?
+        emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletEncryptionKeyReconfigurationEvent">RejectedDWalletEncryptionKeyReconfigurationEvent</a> {
             dwallet_network_encryption_key_id,
-            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> {
+        });
+        event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEncryptionKeyReconfigurationRequestEvent">DWalletEncryptionKeyReconfigurationRequestEvent</a> {
                 dwallet_network_encryption_key_id,
             },
             ctx,
         ));
     } <b>else</b> {
-        <b>let</b> next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
+    <b>let</b> next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
     // Change state to complete and emit an event to signify that only <b>if</b> it is the last chunk.
-            next_reconfiguration_public_output.push_back(public_output);
-            dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-                DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration =&gt; {
-                    <b>if</b> (is_last_chunk) {
-                            event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDecryptionKeyReshareEvent">CompletedDWalletDecryptionKeyReshareEvent</a> {
-                                dwallet_network_encryption_key_id,
-                            });
-                            DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration
-                        } <b>else</b> {
-                            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration
-                        }
-                    },
-                _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>
-            };
+    next_reconfiguration_public_output.push_back(public_output);
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first } =&gt; {
+            <b>if</b> (is_last_chunk) {
+                    event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent">CompletedDWalletEncryptionKeyReconfigurationEvent</a> {
+                        dwallet_network_encryption_key_id,
+                    });
+                    DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration
+                } <b>else</b> {
+                    DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
+                }
+            },
+        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>
+    };
     }
 }
 </code></pre>
@@ -3715,7 +3799,7 @@ finalizing the reonconfiguration of that key, and readying it for use in the nex
     );
     // Sanity checks: check the capability is the right one, and that the key is in the right state.
     <b>assert</b>!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap">EIncorrectCap</a>);
-    <b>assert</b>!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochReconfiguration, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>);
+    <b>assert</b>!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>);
     // Advance the current epoch and state.
     dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;
     dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted;
@@ -3749,15 +3833,22 @@ Emit an event to the Ika network to request a reconfiguration session for the ne
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_emit_start_reconfiguration_event">emit_start_reconfiguration_event</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, cap: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">DWalletNetworkEncryptionKeyCap</a>, ctx: &<b>mut</b> TxContext
 ) {
+    <b>assert</b>!(self.dwallet_network_encryption_keys.contains(cap.dwallet_network_encryption_key_id), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist">EDWalletNetworkEncryptionKeyNotExist</a>);
     <b>let</b> dwallet_network_encryption_key = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_get_active_dwallet_network_encryption_key">get_active_dwallet_network_encryption_key</a>(cap.dwallet_network_encryption_key_id);
-    // Set the state <b>as</b> awaiting reconfiguration.
-    dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration;
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::NetworkDKGCompleted =&gt; {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: <b>true</b> }
+        },
+        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted =&gt; {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: <b>false</b> }
+        },
+        _ =&gt; <b>return</b>, // TODO(@scaly): should not happen, what do you think?
+    };
     // Initialize the chunks vector corresponding to the upcoming's epoch in the <b>public</b> outputs map.
     dwallet_network_encryption_key.reconfiguration_public_outputs.add(dwallet_network_encryption_key.current_epoch + 1, table_vec::empty(ctx));
     // Emit the event to the Ika network, requesting they start the reconfiguration session.
     event::emit(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>(
-        cap.dwallet_network_encryption_key_id,
-        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDecryptionKeyReshareRequestEvent">DWalletDecryptionKeyReshareRequestEvent</a> {
+        <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEncryptionKeyReconfigurationRequestEvent">DWalletEncryptionKeyReconfigurationRequestEvent</a> {
             dwallet_network_encryption_key_id: cap.dwallet_network_encryption_key_id
         },
         ctx,
@@ -4021,7 +4112,7 @@ both of which are related to a particular <code>dwallet_network_encryption_key_i
 No funds are charged, since there is no user to charge.
 
 
-<pre><code><b>fun</b> create_system_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
+<pre><code><b>fun</b> create_system_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
 </code></pre>
 
 
@@ -4032,12 +4123,9 @@ No funds are charged, since there is no user to charge.
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>&lt;E: <b>copy</b> + drop + store&gt;(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
-    // TODO(@Omer): perhaps make it an option? what <b>if</b> we would want to add <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> sessions that aren't related to a particular network key?
-    dwallet_network_encryption_key_id: ID,
     event_data: E,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">DWalletEvent</a>&lt;E&gt; {
-    <b>assert</b>!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist">EDWalletNetworkEncryptionKeyNotExist</a>);
     self.started_system_sessions_count = self.started_system_sessions_count + 1;
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">DWalletEvent</a> {
         epoch: self.current_epoch,
@@ -4133,7 +4221,7 @@ Get the active encryption key ID by its address.
     self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     <b>address</b>: <b>address</b>,
 ): ID {
-    // TODO(@Omer): what happens <b>if</b> <b>address</b> is not found? Shouldn't we check `contains` first?
+    <b>assert</b>!(self.encryption_keys.contains(<b>address</b>), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist">EEncryptionKeyNotExist</a>);
     self.encryption_keys.borrow(<b>address</b>).id.to_inner()
 }
 </code></pre>

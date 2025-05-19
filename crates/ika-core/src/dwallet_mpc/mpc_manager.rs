@@ -41,7 +41,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletDecryptionKeyReshareRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait,
     DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent,
     FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo,
     SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
@@ -418,7 +418,7 @@ impl DWalletMPCManager {
                     .inc();
             }
             t if t
-                == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+                == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
                     packages_config,
                 ) =>
             {

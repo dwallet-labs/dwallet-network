@@ -16,7 +16,7 @@ use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
 use ika_types::messages_checkpoint::CheckpointMessage;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
+use ika_types::messages_dwallet_mpc::DWalletNetworkEncryptionKeyState;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
@@ -209,7 +209,7 @@ where
         };
 
         for (_, key) in network_encryption_keys.iter() {
-            if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+            if key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
                 return false;
             }
         }

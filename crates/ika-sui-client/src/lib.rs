@@ -17,7 +17,7 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
-    DWalletNetworkDecryptionKeyState,
+    DWalletNetworkEncryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
@@ -1041,9 +1041,12 @@ impl SuiClientInner for SuiSdkClient {
             .await?;
 
         let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
-            || key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            || key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-        {
+            || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
+            || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
+            || key.state
+                == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
+                    is_first: true,
+                }) {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
