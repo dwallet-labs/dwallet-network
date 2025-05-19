@@ -623,7 +623,7 @@ public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
 // END OF DKG TYPES
 
 
-public struct DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT has copy, drop, store {
+public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     /// The unique session identifier for the DWallet.
     dwallet_id: ID,
 

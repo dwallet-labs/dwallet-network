@@ -81,6 +81,14 @@ pub struct MakeDWalletUserSecretKeySharesPublicOutput {
     pub session_sequence_number: u64,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct MakeDWalletUserSecretKeySharesPublicOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_user_secret_key_shares: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]

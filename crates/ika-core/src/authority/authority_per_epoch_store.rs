@@ -1789,6 +1789,9 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(event_data) => {
+                
+            }
         }
     }
 
