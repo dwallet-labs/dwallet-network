@@ -368,9 +368,8 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
-                let protocol_public_parameters = bcs::from_bytes(public_input)?;
                 let public_input = (
-                    protocol_public_parameters.clone(),
+                    bcs::from_bytes(public_input)?,
                     dwallet_id,
                     event_data.event_data.centralized_party_message.clone(),
                 )
