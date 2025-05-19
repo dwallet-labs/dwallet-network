@@ -43,6 +43,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -371,7 +372,7 @@ impl DWalletMPCSession {
                 let public_input = (
                     bcs::from_bytes(public_input)?,
                     dwallet_id,
-                    event_data.event_data.centralized_party_message.clone(),
+                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
                 )
                     .into();
                 crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
