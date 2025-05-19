@@ -365,9 +365,12 @@ impl DWalletMPCSession {
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(event_data) => {
+                let dwallet_id = CommitmentSizedNumber::from_le_slice(
+                    event_data.event_data.dwallet_id.to_vec().as_slice(),
+                );
                 let public_input = bcs::from_bytes(public_input)?;
                 crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
-                    session_id,
+                    dwallet_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
