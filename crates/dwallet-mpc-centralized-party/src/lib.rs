@@ -28,8 +28,8 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use serde::{Deserialize, Serialize};
-use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use shared_wasm_class_groups::message_digest::message_digest;
+use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
@@ -270,18 +270,19 @@ pub fn create_imported_dwallet_centralized_step_inner(
         &mut OsRng,
     ) {
         Ok(round_result) => {
-            let secret_share = round_result.private_output;
             let public_output = round_result.public_output;
             let outgoing_message = round_result.outgoing_message;
+            let secret_share = MPCPublicOutput::ClassGroups(
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?),
+            );
             Ok((
                 bcs::to_bytes(&secret_share)?,
                 bcs::to_bytes(&public_output)?,
                 bcs::to_bytes(&outgoing_message)?,
             ))
         }
-        Err(e) => Err(e.into())
+        Err(e) => Err(e.into()),
     }
-    
 }
 
 fn protocol_public_parameters_by_key_scheme(
