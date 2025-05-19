@@ -73,9 +73,10 @@ use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
-    MakeDWalletUserSecretKeySharesPublicOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, Secp256K1NetworkKeyPublicOutputSlice, SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
+    EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
+    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
+    SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
 use ika_types::messages_checkpoint::{
@@ -1789,8 +1790,26 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(event_data) => {
-                
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::DWalletImportedKeyVerificationOutput(
+                    DWalletImportedKeyVerificationOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.clone(),
+                        public_output: output,
+                        encrypted_user_secret_key_share_id: init_event
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .clone(),
+                        session_id: init_event.session_id.clone(),
+                        rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
         }
     }

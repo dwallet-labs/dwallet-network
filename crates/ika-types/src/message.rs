@@ -10,6 +10,7 @@ use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use strum::IntoStaticStr;
+use sui_types::base_types::ObjectID;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGFirstRoundOutput {
@@ -82,9 +83,11 @@ pub struct MakeDWalletUserSecretKeySharesPublicOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct MakeDWalletUserSecretKeySharesPublicOutput {
-    pub dwallet_id: Vec<u8>,
-    pub public_user_secret_key_shares: Vec<u8>,
+pub struct DWalletImportedKeyVerificationOutput {
+    pub dwallet_id: ObjectID,
+    pub public_output: Vec<u8>,
+    pub encrypted_user_secret_key_share_id: ObjectID,
+    pub session_id: ObjectID,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }
@@ -102,6 +105,7 @@ pub enum MessageKind {
     DwalletMPCNetworkDKGOutput(Secp256K1NetworkKeyPublicOutputSlice),
     DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
     MakeDWalletUserSecretKeySharesPublic(MakeDWalletUserSecretKeySharesPublicOutput),
+    DWalletImportedKeyVerificationOutput(DWalletImportedKeyVerificationOutput),
 }
 
 impl MessageKind {
@@ -119,6 +123,9 @@ impl MessageKind {
             MessageKind::DwalletMPCNetworkReshareOutput(_) => "DwalletMPCNetworkReshareOutput",
             MessageKind::MakeDWalletUserSecretKeySharesPublic(_) => {
                 "MakeDWalletUserSecretKeySharesPublic"
+            }
+            MessageKind::DWalletImportedKeyVerificationOutput(_) => {
+                "DWalletImportedKeyVerificationOutput"
             }
         }
     }

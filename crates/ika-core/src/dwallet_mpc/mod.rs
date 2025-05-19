@@ -589,14 +589,14 @@ pub(crate) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<
-                DWalletImportedKeyVerificationRequestEvent,
-            > = deserialize_event_or_dynamic_field(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
-                    .event_data.dwallet_network_encryption_key_id,
+                    .event_data
+                    .dwallet_network_encryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
