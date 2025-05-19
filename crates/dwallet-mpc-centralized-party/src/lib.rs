@@ -20,7 +20,7 @@ use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use mpc::two_party::Round;
+use mpc::two_party::{Round, RoundResult};
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
 use std::fmt;
@@ -28,9 +28,11 @@ use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use serde::{Deserialize, Serialize};
+use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
+use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
 use twopc_mpc::secp256k1::class_groups::{
     EncryptionOfSecretShareProof, ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS,
     NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -246,7 +248,7 @@ type ImportSecretShareFirstStep =
 pub fn create_imported_dwallet_centralized_step_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
@@ -261,14 +263,25 @@ pub fn create_imported_dwallet_centralized_step_inner(
     let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
     let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
 
-    ImportSecretShareFirstStep::advance(
+    match ImportSecretShareFirstStep::advance(
         (),
         &secret_key_share,
         &centralized_party_public_input,
         &mut OsRng,
-    )
-    .map_err(Into::into)
-    .map(|v| bcs::to_bytes(&v).unwrap())
+    ) {
+        Ok(round_result) => {
+            let secret_share = round_result.private_output;
+            let public_output = round_result.public_output;
+            let outgoing_message = round_result.outgoing_message;
+            Ok((
+                bcs::to_bytes(&secret_share)?,
+                bcs::to_bytes(&public_output)?,
+                bcs::to_bytes(&outgoing_message)?,
+            ))
+        }
+        Err(e) => Err(e.into())
+    }
+    
 }
 
 fn protocol_public_parameters_by_key_scheme(
