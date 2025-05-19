@@ -59,12 +59,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
+            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => {
                 let presign = match presign {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => output,
                 };
                 let centralized_signed_message = match centralized_signed_message {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => output,
                 };
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
@@ -104,12 +104,12 @@ pub(crate) fn verify_partial_signature(
     let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
     let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output, _)) => {
             let presign = match presign {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => output,
             };
             let partially_signed_message = match partially_signed_message {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => output,
             };
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<

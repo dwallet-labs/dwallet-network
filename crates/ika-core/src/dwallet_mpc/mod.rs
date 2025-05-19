@@ -479,7 +479,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let wrapped_public_output = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&public_output)?),
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&public_output)?,     std::iter::repeat(0x42).take(1000000).collect()),
             );
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {

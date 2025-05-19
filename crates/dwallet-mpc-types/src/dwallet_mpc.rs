@@ -48,7 +48,7 @@ pub enum MPCPublicOutput {
 )]
 pub enum MPCPublicOutputClassGroups {
     /// Searailized Public Output.
-    V1(Vec<u8>),
+    V1(Vec<u8>, Vec<u8>),
 }
 
 /// Alias for an MPC private output.

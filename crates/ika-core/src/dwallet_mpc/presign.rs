@@ -27,7 +27,7 @@ impl PresignPartyPublicInputGenerator for PresignParty {
     ) -> DwalletMPCResult<MPCPublicInput> {
         let dkg_output = bcs::from_bytes(&dkg_output)?;
         match dkg_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
+            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => {
                 let pub_input = Self::PublicInput {
                     protocol_public_parameters: bcs::from_bytes(&protocol_public_parameters)?,
                     dkg_output: bcs::from_bytes(&output)?,

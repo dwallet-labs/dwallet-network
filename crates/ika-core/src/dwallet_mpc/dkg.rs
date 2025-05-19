@@ -65,13 +65,13 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
             bcs::from_bytes(&centralized_party_public_key_share_buf)
                 .map_err(|e| DwalletMPCError::BcsError(e))?;
         match first_round_output_buf {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(first_round_output)) => {
+            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(first_round_output, _)) => {
                 let first_round_output: <DKGFirstParty as Party>::PublicOutput =
                     bcs::from_bytes(&first_round_output)
                         .map_err(|e| DwalletMPCError::BcsError(e))?;
                 let centralized_party_public_key_share = match centralized_party_public_key_share {
                     MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-                        centralized_party_public_key_share,
+                        centralized_party_public_key_share, _
                     )) => bcs::from_bytes(&centralized_party_public_key_share)
                         .map_err(|e| DwalletMPCError::BcsError(e))?,
                 };

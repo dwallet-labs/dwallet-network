@@ -57,7 +57,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         network_dkg_public_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let network_dkg_public_output = match network_dkg_public_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output, _)) => output,
         };
         let current_committee = current_committee.clone();
 
