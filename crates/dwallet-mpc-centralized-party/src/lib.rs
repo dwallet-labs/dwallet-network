@@ -259,8 +259,8 @@ pub fn create_imported_dwallet_centralized_step_inner(
         &mut OsRng,
     )?;
     let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
-
     let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
+
     ImportSecretShareFirstStep::advance(
         (),
         &secret_key_share,

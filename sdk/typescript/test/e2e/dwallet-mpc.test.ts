@@ -160,7 +160,7 @@ describe('Test dWallet MPC', () => {
 		console.log({ dwalletID });
 		const centralizedStepOutput = create_imported_dwallet_centralized_step(
 			networkDecryptionKeyPublicOutput,
-			dwalletID,
+			dwalletID.slice(2),
 		);
 		console.log({ centralizedStepOutput });
 	});
