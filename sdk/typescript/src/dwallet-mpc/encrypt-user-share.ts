@@ -462,7 +462,7 @@ export async function decryptAndVerifyReceivedUserShare(
 	const decryptedSecretShare = decrypt_user_share(
 		cgKeyPair.decryptionKey,
 		encryptedSecretShareAndProof,
-		networkDecryptionKeyPublicOutput
+		networkDecryptionKeyPublicOutput,
 	);
 	// Before validating this centralized output,
 	// we are making sure it was signed by us.
