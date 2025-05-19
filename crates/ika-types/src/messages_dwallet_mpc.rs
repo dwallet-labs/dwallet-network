@@ -449,38 +449,38 @@ impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletImportedKeyVerificationRequestEvent {
     /// The unique session identifier for the DWallet.
-    dwallet_id: ObjectID,
+    pub dwallet_id: ObjectID,
 
-    encrypted_user_secret_key_share_id: ObjectID,
+    pub encrypted_user_secret_key_share_id: ObjectID,
 
-    centralized_party_message: Vec<u8>,
+    pub centralized_party_message: Vec<u8>,
 
     /// The unique identifier of the dWallet capability associated with this session.
-    dwallet_cap_id: ObjectID,
+    pub dwallet_cap_id: ObjectID,
 
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
-    encrypted_centralized_secret_share_and_proof: Vec<u8>,
+    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
 
     /// The `EncryptionKey` object used for encrypting the secret key share.
-    encryption_key: Vec<u8>,
+    pub encryption_key: Vec<u8>,
 
     /// The unique identifier of the `EncryptionKey` object.
-    encryption_key_id: ObjectID,
+    pub encryption_key_id: ObjectID,
 
-    encryption_key_address: SuiAddress,
+    pub encryption_key_address: SuiAddress,
 
     /// The public output of the centralized party in the DKG process.
-    user_public_output: Vec<u8>,
+    pub user_public_output: Vec<u8>,
 
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
-    signer_public_key: Vec<u8>,
+    pub signer_public_key: Vec<u8>,
 
     /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    dwallet_network_encryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 
     /// The elliptic curve used for the dWallet.
-    curve: u32,
+    pub curve: u32,
 }
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGFirstRoundRequestEvent`.
