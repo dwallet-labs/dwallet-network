@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { create_imported_dwallet_centralized_step } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	create_imported_dwallet_centralized_step,
+	encrypt_secret_share,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
+import { getOrCreateClassGroupsKeyPair } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	checkpointCreationTime,
 	Config,
@@ -158,10 +162,19 @@ describe('Test dWallet MPC', () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const dwalletID = await createImportedDWallet(conf);
 		console.log({ dwalletID });
-		const centralizedStepOutput = create_imported_dwallet_centralized_step(
+
+		const [secret_share, public_output, outgoing_message] =
+			create_imported_dwallet_centralized_step(
+				networkDecryptionKeyPublicOutput,
+				dwalletID.slice(2),
+			);
+		const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+
+		const encryptedUserShareAndProof = encrypt_secret_share(
+			secret_share,
+			classGroupsSecpKeyPair.encryptionKey,
 			networkDecryptionKeyPublicOutput,
-			dwalletID.slice(2),
 		);
-		console.log({ centralizedStepOutput });
+
 	});
 });
