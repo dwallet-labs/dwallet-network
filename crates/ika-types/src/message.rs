@@ -173,6 +173,9 @@ impl Display for MessageKind {
             MessageKind::MakeDWalletUserSecretKeySharesPublic(_) => {
                 writeln!(writer, "MessageKind : MakeDWalletUserSecretKeySharesPublic")?;
             }
+            MessageKind::DWalletImportedKeyVerificationOutput(_) => {
+                writeln!(writer, "MessageKind : DWalletImportedKeyVerificationOutput")?;
+            }
         }
         write!(f, "{}", writer)
     }

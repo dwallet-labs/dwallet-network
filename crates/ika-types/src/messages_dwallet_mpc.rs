@@ -92,6 +92,9 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+                write!(f, "DWalletImportedKeyVerificationRequestEvent")
+            }
         }
     }
 }
@@ -115,6 +118,9 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+                write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
     }
