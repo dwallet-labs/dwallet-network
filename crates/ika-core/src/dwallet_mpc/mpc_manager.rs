@@ -312,6 +312,13 @@ impl DWalletMPCManager {
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
+        if self
+            .malicious_handler
+            .get_malicious_actors_names()
+            .contains(&origin_authority)
+        {
+            return Ok(());
+        }
         let committee = self.epoch_store()?.committee().clone();
         let current_voters_for_report = self
             .threshold_not_reached_reports
