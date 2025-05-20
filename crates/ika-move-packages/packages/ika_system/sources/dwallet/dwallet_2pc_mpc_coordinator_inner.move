@@ -49,7 +49,8 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 public struct DWalletCoordinatorInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
-    session_start_events: Bag,
+    // Holds events keyed by the ID of the corresponding `DWalletSession` session. 
+    user_requested_sessions_events: Bag,
     number_of_completed_user_initiated_sessions: u64,
     started_system_sessions_count: u64,
     completed_system_sessions_count: u64,
@@ -984,7 +985,7 @@ public(package) fun create_dwallet_coordinator_inner(
     DWalletCoordinatorInner {
         current_epoch,
         sessions: object_table::new(ctx),
-        session_start_events: bag::new(ctx),
+        user_requested_sessions_events: bag::new(ctx),
         number_of_completed_user_initiated_sessions: 0,
         next_session_sequence_number: 1,
         last_user_initiated_session_to_complete_in_current_epoch: 0,
@@ -1343,7 +1344,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         event_data,
     };
 
-    self.session_start_events.add(session.id.to_inner(), event);
+    self.user_requested_sessions_events.add(session.id.to_inner(), event);
     self.sessions.add(session_sequence_number, session);
     self.next_session_sequence_number = session_sequence_number + 1;
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
@@ -1685,7 +1686,7 @@ public(package) fun all_current_epoch_user_initiated_sessions_completed(self: &D
         (self.completed_system_sessions_count == self.started_system_sessions_count))
 }
 
-/// Removes a user-initiated session, charging the pre-paid gas amounts in both Sui and Ika
+/// Removes a user-initiated session and its corresponding event, charging the pre-paid gas amounts in both Sui and Ika
 /// to be later distributed as part of the consensus validation and gas reimburesement fees.
 ///
 /// Increments `number_of_completed_user_initiated_sessions`.
@@ -1693,8 +1694,11 @@ public(package) fun all_current_epoch_user_initiated_sessions_completed(self: &D
 /// Notice: never called for a system session.
 fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
     self.number_of_completed_user_initiated_sessions = self.number_of_completed_user_initiated_sessions + 1;
+
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
     let session = self.sessions.remove(session_sequence_number);
+
+    // Unpack and delete the `DWalletSession` object.
     let DWalletSession {
         computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
@@ -1703,35 +1707,21 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut 
         id,
         ..
     } = session;
+
+    // Remove the corresponding event.
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
-    let _: DWalletEvent<E> = self.session_start_events.remove(id.to_inner());
+    let _: DWalletEvent<E> = self.user_requested_sessions_events.remove(id.to_inner());
+
     object::delete(id);
+
     dwallet_network_encryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
     self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
 }
 
-/// Creates the output of the first DKG round.
-///
-/// This function transfers the output of the first DKG round
-/// to the session initiator and ensures it is securely linked
-/// to the `DWalletCap` of the session.
-/// This function is called by blockchain itself.
-/// Validators call it, it's part of the blockchain logic.
-///
-/// ### Effects
-/// - Transfers the output of the first round to the initiator.
-/// - Emits necessary metadata and links it to the associated session.
-///
-/// ### Parameters
-/// - `initiator`: The address of the user who initiated the DKG session.
-/// - `session_id`: The ID of the DKG session.
-/// - `decentralized_public_output`: The public output data from the first round.
-/// - `dwallet_cap_id`: The ID of the associated `DWalletCap`.
-/// - `ctx`: The transaction context.
-///
-/// ### Panics
-/// - Panics with `ENotSystemAddress` if the sender is not the system address.
+/// This function is called by the Ika network to respond to the dWallet DKG first round request made by the user.
+/// Advances the dWallet's state and registers the output in it. 
+/// Also emits an event with the output.
 public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1764,21 +1754,13 @@ public(package) fun respond_dwallet_dkg_first_round(
 
 }
 
-/// Initiates the second round of the Distributed Key Generation (DKG) process
-/// and emits an event for validators to begin their participation in this round.
+/// Initiates the second round of the Distributed Key Generation (DKG) protocol
+/// and emits an event for the Ika validators to request the execution of this round.
 ///
-/// This function handles the creation of a new DKG session ID and emits an event containing
-/// all the necessary parameters to continue the DKG process.
-/// ### Parameters
-/// - `dwallet_cap`: A reference to the `DWalletCap`, representing the capability associated with the dWallet.
-/// - `centralized_public_key_share_and_proof`: The user (centralized) public key share and proof.
-/// - `first_round_output`: A reference to the `DWalletDKGFirstRoundOutput` structure containing the output of the first DKG round.
-/// - `encrypted_centralized_secret_share_and_proof`: Encrypted centralized secret key share and its proof.
-/// - `encryption_key`: The `EncryptionKey` object used for encrypting the secret key share.
-/// - `centralized_public_output`: The public output of the centralized party in the DKG process.
-/// - `decentralized_user_output_signature`: The signature for the public output of the centralized party in the DKG process.
-/// - `signer_public_key`: The Ed25519 public key of the initiator,
-///    used to verify the signature on the public output.
+/// Creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification 
+/// that the user encrypted its user share correctly (the network will verify it as part of the second round).
+///
+/// Sets the state of the dWallet to `AwaitingNetworkDKGVerification`.
 public(package) fun request_dwallet_dkg_second_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_cap: &DWalletCap,
@@ -1802,6 +1784,7 @@ public(package) fun request_dwallet_dkg_second_round(
 
     assert!(!dwallet.is_imported_key_dwallet, EImportedKeyDWallet);
     assert!(encryption_key_curve == curve, EMismatchCurve);
+    self.validate_curve(curve);
 
     let first_round_output = match (&dwallet.state) {
         DWalletState::AwaitingUserDKGVerificationInitiation {
@@ -1858,31 +1841,12 @@ public(package) fun request_dwallet_dkg_second_round(
     dwallet.state = DWalletState::AwaitingNetworkDKGVerification;
 }
 
+/// This function is called by the Ika network to respond to the dWallet DKG second round request made by the user.
+///
 /// Completes the second round of the Distributed Key Generation (DKG) process and
-/// creates the [`DWallet`].
+/// creates the [`DWallet`] and registers the DKG public output in its state.
 ///
-/// This function finalizes the DKG process by creating a `DWallet` object and associating it with the
-/// cryptographic outputs of the second round. It also generates an encrypted user share and emits
-/// events to record the results of the process.
-/// This function is called by the blockchain.
-///
-/// ### Parameters
-/// - **`session_id`**: A unique identifier for the current DKG session.
-/// - **`decentralized_public_output`**: The public output of the second round of the DKG process,
-///      representing the decentralized computation result.
-/// - **`dwallet_cap_id`**: The unique identifier of the `DWalletCap` associated with this session.
-/// - **`dwallet_mpc_network_decryption_key_version`**: The version of the MPC network key for the `DWallet`.
-/// - **`encrypted_secret_share_and_proof`**: The encrypted user secret key share and associated cryptographic proof.
-/// - **`encryption_key_id`**: The ID of the `EncryptionKey` used for encrypting the secret key share.
-/// - **`signed_public_share`**: The signed public share corresponding to the secret key share.
-/// - **`encryptor_ed25519_pubkey`**: The Ed25519 public key of the entity that encrypted the secret key share.
-/// - **`centralized_public_output`**: The centralized public output from the DKG process.
-///
-/// ### Effects
-/// - Creates a new `DWallet` object using the provided session ID, DKG outputs, and other metadata.
-/// - Creates an encrypted user share and associates it with the `DWallet`.
-/// - Emits a `CompletedDWalletDKGSecondRoundEvent` to record the completion of the second DKG round.
-/// - Freezes the created `DWallet` object to make it immutable.
+/// Also emits an event with the public output.
 public(package) fun respond_dwallet_dkg_second_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1923,22 +1887,13 @@ public(package) fun respond_dwallet_dkg_second_round(
 
 }
 
-/// Transfers an encrypted dWallet user secret key share from a source entity to destination entity.
+/// Requests a re-encryption of the user share of the dWallet by having the Ika network 
+/// verify a zk-proof that the encryption matches the public share of the dWallet.
 ///
-/// This function emits an event with the encrypted user secret key share, along with its cryptographic proof,
-/// to the blockchain. The chain verifies that the encrypted data matches the expected secret key share
-/// associated with the dWallet before creating an [`EncryptedUserSecretKeyShare`] object.
+/// This can be used as part of granting access or transfering the dWallet.
 ///
-/// ### Parameters
-/// - **`dwallet`**: A reference to the `DWallet<Secp256K1>` object to which the secret share is linked.
-/// - **`destination_encryption_key`**: A reference to the encryption key used for encrypting the secret key share.
-/// - **`encrypted_centralized_secret_share_and_proof`**: The encrypted secret key share, accompanied by a cryptographic proof.
-/// - **`source_signed_centralized_public_output`**: The signed centralized public output corresponding to the secret share.
-/// - **`source_ed25519_pubkey`**: The Ed25519 public key of the source (encryptor) used for verifying the signature.
-///
-/// ### Effects
-/// - Emits a `EncryptedShareVerificationRequestEvent`,
-/// which is captured by the blockchain to initiate the verification process.
+/// Creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification.
+/// Emits an event to request the verification by the network.
 public(package) fun request_re_encrypt_user_share_for(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1998,19 +1953,8 @@ public(package) fun request_re_encrypt_user_share_for(
     );
 }
 
-/// Creates an encrypted user secret key share after it has been verified by the blockchain.
-///
-/// This function is invoked by the blockchain to generate an [`EncryptedUserSecretKeyShare`] object
-/// once the associated encryption and cryptographic proofs have been verified.
-/// It finalizes the process by storing the encrypted user share on-chain and emitting the relevant event.
-///
-/// ### Parameters
-/// - `dwallet_id`: The unique identifier of the dWallet associated with the encrypted user share.
-/// - `encrypted_centralized_secret_share_and_proof`: The encrypted centralized secret key share along with its cryptographic proof.
-/// - `encryption_key_id`: The `EncryptionKey` Move object ID used to encrypt the secret key share.
-/// - `centralized_user_output_signature`: The signed public share corresponding to the encrypted secret share.
-/// - `signer_public_key`: The Ed25519 public key of the encryptor, used for signing.
-/// - `initiator`: The address of the entity that performed the encryption operation of this secret key share.
+/// This function is called by the Ika network to respond to a re-encryption request of the user share of the dWallet 
+/// by setting the `EncryptedUserSecretKeyShareState` object's state according to the verification result.
 public(package) fun respond_re_encrypt_user_share_for(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -2047,6 +1991,14 @@ public(package) fun respond_re_encrypt_user_share_for(
     };
 }
 
+/// Accept the encryption of the user share of a dWallet.
+///
+/// Called after the user verified the signature of the sender (who re-encrypted the user share for them)
+/// on the public output of the dWallet, and that the decrypted share matches the public key share of the dWallet.
+///
+/// Register the user's own signature on the public output `user_output_signature` for an easy way to perform self-verification in the future.
+///
+/// Finalizes the `EncryptedUserSecretKeyShareState` object's state as `KeyHolderSigned`.
 public(package) fun accept_encrypted_user_share(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
