@@ -1755,7 +1755,7 @@ public(package) fun respond_dwallet_dkg_first_round(
 }
 
 /// Initiates the second round of the Distributed Key Generation (DKG) protocol
-/// and emits an event for the Ika validators to request the execution of this round.
+/// by emitting an event for the Ika validators to request the execution of this round.
 ///
 /// Creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification 
 /// that the user encrypted its user share correctly (the network will verify it as part of the second round).
@@ -1844,7 +1844,9 @@ public(package) fun request_dwallet_dkg_second_round(
 /// This function is called by the Ika network to respond to the dWallet DKG second round request made by the user.
 ///
 /// Completes the second round of the Distributed Key Generation (DKG) process and
-/// creates the [`DWallet`] and registers the DKG public output in its state.
+/// advances the [`DWallet`] state to `AwaitingKeyHolderSignature` with the DKG public output registered in it.
+///
+/// Advances the `EncryptedUserSecretKeyShareState` to `NetworkVerificationCompleted`.
 ///
 /// Also emits an event with the public output.
 public(package) fun respond_dwallet_dkg_second_round(
@@ -2046,6 +2048,11 @@ public(package) fun accept_encrypted_user_share(
     );
 }
 
+/// Creates a new imported key dWallet, by creating a new `DWallet` object with `is_imported_key_dwallet` set and the state at `AwaitingUserImportedKeyInitiation`, 
+/// alongside a corresponding `ImportedKeyDWalletCap`.
+/// 
+/// Required as a first step before the user can call `request_imported_key_dwallet_verification()`, 
+/// which requires the user to know the `dwallet_id` for a unique identifier used by the user to prove the imported key is valid.
 public(package) fun new_imported_key_dwallet(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -2053,14 +2060,16 @@ public(package) fun new_imported_key_dwallet(
     ctx: &mut TxContext
 ): ImportedKeyDWalletCap {
     self.validate_curve(curve);
-
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
+    
     let dwallet_cap = ImportedKeyDWalletCap {
         id: object::new(ctx),
         dwallet_id,
     };
+
     let dwallet_cap_id = object::id(&dwallet_cap);
     self.dwallets.add(dwallet_id, DWallet {
         id,
@@ -2074,9 +2083,16 @@ public(package) fun new_imported_key_dwallet(
         sign_sessions: object_table::new(ctx),
         state: DWalletState::AwaitingUserImportedKeyInitiation,
     });
+
     dwallet_cap
 }
 
+/// Request verification of the imported key dWallet from the Ika network.
+///
+/// Sets the state of the dWallet to `AwaitingNetworkImportedKeyVerification` and creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification 
+/// that the user encrypted its user share correctly (the network will verify it as part of the second round).
+///
+/// Emits an event with the user's message and encrypted user share proof to the Ika network.
 public(package) fun request_imported_key_dwallet_verification(
     self: &mut DWalletCoordinatorInner,
     dwallet_cap: &ImportedKeyDWalletCap,
@@ -2148,6 +2164,13 @@ public(package) fun request_imported_key_dwallet_verification(
     event::emit(emit_event);
 }
 
+/// This function is called by the Ika network to respond to the import key dWallet verification request made by the user.
+///
+/// Completes the verification of an imported key dWallet and
+/// advances the [`DWallet`] state to `AwaitingKeyHolderSignature` with the DKG public output registered in it. 
+/// Also emits an event with the public output.
+///
+/// Advances the `EncryptedUserSecretKeyShareState` to `NetworkVerificationCompleted`. 
 public(package) fun respond_imported_key_dwallet_verification(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -2235,6 +2258,8 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
     );
 }
 
+/// This function is called by the Ika network to respond to the request to make the dWallet's user share public.
+/// Sets `public_user_secret_key_share` to the verified value. 
 public(package) fun respond_make_dwallet_user_secret_key_share_public(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -2256,23 +2281,10 @@ public(package) fun respond_make_dwallet_user_secret_key_share_public(
     }
 }
 
-/// Starts a batched presign session.
+/// Initiates the Presign protocol by creating a new `PresignSession` in `self.presign_sessions` 
+/// and emitting an event for the Ika validators to request its execution.
 ///
-/// This function emits a `RequestedBatchedPresignEvent` for the entire batch and a
-/// `RequestedPresignFirstRoundEvent` for each presign in the batch. These events signal
-/// validators to begin processing the first round of the presign process for each session.
-/// - A unique `batch_session_id` is generated for the batch.
-/// - A loop creates and emits a `RequestedPresignFirstRoundEvent` for each session in the batch.
-/// - Each session is linked to the parent batch via `batch_session_id`.
-///
-/// ### Effects
-/// - Associates the batched presign session with the specified dWallet.
-/// - Emits a `RequestedBatchedPresignEvent` containing the batch session details.
-/// - Emits a `RequestedPresignFirstRoundEvent` for each presign in the batch, with relevant details.
-///
-/// ### Parameters
-/// - `dwallet_id`: The dWallet's ID to request presign.
-/// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
+/// Creates an `UnverifiedPresignCap` for the new `presign_id` that can be exclusively used with this `dwallet_id`.
 public(package) fun request_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -2293,14 +2305,15 @@ public(package) fun request_presign(
 
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
-
     let id = object::new(ctx);
     let presign_id = id.to_inner();
+
     let cap = UnverifiedPresignCap {
         id: object::new(ctx),
         dwallet_id: option::some(dwallet_id),
         presign_id,
     };
+
     self.presign_sessions.add(presign_id, PresignSession {
         id,
         created_at_epoch,
@@ -2333,6 +2346,10 @@ public(package) fun request_presign(
     cap
 }
 
+/// Initiates the Presign protocol by creating a new `PresignSession` in `self.presign_sessions` 
+/// and emitting an event for the Ika validators to request its execution.
+///
+/// Creates an `UnverifiedPresignCap` for the new `presign_id` that can be used with any dWallet.
 public(package) fun request_global_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -2387,30 +2404,8 @@ public(package) fun request_global_presign(
     cap
 }
 
-/// Completes the presign session by creating the output of the
-/// second presign round and transferring it to the session initiator.
-///
-/// This function is called by validators as part of the blockchain logic.
-/// It creates a `Presign` object representing the second presign round output,
-/// emits a `CompletedPresignEvent`, and transfers the result to the initiating user.
-///
-/// ### Parameters
-/// - `initiator`: The address of the user who initiated the presign session.
-/// - `session_id`: The ID of the presign session.
-/// - `output`: The presign result data.
-/// - `dwallet_cap_id`: The ID of the associated `DWalletCap`.
-/// - `dwallet_id`: The ID of the associated `DWallet`.
-/// - `ctx`: The transaction context.
-///
-/// ### Emits
-/// - `CompletedPresignEvent`: Includes the initiator, dWallet ID, and presign ID.
-///
-/// ### Panics
-/// - Panics with `ENotSystemAddress` if the sender of the transaction is not the system address.
-///
-/// ### Effects
-/// - Creates a `Presign` object and transfers it to the session initiator.
-/// - Emits a `CompletedPresignEvent`.
+/// This function is called by the Ika network to respond to the Presign request made by the user.
+/// Advances the `PresignSession` state to `Completed` and registers the output (the presign) in it.
 public(package) fun respond_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: Option<ID>,
@@ -2449,6 +2444,7 @@ public(package) fun respond_presign(
     };
 }
 
+/// Checks that the presign corresponding to `cap` is valid by ensuring it is in the `Completed` state and that the IDs match.
 public(package) fun is_presign_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPresignCap,
@@ -2462,6 +2458,8 @@ public(package) fun is_presign_valid(
     }
 }
 
+/// Verify `cap` by deleting the `UnverifiedPresignCap` object and replacing it with a new `VerifiedPresignCap`, 
+/// if `is_presign_valid()`.
 public(package) fun verify_presign_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedPresignCap,
@@ -2472,25 +2470,34 @@ public(package) fun verify_presign_cap(
         dwallet_id,
         presign_id
     } = cap;
+
     let cap_id = id.to_inner();
     id.delete();
+
+    // TODO(@omer): call is_presign_valid() instead
     let presign = self.presign_sessions.borrow_mut(presign_id);
     assert!(presign.cap_id == cap_id, EIncorrectCap);
         match(&presign.state) {
         PresignState::Completed { .. } => {},
         _ => abort EUnverifiedCap
     };
+
     let cap = VerifiedPresignCap {
         id: object::new(ctx),
         dwallet_id,
         presign_id,
     };
     presign.cap_id = cap.id.to_inner();
+
     cap
 }
 
-/// This function is a shared logic for both the normal and future sign flows.
-/// It checks the presign is valid and removes it, thus assuring it is never used twice.
+/// This function is a shared logic for both the standard and future sign flows.
+///
+/// It checks the presign is valid and deletes it (and its `presign_cap`), thus assuring it is not used twice.
+///
+/// Creates a `SignSession` object and register it in `sign_sessions`.
+///
 /// Finally it emits the sign event.
 fun validate_and_initiate_sign(
     self: &mut DWalletCoordinatorInner,
@@ -2513,14 +2520,15 @@ fun validate_and_initiate_sign(
 
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
-
     let VerifiedPresignCap {
         id,
         dwallet_id: presign_cap_dwallet_id,
         presign_id: presign_cap_presign_id,
     } = presign_cap;
+
     let presign_cap_id = id.to_inner();
     id.delete();
+
     let PresignSession {
         id,
         created_at_epoch: _,
@@ -2530,21 +2538,30 @@ fun validate_and_initiate_sign(
         curve,
         signature_algorithm: presign_signature_algorithm,
     } = presign;
+
     let presign = match(state) {
         PresignState::Completed { presign } => {
             presign
         },
         _ => abort EInvalidPresign
     };
+    
     let presign_id = id.to_inner();
     id.delete();
+
+    // Check that the presign is global, or that it belongs to this dWallet.
     assert!(presign_dwallet_id.is_none() || presign_dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
-    assert!(presign_signature_algorithm == signature_algorithm, EMessageApprovalMismatch);
+    
+    // Santicy checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
     assert!(presign_cap_id == cap_id, EPresignNotExist);
     assert!(presign_id == presign_cap_presign_id, EPresignNotExist);
     assert!(presign_cap_dwallet_id == presign_dwallet_id, EPresignNotExist);
+    
+    // Check that the curve of the dWallet matches that of the presign, and that the signature algorithm matches.
     assert!(dwallet.curve == curve, EDWalletMismatch);
+    assert!(presign_signature_algorithm == signature_algorithm, EMessageApprovalMismatch);
 
+    // Emit a `SignRequestEvent` to request the Ika network to sign `message`.
     let id = object::new(ctx);
     let sign_id = id.to_inner();
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
@@ -2569,6 +2586,8 @@ fun validate_and_initiate_sign(
         },
         ctx,
     );
+
+    // Create a `SignSession` object and register it in `sign_sessions`.
     let session_id = emit_event.session_id;
     let dwallet = self.get_dwallet_mut(dwallet_id);
     dwallet.sign_sessions.add(sign_id, SignSession {
@@ -2581,41 +2600,12 @@ fun validate_and_initiate_sign(
     let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
     self.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
 
-
     event::emit(emit_event);
     is_imported_key_dwallet
 }
 
-
-/// Initiates the signing process for a given dWallet of type T.
-///
-/// This function emits a `RequestedSignEvent` and a `RequestedBatchedSignEvent`,
-/// providing all necessary metadata to ensure the integrity of the signing process.
-/// It validates the linkage between the `DWallet`, `DWalletCap`, and `SignatureAlgorithmData` objects.
-///
-/// # Effects
-/// - Ensures a valid linkage between `DWallet`, `DWalletCap`, and `SignatureAlgorithmData`.
-/// - Validates that `signature_algorithm_data` and `message_approvals` have the same length.
-/// - Emits the following events:
-///   - `RequestedBatchedSignEvent`: Contains the session details and the list of hashed messages.
-///   - `RequestedSignEvent`: Includes details for each message signing process.
-///
-/// # Aborts
-/// - **`EExtraDataAndMessagesLenMismatch`**: If the number of `hashed_messages` does not
-///   match the number of `signature_algorithm_data`.
-/// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approvals are missing or provided in the incorrect order.
-///
-/// # Parameters
-/// - `message_approvals`: A vector of `MessageApproval` objects representing
-///    approvals for the messages, which are destroyed at the end of the transaction.
-/// - `dwallet`: A reference to the `DWallet` object being used for signing.
-/// - `signature_algorithm_data`: A vector of `SignatureAlgorithmData` objects containing intermediate signing outputs,
-///   which are unpacked and then destroyed at the end of the transaction.
-///
-/// # Type Parameters
-/// - `T`: The elliptic curve type used for the dWallet.
-/// D: The type of data that can be stored with the object,
-/// specific to each Digital Signature Algorithm.
+/// Initiates the Sign protocol for this dWallet.
+/// Requires a `MessageApproval`, which approves a message for signing and is unpacked and deleted to ensure it is never used twice.
 public(package) fun request_sign(
     self: &mut DWalletCoordinatorInner,
     message_approval: MessageApproval,
@@ -2647,9 +2637,12 @@ public(package) fun request_sign(
         false,
         ctx
     );
+
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
 
+/// Initiates the Sign protocol for this imported key dWallet.
+/// Requires an `ImportedKeyMessageApproval`, which approves a message for signing and is unpacked and deleted to ensure it is never used twice.
 public(package) fun request_imported_key_sign(
     self: &mut DWalletCoordinatorInner,
     message_approval: ImportedKeyMessageApproval,
@@ -2681,6 +2674,7 @@ public(package) fun request_imported_key_sign(
         false,
         ctx
     );
+    
     assert!(is_imported_key_dwallet, ENotImportedKeyDWallet);
 }
 
