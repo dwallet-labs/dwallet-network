@@ -154,6 +154,8 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create an imported dWallet', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const secretShare = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf);
 		console.log({ dwallet });
 	});
