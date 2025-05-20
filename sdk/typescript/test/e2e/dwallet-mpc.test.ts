@@ -1,26 +1,21 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
+import { sample_dwallet_secret_key } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
+
+
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import {
-	checkpointCreationTime,
-	Config,
-	delay,
-	getNetworkDecryptionKeyPublicOutput,
-	getObjectWithType,
-} from '../../src/dwallet-mpc/globals';
+import { checkpointCreationTime, Config, delay, getNetworkDecryptionKeyPublicOutput, getObjectWithType } from '../../src/dwallet-mpc/globals';
 import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 import { presign } from '../../src/dwallet-mpc/presign';
-import {
-	isDWalletWithPublicUserSecretKeyShares,
-	makeDWalletUserSecretKeySharesPublicRequestEvent,
-} from '../../src/dwallet-mpc/publish_secret_share';
+import { isDWalletWithPublicUserSecretKeyShares, makeDWalletUserSecretKeySharesPublicRequestEvent } from '../../src/dwallet-mpc/publish_secret_share';
 import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
@@ -28,6 +23,7 @@ import {
 	sign,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
+
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -154,7 +150,9 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create an imported dWallet', async () => {
-		const dwallet = await createImportedDWallet(conf);
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const secretShare = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretShare);
 		console.log({ dwallet });
 	});
 });

@@ -244,10 +244,9 @@ pub fn advance_centralized_sign_party(
     }
 }
 
-pub fn create_imported_dwallet_centralized_step_inner(
+pub fn sample_dwallet_secret_key_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
-    dwallet_id: String,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+) -> anyhow::Result<Vec<u8>> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
@@ -259,6 +258,20 @@ pub fn create_imported_dwallet_centralized_step_inner(
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
+    Ok(bcs::to_bytes(&secret_key_share)?)
+}
+
+pub fn create_imported_dwallet_centralized_step_inner(
+    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    dwallet_id: String,
+    secret_share: Vec<u8>,
+) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+    let protocol_public_parameters: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_decryption_key_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
+    let secret_key_share = bcs::from_bytes(&secret_share)?;
     let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
     let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
 
