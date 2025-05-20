@@ -116,8 +116,7 @@ impl Display for MessageKind {
             MessageKind::DwalletMPCNetworkDKGOutput(output) => {
                 writeln!(
                     writer,
-                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
-                    output
+                    "MessageKind : DwalletMPCNetworkDKGOutput",
                 )?;
             }
             MessageKind::DwalletDKGFirstRoundOutput(_) => {
