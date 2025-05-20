@@ -34,13 +34,17 @@ function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalle
 	return event.dwallet_id !== undefined && event.dwallet_cap_id !== undefined;
 }
 
-export async function createImportedDWallet(conf: Config): Promise<DWallet> {
+export async function createImportedDWallet(
+	conf: Config,
+	secretShare: Uint8Array,
+): Promise<DWallet> {
 	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 	const importedDWalletData = await createImportedDWalletMoveCall(conf);
 
 	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
 		networkDecryptionKeyPublicOutput,
 		importedDWalletData.dwallet_id.slice(2),
+		secret_share
 	);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 
