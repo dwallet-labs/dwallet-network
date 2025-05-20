@@ -1256,7 +1256,71 @@ impl CheckpointAggregator {
             let next_to_certify = self.next_checkpoint_to_certify();
 
             let checkpoints_committee = self.current.as_ref().map(|current| {
-                (
+                let messages = current
+                    .signatures_by_digest
+                    .stake_maps
+                    .iter()
+                    .map(|(k, (msg, _))| (k, msg))
+                    .collect_vec();
+
+                for i in 0..messages.len() {
+                    let (digest_i, msg_i) = messages[i];
+                    info!(
+                        digest = ?digest_i,
+                        sequence_number = msg_i.sequence_number,
+                        "Stake Maps Digest I"
+                    );
+
+                    for j in (i + 1)..messages.len() {
+                        let (digest_j, msg_j) = messages[j];
+
+                        info!(
+                            digest = ?digest_j,
+                            sequence_number = msg_j.sequence_number,
+                            "Stake Maps Digest J"
+                        );
+
+                        if msg_i.epoch != msg_j.epoch {
+                            warn!(
+                                digest_a = ?digest_i,
+                                digest_b = ?digest_j,
+                                a = msg_i.epoch,
+                                b = msg_j.epoch,
+                                "Different `epoch`"
+                            );
+                        }
+
+                        if msg_i.sequence_number != msg_j.sequence_number {
+                            warn!(
+                                digest_a = ?digest_i,
+                                digest_b = ?digest_j,
+                                a = msg_i.sequence_number,
+                                b = msg_j.sequence_number,
+                                "Different `sequence_number`"
+                            );
+                        }
+
+                        if msg_i.timestamp_ms != msg_j.timestamp_ms {
+                            warn!(
+                                digest_a = ?digest_i,
+                                digest_b = ?digest_j,
+                                a = msg_i.timestamp_ms,
+                                b = msg_j.timestamp_ms,
+                                "Different `timestamp_ms`"
+                            );
+                        }
+
+                        if msg_i.messages != msg_j.messages {
+                            warn!(
+                                digest_a = ?digest_i,
+                                digest_b = ?digest_j,
+                                "Different `messages` field"
+                            );
+                        }
+                    }
+                }
+
+                let a = (
                     current.checkpoint_message.sequence_number,
                     current
                         .signatures_by_digest
@@ -1267,7 +1331,8 @@ impl CheckpointAggregator {
                         .collect_vec(),
                     current.signatures_by_digest.clone().unique_key_count(),
                     current.signatures_by_digest.clone().total_votes(),
-                )
+                );
+                a
             });
             info!(
                 next_to_certify=?next_to_certify,
