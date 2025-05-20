@@ -59,11 +59,18 @@ export async function sign(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
 ): Promise<CompletedSignEvent> {
+	console.time('sign(): get dwalletCap');
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
+	console.timeEnd('sign(): get dwalletCap');
+	console.time('sign(): get activeDWallet');
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
+	console.timeEnd('sign(): get activeDWallet');
+	console.time('sign(): get presign');
 	const presign = await getObjectWithType(conf, presignID, isPresign);
+	console.timeEnd('sign(): get presign');
 
+	console.time('sign(): create_sign_centralized_output()');
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
 		MPCKeyScheme.Secp256k1,
@@ -73,7 +80,11 @@ export async function sign(
 		message,
 		hash,
 	);
+	console.timeEnd('sign(): create_sign_centralized_output()');
+	console.time('sign(): get dWalletStateData');
 	const dWalletStateData = await getDWalletSecpState(conf);
+	console.timeEnd('sign(): get dWalletStateData');
+	console.time('sign(): approve message');
 	const tx = new Transaction();
 	const messageApproval = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::approve_message`,
@@ -83,12 +94,16 @@ export async function sign(
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 		],
 	});
+	console.timeEnd('sign(): approve message');
+	console.time('sign(): coin::zero ');
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
 		arguments: [],
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
+	console.timeEnd('sign(): coin::zero ');
 
+	console.time('sign(): call request_ecdsa_sign');
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_sign`,
 		arguments: [
@@ -104,6 +119,9 @@ export async function sign(
 			tx.gas,
 		],
 	});
+	console.timeEnd('sign(): call request_ecdsa_sign');
+
+	console.time('sign(): call coin::destroy_zero');
 	tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
 		arguments: [emptyIKACoin],
@@ -117,17 +135,24 @@ export async function sign(
 			showEvents: true,
 		},
 	});
+	console.timeEnd('sign(): call coin::destroy_zero');
+
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
 	if (!isStartSessionEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
 	const completedSignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSASignEvent`;
-	return await fetchCompletedEvent(
+
+	console.time('sign(): call fetchCompletedEvent()');
+	let fetched_event = await fetchCompletedEvent(
 		conf,
 		startSessionEvent.session_id,
 		isCompletedSignEvent,
 		completedSignEventType,
 	);
+	console.timeEnd('sign(): call fetchCompletedEvent()');
+
+	return fetched_event;
 }
 
 export async function createUnverifiedECDSAPartialUserSignatureCap(

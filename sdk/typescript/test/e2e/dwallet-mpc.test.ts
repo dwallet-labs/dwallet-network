@@ -35,12 +35,12 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		const suiClient = new SuiClient({ url: "https://fullnode.testnet.sui.io:443" });
-		// await requestSuiFromFaucetV1({
-		// 	host: getFaucetHost('localnet'),
-		// 	recipient: address,
-		// });
+		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		// const suiClient = new SuiClient({ url: "https://fullnode.testnet.sui.io:443" });
+		await requestSuiFromFaucetV1({
+			host: getFaucetHost('localnet'),
+			recipient: address,
+		});
 
 		conf = {
 			suiClientKeypair: keypair,
