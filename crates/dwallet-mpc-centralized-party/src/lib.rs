@@ -73,7 +73,7 @@ type Secp256k1EncryptionKey = EncryptionKey<
     secp256k1::GroupElement,
 >;
 
-type ImportSecretShareFirstStep =
+type ImportSecretKeyFirstStep =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::TrustedDealerDKGCentralizedPartyRound;
 
 pub struct CentralizedDKGWasmResult {
@@ -253,32 +253,32 @@ pub fn sample_dwallet_secret_key_inner(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let secret_key_share = twopc_mpc::secp256k1::Scalar::sample(
+    let secret_key = twopc_mpc::secp256k1::Scalar::sample(
         &protocol_public_parameters
             .as_ref()
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
-    Ok(bcs::to_bytes(&secret_key_share)?)
+    Ok(bcs::to_bytes(&secret_key)?)
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
-    secret_share: Vec<u8>,
+    secret_key: Vec<u8>,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_decryption_key_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let secret_key_share = bcs::from_bytes(&secret_share)?;
+    let secret_key = bcs::from_bytes(&secret_key)?;
     let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
     let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
 
-    match ImportSecretShareFirstStep::advance(
+    match ImportSecretKeyFirstStep::advance(
         (),
-        &secret_key_share,
+        &secret_key,
         &centralized_party_public_input,
         &mut OsRng,
     ) {
