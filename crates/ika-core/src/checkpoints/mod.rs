@@ -1263,22 +1263,19 @@ impl CheckpointAggregator {
                     .map(|(k, (msg, _))| (k, msg))
                     .collect_vec();
 
-                let epoch_equal = messages.iter().map(|(_, msg)| {
-                   msg.epoch
-                }).all_equal();
+                let epoch_equal = messages.iter().map(|(_, msg)| msg.epoch).all_equal();
 
-                let timestamp_equal = messages.iter().map(|(_, msg)| {
-                    msg.timestamp_ms
-                }).all_equal();
+                let timestamp_equal = messages.iter().map(|(_, msg)| msg.timestamp_ms).all_equal();
 
-                let msgs_equal = messages.iter().map(|(_, msg)| {
-                    msg.messages.clone()
-                }).all_equal();
+                let msgs_equal = messages
+                    .iter()
+                    .map(|(_, msg)| msg.messages.clone())
+                    .all_equal();
 
-                let sequence_number_equal = messages.iter().map(|(_, msg)| {
-                    msg.sequence_number
-                }).all_equal();
-
+                let sequence_number_equal = messages
+                    .iter()
+                    .map(|(_, msg)| msg.sequence_number)
+                    .all_equal();
 
                 for i in 0..messages.len() {
                     let (digest_i, msg_i) = messages[i];
