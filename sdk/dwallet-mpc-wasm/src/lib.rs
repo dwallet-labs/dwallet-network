@@ -5,7 +5,7 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
     create_dkg_output, create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    public_keys_from_dwallet_output, verify_secret_share,
+    public_keys_from_dwallet_output, sample_dwallet_secret_key_inner, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -110,6 +110,16 @@ pub fn verify_user_share(
         )
         .map_err(to_js_err)?,
     ))
+}
+
+#[wasm_bindgen]
+pub fn sample_dwallet_secret_key(
+    network_decryption_key_public_output: Vec<u8>,
+) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(
+        &sample_dwallet_secret_key_inner(network_decryption_key_public_output)
+            .map_err(to_js_err)?,
+    )?)
 }
 
 #[wasm_bindgen]

@@ -245,7 +245,7 @@ pub fn advance_centralized_sign_party(
     }
 }
 
-pub fn sample_dwallet_secret_key(
+pub fn sample_dwallet_secret_key_inner(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_parameters: ProtocolPublicParameters =
