@@ -1268,7 +1268,10 @@ impl CheckpointAggregator {
 
             let timestamp_equal = checkpoint_messages
                 .iter()
-                .map(|msg| msg.timestamp_ms)
+                .map(|msg| {
+                    info!(msg_timestamp=?msg.timestamp_ms,"msg timestamp");
+                    msg.timestamp_ms
+                })
                 .all_equal();
 
             let msgs_equal = checkpoint_messages
