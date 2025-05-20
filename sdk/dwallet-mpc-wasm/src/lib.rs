@@ -103,22 +103,15 @@ pub fn verify_user_share(
     network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     Ok(JsValue::from(
-        verify_secret_share(
-            secret_share,
-            dkg_output,
-            network_dkg_public_output,
-        )
-        .map_err(to_js_err)?,
+        verify_secret_share(secret_share, dkg_output, network_dkg_public_output)
+            .map_err(to_js_err)?,
     ))
 }
 
 #[wasm_bindgen]
-pub fn sample_dwallet_secret_key(
-    network_dkg_public_output: Vec<u8>,
-) -> Result<JsValue, JsError> {
+pub fn sample_dwallet_secret_key(network_dkg_public_output: Vec<u8>) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
-        &sample_dwallet_secret_key_inner(network_dkg_public_output)
-            .map_err(to_js_err)?,
+        &sample_dwallet_secret_key_inner(network_dkg_public_output).map_err(to_js_err)?,
     )?)
 }
 
