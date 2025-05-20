@@ -132,7 +132,7 @@ pub fn create_imported_dwallet_centralized_step(
         &create_imported_dwallet_centralized_step_inner(
             network_decryption_key_public_output,
             dwallet_id,
-            secret_share
+            secret_share,
         )
         .map_err(to_js_err)?,
     )?)
