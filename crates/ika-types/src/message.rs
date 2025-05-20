@@ -114,10 +114,7 @@ impl Display for MessageKind {
         let mut writer = String::new();
         match &self {
             MessageKind::DwalletMPCNetworkDKGOutput(output) => {
-                writeln!(
-                    writer,
-                    "MessageKind : DwalletMPCNetworkDKGOutput",
-                )?;
+                writeln!(writer, "MessageKind : DwalletMPCNetworkDKGOutput",)?;
             }
             MessageKind::DwalletDKGFirstRoundOutput(_) => {
                 writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
