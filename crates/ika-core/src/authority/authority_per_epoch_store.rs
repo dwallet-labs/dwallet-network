@@ -1821,7 +1821,6 @@ impl AuthorityPerEpochStore {
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
     ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
-        warn!(public_output_size=?public_output.len(), "network dkg output size");
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
         let five_kbytes = 5 * 1024;
