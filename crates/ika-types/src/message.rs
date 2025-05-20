@@ -149,6 +149,46 @@ impl Display for MessageKind {
     }
 }
 
+impl Debug for MessageKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+        match &self {
+            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
+                writeln!(
+                    writer,
+                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
+                    output
+                )?;
+            }
+            MessageKind::DwalletDKGFirstRoundOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
+            }
+            MessageKind::DwalletDKGSecondRoundOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletDKGSecondRoundOutput")?;
+            }
+            MessageKind::DwalletPresign(_) => {
+                writeln!(writer, "MessageKind : DwalletPresign")?;
+            }
+            MessageKind::DwalletSign(_) => {
+                writeln!(writer, "MessageKind : DwalletSign")?;
+            }
+            MessageKind::DwalletEncryptedUserShare(_) => {
+                writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
+            }
+            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : DwalletPartialSignatureVerificationOutput"
+                )?;
+            }
+            MessageKind::DwalletMPCNetworkReshareOutput(_) => {
+                writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
+            }
+        }
+        write!(f, "{}", writer)
+    }
+}
+
 // #[enum_dispatch(MessageDataAPI)]
 // #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 // pub enum MessageKind {
