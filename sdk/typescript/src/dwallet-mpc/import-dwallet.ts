@@ -44,7 +44,7 @@ export async function createImportedDWallet(
 	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
 		networkDecryptionKeyPublicOutput,
 		importedDWalletData.dwallet_id.slice(2),
-		secret_share
+		secretShare,
 	);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 
