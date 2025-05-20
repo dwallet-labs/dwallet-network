@@ -1255,6 +1255,32 @@ impl CheckpointAggregator {
         'outer: loop {
             let next_to_certify = self.next_checkpoint_to_certify();
 
+            let checkpoint_messages = self
+                .epoch_store
+                .tables()?
+                .pending_checkpoint_signatures
+                .unbounded_iter()
+                .filter(|((seq, _), _)| *seq == next_to_certify)
+                .map(|(_, data)| data.checkpoint_message)
+                .collect_vec();
+
+            let epoch_equal = checkpoint_messages.iter().map(|msg| msg.epoch).all_equal();
+
+            let timestamp_equal = checkpoint_messages
+                .iter()
+                .map(|msg| msg.timestamp_ms)
+                .all_equal();
+
+            let msgs_equal = checkpoint_messages
+                .iter()
+                .map(|msg| msg.messages.clone())
+                .all_equal();
+
+            let sequence_number_equal = checkpoint_messages
+                .iter()
+                .map(|msg| msg.sequence_number)
+                .all_equal();
+
             let checkpoints_committee = self.current.as_ref().map(|current| {
                 let messages = current
                     .signatures_by_digest
@@ -1353,6 +1379,10 @@ impl CheckpointAggregator {
                 a
             });
             info!(
+                epoch_equal,
+                timestamp_equal,
+                msgs_equal,
+                sequence_number_equal,
                 next_to_certify=?next_to_certify,
                 current=?checkpoints_committee,
                 "Checkpoint Agg run inner",
