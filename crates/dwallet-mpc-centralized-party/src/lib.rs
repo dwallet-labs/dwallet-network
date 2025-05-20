@@ -245,14 +245,21 @@ pub fn advance_centralized_sign_party(
     }
 }
 
-pub fn sample_dwallet_secret_key() -> anyhow::Result<Vec<u8>> {
+pub fn sample_dwallet_secret_key(
     network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+) -> anyhow::Result<Vec<u8>> {
+    let protocol_public_parameters: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_decryption_key_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
     let secret_key_share = twopc_mpc::secp256k1::Scalar::sample(
         &protocol_public_parameters
             .as_ref()
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
+    Ok(bcs::to_bytes(&secret_key_share)?)
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
