@@ -37,4 +37,3 @@ pub fn verify_secret_share(
         }
     }
 }
-}
