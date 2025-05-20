@@ -38,7 +38,7 @@ rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
 # https://cprimozic.net/notes/posts/fixing-rust-wasm-memory-access-out-of-bounds/#a-workaround.
 [target.wasm32-unknown-unknown]
 rustflags = [
-    "-C", "link-args=-z stack-size=15000000",
+    "-C", "link-args=-z stack-size=15000000", "-C", "opt-level=3"
 ]
 
 [env]
