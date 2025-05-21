@@ -34,43 +34,43 @@ use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
 
 pub enum MakeDWalletUserSecretKeySharesPublicRequestOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum DWalletImportedKeyVerificationRequestEventOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum DWalletDKGFirstOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum DWalletDKGSecondOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum PresignOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum SignOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum NetworkDkgOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum EncryptedShareVerificationOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum PartialSignatureVerificationOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 pub enum DecryptionKeyReshareOutputVersion {
-    V1(MPCPublicInput)
+    V1(MPCPublicInput),
 }
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
