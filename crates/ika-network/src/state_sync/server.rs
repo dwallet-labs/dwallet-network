@@ -300,9 +300,7 @@ where
                 tokio::sync::TryAcquireError::Closed => {
                     Status::new(StatusCode::InternalServerError)
                 }
-                tokio::sync::TryAcquireError::NoPermits => {
-                    Status::new(StatusCode::TooManyRequests)
-                }
+                tokio::sync::TryAcquireError::NoPermits => Status::new(StatusCode::TooManyRequests),
             })?;
 
             struct SemaphoreExtension(#[allow(unused)] OwnedSemaphorePermit);
