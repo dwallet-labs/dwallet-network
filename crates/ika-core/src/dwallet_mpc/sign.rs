@@ -103,14 +103,14 @@ pub(crate) fn verify_partial_signature(
 ) -> DwalletMPCResult<()> {
     let dkg_output: DWalletDKGSecondOutputVersion = bcs::from_bytes(&dwallet_decentralized_output)?;
     let presign: PresignOutputVersion = bcs::from_bytes(&presign)?;
-    let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
+    let partially_signed_message: CentralizedSignOutputVersion = bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
         DWalletDKGSecondOutputVersion::V1(dkg_output) => {
             let presign = match presign {
                 PresignOutputVersion::V1(output) => output,
             };
             let partially_signed_message = match partially_signed_message {
-                MPCPublicOutput::V1(output) => output,
+                CentralizedSignOutputVersion::V1(output) => output,
             };
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<

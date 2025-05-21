@@ -284,7 +284,7 @@ pub fn create_imported_dwallet_centralized_step_inner(
         Ok(round_result) => {
             let public_output = round_result.public_output;
             let outgoing_message = round_result.outgoing_message;
-            let secret_share = MPCPublicOutput::V1(bcs::to_bytes(&round_result.private_output)?);
+            let secret_share = round_result.private_output;
             Ok((
                 bcs::to_bytes(&ImportedSecretShareVersions::V1(bcs::to_bytes(
                     &secret_share,
