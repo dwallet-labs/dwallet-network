@@ -12,8 +12,7 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutputClassGroups,
-    SerializedWrappedMPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{

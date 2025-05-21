@@ -54,7 +54,7 @@ struct SessionOutputsData {
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
     session_output_to_voting_authorities:
-        HashMap<(SerializedWrappedSessionInfo), StakeAggregator<(), true>>,
+        HashMap<(SerializedWrappedMPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     authorities_that_sent_output: HashSet<AuthorityName>,
     current_result: OutputVerificationStatus,
