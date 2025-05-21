@@ -228,11 +228,11 @@ impl StateSyncConfig {
         self.mailbox_capacity.unwrap_or(MAILBOX_CAPACITY)
     }
 
-    pub fn synced_checkpoint_broadcast_channel_capacity(&self) -> usize {
-        const SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
+    pub fn synced_dwallet_checkpoint_broadcast_channel_capacity(&self) -> usize {
+        const SYNCED_DWALLET_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
 
         self.synced_checkpoint_broadcast_channel_capacity
-            .unwrap_or(SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
+            .unwrap_or(SYNCED_DWALLET_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
     pub fn synced_system_checkpoint_broadcast_channel_capacity(&self) -> usize {

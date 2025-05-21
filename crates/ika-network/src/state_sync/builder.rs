@@ -132,14 +132,14 @@ where
         let chain_identifier = chain_identifier.unwrap_or_default();
 
         let (sender, mailbox) = mpsc::channel(config.mailbox_capacity());
-        let (checkpoint_event_sender, _receiver) =
-            broadcast::channel(config.synced_checkpoint_broadcast_channel_capacity());
+        let (dwallet_checkpoint_event_sender, _receiver) =
+            broadcast::channel(config.synced_dwallet_checkpoint_broadcast_channel_capacity());
         let (system_checkpoint_event_sender, _receiver) =
             broadcast::channel(config.synced_system_checkpoint_broadcast_channel_capacity());
         let weak_sender = sender.downgrade();
         let handle = Handle {
             sender,
-            dwallet_checkpoint_event_sender: checkpoint_event_sender.clone(),
+            dwallet_checkpoint_event_sender: dwallet_checkpoint_event_sender.clone(),
             system_checkpoint_event_sender: system_checkpoint_event_sender.clone(),
         };
         let peer_heights = PeerHeights {
@@ -169,7 +169,7 @@ where
                 store,
                 download_limit_layer: None,
                 peer_heights,
-                checkpoint_event_sender,
+                checkpoint_event_sender: dwallet_checkpoint_event_sender,
                 system_checkpoint_event_sender,
                 metrics,
                 archive_readers,
