@@ -173,6 +173,11 @@ pub fn create_dkg_output(
     }
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedSignOutputVersion {
+    V1(Vec<u8>),
+}
+
 /// Executes the centralized phase of the Sign protocol,
 ///  the first part of the protocol.
 ///
@@ -247,7 +252,7 @@ pub fn advance_centralized_sign_party(
             .context("advance() failed on the SignCentralizedParty")?;
 
             let signed_message =
-                MPCPublicOutput::V1(bcs::to_bytes(&round_result.outgoing_message)?);
+                CentralizedSignOutputVersion::V1(bcs::to_bytes(&round_result.outgoing_message)?);
             let signed_message = bcs::to_bytes(&signed_message)?;
             Ok(signed_message)
         }
