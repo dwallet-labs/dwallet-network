@@ -16,7 +16,7 @@ use ika_types::execution_status::{
 };
 use ika_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
 use ika_types::message::{MessageKind, SenderSignedData};
-use ika_types::messages_checkpoint::CertifiedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::CertifiedDWalletCheckpointMessage;
 use ika_types::messages_grpc::ObjectInfoRequestKind;
 use ika_types::move_package::TypeOrigin;
 use ika_types::object::Object;
@@ -25,7 +25,7 @@ use ika_types::{
     base_types::MoveObjectType_,
     crypto::Signer,
     message::TransactionExpiration,
-    messages_checkpoint::{
+    messages_dwallet_checkpoint::{
         CheckpointContents, CheckpointContentsDigest, CheckpointMessage, CheckpointMessageDigest,
         FullCheckpointContents,
     },
@@ -253,7 +253,7 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_value(&mut samples, &quorum_sig).unwrap();
 
     tracer
-        .trace_type::<CertifiedCheckpointMessage>(&samples)
+        .trace_type::<CertifiedDWalletCheckpointMessage>(&samples)
         .unwrap();
 
     let event = Event {

@@ -5,14 +5,14 @@ use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use ika_types::digests::{ChainIdentifier, IkaSystemCheckpointDigest};
-use ika_types::messages_ika_system_checkpoints::{
-    CertifiedIkaSystemCheckpoint, IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+use ika_types::digests::{ChainIdentifier, SystemCheckpointDigest};
+use ika_types::messages_system_checkpoints::{
+    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
 use ika_types::{
-    digests::{CheckpointContentsDigest, CheckpointMessageDigest},
-    messages_checkpoint::{
-        CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+    digests::CheckpointMessageDigest,
+    messages_dwallet_checkpoint::{
+        CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
     },
     storage::WriteStore,
 };
@@ -29,18 +29,18 @@ pub enum GetCheckpointMessageRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_checkpoint: Option<CertifiedCheckpointMessage>,
+    pub(crate) highest_synced_checkpoint: Option<CertifiedDWalletCheckpointMessage>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetIkaSystemCheckpointRequest {
-    ByDigest(IkaSystemCheckpointDigest),
-    BySequenceNumber(IkaSystemCheckpointSequenceNumber),
+    ByDigest(SystemCheckpointDigest),
+    BySequenceNumber(SystemCheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetIkaSystemCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_ika_system_checkpoint: Option<CertifiedIkaSystemCheckpoint>,
+    pub(crate) highest_synced_ika_system_checkpoint: Option<CertifiedSystemCheckpoint>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -62,7 +62,7 @@ where
 {
     async fn push_checkpoint_message(
         &self,
-        request: Request<CertifiedCheckpointMessage>,
+        request: Request<CertifiedDWalletCheckpointMessage>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
@@ -102,7 +102,7 @@ where
     async fn get_checkpoint_message(
         &self,
         request: Request<GetCheckpointMessageRequest>,
-    ) -> Result<Response<Option<CertifiedCheckpointMessage>>, Status> {
+    ) -> Result<Response<Option<CertifiedDWalletCheckpointMessage>>, Status> {
         let checkpoint = match request.inner() {
             GetCheckpointMessageRequest::ByDigest(digest) => {
                 self.store.get_checkpoint_by_digest(digest)
@@ -134,7 +134,7 @@ where
 
     async fn push_ika_system_checkpoint(
         &self,
-        request: Request<CertifiedIkaSystemCheckpoint>,
+        request: Request<CertifiedSystemCheckpoint>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
@@ -174,17 +174,17 @@ where
     async fn get_ika_system_checkpoint(
         &self,
         request: Request<GetIkaSystemCheckpointRequest>,
-    ) -> Result<Response<Option<CertifiedIkaSystemCheckpoint>>, Status> {
+    ) -> Result<Response<Option<CertifiedSystemCheckpoint>>, Status> {
         let ika_system_checkpoint = match request.inner() {
             GetIkaSystemCheckpointRequest::ByDigest(digest) => {
                 self.store.get_ika_system_checkpoint_by_digest(digest)
             }
             GetIkaSystemCheckpointRequest::BySequenceNumber(sequence_number) => self
                 .store
-                .get_ika_system_checkpoint_by_sequence_number(*sequence_number),
+                .get_system_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
-        .map(VerifiedIkaSystemCheckpoint::into_inner);
+        .map(VerifiedSystemCheckpoint::into_inner);
 
         Ok(Response::new(ika_system_checkpoint))
     }
@@ -197,7 +197,7 @@ where
             .store
             .get_highest_synced_ika_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
-            .map(VerifiedIkaSystemCheckpoint::into_inner);
+            .map(VerifiedSystemCheckpoint::into_inner);
 
         Ok(Response::new(GetIkaSystemCheckpointAvailabilityResponse {
             highest_synced_ika_system_checkpoint,
@@ -265,7 +265,7 @@ impl<S> tower::Service<Request<GetCheckpointMessageRequest>> for CheckpointMessa
 where
     S: tower::Service<
             Request<GetCheckpointMessageRequest>,
-            Response = Response<Option<CertifiedCheckpointMessage>>,
+            Response = Response<Option<CertifiedDWalletCheckpointMessage>>,
             Error = Status,
         >
         + 'static
@@ -274,7 +274,7 @@ where
     <S as tower::Service<Request<GetCheckpointMessageRequest>>>::Future: Send,
     Request<GetCheckpointMessageRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<CertifiedCheckpointMessage>>;
+    type Response = Response<Option<CertifiedDWalletCheckpointMessage>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -368,7 +368,7 @@ impl<S> tower::Service<Request<GetIkaSystemCheckpointRequest>>
 where
     S: tower::Service<
             Request<GetIkaSystemCheckpointRequest>,
-            Response = Response<Option<CertifiedIkaSystemCheckpoint>>,
+            Response = Response<Option<CertifiedSystemCheckpoint>>,
             Error = Status,
         >
         + 'static
@@ -377,7 +377,7 @@ where
     <S as tower::Service<Request<GetIkaSystemCheckpointRequest>>>::Future: Send,
     Request<GetIkaSystemCheckpointRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<CertifiedIkaSystemCheckpoint>>;
+    type Response = Response<Option<CertifiedSystemCheckpoint>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 

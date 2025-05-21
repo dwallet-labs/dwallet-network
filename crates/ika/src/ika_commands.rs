@@ -48,12 +48,6 @@ use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
-use sui_types::coin::{TreasuryCap, COIN_MODULE_NAME};
-use sui_types::crypto::{SignatureScheme, SuiKeyPair, ToFromBytes};
-use sui_types::move_package::PACKAGE_MODULE_NAME;
-use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, TransactionKind};
-use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
-use tempfile::tempdir;
 use tokio::runtime::Runtime;
 use tracing::info;
 

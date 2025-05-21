@@ -189,8 +189,8 @@ use ika_core::dwallet_mpc::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
 use ika_core::ika_system_checkpoints::{
-    IkaSystemCheckpointMetrics, IkaSystemCheckpointService, IkaSystemCheckpointStore,
-    SendIkaSystemCheckpointToStateSync, SubmitIkaSystemCheckpointToConsensus,
+    IkaSystemCheckpointMetrics, SystemCheckpointStore, SendIkaSystemCheckpointToStateSync,
+    SubmitIkaSystemCheckpointToConsensus, SystemCheckpointService,
 };
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
@@ -198,9 +198,9 @@ use ika_core::sui_connector::SuiConnectorService;
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
-use ika_types::messages_ika_system_checkpoints::{
-    IkaSystemCheckpoint, IkaSystemCheckpointKind, IkaSystemCheckpointSignatureMessage,
-    SignedIkaSystemCheckpoint,
+use ika_types::messages_system_checkpoints::{
+    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint, SystemCheckpoint,
+    SystemCheckpointKind,
 };
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
@@ -237,7 +237,7 @@ pub struct IkaNode {
     _state_archive_handle: Option<broadcast::Sender<()>>,
 
     shutdown_channel_tx: broadcast::Sender<Option<RunWithRange>>,
-    ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+    ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
 }
 
 impl fmt::Debug for IkaNode {
@@ -380,7 +380,7 @@ impl IkaNode {
 
         let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
         let ika_system_checkpoint_store =
-            IkaSystemCheckpointStore::new(&config.db_path().join("ika_system_checkpoints"));
+            SystemCheckpointStore::new(&config.db_path().join("ika_system_checkpoints"));
 
         info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(
@@ -773,7 +773,7 @@ impl IkaNode {
         committee: Arc<Committee>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_store: Arc<CheckpointStore>,
-        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
         state_sync_handle: state_sync::Handle,
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
@@ -846,7 +846,7 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         consensus_adapter: Arc<ConsensusAdapter>,
         checkpoint_store: Arc<CheckpointStore>,
-        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
         consensus_manager: ConsensusManager,
@@ -1009,13 +1009,13 @@ impl IkaNode {
     fn start_ika_system_checkpoint_service(
         config: &NodeConfig,
         consensus_adapter: Arc<ConsensusAdapter>,
-        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
         ika_system_checkpoint_metrics: Arc<IkaSystemCheckpointMetrics>,
         previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
-    ) -> (Arc<IkaSystemCheckpointService>, JoinSet<()>) {
+    ) -> (Arc<SystemCheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
@@ -1042,7 +1042,7 @@ impl IkaNode {
             .max_ika_system_checkpoint_size_bytes()
             as usize;
 
-        IkaSystemCheckpointService::spawn(
+        SystemCheckpointService::spawn(
             state.clone(),
             ika_system_checkpoint_store,
             epoch_store,

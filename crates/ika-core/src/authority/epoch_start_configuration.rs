@@ -5,7 +5,7 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use ika_types::error::IkaResult;
-use ika_types::messages_checkpoint::CheckpointTimestamp;
+use ika_types::messages_dwallet_checkpoint::CheckpointTimestamp;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 
 #[enum_dispatch]

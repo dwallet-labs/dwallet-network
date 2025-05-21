@@ -21,7 +21,7 @@ use sui_types::base_types::{ObjectID, SuiAddress};
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::KeypairTraits;
 use ika_types::crypto::NetworkKeyPair;
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::messages_dwallet_checkpoint::CheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;

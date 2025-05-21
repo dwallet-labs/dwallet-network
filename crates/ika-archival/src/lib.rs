@@ -15,8 +15,7 @@ use bytes::Bytes;
 use fastcrypto::hash::{HashFunction, Sha3_256};
 use ika_config::node::ArchiveReaderConfig;
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
-use ika_types::storage::{SingleCheckpointSharedInMemoryStore, WriteStore};
+use ika_types::storage::{WriteStore};
 use indicatif::{ProgressBar, ProgressStyle};
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -34,7 +33,7 @@ use sui_storage::blob::{Blob, BlobEncoding};
 use sui_storage::object_store::util::{get, put};
 use sui_storage::object_store::{ObjectStoreGetExt, ObjectStorePutExt};
 use sui_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_BYTES};
-use tracing::{error, info};
+use tracing::{info};
 
 #[allow(rustdoc::invalid_html_tags)]
 /// Checkpoints are persisted as blob files. Files are committed to local store
@@ -85,12 +84,12 @@ use tracing::{error, info};
 ///├──────────────────────────────┤
 ///│      sha3 <32 bytes>         │
 ///└──────────────────────────────┘
-pub const IKA_SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000C0DE;
-pub const CHECKPOINT_MESSAGE_FILE_MAGIC: u32 = 0x00000DAD;
+pub const SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000C0DE;
+pub const DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC: u32 = 0x00000DAD;
 const MANIFEST_FILE_MAGIC: u32 = 0x00C0FFEE;
 const MAGIC_BYTES: usize = 4;
-const IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "ika_system_checkpoint";
-const CHECKPOINT_FILE_SUFFIX: &str = "dwallet_coordinator_checkpoint";
+const SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "system_checkpoint";
+const DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX: &str = "dwallet_coordinator_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
@@ -99,8 +98,8 @@ const MANIFEST_FILENAME: &str = "MANIFEST";
 )]
 #[repr(u8)]
 pub enum FileType {
-    IkaSystemCheckpoint = 0,
-    CheckpointMessage = 1,
+    SystemCheckpointMessage = 0,
+    DWalletCoordinatorCheckpointMessage = 1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -115,12 +114,12 @@ impl FileMetadata {
     pub fn file_path(&self) -> Path {
         let dir_path = Path::from(format!("{}{}", EPOCH_DIR_PREFIX, self.epoch_num));
         match self.file_type {
-            FileType::CheckpointMessage => dir_path.child(&*format!(
-                "{}.{CHECKPOINT_FILE_SUFFIX}",
+            FileType::DWalletCoordinatorCheckpointMessage => dir_path.child(&*format!(
+                "{}.{DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX}",
                 self.checkpoint_seq_range.start
             )),
-            FileType::IkaSystemCheckpoint => dir_path.child(&*format!(
-                "{}.{IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX}",
+            FileType::SystemCheckpointMessage => dir_path.child(&*format!(
+                "{}.{SYSTEM_CHECKPOINT_FILE_SUFFIX}",
                 self.checkpoint_seq_range.start
             )),
         }
@@ -130,8 +129,8 @@ impl FileMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ManifestV1 {
     pub archive_version: u8,
-    pub next_checkpoint_seq_num: u64,
-    pub next_ika_system_checkpoint_seq_num: u64,
+    pub dwallet_coordinator_checkpoint_seq_num: u64,
+    pub system_checkpoint_seq_num: u64,
     pub file_metadata: Vec<FileMetadata>,
     pub epoch: u64,
 }
@@ -144,13 +143,13 @@ pub enum Manifest {
 impl Manifest {
     pub fn new(
         epoch: u64,
-        next_checkpoint_seq_num: u64,
-        next_ika_system_checkpoint_seq_num: u64,
+        next_dwallet_coordinator_checkpoint_seq_num: u64,
+        next_system_checkpoint_seq_num: u64,
     ) -> Self {
         Manifest::V1(ManifestV1 {
             archive_version: 1,
-            next_checkpoint_seq_num,
-            next_ika_system_checkpoint_seq_num,
+            dwallet_coordinator_checkpoint_seq_num: next_dwallet_coordinator_checkpoint_seq_num,
+            system_checkpoint_seq_num: next_system_checkpoint_seq_num,
             file_metadata: vec![],
             epoch,
         })
@@ -165,15 +164,15 @@ impl Manifest {
             Manifest::V1(manifest) => manifest.epoch,
         }
     }
-    pub fn next_checkpoint_seq_num(&self) -> u64 {
+    pub fn next_dwallet_checkpoint_seq_num(&self) -> u64 {
         match self {
-            Manifest::V1(manifest) => manifest.next_checkpoint_seq_num,
+            Manifest::V1(manifest) => manifest.dwallet_coordinator_checkpoint_seq_num,
         }
     }
 
-    pub fn next_ika_system_checkpoint_seq_num(&self) -> u64 {
+    pub fn next_system_checkpoint_seq_num(&self) -> u64 {
         match self {
-            Manifest::V1(manifest) => manifest.next_ika_system_checkpoint_seq_num,
+            Manifest::V1(manifest) => manifest.system_checkpoint_seq_num,
         }
     }
 
@@ -189,7 +188,7 @@ impl Manifest {
                     .file_metadata
                     .extend(vec![checkpoint_file_metadata]);
                 manifest.epoch = epoch_num;
-                manifest.next_checkpoint_seq_num = checkpoint_sequence_number;
+                manifest.dwallet_coordinator_checkpoint_seq_num = checkpoint_sequence_number;
             }
         }
     }
@@ -230,34 +229,36 @@ impl CheckpointUpdates {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-pub struct IkaSystemCheckpointUpdates {
-    ika_system_checkpoint_file_metadata: FileMetadata,
+pub struct SystemCheckpointUpdates {
+    system_checkpoint_file_metadata: FileMetadata,
     manifest: Manifest,
 }
 
-impl IkaSystemCheckpointUpdates {
+impl SystemCheckpointUpdates {
     pub fn new(
         epoch_num: u64,
-        ika_system_checkpoint_sequence_number: u64,
-        ika_system_checkpoint_file_metadata: FileMetadata,
+        system_checkpoint_sequence_number: u64,
+        system_checkpoint_file_metadata: FileMetadata,
         manifest: &mut Manifest,
     ) -> Self {
         manifest.update(
             epoch_num,
-            ika_system_checkpoint_sequence_number,
-            ika_system_checkpoint_file_metadata.clone(),
+            system_checkpoint_sequence_number,
+            system_checkpoint_file_metadata.clone(),
         );
-        IkaSystemCheckpointUpdates {
-            ika_system_checkpoint_file_metadata,
+        SystemCheckpointUpdates {
+            system_checkpoint_file_metadata,
             manifest: manifest.clone(),
         }
     }
     pub fn content_file_path(&self) -> Path {
-        self.ika_system_checkpoint_file_metadata.file_path()
+        self.system_checkpoint_file_metadata.file_path()
     }
+
     pub fn summary_file_path(&self) -> Path {
-        self.ika_system_checkpoint_file_metadata.file_path()
+        self.system_checkpoint_file_metadata.file_path()
     }
+
     pub fn manifest_file_path(&self) -> Path {
         Path::from(MANIFEST_FILENAME)
     }
@@ -391,8 +392,8 @@ pub async fn verify_archive_with_checksums(
     archive_reader.sync_manifest_once().await?;
     let manifest = archive_reader.get_manifest().await?;
     info!(
-        "Next checkpoint in archive store: {}",
-        manifest.next_checkpoint_seq_num()
+        dwallet_checkpoint=?manifest.next_dwallet_checkpoint_seq_num(),
+        "Next dwallet coordinator checkpoint in the archive store",
     );
 
     let file_metadata = archive_reader.verify_manifest(manifest).await?;
@@ -422,7 +423,7 @@ where
     };
     let archive_reader = ArchiveReader::new(config, &metrics)?;
     archive_reader.sync_manifest_once().await?;
-    let latest_checkpoint_in_archive = archive_reader.latest_available_checkpoint().await?;
+    let latest_checkpoint_in_archive = archive_reader.latest_available_dwallet_coordinator_checkpoint().await?;
     info!(
         "Latest available checkpoint in archive store: {}",
         latest_checkpoint_in_archive
@@ -437,8 +438,7 @@ where
     let checkpoint_counter = Arc::new(AtomicU64::new(0));
     let progress_bar = if interactive {
         let progress_bar = ProgressBar::new(latest_checkpoint_in_archive).with_style(
-            ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")
-                .unwrap(),
+            ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")?,
         );
         let cloned_progress_bar = progress_bar.clone();
         let cloned_counter = action_counter.clone();
@@ -466,7 +466,7 @@ where
             loop {
                 let latest_checkpoint = cloned_store
                     .get_highest_synced_checkpoint()
-                    .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
+                    .map_err(|_| anyhow!("Failed to read highest-synced checkpoint"))?
                     .map(|c| c.sequence_number)
                     .unwrap_or(0);
                 let percent = (latest_checkpoint * 100) / latest_checkpoint_in_archive;

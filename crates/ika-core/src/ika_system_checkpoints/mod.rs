@@ -6,7 +6,7 @@ mod metrics;
 
 use crate::authority::AuthorityState;
 use crate::ika_system_checkpoints::ika_system_checkpoint_output::{
-    CertifiedIkaSystemCheckpointOutput, IkaSystemCheckpointOutput,
+    CertifiedSystemCheckpointOutput, IkaSystemCheckpointOutput,
 };
 pub use crate::ika_system_checkpoints::ika_system_checkpoint_output::{
     LogIkaSystemCheckpointOutput, SendIkaSystemCheckpointToStateSync,
@@ -33,12 +33,11 @@ use ika_types::digests::{IkaSystemCheckpointContentsDigest, MessageDigest};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransactionKey;
-use ika_types::messages_ika_system_checkpoints::IkaSystemCheckpointKind;
-use ika_types::messages_ika_system_checkpoints::{
-    CertifiedIkaSystemCheckpoint, IkaSystemCheckpoint, IkaSystemCheckpointDigest,
-    IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointSignatureMessage,
-    IkaSystemCheckpointTimestamp, SignedIkaSystemCheckpoint, TrustedIkaSystemCheckpoint,
-    VerifiedIkaSystemCheckpoint,
+use ika_types::messages_system_checkpoints::SystemCheckpointKind;
+use ika_types::messages_system_checkpoints::{
+    CertifiedSystemCheckpoint, IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint,
+    SystemCheckpoint, SystemCheckpointDigest, SystemCheckpointSequenceNumber,
+    SystemCheckpointTimestamp, TrustedIkaSystemCheckpoint, VerifiedSystemCheckpoint,
 };
 use ika_types::sui::{SystemInner, SystemInnerTrait};
 use rand::rngs::OsRng;
@@ -68,7 +67,7 @@ pub struct EpochStats {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingIkaSystemCheckpointInfo {
-    pub timestamp_ms: IkaSystemCheckpointTimestamp,
+    pub timestamp_ms: SystemCheckpointTimestamp,
     pub ika_system_checkpoint_height: IkaSystemCheckpointHeight,
 }
 
@@ -80,7 +79,7 @@ pub enum PendingIkaSystemCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingIkaSystemCheckpointV1 {
-    pub messages: Vec<IkaSystemCheckpointKind>,
+    pub messages: Vec<SystemCheckpointKind>,
     pub details: PendingIkaSystemCheckpointInfo,
 }
 
@@ -97,7 +96,7 @@ impl PendingIkaSystemCheckpoint {
         }
     }
 
-    pub fn messages(&self) -> &Vec<IkaSystemCheckpointKind> {
+    pub fn messages(&self) -> &Vec<SystemCheckpointKind> {
         &self.as_v1().messages
     }
 
@@ -112,19 +111,19 @@ impl PendingIkaSystemCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BuilderIkaSystemCheckpoint {
-    pub ika_system_checkpoint: IkaSystemCheckpoint,
+    pub ika_system_checkpoint: SystemCheckpoint,
     // Height at which this ika_system_checkpoint message was built. None for genesis ika_system_checkpoint
     pub ika_system_checkpoint_height: Option<IkaSystemCheckpointHeight>,
     pub position_in_commit: usize,
 }
 
 #[derive(DBMapUtils)]
-pub struct IkaSystemCheckpointStore {
+pub struct SystemCheckpointStore {
     // /// Maps ika_system_checkpoint contents digest to ika_system_checkpoint contents
     // pub(crate) ika_system_checkpoint_content: DBMap<IkaSystemCheckpointContentsDigest, IkaSystemCheckpointContents>,
     /// Maps ika_system_checkpoint ika_system_checkpoint message digest to ika_system_checkpoint sequence number
     pub(crate) ika_system_checkpoint_sequence_by_digest:
-        DBMap<IkaSystemCheckpointDigest, IkaSystemCheckpointSequenceNumber>,
+        DBMap<SystemCheckpointDigest, SystemCheckpointSequenceNumber>,
 
     // /// Stores entire ika_system_checkpoint contents from state sync, indexed by sequence number, for
     // /// efficient reads of full ika_system_checkpoints. Entries from this table are deleted after state
@@ -132,27 +131,27 @@ pub struct IkaSystemCheckpointStore {
     // full_ika_system_checkpoint_content: DBMap<IkaSystemCheckpointSequenceNumber, FullIkaSystemCheckpointContents>,
     /// Stores certified ika_system_checkpoints
     pub(crate) certified_ika_system_checkpoints:
-        DBMap<IkaSystemCheckpointSequenceNumber, TrustedIkaSystemCheckpoint>,
+        DBMap<SystemCheckpointSequenceNumber, TrustedIkaSystemCheckpoint>,
     // /// Map from ika_system_checkpoint digest to certified ika_system_checkpoint
     // pub(crate) ika_system_checkpoint_by_digest: DBMap<IkaSystemCheckpointDigest, TrustedIkaSystemCheckpoint>,
     /// Store locally computed ika_system_checkpoint summaries so that we can detect forks and log useful
     /// information. Can be pruned as soon as we verify that we are in agreement with the latest
     /// certified ika_system_checkpoint.
     pub(crate) locally_computed_ika_system_checkpoints:
-        DBMap<IkaSystemCheckpointSequenceNumber, IkaSystemCheckpoint>,
+        DBMap<SystemCheckpointSequenceNumber, SystemCheckpoint>,
 
     /// A map from epoch ID to the sequence number of the last ika_system_checkpoint in that epoch.
-    epoch_last_ika_system_checkpoint_map: DBMap<EpochId, IkaSystemCheckpointSequenceNumber>,
+    epoch_last_ika_system_checkpoint_map: DBMap<EpochId, SystemCheckpointSequenceNumber>,
 
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed ika_system_checkpoints
     pub(crate) watermarks: DBMap<
         IkaSystemCheckpointWatermark,
-        (IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest),
+        (SystemCheckpointSequenceNumber, SystemCheckpointDigest),
     >,
 }
 
-impl IkaSystemCheckpointStore {
+impl SystemCheckpointStore {
     pub fn new(path: &Path) -> Arc<Self> {
         Arc::new(Self::open_tables_read_write(
             path.to_path_buf(),
@@ -162,7 +161,7 @@ impl IkaSystemCheckpointStore {
         ))
     }
 
-    pub fn open_readonly(path: &Path) -> IkaSystemCheckpointStoreReadOnly {
+    pub fn open_readonly(path: &Path) -> SystemCheckpointStoreReadOnly {
         Self::get_read_only_handle(
             path.to_path_buf(),
             None,
@@ -173,8 +172,8 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>, TypedStoreError> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
         let sequence = self.ika_system_checkpoint_sequence_by_digest.get(digest)?;
         if let Some(sequence) = sequence {
             self.certified_ika_system_checkpoints
@@ -185,10 +184,10 @@ impl IkaSystemCheckpointStore {
         }
     }
 
-    pub fn get_ika_system_checkpoint_by_sequence_number(
+    pub fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>, TypedStoreError> {
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
         self.certified_ika_system_checkpoints
             .get(&sequence_number)
             .map(|maybe_ika_system_checkpoint| maybe_ika_system_checkpoint.map(|c| c.into()))
@@ -196,15 +195,13 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_locally_computed_ika_system_checkpoint(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<IkaSystemCheckpoint>, TypedStoreError> {
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<SystemCheckpoint>, TypedStoreError> {
         self.locally_computed_ika_system_checkpoints
             .get(&sequence_number)
     }
 
-    pub fn get_latest_certified_ika_system_checkpoint(
-        &self,
-    ) -> Option<VerifiedIkaSystemCheckpoint> {
+    pub fn get_latest_certified_ika_system_checkpoint(&self) -> Option<VerifiedSystemCheckpoint> {
         self.certified_ika_system_checkpoints
             .unbounded_iter()
             .skip_to_last()
@@ -212,7 +209,7 @@ impl IkaSystemCheckpointStore {
             .map(|(_, v)| v.into())
     }
 
-    pub fn get_latest_locally_computed_ika_system_checkpoint(&self) -> Option<IkaSystemCheckpoint> {
+    pub fn get_latest_locally_computed_ika_system_checkpoint(&self) -> Option<SystemCheckpoint> {
         self.locally_computed_ika_system_checkpoints
             .unbounded_iter()
             .skip_to_last()
@@ -220,10 +217,10 @@ impl IkaSystemCheckpointStore {
             .map(|(_, v)| v)
     }
 
-    pub fn multi_get_ika_system_checkpoint_by_sequence_number(
+    pub fn multi_get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_numbers: &[IkaSystemCheckpointSequenceNumber],
-    ) -> Result<Vec<Option<VerifiedIkaSystemCheckpoint>>, TypedStoreError> {
+        sequence_numbers: &[SystemCheckpointSequenceNumber],
+    ) -> Result<Vec<Option<VerifiedSystemCheckpoint>>, TypedStoreError> {
         let ika_system_checkpoints = self
             .certified_ika_system_checkpoints
             .multi_get(sequence_numbers)?
@@ -236,7 +233,7 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
             .get(&IkaSystemCheckpointWatermark::HighestVerified)?
@@ -250,7 +247,7 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_highest_synced_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
             .get(&IkaSystemCheckpointWatermark::HighestSynced)?
@@ -264,7 +261,7 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_highest_executed_ika_system_checkpoint_seq_number(
         &self,
-    ) -> Result<Option<IkaSystemCheckpointSequenceNumber>, TypedStoreError> {
+    ) -> Result<Option<SystemCheckpointSequenceNumber>, TypedStoreError> {
         if let Some(highest_executed) = self
             .watermarks
             .get(&IkaSystemCheckpointWatermark::HighestExecuted)?
@@ -277,7 +274,7 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_highest_executed_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
             .get(&IkaSystemCheckpointWatermark::HighestExecuted)?
@@ -291,7 +288,7 @@ impl IkaSystemCheckpointStore {
 
     pub fn get_highest_pruned_ika_system_checkpoint_seq_number(
         &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber, TypedStoreError> {
+    ) -> Result<SystemCheckpointSequenceNumber, TypedStoreError> {
         Ok(self
             .watermarks
             .get(&IkaSystemCheckpointWatermark::HighestPruned)?
@@ -306,7 +303,7 @@ impl IkaSystemCheckpointStore {
     // state-sync only things.
     pub fn insert_certified_ika_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<(), TypedStoreError> {
         debug!(
             ika_system_checkpoint_seq = ika_system_checkpoint.sequence_number(),
@@ -337,15 +334,15 @@ impl IkaSystemCheckpointStore {
     #[instrument(level = "debug", skip_all)]
     pub fn insert_verified_ika_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<(), TypedStoreError> {
         self.insert_certified_ika_system_checkpoint(ika_system_checkpoint)?;
-        self.update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
+        self.update_highest_verified_system_checkpoint(ika_system_checkpoint)
     }
 
-    pub fn update_highest_verified_ika_system_checkpoint(
+    pub fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<(), TypedStoreError> {
         if Some(*ika_system_checkpoint.sequence_number())
             > self
@@ -368,9 +365,9 @@ impl IkaSystemCheckpointStore {
         Ok(())
     }
 
-    pub fn update_highest_synced_ika_system_checkpoint(
+    pub fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<(), TypedStoreError> {
         debug!(
             ika_system_checkpoint_seq = ika_system_checkpoint.sequence_number(),
@@ -414,7 +411,7 @@ pub enum IkaSystemCheckpointWatermark {
 
 pub struct IkaSystemCheckpointBuilder {
     state: Arc<AuthorityState>,
-    tables: Arc<IkaSystemCheckpointStore>,
+    tables: Arc<SystemCheckpointStore>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     notify: Arc<Notify>,
     notify_aggregator: Arc<Notify>,
@@ -426,11 +423,11 @@ pub struct IkaSystemCheckpointBuilder {
 }
 
 pub struct IkaSystemCheckpointAggregator {
-    tables: Arc<IkaSystemCheckpointStore>,
+    tables: Arc<SystemCheckpointStore>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     notify: Arc<Notify>,
     current: Option<IkaSystemCheckpointSignatureAggregator>,
-    output: Box<dyn CertifiedIkaSystemCheckpointOutput>,
+    output: Box<dyn CertifiedSystemCheckpointOutput>,
     state: Arc<AuthorityState>,
     metrics: Arc<IkaSystemCheckpointMetrics>,
 }
@@ -438,12 +435,11 @@ pub struct IkaSystemCheckpointAggregator {
 // This holds information to aggregate signatures for one ika_system_checkpoint
 pub struct IkaSystemCheckpointSignatureAggregator {
     next_index: u64,
-    ika_system_checkpoint: IkaSystemCheckpoint,
-    digest: IkaSystemCheckpointDigest,
+    ika_system_checkpoint: SystemCheckpoint,
+    digest: SystemCheckpointDigest,
     /// Aggregates voting stake for each signed ika_system_checkpoint proposal by authority
-    signatures_by_digest:
-        MultiStakeAggregator<IkaSystemCheckpointDigest, IkaSystemCheckpoint, true>,
-    tables: Arc<IkaSystemCheckpointStore>,
+    signatures_by_digest: MultiStakeAggregator<SystemCheckpointDigest, SystemCheckpoint, true>,
+    tables: Arc<SystemCheckpointStore>,
     state: Arc<AuthorityState>,
     metrics: Arc<IkaSystemCheckpointMetrics>,
 }
@@ -451,7 +447,7 @@ pub struct IkaSystemCheckpointSignatureAggregator {
 impl IkaSystemCheckpointBuilder {
     fn new(
         state: Arc<AuthorityState>,
-        tables: Arc<IkaSystemCheckpointStore>,
+        tables: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
         output: Box<dyn IkaSystemCheckpointOutput>,
@@ -601,7 +597,7 @@ impl IkaSystemCheckpointBuilder {
     async fn write_ika_system_checkpoints(
         &self,
         height: IkaSystemCheckpointHeight,
-        new_ika_system_checkpoints: Vec<IkaSystemCheckpoint>,
+        new_ika_system_checkpoints: Vec<SystemCheckpoint>,
     ) -> IkaResult {
         let _scope = monitored_scope("IkaSystemCheckpointBuilder::write_ika_system_checkpoints");
         //let mut batch = self.tables.ika_system_checkpoint_content.batch();
@@ -657,8 +653,8 @@ impl IkaSystemCheckpointBuilder {
     #[allow(clippy::type_complexity)]
     fn split_ika_system_checkpoint_chunks(
         &self,
-        messages: Vec<IkaSystemCheckpointKind>,
-    ) -> anyhow::Result<Vec<Vec<IkaSystemCheckpointKind>>> {
+        messages: Vec<SystemCheckpointKind>,
+    ) -> anyhow::Result<Vec<Vec<SystemCheckpointKind>>> {
         let _guard =
             monitored_scope("IkaSystemCheckpointBuilder::split_ika_system_checkpoint_chunks");
         let mut chunks = Vec::new();
@@ -702,9 +698,9 @@ impl IkaSystemCheckpointBuilder {
     #[instrument(level = "debug", skip_all)]
     async fn create_ika_system_checkpoints(
         &self,
-        all_messages: Vec<IkaSystemCheckpointKind>,
+        all_messages: Vec<SystemCheckpointKind>,
         details: &PendingIkaSystemCheckpointInfo,
-    ) -> anyhow::Result<Vec<IkaSystemCheckpoint>> {
+    ) -> anyhow::Result<Vec<SystemCheckpoint>> {
         let _scope = monitored_scope("IkaSystemCheckpointBuilder::create_ika_system_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
@@ -787,7 +783,7 @@ impl IkaSystemCheckpointBuilder {
             );
 
             let ika_system_checkpoint =
-                IkaSystemCheckpoint::new(epoch, sequence_number, messages, timestamp_ms);
+                SystemCheckpoint::new(epoch, sequence_number, messages, timestamp_ms);
             ika_system_checkpoint.report_ika_system_checkpoint_age(
                 &self.metrics.last_created_ika_system_checkpoint_age,
             );
@@ -895,10 +891,10 @@ impl IkaSystemCheckpointBuilder {
 
 impl IkaSystemCheckpointAggregator {
     fn new(
-        tables: Arc<IkaSystemCheckpointStore>,
+        tables: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         notify: Arc<Notify>,
-        output: Box<dyn CertifiedIkaSystemCheckpointOutput>,
+        output: Box<dyn CertifiedSystemCheckpointOutput>,
         state: Arc<AuthorityState>,
         metrics: Arc<IkaSystemCheckpointMetrics>,
     ) -> Self {
@@ -941,7 +937,7 @@ impl IkaSystemCheckpointAggregator {
         Ok(())
     }
 
-    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedIkaSystemCheckpoint>> {
+    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedSystemCheckpoint>> {
         let _scope = monitored_scope("IkaSystemCheckpointAggregator");
         let mut result = vec![];
         'outer: loop {
@@ -1009,8 +1005,8 @@ impl IkaSystemCheckpointAggregator {
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
-                    let ika_system_checkpoint = VerifiedIkaSystemCheckpoint::new_unchecked(
-                        CertifiedIkaSystemCheckpoint::new_from_data_and_sig(
+                    let ika_system_checkpoint = VerifiedSystemCheckpoint::new_unchecked(
+                        CertifiedSystemCheckpoint::new_from_data_and_sig(
                             current.ika_system_checkpoint.clone(),
                             auth_signature,
                         ),
@@ -1038,7 +1034,7 @@ impl IkaSystemCheckpointAggregator {
         Ok(result)
     }
 
-    fn next_ika_system_checkpoint_to_certify(&self) -> IkaSystemCheckpointSequenceNumber {
+    fn next_ika_system_checkpoint_to_certify(&self) -> SystemCheckpointSequenceNumber {
         self.tables
             .certified_ika_system_checkpoints
             .unbounded_iter()
@@ -1119,21 +1115,21 @@ pub trait IkaSystemCheckpointServiceNotify {
 }
 
 /// This is a service used to communicate with other pieces of ika(for ex. authority)
-pub struct IkaSystemCheckpointService {
-    tables: Arc<IkaSystemCheckpointStore>,
+pub struct SystemCheckpointService {
+    tables: Arc<SystemCheckpointStore>,
     notify_builder: Arc<Notify>,
     notify_aggregator: Arc<Notify>,
     last_signature_index: Mutex<u64>,
     metrics: Arc<IkaSystemCheckpointMetrics>,
 }
 
-impl IkaSystemCheckpointService {
+impl SystemCheckpointService {
     pub fn spawn(
         state: Arc<AuthorityState>,
-        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         ika_system_checkpoint_output: Box<dyn IkaSystemCheckpointOutput>,
-        certified_ika_system_checkpoint_output: Box<dyn CertifiedIkaSystemCheckpointOutput>,
+        certified_ika_system_checkpoint_output: Box<dyn CertifiedSystemCheckpointOutput>,
         metrics: Arc<IkaSystemCheckpointMetrics>,
         max_messages_per_ika_system_checkpoint: usize,
         max_ika_system_checkpoint_size_bytes: usize,
@@ -1205,7 +1201,7 @@ impl IkaSystemCheckpointService {
     }
 }
 
-impl IkaSystemCheckpointServiceNotify for IkaSystemCheckpointService {
+impl IkaSystemCheckpointServiceNotify for SystemCheckpointService {
     fn notify_ika_system_checkpoint_signature(
         &self,
         epoch_store: &AuthorityPerEpochStore,

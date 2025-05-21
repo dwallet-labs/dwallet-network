@@ -64,8 +64,8 @@ use shared_crypto::intent::{AppId, Intent, IntentMessage, IntentScope, IntentVer
 use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointContentsDigest, CheckpointMessage,
+use ika_types::messages_dwallet_checkpoint::{
+    CertifiedDWalletCheckpointMessage, CheckpointContentsDigest, CheckpointMessage,
     CheckpointSequenceNumber, CheckpointTimestamp, VerifiedCheckpointMessage,
 };
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;

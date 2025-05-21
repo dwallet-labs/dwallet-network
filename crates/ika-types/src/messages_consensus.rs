@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::AuthorityName;
-use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
+use crate::messages_dwallet_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
     ThresholdNotReachedReport,
 };
-use crate::messages_ika_system_checkpoints::{
-    IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointSignatureMessage,
+use crate::messages_system_checkpoints::{
+    IkaSystemCheckpointSignatureMessage, SystemCheckpointSequenceNumber,
 };
 use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
@@ -47,7 +47,7 @@ pub enum ConsensusTransactionKey {
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    IkaSystemCheckpointSignature(AuthorityName, IkaSystemCheckpointSequenceNumber),
+    IkaSystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
 impl Debug for ConsensusTransactionKey {

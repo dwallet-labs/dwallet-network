@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
-    read_manifest, FileMetadata, FileType, Manifest, CHECKPOINT_MESSAGE_FILE_MAGIC,
-    IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
+    read_manifest, FileMetadata, FileType, Manifest, DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+    SYSTEM_CHECKPOINT_FILE_MAGIC,
 };
 use anyhow::{anyhow, Context, Result};
 use bytes::buf::Reader;
 use bytes::{Buf, Bytes};
 use futures::{StreamExt, TryStreamExt};
 use ika_config::node::ArchiveReaderConfig;
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+use ika_types::messages_dwallet_checkpoint::{
+    CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
 };
-use ika_types::messages_ika_system_checkpoints::{
-    CertifiedIkaSystemCheckpoint, IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+use ika_types::messages_system_checkpoints::{
+    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -28,7 +28,7 @@ use std::time::Duration;
 use sui_storage::object_store::http::HttpDownloaderBuilder;
 use sui_storage::object_store::util::get;
 use sui_storage::object_store::ObjectStoreGetExt;
-use sui_storage::{compute_sha3_checksum_for_bytes, make_iterator, verify_checkpoint};
+use sui_storage::{compute_sha3_checksum_for_bytes, make_iterator};
 use tokio::sync::oneshot::Sender;
 use tokio::sync::{oneshot, Mutex};
 use tracing::info;
@@ -36,8 +36,8 @@ use tracing::info;
 #[derive(Debug)]
 pub struct ArchiveReaderMetrics {
     pub archive_actions_read: IntCounterVec,
-    pub archive_checkpoints_read: IntCounterVec,
-    pub archive_ika_system_checkpoint_read: IntCounterVec,
+    pub archive_dwallet_coordinator_checkpoints_read: IntCounterVec,
+    pub archive_system_checkpoint_read: IntCounterVec,
 }
 
 impl ArchiveReaderMetrics {
@@ -50,16 +50,16 @@ impl ArchiveReaderMetrics {
                 registry
             )
             .unwrap(),
-            archive_checkpoints_read: register_int_counter_vec_with_registry!(
-                "archive_checkpoints_read",
-                "Number of checkpoints read from archive",
+            archive_dwallet_coordinator_checkpoints_read: register_int_counter_vec_with_registry!(
+                "archive_dwallet_coordinator_checkpoints_read",
+                "Number of dwallet coordinator checkpoints read from the archive",
                 &["bucket"],
                 registry
             )
             .unwrap(),
-            archive_ika_system_checkpoint_read: register_int_counter_vec_with_registry!(
-                "archive_ika_system_checkpoint_read",
-                "Number of params messages read from archive",
+            archive_system_checkpoint_read: register_int_counter_vec_with_registry!(
+                "archive_system_checkpoint_read",
+                "Number of system checkpoints read from the archive",
                 &["bucket"],
                 registry
             )
@@ -69,7 +69,8 @@ impl ArchiveReaderMetrics {
     }
 }
 
-// ArchiveReaderBalancer selects archives for reading based on whether they can fulfill a checkpoint request
+// ArchiveReaderBalancer selects archives for reading based on
+// whether they can fulfill a checkpoint request.
 #[derive(Default, Clone)]
 pub struct ArchiveReaderBalancer {
     readers: Vec<Arc<ArchiveReader>>,
@@ -91,7 +92,9 @@ impl ArchiveReaderBalancer {
             .iter()
             .filter(|r| r.use_for_pruning_watermark())
         {
-            let latest_checkpoint = reader.latest_available_checkpoint().await;
+            let latest_checkpoint = reader
+                .latest_available_dwallet_coordinator_checkpoint()
+                .await;
             info!(
                 "Latest archived checkpoint in remote store: {:?} is: {:?}",
                 reader.remote_store_identifier(),
@@ -108,7 +111,10 @@ impl ArchiveReaderBalancer {
     ) -> Option<Arc<ArchiveReader>> {
         let mut archives_with_complete_range = vec![];
         for reader in self.readers.iter() {
-            let latest_checkpoint = reader.latest_available_checkpoint().await.unwrap_or(0);
+            let latest_checkpoint = reader
+                .latest_available_dwallet_coordinator_checkpoint()
+                .await
+                .unwrap_or(0);
             if latest_checkpoint >= checkpoint_range.end {
                 archives_with_complete_range.push(reader.clone());
             }
@@ -123,7 +129,10 @@ impl ArchiveReaderBalancer {
         }
         let mut archives_with_partial_range = vec![];
         for reader in self.readers.iter() {
-            let latest_checkpoint = reader.latest_available_checkpoint().await.unwrap_or(0);
+            let latest_checkpoint = reader
+                .latest_available_dwallet_coordinator_checkpoint()
+                .await
+                .unwrap_or(0);
             if latest_checkpoint >= checkpoint_range.start {
                 archives_with_partial_range.push(reader.clone());
             }
@@ -189,7 +198,7 @@ impl ArchiveReader {
         let mut checkpoint_files: Vec<_> = files
             .clone()
             .into_iter()
-            .filter(|f| f.file_type == FileType::CheckpointMessage)
+            .filter(|f| f.file_type == FileType::DWalletCoordinatorCheckpointMessage)
             .collect();
 
         checkpoint_files.sort_by_key(|f| f.checkpoint_seq_range.start);
@@ -272,8 +281,8 @@ impl ArchiveReader {
             .buffer_unordered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
-                        CHECKPOINT_MESSAGE_FILE_MAGIC,
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -293,7 +302,7 @@ impl ArchiveReader {
             .await
     }
 
-    /// Load given list of checkpoints from archive into the input store `S`.
+    /// Load the given list of checkpoints from an archive into the input store `S`.
     /// Summaries are downloaded out of order and inserted without verification
     pub async fn read_checkpoints_for_list_no_verify<S>(
         &self,
@@ -321,8 +330,8 @@ impl ArchiveReader {
             .buffer_unordered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
-                        CHECKPOINT_MESSAGE_FILE_MAGIC,
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -342,7 +351,7 @@ impl ArchiveReader {
     pub async fn get_checkpoints_for_list_no_verify(
         &self,
         cp_list: Vec<CheckpointSequenceNumber>,
-    ) -> Result<Vec<CertifiedCheckpointMessage>> {
+    ) -> Result<Vec<CertifiedDWalletCheckpointMessage>> {
         let checkpoint_files = self.get_checkpoint_files_for_list(cp_list.clone()).await?;
         let remote_object_store = self.remote_object_store.clone();
         let stream = futures::stream::iter(checkpoint_files.iter())
@@ -359,9 +368,9 @@ impl ArchiveReader {
         stream
             .buffer_unordered(self.concurrency)
             .try_fold(Vec::new(), |mut acc, checkpoint_data| async move {
-                let checkpoint_result: Result<Vec<CertifiedCheckpointMessage>, anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
-                        CHECKPOINT_MESSAGE_FILE_MAGIC,
+                let checkpoint_result: Result<Vec<CertifiedDWalletCheckpointMessage>, anyhow::Error> =
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .map(|checkpoint_iter| checkpoint_iter.collect::<Vec<_>>());
@@ -394,7 +403,7 @@ impl ArchiveReader {
         let manifest = self.manifest.lock().await.clone();
 
         let latest_available_checkpoint = manifest
-            .next_checkpoint_seq_num()
+            .next_dwallet_checkpoint_seq_num()
             .checked_sub(1)
             .context("Checkpoint seq num underflow")?;
 
@@ -407,19 +416,13 @@ impl ArchiveReader {
 
         let files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match files
+        let start_index = files
             .binary_search_by_key(&checkpoint_range.start, |c| c.checkpoint_seq_range.start)
-        {
-            Ok(index) => index,
-            Err(index) => index - 1,
-        };
+            .unwrap_or_else(|index| index - 1);
 
-        let end_index = match files
+        let end_index = files
             .binary_search_by_key(&checkpoint_range.end, |c| c.checkpoint_seq_range.start)
-        {
-            Ok(index) => index,
-            Err(index) => index,
-        };
+            .unwrap_or_else(|index| index);
 
         let remote_object_store = self.remote_object_store.clone();
         futures::stream::iter(files.iter())
@@ -437,8 +440,8 @@ impl ArchiveReader {
             .buffered(self.concurrency)
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedCheckpointMessage, Reader<Bytes>>(
-                        CHECKPOINT_MESSAGE_FILE_MAGIC,
+                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -462,7 +465,7 @@ impl ArchiveReader {
                                     .inc_by(size as u64);
                                 checkpoint_counter.fetch_add(1, Ordering::Relaxed);
                                 self.archive_reader_metrics
-                                    .archive_checkpoints_read
+                                    .archive_dwallet_coordinator_checkpoints_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(1);
                                 Ok::<(), anyhow::Error>(())
@@ -474,10 +477,12 @@ impl ArchiveReader {
     }
 
     /// Return latest available checkpoint in archive
-    pub async fn latest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
+    pub async fn latest_available_dwallet_coordinator_checkpoint(
+        &self,
+    ) -> Result<CheckpointSequenceNumber> {
         let manifest = self.manifest.lock().await.clone();
         manifest
-            .next_checkpoint_seq_num()
+            .next_dwallet_checkpoint_seq_num()
             .checked_sub(1)
             .context("No checkpoint data in archive")
     }
@@ -512,7 +517,7 @@ impl ArchiveReader {
     /// Insert checkpoint checkpoint without verifying it
     fn insert_certified_checkpoint<S>(
         store: &S,
-        certified_checkpoint: CertifiedCheckpointMessage,
+        certified_checkpoint: CertifiedDWalletCheckpointMessage,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
@@ -527,7 +532,7 @@ impl ArchiveReader {
     /// Insert checkpoint checkpoint if it doesn't already exist (without verifying it)
     fn get_or_insert_verified_checkpoint<S>(
         store: &S,
-        certified_checkpoint: CertifiedCheckpointMessage,
+        certified_checkpoint: CertifiedDWalletCheckpointMessage,
     ) -> Result<VerifiedCheckpointMessage>
     where
         S: WriteStore + Clone,
@@ -549,7 +554,7 @@ impl ArchiveReader {
                     .expect("store operation should not fail");
                 Ok::<VerifiedCheckpointMessage, anyhow::Error>(verified_checkpoint)
             })
-            .map_err(|e| anyhow!("Failed to get verified checkpoint: {:?}", e))
+            .map_err(|e| anyhow!("Failed to get a verified checkpoint: {:?}", e))
     }
 
     async fn get_checkpoint_files_for_range(
@@ -559,7 +564,7 @@ impl ArchiveReader {
         let manifest = self.manifest.lock().await.clone();
 
         let latest_available_checkpoint = manifest
-            .next_checkpoint_seq_num()
+            .next_dwallet_checkpoint_seq_num()
             .checked_sub(1)
             .context("Checkpoint seq num underflow")?;
 
@@ -572,19 +577,13 @@ impl ArchiveReader {
 
         let checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match checkpoint_files
+        let start_index = checkpoint_files
             .binary_search_by_key(&checkpoint_range.start, |s| s.checkpoint_seq_range.start)
-        {
-            Ok(index) => index,
-            Err(index) => index - 1,
-        };
+            .unwrap_or_else(|index| index - 1);
 
-        let end_index = match checkpoint_files
+        let end_index = checkpoint_files
             .binary_search_by_key(&checkpoint_range.end, |s| s.checkpoint_seq_range.start)
-        {
-            Ok(index) => index,
-            Err(index) => index,
-        };
+            .unwrap_or_else(|index| index);
 
         Ok((checkpoint_files, start_index, end_index))
     }
@@ -596,7 +595,7 @@ impl ArchiveReader {
         assert!(!checkpoints.is_empty());
         let manifest = self.manifest.lock().await.clone();
         let latest_available_checkpoint = manifest
-            .next_checkpoint_seq_num()
+            .next_dwallet_checkpoint_seq_num()
             .checked_sub(1)
             .context("Checkpoint seq num underflow")?;
 
@@ -630,140 +629,135 @@ impl ArchiveReader {
         Ok(checkpoints_filtered)
     }
 
-    pub async fn latest_available_ika_system_checkpoint(
+    pub async fn latest_available_system_checkpoint(
         &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    ) -> Result<SystemCheckpointSequenceNumber> {
         let manifest = self.manifest.lock().await.clone();
         manifest
-            .next_ika_system_checkpoint_seq_num()
+            .next_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("No ika_system_checkpoint data in archive")
+            .context("No `system_checkpoint` data in archive")
     }
 
-    fn insert_certified_ika_system_checkpoint<S>(
+    fn insert_certified_system_checkpoint<S>(
         store: &S,
-        certified_ika_system_checkpoint: CertifiedIkaSystemCheckpoint,
+        certified_system_checkpoint: CertifiedSystemCheckpoint,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
     {
         store
-            .insert_ika_system_checkpoint(
-                VerifiedIkaSystemCheckpoint::new_unchecked(certified_ika_system_checkpoint)
-                    .borrow(),
+            .insert_system_checkpoint(
+                VerifiedSystemCheckpoint::new_unchecked(certified_system_checkpoint).borrow(),
             )
-            .map_err(|e| anyhow!("Failed to insert ika_system_checkpoint: {e}"))
+            .map_err(|e| anyhow!("failed to insert system_checkpoint: {e}"))
     }
 
-    /// Insert ika_system_checkpoint ika_system_checkpoint if it doesn't already exist (without verifying it)
-    fn get_or_insert_verified_ika_system_checkpoint<S>(
+    /// Insert a system checkpoint if it doesn't already exist (without verifying it)
+    fn get_or_insert_verified_system_checkpoint<S>(
         store: &S,
-        certified_ika_system_checkpoint: CertifiedIkaSystemCheckpoint,
-    ) -> Result<VerifiedIkaSystemCheckpoint>
+        certified_system_checkpoint: CertifiedSystemCheckpoint,
+    ) -> Result<VerifiedSystemCheckpoint>
     where
         S: WriteStore + Clone,
     {
         store
-            .get_ika_system_checkpoint_by_sequence_number(
-                certified_ika_system_checkpoint.sequence_number,
+            .get_system_checkpoint_by_sequence_number(
+                certified_system_checkpoint.sequence_number,
             )
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedIkaSystemCheckpoint, anyhow::Error>)
+            .map(Ok::<VerifiedSystemCheckpoint, anyhow::Error>)
             .unwrap_or_else(|| {
-                let verified_ika_system_checkpoint =
-                    VerifiedIkaSystemCheckpoint::new_unchecked(certified_ika_system_checkpoint);
-                // Insert ika_system_checkpoint message
+                let verified_system_checkpoint =
+                    VerifiedSystemCheckpoint::new_unchecked(certified_system_checkpoint);
+                // Insert `system_checkpoint` message
                 store
-                    .insert_ika_system_checkpoint(&verified_ika_system_checkpoint)
-                    .map_err(|e| anyhow!("Failed to insert ika_system_checkpoint: {e}"))?;
-                // Update highest verified ika_system_checkpoint watermark
+                    .insert_system_checkpoint(&verified_system_checkpoint)
+                    .map_err(|e| anyhow!("Failed to insert system_checkpoint: {e}"))?;
+                // Update highest verified `system_checkpoint` watermark
                 store
-                    .update_highest_verified_ika_system_checkpoint(&verified_ika_system_checkpoint)
+                    .update_highest_verified_system_checkpoint(&verified_system_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedIkaSystemCheckpoint, anyhow::Error>(verified_ika_system_checkpoint)
+                Ok::<VerifiedSystemCheckpoint, anyhow::Error>(verified_system_checkpoint)
             })
-            .map_err(|e| anyhow!("Failed to get verified ika_system_checkpoint: {:?}", e))
+            .map_err(|e| anyhow!("Failed to get a verified `system_checkpoint`: {:?}", e))
     }
 
-    async fn get_ika_system_checkpoint_files_for_range(
+    async fn get_system_checkpoint_files_for_range(
         &self,
-        ika_system_checkpoint_range: Range<IkaSystemCheckpointSequenceNumber>,
+        system_checkpoint_range: Range<SystemCheckpointSequenceNumber>,
     ) -> Result<(Vec<FileMetadata>, usize, usize)> {
         let manifest = self.manifest.lock().await.clone();
 
-        let latest_available_ika_system_checkpoint = manifest
-            .next_ika_system_checkpoint_seq_num()
+        let latest_available_system_checkpoint = manifest
+            .next_system_checkpoint_seq_num()
             .checked_sub(1)
             .context("IkaSystemCheckpoint seq num underflow")?;
 
-        if ika_system_checkpoint_range.start > latest_available_ika_system_checkpoint {
+        if system_checkpoint_range.start > latest_available_system_checkpoint {
             return Err(anyhow!(
-                "Latest available ika_system_checkpoint is: {}",
-                latest_available_ika_system_checkpoint
+                "Latest available system_checkpoint is: {}",
+                latest_available_system_checkpoint
             ));
         }
 
-        let ika_system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+        let system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match ika_system_checkpoint_files
-            .binary_search_by_key(&ika_system_checkpoint_range.start, |s| {
+        let start_index = system_checkpoint_files
+            .binary_search_by_key(&system_checkpoint_range.start, |s| {
                 s.checkpoint_seq_range.start
-            }) {
-            Ok(index) => index,
-            Err(index) => index - 1,
-        };
+            })
+            .unwrap_or_else(|index| index - 1);
 
-        let end_index = match ika_system_checkpoint_files
-            .binary_search_by_key(&ika_system_checkpoint_range.end, |s| {
+        let end_index = system_checkpoint_files
+            .binary_search_by_key(&system_checkpoint_range.end, |s| {
                 s.checkpoint_seq_range.start
-            }) {
-            Ok(index) => index,
-            Err(index) => index,
-        };
+            })
+            .unwrap_or_else(|index| index);
 
-        Ok((ika_system_checkpoint_files, start_index, end_index))
+        Ok((system_checkpoint_files, start_index, end_index))
     }
 
-    async fn get_ika_system_checkpoint_files_for_list(
+    async fn get_system_checkpoint_files_for_list(
         &self,
-        ika_system_checkpoints: Vec<IkaSystemCheckpointSequenceNumber>,
+        system_checkpoints: Vec<SystemCheckpointSequenceNumber>,
     ) -> Result<Vec<FileMetadata>> {
-        assert!(!ika_system_checkpoints.is_empty());
+        assert!(!system_checkpoints.is_empty());
         let manifest = self.manifest.lock().await.clone();
-        let latest_available_ika_system_checkpoint = manifest
-            .next_ika_system_checkpoint_seq_num()
+        let latest_available_system_checkpoint = manifest
+            .next_system_checkpoint_seq_num()
             .checked_sub(1)
             .context("IkaSystemCheckpoint seq num underflow")?;
 
-        let mut ordered_ika_system_checkpoints = ika_system_checkpoints;
-        ordered_ika_system_checkpoints.sort();
-        if *ordered_ika_system_checkpoints.first().unwrap() > latest_available_ika_system_checkpoint
+        let mut ordered_system_checkpoints = system_checkpoints;
+        ordered_system_checkpoints.sort();
+        if *ordered_system_checkpoints.first().unwrap() > latest_available_system_checkpoint
         {
             return Err(anyhow!(
-                "Latest available ika_system_checkpoint is: {}",
-                latest_available_ika_system_checkpoint
+                "Latest available system_checkpoint is: {}",
+                latest_available_system_checkpoint
             ));
         }
 
-        let ika_system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
+        let system_checkpoint_files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let mut ika_system_checkpoints_filtered = vec![];
-        for ika_system_checkpoint in ordered_ika_system_checkpoints.iter() {
-            let index = ika_system_checkpoint_files
+        let mut system_checkpoints_filtered = vec![];
+        for system_checkpoint in ordered_system_checkpoints.iter() {
+            let index = system_checkpoint_files
                 .binary_search_by(|s| {
-                    if ika_system_checkpoint < &s.checkpoint_seq_range.start {
+                    if system_checkpoint < &s.checkpoint_seq_range.start {
                         std::cmp::Ordering::Greater
-                    } else if ika_system_checkpoint >= &s.checkpoint_seq_range.end {
+                    } else if system_checkpoint >= &s.checkpoint_seq_range.end {
                         std::cmp::Ordering::Less
                     } else {
                         std::cmp::Ordering::Equal
                     }
                 })
-                .expect("Archive does not contain ika_system_checkpoint {ika_system_checkpoint}");
-            ika_system_checkpoints_filtered.push(ika_system_checkpoint_files[index].clone());
+                .expect("Archive does not contain system_checkpoint {system_checkpoint}");
+            system_checkpoints_filtered.push(system_checkpoint_files[index].clone());
         }
 
-        Ok(ika_system_checkpoints_filtered)
+        Ok(system_checkpoints_filtered)
     }
 
     fn spawn_manifest_sync_task<S: ObjectStoreGetExt + Clone>(
@@ -788,41 +782,41 @@ impl ArchiveReader {
         });
     }
 
-    pub async fn read_ika_system_checkpoints<S>(
+    pub async fn read_system_checkpoints<S>(
         &self,
         store: S,
-        ika_system_checkpoint_range: Range<IkaSystemCheckpointSequenceNumber>,
+        system_checkpoint_range: Range<SystemCheckpointSequenceNumber>,
         action_counter: Arc<AtomicU64>,
-        ika_system_checkpoint_counter: Arc<AtomicU64>,
+        system_checkpoint_counter: Arc<AtomicU64>,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
     {
         let manifest = self.manifest.lock().await.clone();
 
-        let latest_available_ika_system_checkpoint = manifest
-            .next_ika_system_checkpoint_seq_num()
+        let latest_available_system_checkpoint = manifest
+            .next_system_checkpoint_seq_num()
             .checked_sub(1)
             .context("Params message seq num underflow")?;
 
-        if ika_system_checkpoint_range.start > latest_available_ika_system_checkpoint {
+        if system_checkpoint_range.start > latest_available_system_checkpoint {
             return Err(anyhow!(
                 "Latest available params message is: {}",
-                latest_available_ika_system_checkpoint
+                latest_available_system_checkpoint
             ));
         }
 
         let files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
         let start_index = match files
-            .binary_search_by_key(&ika_system_checkpoint_range.start, |c| {
+            .binary_search_by_key(&system_checkpoint_range.start, |c| {
                 c.checkpoint_seq_range.start
             }) {
             Ok(index) => index,
             Err(index) => index - 1,
         };
 
-        let end_index = match files.binary_search_by_key(&ika_system_checkpoint_range.end, |c| {
+        let end_index = match files.binary_search_by_key(&system_checkpoint_range.end, |c| {
             c.checkpoint_seq_range.start
         }) {
             Ok(index) => index,
@@ -833,42 +827,42 @@ impl ArchiveReader {
         futures::stream::iter(files.iter())
             .enumerate()
             .filter(|(index, _c)| future::ready(*index >= start_index && *index < end_index))
-            .map(|(_, ika_system_checkpoint_metadata)| {
+            .map(|(_, system_checkpoint_metadata)| {
                 let remote_object_store = remote_object_store.clone();
                 async move {
-                    let ika_system_checkpoint_data = get(
+                    let system_checkpoint_data = get(
                         &remote_object_store,
-                        &ika_system_checkpoint_metadata.file_path(),
+                        &system_checkpoint_metadata.file_path(),
                     )
                     .await?;
-                    Ok::<Bytes, anyhow::Error>(ika_system_checkpoint_data)
+                    Ok::<Bytes, anyhow::Error>(system_checkpoint_data)
                 }
             })
             .boxed()
             .buffered(self.concurrency)
-            .try_for_each(|ika_system_checkpoint_data| {
+            .try_for_each(|system_checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedIkaSystemCheckpoint, Reader<Bytes>>(
-                        IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
-                        ika_system_checkpoint_data.reader(),
+                    make_iterator::<CertifiedSystemCheckpoint, Reader<Bytes>>(
+                        SYSTEM_CHECKPOINT_FILE_MAGIC,
+                        system_checkpoint_data.reader(),
                     )
-                    .and_then(|ika_system_checkpoint_iter| {
-                        ika_system_checkpoint_iter
+                    .and_then(|system_checkpoint_iter| {
+                        system_checkpoint_iter
                             .filter(|p| {
-                                p.sequence_number >= ika_system_checkpoint_range.start
-                                    && p.sequence_number < ika_system_checkpoint_range.end
+                                p.sequence_number >= system_checkpoint_range.start
+                                    && p.sequence_number < system_checkpoint_range.end
                             })
-                            .try_for_each(|ika_system_checkpoint| {
-                                let size = ika_system_checkpoint.messages.len();
-                                let verified_ika_system_checkpoint =
-                                    Self::get_or_insert_verified_ika_system_checkpoint(
+                            .try_for_each(|system_checkpoint| {
+                                let size = system_checkpoint.messages.len();
+                                let verified_system_checkpoint =
+                                    Self::get_or_insert_verified_system_checkpoint(
                                         &store,
-                                        ika_system_checkpoint,
+                                        system_checkpoint,
                                     )?;
                                 // Update highest synced watermark
                                 store
-                                    .update_highest_synced_ika_system_checkpoint(
-                                        &verified_ika_system_checkpoint,
+                                    .update_highest_synced_system_checkpoint(
+                                        &verified_system_checkpoint,
                                     )
                                     .map_err(|e| anyhow!("Failed to update watermark: {e}"))?;
                                 action_counter.fetch_add(size as u64, Ordering::Relaxed);
@@ -876,9 +870,9 @@ impl ArchiveReader {
                                     .archive_actions_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(size as u64);
-                                ika_system_checkpoint_counter.fetch_add(1, Ordering::Relaxed);
+                                system_checkpoint_counter.fetch_add(1, Ordering::Relaxed);
                                 self.archive_reader_metrics
-                                    .archive_ika_system_checkpoint_read
+                                    .archive_system_checkpoint_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(1);
                                 Ok::<(), anyhow::Error>(())

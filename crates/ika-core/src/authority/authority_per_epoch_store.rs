@@ -64,9 +64,9 @@ use crate::dwallet_mpc::{
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::ika_system_checkpoints::{
-    BuilderIkaSystemCheckpoint, IkaSystemCheckpointHeight, IkaSystemCheckpointService,
-    IkaSystemCheckpointServiceNotify, PendingIkaSystemCheckpoint, PendingIkaSystemCheckpointInfo,
-    PendingIkaSystemCheckpointV1,
+    BuilderIkaSystemCheckpoint, IkaSystemCheckpointHeight, IkaSystemCheckpointServiceNotify,
+    PendingIkaSystemCheckpoint, PendingIkaSystemCheckpointInfo, PendingIkaSystemCheckpointV1,
+    SystemCheckpointService,
 };
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
@@ -83,7 +83,7 @@ use ika_types::message::{
     SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
-use ika_types::messages_checkpoint::{
+use ika_types::messages_dwallet_checkpoint::{
     CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
     SignedCheckpointMessage,
 };
@@ -97,9 +97,9 @@ use ika_types::messages_dwallet_mpc::{
     SessionType, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
-use ika_types::messages_ika_system_checkpoints::{
-    IkaSystemCheckpoint, IkaSystemCheckpointKind, IkaSystemCheckpointSequenceNumber,
-    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint,
+use ika_types::messages_system_checkpoints::{
+    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint, SystemCheckpoint,
+    SystemCheckpointKind, SystemCheckpointSequenceNumber,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
@@ -177,7 +177,7 @@ pub enum ConsensusCertificateResult {
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
 
-    IkaSystemTransaction(IkaSystemCheckpointKind),
+    IkaSystemTransaction(SystemCheckpointKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -560,12 +560,12 @@ impl AuthorityEpochTables {
 
     pub fn get_pending_ika_system_checkpoint_signatures_iter(
         &self,
-        ika_system_checkpoint_seq: IkaSystemCheckpointSequenceNumber,
+        ika_system_checkpoint_seq: SystemCheckpointSequenceNumber,
         starting_index: u64,
     ) -> IkaResult<
         impl Iterator<
                 Item = (
-                    (IkaSystemCheckpointSequenceNumber, u64),
+                    (SystemCheckpointSequenceNumber, u64),
                     IkaSystemCheckpointSignatureMessage,
                 ),
             > + '_,
@@ -1263,10 +1263,10 @@ impl AuthorityPerEpochStore {
         transactions: Vec<SequencedConsensusTransaction>,
         consensus_stats: &ExecutionIndicesWithStats,
         checkpoint_service: &Arc<C>,
-        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>,
+        ika_system_checkpoint_service: &Arc<SystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<(Vec<MessageKind>, Vec<IkaSystemCheckpointKind>)> {
+    ) -> IkaResult<(Vec<MessageKind>, Vec<SystemCheckpointKind>)> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
@@ -1343,7 +1343,7 @@ impl AuthorityPerEpochStore {
         ika_system_checkpoint_verified_messages
             .iter()
             .for_each(|message| {
-                if let IkaSystemCheckpointKind::NextConfigVersion(version) = message {
+                if let SystemCheckpointKind::NextConfigVersion(version) = message {
                     if let Ok(tables) = self.tables() {
                         if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
                             warn!(
@@ -1397,13 +1397,13 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transactions: &[VerifiedSequencedConsensusTransaction],
         checkpoint_service: &Arc<C>,
-        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>,
+        ika_system_checkpoint_service: &Arc<SystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<(
         Vec<MessageKind>, // transactions to schedule
-        Vec<IkaSystemCheckpointKind>,
+        Vec<SystemCheckpointKind>,
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
@@ -1632,7 +1632,7 @@ impl AuthorityPerEpochStore {
         output: &mut ConsensusCommitOutput,
         transaction: &VerifiedSequencedConsensusTransaction,
         checkpoint_service: &Arc<C>,
-        ika_system_checkpoint_service: &Arc<IkaSystemCheckpointService>, // should i do this generic as the checkpoint service?
+        ika_system_checkpoint_service: &Arc<SystemCheckpointService>, // should i do this generic as the checkpoint service?
         commit_round: Round,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<ConsensusCertificateResult> {
@@ -1719,7 +1719,7 @@ impl AuthorityPerEpochStore {
                             capabilities.first()
                         );
                         return Ok(ConsensusCertificateResult::IkaSystemTransaction(
-                            IkaSystemCheckpointKind::NextConfigVersion(new_version),
+                            SystemCheckpointKind::NextConfigVersion(new_version),
                         ));
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)
@@ -2174,7 +2174,7 @@ impl AuthorityPerEpochStore {
     pub fn process_pending_ika_system_checkpoint(
         &self,
         commit_height: IkaSystemCheckpointHeight,
-        ika_system_checkpoint_messages: Vec<IkaSystemCheckpoint>,
+        ika_system_checkpoint_messages: Vec<SystemCheckpoint>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
         // All created ika_system_checkpoints are inserted in builder_ika_system_checkpoint_summary in a single batch.
@@ -2222,7 +2222,7 @@ impl AuthorityPerEpochStore {
 
     pub fn last_built_ika_system_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpoint)>> {
+    ) -> IkaResult<Option<(SystemCheckpointSequenceNumber, SystemCheckpoint)>> {
         Ok(self
             .tables()?
             .builder_ika_system_checkpoint_v1
@@ -2234,8 +2234,8 @@ impl AuthorityPerEpochStore {
 
     pub fn get_built_ika_system_checkpoint_message(
         &self,
-        sequence: IkaSystemCheckpointSequenceNumber,
-    ) -> IkaResult<Option<IkaSystemCheckpoint>> {
+        sequence: SystemCheckpointSequenceNumber,
+    ) -> IkaResult<Option<SystemCheckpoint>> {
         Ok(self
             .tables()?
             .builder_ika_system_checkpoint_v1
@@ -2256,7 +2256,7 @@ impl AuthorityPerEpochStore {
 
     pub fn insert_ika_system_checkpoint_signature(
         &self,
-        ika_system_checkpoint_seq: IkaSystemCheckpointSequenceNumber,
+        ika_system_checkpoint_seq: SystemCheckpointSequenceNumber,
         index: u64,
         info: &IkaSystemCheckpointSignatureMessage,
     ) -> IkaResult<()> {

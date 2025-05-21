@@ -16,8 +16,8 @@ use ika_types::crypto::AuthoritySignInfoTrait;
 use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::SignedCheckpointMessage;
-use ika_types::messages_ika_system_checkpoints::SignedIkaSystemCheckpoint;
+use ika_types::messages_dwallet_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_system_checkpoints::SignedIkaSystemCheckpoint;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},

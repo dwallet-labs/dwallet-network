@@ -9,8 +9,8 @@ use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointMessage, CheckpointSignatureMessage,
+use ika_types::messages_dwallet_checkpoint::{
+    CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSignatureMessage,
     SignedCheckpointMessage, VerifiedCheckpointMessage,
 };
 use ika_types::messages_consensus::ConsensusTransaction;
@@ -31,7 +31,7 @@ pub trait CheckpointOutput: Sync + Send + 'static {
 pub trait CertifiedCheckpointMessageOutput: Sync + Send + 'static {
     async fn certified_checkpoint_message_created(
         &self,
-        summary: &CertifiedCheckpointMessage,
+        summary: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult;
 }
 
@@ -145,7 +145,7 @@ impl CheckpointOutput for LogCheckpointOutput {
 impl CertifiedCheckpointMessageOutput for LogCheckpointOutput {
     async fn certified_checkpoint_message_created(
         &self,
-        summary: &CertifiedCheckpointMessage,
+        summary: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult {
         info!(
             "Certified checkpoint with sequence {} and digest {}",
@@ -171,7 +171,7 @@ impl CertifiedCheckpointMessageOutput for SendCheckpointToStateSync {
     #[instrument(level = "debug", skip_all)]
     async fn certified_checkpoint_message_created(
         &self,
-        checkpoint_message: &CertifiedCheckpointMessage,
+        checkpoint_message: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult {
         info!(
             "Certified checkpoint with sequence {} and digest {}",

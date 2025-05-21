@@ -5,11 +5,11 @@ use super::error::Result;
 use crate::committee::{Committee, EpochId};
 use crate::digests::{
     CheckpointContentsDigest, CheckpointMessageDigest, IkaSystemCheckpointContentsDigest,
-    IkaSystemCheckpointDigest,
+    SystemCheckpointDigest,
 };
-use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
-use crate::messages_ika_system_checkpoints::{
-    IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+use crate::messages_dwallet_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::messages_system_checkpoints::{
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
 use crate::storage::{ReadStore, WriteStore};
 use std::collections::HashMap;
@@ -83,8 +83,8 @@ impl ReadStore for SharedInMemoryStore {
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
             .get_ika_system_checkpoint_by_digest(digest)
             .cloned()
@@ -93,39 +93,35 @@ impl ReadStore for SharedInMemoryStore {
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
             .get_highest_verified_ika_system_checkpoint()
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
             .get_highest_synced_ika_system_checkpoint()
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         Ok(self.inner().get_lowest_available_ika_system_checkpoint())
     }
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
-            .get_ika_system_checkpoint_by_sequence_number(sequence_number)
+            .get_system_checkpoint_by_sequence_number(sequence_number)
             .cloned()
             .pipe(Ok)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         todo!()
     }
 }
@@ -154,30 +150,30 @@ impl WriteStore for SharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.inner_mut()
             .insert_ika_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.inner_mut()
-            .update_highest_synced_ika_system_checkpoint(ika_system_checkpoint);
+            .update_highest_synced_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.inner_mut()
-            .update_highest_verified_ika_system_checkpoint(ika_system_checkpoint);
+            .update_highest_verified_system_checkpoint(ika_system_checkpoint);
         Ok(())
     }
 
@@ -194,7 +190,7 @@ impl SharedInMemoryStore {
 
     pub fn insert_certified_ika_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) {
         self.inner_mut()
             .insert_certified_ika_system_checkpoint(ika_system_checkpoint);
@@ -214,29 +210,29 @@ pub struct InMemoryStore {
     lowest_checkpoint_number: CheckpointSequenceNumber,
 
     highest_verified_ika_system_checkpoint:
-        Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest)>,
+        Option<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
     highest_synced_ika_system_checkpoint:
-        Option<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest)>,
-    ika_system_checkpoints: HashMap<IkaSystemCheckpointDigest, VerifiedIkaSystemCheckpoint>,
+        Option<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    ika_system_checkpoints: HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint>,
     ika_system_checkpoint_contents_digest_to_sequence_number:
-        HashMap<IkaSystemCheckpointContentsDigest, IkaSystemCheckpointSequenceNumber>,
+        HashMap<IkaSystemCheckpointContentsDigest, SystemCheckpointSequenceNumber>,
     ika_system_checkpoint_sequence_number_to_digest:
-        HashMap<IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest>,
-    lowest_ika_system_checkpoint_number: IkaSystemCheckpointSequenceNumber,
+        HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest>,
+    lowest_ika_system_checkpoint_number: SystemCheckpointSequenceNumber,
 }
 
 impl InMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
-        ika_system_checkpoint: VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: VerifiedSystemCheckpoint,
         committee: Committee,
     ) {
         self.insert_committee(committee);
         self.insert_checkpoint(&checkpoint);
         self.insert_ika_system_checkpoint(&ika_system_checkpoint);
         self.update_highest_synced_checkpoint(&checkpoint);
-        self.update_highest_verified_ika_system_checkpoint(&ika_system_checkpoint);
+        self.update_highest_verified_system_checkpoint(&ika_system_checkpoint);
     }
 
     pub fn get_checkpoint_by_digest(
@@ -265,7 +261,7 @@ impl InMemoryStore {
     pub fn get_ika_system_checkpoint_sequence_number_by_contents_digest(
         &self,
         digest: &IkaSystemCheckpointContentsDigest,
-    ) -> Option<IkaSystemCheckpointSequenceNumber> {
+    ) -> Option<SystemCheckpointSequenceNumber> {
         self.ika_system_checkpoint_contents_digest_to_sequence_number
             .get(digest)
             .copied()
@@ -371,48 +367,46 @@ impl InMemoryStore {
 
     pub fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+        digest: &SystemCheckpointDigest,
+    ) -> Option<&VerifiedSystemCheckpoint> {
         self.ika_system_checkpoints.get(digest)
     }
 
-    pub fn get_ika_system_checkpoint_by_sequence_number(
+    pub fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Option<&VerifiedSystemCheckpoint> {
         self.ika_system_checkpoint_sequence_number_to_digest
             .get(&sequence_number)
             .and_then(|digest| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_verified_ika_system_checkpoint(
-        &self,
-    ) -> Option<&VerifiedIkaSystemCheckpoint> {
+    pub fn get_highest_verified_ika_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
         self.highest_verified_ika_system_checkpoint
             .as_ref()
             .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_synced_ika_system_checkpoint(&self) -> Option<&VerifiedIkaSystemCheckpoint> {
+    pub fn get_highest_synced_ika_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
         self.highest_synced_ika_system_checkpoint
             .as_ref()
             .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_lowest_available_ika_system_checkpoint(&self) -> IkaSystemCheckpointSequenceNumber {
+    pub fn get_lowest_available_ika_system_checkpoint(&self) -> SystemCheckpointSequenceNumber {
         self.lowest_ika_system_checkpoint_number
     }
 
     pub fn set_lowest_available_ika_system_checkpoint(
         &mut self,
-        ika_system_checkpoint_seq_num: IkaSystemCheckpointSequenceNumber,
+        ika_system_checkpoint_seq_num: SystemCheckpointSequenceNumber,
     ) {
         self.lowest_ika_system_checkpoint_number = ika_system_checkpoint_seq_num;
     }
 
     pub fn insert_ika_system_checkpoint(
         &mut self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) {
         self.insert_certified_ika_system_checkpoint(ika_system_checkpoint);
         let digest = *ika_system_checkpoint.digest();
@@ -427,7 +421,7 @@ impl InMemoryStore {
     // without bumping the highest_verified_ika_system_checkpoint watermark.
     pub fn insert_certified_ika_system_checkpoint(
         &mut self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) {
         let digest = *ika_system_checkpoint.digest();
         let sequence_number = *ika_system_checkpoint.sequence_number();
@@ -438,9 +432,9 @@ impl InMemoryStore {
             .insert(sequence_number, digest);
     }
 
-    pub fn update_highest_synced_ika_system_checkpoint(
+    pub fn update_highest_synced_system_checkpoint(
         &mut self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) {
         if !self
             .ika_system_checkpoints
@@ -461,9 +455,9 @@ impl InMemoryStore {
         ));
     }
 
-    pub fn update_highest_verified_ika_system_checkpoint(
+    pub fn update_highest_verified_system_checkpoint(
         &mut self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) {
         if !self
             .ika_system_checkpoints
@@ -486,13 +480,13 @@ impl InMemoryStore {
 
     pub fn ika_system_checkpoints(
         &self,
-    ) -> &HashMap<IkaSystemCheckpointDigest, VerifiedIkaSystemCheckpoint> {
+    ) -> &HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint> {
         &self.ika_system_checkpoints
     }
 
     pub fn ika_system_checkpoint_sequence_number_to_digest(
         &self,
-    ) -> &HashMap<IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest> {
+    ) -> &HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest> {
         &self.ika_system_checkpoint_sequence_number_to_digest
     }
 }
@@ -506,7 +500,7 @@ impl SingleCheckpointSharedInMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
         checkpoint: VerifiedCheckpointMessage,
-        ika_system_checkpoint: VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: VerifiedSystemCheckpoint,
         committee: Committee,
     ) {
         let mut locked = self.0 .0.write().unwrap();
@@ -549,41 +543,37 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         todo!()
     }
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.0.get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.0.get_highest_synced_ika_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         self.0.get_lowest_available_ika_system_checkpoint()
     }
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.0.get_ika_system_checkpoint_by_digest(digest)
     }
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.0
-            .get_ika_system_checkpoint_by_sequence_number(sequence_number)
+            .get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -614,9 +604,9 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         Ok(())
     }
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         {
             let mut locked = self.0 .0.write().unwrap();
@@ -625,25 +615,25 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
                 .ika_system_checkpoint_sequence_number_to_digest
                 .clear();
         }
-        self.0.insert_ika_system_checkpoint(ika_system_checkpoint)?;
+        self.0.insert_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.0
-            .update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)?;
+            .update_highest_synced_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.0
-            .update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)?;
+            .update_highest_verified_system_checkpoint(ika_system_checkpoint)?;
         Ok(())
     }
 

@@ -802,8 +802,8 @@ mod bcs_signable {
 
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
-    impl BcsSignable for crate::messages_checkpoint::CheckpointMessage {}
-    impl BcsSignable for crate::messages_ika_system_checkpoints::IkaSystemCheckpoint {}
+    impl BcsSignable for crate::messages_dwallet_checkpoint::CheckpointMessage {}
+    impl BcsSignable for crate::messages_system_checkpoints::SystemCheckpoint {}
 
     impl BcsSignable for crate::message::MessageKind {}
 

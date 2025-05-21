@@ -3,9 +3,9 @@
 
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
-use ika_types::digests::IkaSystemCheckpointDigest;
-use ika_types::messages_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
-use ika_types::messages_ika_system_checkpoints::IkaSystemCheckpointSequenceNumber;
+use ika_types::digests::SystemCheckpointDigest;
+use ika_types::messages_dwallet_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
+use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
 use serde::{Deserialize, Serialize};
 use sui_types::multiaddr::Multiaddr;
 
@@ -181,7 +181,7 @@ pub struct StateSyncConfig {
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub pinned_ika_system_checkpoints:
-        Vec<(IkaSystemCheckpointSequenceNumber, IkaSystemCheckpointDigest)>,
+        Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_ika_system_checkpoint_broadcast_channel_capacity: Option<usize>,

@@ -4,17 +4,17 @@
 
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
-    IkaSystemCheckpointUpdates, Manifest, CHECKPOINT_FILE_SUFFIX, CHECKPOINT_MESSAGE_FILE_MAGIC,
-    EPOCH_DIR_PREFIX, IKA_SYSTEM_CHECKPOINT_FILE_MAGIC, IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
-    MAGIC_BYTES,
+    Manifest, SystemCheckpointUpdates, DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+    DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES,
+    SYSTEM_CHECKPOINT_FILE_MAGIC, SYSTEM_CHECKPOINT_FILE_SUFFIX,
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::messages_checkpoint::{CertifiedCheckpointMessage, CheckpointSequenceNumber};
-use ika_types::messages_ika_system_checkpoints::{
-    CertifiedIkaSystemCheckpoint, IkaSystemCheckpointSequenceNumber,
+use ika_types::messages_dwallet_checkpoint::{CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber};
+use ika_types::messages_system_checkpoints::{
+    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber,
 };
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
@@ -35,21 +35,21 @@ use tokio::time::Instant;
 use tracing::{debug, info};
 
 pub struct ArchiveMetrics {
-    pub latest_checkpoint_archived: IntGauge,
-    pub latest_ika_system_checkpoint_archived: IntGauge,
+    pub latest_dwallet_checkpoint_archived: IntGauge,
+    pub latest_system_checkpoint_archived: IntGauge,
 }
 
 impl ArchiveMetrics {
     pub fn new(registry: &Registry) -> Arc<Self> {
         let this = Self {
-            latest_checkpoint_archived: register_int_gauge_with_registry!(
-                "latest_checkpoint_archived",
-                "Latest checkpoint to have archived to the remote store",
+            latest_dwallet_checkpoint_archived: register_int_gauge_with_registry!(
+                "latest_dwallet_checkpoint_archived",
+                "Latest dwallet coordinator checkpoint to have archived to the remote store",
                 registry
             )
             .unwrap(),
-            latest_ika_system_checkpoint_archived: register_int_gauge_with_registry!(
-                "latest_ika_system_checkpoint_archived",
+            latest_system_checkpoint_archived: register_int_gauge_with_registry!(
+                "latest_system_checkpoint_archived",
                 "Latest params message to have archived to the remote store",
                 registry
             )
@@ -59,14 +59,15 @@ impl ArchiveMetrics {
     }
 }
 
-/// CheckpointWriter writes checkpoints and summaries. It creates multiple *.chk and *.sum files
-struct CheckpointWriter {
+/// [`DwalletCoordinatorCheckpointWriter`] writes checkpoints and summaries.
+/// It creates multiple *.chk and *.sum files
+struct DwalletCoordinatorCheckpointWriter {
     root_dir_path: PathBuf,
     epoch_num: u64,
-    checkpoint_range: Range<u64>,
+    dwallet_checkpoint_range: Range<u64>,
     wbuf: BufWriter<File>,
     sender: Sender<CheckpointUpdates>,
-    checkpoint_buf_offset: usize,
+    dwallet_checkpoint_buf_offset: usize,
     file_compression: FileCompression,
     storage_format: StorageFormat,
     manifest: Manifest,
@@ -75,7 +76,7 @@ struct CheckpointWriter {
     commit_file_size: usize,
 }
 
-impl CheckpointWriter {
+impl DwalletCoordinatorCheckpointWriter {
     fn new(
         root_dir_path: PathBuf,
         file_compression: FileCompression,
@@ -86,7 +87,7 @@ impl CheckpointWriter {
         commit_file_size: usize,
     ) -> Result<Self> {
         let epoch_num = manifest.epoch_num();
-        let checkpoint_sequence_num = manifest.next_checkpoint_seq_num();
+        let checkpoint_sequence_num = manifest.next_dwallet_checkpoint_seq_num();
         let epoch_dir = root_dir_path.join(format!("{}{epoch_num}", EPOCH_DIR_PREFIX));
         if epoch_dir.exists() {
             fs::remove_dir_all(&epoch_dir)?;
@@ -95,17 +96,17 @@ impl CheckpointWriter {
         let checkpoint_file = Self::next_file(
             &epoch_dir,
             checkpoint_sequence_num,
-            CHECKPOINT_FILE_SUFFIX,
-            CHECKPOINT_MESSAGE_FILE_MAGIC,
+            DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX,
+            DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
             storage_format,
             file_compression,
         )?;
-        Ok(CheckpointWriter {
+        Ok(DwalletCoordinatorCheckpointWriter {
             root_dir_path,
             epoch_num,
-            checkpoint_range: checkpoint_sequence_num..checkpoint_sequence_num,
+            dwallet_checkpoint_range: checkpoint_sequence_num..checkpoint_sequence_num,
             wbuf: BufWriter::new(checkpoint_file),
-            checkpoint_buf_offset: 0,
+            dwallet_checkpoint_buf_offset: 0,
             sender,
             file_compression,
             storage_format,
@@ -116,16 +117,16 @@ impl CheckpointWriter {
         })
     }
 
-    pub fn write(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
+    pub fn write(&mut self, checkpoint_message: CertifiedDWalletCheckpointMessage) -> Result<()> {
         match self.storage_format {
             StorageFormat::Blob => self.write_as_blob(checkpoint_message),
         }
     }
 
-    pub fn write_as_blob(&mut self, checkpoint_message: CertifiedCheckpointMessage) -> Result<()> {
+    pub fn write_as_blob(&mut self, checkpoint_message: CertifiedDWalletCheckpointMessage) -> Result<()> {
         assert_eq!(
             checkpoint_message.sequence_number,
-            self.checkpoint_range.end
+            self.dwallet_checkpoint_range.end
         );
 
         if checkpoint_message.epoch()
@@ -147,7 +148,7 @@ impl CheckpointWriter {
 
         let contents_blob = Blob::encode(&checkpoint_message, BlobEncoding::Bcs)?;
         let blob_size = contents_blob.size();
-        let cut_new_checkpoint_file = (self.checkpoint_buf_offset + blob_size)
+        let cut_new_checkpoint_file = (self.dwallet_checkpoint_buf_offset + blob_size)
             > self.commit_file_size
             || (self.last_commit_instant.elapsed() > self.commit_duration);
         if cut_new_checkpoint_file {
@@ -155,10 +156,10 @@ impl CheckpointWriter {
             self.reset()?;
         }
 
-        self.checkpoint_buf_offset += contents_blob.write(&mut self.wbuf)?;
+        self.dwallet_checkpoint_buf_offset += contents_blob.write(&mut self.wbuf)?;
 
-        self.checkpoint_range.end = self
-            .checkpoint_range
+        self.dwallet_checkpoint_range.end = self
+            .dwallet_checkpoint_range
             .end
             .checked_add(1)
             .context("Checkpoint sequence num overflow")?;
@@ -170,25 +171,25 @@ impl CheckpointWriter {
         let off = self.wbuf.get_ref().stream_position()?;
         self.wbuf.get_ref().set_len(off)?;
         let file_path = self.epoch_dir().join(format!(
-            "{}.{CHECKPOINT_FILE_SUFFIX}",
-            self.checkpoint_range.start
+            "{}.{DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX}",
+            self.dwallet_checkpoint_range.start
         ));
         self.compress(&file_path)?;
         let file_metadata = create_file_metadata(
             &file_path,
-            FileType::CheckpointMessage,
+            FileType::DWalletCoordinatorCheckpointMessage,
             self.epoch_num,
-            self.checkpoint_range.clone(),
+            self.dwallet_checkpoint_range.clone(),
         )?;
         Ok(file_metadata)
     }
 
     fn cut(&mut self) -> Result<()> {
-        if !self.checkpoint_range.is_empty() {
+        if !self.dwallet_checkpoint_range.is_empty() {
             let checkpoint_file_metadata = self.finalize()?;
             let checkpoint_updates = CheckpointUpdates::new(
                 self.epoch_num,
-                self.checkpoint_range.end,
+                self.dwallet_checkpoint_range.end,
                 checkpoint_file_metadata,
                 &mut self.manifest,
             );
@@ -234,13 +235,13 @@ impl CheckpointWriter {
     fn create_new_files(&mut self) -> Result<()> {
         let f = Self::next_file(
             &self.epoch_dir(),
-            self.checkpoint_range.start,
-            CHECKPOINT_FILE_SUFFIX,
-            CHECKPOINT_MESSAGE_FILE_MAGIC,
+            self.dwallet_checkpoint_range.start,
+            DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX,
+            DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
             self.storage_format,
             self.file_compression,
         )?;
-        self.checkpoint_buf_offset = MAGIC_BYTES;
+        self.dwallet_checkpoint_buf_offset = MAGIC_BYTES;
         self.wbuf = BufWriter::new(f);
         Ok(())
     }
@@ -255,7 +256,8 @@ impl CheckpointWriter {
         self.last_commit_instant = Instant::now();
     }
     fn reset_checkpoint_range(&mut self) {
-        self.checkpoint_range = self.checkpoint_range.end..self.checkpoint_range.end
+        self.dwallet_checkpoint_range = self.dwallet_checkpoint_range.end
+            ..self.dwallet_checkpoint_range.end
     }
     fn epoch_dir(&self) -> PathBuf {
         self.root_dir_path
@@ -266,13 +268,13 @@ impl CheckpointWriter {
     }
 }
 
-struct IkaSystemCheckpointWriter {
+struct SystemCheckpointWriter {
     root_dir_path: PathBuf,
     epoch_num: u64,
-    ika_system_checkpoint_range: Range<u64>,
+    system_checkpoint_range: Range<u64>,
     wbuf: BufWriter<File>,
-    sender: Sender<IkaSystemCheckpointUpdates>,
-    ika_system_checkpoint_buf_offset: usize,
+    sender: Sender<SystemCheckpointUpdates>,
+    system_checkpoint_buf_offset: usize,
     file_compression: FileCompression,
     storage_format: StorageFormat,
     manifest: Manifest,
@@ -281,38 +283,37 @@ struct IkaSystemCheckpointWriter {
     commit_file_size: usize,
 }
 
-impl IkaSystemCheckpointWriter {
+impl SystemCheckpointWriter {
     fn new(
         root_dir_path: PathBuf,
         file_compression: FileCompression,
         storage_format: StorageFormat,
-        sender: Sender<IkaSystemCheckpointUpdates>,
+        sender: Sender<SystemCheckpointUpdates>,
         manifest: Manifest,
         commit_duration: Duration,
         commit_file_size: usize,
     ) -> Result<Self> {
         let epoch_num = manifest.epoch_num();
-        let ika_system_checkpoint_sequence_num = manifest.next_ika_system_checkpoint_seq_num();
+        let system_checkpoint_sequence_num = manifest.next_system_checkpoint_seq_num();
         let epoch_dir = root_dir_path.join(format!("{}{epoch_num}", EPOCH_DIR_PREFIX));
         if epoch_dir.exists() {
             fs::remove_dir_all(&epoch_dir)?;
         }
         fs::create_dir_all(&epoch_dir)?;
-        let ika_system_checkpoint_file = Self::next_file(
+        let system_checkpoint_file = Self::next_file(
             &epoch_dir,
-            ika_system_checkpoint_sequence_num,
-            IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
-            IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
+            system_checkpoint_sequence_num,
+            SYSTEM_CHECKPOINT_FILE_SUFFIX,
+            SYSTEM_CHECKPOINT_FILE_MAGIC,
             storage_format,
             file_compression,
         )?;
-        Ok(IkaSystemCheckpointWriter {
+        Ok(SystemCheckpointWriter {
             root_dir_path,
             epoch_num,
-            ika_system_checkpoint_range: ika_system_checkpoint_sequence_num
-                ..ika_system_checkpoint_sequence_num,
-            wbuf: BufWriter::new(ika_system_checkpoint_file),
-            ika_system_checkpoint_buf_offset: 0,
+            system_checkpoint_range: system_checkpoint_sequence_num..system_checkpoint_sequence_num,
+            wbuf: BufWriter::new(system_checkpoint_file),
+            system_checkpoint_buf_offset: 0,
             sender,
             file_compression,
             storage_format,
@@ -323,25 +324,22 @@ impl IkaSystemCheckpointWriter {
         })
     }
 
-    pub fn write(
-        &mut self,
-        ika_system_checkpoint_message: CertifiedIkaSystemCheckpoint,
-    ) -> Result<()> {
+    pub fn write(&mut self, system_checkpoint_message: CertifiedSystemCheckpoint) -> Result<()> {
         match self.storage_format {
-            StorageFormat::Blob => self.write_as_blob(ika_system_checkpoint_message),
+            StorageFormat::Blob => self.write_as_blob(system_checkpoint_message),
         }
     }
 
     pub fn write_as_blob(
         &mut self,
-        ika_system_checkpoint_message: CertifiedIkaSystemCheckpoint,
+        system_checkpoint_message: CertifiedSystemCheckpoint,
     ) -> Result<()> {
         assert_eq!(
-            ika_system_checkpoint_message.sequence_number,
-            self.ika_system_checkpoint_range.end
+            system_checkpoint_message.sequence_number,
+            self.system_checkpoint_range.end
         );
 
-        if ika_system_checkpoint_message.epoch()
+        if system_checkpoint_message.epoch()
             == self
                 .epoch_num
                 .checked_add(1)
@@ -356,22 +354,22 @@ impl IkaSystemCheckpointWriter {
             self.reset()?;
         }
 
-        assert_eq!(ika_system_checkpoint_message.epoch, self.epoch_num);
+        assert_eq!(system_checkpoint_message.epoch, self.epoch_num);
 
-        let contents_blob = Blob::encode(&ika_system_checkpoint_message, BlobEncoding::Bcs)?;
+        let contents_blob = Blob::encode(&system_checkpoint_message, BlobEncoding::Bcs)?;
         let blob_size = contents_blob.size();
-        let cut_new_ika_system_checkpoint_file =
-            (self.ika_system_checkpoint_buf_offset + blob_size) > self.commit_file_size
-                || (self.last_commit_instant.elapsed() > self.commit_duration);
-        if cut_new_ika_system_checkpoint_file {
+        let cut_new_system_checkpoint_file = (self.system_checkpoint_buf_offset + blob_size)
+            > self.commit_file_size
+            || (self.last_commit_instant.elapsed() > self.commit_duration);
+        if cut_new_system_checkpoint_file {
             self.cut()?;
             self.reset()?;
         }
 
-        self.ika_system_checkpoint_buf_offset += contents_blob.write(&mut self.wbuf)?;
+        self.system_checkpoint_buf_offset += contents_blob.write(&mut self.wbuf)?;
 
-        self.ika_system_checkpoint_range.end = self
-            .ika_system_checkpoint_range
+        self.system_checkpoint_range.end = self
+            .system_checkpoint_range
             .end
             .checked_add(1)
             .context("IkaSystemCheckpoint sequence num overflow")?;
@@ -383,33 +381,33 @@ impl IkaSystemCheckpointWriter {
         let off = self.wbuf.get_ref().stream_position()?;
         self.wbuf.get_ref().set_len(off)?;
         let file_path = self.epoch_dir().join(format!(
-            "{}.{IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX}",
-            self.ika_system_checkpoint_range.start
+            "{}.{SYSTEM_CHECKPOINT_FILE_SUFFIX}",
+            self.system_checkpoint_range.start
         ));
         self.compress(&file_path)?;
         let file_metadata = create_file_metadata(
             &file_path,
-            FileType::IkaSystemCheckpoint,
+            FileType::SystemCheckpointMessage,
             self.epoch_num,
-            self.ika_system_checkpoint_range.clone(),
+            self.system_checkpoint_range.clone(),
         )?;
         Ok(file_metadata)
     }
 
     fn cut(&mut self) -> Result<()> {
-        if !self.ika_system_checkpoint_range.is_empty() {
-            let ika_system_checkpoint_file_metadata = self.finalize()?;
-            let ika_system_checkpoint_updates = IkaSystemCheckpointUpdates::new(
+        if !self.system_checkpoint_range.is_empty() {
+            let system_checkpoint_file_metadata = self.finalize()?;
+            let system_checkpoint_updates = SystemCheckpointUpdates::new(
                 self.epoch_num,
-                self.ika_system_checkpoint_range.end,
-                ika_system_checkpoint_file_metadata,
+                self.system_checkpoint_range.end,
+                system_checkpoint_file_metadata,
                 &mut self.manifest,
             );
             info!(
                 "IkaSystemCheckpoint file cut for: {:?}",
-                ika_system_checkpoint_updates
+                system_checkpoint_updates
             );
-            self.sender.blocking_send(ika_system_checkpoint_updates)?;
+            self.sender.blocking_send(system_checkpoint_updates)?;
         }
         Ok(())
     }
@@ -428,14 +426,13 @@ impl IkaSystemCheckpointWriter {
 
     fn next_file(
         dir_path: &Path,
-        ika_system_checkpoint_sequence_num: u64,
+        system_checkpoint_sequence_num: u64,
         suffix: &str,
         magic_bytes: u32,
         storage_format: StorageFormat,
         file_compression: FileCompression,
     ) -> Result<File> {
-        let next_file_path =
-            dir_path.join(format!("{ika_system_checkpoint_sequence_num}.{suffix}"));
+        let next_file_path = dir_path.join(format!("{system_checkpoint_sequence_num}.{suffix}"));
         let mut f = File::create(next_file_path.clone())?;
         let mut metab = [0u8; MAGIC_BYTES];
         BigEndian::write_u32(&mut metab, magic_bytes);
@@ -451,19 +448,19 @@ impl IkaSystemCheckpointWriter {
     fn create_new_files(&mut self) -> Result<()> {
         let f = Self::next_file(
             &self.epoch_dir(),
-            self.ika_system_checkpoint_range.start,
-            IKA_SYSTEM_CHECKPOINT_FILE_SUFFIX,
-            IKA_SYSTEM_CHECKPOINT_FILE_MAGIC,
+            self.system_checkpoint_range.start,
+            SYSTEM_CHECKPOINT_FILE_SUFFIX,
+            SYSTEM_CHECKPOINT_FILE_MAGIC,
             self.storage_format,
             self.file_compression,
         )?;
-        self.ika_system_checkpoint_buf_offset = MAGIC_BYTES;
+        self.system_checkpoint_buf_offset = MAGIC_BYTES;
         self.wbuf = BufWriter::new(f);
         Ok(())
     }
 
     fn reset(&mut self) -> Result<()> {
-        self.reset_ika_system_checkpoint_range();
+        self.reset_system_checkpoint_range();
         self.create_new_files()?;
         self.reset_last_commit_ts();
         Ok(())
@@ -471,9 +468,9 @@ impl IkaSystemCheckpointWriter {
     fn reset_last_commit_ts(&mut self) {
         self.last_commit_instant = Instant::now();
     }
-    fn reset_ika_system_checkpoint_range(&mut self) {
-        self.ika_system_checkpoint_range =
-            self.ika_system_checkpoint_range.end..self.ika_system_checkpoint_range.end
+    fn reset_system_checkpoint_range(&mut self) {
+        self.system_checkpoint_range =
+            self.system_checkpoint_range.end..self.system_checkpoint_range.end
     }
     fn epoch_dir(&self) -> PathBuf {
         self.root_dir_path
@@ -538,11 +535,12 @@ impl ArchiveWriter {
                 .await
                 .expect("Failed to read manifest")
         };
-        let start_checkpoint_sequence_number = manifest.next_checkpoint_seq_num();
+        let start_checkpoint_sequence_number =
+            manifest.next_dwallet_checkpoint_seq_num();
         let (sender, receiver) = mpsc::channel::<CheckpointUpdates>(100);
-        let (sender_ika_system_checkpoint, receiver_ika_system_checkpoint) =
-            mpsc::channel::<IkaSystemCheckpointUpdates>(100);
-        let checkpoint_writer = CheckpointWriter::new(
+        let (sender_system_checkpoint, receiver_system_checkpoint) =
+            mpsc::channel::<SystemCheckpointUpdates>(100);
+        let checkpoint_writer = DwalletCoordinatorCheckpointWriter::new(
             self.local_staging_dir_root.clone(),
             self.file_compression,
             self.storage_format,
@@ -558,7 +556,7 @@ impl ArchiveWriter {
             self.local_object_store.clone(),
             self.local_staging_dir_root.clone(),
             receiver,
-            receiver_ika_system_checkpoint,
+            receiver_system_checkpoint,
             kill_sender.subscribe(),
             self.archive_metrics.clone(),
         ));
@@ -574,22 +572,21 @@ impl ArchiveWriter {
             .await
         });
 
-        let start_ika_system_checkpoint_sequence_number =
-            manifest.next_ika_system_checkpoint_seq_num();
-        let ika_system_checkpoint_writer = IkaSystemCheckpointWriter::new(
+        let start_system_checkpoint_sequence_number = manifest.next_system_checkpoint_seq_num();
+        let system_checkpoint_writer = SystemCheckpointWriter::new(
             self.local_staging_dir_root.clone(),
             self.file_compression,
             self.storage_format,
-            sender_ika_system_checkpoint,
+            sender_system_checkpoint,
             manifest,
             self.commit_duration,
             self.commit_file_size,
         )
-        .expect("Failed to create ika_system_checkpoint writer");
+        .expect("Failed to create system_checkpoint writer");
         tokio::task::spawn(async move {
-            Self::start_tailing_ika_system_checkpoints(
-                start_ika_system_checkpoint_sequence_number,
-                ika_system_checkpoint_writer,
+            Self::start_tailing_system_checkpoints(
+                start_system_checkpoint_sequence_number,
+                system_checkpoint_writer,
                 store,
                 kill_receiver,
             )
@@ -601,7 +598,7 @@ impl ArchiveWriter {
 
     async fn start_tailing_checkpoints<S>(
         start_checkpoint_sequence_number: CheckpointSequenceNumber,
-        mut checkpoint_writer: CheckpointWriter,
+        mut checkpoint_writer: DwalletCoordinatorCheckpointWriter,
         store: S,
         mut kill: tokio::sync::broadcast::Receiver<()>,
     ) -> Result<()>
@@ -630,31 +627,31 @@ impl ArchiveWriter {
         Ok(())
     }
 
-    async fn start_tailing_ika_system_checkpoints<S>(
-        start_ika_system_checkpoint_sequence_number: IkaSystemCheckpointSequenceNumber,
-        mut ika_system_checkpoint_writer: IkaSystemCheckpointWriter,
+    async fn start_tailing_system_checkpoints<S>(
+        start_system_checkpoint_sequence_number: SystemCheckpointSequenceNumber,
+        mut system_checkpoint_writer: SystemCheckpointWriter,
         store: S,
         mut kill: tokio::sync::broadcast::Receiver<()>,
     ) -> Result<()>
     where
         S: WriteStore + Send + Sync + 'static,
     {
-        let mut ika_system_checkpoint_sequence_number = start_ika_system_checkpoint_sequence_number;
-        info!("Starting ika_system_checkpoint tailing from sequence number: {ika_system_checkpoint_sequence_number}");
+        let mut system_checkpoint_sequence_number = start_system_checkpoint_sequence_number;
+        info!("Starting system_checkpoint tailing from sequence number: {system_checkpoint_sequence_number}");
 
         while kill.try_recv().is_err() {
-            if let Some(ika_system_checkpoint_message) = store
-                .get_ika_system_checkpoint_by_sequence_number(ika_system_checkpoint_sequence_number)
-                .map_err(|_| anyhow!("Failed to read ika_system_checkpoint message from store"))?
+            if let Some(system_checkpoint_message) = store
+                .get_system_checkpoint_by_sequence_number(system_checkpoint_sequence_number)
+                .map_err(|_| anyhow!("Failed to read system_checkpoint message from store"))?
             {
-                ika_system_checkpoint_writer.write(ika_system_checkpoint_message.into_inner())?;
-                ika_system_checkpoint_sequence_number = ika_system_checkpoint_sequence_number
+                system_checkpoint_writer.write(system_checkpoint_message.into_inner())?;
+                system_checkpoint_sequence_number = system_checkpoint_sequence_number
                     .checked_add(1)
-                    .context("ika_system_checkpoint seq number overflow")?;
-                // There is more ika_system_checkpoints to tail, so continue without sleeping
+                    .context("system_checkpoint seq number overflow")?;
+                // There is more system_checkpoints to tail, so continue without sleeping
                 continue;
             }
-            // IkaSystemCheckpoint with `ika_system_checkpoint_sequence_number` is not available to read from store yet,
+            // IkaSystemCheckpoint with `system_checkpoint_sequence_number` is not available to read from store yet,
             // sleep for sometime and then retry
             tokio::time::sleep(Duration::from_secs(3)).await;
         }
@@ -666,7 +663,7 @@ impl ArchiveWriter {
         local_object_store: Arc<DynObjectStore>,
         local_staging_root_dir: PathBuf,
         mut update_receiver: Receiver<CheckpointUpdates>,
-        mut update_receiver_ika_system_checkpoint: Receiver<IkaSystemCheckpointUpdates>,
+        mut update_receiver_system_checkpoint: Receiver<SystemCheckpointUpdates>,
         mut kill: tokio::sync::broadcast::Receiver<()>,
         metrics: Arc<ArchiveMetrics>,
     ) -> Result<()> {
@@ -676,7 +673,7 @@ impl ArchiveWriter {
                 updates = update_receiver.recv() => {
                     if let Some(checkpoint_updates) = updates {
                         info!("Received checkpoint update: {:?}", checkpoint_updates);
-                        let latest_checkpoint_seq_num = checkpoint_updates.manifest.next_checkpoint_seq_num();
+                        let latest_checkpoint_seq_num = checkpoint_updates.manifest.next_dwallet_checkpoint_seq_num();
                         let summary_file_path = checkpoint_updates.summary_file_path();
                         Self::sync_file_to_remote(
                             local_staging_root_dir.clone(),
@@ -703,17 +700,17 @@ impl ArchiveWriter {
                         )
                         .await
                         .expect("Updating manifest should not fail");
-                        metrics.latest_checkpoint_archived.set(latest_checkpoint_seq_num as i64)
+                        metrics.latest_dwallet_checkpoint_archived.set(latest_checkpoint_seq_num as i64)
                     } else {
                         info!("Terminating archive sync loop");
                         break;
                     }
                 },
-                updates = update_receiver_ika_system_checkpoint.recv() => {
-                    if let Some(ika_system_checkpoint_updates) = updates {
-                        info!("Received ika_system_checkpoint update: {:?}", ika_system_checkpoint_updates);
-                        let latest_ika_system_checkpoint_seq_num = ika_system_checkpoint_updates.manifest.next_ika_system_checkpoint_seq_num();
-                        let summary_file_path = ika_system_checkpoint_updates.summary_file_path();
+                updates = update_receiver_system_checkpoint.recv() => {
+                    if let Some(system_checkpoint_updates) = updates {
+                        info!("Received system_checkpoint update: {:?}", system_checkpoint_updates);
+                        let latest_system_checkpoint_seq_num = system_checkpoint_updates.manifest.next_system_checkpoint_seq_num();
+                        let summary_file_path = system_checkpoint_updates.summary_file_path();
                         Self::sync_file_to_remote(
                             local_staging_root_dir.clone(),
                             summary_file_path,
@@ -721,9 +718,9 @@ impl ArchiveWriter {
                             remote_object_store.clone()
                         )
                         .await
-                        .expect("Syncing ika_system_checkpoint summary should not fail");
+                        .expect("Syncing system_checkpoint summary should not fail");
 
-                        let content_file_path = ika_system_checkpoint_updates.content_file_path();
+                        let content_file_path = system_checkpoint_updates.content_file_path();
                         Self::sync_file_to_remote(
                             local_staging_root_dir.clone(),
                             content_file_path,
@@ -731,15 +728,15 @@ impl ArchiveWriter {
                             remote_object_store.clone()
                         )
                         .await
-                        .expect("Syncing ika_system_checkpoint content should not fail");
+                        .expect("Syncing system_checkpoint content should not fail");
 
                         write_manifest(
-                            ika_system_checkpoint_updates.manifest,
+                            system_checkpoint_updates.manifest,
                             remote_object_store.clone()
                         )
                         .await
                         .expect("Updating manifest should not fail");
-                        metrics.latest_ika_system_checkpoint_archived.set(latest_ika_system_checkpoint_seq_num as i64)
+                        metrics.latest_system_checkpoint_archived.set(latest_system_checkpoint_seq_num as i64)
                     } else {
                         info!("Terminating archive sync loop");
                         break;

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::messages_dwallet_checkpoint::CheckpointSequenceNumber;
 use prometheus::{
     register_histogram_with_registry, register_int_gauge_with_registry, Histogram, IntGauge,
     Registry,
@@ -54,42 +54,42 @@ impl Metrics {
         None
     }
 
-    pub fn set_highest_known_ika_system_checkpoint(
+    pub fn set_highest_known_system_checkpoint(
         &self,
         sequence_number: CheckpointSequenceNumber,
     ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_known_ika_system_checkpoint
+                .highest_known_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn set_highest_verified_ika_system_checkpoint(
+    pub fn set_highest_verified_system_checkpoint(
         &self,
         sequence_number: CheckpointSequenceNumber,
     ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_verified_ika_system_checkpoint
+                .highest_verified_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn set_highest_synced_ika_system_checkpoint(
+    pub fn set_highest_synced_system_checkpoint(
         &self,
         sequence_number: CheckpointSequenceNumber,
     ) {
         if let Some(inner) = &self.0 {
             inner
-                .highest_synced_ika_system_checkpoint
+                .highest_synced_system_checkpoint
                 .set(sequence_number as i64);
         }
     }
 
-    pub fn ika_system_checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
+    pub fn system_checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
         if let Some(inner) = &self.0 {
-            return Some(&inner.ika_system_checkpoint_summary_age);
+            return Some(&inner.system_checkpoint_summary_age);
         }
         None
     }
@@ -101,10 +101,10 @@ struct Inner {
     highest_synced_checkpoint: IntGauge,
     checkpoint_summary_age: Histogram,
 
-    highest_known_ika_system_checkpoint: IntGauge,
-    highest_verified_ika_system_checkpoint: IntGauge,
-    highest_synced_ika_system_checkpoint: IntGauge,
-    ika_system_checkpoint_summary_age: Histogram,
+    highest_known_system_checkpoint: IntGauge,
+    highest_verified_system_checkpoint: IntGauge,
+    highest_synced_system_checkpoint: IntGauge,
+    system_checkpoint_summary_age: Histogram,
 }
 
 impl Inner {
@@ -138,26 +138,26 @@ impl Inner {
                 registry,
             )
             .unwrap(),
-            highest_known_ika_system_checkpoint: register_int_gauge_with_registry!(
-                "highest_known_ika_system_checkpoint",
+            highest_known_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_known_system_checkpoint",
                 "Highest known params message",
                 registry
             )
             .unwrap(),
-            highest_verified_ika_system_checkpoint: register_int_gauge_with_registry!(
-                "highest_verified_ika_system_checkpoint",
+            highest_verified_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_verified_system_checkpoint",
                 "Highest verified params message",
                 registry
             )
             .unwrap(),
-            highest_synced_ika_system_checkpoint: register_int_gauge_with_registry!(
-                "highest_synced_ika_system_checkpoint",
+            highest_synced_system_checkpoint: register_int_gauge_with_registry!(
+                "highest_synced_system_checkpoint",
                 "Highest synced params message",
                 registry
             )
             .unwrap(),
-            ika_system_checkpoint_summary_age: register_histogram_with_registry!(
-                "ika_system_checkpoint_summary_age",
+            system_checkpoint_summary_age: register_histogram_with_registry!(
+                "system_checkpoint_summary_age",
                 "Age of params messages summaries when they arrive and are verified.",
                 mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
                 registry,

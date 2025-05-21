@@ -30,9 +30,9 @@ use ika_types::digests::{CheckpointContentsDigest, CheckpointMessageDigest, Mess
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::MessageKind;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::SignedCheckpointMessage;
-use ika_types::messages_checkpoint::{
-    CertifiedCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber,
+use ika_types::messages_dwallet_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::{
+    CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber,
     CheckpointSignatureMessage, CheckpointTimestamp, TrustedCheckpointMessage,
     VerifiedCheckpointMessage,
 };
@@ -1215,7 +1215,7 @@ impl CheckpointAggregator {
         Ok(())
     }
 
-    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedCheckpointMessage>> {
+    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedDWalletCheckpointMessage>> {
         let _scope = monitored_scope("CheckpointAggregator");
         let mut result = vec![];
         'outer: loop {
@@ -1284,7 +1284,7 @@ impl CheckpointAggregator {
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
                     let checkpoint_message = VerifiedCheckpointMessage::new_unchecked(
-                        CertifiedCheckpointMessage::new_from_data_and_sig(
+                        CertifiedDWalletCheckpointMessage::new_from_data_and_sig(
                             current.checkpoint_message.clone(),
                             auth_signature,
                         ),

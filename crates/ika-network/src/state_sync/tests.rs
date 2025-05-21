@@ -17,7 +17,7 @@ use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_storage::{FileCompression, StorageFormat};
 use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
 use ika_types::{
-    messages_checkpoint::CheckpointMessageDigest,
+    messages_dwallet_checkpoint::CheckpointMessageDigest,
     storage::{ReadStore, SharedInMemoryStore, WriteStore},
 };
 use prometheus::Registry;
@@ -321,7 +321,7 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
     loop {
         archive_reader.sync_manifest_once().await?;
         if let Ok(latest_available_checkpoint_in_archive) =
-            archive_reader.latest_available_checkpoint().await
+            archive_reader.latest_available_dwallet_coordinator_checkpoint().await
         {
             // We only need enough checkpoints to be in archive store for this test
             if latest_available_checkpoint_in_archive >= oldest_checkpoint_to_keep {

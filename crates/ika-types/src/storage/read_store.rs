@@ -3,10 +3,10 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::{CheckpointMessageDigest, IkaSystemCheckpointDigest};
-use crate::messages_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
-use crate::messages_ika_system_checkpoints::{
-    IkaSystemCheckpointSequenceNumber, VerifiedIkaSystemCheckpoint,
+use crate::digests::{CheckpointMessageDigest, SystemCheckpointDigest};
+use crate::messages_dwallet_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::messages_system_checkpoints::{
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
 use std::sync::Arc;
 
@@ -70,36 +70,32 @@ pub trait ReadStore {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>>;
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint>;
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint>;
 
     fn get_latest_ika_system_checkpoint_sequence_number(
         &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    ) -> Result<SystemCheckpointSequenceNumber> {
         let latest_ika_system_checkpoint = self.get_latest_ika_system_checkpoint()?;
         Ok(*latest_ika_system_checkpoint.sequence_number())
     }
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+    ) -> Result<Option<VerifiedSystemCheckpoint>>;
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber>;
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber>;
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>>;
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>>;
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -145,40 +141,36 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         (*self).get_latest_ika_system_checkpoint()
     }
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (*self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (*self).get_highest_synced_ika_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         (*self).get_lowest_available_ika_system_checkpoint()
     }
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (*self).get_ika_system_checkpoint_by_digest(digest)
     }
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
-        (*self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        (*self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -225,40 +217,36 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         (**self).get_latest_ika_system_checkpoint()
     }
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_synced_ika_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         (**self).get_lowest_available_ika_system_checkpoint()
     }
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_ika_system_checkpoint_by_digest(digest)
     }
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
-        (**self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
 
@@ -305,39 +293,35 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedIkaSystemCheckpoint> {
+    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         (**self).get_latest_ika_system_checkpoint()
     }
 
     fn get_highest_verified_ika_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_verified_ika_system_checkpoint()
     }
 
-    fn get_highest_synced_ika_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_synced_ika_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(
-        &self,
-    ) -> Result<IkaSystemCheckpointSequenceNumber> {
+    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         (**self).get_lowest_available_ika_system_checkpoint()
     }
 
     fn get_ika_system_checkpoint_by_digest(
         &self,
-        digest: &IkaSystemCheckpointDigest,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_ika_system_checkpoint_by_digest(digest)
     }
 
-    fn get_ika_system_checkpoint_by_sequence_number(
+    fn get_system_checkpoint_by_sequence_number(
         &self,
-        sequence_number: IkaSystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedIkaSystemCheckpoint>> {
-        (**self).get_ika_system_checkpoint_by_sequence_number(sequence_number)
+        sequence_number: SystemCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }

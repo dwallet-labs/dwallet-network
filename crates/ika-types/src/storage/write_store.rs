@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use super::error::Result;
 use crate::committee::Committee;
-use crate::messages_checkpoint::VerifiedCheckpointMessage;
-use crate::messages_ika_system_checkpoints::VerifiedIkaSystemCheckpoint;
+use crate::messages_dwallet_checkpoint::VerifiedCheckpointMessage;
+use crate::messages_system_checkpoints::VerifiedSystemCheckpoint;
 use crate::storage::ReadStore;
 
 pub trait WriteStore: ReadStore {
@@ -20,17 +20,17 @@ pub trait WriteStore: ReadStore {
         checkpoint: &VerifiedCheckpointMessage,
     ) -> Result<()>;
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()>;
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()>;
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()>;
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()>;
@@ -55,25 +55,25 @@ impl<T: WriteStore + ?Sized> WriteStore for &T {
         (*self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (*self).insert_ika_system_checkpoint(ika_system_checkpoint)
+        (*self).insert_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (*self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
+        (*self).update_highest_synced_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (*self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
+        (*self).update_highest_verified_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {
@@ -100,25 +100,25 @@ impl<T: WriteStore + ?Sized> WriteStore for Box<T> {
         (**self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).insert_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).insert_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).update_highest_synced_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).update_highest_verified_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {
@@ -145,25 +145,25 @@ impl<T: WriteStore + ?Sized> WriteStore for Arc<T> {
         (**self).update_highest_verified_checkpoint(checkpoint)
     }
 
-    fn insert_ika_system_checkpoint(
+    fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).insert_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).insert_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_synced_ika_system_checkpoint(
+    fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_synced_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).update_highest_synced_system_checkpoint(ika_system_checkpoint)
     }
 
-    fn update_highest_verified_ika_system_checkpoint(
+    fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedIkaSystemCheckpoint,
+        ika_system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        (**self).update_highest_verified_ika_system_checkpoint(ika_system_checkpoint)
+        (**self).update_highest_verified_system_checkpoint(ika_system_checkpoint)
     }
 
     fn insert_committee(&self, new_committee: Committee) -> Result<()> {

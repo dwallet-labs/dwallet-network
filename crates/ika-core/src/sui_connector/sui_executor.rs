@@ -4,7 +4,7 @@
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
-use crate::ika_system_checkpoints::IkaSystemCheckpointStore;
+use crate::ika_system_checkpoints::SystemCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
@@ -16,9 +16,9 @@ use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
-use ika_types::messages_checkpoint::CheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::CheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
-use ika_types::messages_ika_system_checkpoints::IkaSystemCheckpoint;
+use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::{BlsCommittee, DWalletCoordinatorInnerV1};
 use ika_types::sui::{
@@ -54,7 +54,7 @@ pub enum StopReason {
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
     checkpoint_store: Arc<CheckpointStore>,
-    ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+    ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
@@ -73,7 +73,7 @@ where
     pub fn new(
         ika_system_package_id: ObjectID,
         checkpoint_store: Arc<CheckpointStore>,
-        ika_system_checkpoint_store: Arc<IkaSystemCheckpointStore>,
+        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,
         metrics: Arc<SuiConnectorMetrics>,
@@ -360,7 +360,7 @@ where
 
                 if let Ok(Some(ika_system_checkpoint)) = self
                     .ika_system_checkpoint_store
-                    .get_ika_system_checkpoint_by_sequence_number(
+                    .get_system_checkpoint_by_sequence_number(
                         next_ika_system_checkpoint_sequence_number,
                     )
                 {
@@ -375,7 +375,7 @@ where
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message = bcs::to_bytes::<IkaSystemCheckpoint>(
+                        let message = bcs::to_bytes::<SystemCheckpoint>(
                             &ika_system_checkpoint.into_message(),
                         )
                         .expect("Serializing ika_system_checkpoint message cannot fail");
