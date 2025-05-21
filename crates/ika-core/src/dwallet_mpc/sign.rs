@@ -3,9 +3,7 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{CentralizedSignOutputVersion, DWalletDKGSecondOutputVersion, MPCPublicInput, MPCPublicOutput, PresignOutputVersion, SerializedWrappedMPCPublicOutput};
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
@@ -59,12 +57,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
-            MPCPublicOutput::V1(output) => {
+            DWalletDKGSecondOutputVersion::V1(output) => {
                 let presign = match presign {
-                    MPCPublicOutput::V1(output) => output,
+                    PresignOutputVersion::V1(output) => output,
                 };
                 let centralized_signed_message = match centralized_signed_message {
-                    MPCPublicOutput::V1(output) => output,
+                    CentralizedSignOutputVersion::V1(output) => output,
                 };
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
