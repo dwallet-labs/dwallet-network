@@ -1,6 +1,9 @@
 use anyhow::anyhow;
 use class_groups::Secp256k1EncryptionKey;
-use dwallet_mpc_types::dwallet_mpc::{DWalletDKGSecondOutputVersion, ImportedSecretShareVersions, MPCPublicOutput, SerializedWrappedMPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletDKGSecondOutputVersion, ImportedSecretShareVersions, MPCPublicOutput,
+    SerializedWrappedMPCPublicOutput,
+};
 use group::{CyclicGroupElement, GroupElement};
 use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, PlaintextSpaceGroupElement};
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
