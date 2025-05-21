@@ -26,7 +26,7 @@ pub(crate) fn verify_encrypted_share(
         &verification_data.encryption_key,
         protocol_public_parameters,
     )
-        .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
+    .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
 /// Verifies that the given centralized secret key share
