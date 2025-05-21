@@ -54,7 +54,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         current_committee: &Committee,
         upcoming_committee: Committee,
         decryption_key_share_public_parameters: Vec<u8>,
-        network_dkg_public_output: MPCPublicOutput,
+        network_dkg_public_output: SecpNetworkDkgOutputVersion,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let network_dkg_public_output = match network_dkg_public_output {
             MPCPublicOutput::V1(output) => output,
