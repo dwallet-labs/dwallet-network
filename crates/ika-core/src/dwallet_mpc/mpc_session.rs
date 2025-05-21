@@ -37,7 +37,13 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::MessageKind::DWalletImportedKeyVerificationOutput;
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{AdvanceResult, DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion, DWalletImportedKeyVerificationRequestEventOutputVersion, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport, PresignOutputVersion, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType, ThresholdNotReachedReport};
+use ika_types::messages_dwallet_mpc::{
+    AdvanceResult, DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion,
+    DWalletImportedKeyVerificationRequestEventOutputVersion, DWalletMPCMessage,
+    EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport,
+    PresignOutputVersion, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType,
+    ThresholdNotReachedReport,
+};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -423,15 +429,12 @@ impl DWalletMPCSession {
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
-                           public_output,
-                           malicious_parties,
-                           private_output,
-                       }) => {
-                        let public_output = bcs::to_bytes(
-                            &DWalletDKGFirstOutputVersion::V1(
-                                public_output,
-                            ),
-                        )?;
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output =
+                            bcs::to_bytes(&DWalletDKGFirstOutputVersion::V1(public_output))?;
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
@@ -478,15 +481,12 @@ impl DWalletMPCSession {
                 }
                 match result.clone() {
                     AsynchronousRoundResult::Finalize {
-                           public_output,
-                           malicious_parties,
-                           private_output,
-                       } => {
-                        let public_output = bcs::to_bytes(
-                            &DWalletDKGSecondOutputVersion::V1(
-                                public_output,
-                            ),
-                        )?;
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    } => {
+                        let public_output =
+                            bcs::to_bytes(&DWalletDKGSecondOutputVersion::V1(public_output))?;
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
@@ -508,15 +508,12 @@ impl DWalletMPCSession {
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
-                           public_output,
-                           malicious_parties,
-                           private_output,
-                       }) => {
-                        let public_output = bcs::to_bytes(
-                            &PresignOutputVersion::V1(
-                                public_output,
-                            ),
-                        )?;
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output =
+                            bcs::to_bytes(&PresignOutputVersion::V1(public_output))?;
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
@@ -538,10 +535,10 @@ impl DWalletMPCSession {
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
-                           public_output,
-                           malicious_parties,
-                           private_output,
-                       }) => {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
                         let public_output = bcs::to_bytes(
                             &DWalletImportedKeyVerificationRequestEventOutputVersion::V1(
                                 public_output,
