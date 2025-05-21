@@ -94,7 +94,7 @@ pub struct DWalletImportedKeyVerificationOutput {
 
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
-#[derive(PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     DwalletDKGSecondRoundOutput(DKGSecondRoundOutput),
@@ -136,52 +136,6 @@ impl MessageKind {
 }
 
 impl Display for MessageKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut writer = String::new();
-        match &self {
-            MessageKind::DwalletMPCNetworkDKGOutput(output) => {
-                writeln!(
-                    writer,
-                    "MessageKind : DwalletMPCNetworkDKGOutput {:?}",
-                    output
-                )?;
-            }
-            MessageKind::DwalletDKGFirstRoundOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletDKGFirstRoundOutput")?;
-            }
-            MessageKind::DwalletDKGSecondRoundOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletDKGSecondRoundOutput")?;
-            }
-            MessageKind::DwalletPresign(_) => {
-                writeln!(writer, "MessageKind : DwalletPresign")?;
-            }
-            MessageKind::DwalletSign(_) => {
-                writeln!(writer, "MessageKind : DwalletSign")?;
-            }
-            MessageKind::DwalletEncryptedUserShare(_) => {
-                writeln!(writer, "MessageKind : DwalletEncryptedUserShare")?;
-            }
-            MessageKind::DwalletPartialSignatureVerificationOutput(_) => {
-                writeln!(
-                    writer,
-                    "MessageKind : DwalletPartialSignatureVerificationOutput"
-                )?;
-            }
-            MessageKind::DwalletMPCNetworkReshareOutput(_) => {
-                writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
-            }
-            MessageKind::MakeDWalletUserSecretKeySharesPublic(_) => {
-                writeln!(writer, "MessageKind : MakeDWalletUserSecretKeySharesPublic")?;
-            }
-            MessageKind::DWalletImportedKeyVerificationOutput(_) => {
-                writeln!(writer, "MessageKind : DWalletImportedKeyVerificationOutput")?;
-            }
-        }
-        write!(f, "{}", writer)
-    }
-}
-
-impl Debug for MessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {

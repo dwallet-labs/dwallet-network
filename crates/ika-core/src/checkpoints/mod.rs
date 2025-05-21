@@ -1220,26 +1220,6 @@ impl CheckpointAggregator {
         let mut result = vec![];
         'outer: loop {
             let next_to_certify = self.next_checkpoint_to_certify();
-            let checkpoints_committee = self.current.as_ref().map(|current| {
-                (
-                    current.checkpoint_message.messages.clone(),
-                    current.checkpoint_message.sequence_number,
-                    current
-                        .signatures_by_digest
-                        .clone()
-                        .get_all_unique_values()
-                        .into_iter()
-                        .map(|(k, (_, v))| (k, v))
-                        .collect_vec(),
-                    current.signatures_by_digest.clone().unique_key_count(),
-                    current.signatures_by_digest.clone().total_votes(),
-                )
-            });
-            info!(
-                next_to_certify=?next_to_certify,
-                current=?checkpoints_committee,
-                "Checkpoint Agg run inner",
-            );
             let current = if let Some(current) = &mut self.current {
                 // It's possible that the checkpoint was already certified by
                 // the rest of the network, and we've already received the

@@ -18,7 +18,7 @@ use tracing::warn;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
 /// STRENGTH indicates whether we want a strong quorum (2f+1) or a weak quorum (f+1).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StakeAggregator<S, const STRENGTH: bool> {
     data: HashMap<AuthorityName, S>,
     total_votes: StakeUnit,
@@ -222,7 +222,7 @@ impl<CertT> InsertResult<CertT> {
 /// potentially multiple different values (usually due to byzantine/corrupted responses). Each
 /// value is tracked using a StakeAggregator and determine whether it has reached a quorum.
 /// Once quorum is reached, the aggregated signature is returned.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct MultiStakeAggregator<K, V, const STRENGTH: bool> {
     committee: Arc<Committee>,
     stake_maps: HashMap<K, (V, StakeAggregator<AuthoritySignInfo, STRENGTH>)>,

@@ -1737,7 +1737,7 @@ impl AuthorityPerEpochStore {
                 }
                 match key_scheme {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                        let slices = Self::slice_network_dkg_public_output_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
                         );
@@ -1763,7 +1763,7 @@ impl AuthorityPerEpochStore {
                     );
                     return Ok(ConsensusCertificateResult::Ignored);
                 }
-                let slices = Self::slice_network_decryption_key_public_output_into_messages(
+                let slices = Self::slice_network_dkg_public_output_into_messages(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                     output,
                 );
@@ -1817,7 +1817,7 @@ impl AuthorityPerEpochStore {
 
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_decryption_key_public_output_into_messages(
+    fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
     ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
