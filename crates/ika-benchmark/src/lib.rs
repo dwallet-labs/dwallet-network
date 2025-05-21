@@ -26,7 +26,7 @@ use ika_types::gas::GasCostSummary;
 use ika_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use ika_types::quorum_driver_types::EffectsFinalityInfo;
 use ika_types::quorum_driver_types::FinalizedEffects;
-use ika_types::sui::ika_system_state_summary::SystemStateSummary;
+use ika_types::sui::system_state_summary::SystemStateSummary;
 use ika_types::transaction::Argument;
 use ika_types::transaction::CallArg;
 use ika_types::transaction::ObjectArg;
@@ -40,7 +40,7 @@ use ika_types::{base_types::ObjectRef, crypto::AuthorityStrongQuorumSignInfo, ob
 use ika_types::{base_types::SequenceNumber, gas_coin::GasCoin};
 use ika_types::{
     base_types::{AuthorityName, IkaAddress},
-    ika_system_state::SystemStateTrait,
+    system_state::SystemStateTrait,
 };
 use tokio::time::sleep;
 use tracing::{error, info, warn};
@@ -320,7 +320,7 @@ impl ValidatorProxy for LocalValidatorAggregatorProxy {
         Ok(auth_agg
             .get_latest_system_state_object_for_testing()
             .await?
-            .into_ika_system_state_summary())
+            .into_system_state_summary())
     }
 
     async fn execute_transaction_block(&self, tx: Transaction) -> anyhow::Result<ExecutionEffects> {

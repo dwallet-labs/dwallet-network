@@ -279,10 +279,10 @@ where
                 .map(|s| s + 1)
                 .unwrap_or(0);
 
-            let last_processed_ika_system_checkpoint_sequence_number: Option<u64> =
-                system_state_inner.last_processed_ika_system_checkpoint_sequence_number();
-            let next_ika_system_checkpoint_sequence_number =
-                last_processed_ika_system_checkpoint_sequence_number
+            let last_processed_system_checkpoint_sequence_number: Option<u64> =
+                system_state_inner.last_processed_system_checkpoint_sequence_number();
+            let next_system_checkpoint_sequence_number =
+                last_processed_system_checkpoint_sequence_number
                     .map(|s| s + 1)
                     .unwrap_or(0);
 
@@ -351,10 +351,10 @@ where
                     }
                 }
 
-                if let Ok(Some(ika_system_checkpoint)) = self
+                if let Ok(Some(system_checkpoint)) = self
                     .system_checkpoint_store
                     .get_system_checkpoint_by_sequence_number(
-                        next_ika_system_checkpoint_sequence_number,
+                        next_system_checkpoint_sequence_number,
                     )
                 {
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
@@ -362,18 +362,18 @@ where
                     {
                         let active_members: BlsCommittee =
                             system_state_inner.validator_set().clone().active_committee;
-                        let auth_sig = ika_system_checkpoint.auth_sig();
+                        let auth_sig = system_checkpoint.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message = bcs::to_bytes::<SystemCheckpoint>(
-                            &ika_system_checkpoint.into_message(),
+                            &system_checkpoint.into_message(),
                         )
-                        .expect("Serializing ika_system_checkpoint message cannot fail");
+                        .expect("Serializing system_checkpoint message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
 
-                        let task = Self::handle_ika_system_checkpoint_execution_task(
+                        let task = Self::handle_system_checkpoint_execution_task(
                             self.ika_system_package_id,
                             signature,
                             signers_bitmap,
@@ -386,11 +386,11 @@ where
                         match task {
                             Ok(_) => {
                                 last_submitted_system_checkpoint =
-                                    Some(next_ika_system_checkpoint_sequence_number);
-                                info!("Sui transaction successfully executed for ika_system_checkpoint sequence number: {}", next_ika_system_checkpoint_sequence_number);
+                                    Some(next_system_checkpoint_sequence_number);
+                                info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
                             }
                             Err(err) => {
-                                error!("Sui transaction execution failed for ika_system_checkpoint sequence number: {}, error: {}", next_ika_system_checkpoint_sequence_number, err);
+                                error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
                             }
                         };
                     }
@@ -690,7 +690,7 @@ where
         Ok(())
     }
 
-    async fn handle_ika_system_checkpoint_execution_task(
+    async fn handle_system_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
@@ -756,7 +756,7 @@ where
         ptb.move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
-            ident_str!("process_ika_system_checkpoint_by_quorum").into(),
+            ident_str!("process_system_checkpoint_by_quorum").into(),
             vec![],
             args,
         )

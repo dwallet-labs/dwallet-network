@@ -13,7 +13,7 @@ use sui_types::coin::TreasuryCap;
 use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
 use sui_types::id::ID;
 
-/// Rust version of the Move ika::ika_system::SystemParameters type
+/// Rust version of the Move ika::system::SystemParameters type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemParametersV1 {
     /// The duration of an epoch, in milliseconds.
@@ -49,7 +49,7 @@ pub struct BlsCommittee {
 
 pub type ObjectTable = Table;
 
-/// Rust version of the Move ika_system::validator_set::ValidatorSet type
+/// Rust version of the Move system::validator_set::ValidatorSet type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
@@ -71,7 +71,7 @@ pub struct UpgradeCap {
     pub policy: u8,
 }
 
-/// Rust version of the Move ika::ika_system::SystemInner type
+/// Rust version of the Move ika::system::SystemInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemInnerV1 {
     pub epoch: u64,
@@ -86,8 +86,8 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_secp256k1_network_decryption_keys: Vec<DWalletNetworkDecryptionKeyCap>,
-    pub last_processed_ika_system_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
+    pub last_processed_system_checkpoint_sequence_number: Option<u64>,
+    pub previous_epoch_last_system_checkpoint_sequence_number: u64,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -176,12 +176,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.next_protocol_version
     }
 
-    fn last_processed_ika_system_checkpoint_sequence_number(&self) -> Option<u64> {
-        self.last_processed_ika_system_checkpoint_sequence_number
+    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64> {
+        self.last_processed_system_checkpoint_sequence_number
     }
 
-    fn previous_epoch_last_ika_system_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_ika_system_checkpoint_sequence_number
+    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64 {
+        self.previous_epoch_last_system_checkpoint_sequence_number
     }
 
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {
@@ -242,21 +242,21 @@ impl SystemInnerTrait for SystemInnerV1 {
     }
 }
 
-/// Rust version of the Move ika_system::validator_cap::ValidatorCap type
+/// Rust version of the Move system::validator_cap::ValidatorCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorCapV1 {
     pub id: ObjectID,
     pub validator_id: ObjectID,
 }
 
-/// Rust version of the Move ika_system::validator_cap::ValidatorOperationCap type
+/// Rust version of the Move system::validator_cap::ValidatorOperationCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorOperationCapV1 {
     pub id: ObjectID,
     pub validator_id: ObjectID,
 }
 
-/// Rust version of the Move ika_system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap type
+/// Rust version of the Move system::dwallet_2pc_mpc_secp256k1_inner::DWalletNetworkDecryptionKeyCap type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletNetworkDecryptionKeyCap {
     pub id: ObjectID,

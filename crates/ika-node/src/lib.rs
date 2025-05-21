@@ -302,7 +302,7 @@ impl IkaNode {
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_ika_system_checkpoint_sequence_number =
-            latest_system_state.previous_epoch_last_ika_system_checkpoint_sequence_number();
+            latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
             .await;
@@ -1181,7 +1181,7 @@ impl IkaNode {
 
             let system_inner = sui_client.must_get_system_inner_object().await;
             let previous_epoch_last_ika_system_checkpoint_sequence_number =
-                system_inner.previous_epoch_last_ika_system_checkpoint_sequence_number();
+                system_inner.previous_epoch_last_system_checkpoint_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();

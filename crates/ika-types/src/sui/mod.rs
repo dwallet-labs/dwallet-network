@@ -86,7 +86,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_SHALLOW_V2: u64 = 18446744073709551606; // u
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64::MAX - 8
 
-/// Rust version of the Move ika::ika_system::SystemState type
+/// Rust version of the Move ika::system::SystemState type
 /// In Rust, this type should rarely be used since it's just a thin
 /// wrapper used to access the inner object.
 /// Within this module, we use it to determine the current version of the system state inner object type,
@@ -110,17 +110,17 @@ pub struct DWalletCoordinator {
 }
 
 impl System {
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: ika_system_package_address,
+            address: system_package_address,
             name: SYSTEM_STRUCT_NAME.to_owned(),
             module: SYSTEM_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 
-    pub fn type_tag(ika_system_package_address: AccountAddress) -> TypeTag {
-        TypeTag::Struct(Box::new(Self::type_(ika_system_package_address)))
+    pub fn type_tag(system_package_address: AccountAddress) -> TypeTag {
+        TypeTag::Struct(Box::new(Self::type_(system_package_address)))
     }
 }
 
@@ -130,8 +130,8 @@ pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
     fn protocol_version(&self) -> u64;
     fn next_protocol_version(&self) -> Option<u64>;
-    fn last_processed_ika_system_checkpoint_sequence_number(&self) -> Option<u64>;
-    fn previous_epoch_last_ika_system_checkpoint_sequence_number(&self) -> u64;
+    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64>;
+    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
@@ -198,9 +198,9 @@ pub struct ClassGroupsPublicKeyAndProofBuilder;
 
 impl ClassGroupsPublicKeyAndProofBuilder {
     /// Return the Move struct tag for this type
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: ika_system_package_address,
+            address: system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
             module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
@@ -217,9 +217,9 @@ pub struct ClassGroupsPublicKeyAndProof {
 
 impl ClassGroupsPublicKeyAndProof {
     /// Return the Move struct tag for this type
-    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: ika_system_package_address,
+            address: system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
             module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
