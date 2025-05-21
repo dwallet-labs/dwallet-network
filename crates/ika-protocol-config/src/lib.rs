@@ -111,10 +111,12 @@ struct FeatureFlags {
     // new_protocol_feature: bool,
 }
 
+#[allow(unused)]
 fn is_false(b: &bool) -> bool {
     !b
 }
 
+#[allow(unused)]
 fn is_empty(b: &BTreeSet<String>) -> bool {
     b.is_empty()
 }
@@ -340,7 +342,7 @@ impl ProtocolConfig {
         ProtocolConfig::get_for_version(ProtocolVersion::MAX, Chain::Unknown)
     }
 
-    fn get_for_version_impl(version: ProtocolVersion, chain: Chain) -> Self {
+    fn get_for_version_impl(version: ProtocolVersion, _chain: Chain) -> Self {
         #[cfg(msim)]
         {
             // populate the fake simulator version # with a different base tx cost.
@@ -353,7 +355,7 @@ impl ProtocolConfig {
 
         // IMPORTANT: Never modify the value of any constant for a pre-existing protocol version.
         // To change the values here you must create a new protocol version with the new values!
-        let mut cfg = Self {
+        let cfg = Self {
             // will be overwritten before being returned
             version,
 

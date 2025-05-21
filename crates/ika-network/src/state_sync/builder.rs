@@ -135,7 +135,7 @@ where
         let (checkpoint_event_sender, _receiver) =
             broadcast::channel(config.synced_checkpoint_broadcast_channel_capacity());
         let (ika_system_checkpoint_event_sender, _receiver) =
-            broadcast::channel(config.synced_ika_system_checkpoint_broadcast_channel_capacity());
+            broadcast::channel(config.synced_system_checkpoint_broadcast_channel_capacity());
         let weak_sender = sender.downgrade();
         let handle = Handle {
             sender,

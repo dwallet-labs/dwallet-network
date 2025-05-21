@@ -199,7 +199,7 @@ use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_system_checkpoints::{
-    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint, SystemCheckpoint,
+    SystemCheckpointSignatureMessage, SignedSystemCheckpoint, SystemCheckpoint,
     SystemCheckpointKind,
 };
 #[cfg(msim)]

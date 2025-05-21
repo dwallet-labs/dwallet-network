@@ -40,9 +40,9 @@ pub enum SystemCheckpointKind {
 pub struct SystemCheckpoint {
     pub epoch: EpochId,
     pub sequence_number: SystemCheckpointSequenceNumber,
-    /// Timestamp of the ika_system_checkpoint - number of milliseconds from the Unix epoch
-    /// IkaSystemCheckpoint timestamps are monotonic, but not strongly monotonic - subsequent
-    /// ika_system_checkpoints can have same timestamp if they originate from the same underlining consensus commit
+    /// Timestamp of the system checkpoint - number of milliseconds from the Unix epoch
+    /// System checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
+    /// system checkpoints can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: SystemCheckpointTimestamp,
     pub messages: Vec<SystemCheckpointKind>,
 }
@@ -90,7 +90,7 @@ impl SystemCheckpoint {
         UNIX_EPOCH + Duration::from_millis(self.timestamp_ms)
     }
 
-    pub fn report_ika_system_checkpoint_age(&self, metrics: &Histogram) {
+    pub fn report_system_checkpoint_age(&self, metrics: &Histogram) {
         SystemTime::now()
             .duration_since(self.timestamp())
             .map(|latency| {
@@ -98,8 +98,8 @@ impl SystemCheckpoint {
             })
             .tap_err(|err| {
                 warn!(
-                    ika_system_checkpoint_seq = self.sequence_number,
-                    "unable to compute ika_system_checkpoint age: {}", err
+                    system_checkpoint_seq = self.sequence_number,
+                    "unable to compute system checkpoint age: {}", err
                 )
             })
             .ok();
@@ -110,27 +110,27 @@ impl Display for SystemCheckpoint {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "IkaSystemCheckpointSummary {{ epoch: {:?}, seq: {:?}",
+            "SystemCheckpointSummary {{ epoch: {:?}, seq: {:?}",
             self.epoch, self.sequence_number,
         )
     }
 }
 
-// IkaSystemCheckpoints are signed by an authority and 2f+1 form a
+// System checkpoints are signed by an authority and 2f+1 form a
 // certificate that others can use to catch up. The actual
 // content of the digest must at the very least commit to
-// the set of transactions contained in the certificate, but
+// the set of transactions contained in the certificate but
 // we might extend this to contain roots of merkle trees,
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.
 
-pub type IkaSystemCheckpointEnvelope<S> = Envelope<SystemCheckpoint, S>;
-pub type CertifiedSystemCheckpoint = IkaSystemCheckpointEnvelope<AuthorityStrongQuorumSignInfo>;
-pub type SignedIkaSystemCheckpoint = IkaSystemCheckpointEnvelope<AuthoritySignInfo>;
+pub type SystemCheckpointEnvelope<S> = Envelope<SystemCheckpoint, S>;
+pub type CertifiedSystemCheckpoint = SystemCheckpointEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type SignedSystemCheckpoint = SystemCheckpointEnvelope<AuthoritySignInfo>;
 
 pub type VerifiedSystemCheckpoint =
     VerifiedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
-pub type TrustedIkaSystemCheckpoint =
+pub type TrustedSystemCheckpoint =
     TrustedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
 
 impl CertifiedSystemCheckpoint {
@@ -148,7 +148,9 @@ impl CertifiedSystemCheckpoint {
         Ok(VerifiedSystemCheckpoint::new_from_verified(self))
     }
 
-    pub fn into_summary_and_sequence(self) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
         let summary = self.into_data();
         (summary.sequence_number, summary)
     }
@@ -158,7 +160,7 @@ impl CertifiedSystemCheckpoint {
     }
 }
 
-impl SignedIkaSystemCheckpoint {
+impl SignedSystemCheckpoint {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
@@ -183,15 +185,15 @@ impl VerifiedSystemCheckpoint {
     }
 }
 
-/// This is a message validators publish to consensus in order to sign ika_system_checkpoint
+/// This is a message validators publish to consensus in order to sign system checkpoint
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct IkaSystemCheckpointSignatureMessage {
-    pub ika_system_checkpoint: SignedIkaSystemCheckpoint,
+pub struct SystemCheckpointSignatureMessage {
+    pub system_checkpoint: SignedSystemCheckpoint,
 }
 
-impl IkaSystemCheckpointSignatureMessage {
+impl SystemCheckpointSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.ika_system_checkpoint
+        self.system_checkpoint
             .verify_authority_signatures(committee)
     }
 }

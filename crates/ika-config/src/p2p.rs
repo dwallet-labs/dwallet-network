@@ -180,35 +180,35 @@ pub struct StateSyncConfig {
     pub wait_interval_when_no_peer_to_sync_content_ms: Option<u64>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_ika_system_checkpoints:
+    pub pinned_system_checkpoints:
         Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub synced_ika_system_checkpoint_broadcast_channel_capacity: Option<usize>,
+    pub synced_system_checkpoint_broadcast_channel_capacity: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ika_system_checkpoint_header_download_concurrency: Option<usize>,
+    pub system_checkpoint_header_download_concurrency: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ika_system_checkpoint_content_download_concurrency: Option<usize>,
+    pub system_checkpoint_content_download_concurrency: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ika_system_checkpoint_content_download_tx_concurrency: Option<u64>,
+    pub system_checkpoint_content_download_tx_concurrency: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ika_system_checkpoint_content_timeout_ms: Option<u64>,
+    pub system_checkpoint_content_timeout_ms: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub push_ika_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub push_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_ika_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub get_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_ika_system_checkpoint_message_inflight_limit: Option<usize>,
+    pub get_system_checkpoint_message_inflight_limit: Option<usize>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_ika_system_checkpoint_message_per_ika_system_checkpoint_limit: Option<usize>,
+    pub get_system_checkpoint_message_per_system_checkpoint_limit: Option<usize>,
 }
 
 impl StateSyncConfig {
@@ -231,11 +231,11 @@ impl StateSyncConfig {
             .unwrap_or(SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
-    pub fn synced_ika_system_checkpoint_broadcast_channel_capacity(&self) -> usize {
-        const SYNCED_IKA_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
+    pub fn synced_system_checkpoint_broadcast_channel_capacity(&self) -> usize {
+        const SYNCED_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
 
-        self.synced_ika_system_checkpoint_broadcast_channel_capacity
-            .unwrap_or(SYNCED_IKA_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
+        self.synced_system_checkpoint_broadcast_channel_capacity
+            .unwrap_or(SYNCED_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
     pub fn checkpoint_header_download_concurrency(&self) -> usize {
@@ -245,11 +245,11 @@ impl StateSyncConfig {
             .unwrap_or(CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
     }
 
-    pub fn ika_system_checkpoint_header_download_concurrency(&self) -> usize {
-        const IKA_SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
+    pub fn system_checkpoint_header_download_concurrency(&self) -> usize {
+        const SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
 
-        self.ika_system_checkpoint_header_download_concurrency
-            .unwrap_or(IKA_SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
+        self.system_checkpoint_header_download_concurrency
+            .unwrap_or(SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
     }
 
     pub fn checkpoint_content_download_concurrency(&self) -> usize {

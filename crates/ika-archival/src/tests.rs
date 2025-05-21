@@ -203,7 +203,7 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_dwallet_coordinator_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,
@@ -262,7 +262,7 @@ async fn test_verify_archive_with_oneshot_store() -> Result<(), anyhow::Error> {
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_dwallet_coordinator_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,
@@ -308,7 +308,7 @@ async fn test_verify_archive_with_oneshot_store_bad_data() -> Result<(), anyhow:
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_dwallet_coordinator_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,

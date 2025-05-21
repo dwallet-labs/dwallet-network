@@ -496,7 +496,7 @@ where
         info!("State-Synchronizer started");
 
         self.config.pinned_checkpoints.sort();
-        self.config.pinned_ika_system_checkpoints.sort();
+        self.config.pinned_system_checkpoints.sort();
 
         let mut interval = tokio::time::interval(self.config.interval_period());
         let mut peer_events = {
@@ -869,9 +869,9 @@ where
                 self.store.clone(),
                 self.peer_heights.clone(),
                 self.metrics.clone(),
-                self.config.pinned_ika_system_checkpoints.clone(),
+                self.config.pinned_system_checkpoints.clone(),
                 self.config
-                    .ika_system_checkpoint_header_download_concurrency(),
+                    .system_checkpoint_header_download_concurrency(),
                 self.config.timeout(),
                 // The if condition should ensure that this is Some
                 highest_known_ika_system_checkpoint.unwrap(),
@@ -1569,7 +1569,7 @@ where
             metrics.system_checkpoint_summary_age_metrics()
         {
             ika_system_checkpoint
-                .report_ika_system_checkpoint_age(ika_system_checkpoint_summary_age_metric);
+                .report_system_checkpoint_age(ika_system_checkpoint_summary_age_metric);
         }
 
         current = Some(ika_system_checkpoint.clone());

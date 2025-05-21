@@ -27,11 +27,11 @@ const SHA256: u8 = 1;
 
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
-public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
+public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletInner) {
     self.locked_last_session_to_complete_in_current_epoch = true;
 }
 
-public struct DWalletCoordinatorInner has store {
+public struct DWalletInner has store {
     current_epoch: u64,
     sessions: ObjectTable<u64, DWalletSession>,
     session_start_events: Bag,
@@ -745,8 +745,8 @@ public(package) fun create_dwallet_coordinator_inner(
     active_committee: BlsCommittee,
     pricing: DWalletPricing2PcMpcSecp256K1,
     ctx: &mut TxContext
-): DWalletCoordinatorInner {
-    DWalletCoordinatorInner {
+): DWalletInner {
+    DWalletInner {
         current_epoch,
         sessions: object_table::new(ctx),
         session_start_events: bag::new(ctx),
@@ -1203,7 +1203,7 @@ public(package) fun request_dwallet_dkg_first_round(
 /// We do this to ensure that the last session to complete in the current epoch is equal
 /// to the desired completed sessions count.
 /// This is part of the epoch switch logic.
-fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
+fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletInner) {
     if (self.locked_last_session_to_complete_in_current_epoch) {
         return
     };
@@ -1220,13 +1220,13 @@ fun update_last_session_to_complete_in_current_epoch(self: &mut DWalletCoordinat
     self.last_session_to_complete_in_current_epoch = new_last_session_to_complete_in_current_epoch;
 }
 
-public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
+public(package) fun all_current_epoch_sessions_completed(self: &DWalletInner): bool {
     return self.locked_last_session_to_complete_in_current_epoch &&
         self.number_of_completed_sessions == self.last_session_to_complete_in_current_epoch &&
         self.completed_system_sessions_count == self.started_system_sessions_count
 }
 
-fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64) {
+fun remove_session_and_charge<E: copy + drop + store>(self: &mut DWalletInner, session_sequence_number: u64) {
     self.number_of_completed_sessions = self.number_of_completed_sessions + 1;
     self.update_last_session_to_complete_in_current_epoch();
     let session = self.sessions.remove(session_sequence_number);

@@ -5,29 +5,26 @@ use std::sync::Arc;
 
 use crate::ika_system_checkpoints::IkaSystemCheckpointServiceNotify;
 use crate::{
-    authority::{authority_per_epoch_store::AuthorityPerEpochStore, AuthorityState},
+    authority::{AuthorityState},
     checkpoints::CheckpointServiceNotify,
     consensus_adapter::ConsensusOverloadChecker,
 };
 use consensus_core::{TransactionIndex, TransactionVerifier, ValidationError};
-use fastcrypto_tbls::dkg_v1;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthoritySignInfoTrait;
 use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
 use ika_types::messages_dwallet_checkpoint::SignedCheckpointMessage;
-use ika_types::messages_system_checkpoints::SignedIkaSystemCheckpoint;
+use ika_types::messages_system_checkpoints::SignedSystemCheckpoint;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
-use mpc::Party;
 use mysten_metrics::monitored_scope;
 use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
-use sui_types::transaction::Transaction;
 use tap::TapFallible;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 /// Allows verifying the validity of transactions
 #[derive(Clone)]
@@ -83,7 +80,7 @@ impl IkaTxValidator {
                 | ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {}
                 ConsensusTransactionKind::IkaSystemCheckpointSignature(signature) => {
                     ika_system_checkpoints.push(signature.as_ref());
-                    params_batch.push(&signature.ika_system_checkpoint);
+                    params_batch.push(&signature.system_checkpoint);
                 }
             }
         }
@@ -154,7 +151,7 @@ impl IkaTxValidator {
     /// Verifies all certificates - if any fail return error.
     fn batch_verify_all_certificates_and_ika_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedIkaSystemCheckpoint],
+        checkpoints: &[&SignedSystemCheckpoint],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -167,7 +164,7 @@ impl IkaTxValidator {
 
     fn batch_verify_ika_system_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedIkaSystemCheckpoint],
+        checkpoints: &[&SignedSystemCheckpoint],
     ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
@@ -181,7 +178,7 @@ impl IkaTxValidator {
         Ok(obligation.verify_all()?)
     }
 
-    async fn vote_transactions(&self, txs: Vec<ConsensusTransactionKind>) -> Vec<TransactionIndex> {
+    async fn vote_transactions(&self, _txs: Vec<ConsensusTransactionKind>) -> Vec<TransactionIndex> {
         vec![]
         //let epoch_store = self.authority_state.load_epoch_store_one_call_per_task();
         // if !epoch_store.protocol_config().mysticeti_fastpath() {

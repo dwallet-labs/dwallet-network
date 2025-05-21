@@ -321,7 +321,7 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
     loop {
         archive_reader.sync_manifest_once().await?;
         if let Ok(latest_available_checkpoint_in_archive) =
-            archive_reader.latest_available_dwallet_coordinator_checkpoint().await
+            archive_reader.latest_available_dwallet_checkpoint().await
         {
             // We only need enough checkpoints to be in archive store for this test
             if latest_available_checkpoint_in_archive >= oldest_checkpoint_to_keep {

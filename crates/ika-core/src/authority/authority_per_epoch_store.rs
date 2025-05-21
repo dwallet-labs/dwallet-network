@@ -83,23 +83,23 @@ use ika_types::message::{
     SignOutput,
 };
 use ika_types::message_envelope::TrustedEnvelope;
-use ika_types::messages_dwallet_checkpoint::{
-    CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
-    SignedCheckpointMessage,
-};
 use ika_types::messages_consensus::{
     AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
     ConsensusTransactionKind, MovePackageDigest,
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
+use ika_types::messages_dwallet_checkpoint::{
+    CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
+    SignedCheckpointMessage,
+};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     SessionType, StartPresignFirstRoundEvent,
 };
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_system_checkpoints::{
-    IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint, SystemCheckpoint,
-    SystemCheckpointKind, SystemCheckpointSequenceNumber,
+    SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
+    SystemCheckpointSignatureMessage,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
@@ -431,7 +431,7 @@ pub struct AuthorityEpochTables {
     /// Stores pending signatures
     /// The key in this table is ika system checkpoint sequence number and an arbitrary integer
     pending_ika_system_checkpoint_signatures:
-        DBMap<(CheckpointSequenceNumber, u64), IkaSystemCheckpointSignatureMessage>,
+        DBMap<(CheckpointSequenceNumber, u64), SystemCheckpointSignatureMessage>,
 
     /// Maps sequence number to ika system checkpoint summary, used by IkaSystemCheckpointBuilder to build checkpoint within epoch
     builder_ika_system_checkpoint_v1: DBMap<CheckpointSequenceNumber, BuilderIkaSystemCheckpoint>,
@@ -566,7 +566,7 @@ impl AuthorityEpochTables {
         impl Iterator<
                 Item = (
                     (SystemCheckpointSequenceNumber, u64),
-                    IkaSystemCheckpointSignatureMessage,
+                    SystemCheckpointSignatureMessage,
                 ),
             > + '_,
     > {
@@ -1229,11 +1229,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::IkaSystemCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority() != data.ika_system_checkpoint.auth_sig().authority
-                {
+                if transaction.sender_authority() != data.system_checkpoint.auth_sig().authority {
                     warn!(
                         "IkaSystemCheckpoint authority {} does not match its author from consensus {}",
-                        data.ika_system_checkpoint.auth_sig().authority,
+                        data.system_checkpoint.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -2258,7 +2257,7 @@ impl AuthorityPerEpochStore {
         &self,
         ika_system_checkpoint_seq: SystemCheckpointSequenceNumber,
         index: u64,
-        info: &IkaSystemCheckpointSignatureMessage,
+        info: &SystemCheckpointSignatureMessage,
     ) -> IkaResult<()> {
         Ok(self
             .tables()?

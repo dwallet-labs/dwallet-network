@@ -8,7 +8,7 @@ use crate::messages_dwallet_mpc::{
     ThresholdNotReachedReport,
 };
 use crate::messages_system_checkpoints::{
-    IkaSystemCheckpointSignatureMessage, SystemCheckpointSequenceNumber,
+    SystemCheckpointSignatureMessage, SystemCheckpointSequenceNumber,
 };
 use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
@@ -169,7 +169,7 @@ pub enum ConsensusTransactionKind {
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    IkaSystemCheckpointSignature(Box<IkaSystemCheckpointSignatureMessage>),
+    IkaSystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -250,10 +250,10 @@ impl ConsensusTransaction {
     }
 
     pub fn new_ika_system_checkpoint_signature_message(
-        data: IkaSystemCheckpointSignatureMessage,
+        data: SystemCheckpointSignatureMessage,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.ika_system_checkpoint
+        data.system_checkpoint
             .auth_sig()
             .signature
             .hash(&mut hasher);
@@ -316,8 +316,8 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::IkaSystemCheckpointSignature(data) => {
                 ConsensusTransactionKey::IkaSystemCheckpointSignature(
-                    data.ika_system_checkpoint.auth_sig().authority,
-                    data.ika_system_checkpoint.sequence_number,
+                    data.system_checkpoint.auth_sig().authority,
+                    data.system_checkpoint.sequence_number,
                 )
             }
         }

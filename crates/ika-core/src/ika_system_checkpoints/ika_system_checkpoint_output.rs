@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{IkaSystemCheckpointMetrics, SystemCheckpointStore};
+use super::{SystemCheckpointMetrics, SystemCheckpointStore};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
@@ -11,41 +11,41 @@ use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, IkaSystemCheckpointSignatureMessage, SignedIkaSystemCheckpoint,
+    CertifiedSystemCheckpoint, SystemCheckpointSignatureMessage, SignedSystemCheckpoint,
     SystemCheckpoint, VerifiedSystemCheckpoint,
 };
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
 #[async_trait]
-pub trait IkaSystemCheckpointOutput: Sync + Send + 'static {
-    async fn ika_system_checkpoint_created(
+pub trait SystemCheckpointOutput: Sync + Send + 'static {
+    async fn system_checkpoint_created(
         &self,
         summary: &SystemCheckpoint,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        ika_system_checkpoint_store: &Arc<SystemCheckpointStore>,
+        system_checkpoint_store: &Arc<SystemCheckpointStore>,
     ) -> IkaResult;
 }
 
 #[async_trait]
 pub trait CertifiedSystemCheckpointOutput: Sync + Send + 'static {
-    async fn certified_ika_system_checkpoint_created(
+    async fn certified_system_checkpoint_created(
         &self,
         summary: &CertifiedSystemCheckpoint,
     ) -> IkaResult;
 }
 
-pub struct SubmitIkaSystemCheckpointToConsensus<T> {
+pub struct SubmitSystemCheckpointToConsensus<T> {
     pub sender: T,
     pub signer: StableSyncAuthoritySigner,
     pub authority: AuthorityName,
-    pub metrics: Arc<IkaSystemCheckpointMetrics>,
+    pub metrics: Arc<SystemCheckpointMetrics>,
 }
 
-pub struct LogIkaSystemCheckpointOutput;
+pub struct LogSystemCheckpointOutput;
 
-impl LogIkaSystemCheckpointOutput {
-    pub fn boxed() -> Box<dyn IkaSystemCheckpointOutput> {
+impl LogSystemCheckpointOutput {
+    pub fn boxed() -> Box<dyn SystemCheckpointOutput> {
         Box::new(Self)
     }
 
@@ -55,66 +55,66 @@ impl LogIkaSystemCheckpointOutput {
 }
 
 #[async_trait]
-impl<T: SubmitToConsensus> IkaSystemCheckpointOutput for SubmitIkaSystemCheckpointToConsensus<T> {
+impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToConsensus<T> {
     #[instrument(level = "debug", skip_all)]
-    async fn ika_system_checkpoint_created(
+    async fn system_checkpoint_created(
         &self,
-        ika_system_checkpoint: &SystemCheckpoint,
+        system_checkpoint: &SystemCheckpoint,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        ika_system_checkpoint_store: &Arc<SystemCheckpointStore>,
+        system_checkpoint_store: &Arc<SystemCheckpointStore>,
     ) -> IkaResult {
-        LogIkaSystemCheckpointOutput
-            .ika_system_checkpoint_created(
-                ika_system_checkpoint,
+        LogSystemCheckpointOutput
+            .system_checkpoint_created(
+                system_checkpoint,
                 epoch_store,
-                ika_system_checkpoint_store,
+                system_checkpoint_store,
             )
             .await?;
 
-        let ika_system_checkpoint_timestamp = ika_system_checkpoint.timestamp_ms;
-        let ika_system_checkpoint_seq = ika_system_checkpoint.sequence_number;
-        self.metrics.ika_system_checkpoint_creation_latency.observe(
-            ika_system_checkpoint
+        let system_checkpoint_timestamp = system_checkpoint.timestamp_ms;
+        let system_checkpoint_seq = system_checkpoint.sequence_number;
+        self.metrics.system_checkpoint_creation_latency.observe(
+            system_checkpoint
                 .timestamp()
                 .elapsed()
                 .unwrap_or_default()
                 .as_secs_f64(),
         );
 
-        let highest_verified_ika_system_checkpoint = ika_system_checkpoint_store
-            .get_highest_verified_ika_system_checkpoint()?
+        let highest_verified_system_checkpoint = system_checkpoint_store
+            .get_highest_verified_system_checkpoint()?
             .map(|x| *x.sequence_number());
 
-        if Some(ika_system_checkpoint_seq) > highest_verified_ika_system_checkpoint {
+        if Some(system_checkpoint_seq) > highest_verified_system_checkpoint {
             debug!(
-                "Sending ika_system_checkpoint signature at sequence {ika_system_checkpoint_seq} to consensus, timestamp {ika_system_checkpoint_timestamp}."
+                "Sending system_checkpoint signature at sequence {system_checkpoint_seq} to consensus, timestamp {system_checkpoint_timestamp}."
             );
 
-            let summary = SignedIkaSystemCheckpoint::new(
+            let summary = SignedSystemCheckpoint::new(
                 epoch_store.epoch(),
-                ika_system_checkpoint.clone(),
+                system_checkpoint.clone(),
                 &*self.signer,
                 self.authority,
             );
 
-            let message = IkaSystemCheckpointSignatureMessage {
-                ika_system_checkpoint: summary,
+            let message = SystemCheckpointSignatureMessage {
+                system_checkpoint: summary,
             };
             let transaction =
-                ConsensusTransaction::new_ika_system_checkpoint_signature_message(message);
+                ConsensusTransaction::new_system_checkpoint_signature_message(message);
             self.sender
                 .submit_to_consensus(&vec![transaction], epoch_store)
                 .await?;
             self.metrics
-                .last_sent_ika_system_checkpoint_signature
-                .set(ika_system_checkpoint_seq as i64);
+                .last_sent_system_checkpoint_signature
+                .set(system_checkpoint_seq as i64);
         } else {
             debug!(
-                "IkaSystemCheckpoint at sequence {ika_system_checkpoint_seq} is already certified, skipping signature submission to consensus",
+                "SystemCheckpoint at sequence {system_checkpoint_seq} is already certified, skipping signature submission to consensus",
             );
             self.metrics
-                .last_skipped_ika_system_checkpoint_signature_submission
-                .set(ika_system_checkpoint_seq as i64);
+                .last_skipped_system_checkpoint_signature_submission
+                .set(system_checkpoint_seq as i64);
         }
 
         Ok(())
@@ -122,24 +122,24 @@ impl<T: SubmitToConsensus> IkaSystemCheckpointOutput for SubmitIkaSystemCheckpoi
 }
 // ?
 #[async_trait]
-impl IkaSystemCheckpointOutput for LogIkaSystemCheckpointOutput {
-    async fn ika_system_checkpoint_created(
+impl SystemCheckpointOutput for LogSystemCheckpointOutput {
+    async fn system_checkpoint_created(
         &self,
-        ika_system_checkpoint: &SystemCheckpoint,
+        system_checkpoint: &SystemCheckpoint,
         _epoch_store: &Arc<AuthorityPerEpochStore>,
-        _ika_system_checkpoint_store: &Arc<SystemCheckpointStore>,
+        _system_checkpoint_store: &Arc<SystemCheckpointStore>,
     ) -> IkaResult {
         trace!(
-            "Including following transactions in ika_system_checkpoint {}: {:#?}",
-            ika_system_checkpoint.sequence_number,
-            ika_system_checkpoint.messages,
+            "Including following transactions in system_checkpoint {}: {:#?}",
+            system_checkpoint.sequence_number,
+            system_checkpoint.messages,
         );
         info!(
-            "Creating ika_system_checkpoint {:?} at epoch {}, sequence {}, messages count {}",
-            ika_system_checkpoint.digest(),
-            ika_system_checkpoint.epoch,
-            ika_system_checkpoint.sequence_number,
-            ika_system_checkpoint.messages.len(),
+            "Creating system_checkpoint {:?} at epoch {}, sequence {}, messages count {}",
+            system_checkpoint.digest(),
+            system_checkpoint.epoch,
+            system_checkpoint.sequence_number,
+            system_checkpoint.messages.len(),
         );
 
         Ok(())
@@ -147,13 +147,13 @@ impl IkaSystemCheckpointOutput for LogIkaSystemCheckpointOutput {
 }
 
 #[async_trait]
-impl CertifiedSystemCheckpointOutput for LogIkaSystemCheckpointOutput {
-    async fn certified_ika_system_checkpoint_created(
+impl CertifiedSystemCheckpointOutput for LogSystemCheckpointOutput {
+    async fn certified_system_checkpoint_created(
         &self,
         summary: &CertifiedSystemCheckpoint,
     ) -> IkaResult {
         info!(
-            "Certified ika_system_checkpoint with sequence {} and digest {}",
+            "Certified system_checkpoint with sequence {} and digest {}",
             summary.sequence_number,
             summary.digest()
         );
@@ -161,31 +161,31 @@ impl CertifiedSystemCheckpointOutput for LogIkaSystemCheckpointOutput {
     }
 }
 
-pub struct SendIkaSystemCheckpointToStateSync {
+pub struct SendSystemCheckpointToStateSync {
     handle: ika_network::state_sync::Handle,
 }
 
-impl SendIkaSystemCheckpointToStateSync {
+impl SendSystemCheckpointToStateSync {
     pub fn new(handle: ika_network::state_sync::Handle) -> Self {
         Self { handle }
     }
 }
 
 #[async_trait]
-impl CertifiedSystemCheckpointOutput for SendIkaSystemCheckpointToStateSync {
+impl CertifiedSystemCheckpointOutput for SendSystemCheckpointToStateSync {
     #[instrument(level = "debug", skip_all)]
-    async fn certified_ika_system_checkpoint_created(
+    async fn certified_system_checkpoint_created(
         &self,
-        ika_system_checkpoint: &CertifiedSystemCheckpoint,
+        system_checkpoint: &CertifiedSystemCheckpoint,
     ) -> IkaResult {
         info!(
-            "Certified ika_system_checkpoint with sequence {} and digest {}",
-            ika_system_checkpoint.sequence_number,
-            ika_system_checkpoint.digest(),
+            "Certified system_checkpoint with sequence {} and digest {}",
+            system_checkpoint.sequence_number,
+            system_checkpoint.digest(),
         );
         self.handle
             .send_system_checkpoint(VerifiedSystemCheckpoint::new_unchecked(
-                ika_system_checkpoint.to_owned(),
+                system_checkpoint.to_owned(),
             ))
             .await;
 
