@@ -22,10 +22,7 @@ use crate::stake_aggregator::StakeAggregator;
 use class_groups::DecryptionKeyShare;
 use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
-    MPCSessionStatus, NetworkDecryptionKeyPublicData,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput, MPCSessionStatus, NetworkDecryptionKeyPublicData, SecpNetworkDkgOutputVersion};
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
 use futures::future::err;
@@ -534,7 +531,7 @@ impl DWalletMPCManager {
     pub(super) async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<MPCPublicOutput> {
+    ) -> DwalletMPCResult<SecpNetworkDkgOutputVersion> {
         self.network_keys
             .get_network_dkg_public_output(key_id)
             .await
