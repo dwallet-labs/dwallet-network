@@ -515,7 +515,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
-            let wrapped_public_output = bcs::to_bytes(&public_output)?;
+            let wrapped_public_output = bcs::to_bytes(&MPCPublicOutput::V1(public_output))?;
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
