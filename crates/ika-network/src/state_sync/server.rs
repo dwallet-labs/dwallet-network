@@ -80,12 +80,12 @@ where
             return Ok(Response::new(()));
         }
 
-        let highest_verified_checkpoint = self
+        let highest_verified_dwallet_checkpoint = self
             .store
             .get_highest_verified_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        let should_sync = highest_verified_checkpoint
+        let should_sync = highest_verified_dwallet_checkpoint
             .map(|c| *checkpoint.sequence_number() > c.sequence_number)
             .unwrap_or(true);
 
@@ -298,10 +298,10 @@ where
             };
             let permit = semaphore.try_acquire_owned().map_err(|e| match e {
                 tokio::sync::TryAcquireError::Closed => {
-                    anemo::rpc::Status::new(StatusCode::InternalServerError)
+                    Status::new(StatusCode::InternalServerError)
                 }
                 tokio::sync::TryAcquireError::NoPermits => {
-                    anemo::rpc::Status::new(StatusCode::TooManyRequests)
+                    Status::new(StatusCode::TooManyRequests)
                 }
             })?;
 
