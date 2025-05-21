@@ -5,15 +5,14 @@ use anyhow::Result;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
 use ika_types::crypto::AuthorityName;
-use ika_types::crypto::KeypairTraits;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
-use tap::TapFallible;
 use tracing::info;
 
 use super::container::Container;
 
+#[allow(unused_variables)]
 pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
 
 /// A handle to an in-memory Ika Node.
@@ -93,7 +92,7 @@ impl Node {
     /// Perform a health check on this Node by:
     /// * Checking that the node is running
     /// * Calling the Node's gRPC Health service if it's a validator.
-    pub async fn health_check(&self, is_validator: bool) -> Result<(), HealthCheckError> {
+    pub async fn health_check(&self, _is_validator: bool) -> Result<(), HealthCheckError> {
         {
             let lock = self.container.lock().unwrap();
             let container = lock.as_ref().ok_or(HealthCheckError::NotRunning)?;

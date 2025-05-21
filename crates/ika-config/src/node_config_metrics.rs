@@ -5,6 +5,7 @@ use crate::NodeConfig;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::sync::Arc;
 
+#[allow(unused)]
 pub struct NodeConfigMetrics {
     tx_deny_config_user_transaction_disabled: IntGauge,
     tx_deny_config_shared_object_disabled: IntGauge,

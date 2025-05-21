@@ -54,6 +54,7 @@ const TRACING_ROUTE: &str = "/enable-tracing";
 const TRACING_RESET_ROUTE: &str = "/reset-tracing";
 const SET_BUFFER_STAKE_ROUTE: &str = "/set-override-buffer-stake";
 const CLEAR_BUFFER_STAKE_ROUTE: &str = "/clear-override-buffer-stake";
+#[allow(unused_variables)]
 const FORCE_CLOSE_EPOCH: &str = "/force-close-epoch";
 const CAPABILITIES: &str = "/capabilities";
 const NODE_CONFIG: &str = "/node-config";

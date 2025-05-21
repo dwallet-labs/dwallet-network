@@ -118,7 +118,7 @@ impl SuiConnectorService {
     async fn prepare_for_sui(
         sui_connector_config: SuiConnectorConfig,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
-        sui_connector_metrics: Arc<SuiConnectorMetrics>,
+        _sui_connector_metrics: Arc<SuiConnectorMetrics>,
     ) -> anyhow::Result<Option<SuiNotifier>> {
         let Some(sui_key_path) = sui_connector_config.notifier_client_key_pair else {
             return Ok(None);

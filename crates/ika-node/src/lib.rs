@@ -1441,6 +1441,7 @@ pub struct Threshold {
     pub threshold_seconds: Option<u32>,
 }
 
+#[allow(unused)]
 async fn health_check_handler(
     axum::extract::Query(Threshold { threshold_seconds }): axum::extract::Query<Threshold>,
     axum::Extension(state): axum::Extension<Arc<AuthorityState>>,
