@@ -12,7 +12,7 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, SerializedWrappedMPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
@@ -80,6 +80,21 @@ pub struct CentralizedDKGWasmResult {
     pub centralized_secret_output: Vec<u8>,
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum PublicKeyShareAndProofVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedDKGPublicOutputVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedDKGSecretOutputVersion {
+    V1(Vec<u8>),
+}
+
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
@@ -132,20 +147,22 @@ pub fn create_dkg_output(
 
             // Centralized Public Key Share and Proof.
             let public_key_share_and_proof =
-                MPCPublicOutput::V1(bcs::to_bytes(&round_result.outgoing_message)?);
+                PublicKeyShareAndProofVersion::V1(bcs::to_bytes(&round_result.outgoing_message)?);
 
             let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
 
             // Public Output:
             // centralized_public_key_share + public_key + decentralized_party_public_key_share
-            let public_output = bcs::to_bytes(&round_result.public_output)?;
+            let public_output = bcs::to_bytes(&CentralizedDKGPublicOutputVersion::V1(
+                bcs::to_bytes(&round_result.public_output)?,
+            ))?;
             // Centralized Secret Key Share.
             // Warning:
             // The secret (private)
             // key share returned from this function should never be sent
             // and should always be kept private.
             let centralized_secret_output =
-                MPCPublicOutput::V1(bcs::to_bytes(&round_result.private_output)?);
+                CentralizedDKGSecretOutputVersion::V1(bcs::to_bytes(&round_result.private_output)?);
             let centralized_secret_output = bcs::to_bytes(&centralized_secret_output)?;
             Ok(CentralizedDKGWasmResult {
                 public_output,
