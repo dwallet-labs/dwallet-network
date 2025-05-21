@@ -423,6 +423,9 @@ pub fn decrypt_user_share_inner(
             network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
+    let encrypted_user_share_and_proof = match bcs::from_bytes(&encrypted_user_share_and_proof)? {
+        EncryptedSecretShareAndProofVersions::V1(output) => output,
+    };
     let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let public_parameters = homomorphic_encryption::PublicParameters::<
