@@ -59,12 +59,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
+            MPCPublicOutputClassGroups::V1(output) => {
                 let presign = match presign {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                    MPCPublicOutputClassGroups::V1(output) => output,
                 };
                 let centralized_signed_message = match centralized_signed_message {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                    MPCPublicOutputClassGroups::V1(output) => output,
                 };
                 let public_input = SignPublicInput::from((
                     expected_decrypters,

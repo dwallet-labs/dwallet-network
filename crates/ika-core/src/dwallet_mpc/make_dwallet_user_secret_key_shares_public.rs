@@ -27,7 +27,7 @@ pub fn verify_secret_share(
     };
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        MPCPublicOutputClassGroups::V1(dkg_output) => {
             <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
                 &bcs::from_bytes(protocol_public_parameters)?,
                 bcs::from_bytes(&dkg_output)?,

@@ -34,7 +34,7 @@ fn verify_centralized_secret_key_share_proof(
 ) -> anyhow::Result<()> {
     let dkg_public_output = bcs::from_bytes(serialized_dkg_public_output)?;
     match dkg_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_public_output)) => {
+        MPCPublicOutputClassGroups::V1(dkg_public_output) => {
             <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_encryption_of_centralized_party_share_proof(
                 &bcs::from_bytes(&protocol_public_parameters)?, bcs::from_bytes(&dkg_public_output)?, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&encrypted_centralized_secret_share_and_proof)?, &mut OsRng).map_err(Into::<anyhow::Error>::into)?;
             Ok(())

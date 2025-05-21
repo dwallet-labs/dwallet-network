@@ -112,9 +112,9 @@ pub fn create_dkg_output(
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
     match decentralized_first_round_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
+        MPCPublicOutputClassGroups::V1(
             decentralized_first_round_public_output,
-        )) => {
+        ) => {
             let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
                 bcs::from_bytes(&decentralized_first_round_public_output)
                     .context("failed to deserialize decentralized first round DKG output")?;
@@ -357,7 +357,7 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 ) -> anyhow::Result<Vec<u8>> {
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        MPCPublicOutputClassGroups::V1(dkg_output) => {
             let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
                 bcs::from_bytes(&dkg_output)?;
             bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
@@ -403,7 +403,7 @@ pub fn verify_secret_share(
         )?)?;
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        MPCPublicOutputClassGroups::V1(dkg_output) => {
             let dkg_output = bcs::from_bytes(&dkg_output)?;
             let secret_share = bcs::from_bytes(&secret_share)?;
             Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(

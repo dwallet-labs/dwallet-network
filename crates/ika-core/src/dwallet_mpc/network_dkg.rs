@@ -74,7 +74,7 @@ fn get_decryption_key_shares_from_public_output(
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     match shares.state {
         NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.latest_public_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
+            MPCPublicOutputClassGroups::V1(public_output) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
 
@@ -89,7 +89,7 @@ fn get_decryption_key_shares_from_public_output(
             }
         },
         NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.latest_public_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output)) => {
+            MPCPublicOutputClassGroups::V1(public_output) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
 
