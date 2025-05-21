@@ -40,9 +40,9 @@ use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AdvanceResult, DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion,
     DWalletImportedKeyVerificationRequestEventOutputVersion, DWalletMPCMessage,
-    EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport,
-    PresignOutputVersion, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType,
-    SignOutputVersion, ThresholdNotReachedReport,
+    DecryptionKeyReshareOutputVersion, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, PresignOutputVersion, PresignRequestEvent, PresignSessionState, SessionInfo,
+    SessionType, SignOutputVersion, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -606,14 +606,30 @@ impl DWalletMPCSession {
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
-                crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
                     decryption_key_shares,
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output =
+                            bcs::to_bytes(&DecryptionKeyReshareOutputVersion::V1(public_output))?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
                 match verify_secret_share(

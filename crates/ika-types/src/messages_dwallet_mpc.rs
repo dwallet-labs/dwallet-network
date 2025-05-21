@@ -61,14 +61,6 @@ pub enum SecpNetworkDkgOutputVersion {
     V1(MPCPublicInput),
 }
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum EncryptedShareVerificationOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum PartialSignatureVerificationOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum DecryptionKeyReshareOutputVersion {
     V1(MPCPublicInput),
 }

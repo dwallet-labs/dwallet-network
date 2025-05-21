@@ -22,7 +22,10 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState, MPCProtocolInitData, SecpNetworkDkgOutputVersion, SessionInfo, StartNetworkDKGEvent};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState,
+    MPCProtocolInitData, SecpNetworkDkgOutputVersion, SessionInfo, StartNetworkDKGEvent,
+};
 use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
@@ -267,15 +270,12 @@ pub(crate) fn advance_network_dkg(
             );
             match result.clone() {
                 Ok(AsynchronousRoundResult::Finalize {
-                       public_output,
-                       malicious_parties,
-                       private_output,
-                   }) => {
-                    let public_output = bcs::to_bytes(
-                        &SecpNetworkDkgOutputVersion::V1(
-                            public_output,
-                        ),
-                    )?;
+                    public_output,
+                    malicious_parties,
+                    private_output,
+                }) => {
+                    let public_output =
+                        bcs::to_bytes(&SecpNetworkDkgOutputVersion::V1(public_output))?;
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
                         malicious_parties,
@@ -284,7 +284,7 @@ pub(crate) fn advance_network_dkg(
                 }
                 _ => result,
             }
-        },
+        }
         DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
             party_id,
