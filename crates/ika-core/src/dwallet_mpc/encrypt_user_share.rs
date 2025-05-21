@@ -22,13 +22,11 @@ pub(crate) fn verify_encrypted_share(
         };
     verify_centralized_secret_key_share_proof(
         &encrypted_centralized_secret_share_and_proof,
-        &bcs::to_bytes(&DWalletDKGSecondOutputVersion::V1(
-            verification_data.decentralized_public_output.clone(),
-        ))?,
+        &verification_data.decentralized_public_output,
         &verification_data.encryption_key,
         protocol_public_parameters,
     )
-    .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
+        .map_err(|_| DwalletMPCError::EncryptedUserShareVerificationFailed)
 }
 
 /// Verifies that the given centralized secret key share

@@ -459,7 +459,9 @@ impl DWalletMPCSession {
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
                         &EncryptedShareVerificationRequestEvent {
-                            decentralized_public_output: public_output.clone(),
+                            decentralized_public_output: bcs::to_bytes(
+                                &DWalletDKGSecondOutputVersion::V1(public_output.clone()),
+                            )?,
                             encrypted_centralized_secret_share_and_proof: event_data
                                 .event_data
                                 .encrypted_centralized_secret_share_and_proof
