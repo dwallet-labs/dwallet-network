@@ -42,7 +42,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletImportedKeyVerificationRequestEventOutputVersion, DWalletMPCMessage,
     EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport,
     PresignOutputVersion, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType,
-    ThresholdNotReachedReport,
+    SignOutputVersion, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -539,11 +539,7 @@ impl DWalletMPCSession {
                         malicious_parties,
                         private_output,
                     }) => {
-                        let public_output = bcs::to_bytes(
-                            &DWalletImportedKeyVerificationRequestEventOutputVersion::V1(
-                                public_output,
-                            ),
-                        )?;
+                        let public_output = bcs::to_bytes(&SignOutputVersion::V1(public_output))?;
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
