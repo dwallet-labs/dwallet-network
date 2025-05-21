@@ -385,6 +385,34 @@ pub fn encrypt_secret_key_share_and_prove(
     }
 }
 
+/// Verifies the given secret share matches the given dWallets`
+/// DKG output centralized_party_public_key_share.
+pub fn verify_secret_share(
+    secret_share: Vec<u8>,
+    dkg_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: Vec<u8>,
+) -> anyhow::Result<bool> {
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_dkg_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
+    let dkg_output = bcs::from_bytes(&dkg_output)?;
+    match dkg_output {
+        DWalletDKGSecondOutputVersion::V1(dkg_output) => {
+            let dkg_output = bcs::from_bytes(&dkg_output)?;
+            let secret_share = bcs::from_bytes(&secret_share)?;
+            Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
+                &protocol_public_params,
+                dkg_output,
+                secret_share,
+            )
+                .is_ok())
+        }
+    }
+}
+
+
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
     decryption_key: Vec<u8>,
