@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use class_groups::Secp256k1EncryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
+    MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use group::{CyclicGroupElement, GroupElement};
 use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, PlaintextSpaceGroupElement};

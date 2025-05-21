@@ -1,5 +1,5 @@
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
+    MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
 use fastcrypto::traits::ToFromBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

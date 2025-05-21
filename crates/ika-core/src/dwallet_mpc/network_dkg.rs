@@ -15,7 +15,7 @@ use class_groups::{
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput,
     MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
     NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
 };

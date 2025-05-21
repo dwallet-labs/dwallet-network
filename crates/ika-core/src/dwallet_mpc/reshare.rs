@@ -6,7 +6,7 @@ use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
+use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutputClassGroups};
 use group::{secp256k1, GroupElement, PartyID};
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
