@@ -6,7 +6,7 @@ use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, SecpNetworkDkgOutputVersion};
 use group::{secp256k1, GroupElement, PartyID};
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -26,7 +26,7 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
         committee: &Committee,
         new_committee: Committee,
         decryption_key_share_public_parameters: Vec<u8>,
-        network_dkg_public_output: MPCPublicOutput,
+        network_dkg_public_output: SecpNetworkDkgOutputVersion,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
