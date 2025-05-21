@@ -466,9 +466,6 @@ where
     // Handle a checkpoint that we received from consensus
     #[instrument(level = "debug", skip_all)]
     fn handle_checkpoint_from_consensus(&mut self, checkpoint: Box<VerifiedCheckpointMessage>) {
-        if *checkpoint.sequence_number() == 0 {
-            return;
-        }
         // // Always check previous_digest matches in case there is a gap between
         // // state sync and consensus.
         // let prev_digest = *self.store.get_checkpoint_by_sequence_number(checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
