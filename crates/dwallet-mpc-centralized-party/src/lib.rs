@@ -177,12 +177,10 @@ pub fn advance_centralized_sign_party(
     let decentralized_party_dkg_public_output =
         bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     match decentralized_party_dkg_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-            decentralized_party_dkg_public_output,
-        )) => {
+        MPCPublicOutputClassGroups::V1(decentralized_party_dkg_public_output) => {
             let presign = bcs::from_bytes(&presign)?;
             let presign = match presign {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutputClassGroups::V1(output) => output,
                 _ => {
                     return Err(anyhow!(
                         "invalid presign output version: expected ClassGroups::V1, got {:?}",
@@ -190,10 +188,10 @@ pub fn advance_centralized_sign_party(
                     ));
                 }
             };
-            let centralized_party_secret_key_share: MPCPublicOutput =
+            let centralized_party_secret_key_share: MPCPublicOutputClassGroups =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
             let centralized_party_secret_key_share = match centralized_party_secret_key_share {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutputClassGroups::V1(output) => output,
                 _ => {
                     return Err(anyhow!(
                         "invalid centralized public output version: expected ClassGroups::V1, got {:?}",
@@ -301,10 +299,10 @@ fn protocol_public_parameters_by_key_scheme(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
-    let mpc_public_output: MPCPublicOutput = bcs::from_bytes(&network_dkg_public_output)?;
+    let mpc_public_output: MPCPublicOutputClassGroups = bcs::from_bytes(&network_dkg_public_output)?;
 
     match &mpc_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(network_dkg_public_output)) => {
+        MPCPublicOutputClassGroups::V1(network_dkg_public_output) => {
             let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
@@ -380,9 +378,9 @@ pub fn encrypt_secret_key_share_and_prove(
             network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
+    let secret_key_share: MPCPublicOutputClassGroups = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
+        MPCPublicOutputClassGroups::V1(secret_key_share) => {
             let encryption_key = bcs::from_bytes(&encryption_key)?;
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
