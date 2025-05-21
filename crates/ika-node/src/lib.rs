@@ -10,38 +10,30 @@ use anemo_tower::trace::TraceLayer;
 use anyhow::anyhow;
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use fastcrypto_zkp::bn254::zk_login::JwkId;
-use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use futures::TryFutureExt;
-use mysten_network::server::SUI_TLS_SERVER_NAME;
 use prometheus::Registry;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
-use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::str::FromStr;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::Arc;
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
 use ika_core::consensus_manager::UpdatableConsensusClient;
 
 use ika_types::digests::ChainIdentifier;
-use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::sui::SystemInner;
-use sui_types::base_types::{random_object_ref, ConciseableName, ObjectID};
-use sui_types::crypto::RandomnessRound;
+use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, mpsc, watch, Mutex};
-use tokio::task::{JoinHandle, JoinSet};
+use tokio::sync::{broadcast, watch, Mutex};
+use tokio::task::JoinSet;
 use tower::ServiceBuilder;
-use tracing::{debug, error, warn};
-use tracing::{error_span, info, Instrument};
+use tracing::{debug, warn};
+use tracing::info;
 
-use fastcrypto_zkp::bn254::zk_login::JWK;
 pub use handle::IkaNodeHandle;
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_archival::writer::ArchiveWriter;
@@ -70,35 +62,29 @@ use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
 use ika_core::storage::RocksDbStore;
 use mysten_metrics::{spawn_monitored_task, RegistryService};
-use mysten_network::server::ServerBuilder;
-use mysten_service::server_timing::server_timing_middleware;
 
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::{discovery, state_sync};
-use ika_protocol_config::{Chain, ProtocolConfig};
-use sui_macros::fail_point;
+use ika_protocol_config::ProtocolConfig;
 use sui_macros::{fail_point_async, replay_log};
 use sui_storage::{FileCompression, StorageFormat};
 use sui_types::base_types::EpochId;
 
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
-use ika_types::error::{IkaError, IkaResult};
+use ika_types::error::IkaResult;
 use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction};
-use ika_types::quorum_driver_types::QuorumDriverEffectsQueueResult;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::SystemInnerTrait;
 use sui_types::crypto::KeypairTraits;
 
 use ika_core::consensus_adapter::SubmitToConsensus;
-use ika_types::supported_protocol_versions::{
-    SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
-};
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
 
-use crate::metrics::{GrpcMetrics, IkaNodeMetrics};
+use crate::metrics::IkaNodeMetrics;
 
 pub mod admin;
 mod handle;
@@ -183,11 +169,7 @@ use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
-use ika_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use ika_core::dwallet_mpc::network_dkg::{
-    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
-};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -198,15 +180,10 @@ use ika_core::system_checkpoints::{
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
-use ika_types::messages_system_checkpoints::{
-    SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointKind,
-    SystemCheckpointSignatureMessage,
-};
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
 use simulator::*;
-use sui_types::execution_config_utils::to_binary_config;
 use tokio::sync::watch::Receiver;
 
 pub struct IkaNode {
