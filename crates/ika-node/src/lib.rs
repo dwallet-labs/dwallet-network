@@ -110,7 +110,7 @@ pub struct ValidatorComponents {
     consensus_adapter: Arc<ConsensusAdapter>,
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
     checkpoint_service_tasks: JoinSet<()>,
-    ika_system_checkpoint_service_tasks: JoinSet<()>,
+    system_checkpoint_service_tasks: JoinSet<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
     ika_system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
@@ -873,8 +873,8 @@ impl IkaNode {
             previous_epoch_last_checkpoint_sequence_number,
         );
 
-        let (ika_system_checkpoint_service, ika_system_checkpoint_service_tasks) =
-            Self::start_ika_system_checkpoint_service(
+        let (system_checkpoint_service, system_checkpoint_service_tasks) =
+            Self::start_system_checkpoint_service(
                 config,
                 consensus_adapter.clone(),
                 system_checkpoint_store,
@@ -927,7 +927,7 @@ impl IkaNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
-            ika_system_checkpoint_service.clone(),
+            system_checkpoint_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,
             throughput_calculator,
@@ -942,7 +942,7 @@ impl IkaNode {
                     state.clone(),
                     consensus_adapter.clone(),
                     checkpoint_service.clone(),
-                    ika_system_checkpoint_service.clone(),
+                    system_checkpoint_service.clone(),
                     ika_tx_validator_metrics.clone(),
                 ),
             )
@@ -953,7 +953,7 @@ impl IkaNode {
             consensus_store_pruner,
             consensus_adapter,
             checkpoint_service_tasks,
-            ika_system_checkpoint_service_tasks,
+            system_checkpoint_service_tasks,
             checkpoint_metrics,
             ika_system_checkpoint_metrics,
             ika_tx_validator_metrics,
@@ -1006,7 +1006,7 @@ impl IkaNode {
         )
     }
 
-    fn start_ika_system_checkpoint_service(
+    fn start_system_checkpoint_service(
         config: &NodeConfig,
         consensus_adapter: Arc<ConsensusAdapter>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
@@ -1220,7 +1220,7 @@ impl IkaNode {
                 consensus_store_pruner,
                 consensus_adapter,
                 mut checkpoint_service_tasks,
-                mut ika_system_checkpoint_service_tasks,
+                mut system_checkpoint_service_tasks,
                 checkpoint_metrics,
                 ika_system_checkpoint_metrics,
                 ika_tx_validator_metrics,
@@ -1244,8 +1244,8 @@ impl IkaNode {
                 }
                 info!("Checkpoint service has shut down.");
 
-                ika_system_checkpoint_service_tasks.abort_all();
-                while let Some(result) = ika_system_checkpoint_service_tasks.join_next().await {
+                system_checkpoint_service_tasks.abort_all();
+                while let Some(result) = system_checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
                             std::panic::resume_unwind(err.into_panic());

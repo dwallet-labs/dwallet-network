@@ -153,7 +153,7 @@ impl<C> ConsensusHandler<C> {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_service: Arc<C>,
-        ika_system_checkpoint_service: Arc<SystemCheckpointService>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
@@ -172,7 +172,7 @@ impl<C> ConsensusHandler<C> {
             epoch_store,
             last_consensus_stats,
             checkpoint_service,
-            system_checkpoint_service: ika_system_checkpoint_service,
+            system_checkpoint_service: system_checkpoint_service,
             low_scoring_authorities,
             committee,
             metrics,

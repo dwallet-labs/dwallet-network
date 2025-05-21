@@ -38,7 +38,7 @@ struct IpResponse {
     ip: String,
 }
 
-pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool) {
+pub async fn send_telemetry_event(_state: Arc<AuthorityState>, is_validator: bool) {
     let git_rev = env!("CARGO_PKG_VERSION").to_string();
     let ip_address = get_ip().await;
     // let chain_identifier = match state.get_chain_identifier() {
@@ -70,7 +70,7 @@ pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool
         ]),
     };
 
-    let telemetry_payload = TelemetryPayload {
+    let _telemetry_payload = TelemetryPayload {
         client_id: HARDCODED_CLIENT_ID.into(),
         events: vec![telemetry_event],
     };

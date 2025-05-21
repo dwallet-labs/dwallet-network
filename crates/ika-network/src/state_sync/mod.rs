@@ -947,7 +947,7 @@ async fn notify_peers_of_ika_system_checkpoint(
         .map(StateSyncClient::new)
         .map(|mut client| {
             let request = Request::new(ika_system_checkpoint.inner().clone()).with_timeout(timeout);
-            async move { client.push_ika_system_checkpoint(request).await }
+            async move { client.push_system_checkpoint(request).await }
         })
         .collect::<Vec<_>>();
     futures::future::join_all(futs).await;
@@ -1357,7 +1357,7 @@ async fn query_peer_for_latest_info_ika_system_checkpoint(
 ) -> Option<CertifiedSystemCheckpoint> {
     let request = Request::new(()).with_timeout(timeout);
     let response = client
-        .get_ika_system_checkpoint_availability(request)
+        .get_system_checkpoint_availability(request)
         .await
         .map(Response::into_inner);
     match response {
@@ -1497,7 +1497,7 @@ where
                     let request = Request::new(GetSystemCheckpointRequest::BySequenceNumber(next))
                         .with_timeout(timeout);
                     if let Some(ika_system_checkpoint) = peer
-                        .get_ika_system_checkpoint(request)
+                        .get_system_checkpoint(request)
                         .await
                         .tap_err(|e| trace!("{e:?}"))
                         .ok()

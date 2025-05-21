@@ -32,7 +32,7 @@ pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
     checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
-    ika_system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
+    system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
 
@@ -41,7 +41,7 @@ impl IkaTxValidator {
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
         checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
-        ika_system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
+        system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
         let epoch_store = authority_state.load_epoch_store_one_call_per_task().clone();
@@ -53,7 +53,7 @@ impl IkaTxValidator {
             authority_state,
             consensus_overload_checker,
             checkpoint_service,
-            ika_system_checkpoint_service,
+            system_checkpoint_service,
             metrics,
         }
     }
@@ -111,7 +111,7 @@ impl IkaTxValidator {
 
         // All checkpoint sigs have been verified, forward them to the checkpoint service
         for ckpt in system_checkpoints {
-            self.ika_system_checkpoint_service
+            self.system_checkpoint_service
                 .notify_system_checkpoint_signature(&epoch_store, ckpt)?;
         }
 

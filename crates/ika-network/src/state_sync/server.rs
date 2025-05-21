@@ -132,7 +132,7 @@ where
         }))
     }
 
-    async fn push_ika_system_checkpoint(
+    async fn push_system_checkpoint(
         &self,
         request: Request<CertifiedSystemCheckpoint>,
     ) -> Result<Response<()>, Status> {
@@ -171,7 +171,7 @@ where
         Ok(Response::new(()))
     }
 
-    async fn get_ika_system_checkpoint(
+    async fn get_system_checkpoint(
         &self,
         request: Request<GetSystemCheckpointRequest>,
     ) -> Result<Response<Option<CertifiedSystemCheckpoint>>, Status> {
@@ -189,7 +189,7 @@ where
         Ok(Response::new(ika_system_checkpoint))
     }
 
-    async fn get_ika_system_checkpoint_availability(
+    async fn get_system_checkpoint_availability(
         &self,
         _request: Request<()>,
     ) -> Result<Response<GetSystemCheckpointAvailabilityResponse>, Status> {
