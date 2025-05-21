@@ -36,19 +36,11 @@ pub type MPCMessage = Vec<u8>;
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
-/// MPC Public Output for different protocols.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
-)]
-pub enum MPCPublicOutput {
-    ClassGroups(MPCPublicOutputClassGroups),
-}
-
 /// The MPC Public Output for Class Groups based protocols.
 #[derive(
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
 )]
-pub enum MPCPublicOutputClassGroups {
+pub enum MPCPublicOutput {
     /// Serialized Public Output.
     V1(Vec<u8>),
 }
@@ -113,7 +105,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     pub state: NetworkDecryptionKeyPublicOutputType,
     /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
-    pub latest_public_output: MPCPublicOutputClassGroups,
+    pub latest_public_output: MPCPublicOutput,
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
@@ -121,7 +113,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     /// The public output of the `NetworkDKG` process (the first and only one).
     /// On first instance it will be equal to `latest_public_output`.
-    pub network_dkg_output: MPCPublicOutputClassGroups,
+    pub network_dkg_output: MPCPublicOutput,
 }
 
 #[repr(u32)]

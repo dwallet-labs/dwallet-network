@@ -4,7 +4,7 @@
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
+    MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -59,12 +59,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
-            MPCPublicOutputClassGroups::V1(output) => {
+            MPCPublicOutput::V1(output) => {
                 let presign = match presign {
-                    MPCPublicOutputClassGroups::V1(output) => output,
+                    MPCPublicOutput::V1(output) => output,
                 };
                 let centralized_signed_message = match centralized_signed_message {
-                    MPCPublicOutputClassGroups::V1(output) => output,
+                    MPCPublicOutput::V1(output) => output,
                 };
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
@@ -100,17 +100,16 @@ pub(crate) fn verify_partial_signature(
     partially_signed_message: &SerializedWrappedMPCPublicOutput,
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
-    let dkg_output: MPCPublicOutputClassGroups = bcs::from_bytes(&dwallet_decentralized_output)?;
-    let presign: MPCPublicOutputClassGroups = bcs::from_bytes(&presign)?;
-    let partially_signed_message: MPCPublicOutputClassGroups =
-        bcs::from_bytes(&partially_signed_message)?;
+    let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
+    let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
+    let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
-        MPCPublicOutputClassGroups::V1(dkg_output) => {
+        MPCPublicOutput::V1(dkg_output) => {
             let presign = match presign {
-                MPCPublicOutputClassGroups::V1(output) => output,
+                MPCPublicOutput::V1(output) => output,
             };
             let partially_signed_message = match partially_signed_message {
-                MPCPublicOutputClassGroups::V1(output) => output,
+                MPCPublicOutput::V1(output) => output,
             };
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<
