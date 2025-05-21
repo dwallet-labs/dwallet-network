@@ -10,7 +10,7 @@ use std::sync::{Arc, Weak};
 use std::thread;
 use sui_types::base_types::ConciseableName;
 use telemetry_subscribers::get_global_telemetry_config;
-use tracing::{error, info, trace};
+use tracing::{info, trace};
 
 const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
 

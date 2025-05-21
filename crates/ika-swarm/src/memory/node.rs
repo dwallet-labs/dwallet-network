@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::anyhow;
 use anyhow::Result;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
@@ -11,7 +10,7 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
 use tap::TapFallible;
-use tracing::{error, info};
+use tracing::info;
 
 use super::container::Container;
 
