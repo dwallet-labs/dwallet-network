@@ -380,6 +380,11 @@ pub fn centralized_public_share_from_decentralized_output_inner(
     }
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum EncryptedSecretShareAndProofVersions {
+    V1(Vec<u8>),
+}
+
 /// Encrypts the given secret key share with the given encryption key.
 /// Returns a serialized tuple containing the `proof of encryption`,
 /// and an encrypted `secret key share`.
@@ -399,7 +404,9 @@ pub fn encrypt_secret_key_share_and_prove(
             let encryption_key = bcs::from_bytes(&encryption_key)?;
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
-            Ok(bcs::to_bytes(&result)?)
+            Ok(bcs::to_bytes(&EncryptedSecretShareAndProofVersions::V1(
+                bcs::to_bytes(&result)?,
+            ))?)
         }
     }
 }
