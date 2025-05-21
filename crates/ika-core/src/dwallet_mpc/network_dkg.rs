@@ -236,7 +236,7 @@ impl DwalletMPCNetworkKeys {
     pub async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<MPCPublicOutput> {
+    ) -> DwalletMPCResult<SecpNetworkDkgOutputVersion> {
         Ok(self
             .network_encryption_keys
             .get(key_id)
