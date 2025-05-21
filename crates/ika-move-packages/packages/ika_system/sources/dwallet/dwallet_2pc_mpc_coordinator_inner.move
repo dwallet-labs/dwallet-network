@@ -2679,10 +2679,18 @@ public(package) fun request_imported_key_sign(
 }
 
 // TODO: add hash_scheme per message so we can validate that.
-/// A function to publish messages signed by the user on chain with on-chain verification,
-/// without launching the chain's sign flow immediately.
+/// Request the Ika network verify the user-side sign protocol (in other words, that `message` is partially signed by the user), 
+/// without (yet) executing the network side sign-protocol.
 ///
-/// See the docs of [`PartialCentralizedSignedMessages`] for
+/// Used for future sign use-cases, in which the user share isn't required to sign `message`; 
+/// instead, anyone that holds a `VerifiedPartialUserSignatureCap` capability and a `MessageApproval` can sign `message` by calling `request_sign_with_partial_user_signature()` at any time.
+///
+/// Creates a new `PartialUserSignature` in the `AwaitingNetworkVerification` state and registered it into `partial_centralized_signed_messages`. Moves `presign_cap` to it, 
+/// ensuring it can be used for anything other than signing this `message` using `request_sign_with_partial_user_signature()` (which will in turn ensure it can only be signed once).
+/// 
+/// Creates a new `UnverifiedPartialUserSignatureCap` object and returns it to the caller.
+///
+/// See the doc of [`PartialUserSignature`] for
 /// more details on when this may be used.
 public(package) fun request_future_sign(
     self: &mut DWalletCoordinatorInner,
@@ -2697,8 +2705,10 @@ public(package) fun request_future_sign(
 ): UnverifiedPartialUserSignatureCap {
     let pricing = self.pricing.future_sign();
 
+    // TODO(@Omer): Check valid curve, sig alg, hash
     assert!(!self.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 
+    // Check that the presign is global, or that it belongs to this dWallet.
     assert!(presign_cap.dwallet_id.is_none() || presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
 
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
@@ -2723,6 +2733,7 @@ public(package) fun request_future_sign(
         id: object::new(ctx),
         partial_centralized_signed_message_id,
     };
+
     let signature_algorithm = presign_obj.signature_algorithm;
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
         dwallet_network_encryption_key_id,
@@ -2743,6 +2754,8 @@ public(package) fun request_future_sign(
         },
         ctx,
     );
+
+    // Create a new `PartialUserSignature` that wraps around `presign_cap` to ensure it can't be used twice.
     self.partial_centralized_signed_messages.add(partial_centralized_signed_message_id, PartialUserSignature {
         id: id,
         created_at_epoch: self.current_epoch,
@@ -2762,6 +2775,12 @@ public(package) fun request_future_sign(
     cap
 }
 
+/// Called by the Ika network to respond with the verification result of the user-side sign protocol (in other words, whether `message` is partially signed by the user). 
+///
+/// Advances the `PartialUserSignature` state to `NetworkVerificationCompleted`.
+///
+/// See the doc of [`PartialUserSignature`] for
+/// more details on when this may be used.
 public(package) fun respond_future_sign(
     self: &mut DWalletCoordinatorInner,
     session_id: ID,
@@ -2771,8 +2790,12 @@ public(package) fun respond_future_sign(
     session_sequence_number: u64
 ) {
     self.remove_user_initiated_session_and_charge<FutureSignRequestEvent>(session_sequence_number);
+
     let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    
+    // Check that the presign is global, or that it belongs to this dWallet.
     assert!(partial_centralized_signed_message.presign_cap.dwallet_id.is_none() || partial_centralized_signed_message.presign_cap.dwallet_id.is_some_and!(|id| id == dwallet_id), EDWalletMismatch);
+
     partial_centralized_signed_message.state = match(partial_centralized_signed_message.state) {
         PartialUserSignatureState::AwaitingNetworkVerification => {
             if(rejected) {
@@ -2795,6 +2818,8 @@ public(package) fun respond_future_sign(
     }
 }
 
+// TODO(@omer): this function is not used
+/// Checks that the partial user signature coresponding to `cap` is valid, by assuring it is in the `NetworkVerificationCompleted`.
 public(package) fun is_partial_user_signature_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPartialUserSignatureCap,
@@ -2803,6 +2828,8 @@ public(package) fun is_partial_user_signature_valid(
     partial_centralized_signed_message.cap_id == cap.id.to_inner() && partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted
 }
 
+/// Verifies that the partial user signature coresponding to `cap` is valid, 
+/// deleting the `UnverifiedPartialUserSignatureCap` object and returning a new `VerifiedPartialUserSignatureCap` in its place.
 public(package) fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,
     cap: UnverifiedPartialUserSignatureCap,
@@ -2812,9 +2839,12 @@ public(package) fun verify_partial_user_signature_cap(
         id,
         partial_centralized_signed_message_id
     } = cap;
+
     let cap_id = id.to_inner();
     id.delete();
+
     let partial_centralized_signed_message = self.partial_centralized_signed_messages.borrow_mut(partial_centralized_signed_message_id);
+    // TODO(@omer) call `is_partial_user_signature_valid()`
     assert!(partial_centralized_signed_message.cap_id == cap_id, EIncorrectCap);
     assert!(partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted, EUnverifiedCap);
     let cap = VerifiedPartialUserSignatureCap {
@@ -2825,22 +2855,14 @@ public(package) fun verify_partial_user_signature_cap(
     cap
 }
 
-/// Initiates a signing flow using a previously published [`PartialUserSignature`].
+/// Requests the Ika network to complete the signing session on a message that was already partially-signed by the user (i.e. a message with a verified [`PartialUserSignature`]).
+/// Useful is `message_approval` was only acquired after `PartialUserSignature` was created, and the caller does not own the user-share of this dWallet.
 ///
-/// This function takes a partial signature object, validates approvals for each message,
-/// and emits the necessary signing events.
+/// Takes the `presign_cap` from the `PartialUserSignature` object, and destroys it in `validate_and_initiate_sign()`, 
+/// ensuring the presign was not used for any other purpose than signing this message once.
 ///
-/// ## Type Parameters
-/// - `D`: Represents additional data fields specific for each implementation.
-///
-/// ## Parameters
-/// - `partial_signature`: A previously published `PartialUserSignature<D>` object
-///   containing messages that require approval.
-/// - `message_approvals`: A list of approvals corresponding to the messages in `partial_signature`.
-/// - `ctx`: The transaction context.
-/// ## Notes
-/// - See [`PartialUserSignature`] documentation for more details on usage scenarios.
-/// - The function ensures that messages and approvals have a one-to-one correspondence before proceeding.
+/// See the doc of [`PartialUserSignature`] for
+/// more details on when this may be used.
 public(package) fun request_sign_with_partial_user_signature(
     self: &mut DWalletCoordinatorInner,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
@@ -2849,7 +2871,6 @@ public(package) fun request_sign_with_partial_user_signature(
     payment_sui: &mut Coin<SUI>,
     ctx: &mut TxContext
 ) {
-
     let pricing = self.pricing.sign_with_partial_user_signature();
 
     // Ensure that each partial user signature has a corresponding message approval; otherwise, abort.
@@ -2862,6 +2883,7 @@ public(package) fun request_sign_with_partial_user_signature(
     } = partial_user_signature_cap;
     let verified_cap_id = id.to_inner();
     id.delete();
+
     let PartialUserSignature {
         id,
         created_at_epoch: _,
@@ -2875,6 +2897,7 @@ public(package) fun request_sign_with_partial_user_signature(
         message_centralized_signature,
         state
     } = self.partial_centralized_signed_messages.remove(partial_centralized_signed_message_id);
+    
     id.delete();
     assert!(cap_id == verified_cap_id && state == PartialUserSignatureState::NetworkVerificationCompleted, EIncorrectCap);
 
@@ -2902,6 +2925,7 @@ public(package) fun request_sign_with_partial_user_signature(
     assert!(!is_imported_key_dwallet, EImportedKeyDWallet);
 }
 
+/// The imported key variant of [`request_sign_with_partial_user_signature()`] (see for documentation).
 public(package) fun request_imported_key_sign_with_partial_user_signature(
     self: &mut DWalletCoordinatorInner,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
@@ -2922,6 +2946,7 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
     } = partial_user_signature_cap;
     let verified_cap_id = id.to_inner();
     id.delete();
+
     let PartialUserSignature {
         id,
         created_at_epoch: _,
@@ -2964,7 +2989,8 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
 
 /// Matches partial user signature with message approval to ensure they are consistent.
 /// This function can be called by the user to verify before calling
-/// the `request_sign_with_partial_user_signature` function.
+/// the `request_sign_with_partial_user_signature` function. 
+/// It is also called before requesting the Ika network to complete the signing.
 public(package) fun match_partial_user_signature_with_message_approval(
     self: &DWalletCoordinatorInner,
     partial_user_signature_cap: &VerifiedPartialUserSignatureCap,
@@ -2994,28 +3020,10 @@ public(package) fun match_partial_user_signature_with_imported_key_message_appro
     partial_signature.hash_scheme == message_approval.hash_scheme
 }
 
-/// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
-///
-/// This function is called by the blockchain itself and is part of the core
-/// blockchain logic executed by validators. The emitted event contains the
-/// completed sign output that should be consumed by the initiating user.
-///
-/// ### Parameters
-/// - **`signed_messages`**: A vector containing the signed message outputs.
-/// - **`batch_session_id`**: The unique identifier for the batch signing session.
-/// - **`ctx`**: The transaction context used for event emission.
-///
-/// ### Requirements
-/// - The caller **must be the system address** (`@0x0`). If this condition is not met,
-///   the function will abort with `ENotSystemAddress`.
-///
-/// ### Events
-/// - **`CompletedSignEvent`**: Emitted with the `session_id` and `signed_messages`,
-///   signaling the completion of the sign process for the batch session.
-///
-/// ### Errors
-/// - **`ENotSystemAddress`**: If the caller is not the system address (`@0x0`),
-///   the function will abort with this error.
+/// Called by the Ika network to respond to (and complete) a Sign protocol request.
+/// 
+/// Sets the `SignSession` to `Completed` and stores in it the `signature`. 
+/// Also emits an event with the `signature`.
 public(package) fun respond_sign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
