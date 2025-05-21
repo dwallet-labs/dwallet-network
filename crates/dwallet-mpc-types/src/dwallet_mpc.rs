@@ -105,7 +105,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     pub state: NetworkDecryptionKeyPublicOutputType,
     /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
-    pub latest_public_output: MPCPublicOutput,
+    pub latest_public_output: SecpNetworkDkgOutputVersion,
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
@@ -113,7 +113,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     /// The public output of the `NetworkDKG` process (the first and only one).
     /// On first instance it will be equal to `latest_public_output`.
-    pub network_dkg_output: MPCPublicOutput,
+    pub network_dkg_output: SecpNetworkDkgOutputVersion,
 }
 
 #[repr(u32)]
@@ -170,7 +170,7 @@ pub enum SignOutputVersion {
     V1(MPCPublicInput),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub enum SecpNetworkDkgOutputVersion {
     V1(MPCPublicInput),
 }
