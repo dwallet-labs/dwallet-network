@@ -497,7 +497,7 @@ where
     pub async fn start(mut self) {
         info!("State-Synchronizer started");
 
-        self.config.pinned_checkpoints.sort();
+        self.config.pinned_dwallet_checkpoints.sort();
         self.config.pinned_system_checkpoints.sort();
 
         let mut interval = tokio::time::interval(self.config.interval_period());
@@ -820,14 +820,14 @@ where
                 .as_ref()
                 .map(|x| x.sequence_number())
         {
-            // start sync job
+            // Start a sync job.
             let task = sync_to_checkpoint(
                 self.network.clone(),
                 self.store.clone(),
                 self.peer_heights.clone(),
                 self.metrics.clone(),
-                self.config.pinned_checkpoints.clone(),
-                self.config.checkpoint_header_download_concurrency(),
+                self.config.pinned_dwallet_checkpoints.clone(),
+                self.config.dwallet_checkpoint_header_download_concurrency(),
                 self.config.timeout(),
                 // The if condition should ensure that this is Some
                 highest_known_checkpoint.unwrap(),
