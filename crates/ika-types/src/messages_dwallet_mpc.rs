@@ -33,10 +33,6 @@ use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum MakeDWalletUserSecretKeySharesPublicRequestOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum DWalletImportedKeyVerificationRequestEventOutputVersion {
     V1(MPCPublicInput),
 }
