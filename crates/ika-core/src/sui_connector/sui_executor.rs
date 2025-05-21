@@ -4,7 +4,7 @@
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
-use crate::ika_system_checkpoints::SystemCheckpointStore;
+use crate::system_checkpoints::SystemCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
@@ -54,7 +54,7 @@ pub enum StopReason {
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
     checkpoint_store: Arc<CheckpointStore>,
-    ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
+    system_checkpoint_store: Arc<SystemCheckpointStore>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
@@ -73,7 +73,7 @@ where
     pub fn new(
         ika_system_package_id: ObjectID,
         checkpoint_store: Arc<CheckpointStore>,
-        ika_system_checkpoint_store: Arc<SystemCheckpointStore>,
+        system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,
         metrics: Arc<SuiConnectorMetrics>,
@@ -81,7 +81,7 @@ where
         Self {
             ika_system_package_id,
             checkpoint_store,
-            ika_system_checkpoint_store,
+            system_checkpoint_store,
             sui_notifier,
             sui_client,
             metrics,
@@ -99,7 +99,7 @@ where
     async fn run_epoch_switch(
         &self,
         sui_notifier: &SuiNotifier,
-        ika_system_state_inner: &SystemInner,
+        system_state_inner: &SystemInner,
         epoch_switch_state: &mut EpochSwitchState,
     ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
@@ -107,15 +107,15 @@ where
             return;
         };
         let Some(dwallet_2pc_mpc_secp256k1_id) =
-            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+            system_state_inner.dwallet_2pc_mpc_secp256k1_id()
         else {
             error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
             return;
         };
-        let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
+        let SystemInner::V1(system_inner_v1) = &system_state_inner;
 
-        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
-            + (ika_system_state_inner.epoch_duration_ms() / 2);
+        let mid_epoch_time = system_state_inner.epoch_start_timestamp_ms()
+            + (system_state_inner.epoch_duration_ms() / 2);
         let next_epoch_committee_is_empty =
             system_inner_v1.validator_set.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time
@@ -149,8 +149,8 @@ where
         };
 
         // The Epoch was finished.
-        let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
-            + ika_system_state_inner.epoch_duration_ms();
+        let epoch_finish_time = system_state_inner.epoch_start_timestamp_ms()
+            + system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
@@ -246,7 +246,7 @@ where
         let mut interval = time::interval(Duration::from_millis(120));
 
         let mut last_submitted_checkpoint: Option<u64> = None;
-        let mut last_submitted_ika_system_checkpoint: Option<u64> = None;
+        let mut last_submitted_system_checkpoint: Option<u64> = None;
 
         let mut epoch_switch_state = EpochSwitchState {
             ran_mid_epoch: false,
@@ -256,16 +256,16 @@ where
 
         loop {
             interval.tick().await;
-            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
-            let epoch_on_sui: u64 = ika_system_state_inner.epoch();
+            let system_state_inner = self.sui_client.must_get_system_inner_object().await;
+            let epoch_on_sui: u64 = system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
                 info!(epoch, "Finished epoch");
                 let epoch_start_system_state = self
                     .sui_client
-                    .get_epoch_start_system_until_success(&ika_system_state_inner)
+                    .get_epoch_start_system_until_success(&system_state_inner)
                     .await;
-                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
+                return StopReason::EpochComplete(system_state_inner, epoch_start_system_state);
             }
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
@@ -281,7 +281,7 @@ where
                 .unwrap_or(0);
 
             let last_processed_ika_system_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_ika_system_checkpoint_sequence_number();
+                system_state_inner.last_processed_ika_system_checkpoint_sequence_number();
             let next_ika_system_checkpoint_sequence_number =
                 last_processed_ika_system_checkpoint_sequence_number
                     .map(|s| s + 1)
@@ -292,8 +292,8 @@ where
             {
                 continue;
             }
-            if last_submitted_ika_system_checkpoint.is_some()
-                && last_submitted_ika_system_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            if last_submitted_system_checkpoint.is_some()
+                && last_submitted_system_checkpoint.unwrap() >= next_checkpoint_sequence_number
             {
                 continue;
             }
@@ -301,7 +301,7 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(
                     sui_notifier,
-                    &ika_system_state_inner,
+                    &system_state_inner,
                     &mut epoch_switch_state,
                 )
                 .await;
@@ -314,9 +314,9 @@ where
                         .next_checkpoint_sequence
                         .set(next_checkpoint_sequence_number as i64);
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                        system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee = ika_system_state_inner
+                        let active_members: BlsCommittee = system_state_inner
                             .validator_set()
                             .clone()
                             .active_committee;
@@ -359,15 +359,15 @@ where
                 }
 
                 if let Ok(Some(ika_system_checkpoint)) = self
-                    .ika_system_checkpoint_store
+                    .system_checkpoint_store
                     .get_system_checkpoint_by_sequence_number(
                         next_ika_system_checkpoint_sequence_number,
                     )
                 {
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                        system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee = ika_system_state_inner
+                        let active_members: BlsCommittee = system_state_inner
                             .validator_set()
                             .clone()
                             .active_committee;
@@ -394,7 +394,7 @@ where
                         .await;
                         match task {
                             Ok(_) => {
-                                last_submitted_ika_system_checkpoint =
+                                last_submitted_system_checkpoint =
                                     Some(next_ika_system_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for ika_system_checkpoint sequence number: {}", next_ika_system_checkpoint_sequence_number);
                             }

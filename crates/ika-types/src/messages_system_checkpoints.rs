@@ -23,7 +23,7 @@ use sui_types::transaction::{Transaction, TransactionData};
 use tap::TapFallible;
 use tracing::warn;
 
-pub use crate::digests::IkaSystemCheckpointContentsDigest;
+pub use crate::digests::SystemCheckpointContentsDigest;
 pub use crate::digests::SystemCheckpointDigest;
 
 pub type SystemCheckpointSequenceNumber = u64;

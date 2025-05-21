@@ -62,7 +62,7 @@ pub struct EpochMetrics {
     // TODO: This needs to be reported properly.
     pub epoch_first_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
 
-    pub epoch_first_ika_system_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
+    pub epoch_first_system_checkpoint_created_time_since_epoch_begin_ms: IntGauge,
 
     /// Buffer stake current in effect for this epoch
     pub effective_buffer_stake: IntGauge,
@@ -150,7 +150,7 @@ impl EpochMetrics {
                 "Time interval from when the epoch opens at new epoch to the first checkpoint is created locally",
                 registry
             ).unwrap(),
-            epoch_first_ika_system_checkpoint_created_time_since_epoch_begin_ms: register_int_gauge_with_registry!(
+            epoch_first_system_checkpoint_created_time_since_epoch_begin_ms: register_int_gauge_with_registry!(
                 "epoch_first_ika_system_checkpoint_created_time_since_epoch_begin_ms",
                 "Time interval from when the epoch opens at new epoch to the first params message is created locally",
                 registry

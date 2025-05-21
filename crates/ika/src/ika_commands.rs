@@ -47,7 +47,6 @@ use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
 use ika_types::sui::System;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
 use tokio::runtime::Runtime;
 use tracing::info;
 

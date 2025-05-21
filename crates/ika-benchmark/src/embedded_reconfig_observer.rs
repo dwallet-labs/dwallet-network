@@ -10,7 +10,7 @@ use ika_core::{
     authority_client::NetworkAuthorityClient, quorum_driver::reconfig_observer::ReconfigObserver,
 };
 use ika_network::default_mysten_network_config;
-use ika_types::sui::IkaSystemStateTrait;
+use ika_types::sui::SystemStateTrait;
 use tracing::{error, info, trace};
 
 /// A ReconfigObserver that polls validators periodically

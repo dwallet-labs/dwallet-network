@@ -185,7 +185,7 @@ pub struct ProtocolConfig {
     /// Max number of transactions per iks system checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_messages_per_ika_system_checkpoint: Option<u64>,
+    max_messages_per_system_checkpoint: Option<u64>,
 
     /// Max size of a checkpoint in bytes.
     /// Note that this is a protocol constant and not a config as validators must have this set to
@@ -195,7 +195,7 @@ pub struct ProtocolConfig {
     /// Max size of an ika system checkpoint in bytes.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_ika_system_checkpoint_size_bytes: Option<u64>,
+    max_system_checkpoint_size_bytes: Option<u64>,
 
     /// A protocol upgrade always requires 2f+1 stake to agree. We support a buffer of additional
     /// stake (as a fraction of f, expressed in basis points) that is required before an upgrade
@@ -207,7 +207,7 @@ pub struct ProtocolConfig {
     min_checkpoint_interval_ms: Option<u64>,
 
     /// Minimum interval of commit timestamps between consecutive ika system checkpoints.
-    min_ika_system_checkpoint_interval_ms: Option<u64>,
+    min_system_checkpoint_interval_ms: Option<u64>,
 
     /// === Consensus ===
 
@@ -363,16 +363,16 @@ impl ProtocolConfig {
             feature_flags: Default::default(),
 
             max_messages_per_checkpoint: Some(1_000),
-            max_messages_per_ika_system_checkpoint: Some(1_000),
+            max_messages_per_system_checkpoint: Some(1_000),
 
             // The `max_tx_size_bytes` on Sui is `128 * 1024`, but we must keep the transaction size lower to avoid reaching the maximum computation fee.
             max_checkpoint_size_bytes: Some(50 * 1024),
-            max_ika_system_checkpoint_size_bytes: Some(50 * 1024),
+            max_system_checkpoint_size_bytes: Some(50 * 1024),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
 
             min_checkpoint_interval_ms: Some(200),
-            min_ika_system_checkpoint_interval_ms: Some(200),
+            min_system_checkpoint_interval_ms: Some(200),
 
             // Taking a baby step approach, we consider only 20% by stake as bad nodes so we
             // have an 80% by stake of nodes participating in the leader committee. That allow

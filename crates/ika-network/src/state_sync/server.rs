@@ -33,13 +33,13 @@ pub struct GetCheckpointAvailabilityResponse {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
-pub enum GetIkaSystemCheckpointRequest {
+pub enum GetSystemCheckpointRequest {
     ByDigest(SystemCheckpointDigest),
     BySequenceNumber(SystemCheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetIkaSystemCheckpointAvailabilityResponse {
+pub struct GetSystemCheckpointAvailabilityResponse {
     pub(crate) highest_synced_ika_system_checkpoint: Option<CertifiedSystemCheckpoint>,
 }
 
@@ -153,7 +153,7 @@ where
 
         let highest_verified_ika_system_checkpoint = self
             .store
-            .get_highest_verified_ika_system_checkpoint()
+            .get_highest_verified_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?;
 
         let should_sync = highest_verified_ika_system_checkpoint
@@ -173,13 +173,13 @@ where
 
     async fn get_ika_system_checkpoint(
         &self,
-        request: Request<GetIkaSystemCheckpointRequest>,
+        request: Request<GetSystemCheckpointRequest>,
     ) -> Result<Response<Option<CertifiedSystemCheckpoint>>, Status> {
         let ika_system_checkpoint = match request.inner() {
-            GetIkaSystemCheckpointRequest::ByDigest(digest) => {
+            GetSystemCheckpointRequest::ByDigest(digest) => {
                 self.store.get_ika_system_checkpoint_by_digest(digest)
             }
-            GetIkaSystemCheckpointRequest::BySequenceNumber(sequence_number) => self
+            GetSystemCheckpointRequest::BySequenceNumber(sequence_number) => self
                 .store
                 .get_system_checkpoint_by_sequence_number(*sequence_number),
         }
@@ -192,14 +192,14 @@ where
     async fn get_ika_system_checkpoint_availability(
         &self,
         _request: Request<()>,
-    ) -> Result<Response<GetIkaSystemCheckpointAvailabilityResponse>, Status> {
+    ) -> Result<Response<GetSystemCheckpointAvailabilityResponse>, Status> {
         let highest_synced_ika_system_checkpoint = self
             .store
             .get_highest_synced_ika_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedSystemCheckpoint::into_inner);
 
-        Ok(Response::new(GetIkaSystemCheckpointAvailabilityResponse {
+        Ok(Response::new(GetSystemCheckpointAvailabilityResponse {
             highest_synced_ika_system_checkpoint,
         }))
     }
@@ -318,12 +318,12 @@ where
 }
 
 #[derive(Clone)]
-pub(super) struct IkaSystemCheckpointDownloadLimitLayer {
-    inflight_per_ika_system_checkpoint: Arc<DashMap<GetIkaSystemCheckpointRequest, Arc<Semaphore>>>,
+pub(super) struct SystemCheckpointDownloadLimitLayer {
+    inflight_per_ika_system_checkpoint: Arc<DashMap<GetSystemCheckpointRequest, Arc<Semaphore>>>,
     max_inflight_per_ika_system_checkpoint: usize,
 }
 
-impl IkaSystemCheckpointDownloadLimitLayer {
+impl SystemCheckpointDownloadLimitLayer {
     pub(super) fn new(max_inflight_per_ika_system_checkpoint: usize) -> Self {
         Self {
             inflight_per_ika_system_checkpoint: Arc::new(DashMap::new()),
@@ -342,11 +342,11 @@ impl IkaSystemCheckpointDownloadLimitLayer {
     }
 }
 
-impl<S> tower::layer::Layer<S> for IkaSystemCheckpointDownloadLimitLayer {
-    type Service = IkaSystemCheckpointDownloadLimit<S>;
+impl<S> tower::layer::Layer<S> for SystemCheckpointDownloadLimitLayer {
+    type Service = SystemCheckpointDownloadLimit<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        IkaSystemCheckpointDownloadLimit {
+        SystemCheckpointDownloadLimit {
             inner,
             inflight_per_ika_system_checkpoint: self.inflight_per_ika_system_checkpoint.clone(),
             max_inflight_per_ika_system_checkpoint: self.max_inflight_per_ika_system_checkpoint,
@@ -354,28 +354,28 @@ impl<S> tower::layer::Layer<S> for IkaSystemCheckpointDownloadLimitLayer {
     }
 }
 
-/// Middleware for adding a per-ika_system_checkpoint limit to the number of inflight GetIkaSystemCheckpointContent
+/// Middleware for adding a per-ika_system_checkpoint limit to the number of inflight GetSystemCheckpointContent
 /// requests.
 #[derive(Clone)]
-pub(super) struct IkaSystemCheckpointDownloadLimit<S> {
+pub(super) struct SystemCheckpointDownloadLimit<S> {
     inner: S,
-    inflight_per_ika_system_checkpoint: Arc<DashMap<GetIkaSystemCheckpointRequest, Arc<Semaphore>>>,
+    inflight_per_ika_system_checkpoint: Arc<DashMap<GetSystemCheckpointRequest, Arc<Semaphore>>>,
     max_inflight_per_ika_system_checkpoint: usize,
 }
 
-impl<S> tower::Service<Request<GetIkaSystemCheckpointRequest>>
-    for IkaSystemCheckpointDownloadLimit<S>
+impl<S> tower::Service<Request<GetSystemCheckpointRequest>>
+    for SystemCheckpointDownloadLimit<S>
 where
     S: tower::Service<
-            Request<GetIkaSystemCheckpointRequest>,
+            Request<GetSystemCheckpointRequest>,
             Response = Response<Option<CertifiedSystemCheckpoint>>,
             Error = Status,
         >
         + 'static
         + Clone
         + Send,
-    <S as tower::Service<Request<GetIkaSystemCheckpointRequest>>>::Future: Send,
-    Request<GetIkaSystemCheckpointRequest>: 'static + Send + Sync,
+    <S as tower::Service<Request<GetSystemCheckpointRequest>>>::Future: Send,
+    Request<GetSystemCheckpointRequest>: 'static + Send + Sync,
 {
     type Response = Response<Option<CertifiedSystemCheckpoint>>;
     type Error = S::Error;
@@ -386,7 +386,7 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<GetIkaSystemCheckpointRequest>) -> Self::Future {
+    fn call(&mut self, req: Request<GetSystemCheckpointRequest>) -> Self::Future {
         let inflight_per_ika_system_checkpoint = self.inflight_per_ika_system_checkpoint.clone();
         let max_inflight_per_ika_system_checkpoint = self.max_inflight_per_ika_system_checkpoint;
         let mut inner = self.inner.clone();

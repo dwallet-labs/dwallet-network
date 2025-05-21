@@ -37,7 +37,7 @@ use ika_types::event::EventID;
 use ika_types::messages_checkpoint::CheckpointSequenceNumber;
 use ika_types::quorum_driver_types::ExecuteTransactionRequestType;
 use ika_types::ika_serde::BigInt;
-use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::ika_system_state_summary::SystemStateSummary;
 use ika_types::transaction::{Transaction, TransactionData, TransactionKind};
 
 const WAIT_FOR_LOCAL_EXECUTION_TIMEOUT: Duration = Duration::from_secs(60);
@@ -1230,8 +1230,8 @@ impl GovernanceApi {
     ///
     /// Use this method to access system's information, such as the current epoch,
     /// the protocol version, the computation price per unit size, the total stake, active validators,
-    /// and much more. See the [IkaSystemStateSummary] for all the available fields.
-    pub async fn get_latest_ika_system_state(&self) -> IkaRpcResult<IkaSystemStateSummary> {
+    /// and much more. See the [SystemStateSummary] for all the available fields.
+    pub async fn get_latest_ika_system_state(&self) -> IkaRpcResult<SystemStateSummary> {
         Ok(self.api.http.get_latest_ika_system_state().await?)
     }
 

@@ -13,7 +13,7 @@ pub mod consensus_throughput_calculator;
 pub(crate) mod consensus_types;
 pub mod consensus_validator;
 pub mod epoch;
-pub mod ika_system_checkpoints;
+pub mod system_checkpoints;
 pub mod metrics;
 pub mod mysticeti_adapter;
 mod scoring_decision;

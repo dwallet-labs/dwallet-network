@@ -47,7 +47,7 @@ pub enum ConsensusTransactionKey {
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    IkaSystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
+    SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
 impl Debug for ConsensusTransactionKey {
@@ -88,10 +88,10 @@ impl Debug for ConsensusTransactionKey {
                     report,
                 )
             }
-            ConsensusTransactionKey::IkaSystemCheckpointSignature(name, seq) => {
+            ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {
                 write!(
                     f,
-                    "IkaSystemCheckpointSignature({:?}, {:?})",
+                    "SystemCheckpointSignature({:?}, {:?})",
                     name.concise(),
                     seq
                 )
@@ -169,7 +169,7 @@ pub enum ConsensusTransactionKind {
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    IkaSystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
+    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -249,7 +249,7 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_ika_system_checkpoint_signature_message(
+    pub fn new_system_checkpoint_signature_message(
         data: SystemCheckpointSignatureMessage,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
@@ -260,7 +260,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::IkaSystemCheckpointSignature(Box::new(data)),
+            kind: ConsensusTransactionKind::SystemCheckpointSignature(Box::new(data)),
         }
     }
 
@@ -314,8 +314,8 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report) => {
                 ConsensusTransactionKey::DWalletMPCThresholdNotReached(*authority, report.clone())
             }
-            ConsensusTransactionKind::IkaSystemCheckpointSignature(data) => {
-                ConsensusTransactionKey::IkaSystemCheckpointSignature(
+            ConsensusTransactionKind::SystemCheckpointSignature(data) => {
+                ConsensusTransactionKey::SystemCheckpointSignature(
                     data.system_checkpoint.auth_sig().authority,
                     data.system_checkpoint.sequence_number,
                 )

@@ -37,7 +37,7 @@ use sui_types::{
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
-use crate::ika_system_checkpoints::{IkaSystemCheckpointServiceNotify, SystemCheckpointService};
+use crate::system_checkpoints::{SystemCheckpointServiceNotify, SystemCheckpointService};
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -548,7 +548,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
             "dwallet_mpc_threshold_not_reached"
         }
-        ConsensusTransactionKind::IkaSystemCheckpointSignature(_) => {
+        ConsensusTransactionKind::SystemCheckpointSignature(_) => {
             "ika_system_checkpoint_signature"
         }
     }

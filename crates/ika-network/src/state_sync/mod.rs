@@ -84,8 +84,8 @@ mod tests;
 use self::{metrics::Metrics, server::CheckpointMessageDownloadLimitLayer};
 pub use crate::state_sync::server::GetChainIdentifierResponse;
 use crate::state_sync::server::{
-    GetIkaSystemCheckpointAvailabilityResponse, GetIkaSystemCheckpointRequest,
-    IkaSystemCheckpointDownloadLimitLayer,
+    GetSystemCheckpointAvailabilityResponse, GetSystemCheckpointRequest,
+    SystemCheckpointDownloadLimitLayer,
 };
 pub use builder::{Builder, UnstartedStateSync};
 pub use generated::{
@@ -138,14 +138,14 @@ impl Handle {
 
     pub async fn send_system_checkpoint(&self, system_checkpoint: VerifiedSystemCheckpoint) {
         self.sender
-            .send(StateSyncMessage::VerifiedIkaSystemCheckpointMessage(
+            .send(StateSyncMessage::VerifiedSystemCheckpointMessage(
                 Box::new(system_checkpoint),
             ))
             .await
             .unwrap()
     }
 
-    pub fn subscribe_to_synced_ika_system_checkpoints(
+    pub fn subscribe_to_synced_system_checkpoints(
         &self,
     ) -> broadcast::Receiver<VerifiedSystemCheckpoint> {
         self.ika_system_checkpoint_event_sender.subscribe()
@@ -319,7 +319,7 @@ impl PeerHeights {
         self.unprocessed_checkpoints.get(digest)
     }
 
-    pub fn cleanup_old_ika_system_checkpoints(
+    pub fn cleanup_old_system_checkpoints(
         &mut self,
         sequence_number: SystemCheckpointSequenceNumber,
     ) {
@@ -452,9 +452,9 @@ enum StateSyncMessage {
     // synced at the same time, only the highest checkpoint is sent.
     SyncedCheckpoint(Box<VerifiedCheckpointMessage>),
 
-    VerifiedIkaSystemCheckpointMessage(Box<VerifiedSystemCheckpoint>),
+    VerifiedSystemCheckpointMessage(Box<VerifiedSystemCheckpoint>),
 
-    SyncedIkaSystemCheckpoint(Box<VerifiedSystemCheckpoint>),
+    SyncedSystemCheckpoint(Box<VerifiedSystemCheckpoint>),
 }
 
 struct StateSyncEventLoop<S> {
@@ -479,8 +479,8 @@ struct StateSyncEventLoop<S> {
     chain_identifier: ChainIdentifier,
 
     ika_system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
-    sync_ika_system_checkpoints_task: Option<AbortHandle>,
-    ika_system_checkpoint_download_limit_layer: Option<IkaSystemCheckpointDownloadLimitLayer>,
+    sync_system_checkpoints_task: Option<AbortHandle>,
+    ika_system_checkpoint_download_limit_layer: Option<SystemCheckpointDownloadLimitLayer>,
     sync_ika_system_checkpoint_from_archive_task: Option<AbortHandle>,
 }
 
@@ -582,8 +582,8 @@ where
                         panic!("sync_checkpoint_from_archive task unexpectedly terminated")
                     }
 
-                    if matches!(&self.sync_ika_system_checkpoints_task, Some(t) if t.is_finished()) {
-                        self.sync_ika_system_checkpoints_task = None;
+                    if matches!(&self.sync_system_checkpoints_task, Some(t) if t.is_finished()) {
+                        self.sync_system_checkpoints_task = None;
                     }
 
                     if matches!(&self.sync_ika_system_checkpoint_from_archive_task, Some(t) if t.is_finished()) {
@@ -613,10 +613,10 @@ where
             StateSyncMessage::SyncedCheckpoint(checkpoint) => {
                 self.spawn_notify_peers_of_checkpoint(*checkpoint)
             }
-            StateSyncMessage::VerifiedIkaSystemCheckpointMessage(msg) => {
+            StateSyncMessage::VerifiedSystemCheckpointMessage(msg) => {
                 self.handle_ika_system_checkpoint_from_consensus(msg)
             }
-            StateSyncMessage::SyncedIkaSystemCheckpoint(msg) => {
+            StateSyncMessage::SyncedSystemCheckpoint(msg) => {
                 self.spawn_notify_peers_of_ika_system_checkpoint(*msg)
             }
         }
@@ -685,7 +685,7 @@ where
 
         let latest_ika_system_checkpoint_sequence_number = self
             .store
-            .get_highest_verified_ika_system_checkpoint()
+            .get_highest_verified_system_checkpoint()
             .expect("store operation should not fail")
             .map(|ika_system_checkpoint| ika_system_checkpoint.sequence_number().clone());
 
@@ -840,13 +840,13 @@ where
 
     fn maybe_start_ika_system_checkpoint_summary_sync_task(&mut self) {
         // Only run one sync task at a time
-        if self.sync_ika_system_checkpoints_task.is_some() {
+        if self.sync_system_checkpoints_task.is_some() {
             return;
         }
 
         let highest_processed_ika_system_checkpoint = self
             .store
-            .get_highest_verified_ika_system_checkpoint()
+            .get_highest_verified_system_checkpoint()
             .expect("store operation should not fail");
 
         let highest_known_ika_system_checkpoint = self
@@ -883,7 +883,7 @@ where
                 }
             });
             let task_handle = self.tasks.spawn(task);
-            self.sync_ika_system_checkpoints_task = Some(task_handle);
+            self.sync_system_checkpoints_task = Some(task_handle);
         }
     }
 
@@ -1361,7 +1361,7 @@ async fn query_peer_for_latest_info_ika_system_checkpoint(
         .await
         .map(Response::into_inner);
     match response {
-        Ok(GetIkaSystemCheckpointAvailabilityResponse {
+        Ok(GetSystemCheckpointAvailabilityResponse {
             highest_synced_ika_system_checkpoint,
         }) => highest_synced_ika_system_checkpoint,
         Err(status) => {
@@ -1412,9 +1412,9 @@ async fn query_peers_for_their_latest_ika_system_checkpoint(
         futs.len()
     );
 
-    let ika_system_checkpoints = futures::future::join_all(futs).await.into_iter().flatten();
+    let system_checkpoints = futures::future::join_all(futs).await.into_iter().flatten();
 
-    let highest_ika_system_checkpoint = ika_system_checkpoints
+    let highest_ika_system_checkpoint = system_checkpoints
         .max_by_key(|ika_system_checkpoint| *ika_system_checkpoint.sequence_number());
 
     let our_highest_ika_system_checkpoint = peer_heights
@@ -1452,7 +1452,7 @@ async fn sync_to_ika_system_checkpoint<S>(
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
     metrics: Metrics,
-    pinned_ika_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    pinned_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
     ika_system_checkpoint_header_download_concurrency: usize,
     timeout: Duration,
     ika_system_checkpoint: CertifiedSystemCheckpoint,
@@ -1463,7 +1463,7 @@ where
     metrics.set_highest_known_system_checkpoint(*ika_system_checkpoint.sequence_number());
 
     let mut current = store
-        .get_highest_verified_ika_system_checkpoint()
+        .get_highest_verified_system_checkpoint()
         .expect("store operation should not fail");
     let current_sequence_number = current.as_ref().map(|c| c.sequence_number);
     if current_sequence_number.as_ref() >= Some(ika_system_checkpoint.sequence_number()) {
@@ -1481,7 +1481,7 @@ where
         .map(|next| {
             let peers = peer_balancer.clone().with_ika_system_checkpoint(next);
             let peer_heights = peer_heights.clone();
-            let pinned_ika_system_checkpoints = &pinned_ika_system_checkpoints;
+            let pinned_system_checkpoints = &pinned_system_checkpoints;
             async move {
                 if let Some(ika_system_checkpoint) = peer_heights
                     .read()
@@ -1494,7 +1494,7 @@ where
                 // Iterate through peers trying each one in turn until we're able to
                 // successfully get the target ika_system_checkpoint
                 for mut peer in peers {
-                    let request = Request::new(GetIkaSystemCheckpointRequest::BySequenceNumber(next))
+                    let request = Request::new(GetSystemCheckpointRequest::BySequenceNumber(next))
                         .with_timeout(timeout);
                     if let Some(ika_system_checkpoint) = peer
                         .get_ika_system_checkpoint(request)
@@ -1515,14 +1515,14 @@ where
 
                         // peer gave us a ika_system_checkpoint whose digest does not match pinned digest
                         let ika_system_checkpoint_digest = ika_system_checkpoint.digest();
-                        if let Ok(pinned_digest_index) = pinned_ika_system_checkpoints.binary_search_by_key(
+                        if let Ok(pinned_digest_index) = pinned_system_checkpoints.binary_search_by_key(
                             ika_system_checkpoint.sequence_number(),
                             |(seq_num, _digest)| *seq_num
                         ) {
-                            if pinned_ika_system_checkpoints[pinned_digest_index].1 != *ika_system_checkpoint_digest {
+                            if pinned_system_checkpoints[pinned_digest_index].1 != *ika_system_checkpoint_digest {
                                 debug!(
                                     "peer returned ika_system_checkpoint with digest that does not match pinned digest: expected {:?}, got {:?}",
-                                    pinned_ika_system_checkpoints[pinned_digest_index].1,
+                                    pinned_system_checkpoints[pinned_digest_index].1,
                                     ika_system_checkpoint_digest
                                 );
                                 continue;
@@ -1583,7 +1583,7 @@ where
     peer_heights
         .write()
         .unwrap()
-        .cleanup_old_ika_system_checkpoints(*ika_system_checkpoint.sequence_number());
+        .cleanup_old_system_checkpoints(*ika_system_checkpoint.sequence_number());
 
     Ok(())
 }
@@ -1605,7 +1605,7 @@ async fn sync_ika_system_checkpoint_messages_from_archive<S>(
         );
         let start = highest_synced
             .checked_add(1)
-            .expect("IkaSystemCheckpoint seq num overflow");
+            .expect("SystemCheckpoint seq num overflow");
         let ika_system_checkpoint_range = start..u64::MAX;
         if let Some(archive_reader) = archive_readers
             .pick_one_random(ika_system_checkpoint_range.clone())
@@ -1649,7 +1649,7 @@ where
     loop {
         tokio::select! {
              _now = interval.tick() => {
-                let highest_verified_ika_system_checkpoint = store.get_highest_verified_ika_system_checkpoint()
+                let highest_verified_ika_system_checkpoint = store.get_highest_verified_system_checkpoint()
                     .expect("store operation should not fail");
                 if let Some(highest_verified_ika_system_checkpoint) = highest_verified_ika_system_checkpoint {
                     metrics.set_highest_verified_system_checkpoint(highest_verified_ika_system_checkpoint.sequence_number);

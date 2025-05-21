@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-mod system_checkpoint_output;
 mod metrics;
+mod system_checkpoint_output;
 
 use crate::authority::AuthorityState;
 use crate::system_checkpoints::system_checkpoint_output::{

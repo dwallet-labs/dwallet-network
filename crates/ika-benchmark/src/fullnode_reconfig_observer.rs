@@ -68,7 +68,7 @@ impl ReconfigObserver<NetworkAuthorityClient> for FullNodeReconfigObserver {
                 Ok(ika_system_state) => {
                     let epoch_id = ika_system_state.epoch;
                     if epoch_id > driver.epoch() {
-                        debug!(epoch_id, "Got IkaSystemState in newer epoch");
+                        debug!(epoch_id, "Got SystemState in newer epoch");
                         let new_committee = ika_system_state.get_ika_committee_for_benchmarking();
                         let _ = self
                             .committee_store
@@ -88,7 +88,7 @@ impl ReconfigObserver<NetworkAuthorityClient> for FullNodeReconfigObserver {
                         );
                     }
                 }
-                Err(err) => error!("Can't get IkaSystemState from Full Node: {:?}", err,),
+                Err(err) => error!("Can't get SystemState from Full Node: {:?}", err,),
             }
         }
     }

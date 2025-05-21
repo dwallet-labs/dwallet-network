@@ -19,7 +19,7 @@ use ika_test_transaction_builder::batch_make_transfer_transactions;
 use ika_types::base_types::TransactionDigest;
 use ika_types::object::Owner;
 use ika_types::quorum_driver_types::ExecuteTransactionRequestType;
-use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::ika_system_state_summary::SystemStateSummary;
 
 use ika_sdk::IkaClient;
 use ika_types::gas_coin::GasCoin;
@@ -103,7 +103,7 @@ impl TestContext {
         self.client.get_wallet()
     }
 
-    async fn get_latest_ika_system_state(&self) -> IkaSystemStateSummary {
+    async fn get_latest_ika_system_state(&self) -> SystemStateSummary {
         self.client
             .get_fullnode_client()
             .governance_api()

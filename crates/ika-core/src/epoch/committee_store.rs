@@ -49,7 +49,7 @@ impl CommitteeStore {
         store
     }
 
-    pub fn new_for_testing(genesis_committee: &Committee) -> Self {
+    pub fn new_for_testing(_genesis_committee: &Committee) -> Self {
         let dir = std::env::temp_dir();
         let path = dir.join(format!("DB_{:?}", nondeterministic!(ObjectID::random())));
         Self::new(path, None)

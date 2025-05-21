@@ -34,7 +34,7 @@ impl EpochStartConfiguration {
                     system_state: config.system_state.new_at_next_epoch_for_testing(),
                 })
             }
-            _ => panic!("This function is only implemented for the latest version of EpochStartConfiguration"),
+            _ => unreachable!("This function is only implemented for the latest version of EpochStartConfiguration"),
         }
     }
 
