@@ -98,13 +98,13 @@ pub(crate) fn verify_partial_signature(
     partially_signed_message: &SerializedWrappedMPCPublicOutput,
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
-    let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
-    let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
+    let dkg_output: DWalletDKGSecondOutputVersion = bcs::from_bytes(&dwallet_decentralized_output)?;
+    let presign: PresignOutputVersion = bcs::from_bytes(&presign)?;
     let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
-        MPCPublicOutput::V1(dkg_output) => {
+        DWalletDKGSecondOutputVersion::V1(dkg_output) => {
             let presign = match presign {
-                MPCPublicOutput::V1(output) => output,
+                PresignOutputVersion::V1(output) => output,
             };
             let partially_signed_message = match partially_signed_message {
                 MPCPublicOutput::V1(output) => output,
