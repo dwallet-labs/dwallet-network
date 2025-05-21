@@ -3,8 +3,8 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    CentralizedDKGPublicOutputVersion, MPCPublicInput, MPCPublicOutput,
-    PublicKeyShareAndProofVersion, SerializedWrappedMPCPublicOutput,
+    CentralizedDKGPublicOutputVersion, MPCPublicInput, PublicKeyShareAndProofVersion,
+    SerializedWrappedMPCPublicOutput,
 };
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;

@@ -16,7 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     CentralizedSignOutputVersion, DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion,
     DWalletMPCNetworkKeyScheme, EncryptedSecretShareAndProofVersions,
     ImportedDWalletPublicOutputVersions, ImportedDwalletOutgoingMessageVersions,
-    ImportedSecretShareVersions, MPCPublicInput, MPCPublicOutput, PresignOutputVersion,
+    ImportedSecretShareVersions, MPCPublicInput, PresignOutputVersion,
     PublicKeyShareAndProofVersion, SecpNetworkDkgOutputVersion, SerializedWrappedMPCPublicOutput,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
@@ -359,19 +359,6 @@ pub fn generate_secp256k1_cg_keypair_from_seed_internal(
     Ok((encryption_key, decryption_key))
 }
 
-pub fn centralized_public_share_from_decentralized_output_inner(
-    dkg_output: SerializedWrappedMPCPublicOutput,
-) -> anyhow::Result<Vec<u8>> {
-    let dkg_output = bcs::from_bytes(&dkg_output)?;
-    match dkg_output {
-        MPCPublicOutput::V1(dkg_output) => {
-            let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-                bcs::from_bytes(&dkg_output)?;
-            bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
-        }
-    }
-}
-
 /// Encrypts the given secret key share with the given encryption key.
 /// Returns a serialized tuple containing the `proof of encryption`,
 /// and an encrypted `secret key share`.
@@ -394,33 +381,6 @@ pub fn encrypt_secret_key_share_and_prove(
             Ok(bcs::to_bytes(&EncryptedSecretShareAndProofVersions::V1(
                 bcs::to_bytes(&result)?,
             ))?)
-        }
-    }
-}
-
-/// Verifies the given secret share matches the given dWallets`
-/// DKG output centralized_party_public_key_share.
-pub fn verify_secret_share(
-    secret_share: Vec<u8>,
-    dkg_output: SerializedWrappedMPCPublicOutput,
-    network_dkg_public_output: Vec<u8>,
-) -> anyhow::Result<bool> {
-    let protocol_public_params: ProtocolPublicParameters =
-        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?)?;
-    let dkg_output = bcs::from_bytes(&dkg_output)?;
-    match dkg_output {
-        MPCPublicOutput::V1(dkg_output) => {
-            let dkg_output = bcs::from_bytes(&dkg_output)?;
-            let secret_share = bcs::from_bytes(&secret_share)?;
-            Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
-                &protocol_public_params,
-                dkg_output,
-                secret_share,
-            )
-                .is_ok())
         }
     }
 }

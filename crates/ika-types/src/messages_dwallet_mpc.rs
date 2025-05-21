@@ -3,7 +3,7 @@ use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, NetworkDecryptionKeyPublicData,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
     DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
@@ -124,20 +124,6 @@ impl Debug for MPCProtocolInitData {
             }
         }
     }
-}
-
-/// The optional state of the Presign session, if the first round party was
-/// completed and agreed on.
-/// If the first presign round was completed and agreed on,
-/// the [`DWalletMPCSession`] `session_specific_state` will hold
-/// this state.
-/// If the first round was not completed, the `session_specific_state` will be `None`.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct PresignSessionState {
-    /// The verified output from the first party of the Presign protocol.
-    pub first_presign_party_output: MPCPublicOutput,
-    /// The public input for the second party of the Presign protocol.
-    pub second_party_public_input: MPCPublicInput,
 }
 
 /// This is a wrapper type for the [`SuiEvent`] type that is being used to write it to the local RocksDB.

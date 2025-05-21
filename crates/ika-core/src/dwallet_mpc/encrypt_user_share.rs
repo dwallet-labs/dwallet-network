@@ -1,5 +1,5 @@
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletDKGSecondOutputVersion, EncryptedSecretShareAndProofVersions, MPCPublicOutput,
+    DWalletDKGSecondOutputVersion, EncryptedSecretShareAndProofVersions,
     SerializedWrappedMPCPublicOutput,
 };
 use fastcrypto::traits::ToFromBytes;
