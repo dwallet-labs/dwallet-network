@@ -11,9 +11,7 @@ use class_groups::{
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletDKGFirstOutputVersion, DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput};
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -126,7 +124,7 @@ pub fn create_dkg_output(
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
     match decentralized_first_round_public_output {
-        MPCPublicOutput::V1(decentralized_first_round_public_output) => {
+        DWalletDKGFirstOutputVersion::V1(decentralized_first_round_public_output) => {
             let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
                 bcs::from_bytes(&decentralized_first_round_public_output)
                     .context("failed to deserialize decentralized first round DKG output")?;
