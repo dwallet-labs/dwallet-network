@@ -276,6 +276,19 @@ pub fn sample_dwallet_secret_key_inner(
     Ok(bcs::to_bytes(&secret_key)?)
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedDWalletPublicOutputVersions {
+    V1(Vec<u8>),
+}
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedSecretShareVersions {
+    V1(Vec<u8>),
+}
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedDwalletOutgoingMessageVersions {
+    V1(Vec<u8>),
+}
+
 pub fn create_imported_dwallet_centralized_step_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
@@ -301,9 +314,15 @@ pub fn create_imported_dwallet_centralized_step_inner(
             let outgoing_message = round_result.outgoing_message;
             let secret_share = MPCPublicOutput::V1(bcs::to_bytes(&round_result.private_output)?);
             Ok((
-                bcs::to_bytes(&secret_share)?,
-                bcs::to_bytes(&public_output)?,
-                bcs::to_bytes(&outgoing_message)?,
+                bcs::to_bytes(&ImportedSecretShareVersions::V1(bcs::to_bytes(
+                    &secret_share,
+                )?))?,
+                bcs::to_bytes(&ImportedDWalletPublicOutputVersions::V1(bcs::to_bytes(
+                    &public_output,
+                )?))?,
+                bcs::to_bytes(&ImportedDwalletOutgoingMessageVersions::V1(bcs::to_bytes(
+                    &outgoing_message,
+                )?))?,
             ))
         }
         Err(e) => Err(e.into()),
