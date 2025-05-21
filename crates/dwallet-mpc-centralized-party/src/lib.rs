@@ -412,7 +412,6 @@ pub fn verify_secret_share(
     }
 }
 
-
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
     decryption_key: Vec<u8>,
