@@ -43,8 +43,8 @@ use super::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::authority::{AuthorityMetrics, AuthorityState};
 use crate::checkpoints::{
-    BuilderCheckpointMessage, CheckpointHeight, CheckpointServiceNotify, EpochStats,
-    PendingCheckpoint, PendingCheckpointInfo, PendingCheckpointV1,
+    BuilderCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify, EpochStats,
+    PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1,
 };
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
@@ -411,7 +411,7 @@ pub struct AuthorityEpochTables {
     /// Because we don't want to create checkpoints with empty content(see CheckpointBuilder::write_checkpoint),
     /// the sequence number of checkpoint does not match height here.
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
-    pending_checkpoints: DBMap<CheckpointHeight, PendingCheckpoint>,
+    pending_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
     /// Maps non-digest TransactionKeys to the corresponding digest after execution, for use
     /// by checkpoint builder.
@@ -1264,7 +1264,7 @@ impl AuthorityPerEpochStore {
     #[instrument(level = "debug", skip_all)]
     pub(crate) async fn process_consensus_transactions_and_commit_boundary<
         'a,
-        C: CheckpointServiceNotify,
+        C: DWalletCheckpointServiceNotify,
     >(
         &self,
         transactions: Vec<SequencedConsensusTransaction>,
@@ -1326,11 +1326,11 @@ impl AuthorityPerEpochStore {
 
         let checkpoint_height = consensus_commit_info.round;
 
-        let pending_checkpoint = PendingCheckpoint::V1(PendingCheckpointV1 {
+        let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
             messages: verified_messages.clone(),
-            details: PendingCheckpointInfo {
+            details: PendingDWalletCheckpointInfo {
                 timestamp_ms: consensus_commit_info.timestamp,
-                checkpoint_height,
+                dwallet_checkpoint_height: checkpoint_height,
             },
         });
         self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
@@ -1398,7 +1398,7 @@ impl AuthorityPerEpochStore {
     /// - Or update the state for checkpoint or epoch change protocol.
     #[instrument(level = "debug", skip_all)]
     #[allow(clippy::type_complexity)]
-    pub(crate) async fn process_consensus_transactions<C: CheckpointServiceNotify>(
+    pub(crate) async fn process_consensus_transactions<C: DWalletCheckpointServiceNotify>(
         &self,
         output: &mut ConsensusCommitOutput,
         transactions: &[VerifiedSequencedConsensusTransaction],
@@ -1633,7 +1633,7 @@ impl AuthorityPerEpochStore {
     }
 
     #[instrument(level = "trace", skip_all)]
-    async fn process_consensus_transaction<C: CheckpointServiceNotify>(
+    async fn process_consensus_transaction<C: DWalletCheckpointServiceNotify>(
         &self,
         output: &mut ConsensusCommitOutput,
         transaction: &VerifiedSequencedConsensusTransaction,
@@ -1993,7 +1993,7 @@ impl AuthorityPerEpochStore {
     pub(crate) fn write_pending_checkpoint(
         &self,
         output: &mut ConsensusCommitOutput,
-        checkpoint: &PendingCheckpoint,
+        checkpoint: &PendingDWalletCheckpoint,
     ) -> IkaResult {
         assert!(
             self.get_pending_checkpoint(&checkpoint.height())?.is_none(),
@@ -2019,8 +2019,8 @@ impl AuthorityPerEpochStore {
 
     pub fn get_pending_checkpoints(
         &self,
-        last: Option<CheckpointHeight>,
-    ) -> IkaResult<Vec<(CheckpointHeight, PendingCheckpoint)>> {
+        last: Option<DWalletCheckpointHeight>,
+    ) -> IkaResult<Vec<(DWalletCheckpointHeight, PendingDWalletCheckpoint)>> {
         let tables = self.tables()?;
         let mut iter = tables.pending_checkpoints.unbounded_iter();
         if let Some(last_processed_height) = last {
@@ -2031,14 +2031,14 @@ impl AuthorityPerEpochStore {
 
     pub fn get_pending_checkpoint(
         &self,
-        index: &CheckpointHeight,
-    ) -> IkaResult<Option<PendingCheckpoint>> {
+        index: &DWalletCheckpointHeight,
+    ) -> IkaResult<Option<PendingDWalletCheckpoint>> {
         Ok(self.tables()?.pending_checkpoints.get(index)?)
     }
 
     pub fn process_pending_checkpoint(
         &self,
-        commit_height: CheckpointHeight,
+        commit_height: DWalletCheckpointHeight,
         checkpoint_messages: Vec<DWalletCheckpointMessage>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
@@ -2049,8 +2049,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderCheckpointMessage {
-                checkpoint_message: summary,
-                checkpoint_height: Some(commit_height),
+                dwallet_checkpoint_message: summary,
+                dwallet_checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -2093,7 +2093,7 @@ impl AuthorityPerEpochStore {
             .unbounded_iter()
             .skip_to_last()
             .next()
-            .map(|(seq, s)| (seq, s.checkpoint_message)))
+            .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
     }
 
     pub fn get_built_checkpoint_message(
@@ -2104,7 +2104,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_checkpoint_message_v1
             .get(&sequence)?
-            .map(|s| s.checkpoint_message))
+            .map(|s| s.dwallet_checkpoint_message))
     }
 
     pub fn get_last_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2322,7 +2322,7 @@ pub(crate) struct ConsensusCommitOutput {
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
     consensus_commit_stats: Option<ExecutionIndicesWithStats>,
 
-    pending_checkpoints: Vec<PendingCheckpoint>,
+    pending_checkpoints: Vec<PendingDWalletCheckpoint>,
     pending_system_checkpoints: Vec<PendingSystemCheckpoint>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
@@ -2367,7 +2367,7 @@ impl ConsensusCommitOutput {
         self.consensus_messages_processed.insert(key);
     }
 
-    fn insert_pending_checkpoint(&mut self, checkpoint: PendingCheckpoint) {
+    fn insert_pending_checkpoint(&mut self, checkpoint: PendingDWalletCheckpoint) {
         self.pending_checkpoints.push(checkpoint);
     }
 

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use crate::system_checkpoints::SystemCheckpointServiceNotify;
 use crate::{
-    authority::AuthorityState, checkpoints::CheckpointServiceNotify,
+    authority::AuthorityState, checkpoints::DWalletCheckpointServiceNotify,
     consensus_adapter::ConsensusOverloadChecker,
 };
 use consensus_core::{TransactionIndex, TransactionVerifier, ValidationError};
@@ -30,7 +30,7 @@ use tracing::{info, warn};
 pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-    checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+    checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
     system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
@@ -39,7 +39,7 @@ impl IkaTxValidator {
     pub fn new(
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-        checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+        checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
         system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
@@ -97,7 +97,7 @@ impl IkaTxValidator {
         }
 
         self.metrics
-            .checkpoint_signatures_verified
+            .dwallet_checkpoint_signatures_verified
             .inc_by(ckpt_count as u64);
 
         let params_count = params_batch.len();
@@ -275,7 +275,7 @@ impl TransactionVerifier for IkaTxValidator {
 
 pub struct IkaTxValidatorMetrics {
     certificate_signatures_verified: IntCounter,
-    checkpoint_signatures_verified: IntCounter,
+    dwallet_checkpoint_signatures_verified: IntCounter,
     system_checkpoint_signatures_verified: IntCounter,
 }
 
@@ -288,15 +288,15 @@ impl IkaTxValidatorMetrics {
                 registry
             )
             .unwrap(),
-            checkpoint_signatures_verified: register_int_counter_with_registry!(
-                "checkpoint_signatures_verified",
-                "Number of checkpoint verified in consensus batch verifier",
+            dwallet_checkpoint_signatures_verified: register_int_counter_with_registry!(
+                "dwallet_checkpoint_signatures_verified",
+                "Number of dwallet checkpoint verified in consensus batch verifier",
                 registry
             )
             .unwrap(),
             system_checkpoint_signatures_verified: register_int_counter_with_registry!(
                 "system_checkpoint_signatures_verified",
-                "Number of checkpoints signatures verified in consensus batch verifier",
+                "Number of system checkpoints signatures verified in consensus batch verifier",
                 registry
             )
             .unwrap(),

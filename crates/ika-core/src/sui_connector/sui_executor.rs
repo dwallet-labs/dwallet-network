@@ -3,7 +3,7 @@
 
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
-use crate::checkpoints::CheckpointStore;
+use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
@@ -53,7 +53,7 @@ pub enum StopReason {
 
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
-    checkpoint_store: Arc<CheckpointStore>,
+    checkpoint_store: Arc<DWalletCheckpointStore>,
     system_checkpoint_store: Arc<SystemCheckpointStore>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
@@ -72,7 +72,7 @@ where
 {
     pub fn new(
         ika_system_package_id: ObjectID,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::checkpoints::CheckpointStore;
+use crate::checkpoints::DWalletCheckpointStore;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::system_checkpoints::SystemCheckpointStore;
 use ika_types::committee::Committee;
@@ -24,10 +24,10 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct RocksDbStore {
     committee_store: Arc<CommitteeStore>,
-    checkpoint_store: Arc<CheckpointStore>,
+    dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
     // in memory checkpoint watermark sequence numbers
-    highest_verified_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
-    highest_synced_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
+    highest_verified_dwallet_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
+    highest_synced_dwallet_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
 
     system_checkpoint_store: Arc<SystemCheckpointStore>,
     // in memory system_checkpoint watermark sequence numbers
@@ -38,14 +38,14 @@ pub struct RocksDbStore {
 impl RocksDbStore {
     pub fn new(
         committee_store: Arc<CommitteeStore>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
     ) -> Self {
         Self {
             committee_store,
-            checkpoint_store,
-            highest_verified_checkpoint: Arc::new(Mutex::new(None)),
-            highest_synced_checkpoint: Arc::new(Mutex::new(None)),
+            dwallet_checkpoint_store: checkpoint_store,
+            highest_verified_dwallet_checkpoint: Arc::new(Mutex::new(None)),
+            highest_synced_dwallet_checkpoint: Arc::new(Mutex::new(None)),
             system_checkpoint_store,
             highest_verified_system_checkpoint: Arc::new(Mutex::new(None)),
             highest_synced_system_checkpoint: Arc::new(Mutex::new(None)),
@@ -55,7 +55,9 @@ impl RocksDbStore {
     pub fn get_last_executed_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, IkaError> {
-        Ok(self.checkpoint_store.get_highest_executed_checkpoint()?)
+        Ok(self
+            .dwallet_checkpoint_store
+            .get_highest_executed_checkpoint()?)
     }
 }
 
@@ -64,7 +66,7 @@ impl ReadStore for RocksDbStore {
         &self,
         digest: &DWalletCheckpointMessageDigest,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .get_dwallet_checkpoint_by_digest(digest)
             .map_err(Into::into)
     }
@@ -73,7 +75,7 @@ impl ReadStore for RocksDbStore {
         &self,
         sequence_number: DWalletCheckpointSequenceNumber,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .get_dwallet_checkpoint_by_sequence_number(sequence_number)
             .map_err(Into::into)
     }
@@ -81,7 +83,7 @@ impl ReadStore for RocksDbStore {
     fn get_highest_verified_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .get_highest_verified_dwallet_checkpoint()
             .map_err(Into::into)
     }
@@ -89,7 +91,7 @@ impl ReadStore for RocksDbStore {
     fn get_highest_synced_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .get_highest_synced_dwallet_checkpoint()
             .map_err(Into::into)
     }
@@ -98,7 +100,7 @@ impl ReadStore for RocksDbStore {
         &self,
     ) -> Result<DWalletCheckpointSequenceNumber, StorageError> {
         let highest_pruned_cp = self
-            .checkpoint_store
+            .dwallet_checkpoint_store
             .get_highest_pruned_checkpoint_seq_number()
             .map_err(Into::<StorageError>::into)?;
 
@@ -119,7 +121,7 @@ impl ReadStore for RocksDbStore {
     fn get_dwallet_latest_checkpoint(
         &self,
     ) -> ika_types::storage::error::Result<VerifiedDWalletCheckpointMessage> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .get_highest_executed_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
             .ok_or_else(|| {
@@ -185,7 +187,7 @@ impl WriteStore for RocksDbStore {
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .insert_verified_checkpoint(checkpoint)
             .map_err(Into::into)
     }
@@ -194,11 +196,11 @@ impl WriteStore for RocksDbStore {
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
-        let mut locked = self.highest_synced_checkpoint.lock();
+        let mut locked = self.highest_synced_dwallet_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {
             return Ok(());
         }
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .update_highest_synced_checkpoint(checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
         *locked = Some(checkpoint.sequence_number);
@@ -209,11 +211,11 @@ impl WriteStore for RocksDbStore {
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
-        let mut locked = self.highest_verified_checkpoint.lock();
+        let mut locked = self.highest_verified_dwallet_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {
             return Ok(());
         }
-        self.checkpoint_store
+        self.dwallet_checkpoint_store
             .update_highest_verified_checkpoint(checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
         *locked = Some(checkpoint.sequence_number);

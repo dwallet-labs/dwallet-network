@@ -46,7 +46,7 @@ use ika_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
 use ika_core::checkpoints::{
-    CheckpointService, CheckpointStore, DWalletCheckpointMetrics, SendDWalletCheckpointToStateSync,
+    DWalletCheckpointService, DWalletCheckpointStore, DWalletCheckpointMetrics, SendDWalletCheckpointToStateSync,
     SubmitDWalletCheckpointToConsensus,
 };
 use ika_core::consensus_adapter::{
@@ -197,7 +197,7 @@ pub struct IkaNode {
     _discovery: discovery::Handle,
     _connection_monitor_handle: consensus_core::ConnectionMonitorHandle,
     state_sync_handle: state_sync::Handle,
-    checkpoint_store: Arc<CheckpointStore>,
+    checkpoint_store: Arc<DWalletCheckpointStore>,
     connection_monitor_status: Arc<ConnectionMonitorStatus>,
 
     /// Broadcast channel to send the starting system state for the next epoch.
@@ -355,14 +355,14 @@ impl IkaNode {
 
         info!("creating checkpoint store");
 
-        let checkpoint_store = CheckpointStore::new(&config.db_path().join("checkpoints"));
+        let dwallet_checkpoint_store = DWalletCheckpointStore::new(&config.db_path().join("dwallet_checkpoints"));
         let system_checkpoint_store =
             SystemCheckpointStore::new(&config.db_path().join("system_checkpoints"));
 
         info!("Creating state sync store");
         let state_sync_store = RocksDbStore::new(
             committee_store.clone(),
-            checkpoint_store.clone(),
+            dwallet_checkpoint_store.clone(),
             system_checkpoint_store.clone(),
         );
 
@@ -374,7 +374,7 @@ impl IkaNode {
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
-                checkpoint_store.clone(),
+                dwallet_checkpoint_store.clone(),
                 system_checkpoint_store.clone(),
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
@@ -431,7 +431,7 @@ impl IkaNode {
             perpetual_tables.clone(),
             epoch_store.clone(),
             committee_store.clone(),
-            checkpoint_store.clone(),
+            dwallet_checkpoint_store.clone(),
             &prometheus_registry,
             config.clone(),
         )
@@ -473,7 +473,7 @@ impl IkaNode {
                 state.clone(),
                 committee_arc,
                 epoch_store.clone(),
-                checkpoint_store.clone(),
+                dwallet_checkpoint_store.clone(),
                 system_checkpoint_store.clone(),
                 state_sync_handle.clone(),
                 connection_monitor_status.clone(),
@@ -509,7 +509,7 @@ impl IkaNode {
             _discovery: discovery_handle,
             _connection_monitor_handle: connection_monitor_handle,
             state_sync_handle,
-            checkpoint_store,
+            checkpoint_store: dwallet_checkpoint_store,
             system_checkpoint_store,
 
             end_of_epoch_channel,
@@ -749,13 +749,13 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         committee: Arc<Committee>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        checkpoint_store: Arc<CheckpointStore>,
+        dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         state_sync_handle: state_sync::Handle,
         connection_monitor_status: Arc<ConnectionMonitorStatus>,
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
@@ -799,7 +799,7 @@ impl IkaNode {
             &config,
             state.clone(),
             consensus_adapter,
-            checkpoint_store,
+            dwallet_checkpoint_store,
             system_checkpoint_store,
             epoch_store,
             state_sync_handle,
@@ -810,7 +810,7 @@ impl IkaNode {
             system_checkpoint_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
-            previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
             previous_epoch_last_system_checkpoint_sequence_number,
             network_keys_receiver,
             next_epoch_committee_receiver,
@@ -823,7 +823,7 @@ impl IkaNode {
         config: &NodeConfig,
         state: Arc<AuthorityState>,
         consensus_adapter: Arc<ConsensusAdapter>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
@@ -943,13 +943,13 @@ impl IkaNode {
     fn start_checkpoint_service(
         config: &NodeConfig,
         consensus_adapter: Arc<ConsensusAdapter>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
         checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-    ) -> (Arc<CheckpointService>, JoinSet<()>) {
+    ) -> (Arc<DWalletCheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
@@ -971,7 +971,7 @@ impl IkaNode {
         let max_checkpoint_size_bytes =
             epoch_store.protocol_config().max_checkpoint_size_bytes() as usize;
 
-        CheckpointService::spawn(
+        DWalletCheckpointService::spawn(
             state.clone(),
             checkpoint_store,
             epoch_store,

@@ -1,5 +1,5 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::checkpoints::CheckpointStore;
+use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
@@ -63,7 +63,7 @@ pub struct SuiConnectorService {
 impl SuiConnectorService {
     pub async fn new(
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,

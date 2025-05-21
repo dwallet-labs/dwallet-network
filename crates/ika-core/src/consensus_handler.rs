@@ -47,7 +47,7 @@ use crate::{
         epoch_start_configuration::EpochStartConfigTrait,
         AuthorityMetrics, AuthorityState,
     },
-    checkpoints::{CheckpointService, CheckpointServiceNotify},
+    checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     consensus_throughput_calculator::ConsensusThroughputCalculator,
     consensus_types::consensus_output_api::{parse_block_transactions, ConsensusCommitAPI},
     scoring_decision::update_low_scoring_authorities,
@@ -61,7 +61,7 @@ use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
-    checkpoint_service: Arc<CheckpointService>,
+    checkpoint_service: Arc<DWalletCheckpointService>,
     system_checkpoint_service: Arc<SystemCheckpointService>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
@@ -71,7 +71,7 @@ pub struct ConsensusHandlerInitializer {
 impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        checkpoint_service: Arc<DWalletCheckpointService>,
         system_checkpoint_service: Arc<SystemCheckpointService>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
@@ -90,7 +90,7 @@ impl ConsensusHandlerInitializer {
     #[cfg(test)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        checkpoint_service: Arc<DWalletCheckpointService>,
     ) -> Self {
         Self {
             state: state.clone(),
@@ -104,7 +104,7 @@ impl ConsensusHandlerInitializer {
         }
     }
 
-    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<CheckpointService> {
+    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<DWalletCheckpointService> {
         let new_epoch_start_state = self.epoch_store.epoch_start_state();
         let consensus_committee = new_epoch_start_state.get_consensus_committee();
 
@@ -187,7 +187,7 @@ impl<C> ConsensusHandler<C> {
     }
 }
 
-impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
+impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
@@ -509,7 +509,7 @@ pub(crate) struct MysticetiConsensusHandler {
 
 impl MysticetiConsensusHandler {
     pub(crate) fn new(
-        mut consensus_handler: ConsensusHandler<CheckpointService>,
+        mut consensus_handler: ConsensusHandler<DWalletCheckpointService>,
         mut commit_receiver: UnboundedReceiver<consensus_core::CommittedSubDag>,
         commit_consumer_monitor: Arc<CommitConsumerMonitor>,
     ) -> Self {

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{CheckpointStore, DWalletCheckpointMetrics};
+use super::{DWalletCheckpointStore, DWalletCheckpointMetrics};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
@@ -23,7 +23,7 @@ pub trait DWalletCheckpointOutput: Sync + Send + 'static {
         &self,
         summary: &DWalletCheckpointMessage,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        checkpoint_store: &Arc<CheckpointStore>,
+        checkpoint_store: &Arc<DWalletCheckpointStore>,
     ) -> IkaResult;
 }
 
@@ -61,7 +61,7 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
         &self,
         checkpoint_message: &DWalletCheckpointMessage,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-        checkpoint_store: &Arc<CheckpointStore>,
+        checkpoint_store: &Arc<DWalletCheckpointStore>,
     ) -> IkaResult {
         LogDWalletCheckpointOutput
             .dwallet_checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
@@ -123,7 +123,7 @@ impl DWalletCheckpointOutput for LogDWalletCheckpointOutput {
         &self,
         checkpoint_message: &DWalletCheckpointMessage,
         _epoch_store: &Arc<AuthorityPerEpochStore>,
-        _checkpoint_store: &Arc<CheckpointStore>,
+        _checkpoint_store: &Arc<DWalletCheckpointStore>,
     ) -> IkaResult {
         trace!(
             "Including following transactions in dwallet checkpoint {}: {:#?}",

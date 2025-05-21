@@ -102,7 +102,6 @@ use sui_types::storage::{
 use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, CertTxGuard};
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use crate::checkpoints::CheckpointStore;
 use crate::epoch::committee_store::CommitteeStore;
 use ika_config::node::AuthorityOverloadConfig;
 use ika_types::message::*;
@@ -124,6 +123,7 @@ use crate::stake_aggregator::StakeAggregator;
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
+use crate::checkpoints::DWalletCheckpointStore;
 
 pub mod authority_per_epoch_store;
 
@@ -705,7 +705,7 @@ pub struct AuthorityState {
     /// from previous epoch that are executed but did not make into checkpoint.
     execution_lock: RwLock<EpochId>,
 
-    checkpoint_store: Arc<CheckpointStore>,
+    checkpoint_store: Arc<DWalletCheckpointStore>,
     committee_store: Arc<CommitteeStore>,
 
     pub metrics: Arc<AuthorityMetrics>,
@@ -784,7 +784,7 @@ impl AuthorityState {
         perpetual_tables: Arc<AuthorityPerpetualTables>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         committee_store: Arc<CommitteeStore>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
         prometheus_registry: &Registry,
         config: NodeConfig,
     ) -> Arc<Self> {
@@ -925,7 +925,7 @@ impl AuthorityState {
         Committee::clone(self.epoch_store_for_testing().committee())
     }
 
-    pub fn get_checkpoint_store(&self) -> &Arc<CheckpointStore> {
+    pub fn get_checkpoint_store(&self) -> &Arc<DWalletCheckpointStore> {
         &self.checkpoint_store
     }
 
