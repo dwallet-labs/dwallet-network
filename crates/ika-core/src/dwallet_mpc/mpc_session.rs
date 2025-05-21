@@ -35,11 +35,12 @@ use ika_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::message::MessageKind::DWalletImportedKeyVerificationOutput;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, PresignRequestEvent, PresignSessionState, SessionInfo, SessionType,
-    ThresholdNotReachedReport,
+    AdvanceResult, DWalletImportedKeyVerificationRequestEventOutputVersion, DWalletMPCMessage,
+    EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport,
+    PresignRequestEvent, PresignSessionState, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -375,7 +376,9 @@ impl DWalletMPCSession {
                     bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
                 )
                     .into();
-                crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<
+                    DWalletImportedKeyVerificationParty,
+                >(
                     // we are using the dWallet ID as a unique session identifier, as no two dWallets will ever have the same ID or be used for any other import session.
                     dwallet_id,
                     self.party_id,
@@ -383,7 +386,26 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output = bcs::to_bytes(
+                            &DWalletImportedKeyVerificationRequestEventOutputVersion::V1(
+                                public_output,
+                            ),
+                        )?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
