@@ -112,9 +112,7 @@ pub fn create_dkg_output(
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
     match decentralized_first_round_public_output {
-        MPCPublicOutputClassGroups::V1(
-            decentralized_first_round_public_output,
-        ) => {
+        MPCPublicOutputClassGroups::V1(decentralized_first_round_public_output) => {
             let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
                 bcs::from_bytes(&decentralized_first_round_public_output)
                     .context("failed to deserialize decentralized first round DKG output")?;
@@ -134,8 +132,9 @@ pub fn create_dkg_output(
             .context("advance() failed on the DKGCentralizedParty")?;
 
             // Centralized Public Key Share and Proof.
-            let public_key_share_and_proof = MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?);
-            
+            let public_key_share_and_proof =
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?);
+
             let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
 
             // Public Output:
@@ -146,9 +145,8 @@ pub fn create_dkg_output(
             // The secret (private)
             // key share returned from this function should never be sent
             // and should always be kept private.
-            let centralized_secret_output = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?),
-            );
+            let centralized_secret_output =
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?);
             let centralized_secret_output = bcs::to_bytes(&centralized_secret_output)?;
             Ok(CentralizedDKGWasmResult {
                 public_output,
@@ -232,9 +230,8 @@ pub fn advance_centralized_sign_party(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = MPCPublicOutputClassGroups::V1(
-                bcs::to_bytes(&round_result.outgoing_message)?,
-            );
+            let signed_message =
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?);
             let signed_message = bcs::to_bytes(&signed_message)?;
             Ok(signed_message)
         }
@@ -281,9 +278,8 @@ pub fn create_imported_dwallet_centralized_step_inner(
         Ok(round_result) => {
             let public_output = round_result.public_output;
             let outgoing_message = round_result.outgoing_message;
-            let secret_share = MPCPublicOutputClassGroups::V1(
-                bcs::to_bytes(&round_result.private_output)?,
-            );
+            let secret_share =
+                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?);
             Ok((
                 bcs::to_bytes(&secret_share)?,
                 bcs::to_bytes(&public_output)?,
@@ -298,7 +294,8 @@ fn protocol_public_parameters_by_key_scheme(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
-    let mpc_public_output: MPCPublicOutputClassGroups = bcs::from_bytes(&network_dkg_public_output)?;
+    let mpc_public_output: MPCPublicOutputClassGroups =
+        bcs::from_bytes(&network_dkg_public_output)?;
 
     match &mpc_public_output {
         MPCPublicOutputClassGroups::V1(network_dkg_public_output) => {

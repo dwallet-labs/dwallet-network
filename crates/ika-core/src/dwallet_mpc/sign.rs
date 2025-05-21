@@ -102,7 +102,8 @@ pub(crate) fn verify_partial_signature(
 ) -> DwalletMPCResult<()> {
     let dkg_output: MPCPublicOutputClassGroups = bcs::from_bytes(&dwallet_decentralized_output)?;
     let presign: MPCPublicOutputClassGroups = bcs::from_bytes(&presign)?;
-    let partially_signed_message: MPCPublicOutputClassGroups = bcs::from_bytes(&partially_signed_message)?;
+    let partially_signed_message: MPCPublicOutputClassGroups =
+        bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
         MPCPublicOutputClassGroups::V1(dkg_output) => {
             let presign = match presign {
