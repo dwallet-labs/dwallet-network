@@ -11,7 +11,7 @@ use class_groups::{
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::{DWalletDKGFirstOutputVersion, DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, SerializedWrappedMPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion, DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutput, PresignOutputVersion, SecpNetworkDkgOutputVersion, SerializedWrappedMPCPublicOutput};
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -193,10 +193,10 @@ pub fn advance_centralized_sign_party(
     let decentralized_party_dkg_public_output =
         bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     match decentralized_party_dkg_public_output {
-        MPCPublicOutput::V1(decentralized_party_dkg_public_output) => {
+        DWalletDKGSecondOutputVersion::V1(decentralized_party_dkg_public_output) => {
             let presign = bcs::from_bytes(&presign)?;
             let presign = match presign {
-                MPCPublicOutput::V1(output) => output,
+                PresignOutputVersion::V1(output) => output,
                 _ => {
                     return Err(anyhow!(
                         "invalid presign output version: expected ClassGroups::V1, got {:?}",
@@ -204,10 +204,10 @@ pub fn advance_centralized_sign_party(
                     ));
                 }
             };
-            let centralized_party_secret_key_share: MPCPublicOutput =
+            let centralized_party_secret_key_share: CentralizedDKGSecretOutputVersion =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
             let centralized_party_secret_key_share = match centralized_party_secret_key_share {
-                MPCPublicOutput::V1(output) => output,
+                CentralizedDKGSecretOutputVersion::V1(output) => output,
                 _ => {
                     return Err(anyhow!(
                         "invalid centralized public output version: expected ClassGroups::V1, got {:?}",
@@ -331,10 +331,11 @@ fn protocol_public_parameters_by_key_scheme(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
-    let mpc_public_output: MPCPublicOutput = bcs::from_bytes(&network_dkg_public_output)?;
+    let mpc_public_output: SecpNetworkDkgOutputVersion =
+        bcs::from_bytes(&network_dkg_public_output)?;
 
     match &mpc_public_output {
-        MPCPublicOutput::V1(network_dkg_public_output) => {
+        SecpNetworkDkgOutputVersion::V1(network_dkg_public_output) => {
             let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
