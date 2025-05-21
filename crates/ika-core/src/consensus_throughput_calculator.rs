@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::AuthorityMetrics;
 use arc_swap::ArcSwap;
-use ika_protocol_config::Chain;
 use ika_types::digests::ChainIdentifier;
 use parking_lot::Mutex;
 use std::collections::{BTreeMap, VecDeque};

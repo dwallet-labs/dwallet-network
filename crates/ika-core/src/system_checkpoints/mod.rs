@@ -13,7 +13,6 @@ use crate::system_checkpoints::system_checkpoint_output::{
 pub use crate::system_checkpoints::system_checkpoint_output::{
     LogSystemCheckpointOutput, SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus,
 };
-use diffy::create_patch;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use itertools::Itertools;
 use mysten_metrics::{monitored_future, monitored_scope};
@@ -22,25 +21,16 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_handler::SequencedConsensusTransactionKey;
-use chrono::Utc;
-use ika_protocol_config::ProtocolVersion;
-use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
-use ika_types::digests::{MessageDigest, SystemCheckpointContentsDigest};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message_envelope::Message;
-use ika_types::messages_consensus::ConsensusTransactionKey;
 use ika_types::messages_system_checkpoints::SystemCheckpointKind;
 use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpoint, SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointDigest,
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage, SystemCheckpointTimestamp,
     TrustedSystemCheckpoint, VerifiedSystemCheckpoint,
 };
-use ika_types::sui::{SystemInner, SystemInnerTrait};
-use rand::rngs::OsRng;
-use rand::seq::SliceRandom;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use ika_types::sui::SystemInnerTrait;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -719,7 +709,7 @@ impl SystemCheckpointBuilder {
             all_messages.len(),
         );
 
-        if (all_messages.len() != 0) {
+        if all_messages.len() != 0 {
             info!(
                 "SystemCheckpointBuilder::create_system_checkpoints: {} messages to be included in system_checkpoint",
                 all_messages.len()
@@ -736,7 +726,7 @@ impl SystemCheckpointBuilder {
             "Creating {} system_checkpoints with {} transactions", chunks_count, total,
         );
 
-        for (index, mut messages) in chunks.into_iter().enumerate() {
+        for (index, messages) in chunks.into_iter().enumerate() {
             let first_system_checkpoint_of_epoch = index == 0
                 && (last_system_checkpoint_seq.is_none()
                     || last_system_checkpoint_seq.unwrap()

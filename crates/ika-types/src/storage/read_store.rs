@@ -27,17 +27,17 @@ pub trait ReadStore {
     ///
     /// All transactions, effects, objects and events are guaranteed to be available for the
     /// returned dwallet checkpoint.
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage>;
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage>;
 
     /// Get the latest available dwallet checkpoint sequence number. This is the sequence number of the latest executed dwallet checkpoint.
     fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
-        let latest_dwallet_checkpoint = self.get_dwallet_latest_checkpoint()?;
+        let latest_dwallet_checkpoint = self.get_latest_dwallet_checkpoint()?;
         Ok(*latest_dwallet_checkpoint.sequence_number())
     }
 
     /// Get the epoch of the latest dwallet checkpoint
     fn get_latest_epoch_id(&self) -> Result<EpochId> {
-        let latest_dwallet_checkpoint = self.get_dwallet_latest_checkpoint()?;
+        let latest_dwallet_checkpoint = self.get_latest_dwallet_checkpoint()?;
         Ok(latest_dwallet_checkpoint.epoch())
     }
 
@@ -107,8 +107,8 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_committee(epoch)
     }
 
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
-        (*self).get_dwallet_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (*self).get_latest_dwallet_checkpoint()
     }
 
     fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
@@ -185,8 +185,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
-        (**self).get_dwallet_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (**self).get_latest_dwallet_checkpoint()
     }
 
     fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {
@@ -263,8 +263,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_committee(epoch)
     }
 
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
-        (**self).get_dwallet_latest_checkpoint()
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+        (**self).get_latest_dwallet_checkpoint()
     }
 
     fn get_latest_checkpoint_sequence_number(&self) -> Result<DWalletCheckpointSequenceNumber> {

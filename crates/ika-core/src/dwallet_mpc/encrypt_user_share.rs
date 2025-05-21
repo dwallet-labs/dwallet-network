@@ -5,7 +5,7 @@ use class_groups::{
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
-use fastcrypto::traits::{ToFromBytes, VerifyingKey};
+use fastcrypto::traits::VerifyingKey;
 use group::GroupElement;
 use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

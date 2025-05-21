@@ -9,14 +9,12 @@ use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
 use group::{secp256k1, GroupElement, PartyID};
 use ika_types::committee::Committee;
-use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletDecryptionKeyReshareRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo,
 };
-use mpc::{Party, Weight, WeightedThresholdAccessStructure};
+use mpc::Party;
 use std::collections::HashMap;
-use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(super) type ReshareSecp256k1Party = Secp256k1Party;
 

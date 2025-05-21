@@ -11,7 +11,6 @@ use ika_config::NodeConfig;
 use ika_types::{committee::EpochId, sui::epoch_start_system::EpochStartSystemTrait};
 use mysten_metrics::{RegistryID, RegistryService};
 use prometheus::Registry;
-use sui_protocol_config::ConsensusNetwork;
 use tokio::sync::Mutex;
 use tracing::info;
 

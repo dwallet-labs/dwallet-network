@@ -4,7 +4,6 @@
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
 use fastcrypto::groups::bls12381;
-use fastcrypto_tbls::dkg_v1;
 use futures::future::{join_all, select, Either};
 use futures::FutureExt;
 use ika_types::committee::Committee;
@@ -19,18 +18,12 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use sui_macros::fail_point_arg;
-use sui_types::accumulator::Accumulator;
-use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
-use sui_types::base_types::{ConciseableName, ObjectRef, SuiAddress};
-use sui_types::base_types::{EpochId, ObjectID, SequenceNumber};
-use sui_types::crypto::RandomnessRound;
+use sui_types::base_types::ConciseableName;
+use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::event::EventID;
-use sui_types::signature::GenericSignature;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
-use typed_store::rocks::{read_size_from_env, ReadWriteOptions};
 use typed_store::rocksdb::Options;
 use typed_store::{
     rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf},
@@ -43,7 +36,7 @@ use super::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::authority::{AuthorityMetrics, AuthorityState};
 use crate::checkpoints::{
-    BuilderCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify, EpochStats,
+    BuilderCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
     PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1,
 };
 
@@ -52,29 +45,25 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
 use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::dwallet_mpc::session_info_from_event;
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
     SystemCheckpointServiceNotify,
 };
-use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyPublicData,
-};
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use group::PartyID;
-use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
@@ -82,50 +71,38 @@ use ika_types::message::{
     PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
     SignOutput,
 };
-use ika_types::message_envelope::TrustedEnvelope;
+use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
     AuthorityCapabilitiesV1, ConsensusTransaction, ConsensusTransactionKey,
-    ConsensusTransactionKind, MovePackageDigest,
+    ConsensusTransactionKind,
 };
-use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
-    SignedDWalletCheckpointMessage,
 };
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
-    SessionType, StartPresignFirstRoundEvent,
+    SessionType,
 };
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_system_checkpoints::{
-    SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
+    SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
-use ika_types::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
-use move_bytecode_utils::module_cache::SyncModuleCache;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
-use schemars::_private::NoSerialize;
-use std::str::FromStr;
 use std::time::Duration;
-use sui_macros::fail_point;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
-use sui_types::digests::TransactionDigest;
-use sui_types::effects::TransactionEffects;
-use sui_types::error::ExecutionError;
 use sui_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
 };
-use sui_types::id::ID;
-use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemState;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
-use typed_store::{retry_transaction_forever, Map};
+use typed_store::Map;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1310,7 +1287,7 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (mut verified_messages, mut system_checkpoint_verified_messages, notifications) = self
+        let (verified_messages, system_checkpoint_verified_messages, notifications) = self
             .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
@@ -1419,7 +1396,7 @@ impl AuthorityPerEpochStore {
             VecDeque::with_capacity(transactions.len() + 1);
         let mut notifications = Vec::with_capacity(transactions.len());
 
-        let mut cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
+        let cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
             BTreeMap::new();
 
         for tx in transactions {

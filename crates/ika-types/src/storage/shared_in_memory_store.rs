@@ -41,7 +41,7 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
         todo!()
     }
 
@@ -131,12 +131,15 @@ impl ReadStore for SharedInMemoryStore {
 }
 
 impl WriteStore for SharedInMemoryStore {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
+    fn insert_dwallet_checkpoint(
+        &self,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
         self.inner_mut().insert_checkpoint(checkpoint);
         Ok(())
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
@@ -145,7 +148,7 @@ impl WriteStore for SharedInMemoryStore {
         Ok(())
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
@@ -521,7 +524,7 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_committee(epoch)
     }
 
-    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
         todo!()
     }
 
@@ -589,29 +592,34 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
 }
 
 impl WriteStore for SingleCheckpointSharedInMemoryStore {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
+    fn insert_dwallet_checkpoint(
+        &self,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
         {
             let mut locked = self.0 .0.write().unwrap();
             locked.checkpoints.clear();
             locked.sequence_number_to_digest.clear();
         }
-        self.0.insert_checkpoint(checkpoint)?;
+        self.0.insert_dwallet_checkpoint(checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        self.0.update_highest_synced_checkpoint(checkpoint)?;
+        self.0
+            .update_highest_synced_dwallet_checkpoint(checkpoint)?;
         Ok(())
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        self.0.update_highest_verified_checkpoint(checkpoint)?;
+        self.0
+            .update_highest_verified_dwallet_checkpoint(checkpoint)?;
         Ok(())
     }
 

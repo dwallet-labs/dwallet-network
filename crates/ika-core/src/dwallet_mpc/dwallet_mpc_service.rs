@@ -4,36 +4,24 @@
 //! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
+use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 use crate::dwallet_mpc::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
-};
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
 use ika_config::NodeConfig;
-use ika_sui_client::{SuiClient, SuiConnectorClient};
+use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::error::IkaResult;
-use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime};
-use sui_json_rpc_types::SuiEvent;
+use std::time::Duration;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
-use tokio::sync::watch::error::RecvError;
 use tokio::sync::watch::Receiver;
-use tokio::sync::{watch, Notify};
-use tokio::task::yield_now;
-use tokio::time;
+use tokio::sync::Notify;
 use tracing::{error, info, warn};
 use typed_store::Map;
 

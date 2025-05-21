@@ -667,10 +667,10 @@ where
         }
 
         self.store
-            .update_highest_verified_checkpoint(&checkpoint)
+            .update_highest_verified_dwallet_checkpoint(&checkpoint)
             .expect("store operation should not fail");
         self.store
-            .update_highest_synced_checkpoint(&checkpoint)
+            .update_highest_synced_dwallet_checkpoint(&checkpoint)
             .expect("store operation should not fail");
 
         // We don't care if no one is listening as this is a broadcast channel
@@ -1220,7 +1220,7 @@ where
         // Insert the newly verified checkpoint into our store, which will bump our highest
         // verified checkpoint watermark as well.
         store
-            .insert_checkpoint(&checkpoint)
+            .insert_dwallet_checkpoint(&checkpoint)
             .expect("store operation should not fail");
     }
 

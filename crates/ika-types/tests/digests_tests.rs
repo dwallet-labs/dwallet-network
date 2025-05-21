@@ -33,12 +33,12 @@ macro_rules! define_digest_test {
 }
 
 define_digest_test!(
-    test_checkpoint_contents_digest_from_str,
+    test_dwallet_checkpoint_contents_digest_from_str,
     DWalletCheckpointContentsDigest
 );
 
 define_digest_test!(
-    test_checkpoint_digest_from_str,
+    test_dwallet_checkpoint_digest_from_str,
     DWalletCheckpointMessageDigest
 );
 

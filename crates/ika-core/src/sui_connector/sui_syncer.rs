@@ -5,12 +5,9 @@
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::generate_access_structure_from_committee;
-use crate::dwallet_mpc::network_dkg::{
-    instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
-};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
-use group::PartyID;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
@@ -20,15 +17,13 @@ use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
 use im::HashSet;
 use itertools::Itertools;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
-use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
-use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::watch;
 use tokio::sync::watch::Sender;
-use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,

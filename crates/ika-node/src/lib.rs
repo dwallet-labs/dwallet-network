@@ -1449,7 +1449,7 @@ async fn health_check_handler(
         // Attempt to get the latest checkpoint
         let summary = match state
             .get_checkpoint_store()
-            .get_highest_executed_checkpoint()
+            .get_highest_executed_dwallet_checkpoint()
         {
             Ok(Some(summary)) => summary,
             Ok(None) => {

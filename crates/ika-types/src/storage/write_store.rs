@@ -9,15 +9,20 @@ use crate::messages_dwallet_checkpoint::VerifiedDWalletCheckpointMessage;
 use crate::messages_system_checkpoints::VerifiedSystemCheckpoint;
 use crate::storage::ReadStore;
 
+/// A trait for writing to a store
 pub trait WriteStore: ReadStore {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()>;
-    fn update_highest_synced_checkpoint(
+    fn insert_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()>;
-    fn update_highest_verified_checkpoint(
+
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()>;
+    fn update_highest_verified_dwallet_checkpoint(
+        &self,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()>;
 
     fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()>;
@@ -34,22 +39,25 @@ pub trait WriteStore: ReadStore {
 }
 
 impl<T: WriteStore + ?Sized> WriteStore for &T {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
-        (*self).insert_checkpoint(checkpoint)
+    fn insert_dwallet_checkpoint(
+        &self,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
+        (*self).insert_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (*self).update_highest_synced_checkpoint(checkpoint)
+        (*self).update_highest_synced_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (*self).update_highest_verified_checkpoint(checkpoint)
+        (*self).update_highest_verified_dwallet_checkpoint(dwallet_checkpoint)
     }
 
     fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
@@ -76,22 +84,25 @@ impl<T: WriteStore + ?Sized> WriteStore for &T {
 }
 
 impl<T: WriteStore + ?Sized> WriteStore for Box<T> {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
-        (**self).insert_checkpoint(checkpoint)
+    fn insert_dwallet_checkpoint(
+        &self,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
+        (**self).insert_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (**self).update_highest_synced_checkpoint(checkpoint)
+        (**self).update_highest_synced_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (**self).update_highest_verified_checkpoint(checkpoint)
+        (**self).update_highest_verified_dwallet_checkpoint(dwallet_checkpoint)
     }
 
     fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
@@ -118,22 +129,25 @@ impl<T: WriteStore + ?Sized> WriteStore for Box<T> {
 }
 
 impl<T: WriteStore + ?Sized> WriteStore for Arc<T> {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
-        (**self).insert_checkpoint(checkpoint)
+    fn insert_dwallet_checkpoint(
+        &self,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
+        (**self).insert_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (**self).update_highest_synced_checkpoint(checkpoint)
+        (**self).update_highest_synced_dwallet_checkpoint(dwallet_checkpoint)
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
-        checkpoint: &VerifiedDWalletCheckpointMessage,
+        dwallet_checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
-        (**self).update_highest_verified_checkpoint(checkpoint)
+        (**self).update_highest_verified_dwallet_checkpoint(dwallet_checkpoint)
     }
 
     fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {

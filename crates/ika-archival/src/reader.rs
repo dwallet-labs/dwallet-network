@@ -458,7 +458,7 @@ impl ArchiveReader {
                                     Self::get_or_insert_verified_checkpoint(&store, checkpoint)?;
                                 // Update highest synced watermark
                                 store
-                                    .update_highest_synced_checkpoint(&verified_checkpoint)
+                                    .update_highest_synced_dwallet_checkpoint(&verified_checkpoint)
                                     .map_err(|e| anyhow!("Failed to update watermark: {e}"))?;
                                 action_counter.fetch_add(size as u64, Ordering::Relaxed);
                                 self.archive_reader_metrics
@@ -525,7 +525,7 @@ impl ArchiveReader {
         S: WriteStore + Clone,
     {
         store
-            .insert_checkpoint(
+            .insert_dwallet_checkpoint(
                 VerifiedDWalletCheckpointMessage::new_unchecked(certified_checkpoint).borrow(),
             )
             .map_err(|e| anyhow!("Failed to insert checkpoint: {e}"))
@@ -548,11 +548,11 @@ impl ArchiveReader {
                     VerifiedDWalletCheckpointMessage::new_unchecked(certified_checkpoint);
                 // Insert checkpoint message
                 store
-                    .insert_checkpoint(&verified_checkpoint)
+                    .insert_dwallet_checkpoint(&verified_checkpoint)
                     .map_err(|e| anyhow!("Failed to insert checkpoint: {e}"))?;
                 // Update highest verified checkpoint watermark
                 store
-                    .update_highest_verified_checkpoint(&verified_checkpoint)
+                    .update_highest_verified_dwallet_checkpoint(&verified_checkpoint)
                     .expect("store operation should not fail");
                 Ok::<VerifiedDWalletCheckpointMessage, anyhow::Error>(verified_checkpoint)
             })

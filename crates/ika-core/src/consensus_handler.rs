@@ -10,7 +10,7 @@ use std::{
 
 use arc_swap::ArcSwap;
 use consensus_config::Committee as ConsensusCommittee;
-use consensus_core::{CommitConsumerMonitor, TransactionIndex, VerifiedBlock};
+use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
@@ -20,24 +20,13 @@ use ika_types::messages_consensus::{
 };
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use lru::LruCache;
-use mpc::WeightedThresholdAccessStructure;
-use mysten_metrics::{
-    monitored_future,
-    monitored_mpsc::{self, UnboundedReceiver},
-    monitored_scope, spawn_monitored_task,
-};
+use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monitored_scope};
 use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
-use sui_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
+use sui_types::base_types::EpochId;
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
-use crate::system_checkpoints::{SystemCheckpointService, SystemCheckpointServiceNotify};
+use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -49,14 +38,13 @@ use crate::{
     },
     checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     consensus_throughput_calculator::ConsensusThroughputCalculator,
-    consensus_types::consensus_output_api::{parse_block_transactions, ConsensusCommitAPI},
+    consensus_types::consensus_output_api::ConsensusCommitAPI,
     scoring_decision::update_low_scoring_authorities,
 };
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use tokio::task::JoinSet;
-use tracing::{debug, error, info, instrument, trace_span, warn};
+use tracing::{error, info, instrument, trace_span, warn};
 use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
@@ -458,7 +446,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.

@@ -57,7 +57,7 @@ impl RocksDbStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, IkaError> {
         Ok(self
             .dwallet_checkpoint_store
-            .get_highest_executed_checkpoint()?)
+            .get_highest_executed_dwallet_checkpoint()?)
     }
 }
 
@@ -101,7 +101,7 @@ impl ReadStore for RocksDbStore {
     ) -> Result<DWalletCheckpointSequenceNumber, StorageError> {
         let highest_pruned_cp = self
             .dwallet_checkpoint_store
-            .get_highest_pruned_checkpoint_seq_number()
+            .get_highest_pruned_dwallet_checkpoint_seq_number()
             .map_err(Into::<StorageError>::into)?;
 
         if highest_pruned_cp == 0 {
@@ -118,11 +118,9 @@ impl ReadStore for RocksDbStore {
         Ok(self.committee_store.get_committee(&epoch).unwrap())
     }
 
-    fn get_dwallet_latest_checkpoint(
-        &self,
-    ) -> ika_types::storage::error::Result<VerifiedDWalletCheckpointMessage> {
+    fn get_latest_dwallet_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
         self.dwallet_checkpoint_store
-            .get_highest_executed_checkpoint()
+            .get_highest_executed_dwallet_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
             .ok_or_else(|| {
                 ika_types::storage::error::Error::missing("unable to get latest checkpoint")
@@ -183,7 +181,7 @@ impl ReadStore for RocksDbStore {
 }
 
 impl WriteStore for RocksDbStore {
-    fn insert_checkpoint(
+    fn insert_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
@@ -192,7 +190,7 @@ impl WriteStore for RocksDbStore {
             .map_err(Into::into)
     }
 
-    fn update_highest_synced_checkpoint(
+    fn update_highest_synced_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
@@ -207,7 +205,7 @@ impl WriteStore for RocksDbStore {
         Ok(())
     }
 
-    fn update_highest_verified_checkpoint(
+    fn update_highest_verified_dwallet_checkpoint(
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
