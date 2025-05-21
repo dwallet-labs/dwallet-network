@@ -4,9 +4,9 @@
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 use crate::checkpoints::CheckpointStore;
-use crate::system_checkpoints::SystemCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
+use crate::system_checkpoints::SystemCheckpointStore;
 use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
@@ -106,8 +106,7 @@ where
             error!("failed to get clock when running epoch switch");
             return;
         };
-        let Some(dwallet_2pc_mpc_secp256k1_id) =
-            system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        let Some(dwallet_2pc_mpc_secp256k1_id) = system_state_inner.dwallet_2pc_mpc_secp256k1_id()
         else {
             error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
             return;
@@ -149,8 +148,8 @@ where
         };
 
         // The Epoch was finished.
-        let epoch_finish_time = system_state_inner.epoch_start_timestamp_ms()
-            + system_state_inner.epoch_duration_ms();
+        let epoch_finish_time =
+            system_state_inner.epoch_start_timestamp_ms() + system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
@@ -299,12 +298,8 @@ where
             }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
-                self.run_epoch_switch(
-                    sui_notifier,
-                    &system_state_inner,
-                    &mut epoch_switch_state,
-                )
-                .await;
+                self.run_epoch_switch(sui_notifier, &system_state_inner, &mut epoch_switch_state)
+                    .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
                     .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
@@ -316,10 +311,8 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee = system_state_inner
-                            .validator_set()
-                            .clone()
-                            .active_committee;
+                        let active_members: BlsCommittee =
+                            system_state_inner.validator_set().clone().active_committee;
                         let auth_sig = checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
@@ -367,10 +360,8 @@ where
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee = system_state_inner
-                            .validator_set()
-                            .clone()
-                            .active_committee;
+                        let active_members: BlsCommittee =
+                            system_state_inner.validator_set().clone().active_committee;
                         let auth_sig = ika_system_checkpoint.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =

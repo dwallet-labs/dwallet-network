@@ -54,10 +54,7 @@ impl Metrics {
         None
     }
 
-    pub fn set_highest_known_system_checkpoint(
-        &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) {
+    pub fn set_highest_known_system_checkpoint(&self, sequence_number: CheckpointSequenceNumber) {
         if let Some(inner) = &self.0 {
             inner
                 .highest_known_system_checkpoint
@@ -76,10 +73,7 @@ impl Metrics {
         }
     }
 
-    pub fn set_highest_synced_system_checkpoint(
-        &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) {
+    pub fn set_highest_synced_system_checkpoint(&self, sequence_number: CheckpointSequenceNumber) {
         if let Some(inner) = &self.0 {
             inner
                 .highest_synced_system_checkpoint

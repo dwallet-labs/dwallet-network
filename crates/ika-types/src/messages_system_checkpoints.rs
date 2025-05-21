@@ -130,8 +130,7 @@ pub type SignedSystemCheckpoint = SystemCheckpointEnvelope<AuthoritySignInfo>;
 
 pub type VerifiedSystemCheckpoint =
     VerifiedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
-pub type TrustedSystemCheckpoint =
-    TrustedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
+pub type TrustedSystemCheckpoint = TrustedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
 
 impl CertifiedSystemCheckpoint {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
@@ -148,9 +147,7 @@ impl CertifiedSystemCheckpoint {
         Ok(VerifiedSystemCheckpoint::new_from_verified(self))
     }
 
-    pub fn into_summary_and_sequence(
-        self,
-    ) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
+    pub fn into_summary_and_sequence(self) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
         let summary = self.into_data();
         (summary.sequence_number, summary)
     }

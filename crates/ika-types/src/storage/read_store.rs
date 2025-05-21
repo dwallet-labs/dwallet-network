@@ -79,9 +79,7 @@ pub trait ReadStore {
         Ok(*latest_system_checkpoint.sequence_number())
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>>;
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
 
     fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
 
@@ -145,9 +143,7 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (*self).get_highest_verified_system_checkpoint()
     }
 
@@ -221,9 +217,7 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_verified_system_checkpoint()
     }
 
@@ -297,9 +291,7 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         (**self).get_highest_verified_system_checkpoint()
     }
 

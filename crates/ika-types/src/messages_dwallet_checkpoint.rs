@@ -121,7 +121,8 @@ impl Display for CheckpointMessage {
 // clients and more efficient sync protocols.
 
 pub type CheckpointMessageEnvelope<S> = Envelope<CheckpointMessage, S>;
-pub type CertifiedDWalletCheckpointMessage = CheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type CertifiedDWalletCheckpointMessage =
+    CheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
 pub type SignedCheckpointMessage = CheckpointMessageEnvelope<AuthoritySignInfo>;
 
 pub type VerifiedCheckpointMessage =

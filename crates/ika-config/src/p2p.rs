@@ -180,8 +180,7 @@ pub struct StateSyncConfig {
     pub wait_interval_when_no_peer_to_sync_content_ms: Option<u64>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_system_checkpoints:
-        Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    pub pinned_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_system_checkpoint_broadcast_channel_capacity: Option<usize>,

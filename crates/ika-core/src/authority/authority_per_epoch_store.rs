@@ -63,12 +63,12 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::system_checkpoints::{
-    BuilderSystemCheckpoint, SystemCheckpointHeight, SystemCheckpointServiceNotify,
-    PendingSystemCheckpoint, PendingSystemCheckpointInfo, PendingSystemCheckpointV1,
-    SystemCheckpointService,
-};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use crate::system_checkpoints::{
+    BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
+    PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
+    SystemCheckpointServiceNotify,
+};
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, NetworkDecryptionKeyPublicData,
@@ -1302,8 +1302,8 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (mut verified_messages, mut system_checkpoint_verified_messages, notifications) =
-            self.process_consensus_transactions(
+        let (mut verified_messages, mut system_checkpoint_verified_messages, notifications) = self
+            .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
                 checkpoint_service,
@@ -1329,14 +1329,13 @@ impl AuthorityPerEpochStore {
 
         let system_checkpoint_height = consensus_commit_info.round;
 
-        let pending_system_checkpoint =
-            PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
-                messages: system_checkpoint_verified_messages.clone(),
-                details: PendingSystemCheckpointInfo {
-                    timestamp_ms: consensus_commit_info.timestamp,
-                    system_checkpoint_height,
-                },
-            });
+        let pending_system_checkpoint = PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
+            messages: system_checkpoint_verified_messages.clone(),
+            details: PendingSystemCheckpointInfo {
+                timestamp_ms: consensus_commit_info.timestamp,
+                system_checkpoint_height,
+            },
+        });
         self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
 
         system_checkpoint_verified_messages
@@ -2180,8 +2179,7 @@ impl AuthorityPerEpochStore {
         // This means that upon restart we can use BuilderSystemCheckpointSummary::commit_height
         // from the last built summary to resume building system_checkpoints.
         let mut batch = tables.pending_system_checkpoints.batch();
-        for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate()
-        {
+        for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
                 system_checkpoint: summary,

@@ -186,8 +186,7 @@ pub struct UnstartedStateSync<S> {
     pub(super) handle: Handle,
     pub(super) mailbox: mpsc::Receiver<StateSyncMessage>,
     pub(super) download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
-    pub(super) system_checkpoint_download_limit_layer:
-        Option<SystemCheckpointDownloadLimitLayer>,
+    pub(super) system_checkpoint_download_limit_layer: Option<SystemCheckpointDownloadLimitLayer>,
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
     pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,

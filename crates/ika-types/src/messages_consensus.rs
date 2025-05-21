@@ -8,7 +8,7 @@ use crate::messages_dwallet_mpc::{
     ThresholdNotReachedReport,
 };
 use crate::messages_system_checkpoints::{
-    SystemCheckpointSignatureMessage, SystemCheckpointSequenceNumber,
+    SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
 };
 use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
@@ -249,9 +249,7 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_system_checkpoint_signature_message(
-        data: SystemCheckpointSignatureMessage,
-    ) -> Self {
+    pub fn new_system_checkpoint_signature_message(data: SystemCheckpointSignatureMessage) -> Self {
         let mut hasher = DefaultHasher::new();
         data.system_checkpoint
             .auth_sig()

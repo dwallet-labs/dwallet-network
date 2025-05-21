@@ -11,8 +11,8 @@ use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSignatureMessage, SignedSystemCheckpoint,
-    SystemCheckpoint, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpoint, SignedSystemCheckpoint, SystemCheckpoint,
+    SystemCheckpointSignatureMessage, VerifiedSystemCheckpoint,
 };
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
@@ -64,11 +64,7 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
         system_checkpoint_store: &Arc<SystemCheckpointStore>,
     ) -> IkaResult {
         LogSystemCheckpointOutput
-            .system_checkpoint_created(
-                system_checkpoint,
-                epoch_store,
-                system_checkpoint_store,
-            )
+            .system_checkpoint_created(system_checkpoint, epoch_store, system_checkpoint_store)
             .await?;
 
         let system_checkpoint_timestamp = system_checkpoint.timestamp_ms;

@@ -15,7 +15,7 @@ use bytes::Bytes;
 use fastcrypto::hash::{HashFunction, Sha3_256};
 use ika_config::node::ArchiveReaderConfig;
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::storage::{WriteStore};
+use ika_types::storage::WriteStore;
 use indicatif::{ProgressBar, ProgressStyle};
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
@@ -33,7 +33,7 @@ use sui_storage::blob::{Blob, BlobEncoding};
 use sui_storage::object_store::util::{get, put};
 use sui_storage::object_store::{ObjectStoreGetExt, ObjectStorePutExt};
 use sui_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_BYTES};
-use tracing::{info};
+use tracing::info;
 
 #[allow(rustdoc::invalid_html_tags)]
 /// Checkpoints are persisted as blob files. Files are committed to local store

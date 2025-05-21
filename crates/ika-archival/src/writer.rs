@@ -5,14 +5,16 @@
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
     Manifest, SystemCheckpointUpdates, DWALLET_CHECKPOINT_FILE_MAGIC,
-    DWALLET_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES,
-    SYSTEM_CHECKPOINT_FILE_MAGIC, SYSTEM_CHECKPOINT_FILE_SUFFIX,
+    DWALLET_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES, SYSTEM_CHECKPOINT_FILE_MAGIC,
+    SYSTEM_CHECKPOINT_FILE_SUFFIX,
 };
 use anyhow::Result;
 use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
-use ika_types::messages_dwallet_checkpoint::{CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber};
+use ika_types::messages_dwallet_checkpoint::{
+    CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber,
+};
 use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber,
 };
@@ -123,7 +125,10 @@ impl DWalletCheckpointWriter {
         }
     }
 
-    pub fn write_as_blob(&mut self, checkpoint_message: CertifiedDWalletCheckpointMessage) -> Result<()> {
+    pub fn write_as_blob(
+        &mut self,
+        checkpoint_message: CertifiedDWalletCheckpointMessage,
+    ) -> Result<()> {
         assert_eq!(
             checkpoint_message.sequence_number,
             self.dwallet_checkpoint_range.end
@@ -256,8 +261,8 @@ impl DWalletCheckpointWriter {
         self.last_commit_instant = Instant::now();
     }
     fn reset_checkpoint_range(&mut self) {
-        self.dwallet_checkpoint_range = self.dwallet_checkpoint_range.end
-            ..self.dwallet_checkpoint_range.end
+        self.dwallet_checkpoint_range =
+            self.dwallet_checkpoint_range.end..self.dwallet_checkpoint_range.end
     }
     fn epoch_dir(&self) -> PathBuf {
         self.root_dir_path
@@ -535,8 +540,7 @@ impl ArchiveWriter {
                 .await
                 .expect("Failed to read manifest")
         };
-        let start_checkpoint_sequence_number =
-            manifest.next_dwallet_checkpoint_seq_num();
+        let start_checkpoint_sequence_number = manifest.next_dwallet_checkpoint_seq_num();
         let (sender, receiver) = mpsc::channel::<CheckpointUpdates>(100);
         let (sender_system_checkpoint, receiver_system_checkpoint) =
             mpsc::channel::<SystemCheckpointUpdates>(100);

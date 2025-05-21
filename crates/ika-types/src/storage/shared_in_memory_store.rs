@@ -91,9 +91,7 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
             .get_highest_verified_ika_system_checkpoint()
             .cloned()
@@ -478,9 +476,7 @@ impl InMemoryStore {
         ));
     }
 
-    pub fn system_checkpoints(
-        &self,
-    ) -> &HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint> {
+    pub fn system_checkpoints(&self) -> &HashMap<SystemCheckpointDigest, VerifiedSystemCheckpoint> {
         &self.system_checkpoints
     }
 
@@ -547,9 +543,7 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         todo!()
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.0.get_highest_verified_system_checkpoint()
     }
 

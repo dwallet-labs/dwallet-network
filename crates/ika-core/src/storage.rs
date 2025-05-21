@@ -218,10 +218,7 @@ impl WriteStore for RocksDbStore {
         Ok(())
     }
 
-    fn insert_system_checkpoint(
-        &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
-    ) -> Result<()> {
+    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
         self.system_checkpoint_store
             .insert_verified_system_checkpoint(system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)

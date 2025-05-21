@@ -1,10 +1,10 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::CheckpointStore;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
-use crate::system_checkpoints::SystemCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
+use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;

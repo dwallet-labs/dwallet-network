@@ -334,10 +334,9 @@ impl SystemCheckpointDownloadLimitLayer {
     pub(super) fn maybe_prune_map(&self) {
         const PRUNE_THRESHOLD: usize = 5000;
         if self.inflight_per_system_checkpoint.len() >= PRUNE_THRESHOLD {
-            self.inflight_per_system_checkpoint
-                .retain(|_, semaphore| {
-                    semaphore.available_permits() < self.max_inflight_per_system_checkpoint
-                });
+            self.inflight_per_system_checkpoint.retain(|_, semaphore| {
+                semaphore.available_permits() < self.max_inflight_per_system_checkpoint
+            });
         }
     }
 }
@@ -363,8 +362,7 @@ pub(super) struct SystemCheckpointDownloadLimit<S> {
     max_inflight_per_system_checkpoint: usize,
 }
 
-impl<S> tower::Service<Request<GetSystemCheckpointRequest>>
-    for SystemCheckpointDownloadLimit<S>
+impl<S> tower::Service<Request<GetSystemCheckpointRequest>> for SystemCheckpointDownloadLimit<S>
 where
     S: tower::Service<
             Request<GetSystemCheckpointRequest>,

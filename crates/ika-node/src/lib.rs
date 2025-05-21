@@ -188,19 +188,19 @@ use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::dwallet_mpc::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
-use ika_core::system_checkpoints::{
-    SystemCheckpointMetrics, SystemCheckpointStore, SendSystemCheckpointToStateSync,
-    SubmitSystemCheckpointToConsensus, SystemCheckpointService,
-};
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
+use ika_core::system_checkpoints::{
+    SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus, SystemCheckpointMetrics,
+    SystemCheckpointService, SystemCheckpointStore,
+};
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_system_checkpoints::{
-    SystemCheckpointSignatureMessage, SignedSystemCheckpoint, SystemCheckpoint,
-    SystemCheckpointKind,
+    SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointKind,
+    SystemCheckpointSignatureMessage,
 };
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;

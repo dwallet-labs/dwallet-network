@@ -30,13 +30,13 @@ use ika_types::digests::{CheckpointContentsDigest, CheckpointMessageDigest, Mess
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::MessageKind;
 use ika_types::message_envelope::Message;
+use ika_types::messages_consensus::ConsensusTransactionKey;
 use ika_types::messages_dwallet_checkpoint::SignedCheckpointMessage;
 use ika_types::messages_dwallet_checkpoint::{
     CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSequenceNumber,
     CheckpointSignatureMessage, CheckpointTimestamp, TrustedCheckpointMessage,
     VerifiedCheckpointMessage,
 };
-use ika_types::messages_consensus::ConsensusTransactionKey;
 use ika_types::sui::{SystemInner, SystemInnerTrait};
 use rand::rngs::OsRng;
 use rand::seq::SliceRandom;

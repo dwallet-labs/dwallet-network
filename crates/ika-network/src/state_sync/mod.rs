@@ -138,9 +138,9 @@ impl Handle {
 
     pub async fn send_system_checkpoint(&self, system_checkpoint: VerifiedSystemCheckpoint) {
         self.sender
-            .send(StateSyncMessage::VerifiedSystemCheckpointMessage(
-                Box::new(system_checkpoint),
-            ))
+            .send(StateSyncMessage::VerifiedSystemCheckpointMessage(Box::new(
+                system_checkpoint,
+            )))
             .await
             .unwrap()
     }
@@ -332,10 +332,7 @@ impl PeerHeights {
     }
 
     // TODO: also record who gives this system_checkpoint info for peer quality measurement?
-    pub fn insert_system_checkpoint(
-        &mut self,
-        system_checkpoint: CertifiedSystemCheckpoint,
-    ) {
+    pub fn insert_system_checkpoint(&mut self, system_checkpoint: CertifiedSystemCheckpoint) {
         let digest = *system_checkpoint.digest();
         let sequence_number = *system_checkpoint.sequence_number();
         self.unprocessed_system_checkpoint
@@ -870,8 +867,7 @@ where
                 self.peer_heights.clone(),
                 self.metrics.clone(),
                 self.config.pinned_system_checkpoints.clone(),
-                self.config
-                    .system_checkpoint_header_download_concurrency(),
+                self.config.system_checkpoint_header_download_concurrency(),
                 self.config.timeout(),
                 // The if condition should ensure that this is Some
                 highest_known_system_checkpoint.unwrap(),
@@ -1407,15 +1403,12 @@ async fn query_peers_for_their_latest_system_checkpoint(
         })
         .collect::<Vec<_>>();
 
-    debug!(
-        "Query {} peers for latest system_checkpoint",
-        futs.len()
-    );
+    debug!("Query {} peers for latest system_checkpoint", futs.len());
 
     let system_checkpoints = futures::future::join_all(futs).await.into_iter().flatten();
 
-    let highest_system_checkpoint = system_checkpoints
-        .max_by_key(|system_checkpoint| *system_checkpoint.sequence_number());
+    let highest_system_checkpoint =
+        system_checkpoints.max_by_key(|system_checkpoint| *system_checkpoint.sequence_number());
 
     let our_highest_system_checkpoint = peer_heights
         .read()
@@ -1433,10 +1426,7 @@ async fn query_peers_for_their_latest_system_checkpoint(
             .map(|c| c.sequence_number())
     );
 
-    let _new_system_checkpoint = match (
-        highest_system_checkpoint,
-        our_highest_system_checkpoint,
-    ) {
+    let _new_system_checkpoint = match (highest_system_checkpoint, our_highest_system_checkpoint) {
         (Some(theirs), None) => theirs,
         (Some(theirs), Some(ours)) if theirs.sequence_number() > ours.sequence_number() => theirs,
         _ => return,
@@ -1543,9 +1533,7 @@ where
         .pipe(futures::stream::iter)
         .buffered(system_checkpoint_header_download_concurrency);
 
-    while let Some((maybe_system_checkpoint, next, _maybe_peer_id)) =
-        request_stream.next().await
-    {
+    while let Some((maybe_system_checkpoint, next, _maybe_peer_id)) = request_stream.next().await {
         assert_eq!(
             current
                 .map(|s| s
@@ -1568,8 +1556,7 @@ where
         if let Some(system_checkpoint_summary_age_metric) =
             metrics.system_checkpoint_summary_age_metrics()
         {
-            system_checkpoint
-                .report_system_checkpoint_age(system_checkpoint_summary_age_metric);
+            system_checkpoint.report_system_checkpoint_age(system_checkpoint_summary_age_metric);
         }
 
         current = Some(system_checkpoint.clone());
@@ -1600,9 +1587,7 @@ async fn sync_system_checkpoint_messages_from_archive<S>(
             .expect("store operation should not fail")
             .map(|system_checkpoint| system_checkpoint.sequence_number)
             .unwrap_or(0);
-        debug!(
-            "Syncing system_checkpoint messages from archive, highest_synced: {highest_synced}"
-        );
+        debug!("Syncing system_checkpoint messages from archive, highest_synced: {highest_synced}");
         let start = highest_synced
             .checked_add(1)
             .expect("SystemCheckpoint seq num overflow");

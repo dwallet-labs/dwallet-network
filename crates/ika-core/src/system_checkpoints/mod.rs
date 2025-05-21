@@ -5,15 +5,14 @@ mod metrics;
 mod system_checkpoint_output;
 
 use crate::authority::AuthorityState;
+use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
+pub use crate::system_checkpoints::metrics::SystemCheckpointMetrics;
 use crate::system_checkpoints::system_checkpoint_output::{
     CertifiedSystemCheckpointOutput, SystemCheckpointOutput,
 };
 pub use crate::system_checkpoints::system_checkpoint_output::{
-    LogSystemCheckpointOutput, SendSystemCheckpointToStateSync,
-    SubmitSystemCheckpointToConsensus,
+    LogSystemCheckpointOutput, SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus,
 };
-pub use crate::system_checkpoints::metrics::SystemCheckpointMetrics;
-use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
 use diffy::create_patch;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use itertools::Itertools;
@@ -28,15 +27,15 @@ use chrono::Utc;
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
-use ika_types::digests::{SystemCheckpointContentsDigest, MessageDigest};
+use ika_types::digests::{MessageDigest, SystemCheckpointContentsDigest};
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransactionKey;
 use ika_types::messages_system_checkpoints::SystemCheckpointKind;
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSignatureMessage, SignedSystemCheckpoint,
-    SystemCheckpoint, SystemCheckpointDigest, SystemCheckpointSequenceNumber,
-    SystemCheckpointTimestamp, TrustedSystemCheckpoint, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpoint, SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointDigest,
+    SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage, SystemCheckpointTimestamp,
+    TrustedSystemCheckpoint, VerifiedSystemCheckpoint,
 };
 use ika_types::sui::{SystemInner, SystemInnerTrait};
 use rand::rngs::OsRng;
@@ -144,10 +143,8 @@ pub struct SystemCheckpointStore {
 
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed system_checkpoints
-    pub(crate) watermarks: DBMap<
-        SystemCheckpointWatermark,
-        (SystemCheckpointSequenceNumber, SystemCheckpointDigest),
-    >,
+    pub(crate) watermarks:
+        DBMap<SystemCheckpointWatermark, (SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
 }
 
 impl SystemCheckpointStore {
@@ -491,8 +488,7 @@ impl SystemCheckpointBuilder {
         let mut last_height = system_checkpoint
             .clone()
             .and_then(|s| s.system_checkpoint_height);
-        let mut last_timestamp =
-            system_checkpoint.map(|s| s.system_checkpoint.timestamp_ms);
+        let mut last_timestamp = system_checkpoint.map(|s| s.system_checkpoint.timestamp_ms);
 
         let min_system_checkpoint_interval_ms = self
             .epoch_store
@@ -535,9 +531,7 @@ impl SystemCheckpointBuilder {
                 "Making system_checkpoint at commit height"
             );
             if let Err(e) = self
-                .make_system_checkpoints(std::mem::take(
-                    &mut grouped_pending_system_checkpoints,
-                ))
+                .make_system_checkpoints(std::mem::take(&mut grouped_pending_system_checkpoints))
                 .await
             {
                 error!(
@@ -584,11 +578,8 @@ impl SystemCheckpointBuilder {
                 &last_details,
             )
             .await?;
-        self.write_system_checkpoints(
-            last_details.system_checkpoint_height,
-            new_system_checkpoint,
-        )
-        .await?;
+        self.write_system_checkpoints(last_details.system_checkpoint_height, new_system_checkpoint)
+            .await?;
         Ok(())
     }
 
@@ -613,11 +604,7 @@ impl SystemCheckpointBuilder {
             //all_tx_digests.extend(contents.iter().map(|digest| digest));
 
             self.output
-                .system_checkpoint_created(
-                    system_checkpoint,
-                    &self.epoch_store,
-                    &self.tables,
-                )
+                .system_checkpoint_created(system_checkpoint, &self.epoch_store, &self.tables)
                 .await?;
 
             self.metrics
@@ -654,8 +641,7 @@ impl SystemCheckpointBuilder {
         &self,
         messages: Vec<SystemCheckpointKind>,
     ) -> anyhow::Result<Vec<Vec<SystemCheckpointKind>>> {
-        let _guard =
-            monitored_scope("SystemCheckpointBuilder::split_system_checkpoint_chunks");
+        let _guard = monitored_scope("SystemCheckpointBuilder::split_system_checkpoint_chunks");
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
         let mut chunk_size: usize = 0;
@@ -703,9 +689,7 @@ impl SystemCheckpointBuilder {
         let _scope = monitored_scope("SystemCheckpointBuilder::create_system_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
-        let mut last_system_checkpoint = self
-            .epoch_store
-            .last_built_system_checkpoint_message()?;
+        let mut last_system_checkpoint = self.epoch_store.last_built_system_checkpoint_message()?;
         // if last_system_checkpoint.is_none() {
         //     let epoch = self.epoch_store.epoch();
         //     if epoch > 0 {
@@ -720,8 +704,7 @@ impl SystemCheckpointBuilder {
         //         }
         //     }
         // }
-        let mut last_system_checkpoint_seq =
-            last_system_checkpoint.as_ref().map(|(seq, _)| *seq);
+        let mut last_system_checkpoint_seq = last_system_checkpoint.as_ref().map(|(seq, _)| *seq);
         // Epoch 0 is where we create the validator set (we are not running Epoch 0).
         // Once we initialize, the active committee starts in Epoch 1.
         // So there is no previous committee in epoch 1.
@@ -730,8 +713,7 @@ impl SystemCheckpointBuilder {
                 Some(self.previous_epoch_last_system_checkpoint_sequence_number);
         }
         info!(
-            next_system_checkpoint_seq =
-                last_system_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
+            next_system_checkpoint_seq = last_system_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
             system_checkpoint_timestamp = details.timestamp_ms,
             "Creating system_checkpoint(s) for {} messages",
             all_messages.len(),
@@ -783,9 +765,8 @@ impl SystemCheckpointBuilder {
 
             let system_checkpoint =
                 SystemCheckpoint::new(epoch, sequence_number, messages, timestamp_ms);
-            system_checkpoint.report_system_checkpoint_age(
-                &self.metrics.last_created_system_checkpoint_age,
-            );
+            system_checkpoint
+                .report_system_checkpoint_age(&self.metrics.last_created_system_checkpoint_age);
             last_system_checkpoint = Some((sequence_number, system_checkpoint.clone()));
             system_checkpoints.push(system_checkpoint);
         }
@@ -1016,11 +997,9 @@ impl SystemCheckpointAggregator {
                     self.metrics
                         .last_certified_system_checkpoint
                         .set(current.system_checkpoint.sequence_number as i64);
-                    current
-                        .system_checkpoint
-                        .report_system_checkpoint_age(
-                            &self.metrics.last_certified_system_checkpoint_age,
-                        );
+                    current.system_checkpoint.report_system_checkpoint_age(
+                        &self.metrics.last_certified_system_checkpoint_age,
+                    );
                     result.push(system_checkpoint.into_inner());
                     self.current = None;
                     continue 'outer;

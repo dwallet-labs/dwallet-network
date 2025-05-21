@@ -30,8 +30,8 @@ pub use system_inner_v1::*;
 
 #[cfg(msim)]
 use self::simtest_system_state_inner::{
-    SimTestSystemStateInnerDeepV2, SimTestSystemStateInnerShallowV2,
-    SimTestSystemStateInnerV1, SimTestValidatorDeepV2, SimTestValidatorV1,
+    SimTestSystemStateInnerDeepV2, SimTestSystemStateInnerShallowV2, SimTestSystemStateInnerV1,
+    SimTestValidatorDeepV2, SimTestValidatorV1,
 };
 
 /// Default computation price of 1000 NIka

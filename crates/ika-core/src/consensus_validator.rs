@@ -5,8 +5,7 @@ use std::sync::Arc;
 
 use crate::system_checkpoints::SystemCheckpointServiceNotify;
 use crate::{
-    authority::{AuthorityState},
-    checkpoints::CheckpointServiceNotify,
+    authority::AuthorityState, checkpoints::CheckpointServiceNotify,
     consensus_adapter::ConsensusOverloadChecker,
 };
 use consensus_core::{TransactionIndex, TransactionVerifier, ValidationError};
@@ -178,7 +177,10 @@ impl IkaTxValidator {
         Ok(obligation.verify_all()?)
     }
 
-    async fn vote_transactions(&self, _txs: Vec<ConsensusTransactionKind>) -> Vec<TransactionIndex> {
+    async fn vote_transactions(
+        &self,
+        _txs: Vec<ConsensusTransactionKind>,
+    ) -> Vec<TransactionIndex> {
         vec![]
         //let epoch_store = self.authority_state.load_epoch_store_one_call_per_task();
         // if !epoch_store.protocol_config().mysticeti_fastpath() {

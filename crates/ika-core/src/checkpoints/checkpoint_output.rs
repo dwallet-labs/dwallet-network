@@ -9,11 +9,11 @@ use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_checkpoint::{
     CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSignatureMessage,
     SignedCheckpointMessage, VerifiedCheckpointMessage,
 };
-use ika_types::messages_consensus::ConsensusTransaction;
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
