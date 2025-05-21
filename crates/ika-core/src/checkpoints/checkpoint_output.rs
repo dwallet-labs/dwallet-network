@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{CheckpointMetrics, CheckpointStore};
+use super::{CheckpointStore, DWalletCheckpointMetrics};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
@@ -11,65 +11,65 @@ use ika_types::error::IkaResult;
 use ika_types::message_envelope::Message;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_checkpoint::{
-    CertifiedDWalletCheckpointMessage, CheckpointMessage, CheckpointSignatureMessage,
-    SignedCheckpointMessage, VerifiedCheckpointMessage,
+    CertifiedDWalletCheckpointMessage, DWalletCheckpointMessage, DWalletCheckpointSignatureMessage,
+    SignedDWalletCheckpointMessage, VerifiedDWalletCheckpointMessage,
 };
 use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
 #[async_trait]
-pub trait CheckpointOutput: Sync + Send + 'static {
-    async fn checkpoint_created(
+pub trait DWalletCheckpointOutput: Sync + Send + 'static {
+    async fn dwallet_checkpoint_created(
         &self,
-        summary: &CheckpointMessage,
+        summary: &DWalletCheckpointMessage,
         epoch_store: &Arc<AuthorityPerEpochStore>,
         checkpoint_store: &Arc<CheckpointStore>,
     ) -> IkaResult;
 }
 
 #[async_trait]
-pub trait CertifiedCheckpointMessageOutput: Sync + Send + 'static {
-    async fn certified_checkpoint_message_created(
+pub trait CertifiedDWalletCheckpointMessageOutput: Sync + Send + 'static {
+    async fn certified_dwallet_checkpoint_message_created(
         &self,
         summary: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult;
 }
 
-pub struct SubmitCheckpointToConsensus<T> {
+pub struct SubmitDWalletCheckpointToConsensus<T> {
     pub sender: T,
     pub signer: StableSyncAuthoritySigner,
     pub authority: AuthorityName,
-    pub metrics: Arc<CheckpointMetrics>,
+    pub metrics: Arc<DWalletCheckpointMetrics>,
 }
 
-pub struct LogCheckpointOutput;
+pub struct LogDWalletCheckpointOutput;
 
-impl LogCheckpointOutput {
-    pub fn boxed() -> Box<dyn CheckpointOutput> {
+impl LogDWalletCheckpointOutput {
+    pub fn boxed() -> Box<dyn DWalletCheckpointOutput> {
         Box::new(Self)
     }
 
-    pub fn boxed_certified() -> Box<dyn CertifiedCheckpointMessageOutput> {
+    pub fn boxed_certified() -> Box<dyn CertifiedDWalletCheckpointMessageOutput> {
         Box::new(Self)
     }
 }
 
 #[async_trait]
-impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
+impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointToConsensus<T> {
     #[instrument(level = "debug", skip_all)]
-    async fn checkpoint_created(
+    async fn dwallet_checkpoint_created(
         &self,
-        checkpoint_message: &CheckpointMessage,
+        checkpoint_message: &DWalletCheckpointMessage,
         epoch_store: &Arc<AuthorityPerEpochStore>,
         checkpoint_store: &Arc<CheckpointStore>,
     ) -> IkaResult {
-        LogCheckpointOutput
-            .checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
+        LogDWalletCheckpointOutput
+            .dwallet_checkpoint_created(checkpoint_message, epoch_store, checkpoint_store)
             .await?;
 
         let checkpoint_timestamp = checkpoint_message.timestamp_ms;
         let checkpoint_seq = checkpoint_message.sequence_number;
-        self.metrics.checkpoint_creation_latency.observe(
+        self.metrics.dwallet_checkpoint_creation_latency.observe(
             checkpoint_message
                 .timestamp()
                 .elapsed()
@@ -78,37 +78,38 @@ impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
         );
 
         let highest_verified_checkpoint = checkpoint_store
-            .get_highest_verified_checkpoint()?
+            .get_highest_verified_dwallet_checkpoint()?
             .map(|x| *x.sequence_number());
 
         if Some(checkpoint_seq) > highest_verified_checkpoint {
             debug!(
-                "Sending checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}."
+                "Sending dwallet checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}."
             );
 
-            let summary = SignedCheckpointMessage::new(
+            let summary = SignedDWalletCheckpointMessage::new(
                 epoch_store.epoch(),
                 checkpoint_message.clone(),
                 &*self.signer,
                 self.authority,
             );
 
-            let message = CheckpointSignatureMessage {
-                checkpoint_message: summary,
+            let message = DWalletCheckpointSignatureMessage {
+                dwallet_checkpoint_message: summary,
             };
-            let transaction = ConsensusTransaction::new_checkpoint_signature_message(message);
+            let transaction =
+                ConsensusTransaction::new_dwallet_checkpoint_signature_message(message);
             self.sender
                 .submit_to_consensus(&vec![transaction], epoch_store)
                 .await?;
             self.metrics
-                .last_sent_checkpoint_signature
+                .last_sent_dwallet_checkpoint_signature
                 .set(checkpoint_seq as i64);
         } else {
             debug!(
-                "Checkpoint at sequence {checkpoint_seq} is already certified, skipping signature submission to consensus",
+                "Dwallet checkpoint at sequence {checkpoint_seq} is already certified, skipping signature submission to consensus",
             );
             self.metrics
-                .last_skipped_checkpoint_signature_submission
+                .last_skipped_dwallet_checkpoint_signature_submission
                 .set(checkpoint_seq as i64);
         }
 
@@ -117,20 +118,20 @@ impl<T: SubmitToConsensus> CheckpointOutput for SubmitCheckpointToConsensus<T> {
 }
 
 #[async_trait]
-impl CheckpointOutput for LogCheckpointOutput {
-    async fn checkpoint_created(
+impl DWalletCheckpointOutput for LogDWalletCheckpointOutput {
+    async fn dwallet_checkpoint_created(
         &self,
-        checkpoint_message: &CheckpointMessage,
+        checkpoint_message: &DWalletCheckpointMessage,
         _epoch_store: &Arc<AuthorityPerEpochStore>,
         _checkpoint_store: &Arc<CheckpointStore>,
     ) -> IkaResult {
         trace!(
-            "Including following transactions in checkpoint {}: {:#?}",
+            "Including following transactions in dwallet checkpoint {}: {:#?}",
             checkpoint_message.sequence_number,
             checkpoint_message.messages,
         );
         info!(
-            "Creating checkpoint {:?} at epoch {}, sequence {}, messages count {}",
+            "Creating dwallet checkpoint {:?} at epoch {}, sequence {}, messages count {}",
             checkpoint_message.digest(),
             checkpoint_message.epoch,
             checkpoint_message.sequence_number,
@@ -142,13 +143,13 @@ impl CheckpointOutput for LogCheckpointOutput {
 }
 
 #[async_trait]
-impl CertifiedCheckpointMessageOutput for LogCheckpointOutput {
-    async fn certified_checkpoint_message_created(
+impl CertifiedDWalletCheckpointMessageOutput for LogDWalletCheckpointOutput {
+    async fn certified_dwallet_checkpoint_message_created(
         &self,
         summary: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult {
         info!(
-            "Certified checkpoint with sequence {} and digest {}",
+            "Certified dwallet checkpoint with sequence {} and digest {}",
             summary.sequence_number,
             summary.digest()
         );
@@ -156,30 +157,30 @@ impl CertifiedCheckpointMessageOutput for LogCheckpointOutput {
     }
 }
 
-pub struct SendCheckpointToStateSync {
+pub struct SendDWalletCheckpointToStateSync {
     handle: ika_network::state_sync::Handle,
 }
 
-impl SendCheckpointToStateSync {
+impl SendDWalletCheckpointToStateSync {
     pub fn new(handle: ika_network::state_sync::Handle) -> Self {
         Self { handle }
     }
 }
 
 #[async_trait]
-impl CertifiedCheckpointMessageOutput for SendCheckpointToStateSync {
+impl CertifiedDWalletCheckpointMessageOutput for SendDWalletCheckpointToStateSync {
     #[instrument(level = "debug", skip_all)]
-    async fn certified_checkpoint_message_created(
+    async fn certified_dwallet_checkpoint_message_created(
         &self,
         checkpoint_message: &CertifiedDWalletCheckpointMessage,
     ) -> IkaResult {
         info!(
-            "Certified checkpoint with sequence {} and digest {}",
+            "Certified dwallet checkpoint with sequence {} and digest {}",
             checkpoint_message.sequence_number,
             checkpoint_message.digest(),
         );
         self.handle
-            .send_checkpoint(VerifiedCheckpointMessage::new_unchecked(
+            .send_dwallet_checkpoint(VerifiedDWalletCheckpointMessage::new_unchecked(
                 checkpoint_message.to_owned(),
             ))
             .await;

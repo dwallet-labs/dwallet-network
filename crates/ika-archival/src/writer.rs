@@ -13,7 +13,7 @@ use anyhow::{anyhow, Context};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use ika_config::object_storage_config::ObjectStoreConfig;
 use ika_types::messages_dwallet_checkpoint::{
-    CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber,
+    CertifiedDWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
 };
 use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber,
@@ -601,7 +601,7 @@ impl ArchiveWriter {
     }
 
     async fn start_tailing_checkpoints<S>(
-        start_checkpoint_sequence_number: CheckpointSequenceNumber,
+        start_checkpoint_sequence_number: DWalletCheckpointSequenceNumber,
         mut checkpoint_writer: DWalletCheckpointWriter,
         store: S,
         mut kill: tokio::sync::broadcast::Receiver<()>,
@@ -614,7 +614,7 @@ impl ArchiveWriter {
 
         while kill.try_recv().is_err() {
             if let Some(checkpoint_message) = store
-                .get_checkpoint_by_sequence_number(checkpoint_sequence_number)
+                .get_dwallet_checkpoint_by_sequence_number(checkpoint_sequence_number)
                 .map_err(|_| anyhow!("Failed to read checkpoint message from store"))?
             {
                 checkpoint_writer.write(checkpoint_message.into_inner())?;

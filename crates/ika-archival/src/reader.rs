@@ -11,7 +11,8 @@ use bytes::{Buf, Bytes};
 use futures::{StreamExt, TryStreamExt};
 use ika_config::node::ArchiveReaderConfig;
 use ika_types::messages_dwallet_checkpoint::{
-    CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+    CertifiedDWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
+    VerifiedDWalletCheckpointMessage,
 };
 use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
@@ -86,7 +87,7 @@ impl ArchiveReaderBalancer {
         Ok(ArchiveReaderBalancer { readers })
     }
     pub async fn get_archive_watermark(&self) -> Result<Option<u64>> {
-        let mut checkpoints: Vec<Result<CheckpointSequenceNumber>> = vec![];
+        let mut checkpoints: Vec<Result<DWalletCheckpointSequenceNumber>> = vec![];
         for reader in self
             .readers
             .iter()
@@ -100,12 +101,13 @@ impl ArchiveReaderBalancer {
             );
             checkpoints.push(latest_checkpoint)
         }
-        let checkpoints: Result<Vec<CheckpointSequenceNumber>> = checkpoints.into_iter().collect();
+        let checkpoints: Result<Vec<DWalletCheckpointSequenceNumber>> =
+            checkpoints.into_iter().collect();
         checkpoints.map(|vec| vec.into_iter().min())
     }
     pub async fn pick_one_random(
         &self,
-        checkpoint_range: Range<CheckpointSequenceNumber>,
+        checkpoint_range: Range<DWalletCheckpointSequenceNumber>,
     ) -> Option<Arc<ArchiveReader>> {
         let mut archives_with_complete_range = vec![];
         for reader in self.readers.iter() {
@@ -253,7 +255,7 @@ impl ArchiveReader {
     pub async fn read_checkpoints_for_range_no_verify<S>(
         &self,
         store: S,
-        checkpoint_range: Range<CheckpointSequenceNumber>,
+        checkpoint_range: Range<DWalletCheckpointSequenceNumber>,
         checkpoint_counter: Arc<AtomicU64>,
     ) -> Result<()>
     where
@@ -305,7 +307,7 @@ impl ArchiveReader {
     pub async fn read_checkpoints_for_list_no_verify<S>(
         &self,
         store: S,
-        skiplist: Vec<CheckpointSequenceNumber>,
+        skiplist: Vec<DWalletCheckpointSequenceNumber>,
         checkpoint_counter: Arc<AtomicU64>,
     ) -> Result<()>
     where
@@ -348,7 +350,7 @@ impl ArchiveReader {
 
     pub async fn get_checkpoints_for_list_no_verify(
         &self,
-        cp_list: Vec<CheckpointSequenceNumber>,
+        cp_list: Vec<DWalletCheckpointSequenceNumber>,
     ) -> Result<Vec<CertifiedDWalletCheckpointMessage>> {
         let checkpoint_files = self.get_checkpoint_files_for_list(cp_list.clone()).await?;
         let remote_object_store = self.remote_object_store.clone();
@@ -393,7 +395,7 @@ impl ArchiveReader {
     pub async fn read<S>(
         &self,
         store: S,
-        checkpoint_range: Range<CheckpointSequenceNumber>,
+        checkpoint_range: Range<DWalletCheckpointSequenceNumber>,
         action_counter: Arc<AtomicU64>,
         checkpoint_counter: Arc<AtomicU64>,
     ) -> Result<()>
@@ -477,7 +479,9 @@ impl ArchiveReader {
     }
 
     /// Return latest available checkpoint in archive
-    pub async fn latest_available_dwallet_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
+    pub async fn latest_available_dwallet_checkpoint(
+        &self,
+    ) -> Result<DWalletCheckpointSequenceNumber> {
         let manifest = self.manifest.lock().await.clone();
         manifest
             .next_dwallet_checkpoint_seq_num()
@@ -522,7 +526,7 @@ impl ArchiveReader {
     {
         store
             .insert_checkpoint(
-                VerifiedCheckpointMessage::new_unchecked(certified_checkpoint).borrow(),
+                VerifiedDWalletCheckpointMessage::new_unchecked(certified_checkpoint).borrow(),
             )
             .map_err(|e| anyhow!("Failed to insert checkpoint: {e}"))
     }
@@ -531,17 +535,17 @@ impl ArchiveReader {
     fn get_or_insert_verified_checkpoint<S>(
         store: &S,
         certified_checkpoint: CertifiedDWalletCheckpointMessage,
-    ) -> Result<VerifiedCheckpointMessage>
+    ) -> Result<VerifiedDWalletCheckpointMessage>
     where
         S: WriteStore + Clone,
     {
         store
-            .get_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
+            .get_dwallet_checkpoint_by_sequence_number(certified_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedCheckpointMessage, anyhow::Error>)
+            .map(Ok::<VerifiedDWalletCheckpointMessage, anyhow::Error>)
             .unwrap_or_else(|| {
                 let verified_checkpoint =
-                    VerifiedCheckpointMessage::new_unchecked(certified_checkpoint);
+                    VerifiedDWalletCheckpointMessage::new_unchecked(certified_checkpoint);
                 // Insert checkpoint message
                 store
                     .insert_checkpoint(&verified_checkpoint)
@@ -550,14 +554,14 @@ impl ArchiveReader {
                 store
                     .update_highest_verified_checkpoint(&verified_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedCheckpointMessage, anyhow::Error>(verified_checkpoint)
+                Ok::<VerifiedDWalletCheckpointMessage, anyhow::Error>(verified_checkpoint)
             })
             .map_err(|e| anyhow!("Failed to get a verified checkpoint: {:?}", e))
     }
 
     async fn get_checkpoint_files_for_range(
         &self,
-        checkpoint_range: Range<CheckpointSequenceNumber>,
+        checkpoint_range: Range<DWalletCheckpointSequenceNumber>,
     ) -> Result<(Vec<FileMetadata>, usize, usize)> {
         let manifest = self.manifest.lock().await.clone();
 
@@ -588,7 +592,7 @@ impl ArchiveReader {
 
     async fn get_checkpoint_files_for_list(
         &self,
-        checkpoints: Vec<CheckpointSequenceNumber>,
+        checkpoints: Vec<DWalletCheckpointSequenceNumber>,
     ) -> Result<Vec<FileMetadata>> {
         assert!(!checkpoints.is_empty());
         let manifest = self.manifest.lock().await.clone();

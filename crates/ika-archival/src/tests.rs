@@ -214,7 +214,7 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
     }
     ma::assert_ge!(latest_archived_checkpoint_seq_num, 10);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?
@@ -240,12 +240,14 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
         .await?;
     ma::assert_ge!(
         read_store
-            .get_highest_verified_checkpoint()?
+            .get_highest_verified_dwallet_checkpoint()?
             .sequence_number,
         latest_archived_checkpoint_seq_num
     );
     ma::assert_ge!(
-        read_store.get_highest_synced_checkpoint()?.sequence_number,
+        read_store
+            .get_highest_synced_dwallet_checkpoint()?
+            .sequence_number,
         latest_archived_checkpoint_seq_num
     );
     kill.send(())?;
@@ -273,7 +275,7 @@ async fn test_verify_archive_with_oneshot_store() -> Result<(), anyhow::Error> {
     }
     ma::assert_ge!(latest_archived_checkpoint_seq_num, 10);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?
@@ -347,7 +349,7 @@ async fn test_verify_archive_with_oneshot_store_bad_data() -> Result<(), anyhow:
     }
     ma::assert_gt!(num_files_corrupted, 0);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?

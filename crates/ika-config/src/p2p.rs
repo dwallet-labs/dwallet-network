@@ -4,7 +4,9 @@
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
 use ika_types::digests::SystemCheckpointDigest;
-use ika_types::messages_dwallet_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
+use ika_types::messages_dwallet_checkpoint::{
+    DWalletCheckpointMessageDigest, DWalletCheckpointSequenceNumber,
+};
 use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
 use serde::{Deserialize, Serialize};
 use sui_types::multiaddr::Multiaddr;
@@ -97,7 +99,10 @@ pub struct StateSyncConfig {
     /// - in case of a network stall, to force the node to proceed with a manually-injected
     ///   checkpoint.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_checkpoints: Vec<(CheckpointSequenceNumber, CheckpointMessageDigest)>,
+    pub pinned_checkpoints: Vec<(
+        DWalletCheckpointSequenceNumber,
+        DWalletCheckpointMessageDigest,
+    )>,
 
     /// Query peers for their latest checkpoint every interval period.
     ///
@@ -153,26 +158,26 @@ pub struct StateSyncConfig {
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub push_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub push_dwallet_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
     /// Per-peer rate-limit (in requests/sec) for the GetCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub get_dwallet_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
     /// Per-peer inflight limit for the GetCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_inflight_limit: Option<usize>,
+    pub get_dwallet_checkpoint_message_inflight_limit: Option<usize>,
 
     /// Per-checkpoint inflight limit for the GetCheckpointMessage RPC. This is enforced globally
     /// across all peers.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_per_checkpoint_limit: Option<usize>,
+    pub get_dwallet_checkpoint_message_per_checkpoint_limit: Option<usize>,
 
     /// The amount of time to wait before retry if there are no peers to sync content from.
     /// If unspecified, this will set to default value

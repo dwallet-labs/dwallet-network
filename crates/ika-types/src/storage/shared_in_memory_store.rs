@@ -4,10 +4,12 @@
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
 use crate::digests::{
-    CheckpointContentsDigest, CheckpointMessageDigest, SystemCheckpointContentsDigest,
-    SystemCheckpointDigest,
+    DWalletCheckpointContentsDigest, DWalletCheckpointMessageDigest,
+    SystemCheckpointContentsDigest, SystemCheckpointDigest,
 };
-use crate::messages_dwallet_checkpoint::{CheckpointSequenceNumber, VerifiedCheckpointMessage};
+use crate::messages_dwallet_checkpoint::{
+    DWalletCheckpointSequenceNumber, VerifiedDWalletCheckpointMessage,
+};
 use crate::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
@@ -31,44 +33,6 @@ impl SharedInMemoryStore {
 }
 
 impl ReadStore for SharedInMemoryStore {
-    fn get_checkpoint_by_digest(
-        &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.inner()
-            .get_checkpoint_by_digest(digest)
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_checkpoint_by_sequence_number(
-        &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.inner()
-            .get_checkpoint_by_sequence_number(sequence_number)
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.inner()
-            .get_highest_verified_checkpoint()
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.inner()
-            .get_highest_synced_checkpoint()
-            .cloned()
-            .pipe(Ok)
-    }
-
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
-        Ok(self.inner().get_lowest_available_checkpoint())
-    }
-
     fn get_committee(&self, epoch: EpochId) -> Result<Option<Arc<Committee>>> {
         self.inner()
             .get_committee_by_epoch(epoch)
@@ -77,18 +41,54 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
         todo!()
     }
 
-    fn get_system_checkpoint_by_digest(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
         self.inner()
-            .get_system_checkpoint_by_digest(digest)
+            .get_highest_verified_dwallet_checkpoint()
             .cloned()
             .pipe(Ok)
+    }
+
+    fn get_highest_synced_dwallet_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.inner()
+            .get_highest_synced_dwallet_checkpoint()
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        Ok(self.inner().get_lowest_available_dwallet_checkpoint())
+    }
+
+    fn get_dwallet_checkpoint_by_digest(
+        &self,
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.inner()
+            .get_dwallet_checkpoint_by_digest(digest)
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_dwallet_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.inner()
+            .get_dwallet_checkpoint_by_sequence_number(sequence_number)
+            .cloned()
+            .pipe(Ok)
+    }
+
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+        todo!()
     }
 
     fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
@@ -109,6 +109,16 @@ impl ReadStore for SharedInMemoryStore {
         Ok(self.inner().get_lowest_available_system_checkpoint())
     }
 
+    fn get_system_checkpoint_by_digest(
+        &self,
+        digest: &SystemCheckpointDigest,
+    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        self.inner()
+            .get_system_checkpoint_by_digest(digest)
+            .cloned()
+            .pipe(Ok)
+    }
+
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
@@ -118,21 +128,17 @@ impl ReadStore for SharedInMemoryStore {
             .cloned()
             .pipe(Ok)
     }
-
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
-        todo!()
-    }
 }
 
 impl WriteStore for SharedInMemoryStore {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedCheckpointMessage) -> Result<()> {
+    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
         self.inner_mut().insert_checkpoint(checkpoint);
         Ok(())
     }
 
     fn update_highest_synced_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         self.inner_mut()
             .update_highest_synced_checkpoint(checkpoint);
@@ -141,19 +147,15 @@ impl WriteStore for SharedInMemoryStore {
 
     fn update_highest_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         self.inner_mut()
             .update_highest_verified_checkpoint(checkpoint);
         Ok(())
     }
 
-    fn insert_system_checkpoint(
-        &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
-    ) -> Result<()> {
-        self.inner_mut()
-            .insert_system_checkpoint(system_checkpoint);
+    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
+        self.inner_mut().insert_system_checkpoint(system_checkpoint);
         Ok(())
     }
 
@@ -182,14 +184,11 @@ impl WriteStore for SharedInMemoryStore {
 }
 
 impl SharedInMemoryStore {
-    pub fn insert_certified_checkpoint(&self, checkpoint: &VerifiedCheckpointMessage) {
+    pub fn insert_certified_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) {
         self.inner_mut().insert_certified_checkpoint(checkpoint);
     }
 
-    pub fn insert_certified_system_checkpoint(
-        &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
-    ) {
+    pub fn insert_certified_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) {
         self.inner_mut()
             .insert_certified_system_checkpoint(system_checkpoint);
     }
@@ -197,15 +196,23 @@ impl SharedInMemoryStore {
 
 #[derive(Debug, Default)]
 pub struct InMemoryStore {
-    highest_verified_checkpoint: Option<(CheckpointSequenceNumber, CheckpointMessageDigest)>,
-    highest_synced_checkpoint: Option<(CheckpointSequenceNumber, CheckpointMessageDigest)>,
-    checkpoints: HashMap<CheckpointMessageDigest, VerifiedCheckpointMessage>,
-    contents_digest_to_sequence_number: HashMap<CheckpointContentsDigest, CheckpointSequenceNumber>,
-    sequence_number_to_digest: HashMap<CheckpointSequenceNumber, CheckpointMessageDigest>,
+    highest_verified_dwallet_checkpoint: Option<(
+        DWalletCheckpointSequenceNumber,
+        DWalletCheckpointMessageDigest,
+    )>,
+    highest_synced_dwallet_checkpoint: Option<(
+        DWalletCheckpointSequenceNumber,
+        DWalletCheckpointMessageDigest,
+    )>,
+    checkpoints: HashMap<DWalletCheckpointMessageDigest, VerifiedDWalletCheckpointMessage>,
+    contents_digest_to_sequence_number:
+        HashMap<DWalletCheckpointContentsDigest, DWalletCheckpointSequenceNumber>,
+    sequence_number_to_digest:
+        HashMap<DWalletCheckpointSequenceNumber, DWalletCheckpointMessageDigest>,
 
     epoch_to_committee: Vec<Committee>,
 
-    lowest_checkpoint_number: CheckpointSequenceNumber,
+    lowest_dwallet_checkpoint_number: DWalletCheckpointSequenceNumber,
 
     highest_verified_system_checkpoint:
         Option<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
@@ -222,7 +229,7 @@ pub struct InMemoryStore {
 impl InMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
-        checkpoint: VerifiedCheckpointMessage,
+        checkpoint: VerifiedDWalletCheckpointMessage,
         system_checkpoint: VerifiedSystemCheckpoint,
         committee: Committee,
     ) {
@@ -233,26 +240,26 @@ impl InMemoryStore {
         self.update_highest_verified_system_checkpoint(&system_checkpoint);
     }
 
-    pub fn get_checkpoint_by_digest(
+    pub fn get_dwallet_checkpoint_by_digest(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Option<&VerifiedCheckpointMessage> {
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Option<&VerifiedDWalletCheckpointMessage> {
         self.checkpoints.get(digest)
     }
 
-    pub fn get_checkpoint_by_sequence_number(
+    pub fn get_dwallet_checkpoint_by_sequence_number(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Option<&VerifiedCheckpointMessage> {
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Option<&VerifiedDWalletCheckpointMessage> {
         self.sequence_number_to_digest
             .get(&sequence_number)
-            .and_then(|digest| self.get_checkpoint_by_digest(digest))
+            .and_then(|digest| self.get_dwallet_checkpoint_by_digest(digest))
     }
 
     pub fn get_sequence_number_by_contents_digest(
         &self,
-        digest: &CheckpointContentsDigest,
-    ) -> Option<CheckpointSequenceNumber> {
+        digest: &DWalletCheckpointContentsDigest,
+    ) -> Option<DWalletCheckpointSequenceNumber> {
         self.contents_digest_to_sequence_number.get(digest).copied()
     }
 
@@ -265,42 +272,46 @@ impl InMemoryStore {
             .copied()
     }
 
-    pub fn get_highest_verified_checkpoint(&self) -> Option<&VerifiedCheckpointMessage> {
-        self.highest_verified_checkpoint
+    pub fn get_highest_verified_dwallet_checkpoint(
+        &self,
+    ) -> Option<&VerifiedDWalletCheckpointMessage> {
+        self.highest_verified_dwallet_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_checkpoint_by_digest(digest))
+            .and_then(|(_, digest)| self.get_dwallet_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_synced_checkpoint(&self) -> Option<&VerifiedCheckpointMessage> {
-        self.highest_synced_checkpoint
+    pub fn get_highest_synced_dwallet_checkpoint(
+        &self,
+    ) -> Option<&VerifiedDWalletCheckpointMessage> {
+        self.highest_synced_dwallet_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_checkpoint_by_digest(digest))
+            .and_then(|(_, digest)| self.get_dwallet_checkpoint_by_digest(digest))
     }
 
-    pub fn get_lowest_available_checkpoint(&self) -> CheckpointSequenceNumber {
-        self.lowest_checkpoint_number
+    pub fn get_lowest_available_dwallet_checkpoint(&self) -> DWalletCheckpointSequenceNumber {
+        self.lowest_dwallet_checkpoint_number
     }
 
     pub fn set_lowest_available_checkpoint(
         &mut self,
-        checkpoint_seq_num: CheckpointSequenceNumber,
+        checkpoint_seq_num: DWalletCheckpointSequenceNumber,
     ) {
-        self.lowest_checkpoint_number = checkpoint_seq_num;
+        self.lowest_dwallet_checkpoint_number = checkpoint_seq_num;
     }
 
-    pub fn insert_checkpoint(&mut self, checkpoint: &VerifiedCheckpointMessage) {
+    pub fn insert_checkpoint(&mut self, checkpoint: &VerifiedDWalletCheckpointMessage) {
         self.insert_certified_checkpoint(checkpoint);
         let digest = *checkpoint.digest();
         let sequence_number = *checkpoint.sequence_number();
 
-        if Some(sequence_number) > self.highest_verified_checkpoint.map(|x| x.0) {
-            self.highest_verified_checkpoint = Some((sequence_number, digest));
+        if Some(sequence_number) > self.highest_verified_dwallet_checkpoint.map(|x| x.0) {
+            self.highest_verified_dwallet_checkpoint = Some((sequence_number, digest));
         }
     }
 
     // This function simulates Consensus inserts certified checkpoint into the checkpoint store
     // without bumping the highest_verified_checkpoint watermark.
-    pub fn insert_certified_checkpoint(&mut self, checkpoint: &VerifiedCheckpointMessage) {
+    pub fn insert_certified_checkpoint(&mut self, checkpoint: &VerifiedDWalletCheckpointMessage) {
         let digest = *checkpoint.digest();
         let sequence_number = *checkpoint.sequence_number();
 
@@ -309,39 +320,47 @@ impl InMemoryStore {
             .insert(sequence_number, digest);
     }
 
-    pub fn update_highest_synced_checkpoint(&mut self, checkpoint: &VerifiedCheckpointMessage) {
+    pub fn update_highest_synced_checkpoint(
+        &mut self,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) {
         if !self.checkpoints.contains_key(checkpoint.digest()) {
             panic!("store should already contain checkpoint");
         }
-        if let Some(highest_synced_checkpoint) = self.highest_synced_checkpoint {
+        if let Some(highest_synced_checkpoint) = self.highest_synced_dwallet_checkpoint {
             if highest_synced_checkpoint.0 >= checkpoint.sequence_number {
                 return;
             }
         }
-        self.highest_synced_checkpoint =
+        self.highest_synced_dwallet_checkpoint =
             Some((*checkpoint.sequence_number(), *checkpoint.digest()));
     }
 
-    pub fn update_highest_verified_checkpoint(&mut self, checkpoint: &VerifiedCheckpointMessage) {
+    pub fn update_highest_verified_checkpoint(
+        &mut self,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
+    ) {
         if !self.checkpoints.contains_key(checkpoint.digest()) {
             panic!("store should already contain checkpoint");
         }
-        if let Some(highest_verified_checkpoint) = self.highest_verified_checkpoint {
+        if let Some(highest_verified_checkpoint) = self.highest_verified_dwallet_checkpoint {
             if highest_verified_checkpoint.0 >= checkpoint.sequence_number {
                 return;
             }
         }
-        self.highest_verified_checkpoint =
+        self.highest_verified_dwallet_checkpoint =
             Some((*checkpoint.sequence_number(), *checkpoint.digest()));
     }
 
-    pub fn checkpoints(&self) -> &HashMap<CheckpointMessageDigest, VerifiedCheckpointMessage> {
+    pub fn checkpoints(
+        &self,
+    ) -> &HashMap<DWalletCheckpointMessageDigest, VerifiedDWalletCheckpointMessage> {
         &self.checkpoints
     }
 
     pub fn checkpoint_sequence_number_to_digest(
         &self,
-    ) -> &HashMap<CheckpointSequenceNumber, CheckpointMessageDigest> {
+    ) -> &HashMap<DWalletCheckpointSequenceNumber, DWalletCheckpointMessageDigest> {
         &self.sequence_number_to_digest
     }
 
@@ -402,10 +421,7 @@ impl InMemoryStore {
         self.lowest_system_checkpoint_number = system_checkpoint_seq_num;
     }
 
-    pub fn insert_system_checkpoint(
-        &mut self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
-    ) {
+    pub fn insert_system_checkpoint(&mut self, system_checkpoint: &VerifiedSystemCheckpoint) {
         self.insert_certified_system_checkpoint(system_checkpoint);
         let digest = *system_checkpoint.digest();
         let sequence_number = *system_checkpoint.sequence_number();
@@ -440,9 +456,7 @@ impl InMemoryStore {
         {
             panic!("store should already contain system_checkpoint");
         }
-        if let Some(highest_synced_system_checkpoint) =
-            self.highest_synced_system_checkpoint
-        {
+        if let Some(highest_synced_system_checkpoint) = self.highest_synced_system_checkpoint {
             if highest_synced_system_checkpoint.0 >= system_checkpoint.sequence_number {
                 return;
             }
@@ -463,9 +477,7 @@ impl InMemoryStore {
         {
             panic!("store should already contain system_checkpoint");
         }
-        if let Some(highest_verified_system_checkpoint) =
-            self.highest_verified_system_checkpoint
-        {
+        if let Some(highest_verified_system_checkpoint) = self.highest_verified_system_checkpoint {
             if highest_verified_system_checkpoint.0 >= system_checkpoint.sequence_number {
                 return;
             }
@@ -495,7 +507,7 @@ pub struct SingleCheckpointSharedInMemoryStore(SharedInMemoryStore);
 impl SingleCheckpointSharedInMemoryStore {
     pub fn insert_genesis_state(
         &mut self,
-        checkpoint: VerifiedCheckpointMessage,
+        checkpoint: VerifiedDWalletCheckpointMessage,
         system_checkpoint: VerifiedSystemCheckpoint,
         committee: Committee,
     ) {
@@ -509,34 +521,39 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_committee(epoch)
     }
 
-    fn get_latest_checkpoint(&self) -> Result<VerifiedCheckpointMessage> {
+    fn get_dwallet_latest_checkpoint(&self) -> Result<VerifiedDWalletCheckpointMessage> {
         todo!()
     }
 
-    fn get_highest_verified_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_highest_verified_checkpoint()
-    }
-
-    fn get_highest_synced_checkpoint(&self) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_highest_synced_checkpoint()
-    }
-
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
-        self.0.get_lowest_available_checkpoint()
-    }
-
-    fn get_checkpoint_by_digest(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_checkpoint_by_digest(digest)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.0.get_highest_verified_dwallet_checkpoint()
     }
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_highest_synced_dwallet_checkpoint(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>> {
-        self.0.get_checkpoint_by_sequence_number(sequence_number)
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.0.get_highest_synced_dwallet_checkpoint()
+    }
+
+    fn get_lowest_available_dwallet_checkpoint(&self) -> Result<DWalletCheckpointSequenceNumber> {
+        self.0.get_lowest_available_dwallet_checkpoint()
+    }
+
+    fn get_dwallet_checkpoint_by_digest(
+        &self,
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.0.get_dwallet_checkpoint_by_digest(digest)
+    }
+
+    fn get_dwallet_checkpoint_by_sequence_number(
+        &self,
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>> {
+        self.0
+            .get_dwallet_checkpoint_by_sequence_number(sequence_number)
     }
 
     fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
@@ -572,7 +589,7 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
 }
 
 impl WriteStore for SingleCheckpointSharedInMemoryStore {
-    fn insert_checkpoint(&self, checkpoint: &VerifiedCheckpointMessage) -> Result<()> {
+    fn insert_checkpoint(&self, checkpoint: &VerifiedDWalletCheckpointMessage) -> Result<()> {
         {
             let mut locked = self.0 .0.write().unwrap();
             locked.checkpoints.clear();
@@ -584,7 +601,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
 
     fn update_highest_synced_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         self.0.update_highest_synced_checkpoint(checkpoint)?;
         Ok(())
@@ -592,22 +609,17 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
 
     fn update_highest_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         self.0.update_highest_verified_checkpoint(checkpoint)?;
         Ok(())
     }
 
-    fn insert_system_checkpoint(
-        &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
-    ) -> Result<()> {
+    fn insert_system_checkpoint(&self, system_checkpoint: &VerifiedSystemCheckpoint) -> Result<()> {
         {
             let mut locked = self.0 .0.write().unwrap();
             locked.system_checkpoints.clear();
-            locked
-                .system_checkpoint_sequence_number_to_digest
-                .clear();
+            locked.system_checkpoint_sequence_number_to_digest.clear();
         }
         self.0.insert_system_checkpoint(system_checkpoint)?;
         Ok(())

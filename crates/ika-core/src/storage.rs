@@ -8,9 +8,9 @@ use ika_types::committee::Committee;
 use ika_types::committee::EpochId;
 use ika_types::digests::SystemCheckpointDigest;
 use ika_types::error::IkaError;
-use ika_types::messages_dwallet_checkpoint::CheckpointMessageDigest;
-use ika_types::messages_dwallet_checkpoint::CheckpointSequenceNumber;
-use ika_types::messages_dwallet_checkpoint::VerifiedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessageDigest;
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
+use ika_types::messages_dwallet_checkpoint::VerifiedDWalletCheckpointMessage;
 use ika_types::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
@@ -26,8 +26,8 @@ pub struct RocksDbStore {
     committee_store: Arc<CommitteeStore>,
     checkpoint_store: Arc<CheckpointStore>,
     // in memory checkpoint watermark sequence numbers
-    highest_verified_checkpoint: Arc<Mutex<Option<CheckpointSequenceNumber>>>,
-    highest_synced_checkpoint: Arc<Mutex<Option<CheckpointSequenceNumber>>>,
+    highest_verified_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
+    highest_synced_checkpoint: Arc<Mutex<Option<DWalletCheckpointSequenceNumber>>>,
 
     system_checkpoint_store: Arc<SystemCheckpointStore>,
     // in memory system_checkpoint watermark sequence numbers
@@ -54,47 +54,49 @@ impl RocksDbStore {
 
     pub fn get_last_executed_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage>, IkaError> {
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>, IkaError> {
         Ok(self.checkpoint_store.get_highest_executed_checkpoint()?)
     }
 }
 
 impl ReadStore for RocksDbStore {
-    fn get_checkpoint_by_digest(
+    fn get_dwallet_checkpoint_by_digest(
         &self,
-        digest: &CheckpointMessageDigest,
-    ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
+        digest: &DWalletCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_checkpoint_by_digest(digest)
+            .get_dwallet_checkpoint_by_digest(digest)
             .map_err(Into::into)
     }
 
-    fn get_checkpoint_by_sequence_number(
+    fn get_dwallet_checkpoint_by_sequence_number(
         &self,
-        sequence_number: CheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
+        sequence_number: DWalletCheckpointSequenceNumber,
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_checkpoint_by_sequence_number(sequence_number)
+            .get_dwallet_checkpoint_by_sequence_number(sequence_number)
             .map_err(Into::into)
     }
 
-    fn get_highest_verified_checkpoint(
+    fn get_highest_verified_dwallet_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .map_err(Into::into)
     }
 
-    fn get_highest_synced_checkpoint(
+    fn get_highest_synced_dwallet_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedCheckpointMessage>, StorageError> {
+    ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
         self.checkpoint_store
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .map_err(Into::into)
     }
 
-    fn get_lowest_available_checkpoint(&self) -> Result<CheckpointSequenceNumber, StorageError> {
+    fn get_lowest_available_dwallet_checkpoint(
+        &self,
+    ) -> Result<DWalletCheckpointSequenceNumber, StorageError> {
         let highest_pruned_cp = self
             .checkpoint_store
             .get_highest_pruned_checkpoint_seq_number()
@@ -114,9 +116,9 @@ impl ReadStore for RocksDbStore {
         Ok(self.committee_store.get_committee(&epoch).unwrap())
     }
 
-    fn get_latest_checkpoint(
+    fn get_dwallet_latest_checkpoint(
         &self,
-    ) -> ika_types::storage::error::Result<VerifiedCheckpointMessage> {
+    ) -> ika_types::storage::error::Result<VerifiedDWalletCheckpointMessage> {
         self.checkpoint_store
             .get_highest_executed_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
@@ -181,7 +183,7 @@ impl ReadStore for RocksDbStore {
 impl WriteStore for RocksDbStore {
     fn insert_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
         self.checkpoint_store
             .insert_verified_checkpoint(checkpoint)
@@ -190,7 +192,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_synced_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
         let mut locked = self.highest_synced_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {
@@ -205,7 +207,7 @@ impl WriteStore for RocksDbStore {
 
     fn update_highest_verified_checkpoint(
         &self,
-        checkpoint: &VerifiedCheckpointMessage,
+        checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), ika_types::storage::error::Error> {
         let mut locked = self.highest_verified_checkpoint.lock();
         if locked.is_some() && locked.unwrap() >= checkpoint.sequence_number {

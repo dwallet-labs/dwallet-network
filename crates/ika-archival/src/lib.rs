@@ -423,13 +423,14 @@ where
     };
     let archive_reader = ArchiveReader::new(config, &metrics)?;
     archive_reader.sync_manifest_once().await?;
-    let latest_checkpoint_in_archive = archive_reader.latest_available_dwallet_checkpoint().await?;
+    let latest_dwallet_checkpoint_in_archive =
+        archive_reader.latest_available_dwallet_checkpoint().await?;
     info!(
-        "Latest available checkpoint in archive store: {}",
-        latest_checkpoint_in_archive
+        "Latest available dwallet checkpoint in archive store: {}",
+        latest_dwallet_checkpoint_in_archive
     );
     let latest_checkpoint = store
-        .get_highest_synced_checkpoint()
+        .get_highest_synced_dwallet_checkpoint()
         .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);
@@ -437,7 +438,7 @@ where
     let action_counter = Arc::new(AtomicU64::new(0));
     let checkpoint_counter = Arc::new(AtomicU64::new(0));
     let progress_bar = if interactive {
-        let progress_bar = ProgressBar::new(latest_checkpoint_in_archive).with_style(
+        let progress_bar = ProgressBar::new(latest_dwallet_checkpoint_in_archive).with_style(
             ProgressStyle::with_template("[{elapsed_precise}] {wide_bar} {pos}/{len}({msg})")?,
         );
         let cloned_progress_bar = progress_bar.clone();
@@ -465,11 +466,11 @@ where
         tokio::spawn(async move {
             loop {
                 let latest_checkpoint = cloned_store
-                    .get_highest_synced_checkpoint()
+                    .get_highest_synced_dwallet_checkpoint()
                     .map_err(|_| anyhow!("Failed to read highest-synced checkpoint"))?
                     .map(|c| c.sequence_number)
                     .unwrap_or(0);
-                let percent = (latest_checkpoint * 100) / latest_checkpoint_in_archive;
+                let percent = (latest_checkpoint * 100) / latest_dwallet_checkpoint_in_archive;
                 info!("done = {percent}%");
                 tokio::time::sleep(Duration::from_secs(60)).await;
                 if percent >= 100 {
@@ -490,7 +491,7 @@ where
         .await?;
     progress_bar.iter().for_each(|p| p.finish_and_clear());
     let end = store
-        .get_highest_synced_checkpoint()
+        .get_highest_synced_dwallet_checkpoint()
         .map_err(|_| anyhow!("Failed to read watermark"))?
         .map(|c| c.sequence_number)
         .unwrap_or(0);

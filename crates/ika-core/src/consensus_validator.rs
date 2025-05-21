@@ -14,7 +14,7 @@ use ika_types::crypto::AuthoritySignInfoTrait;
 use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
-use ika_types::messages_dwallet_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::SignedDWalletCheckpointMessage;
 use ika_types::messages_system_checkpoints::SignedSystemCheckpoint;
 use ika_types::{
     error::{IkaError, IkaResult},
@@ -68,9 +68,9 @@ impl IkaTxValidator {
 
         for tx in txs.iter() {
             match tx {
-                ConsensusTransactionKind::CheckpointSignature(signature) => {
+                ConsensusTransactionKind::DWalletCheckpointSignature(signature) => {
                     ckpt_messages.push(signature.as_ref());
-                    ckpt_batch.push(&signature.checkpoint_message);
+                    ckpt_batch.push(&signature.dwallet_checkpoint_message);
                 }
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
@@ -123,7 +123,7 @@ impl IkaTxValidator {
     /// Verifies all certificates - if any fail return error.
     fn batch_verify_all_certificates_and_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedCheckpointMessage],
+        checkpoints: &[&SignedDWalletCheckpointMessage],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
@@ -134,7 +134,10 @@ impl IkaTxValidator {
         Self::batch_verify(committee, checkpoints)
     }
 
-    fn batch_verify(committee: &Committee, checkpoints: &[&SignedCheckpointMessage]) -> IkaResult {
+    fn batch_verify(
+        committee: &Committee,
+        checkpoints: &[&SignedDWalletCheckpointMessage],
+    ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
         for ckpt in checkpoints {

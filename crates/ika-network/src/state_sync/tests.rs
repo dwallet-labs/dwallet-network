@@ -17,7 +17,7 @@ use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_storage::{FileCompression, StorageFormat};
 use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
 use ika_types::{
-    messages_dwallet_checkpoint::CheckpointMessageDigest,
+    messages_dwallet_checkpoint::DWalletCheckpointMessageDigest,
     storage::{ReadStore, SharedInMemoryStore, WriteStore},
 };
 use prometheus::Registry;
@@ -61,7 +61,10 @@ async fn server_push_checkpoint() {
 
     let checkpoint = ordered_checkpoints[1].inner().to_owned();
     let request = Request::new(checkpoint.clone()).with_extension(peer_id);
-    server.push_checkpoint_message(request).await.unwrap();
+    server
+        .push_dwallet_checkpoint_message(request)
+        .await
+        .unwrap();
 
     assert_eq!(
         peer_heights.read().unwrap().peers.get(&peer_id),
@@ -115,7 +118,7 @@ async fn server_get_checkpoint() {
 
     // Requests for the Latest checkpoint should return the genesis checkpoint
     let response = server
-        .get_checkpoint_message(Request::new(GetCheckpointMessageRequest::Latest))
+        .get_dwallet_checkpoint_message(Request::new(GetCheckpointMessageRequest::Latest))
         .await
         .unwrap()
         .into_inner();
@@ -127,11 +130,11 @@ async fn server_get_checkpoint() {
     // Requests for checkpoints that aren't in the server's store
     let requests = [
         GetCheckpointMessageRequest::BySequenceNumber(9),
-        GetCheckpointMessageRequest::ByDigest(CheckpointMessageDigest::new([10; 32])),
+        GetCheckpointMessageRequest::ByDigest(DWalletCheckpointMessageDigest::new([10; 32])),
     ];
     for request in requests {
         let response = server
-            .get_checkpoint_message(Request::new(request))
+            .get_dwallet_checkpoint_message(Request::new(request))
             .await
             .unwrap()
             .into_inner();
@@ -150,7 +153,7 @@ async fn server_get_checkpoint() {
 
     let request = Request::new(GetCheckpointMessageRequest::Latest);
     let response = server
-        .get_checkpoint_message(request)
+        .get_dwallet_checkpoint_message(request)
         .await
         .unwrap()
         .into_inner()
@@ -160,7 +163,7 @@ async fn server_get_checkpoint() {
     for checkpoint in ordered_checkpoints {
         let request = Request::new(GetCheckpointMessageRequest::ByDigest(*checkpoint.digest()));
         let response = server
-            .get_checkpoint_message(request)
+            .get_dwallet_checkpoint_message(request)
             .await
             .unwrap()
             .into_inner()
@@ -171,7 +174,7 @@ async fn server_get_checkpoint() {
             *checkpoint.sequence_number(),
         ));
         let response = server
-            .get_checkpoint_message(request)
+            .get_dwallet_checkpoint_message(request)
             .await
             .unwrap()
             .into_inner()
@@ -240,7 +243,7 @@ async fn isolated_sync_job() {
         Some(
             event_loop_1
                 .store
-                .get_highest_verified_checkpoint()
+                .get_highest_verified_dwallet_checkpoint()
                 .unwrap()
                 .data()
         )
@@ -372,19 +375,19 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
         }
         // Now Node 2 has deleted checkpoint contents from range [0, 10) on local store
         assert_eq!(
-            store.get_lowest_available_checkpoint(),
+            store.get_lowest_available_dwallet_checkpoint(),
             oldest_checkpoint_to_keep
         );
         assert_eq!(
             store
-                .get_highest_synced_checkpoint()
+                .get_highest_synced_dwallet_checkpoint()
                 .unwrap()
                 .sequence_number,
             ordered_checkpoints.last().unwrap().sequence_number
         );
         assert_eq!(
             store
-                .get_highest_verified_checkpoint()
+                .get_highest_verified_dwallet_checkpoint()
                 .unwrap()
                 .sequence_number,
             ordered_checkpoints.last().unwrap().sequence_number
@@ -414,7 +417,7 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
     loop {
         {
             let store = store_1.inner();
-            if let Some(highest_synced_checkpoint) = store.get_highest_synced_checkpoint() {
+            if let Some(highest_synced_checkpoint) = store.get_highest_synced_dwallet_checkpoint() {
                 if highest_synced_checkpoint.sequence_number
                     == ordered_checkpoints.last().unwrap().sequence_number
                 {
@@ -502,7 +505,7 @@ async fn sync_with_checkpoints_being_inserted() {
         .insert_checkpoint_contents(&checkpoint, empty_contents())
         .unwrap();
     store_1.insert_certified_checkpoint(&checkpoint);
-    handle_1.send_checkpoint(checkpoint).await;
+    handle_1.send_dwallet_checkpoint(checkpoint).await;
 
     timeout(Duration::from_secs(1), async {
         assert_eq!(
@@ -520,7 +523,7 @@ async fn sync_with_checkpoints_being_inserted() {
     // Inject all the checkpoints
     for checkpoint in checkpoint_iter {
         store_1.insert_certified_checkpoint(&checkpoint);
-        handle_1.send_checkpoint(checkpoint).await;
+        handle_1.send_dwallet_checkpoint(checkpoint).await;
     }
 
     timeout(Duration::from_secs(1), async {
@@ -537,14 +540,14 @@ async fn sync_with_checkpoints_being_inserted() {
     assert_eq!(
         ordered_checkpoints.last().map(|x| x.digest()),
         store_1
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .as_ref()
             .map(|x| x.digest())
     );
     assert_eq!(
         ordered_checkpoints.last().map(|x| x.digest()),
         store_2
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .as_ref()
             .map(|x| x.digest())
     );
@@ -644,7 +647,7 @@ async fn sync_with_checkpoints_watermark() {
         .insert_checkpoint_contents(&checkpoint_1, contents_1.clone())
         .unwrap();
     store_1.insert_certified_checkpoint(&checkpoint_1);
-    handle_1.send_checkpoint(checkpoint_1.clone()).await;
+    handle_1.send_dwallet_checkpoint(checkpoint_1.clone()).await;
 
     timeout(Duration::from_secs(3), async {
         assert_eq!(
@@ -661,28 +664,28 @@ async fn sync_with_checkpoints_watermark() {
 
     assert_eq!(
         store_1
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         checkpoint_seq
     );
     assert_eq!(
         store_2
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         checkpoint_seq
     );
     assert_eq!(
         store_1
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &1
     );
     assert_eq!(
         store_2
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &1
@@ -707,7 +710,7 @@ async fn sync_with_checkpoints_watermark() {
             .insert_checkpoint_contents(&checkpoint, contents)
             .unwrap();
         store_1.insert_certified_checkpoint(&checkpoint);
-        handle_1.send_checkpoint(checkpoint).await;
+        handle_1.send_dwallet_checkpoint(checkpoint).await;
     }
 
     // Peer 1 has all the checkpoint contents, but not Peer 2
@@ -736,14 +739,14 @@ async fn sync_with_checkpoints_watermark() {
 
     assert_eq!(
         store_1
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         ordered_checkpoints.last().unwrap().sequence_number()
     );
     assert_eq!(
         store_2
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         ordered_checkpoints[1].sequence_number()
@@ -751,7 +754,7 @@ async fn sync_with_checkpoints_watermark() {
 
     assert_eq!(
         store_1
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq
@@ -797,14 +800,14 @@ async fn sync_with_checkpoints_watermark() {
 
     assert_eq!(
         store_2
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         ordered_checkpoints[1].sequence_number(),
     );
     assert_eq!(
         store_3
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         ordered_checkpoints[1].sequence_number(),
@@ -813,7 +816,7 @@ async fn sync_with_checkpoints_watermark() {
     // Now set Peer 1's low watermark back to 0
     store_1.inner_mut().set_lowest_available_checkpoint(0);
 
-    // Peer 2 and Peer 3 will know about this change by `get_checkpoint_availability`
+    // Peer 2 and Peer 3 will know about this change by `get_dwallet_checkpoint_availability`
     // Soon we expect them to have all checkpoints's content.
     timeout(Duration::from_secs(6), async {
         for (checkpoint, contents) in ordered_checkpoints[2..]
@@ -837,28 +840,28 @@ async fn sync_with_checkpoints_watermark() {
     .unwrap();
     assert_eq!(
         store_2
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq
     );
     assert_eq!(
         store_3
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq
     );
     assert_eq!(
         store_2
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq
     );
     assert_eq!(
         store_3
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq
@@ -914,7 +917,7 @@ async fn sync_with_checkpoints_watermark() {
     .unwrap();
     assert_eq!(
         store_4
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .unwrap()
             .sequence_number(),
         &last_checkpoint_seq

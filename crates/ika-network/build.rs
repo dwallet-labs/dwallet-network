@@ -45,7 +45,7 @@ fn build_anemo_services(out_dir: &Path) {
         .package("ika")
         .method(
             anemo_build::manual::Method::builder()
-                .name("push_checkpoint_message")
+                .name("push_dwallet_checkpoint_message")
                 .route_name("PushCheckpointMessage")
                 .request_type("ika_types::messages_dwallet_checkpoint::CertifiedDWalletCheckpointMessage")
                 .response_type("()")
@@ -54,7 +54,7 @@ fn build_anemo_services(out_dir: &Path) {
         )
         .method(
             anemo_build::manual::Method::builder()
-                .name("get_checkpoint_message")
+                .name("get_dwallet_checkpoint_message")
                 .route_name("GetCheckpointMessage")
                 .request_type("crate::state_sync::GetCheckpointMessageRequest")
                 .response_type("Option<ika_types::messages_dwallet_checkpoint::CertifiedDWalletCheckpointMessage>")
@@ -63,10 +63,10 @@ fn build_anemo_services(out_dir: &Path) {
         )
         .method(
             anemo_build::manual::Method::builder()
-                .name("get_checkpoint_availability")
-                .route_name("GetCheckpointAvailability")
+                .name("get_dwallet_checkpoint_availability")
+                .route_name("GetDWalletCheckpointAvailability")
                 .request_type("()")
-                .response_type("crate::state_sync::GetCheckpointAvailabilityResponse")
+                .response_type("crate::state_sync::GetDWalletCheckpointAvailabilityResponse")
                 .codec_path(codec_path)
                 .build(),
         )

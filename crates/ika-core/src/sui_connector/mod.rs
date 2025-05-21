@@ -1,6 +1,5 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::CheckpointStore;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};

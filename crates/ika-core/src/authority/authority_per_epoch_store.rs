@@ -89,8 +89,8 @@ use ika_types::messages_consensus::{
 };
 use ika_types::messages_consensus::{Round, TimestampMs};
 use ika_types::messages_dwallet_checkpoint::{
-    CheckpointMessage, CheckpointSequenceNumber, CheckpointSignatureMessage,
-    SignedCheckpointMessage,
+    DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
+    SignedDWalletCheckpointMessage,
 };
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
@@ -314,14 +314,14 @@ pub struct AuthorityPerEpochStore {
 
     // Subscribers will get notified when a transaction is executed via checkpoint execution.
     executed_transactions_to_checkpoint_notify_read:
-        NotifyRead<MessageDigest, CheckpointSequenceNumber>,
+        NotifyRead<MessageDigest, DWalletCheckpointSequenceNumber>,
 
     executed_digests_notify_read: NotifyRead<TransactionKey, MessageDigest>,
 
     /// Get notified when a synced checkpoint has reached CheckpointExecutor.
-    synced_checkpoint_notify_read: NotifyRead<CheckpointSequenceNumber, ()>,
+    synced_checkpoint_notify_read: NotifyRead<DWalletCheckpointSequenceNumber, ()>,
     /// Caches the highest synced checkpoint sequence number as this has been notified from the CheckpointExecutor
-    highest_synced_checkpoint: RwLock<CheckpointSequenceNumber>,
+    highest_synced_checkpoint: RwLock<DWalletCheckpointSequenceNumber>,
 
     /// This is used to notify all epoch specific tasks that epoch has ended.
     epoch_alive_notify: NotifyOnce,
@@ -420,10 +420,10 @@ pub struct AuthorityEpochTables {
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
     pending_checkpoint_signatures:
-        DBMap<(CheckpointSequenceNumber, u64), CheckpointSignatureMessage>,
+        DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_checkpoint_message_v1: DBMap<CheckpointSequenceNumber, BuilderCheckpointMessage>,
+    builder_checkpoint_message_v1: DBMap<DWalletCheckpointSequenceNumber, BuilderCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_system_checkpoints: DBMap<SystemCheckpointHeight, PendingSystemCheckpoint>,
@@ -431,10 +431,10 @@ pub struct AuthorityEpochTables {
     /// Stores pending signatures
     /// The key in this table is ika system checkpoint sequence number and an arbitrary integer
     pending_system_checkpoint_signatures:
-        DBMap<(CheckpointSequenceNumber, u64), SystemCheckpointSignatureMessage>,
+        DBMap<(DWalletCheckpointSequenceNumber, u64), SystemCheckpointSignatureMessage>,
 
     /// Maps sequence number to ika system checkpoint summary, used by SystemCheckpointBuilder to build checkpoint within epoch
-    builder_system_checkpoint_v1: DBMap<CheckpointSequenceNumber, BuilderSystemCheckpoint>,
+    builder_system_checkpoint_v1: DBMap<DWalletCheckpointSequenceNumber, BuilderSystemCheckpoint>,
 
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
@@ -449,7 +449,8 @@ pub struct AuthorityEpochTables {
     override_protocol_upgrade_buffer_stake: DBMap<u64, u64>,
 
     /// When transaction is executed via checkpoint executor, we store association here
-    pub(crate) executed_transactions_to_checkpoint: DBMap<MessageDigest, CheckpointSequenceNumber>,
+    pub(crate) executed_transactions_to_checkpoint:
+        DBMap<MessageDigest, DWalletCheckpointSequenceNumber>,
 
     /// Holds all the DWallet MPC related messages that have been
     /// received since the beginning of the epoch.
@@ -544,10 +545,15 @@ impl AuthorityEpochTables {
 
     pub fn get_pending_checkpoint_signatures_iter(
         &self,
-        checkpoint_seq: CheckpointSequenceNumber,
+        checkpoint_seq: DWalletCheckpointSequenceNumber,
         starting_index: u64,
     ) -> IkaResult<
-        impl Iterator<Item = ((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
+        impl Iterator<
+                Item = (
+                    (DWalletCheckpointSequenceNumber, u64),
+                    DWalletCheckpointSignatureMessage,
+                ),
+            > + '_,
     > {
         let key = (checkpoint_seq, starting_index);
         debug!("Scanning pending checkpoint signatures from {:?}", key);
@@ -1197,13 +1203,15 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(data),
+                kind: ConsensusTransactionKind::DWalletCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority() != data.checkpoint_message.auth_sig().authority {
+                if transaction.sender_authority()
+                    != data.dwallet_checkpoint_message.auth_sig().authority
+                {
                     warn!(
                         "CheckpointSignature authority {} does not match its author from consensus {}",
-                        data.checkpoint_message.auth_sig().authority,
+                        data.dwallet_checkpoint_message.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -1669,7 +1677,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(info),
+                kind: ConsensusTransactionKind::DWalletCheckpointSignature(info),
                 ..
             }) => {
                 // We usually call notify_checkpoint_signature in IkaTxValidator, but that step can
@@ -2031,7 +2039,7 @@ impl AuthorityPerEpochStore {
     pub fn process_pending_checkpoint(
         &self,
         commit_height: CheckpointHeight,
-        checkpoint_messages: Vec<CheckpointMessage>,
+        checkpoint_messages: Vec<DWalletCheckpointMessage>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
         // All created checkpoints are inserted in builder_checkpoint_summary in a single batch.
@@ -2078,7 +2086,7 @@ impl AuthorityPerEpochStore {
 
     pub fn last_built_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(CheckpointSequenceNumber, CheckpointMessage)>> {
+    ) -> IkaResult<Option<(DWalletCheckpointSequenceNumber, DWalletCheckpointMessage)>> {
         Ok(self
             .tables()?
             .builder_checkpoint_message_v1
@@ -2090,8 +2098,8 @@ impl AuthorityPerEpochStore {
 
     pub fn get_built_checkpoint_message(
         &self,
-        sequence: CheckpointSequenceNumber,
-    ) -> IkaResult<Option<CheckpointMessage>> {
+        sequence: DWalletCheckpointSequenceNumber,
+    ) -> IkaResult<Option<DWalletCheckpointMessage>> {
         Ok(self
             .tables()?
             .builder_checkpoint_message_v1
@@ -2112,9 +2120,9 @@ impl AuthorityPerEpochStore {
 
     pub fn insert_checkpoint_signature(
         &self,
-        checkpoint_seq: CheckpointSequenceNumber,
+        checkpoint_seq: DWalletCheckpointSequenceNumber,
         index: u64,
-        info: &CheckpointSignatureMessage,
+        info: &DWalletCheckpointSignatureMessage,
     ) -> IkaResult<()> {
         Ok(self
             .tables()?

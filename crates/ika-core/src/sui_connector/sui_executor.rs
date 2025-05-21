@@ -16,7 +16,7 @@ use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message::Secp256K1NetworkKeyPublicOutputSlice;
-use ika_types::messages_dwallet_checkpoint::CheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
 use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
@@ -302,11 +302,12 @@ where
                     .await;
                 if let Ok(Some(checkpoint_message)) = self
                     .checkpoint_store
-                    .get_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
+                    .get_dwallet_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
                 {
-                    self.metrics.checkpoint_write_requests_total.inc();
+                    // todo(zeev): add system checkpoints in here.
+                    self.metrics.dwallet_checkpoint_write_requests_total.inc();
                     self.metrics
-                        .next_checkpoint_sequence
+                        .dwallet_checkpoint_sequence
                         .set(next_checkpoint_sequence_number as i64);
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         system_state_inner.dwallet_2pc_mpc_secp256k1_id()
@@ -317,9 +318,10 @@ where
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message =
-                            bcs::to_bytes::<CheckpointMessage>(&checkpoint_message.into_message())
-                                .expect("Serializing checkpoint message cannot fail");
+                        let message = bcs::to_bytes::<DWalletCheckpointMessage>(
+                            &checkpoint_message.into_message(),
+                        )
+                        .expect("Serializing checkpoint message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
 
@@ -336,15 +338,15 @@ where
                         .await;
                         match task {
                             Ok(_) => {
-                                self.metrics.checkpoint_writes_success_total.inc();
+                                self.metrics.dwallet_checkpoint_writes_success_total.inc();
                                 self.metrics
-                                    .last_written_checkpoint_sequence
+                                    .last_written_dwallet_checkpoint_sequence
                                     .set(next_checkpoint_sequence_number as i64);
                                 last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
                                 info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
                             }
                             Err(err) => {
-                                self.metrics.checkpoint_writes_failure_total.inc();
+                                self.metrics.dwallet_checkpoint_writes_failure_total.inc();
                                 error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
                             }
                         };
@@ -366,10 +368,9 @@ where
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message = bcs::to_bytes::<SystemCheckpoint>(
-                            &system_checkpoint.into_message(),
-                        )
-                        .expect("Serializing system_checkpoint message cannot fail");
+                        let message =
+                            bcs::to_bytes::<SystemCheckpoint>(&system_checkpoint.into_message())
+                                .expect("Serializing system_checkpoint message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
 

@@ -29,7 +29,7 @@ use ika_core::consensus_adapter::ConsensusClient;
 use ika_core::consensus_manager::UpdatableConsensusClient;
 
 use ika_types::digests::ChainIdentifier;
-use ika_types::digests::CheckpointMessageDigest;
+use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::sui::SystemInner;
 use sui_types::base_types::{random_object_ref, ConciseableName, ObjectID};
 use sui_types::crypto::RandomnessRound;
@@ -54,8 +54,8 @@ use ika_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
 use ika_core::checkpoints::{
-    CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
-    SubmitCheckpointToConsensus,
+    CheckpointService, CheckpointStore, DWalletCheckpointMetrics, SendDWalletCheckpointToStateSync,
+    SubmitDWalletCheckpointToConsensus,
 };
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
@@ -111,7 +111,7 @@ pub struct ValidatorComponents {
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
     checkpoint_service_tasks: JoinSet<()>,
     system_checkpoint_service_tasks: JoinSet<()>,
-    checkpoint_metrics: Arc<CheckpointMetrics>,
+    checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
     system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
 
@@ -812,7 +812,8 @@ impl IkaNode {
             &registry_service.default_registry(),
         );
 
-        let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
+        let checkpoint_metrics =
+            DWalletCheckpointMetrics::new(&registry_service.default_registry());
         let system_checkpoint_metrics =
             SystemCheckpointMetrics::new(&registry_service.default_registry());
         let ika_tx_validator_metrics =
@@ -851,7 +852,7 @@ impl IkaNode {
         state_sync_handle: state_sync::Handle,
         consensus_manager: ConsensusManager,
         consensus_store_pruner: ConsensusStorePruner,
-        checkpoint_metrics: Arc<CheckpointMetrics>,
+        checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
         system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
         _ika_node_metrics: Arc<IkaNodeMetrics>,
@@ -969,7 +970,7 @@ impl IkaNode {
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
-        checkpoint_metrics: Arc<CheckpointMetrics>,
+        checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<CheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
@@ -981,14 +982,14 @@ impl IkaNode {
             epoch_start_timestamp_ms, epoch_duration_ms
         );
 
-        let checkpoint_output = Box::new(SubmitCheckpointToConsensus {
+        let checkpoint_output = Box::new(SubmitDWalletCheckpointToConsensus {
             sender: consensus_adapter,
             signer: state.secret.clone(),
             authority: config.protocol_public_key(),
             metrics: checkpoint_metrics.clone(),
         });
 
-        let certified_checkpoint_output = SendCheckpointToStateSync::new(state_sync_handle);
+        let certified_checkpoint_output = SendDWalletCheckpointToStateSync::new(state_sync_handle);
         let max_tx_per_checkpoint = max_tx_per_checkpoint(epoch_store.protocol_config());
         let max_checkpoint_size_bytes =
             epoch_store.protocol_config().max_checkpoint_size_bytes() as usize;

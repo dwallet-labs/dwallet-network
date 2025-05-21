@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::{EpochId, ProtocolVersion, StakeUnit};
+use crate::committee::EpochId;
 use crate::crypto::{
     default_hash, AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
     AuthorityStrongQuorumSignInfo,
@@ -10,55 +10,49 @@ use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};
 use crate::message_envelope::{Envelope, Message, TrustedEnvelope, VerifiedEnvelope};
 use crate::{committee::Committee, error::IkaError};
-use ika_protocol_config::ProtocolConfig;
 use prometheus::Histogram;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use std::fmt::{Debug, Display, Formatter};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use sui_types::effects::{TestEffectsBuilder, TransactionEffectsAPI};
-use sui_types::storage::ReadStore;
-use sui_types::sui_serde::BigInt;
-use sui_types::transaction::{Transaction, TransactionData};
 use tap::TapFallible;
 use tracing::warn;
 
-pub use crate::digests::CheckpointContentsDigest;
-pub use crate::digests::CheckpointMessageDigest;
+pub use crate::digests::DWalletCheckpointContentsDigest;
+pub use crate::digests::DWalletCheckpointMessageDigest;
 use crate::message::MessageKind;
 
-pub type CheckpointSequenceNumber = u64;
-pub type CheckpointTimestamp = u64;
+pub type DWalletCheckpointSequenceNumber = u64;
+pub type DWalletCheckpointTimestamp = u64;
 
 // The constituent parts of checkpoints, signed and certified
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct CheckpointMessage {
+pub struct DWalletCheckpointMessage {
     pub epoch: EpochId,
-    pub sequence_number: CheckpointSequenceNumber,
-    /// Timestamp of the checkpoint - number of milliseconds from the Unix epoch
-    /// Checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
-    /// checkpoints can have same timestamp if they originate from the same underlining consensus commit
-    pub timestamp_ms: CheckpointTimestamp,
+    pub sequence_number: DWalletCheckpointSequenceNumber,
+    /// Timestamp of the dwallet checkpoint - number of milliseconds from the Unix epoch
+    /// DWallet checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
+    /// dwallet checkpoints can have same timestamp if they originate from the same underlining consensus commit
+    pub timestamp_ms: DWalletCheckpointTimestamp,
     pub messages: Vec<MessageKind>,
 }
 
-impl Message for CheckpointMessage {
-    type DigestType = CheckpointMessageDigest;
-    const SCOPE: IntentScope = IntentScope::CheckpointMessage;
+impl Message for DWalletCheckpointMessage {
+    type DigestType = DWalletCheckpointMessageDigest;
+    const SCOPE: IntentScope = IntentScope::DWalletCheckpointMessage;
 
     fn digest(&self) -> Self::DigestType {
-        CheckpointMessageDigest::new(default_hash(self))
+        DWalletCheckpointMessageDigest::new(default_hash(self))
     }
 }
 
-impl CheckpointMessage {
+impl DWalletCheckpointMessage {
     pub fn new(
         epoch: EpochId,
-        sequence_number: CheckpointSequenceNumber,
+        sequence_number: DWalletCheckpointSequenceNumber,
         messages: Vec<MessageKind>,
-        timestamp_ms: CheckpointTimestamp,
-    ) -> CheckpointMessage {
+        timestamp_ms: DWalletCheckpointTimestamp,
+    ) -> DWalletCheckpointMessage {
         Self {
             epoch,
             sequence_number,
@@ -78,7 +72,7 @@ impl CheckpointMessage {
         Ok(())
     }
 
-    pub fn sequence_number(&self) -> &CheckpointSequenceNumber {
+    pub fn sequence_number(&self) -> &DWalletCheckpointSequenceNumber {
         &self.sequence_number
     }
 
@@ -86,7 +80,7 @@ impl CheckpointMessage {
         UNIX_EPOCH + Duration::from_millis(self.timestamp_ms)
     }
 
-    pub fn report_checkpoint_age(&self, metrics: &Histogram) {
+    pub fn report_dwallet_checkpoint_age(&self, metrics: &Histogram) {
         SystemTime::now()
             .duration_since(self.timestamp())
             .map(|latency| {
@@ -94,25 +88,25 @@ impl CheckpointMessage {
             })
             .tap_err(|err| {
                 warn!(
-                    checkpoint_seq = self.sequence_number,
-                    "unable to compute checkpoint age: {}", err
+                    dwallet_checkpoint_seq = self.sequence_number,
+                    "unable to compute dwallet checkpoint age: {}", err
                 )
             })
             .ok();
     }
 }
 
-impl Display for CheckpointMessage {
+impl Display for DWalletCheckpointMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CheckpointSummary {{ epoch: {:?}, seq: {:?}",
+            "DWalletCheckpointSummary {{ epoch: {:?}, seq: {:?}",
             self.epoch, self.sequence_number,
         )
     }
 }
 
-// Checkpoints are signed by an authority and 2f+1 form a
+// DWallet checkpoints are signed by an authority and 2f+1 form a
 // certificate that others can use to catch up. The actual
 // content of the digest must at the very least commit to
 // the set of transactions contained in the certificate but
@@ -120,32 +114,37 @@ impl Display for CheckpointMessage {
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.
 
-pub type CheckpointMessageEnvelope<S> = Envelope<CheckpointMessage, S>;
+pub type DWalletCheckpointMessageEnvelope<S> = Envelope<DWalletCheckpointMessage, S>;
 pub type CertifiedDWalletCheckpointMessage =
-    CheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
-pub type SignedCheckpointMessage = CheckpointMessageEnvelope<AuthoritySignInfo>;
+    DWalletCheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type SignedDWalletCheckpointMessage = DWalletCheckpointMessageEnvelope<AuthoritySignInfo>;
 
-pub type VerifiedCheckpointMessage =
-    VerifiedEnvelope<CheckpointMessage, AuthorityStrongQuorumSignInfo>;
-pub type TrustedCheckpointMessage =
-    TrustedEnvelope<CheckpointMessage, AuthorityStrongQuorumSignInfo>;
+pub type VerifiedDWalletCheckpointMessage =
+    VerifiedEnvelope<DWalletCheckpointMessage, AuthorityStrongQuorumSignInfo>;
+pub type TrustedDWalletCheckpointMessage =
+    TrustedEnvelope<DWalletCheckpointMessage, AuthorityStrongQuorumSignInfo>;
 
 impl CertifiedDWalletCheckpointMessage {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::CheckpointMessage),
+            Intent::ika_app(IntentScope::DWalletCheckpointMessage),
             committee,
         )
     }
 
-    pub fn try_into_verified(self, committee: &Committee) -> IkaResult<VerifiedCheckpointMessage> {
+    pub fn try_into_verified(
+        self,
+        committee: &Committee,
+    ) -> IkaResult<VerifiedDWalletCheckpointMessage> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedCheckpointMessage::new_from_verified(self))
+        Ok(VerifiedDWalletCheckpointMessage::new_from_verified(self))
     }
 
-    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage) {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (DWalletCheckpointSequenceNumber, DWalletCheckpointMessage) {
         let summary = self.into_data();
         (summary.sequence_number, summary)
     }
@@ -155,12 +154,12 @@ impl CertifiedDWalletCheckpointMessage {
     }
 }
 
-impl SignedCheckpointMessage {
+impl SignedDWalletCheckpointMessage {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::CheckpointMessage),
+            Intent::ika_app(IntentScope::DWalletCheckpointMessage),
             committee,
         )
     }
@@ -168,27 +167,32 @@ impl SignedCheckpointMessage {
     pub fn try_into_verified(
         self,
         committee: &Committee,
-    ) -> IkaResult<VerifiedEnvelope<CheckpointMessage, AuthoritySignInfo>> {
+    ) -> IkaResult<VerifiedEnvelope<DWalletCheckpointMessage, AuthoritySignInfo>> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedEnvelope::<CheckpointMessage, AuthoritySignInfo>::new_from_verified(self))
+        Ok(VerifiedEnvelope::<
+            DWalletCheckpointMessage,
+            AuthoritySignInfo,
+        >::new_from_verified(self))
     }
 }
 
-impl VerifiedCheckpointMessage {
-    pub fn into_summary_and_sequence(self) -> (CheckpointSequenceNumber, CheckpointMessage) {
+impl VerifiedDWalletCheckpointMessage {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (DWalletCheckpointSequenceNumber, DWalletCheckpointMessage) {
         self.into_inner().into_summary_and_sequence()
     }
 }
 
-/// This is a message validators publish to consensus in order to sign checkpoint
+/// This is a message validators publish to consensus to sign dwallet checkpoint.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CheckpointSignatureMessage {
-    pub checkpoint_message: SignedCheckpointMessage,
+pub struct DWalletCheckpointSignatureMessage {
+    pub dwallet_checkpoint_message: SignedDWalletCheckpointMessage,
 }
 
-impl CheckpointSignatureMessage {
+impl DWalletCheckpointSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.checkpoint_message
+        self.dwallet_checkpoint_message
             .verify_authority_signatures(committee)
     }
 }

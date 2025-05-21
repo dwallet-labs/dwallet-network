@@ -10,9 +10,10 @@ use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
 };
 use ika_types::{
-    digests::CheckpointMessageDigest,
+    digests::DWalletCheckpointMessageDigest,
     messages_dwallet_checkpoint::{
-        CertifiedDWalletCheckpointMessage, CheckpointSequenceNumber, VerifiedCheckpointMessage,
+        CertifiedDWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
+        VerifiedDWalletCheckpointMessage,
     },
     storage::WriteStore,
 };
@@ -23,12 +24,12 @@ use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
-    ByDigest(CheckpointMessageDigest),
-    BySequenceNumber(CheckpointSequenceNumber),
+    ByDigest(DWalletCheckpointMessageDigest),
+    BySequenceNumber(DWalletCheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GetCheckpointAvailabilityResponse {
+pub struct GetDWalletCheckpointAvailabilityResponse {
     pub(crate) highest_synced_checkpoint: Option<CertifiedDWalletCheckpointMessage>,
 }
 
@@ -60,7 +61,7 @@ impl<S> StateSync for Server<S>
 where
     S: WriteStore + Send + Sync + 'static,
 {
-    async fn push_checkpoint_message(
+    async fn push_dwallet_checkpoint_message(
         &self,
         request: Request<CertifiedDWalletCheckpointMessage>,
     ) -> Result<Response<()>, Status> {
@@ -81,7 +82,7 @@ where
 
         let highest_verified_checkpoint = self
             .store
-            .get_highest_verified_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?;
 
         let should_sync = highest_verified_checkpoint
@@ -99,35 +100,35 @@ where
         Ok(Response::new(()))
     }
 
-    async fn get_checkpoint_message(
+    async fn get_dwallet_checkpoint_message(
         &self,
         request: Request<GetCheckpointMessageRequest>,
     ) -> Result<Response<Option<CertifiedDWalletCheckpointMessage>>, Status> {
         let checkpoint = match request.inner() {
             GetCheckpointMessageRequest::ByDigest(digest) => {
-                self.store.get_checkpoint_by_digest(digest)
+                self.store.get_dwallet_checkpoint_by_digest(digest)
             }
             GetCheckpointMessageRequest::BySequenceNumber(sequence_number) => self
                 .store
-                .get_checkpoint_by_sequence_number(*sequence_number),
+                .get_dwallet_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
-        .map(VerifiedCheckpointMessage::into_inner);
+        .map(VerifiedDWalletCheckpointMessage::into_inner);
 
         Ok(Response::new(checkpoint))
     }
 
-    async fn get_checkpoint_availability(
+    async fn get_dwallet_checkpoint_availability(
         &self,
         _request: Request<()>,
-    ) -> Result<Response<GetCheckpointAvailabilityResponse>, Status> {
+    ) -> Result<Response<GetDWalletCheckpointAvailabilityResponse>, Status> {
         let highest_synced_checkpoint = self
             .store
-            .get_highest_synced_checkpoint()
+            .get_highest_synced_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
-            .map(VerifiedCheckpointMessage::into_inner);
+            .map(VerifiedDWalletCheckpointMessage::into_inner);
 
-        Ok(Response::new(GetCheckpointAvailabilityResponse {
+        Ok(Response::new(GetDWalletCheckpointAvailabilityResponse {
             highest_synced_checkpoint,
         }))
     }

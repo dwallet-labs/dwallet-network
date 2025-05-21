@@ -269,13 +269,13 @@ impl From<ObjectID> for ChainIdentifier {
     }
 }
 
-/// Representation of a CheckpointMessage's digest
+/// Representation of a [`DWalletCheckpointMessageDigest`] digest
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
-pub struct CheckpointMessageDigest(Digest);
+pub struct DWalletCheckpointMessageDigest(Digest);
 
-impl CheckpointMessageDigest {
+impl DWalletCheckpointMessageDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -305,63 +305,63 @@ impl CheckpointMessageDigest {
     }
 }
 
-impl AsRef<[u8]> for CheckpointMessageDigest {
+impl AsRef<[u8]> for DWalletCheckpointMessageDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for CheckpointMessageDigest {
+impl AsRef<[u8; 32]> for DWalletCheckpointMessageDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl From<CheckpointMessageDigest> for [u8; 32] {
-    fn from(digest: CheckpointMessageDigest) -> Self {
+impl From<DWalletCheckpointMessageDigest> for [u8; 32] {
+    fn from(digest: DWalletCheckpointMessageDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for CheckpointMessageDigest {
+impl From<[u8; 32]> for DWalletCheckpointMessageDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl TryFrom<Vec<u8>> for CheckpointMessageDigest {
+impl TryFrom<Vec<u8>> for DWalletCheckpointMessageDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(CheckpointMessageDigest)
+        Digest::try_from(bytes).map(DWalletCheckpointMessageDigest)
     }
 }
 
-impl fmt::Display for CheckpointMessageDigest {
+impl fmt::Display for DWalletCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for CheckpointMessageDigest {
+impl fmt::Debug for DWalletCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("CheckpointDigest").field(&self.0).finish()
     }
 }
 
-impl fmt::LowerHex for CheckpointMessageDigest {
+impl fmt::LowerHex for DWalletCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for CheckpointMessageDigest {
+impl fmt::UpperHex for DWalletCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
 
-impl std::str::FromStr for CheckpointMessageDigest {
+impl std::str::FromStr for DWalletCheckpointMessageDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -371,14 +371,14 @@ impl std::str::FromStr for CheckpointMessageDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(CheckpointMessageDigest::new(result))
+        Ok(DWalletCheckpointMessageDigest::new(result))
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
-pub struct CheckpointContentsDigest(Digest);
+pub struct DWalletCheckpointContentsDigest(Digest);
 
-impl CheckpointContentsDigest {
+impl DWalletCheckpointContentsDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -408,45 +408,45 @@ impl CheckpointContentsDigest {
     }
 }
 
-impl AsRef<[u8]> for CheckpointContentsDigest {
+impl AsRef<[u8]> for DWalletCheckpointContentsDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for CheckpointContentsDigest {
+impl AsRef<[u8; 32]> for DWalletCheckpointContentsDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl TryFrom<Vec<u8>> for CheckpointContentsDigest {
+impl TryFrom<Vec<u8>> for DWalletCheckpointContentsDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(CheckpointContentsDigest)
+        Digest::try_from(bytes).map(DWalletCheckpointContentsDigest)
     }
 }
 
-impl From<CheckpointContentsDigest> for [u8; 32] {
-    fn from(digest: CheckpointContentsDigest) -> Self {
+impl From<DWalletCheckpointContentsDigest> for [u8; 32] {
+    fn from(digest: DWalletCheckpointContentsDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for CheckpointContentsDigest {
+impl From<[u8; 32]> for DWalletCheckpointContentsDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl fmt::Display for CheckpointContentsDigest {
+impl fmt::Display for DWalletCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for CheckpointContentsDigest {
+impl fmt::Debug for DWalletCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("CheckpointContentsDigest")
             .field(&self.0)
@@ -454,7 +454,7 @@ impl fmt::Debug for CheckpointContentsDigest {
     }
 }
 
-impl std::str::FromStr for CheckpointContentsDigest {
+impl std::str::FromStr for DWalletCheckpointContentsDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -464,17 +464,17 @@ impl std::str::FromStr for CheckpointContentsDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(CheckpointContentsDigest::new(result))
+        Ok(DWalletCheckpointContentsDigest::new(result))
     }
 }
 
-impl fmt::LowerHex for CheckpointContentsDigest {
+impl fmt::LowerHex for DWalletCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for CheckpointContentsDigest {
+impl fmt::UpperHex for DWalletCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }

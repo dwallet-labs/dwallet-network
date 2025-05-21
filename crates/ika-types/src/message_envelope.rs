@@ -9,7 +9,7 @@ use crate::crypto::{
 };
 use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};
-use crate::messages_dwallet_checkpoint::CheckpointSequenceNumber;
+use crate::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use fastcrypto::traits::KeyPair;
 use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};

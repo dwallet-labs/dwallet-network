@@ -65,8 +65,8 @@ use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
 use ika_types::message_envelope::Message;
 use ika_types::messages_dwallet_checkpoint::{
-    CertifiedDWalletCheckpointMessage, CheckpointContentsDigest, CheckpointMessage,
-    CheckpointSequenceNumber, CheckpointTimestamp, VerifiedCheckpointMessage,
+    CertifiedDWalletCheckpointMessage, DWalletCheckpointContentsDigest, DWalletCheckpointMessage,
+    DWalletCheckpointSequenceNumber, DWalletCheckpointTimestamp, VerifiedDWalletCheckpointMessage,
 };
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::SystemInner;
