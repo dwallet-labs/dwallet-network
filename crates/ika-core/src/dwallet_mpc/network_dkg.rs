@@ -22,10 +22,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState,
-    MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState, MPCProtocolInitData, SecpNetworkDkgOutputVersion, SessionInfo, StartNetworkDKGEvent};
 use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
@@ -259,14 +256,35 @@ pub(crate) fn advance_network_dkg(
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
     let res = match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => advance_and_serialize::<Secp256k1Party>(
-            session_id,
-            party_id,
-            &weighted_threshold_access_structure,
-            messages,
-            bcs::from_bytes(public_input)?,
-            class_groups_decryption_key,
-        ),
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let result = advance_and_serialize::<Secp256k1Party>(
+                session_id,
+                party_id,
+                &weighted_threshold_access_structure,
+                messages,
+                bcs::from_bytes(public_input)?,
+                class_groups_decryption_key,
+            );
+            match result.clone() {
+                Ok(AsynchronousRoundResult::Finalize {
+                       public_output,
+                       malicious_parties,
+                       private_output,
+                   }) => {
+                    let public_output = bcs::to_bytes(
+                        &SecpNetworkDkgOutputVersion::V1(
+                            public_output,
+                        ),
+                    )?;
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    })
+                }
+                _ => result,
+            }
+        },
         DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
             session_id,
             party_id,

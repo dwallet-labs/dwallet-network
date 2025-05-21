@@ -57,7 +57,7 @@ pub enum SignOutputVersion {
     V1(MPCPublicInput),
 }
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum NetworkDkgOutputVersion {
+pub enum SecpNetworkDkgOutputVersion {
     V1(MPCPublicInput),
 }
 #[derive(Deserialize, Serialize, Clone, Debug)]
