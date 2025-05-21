@@ -236,7 +236,7 @@ impl DwalletMPCNetworkKeys {
     pub async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<MPCPublicOutput> {
+    ) -> DwalletMPCResult<MPCPublicOutputClassGroups> {
         Ok(self
             .network_encryption_keys
             .get(key_id)
@@ -395,10 +395,10 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
     network_dkg_public_output: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    let mpc_public_output: MPCPublicOutput =
+    let mpc_public_output: MPCPublicOutputClassGroups =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match &mpc_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output_bytes)) => {
+        MPCPublicOutputClassGroups::V1(public_output_bytes) => {
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(&public_output_bytes)?;
             let decryption_key_share_public_parameters = public_output
@@ -426,11 +426,11 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    let mpc_public_output: MPCPublicOutput =
+    let mpc_public_output: MPCPublicOutputClassGroups =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => match &mpc_public_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(public_output_bytes)) => {
+            MPCPublicOutputClassGroups::V1(public_output_bytes) => {
                 let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output_bytes)?;
                 let decryption_key_share_public_parameters = public_output

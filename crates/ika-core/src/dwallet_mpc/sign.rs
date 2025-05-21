@@ -100,16 +100,16 @@ pub(crate) fn verify_partial_signature(
     partially_signed_message: &SerializedWrappedMPCPublicOutput,
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
-    let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
-    let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
-    let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
+    let dkg_output: MPCPublicOutputClassGroups = bcs::from_bytes(&dwallet_decentralized_output)?;
+    let presign: MPCPublicOutputClassGroups = bcs::from_bytes(&presign)?;
+    let partially_signed_message: MPCPublicOutputClassGroups = bcs::from_bytes(&partially_signed_message)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        MPCPublicOutputClassGroups::V1(dkg_output) => {
             let presign = match presign {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutputClassGroups::V1(output) => output,
             };
             let partially_signed_message = match partially_signed_message {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                MPCPublicOutputClassGroups::V1(output) => output,
             };
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<
