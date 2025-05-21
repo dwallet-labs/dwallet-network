@@ -134,20 +134,20 @@ where
         let (sender, mailbox) = mpsc::channel(config.mailbox_capacity());
         let (checkpoint_event_sender, _receiver) =
             broadcast::channel(config.synced_checkpoint_broadcast_channel_capacity());
-        let (ika_system_checkpoint_event_sender, _receiver) =
+        let (system_checkpoint_event_sender, _receiver) =
             broadcast::channel(config.synced_system_checkpoint_broadcast_channel_capacity());
         let weak_sender = sender.downgrade();
         let handle = Handle {
             sender,
             checkpoint_event_sender: checkpoint_event_sender.clone(),
-            ika_system_checkpoint_event_sender: ika_system_checkpoint_event_sender.clone(),
+            system_checkpoint_event_sender: system_checkpoint_event_sender.clone(),
         };
         let peer_heights = PeerHeights {
             peers: HashMap::new(),
             unprocessed_checkpoints: HashMap::new(),
             sequence_number_to_digest: HashMap::new(),
-            unprocessed_ika_system_checkpoint: HashMap::new(),
-            sequence_number_to_digest_ika_system_checkpoint: HashMap::new(),
+            unprocessed_system_checkpoint: HashMap::new(),
+            sequence_number_to_digest_system_checkpoint: HashMap::new(),
             wait_interval_when_no_peer_to_sync_content: config
                 .wait_interval_when_no_peer_to_sync_content(),
         }
@@ -170,11 +170,11 @@ where
                 download_limit_layer: None,
                 peer_heights,
                 checkpoint_event_sender,
-                ika_system_checkpoint_event_sender,
+                system_checkpoint_event_sender,
                 metrics,
                 archive_readers,
                 chain_identifier,
-                ika_system_checkpoint_download_limit_layer: None,
+                system_checkpoint_download_limit_layer: None,
             },
             server,
         )
@@ -186,12 +186,12 @@ pub struct UnstartedStateSync<S> {
     pub(super) handle: Handle,
     pub(super) mailbox: mpsc::Receiver<StateSyncMessage>,
     pub(super) download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
-    pub(super) ika_system_checkpoint_download_limit_layer:
+    pub(super) system_checkpoint_download_limit_layer:
         Option<SystemCheckpointDownloadLimitLayer>,
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
     pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
-    pub(super) ika_system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
+    pub(super) system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
     pub(super) metrics: Metrics,
     pub(super) archive_readers: ArchiveReaderBalancer,
     pub(crate) chain_identifier: ChainIdentifier,
@@ -207,11 +207,11 @@ where
             handle,
             mailbox,
             download_limit_layer,
-            ika_system_checkpoint_download_limit_layer,
+            system_checkpoint_download_limit_layer,
             store,
             peer_heights,
             checkpoint_event_sender,
-            ika_system_checkpoint_event_sender,
+            system_checkpoint_event_sender,
             metrics,
             archive_readers,
             chain_identifier,
@@ -225,9 +225,9 @@ where
                 tasks: JoinSet::new(),
                 sync_checkpoint_messages_task: None,
                 download_limit_layer,
-                ika_system_checkpoint_event_sender,
+                system_checkpoint_event_sender,
                 sync_system_checkpoints_task: None,
-                ika_system_checkpoint_download_limit_layer,
+                system_checkpoint_download_limit_layer,
                 store,
                 peer_heights,
                 checkpoint_event_sender,
@@ -236,7 +236,7 @@ where
                 archive_readers,
                 sync_checkpoint_from_archive_task: None,
                 chain_identifier,
-                sync_ika_system_checkpoint_from_archive_task: None,
+                sync_system_checkpoint_from_archive_task: None,
             },
             handle,
         )

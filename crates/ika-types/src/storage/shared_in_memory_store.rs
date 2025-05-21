@@ -81,12 +81,12 @@ impl ReadStore for SharedInMemoryStore {
         todo!()
     }
 
-    fn get_ika_system_checkpoint_by_digest(
+    fn get_system_checkpoint_by_digest(
         &self,
         digest: &SystemCheckpointDigest,
     ) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
-            .get_ika_system_checkpoint_by_digest(digest)
+            .get_system_checkpoint_by_digest(digest)
             .cloned()
             .pipe(Ok)
     }
@@ -100,9 +100,9 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.inner()
-            .get_highest_synced_ika_system_checkpoint()
+            .get_highest_synced_system_checkpoint()
             .cloned()
             .pipe(Ok)
     }
@@ -365,7 +365,7 @@ impl InMemoryStore {
         }
     }
 
-    pub fn get_ika_system_checkpoint_by_digest(
+    pub fn get_system_checkpoint_by_digest(
         &self,
         digest: &SystemCheckpointDigest,
     ) -> Option<&VerifiedSystemCheckpoint> {
@@ -378,19 +378,19 @@ impl InMemoryStore {
     ) -> Option<&VerifiedSystemCheckpoint> {
         self.ika_system_checkpoint_sequence_number_to_digest
             .get(&sequence_number)
-            .and_then(|digest| self.get_ika_system_checkpoint_by_digest(digest))
+            .and_then(|digest| self.get_system_checkpoint_by_digest(digest))
     }
 
     pub fn get_highest_verified_ika_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
         self.highest_verified_ika_system_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
+            .and_then(|(_, digest)| self.get_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_highest_synced_ika_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
+    pub fn get_highest_synced_system_checkpoint(&self) -> Option<&VerifiedSystemCheckpoint> {
         self.highest_synced_ika_system_checkpoint
             .as_ref()
-            .and_then(|(_, digest)| self.get_ika_system_checkpoint_by_digest(digest))
+            .and_then(|(_, digest)| self.get_system_checkpoint_by_digest(digest))
     }
 
     pub fn get_lowest_available_ika_system_checkpoint(&self) -> SystemCheckpointSequenceNumber {
@@ -553,19 +553,19 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_highest_verified_system_checkpoint()
     }
 
-    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
-        self.0.get_highest_synced_ika_system_checkpoint()
+    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+        self.0.get_highest_synced_system_checkpoint()
     }
 
     fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         self.0.get_lowest_available_ika_system_checkpoint()
     }
 
-    fn get_ika_system_checkpoint_by_digest(
+    fn get_system_checkpoint_by_digest(
         &self,
         digest: &SystemCheckpointDigest,
     ) -> Result<Option<VerifiedSystemCheckpoint>> {
-        self.0.get_ika_system_checkpoint_by_digest(digest)
+        self.0.get_system_checkpoint_by_digest(digest)
     }
 
     fn get_system_checkpoint_by_sequence_number(

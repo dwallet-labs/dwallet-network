@@ -142,7 +142,7 @@ impl ReadStore for RocksDbStore {
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_highest_synced_ika_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.system_checkpoint_store
             .get_highest_synced_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
@@ -161,7 +161,7 @@ impl ReadStore for RocksDbStore {
         }
     }
 
-    fn get_ika_system_checkpoint_by_digest(
+    fn get_system_checkpoint_by_digest(
         &self,
         digest: &SystemCheckpointDigest,
     ) -> Result<Option<VerifiedSystemCheckpoint>> {
