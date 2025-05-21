@@ -18,7 +18,7 @@ pub(crate) fn verify_encrypted_share(
 ) -> DwalletMPCResult<()> {
     let encrypted_centralized_secret_share_and_proof =
         match &bcs::from_bytes(&verification_data.encrypted_centralized_secret_share_and_proof)? {
-            EncryptedSecretShareAndProofVersions::V1(output) => output,
+            EncryptedSecretShareAndProofVersions::V1(output) => output.clone(),
         };
     verify_centralized_secret_key_share_proof(
         &encrypted_centralized_secret_share_and_proof,
