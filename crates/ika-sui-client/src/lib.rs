@@ -27,14 +27,12 @@ use move_core_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use sui_json_rpc_types::{
-    SuiData, SuiObjectDataFilter, SuiObjectResponseQuery,
-};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{
     EventPage, SuiObjectDataOptions, SuiTransactionBlockResponse,
     SuiTransactionBlockResponseOptions,
 };
+use sui_json_rpc_types::{SuiData, SuiObjectDataFilter, SuiObjectResponseQuery};
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
 use sui_types::base_types::{EpochId, ObjectRef};

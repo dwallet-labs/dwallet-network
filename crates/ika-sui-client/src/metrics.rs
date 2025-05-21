@@ -1,9 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::{
-    register_int_counter_vec_with_registry, IntCounterVec, Registry,
-};
+use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]

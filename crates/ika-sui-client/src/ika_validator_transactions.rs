@@ -26,8 +26,8 @@ use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
 use sui_types::transaction::TransactionData;
+use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
 
 /// Create a ClassGroupsPublicKeyAndProofBuilder object
 async fn create_class_groups_public_key_and_proof_builder_object(

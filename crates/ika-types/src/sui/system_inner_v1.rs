@@ -6,12 +6,10 @@ use crate::committee::StakeUnit;
 use crate::crypto::{AuthorityName, AuthorityPublicKey};
 use fastcrypto::traits::ToFromBytes;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
 use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
-use sui_types::id::ID;
 
 /// Rust version of the Move ika::system::SystemParameters type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
