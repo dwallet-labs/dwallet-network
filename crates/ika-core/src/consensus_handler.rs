@@ -373,7 +373,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
 
-        let (executable_transactions, ika_system_checkpoint_executable_transactions) = self
+        let (executable_transactions, system_checkpoint_executable_transactions) = self
             .epoch_store
             .process_consensus_transactions_and_commit_boundary(
                 all_transactions,
@@ -389,7 +389,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         // update the calculated throughput
         self.throughput_calculator.add_transactions(
             timestamp,
-            (executable_transactions.len() + ika_system_checkpoint_executable_transactions.len())
+            (executable_transactions.len() + system_checkpoint_executable_transactions.len())
                 as u64,
         );
 

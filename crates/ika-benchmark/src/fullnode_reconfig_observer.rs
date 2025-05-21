@@ -62,19 +62,19 @@ impl ReconfigObserver<NetworkAuthorityClient> for FullNodeReconfigObserver {
             match self
                 .fullnode_client
                 .governance_api()
-                .get_latest_ika_system_state()
+                .get_latest_system_state()
                 .await
             {
-                Ok(ika_system_state) => {
-                    let epoch_id = ika_system_state.epoch;
+                Ok(system_state) => {
+                    let epoch_id = system_state.epoch;
                     if epoch_id > driver.epoch() {
                         debug!(epoch_id, "Got SystemState in newer epoch");
-                        let new_committee = ika_system_state.get_ika_committee_for_benchmarking();
+                        let new_committee = system_state.get_ika_committee_for_benchmarking();
                         let _ = self
                             .committee_store
                             .insert_new_committee(new_committee.committee());
                         let auth_agg = AuthorityAggregator::new_from_committee(
-                            ika_system_state.get_ika_committee_for_benchmarking(),
+                            system_state.get_ika_committee_for_benchmarking(),
                             &self.committee_store,
                             self.safe_client_metrics_base.clone(),
                             self.auth_agg_metrics.clone(),

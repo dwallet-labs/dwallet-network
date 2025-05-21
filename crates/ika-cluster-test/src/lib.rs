@@ -103,11 +103,11 @@ impl TestContext {
         self.client.get_wallet()
     }
 
-    async fn get_latest_ika_system_state(&self) -> SystemStateSummary {
+    async fn get_latest_system_state(&self) -> SystemStateSummary {
         self.client
             .get_fullnode_client()
             .governance_api()
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await
             .unwrap()
     }

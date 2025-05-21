@@ -30,9 +30,9 @@ pub struct RocksDbStore {
     highest_synced_checkpoint: Arc<Mutex<Option<CheckpointSequenceNumber>>>,
 
     system_checkpoint_store: Arc<SystemCheckpointStore>,
-    // in memory ika_system_checkpoint watermark sequence numbers
-    highest_verified_ika_system_checkpoint: Arc<Mutex<Option<SystemCheckpointSequenceNumber>>>,
-    highest_synced_ika_system_checkpoint: Arc<Mutex<Option<SystemCheckpointSequenceNumber>>>,
+    // in memory system_checkpoint watermark sequence numbers
+    highest_verified_system_checkpoint: Arc<Mutex<Option<SystemCheckpointSequenceNumber>>>,
+    highest_synced_system_checkpoint: Arc<Mutex<Option<SystemCheckpointSequenceNumber>>>,
 }
 
 impl RocksDbStore {
@@ -46,9 +46,9 @@ impl RocksDbStore {
             checkpoint_store,
             highest_verified_checkpoint: Arc::new(Mutex::new(None)),
             highest_synced_checkpoint: Arc::new(Mutex::new(None)),
-            system_checkpoint_store: system_checkpoint_store,
-            highest_verified_ika_system_checkpoint: Arc::new(Mutex::new(None)),
-            highest_synced_ika_system_checkpoint: Arc::new(Mutex::new(None)),
+            system_checkpoint_store,
+            highest_verified_system_checkpoint: Arc::new(Mutex::new(None)),
+            highest_synced_system_checkpoint: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -125,7 +125,7 @@ impl ReadStore for RocksDbStore {
             })
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         self.system_checkpoint_store
             .get_highest_executed_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)?
@@ -134,9 +134,7 @@ impl ReadStore for RocksDbStore {
             })
     }
 
-    fn get_highest_verified_system_checkpoint(
-        &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
         self.system_checkpoint_store
             .get_highest_verified_system_checkpoint()
             .map_err(ika_types::storage::error::Error::custom)
@@ -148,7 +146,7 @@ impl ReadStore for RocksDbStore {
             .map_err(ika_types::storage::error::Error::custom)
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
         let highest_pruned_cp = self
             .system_checkpoint_store
             .get_highest_pruned_system_checkpoint_seq_number()
@@ -222,40 +220,40 @@ impl WriteStore for RocksDbStore {
 
     fn insert_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
         self.system_checkpoint_store
-            .insert_verified_system_checkpoint(ika_system_checkpoint)
+            .insert_verified_system_checkpoint(system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)
     }
 
     fn update_highest_synced_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        let mut locked = self.highest_synced_ika_system_checkpoint.lock();
-        if locked.is_some() && locked.unwrap() >= ika_system_checkpoint.sequence_number {
+        let mut locked = self.highest_synced_system_checkpoint.lock();
+        if locked.is_some() && locked.unwrap() >= system_checkpoint.sequence_number {
             return Ok(());
         }
         self.system_checkpoint_store
-            .update_highest_synced_system_checkpoint(ika_system_checkpoint)
+            .update_highest_synced_system_checkpoint(system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
-        *locked = Some(ika_system_checkpoint.sequence_number);
+        *locked = Some(system_checkpoint.sequence_number);
         Ok(())
     }
 
     fn update_highest_verified_system_checkpoint(
         &self,
-        ika_system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpoint,
     ) -> Result<()> {
-        let mut locked = self.highest_verified_ika_system_checkpoint.lock();
-        if locked.is_some() && locked.unwrap() >= ika_system_checkpoint.sequence_number {
+        let mut locked = self.highest_verified_system_checkpoint.lock();
+        if locked.is_some() && locked.unwrap() >= system_checkpoint.sequence_number {
             return Ok(());
         }
         self.system_checkpoint_store
-            .update_highest_verified_system_checkpoint(ika_system_checkpoint)
+            .update_highest_verified_system_checkpoint(system_checkpoint)
             .map_err(ika_types::storage::error::Error::custom)?;
-        *locked = Some(ika_system_checkpoint.sequence_number);
+        *locked = Some(system_checkpoint.sequence_number);
         Ok(())
     }
 

@@ -70,13 +70,13 @@ pub trait ReadStore {
         sequence_number: CheckpointSequenceNumber,
     ) -> Result<Option<VerifiedCheckpointMessage>>;
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint>;
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint>;
 
-    fn get_latest_ika_system_checkpoint_sequence_number(
+    fn get_latest_system_checkpoint_sequence_number(
         &self,
     ) -> Result<SystemCheckpointSequenceNumber> {
-        let latest_ika_system_checkpoint = self.get_latest_ika_system_checkpoint()?;
-        Ok(*latest_ika_system_checkpoint.sequence_number())
+        let latest_system_checkpoint = self.get_latest_system_checkpoint()?;
+        Ok(*latest_system_checkpoint.sequence_number())
     }
 
     fn get_highest_verified_system_checkpoint(
@@ -85,7 +85,7 @@ pub trait ReadStore {
 
     fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber>;
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber>;
 
     fn get_system_checkpoint_by_digest(
         &self,
@@ -141,8 +141,8 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
-        (*self).get_latest_ika_system_checkpoint()
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+        (*self).get_latest_system_checkpoint()
     }
 
     fn get_highest_verified_system_checkpoint(
@@ -155,8 +155,8 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_highest_synced_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
-        (*self).get_lowest_available_ika_system_checkpoint()
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (*self).get_lowest_available_system_checkpoint()
     }
 
     fn get_system_checkpoint_by_digest(
@@ -217,8 +217,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
-        (**self).get_latest_ika_system_checkpoint()
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+        (**self).get_latest_system_checkpoint()
     }
 
     fn get_highest_verified_system_checkpoint(
@@ -231,8 +231,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_highest_synced_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
-        (**self).get_lowest_available_ika_system_checkpoint()
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_system_checkpoint()
     }
 
     fn get_system_checkpoint_by_digest(
@@ -293,8 +293,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
-        (**self).get_latest_ika_system_checkpoint()
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+        (**self).get_latest_system_checkpoint()
     }
 
     fn get_highest_verified_system_checkpoint(
@@ -307,8 +307,8 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_highest_synced_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
-        (**self).get_lowest_available_ika_system_checkpoint()
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        (**self).get_lowest_available_system_checkpoint()
     }
 
     fn get_system_checkpoint_by_digest(

@@ -1231,8 +1231,8 @@ impl GovernanceApi {
     /// Use this method to access system's information, such as the current epoch,
     /// the protocol version, the computation price per unit size, the total stake, active validators,
     /// and much more. See the [SystemStateSummary] for all the available fields.
-    pub async fn get_latest_ika_system_state(&self) -> IkaRpcResult<SystemStateSummary> {
-        Ok(self.api.http.get_latest_ika_system_state().await?)
+    pub async fn get_latest_system_state(&self) -> IkaRpcResult<SystemStateSummary> {
+        Ok(self.api.http.get_latest_system_state().await?)
     }
 
     /// Return the computation price per unit size for the network, or an error upon failure.

@@ -107,8 +107,8 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
-        Ok(self.inner().get_lowest_available_ika_system_checkpoint())
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        Ok(self.inner().get_lowest_available_system_checkpoint())
     }
 
     fn get_system_checkpoint_by_sequence_number(
@@ -121,7 +121,7 @@ impl ReadStore for SharedInMemoryStore {
             .pipe(Ok)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         todo!()
     }
 }
@@ -393,7 +393,7 @@ impl InMemoryStore {
             .and_then(|(_, digest)| self.get_system_checkpoint_by_digest(digest))
     }
 
-    pub fn get_lowest_available_ika_system_checkpoint(&self) -> SystemCheckpointSequenceNumber {
+    pub fn get_lowest_available_system_checkpoint(&self) -> SystemCheckpointSequenceNumber {
         self.lowest_ika_system_checkpoint_number
     }
 
@@ -543,7 +543,7 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_ika_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
         todo!()
     }
 
@@ -557,8 +557,8 @@ impl ReadStore for SingleCheckpointSharedInMemoryStore {
         self.0.get_highest_synced_system_checkpoint()
     }
 
-    fn get_lowest_available_ika_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
-        self.0.get_lowest_available_ika_system_checkpoint()
+    fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber> {
+        self.0.get_lowest_available_system_checkpoint()
     }
 
     fn get_system_checkpoint_by_digest(

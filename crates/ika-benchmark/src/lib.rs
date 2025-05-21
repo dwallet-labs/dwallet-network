@@ -493,7 +493,7 @@ impl ValidatorProxy for FullNodeProxy {
         Ok(self
             .ika_client
             .governance_api()
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await?)
     }
 
@@ -549,7 +549,7 @@ impl ValidatorProxy for FullNodeProxy {
         let validators = self
             .ika_client
             .governance_api()
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await?
             .active_validators;
         Ok(validators.into_iter().map(|v| v.ika_address).collect())

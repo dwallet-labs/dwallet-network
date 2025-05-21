@@ -116,7 +116,7 @@ impl IkaTxValidator {
         }
 
         self.metrics
-            .ika_system_checkpoint_signatures_verified
+            .system_checkpoint_signatures_verified
             .inc_by(params_count as u64);
         Ok(())
     }
@@ -271,7 +271,7 @@ impl TransactionVerifier for IkaTxValidator {
 pub struct IkaTxValidatorMetrics {
     certificate_signatures_verified: IntCounter,
     checkpoint_signatures_verified: IntCounter,
-    ika_system_checkpoint_signatures_verified: IntCounter,
+    system_checkpoint_signatures_verified: IntCounter,
 }
 
 impl IkaTxValidatorMetrics {
@@ -289,9 +289,9 @@ impl IkaTxValidatorMetrics {
                 registry
             )
             .unwrap(),
-            ika_system_checkpoint_signatures_verified: register_int_counter_with_registry!(
-                "ika_system_checkpoint_signatures_verified",
-                "Number of params messages verified in consensus batch verifier",
+            system_checkpoint_signatures_verified: register_int_counter_with_registry!(
+                "system_checkpoint_signatures_verified",
+                "Number of checkpoints signatures verified in consensus batch verifier",
                 registry
             )
             .unwrap(),
