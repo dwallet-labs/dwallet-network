@@ -112,7 +112,7 @@ pub struct ValidatorComponents {
     checkpoint_service_tasks: JoinSet<()>,
     system_checkpoint_service_tasks: JoinSet<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
-    ika_system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
+    system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
     ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
 
     dwallet_mpc_service_exit: watch::Sender<()>,
@@ -301,7 +301,7 @@ impl IkaNode {
         );
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
-        let previous_epoch_last_ika_system_checkpoint_sequence_number =
+        let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
             .get_epoch_start_system_until_success(&latest_system_state)
@@ -503,7 +503,7 @@ impl IkaNode {
                 &registry_service,
                 ika_node_metrics.clone(),
                 previous_epoch_last_checkpoint_sequence_number,
-                previous_epoch_last_ika_system_checkpoint_sequence_number,
+                previous_epoch_last_system_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
                 network_keys_receiver.clone(),
                 next_epoch_committee_receiver.clone(),
@@ -779,7 +779,7 @@ impl IkaNode {
         registry_service: &RegistryService,
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
+        previous_epoch_last_system_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -813,7 +813,7 @@ impl IkaNode {
         );
 
         let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
-        let ika_system_checkpoint_metrics =
+        let system_checkpoint_metrics =
             SystemCheckpointMetrics::new(&registry_service.default_registry());
         let ika_tx_validator_metrics =
             IkaTxValidatorMetrics::new(&registry_service.default_registry());
@@ -829,11 +829,11 @@ impl IkaNode {
             consensus_store_pruner,
             checkpoint_metrics,
             dwallet_mpc_metrics,
-            ika_system_checkpoint_metrics,
+            system_checkpoint_metrics,
             ika_node_metrics,
             ika_tx_validator_metrics,
             previous_epoch_last_checkpoint_sequence_number,
-            previous_epoch_last_ika_system_checkpoint_sequence_number,
+            previous_epoch_last_system_checkpoint_sequence_number,
             network_keys_receiver,
             next_epoch_committee_receiver,
             sui_client,
@@ -853,11 +853,11 @@ impl IkaNode {
         consensus_store_pruner: ConsensusStorePruner,
         checkpoint_metrics: Arc<CheckpointMetrics>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        ika_system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
+        system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_checkpoint_sequence_number: u64,
-        previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
+        previous_epoch_last_system_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -881,8 +881,8 @@ impl IkaNode {
                 epoch_store.clone(),
                 state.clone(),
                 state_sync_handle.clone(),
-                ika_system_checkpoint_metrics.clone(),
-                previous_epoch_last_ika_system_checkpoint_sequence_number,
+                system_checkpoint_metrics.clone(),
+                previous_epoch_last_system_checkpoint_sequence_number,
             );
 
         let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
@@ -955,7 +955,7 @@ impl IkaNode {
             checkpoint_service_tasks,
             system_checkpoint_service_tasks,
             checkpoint_metrics,
-            ika_system_checkpoint_metrics,
+            system_checkpoint_metrics,
             ika_tx_validator_metrics,
             dwallet_mpc_metrics,
             dwallet_mpc_service_exit,
@@ -1013,31 +1013,31 @@ impl IkaNode {
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
-        ika_system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
-        previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
+        system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
+        previous_epoch_last_system_checkpoint_sequence_number: u64,
     ) -> (Arc<SystemCheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
         debug!(
-            "Starting ika_system_checkpoint service with epoch start timestamp {}
+            "Starting system_checkpoint service with epoch start timestamp {}
             and epoch duration {}",
             epoch_start_timestamp_ms, epoch_duration_ms
         );
 
-        let ika_system_checkpoint_output = Box::new(SubmitSystemCheckpointToConsensus {
+        let system_checkpoint_output = Box::new(SubmitSystemCheckpointToConsensus {
             sender: consensus_adapter,
             signer: state.secret.clone(),
             authority: config.protocol_public_key(),
-            metrics: ika_system_checkpoint_metrics.clone(),
+            metrics: system_checkpoint_metrics.clone(),
         });
 
-        let certified_ika_system_checkpoint_output =
+        let certified_system_checkpoint_output =
             SendSystemCheckpointToStateSync::new(state_sync_handle);
-        let max_tx_per_ika_system_checkpoint = epoch_store
+        let max_tx_per_system_checkpoint = epoch_store
             .protocol_config()
             .max_messages_per_system_checkpoint();
-        let max_ika_system_checkpoint_size_bytes = epoch_store
+        let max_system_checkpoint_size_bytes = epoch_store
             .protocol_config()
             .max_system_checkpoint_size_bytes()
             as usize;
@@ -1046,12 +1046,12 @@ impl IkaNode {
             state.clone(),
             system_checkpoint_store,
             epoch_store,
-            ika_system_checkpoint_output,
-            Box::new(certified_ika_system_checkpoint_output),
-            ika_system_checkpoint_metrics,
-            max_tx_per_ika_system_checkpoint as usize,
-            max_ika_system_checkpoint_size_bytes,
-            previous_epoch_last_ika_system_checkpoint_sequence_number,
+            system_checkpoint_output,
+            Box::new(certified_system_checkpoint_output),
+            system_checkpoint_metrics,
+            max_tx_per_system_checkpoint as usize,
+            max_system_checkpoint_size_bytes,
+            previous_epoch_last_system_checkpoint_sequence_number,
         )
     }
 
@@ -1180,7 +1180,7 @@ impl IkaNode {
                 dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let previous_epoch_last_ika_system_checkpoint_sequence_number =
+            let previous_epoch_last_system_checkpoint_sequence_number =
                 system_inner.previous_epoch_last_system_checkpoint_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
@@ -1222,7 +1222,7 @@ impl IkaNode {
                 mut checkpoint_service_tasks,
                 mut system_checkpoint_service_tasks,
                 checkpoint_metrics,
-                ika_system_checkpoint_metrics,
+                system_checkpoint_metrics,
                 ika_tx_validator_metrics,
                 dwallet_mpc_metrics,
                 dwallet_mpc_service_exit,
@@ -1250,10 +1250,10 @@ impl IkaNode {
                         if err.is_panic() {
                             std::panic::resume_unwind(err.into_panic());
                         }
-                        warn!("Error in ika_system_checkpoint service task: {:?}", err);
+                        warn!("Error in system_checkpoint service task: {:?}", err);
                     }
                 }
-                info!("ika_system_checkpoint service has shut down.");
+                info!("system_checkpoint service has shut down.");
 
                 consensus_manager.shutdown().await;
                 info!("Consensus has shut down.");
@@ -1285,11 +1285,11 @@ impl IkaNode {
                             consensus_store_pruner,
                             checkpoint_metrics,
                             dwallet_mpc_metrics,
-                            ika_system_checkpoint_metrics,
+                            system_checkpoint_metrics,
                             self.metrics.clone(),
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
-                            previous_epoch_last_ika_system_checkpoint_sequence_number,
+                            previous_epoch_last_system_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
                             next_epoch_committee_receiver.clone(),
@@ -1327,7 +1327,7 @@ impl IkaNode {
                             &self.registry_service,
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
-                            previous_epoch_last_ika_system_checkpoint_sequence_number,
+                            previous_epoch_last_system_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
                             network_keys_receiver.clone(),
                             next_epoch_committee_receiver.clone(),

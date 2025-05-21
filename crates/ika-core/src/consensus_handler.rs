@@ -548,7 +548,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
             "dwallet_mpc_threshold_not_reached"
         }
-        ConsensusTransactionKind::SystemCheckpointSignature(_) => "ika_system_checkpoint_signature",
+        ConsensusTransactionKind::SystemCheckpointSignature(_) => "system_checkpoint_signature",
     }
 }
 
