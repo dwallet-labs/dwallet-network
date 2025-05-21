@@ -416,7 +416,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
     let mpc_public_output: SecpNetworkDkgOutputVersion =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match &mpc_public_output {
-        MPCPublicOutput::V1(public_output_bytes) => {
+        SecpNetworkDkgOutputVersion::V1(public_output_bytes) => {
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(&public_output_bytes)?;
             let decryption_key_share_public_parameters = public_output
