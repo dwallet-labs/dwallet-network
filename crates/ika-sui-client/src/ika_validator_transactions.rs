@@ -27,7 +27,7 @@ use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionKind};
-use sui_types::transaction::{TransactionData, TransactionDataAPI};
+use sui_types::transaction::TransactionData;
 
 /// Create a ClassGroupsPublicKeyAndProofBuilder object
 async fn create_class_groups_public_key_and_proof_builder_object(
@@ -383,7 +383,7 @@ pub async fn stake_ika(
     gas_budget: u64,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
-    let mut client = context.get_client().await?;
+    let client = context.get_client().await?;
     let ika_supply_ref = client
         .transaction_builder()
         .get_object_ref(ika_supply_id)
@@ -555,7 +555,7 @@ async fn construct_unsigned_txn(
     context: &mut WalletContext,
     sender: SuiAddress,
     gas_budget: u64,
-    mut ptb: ProgrammableTransactionBuilder,
+    ptb: ProgrammableTransactionBuilder,
 ) -> anyhow::Result<TransactionData> {
     let sui_client = context.get_client().await?;
     let gas_price = context.get_reference_gas_price().await?;
