@@ -12,7 +12,7 @@ use tracing::info;
 
 use super::container::Container;
 
-#[allow(unused_variables)]
+#[allow(dead_code)]
 pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
 
 /// A handle to an in-memory Ika Node.

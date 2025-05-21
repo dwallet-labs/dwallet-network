@@ -1,8 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use fastcrypto::hash::HashFunction;
-
 use ika_types::committee::ProtocolVersion;
 use ika_types::ika_coin::NIKA_PER_IKA;
 use serde::{Deserialize, Serialize};

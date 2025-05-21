@@ -185,10 +185,6 @@ pub fn default_end_of_epoch_broadcast_channel_capacity() -> usize {
     128
 }
 
-fn is_true(value: &bool) -> bool {
-    *value
-}
-
 impl Config for NodeConfig {}
 
 impl NodeConfig {

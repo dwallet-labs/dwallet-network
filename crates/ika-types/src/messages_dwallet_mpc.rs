@@ -11,13 +11,11 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-use sui_types::message_envelope::Message;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {

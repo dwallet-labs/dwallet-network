@@ -323,6 +323,7 @@ pub(super) struct SystemCheckpointDownloadLimitLayer {
 }
 
 impl SystemCheckpointDownloadLimitLayer {
+    #[allow(dead_code)]
     pub(super) fn new(max_inflight_per_system_checkpoint: usize) -> Self {
         Self {
             inflight_per_system_checkpoint: Arc::new(DashMap::new()),

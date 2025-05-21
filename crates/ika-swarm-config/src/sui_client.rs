@@ -33,9 +33,7 @@ use sui::client_commands::{
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
-use sui_sdk::rpc_types::{
-    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
-};
+use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse};
 use sui_sdk::rpc_types::{
     SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
@@ -619,7 +617,7 @@ async fn stake_ika(
         mutable: true,
     }))?;
 
-    let mut client = context.get_client().await?;
+    let client = context.get_client().await?;
 
     let ika_supply_ref = client
         .transaction_builder()
@@ -971,7 +969,7 @@ async fn create_class_groups_public_key_and_proof_object(
     ika_system_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: Vec<u8>,
 ) -> anyhow::Result<ObjectRef> {
-    let mut builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
+    let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
         publisher_address,
         context,
         client,
@@ -1065,9 +1063,9 @@ async fn add_public_keys_and_proofs_with_rng(
             vec![],
             vec![
                 proof_builder,
-                /// Sui limits the size of a single call argument to 16KB.
+                // Sui limits the size of a single call argument to 16KB.
                 first_proof_bytes_half,
-                second_proof_bytes_half
+                second_proof_bytes_half,
             ],
         );
     }

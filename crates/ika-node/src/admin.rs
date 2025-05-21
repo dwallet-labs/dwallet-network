@@ -8,7 +8,6 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use base64::Engine;
 use humantime::parse_duration;
 use serde::Deserialize;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -54,8 +53,9 @@ const TRACING_ROUTE: &str = "/enable-tracing";
 const TRACING_RESET_ROUTE: &str = "/reset-tracing";
 const SET_BUFFER_STAKE_ROUTE: &str = "/set-override-buffer-stake";
 const CLEAR_BUFFER_STAKE_ROUTE: &str = "/clear-override-buffer-stake";
-#[allow(unused_variables)]
+#[allow(dead_code)]
 const FORCE_CLOSE_EPOCH: &str = "/force-close-epoch";
+#[allow(dead_code)]
 const CAPABILITIES: &str = "/capabilities";
 const NODE_CONFIG: &str = "/node-config";
 

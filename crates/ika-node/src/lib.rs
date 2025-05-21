@@ -10,7 +10,6 @@ use anemo_tower::trace::TraceLayer;
 use anyhow::anyhow;
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use futures::TryFutureExt;
 use prometheus::Registry;
 use std::collections::HashMap;
 use std::fmt;
@@ -42,7 +41,6 @@ use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use ika_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
 use ika_core::checkpoints::{

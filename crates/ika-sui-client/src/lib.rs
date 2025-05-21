@@ -620,12 +620,7 @@ where
             };
             let DWalletCoordinatorInner::V1(inner_v1) = self
                 .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-                .await
-            else {
-                error!("fetched a wrong version of dwallet coordinator inner, trying again");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
+                .await;
             return inner_v1;
         }
     }

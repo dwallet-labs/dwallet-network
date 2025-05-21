@@ -3,8 +3,6 @@
 
 use crate::committee::StakeUnit;
 use crate::crypto::AuthorityName;
-use crate::sui::system_inner_v1::{BlsCommittee, DWalletNetworkDecryptionKeyCap};
-use crate::sui::system_inner_v1::{DWalletCoordinatorInnerV1, ValidatorSetV1};
 use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -13,8 +11,6 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::{TableVec, VecMap};
 use sui_types::versioned::Versioned;
-use system_inner_v1::SystemInnerV1;
-use system_inner_v1::UpgradeCap;
 
 pub mod epoch_start_system;
 pub mod staking;
@@ -172,7 +168,6 @@ impl SystemInner {
     pub fn into_init_version_for_tooling(self) -> SystemInnerInit {
         match self {
             SystemInner::V1(inner) => inner,
-            _ => unreachable!(),
         }
     }
 }

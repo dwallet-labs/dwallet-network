@@ -165,6 +165,7 @@ struct PeerHeights {
     sequence_number_to_digest_system_checkpoint:
         HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest>,
 
+    #[allow(unused)]
     // The amount of time to wait before retry if there are no peers to sync content from.
     wait_interval_when_no_peer_to_sync_content: Duration,
 }
@@ -279,6 +280,7 @@ impl PeerHeights {
         }
     }
 
+    #[allow(unused)]
     pub fn mark_peer_as_not_on_same_chain(&mut self, peer_id: PeerId) {
         if let Some(info) = self.peers.get_mut(&peer_id) {
             info.on_same_chain_as_us = false;
@@ -301,6 +303,7 @@ impl PeerHeights {
             .insert(sequence_number, digest);
     }
 
+    #[allow(unused)]
     pub fn remove_checkpoint(&mut self, digest: &DWalletCheckpointMessageDigest) {
         if let Some(checkpoint) = self.unprocessed_checkpoints.remove(digest) {
             self.sequence_number_to_digest
@@ -346,6 +349,7 @@ impl PeerHeights {
             .insert(sequence_number, digest);
     }
 
+    #[allow(unused)]
     pub fn remove_system_checkpoint(&mut self, digest: &SystemCheckpointDigest) {
         if let Some(system_checkpoint) = self.unprocessed_system_checkpoint.remove(digest) {
             self.sequence_number_to_digest_system_checkpoint
@@ -374,6 +378,7 @@ impl PeerHeights {
         self.wait_interval_when_no_peer_to_sync_content = duration;
     }
 
+    #[allow(unused)]
     pub fn wait_interval_when_no_peer_to_sync_content(&self) -> Duration {
         self.wait_interval_when_no_peer_to_sync_content
     }
@@ -443,6 +448,7 @@ impl Iterator for PeerBalancer {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone, Debug)]
 enum StateSyncMessage {
     StartSyncJob,

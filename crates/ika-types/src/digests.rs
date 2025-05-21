@@ -218,9 +218,9 @@ impl ChainIdentifier {
         chain
     }
 
-    pub fn as_bytes(&self) -> &[u8; 32] {
-        self.as_bytes()
-    }
+    // pub fn as_bytes(&self) -> &[u8; 32] {
+    //     self.as_bytes()
+    // }
 
     pub fn base58_encode(&self) -> String {
         Base58::encode(self.0)

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::fmt::Debug;
-use std::fmt::Write;
 
 use ika_protocol_config::ProtocolVersion;
 use schemars::JsonSchema;

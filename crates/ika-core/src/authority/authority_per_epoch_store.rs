@@ -1612,12 +1612,12 @@ impl AuthorityPerEpochStore {
     #[instrument(level = "trace", skip_all)]
     async fn process_consensus_transaction<C: DWalletCheckpointServiceNotify>(
         &self,
-        output: &mut ConsensusCommitOutput,
+        _output: &mut ConsensusCommitOutput,
         transaction: &VerifiedSequencedConsensusTransaction,
         checkpoint_service: &Arc<C>,
         system_checkpoint_service: &Arc<SystemCheckpointService>, // should i do this generic as the checkpoint service?
-        commit_round: Round,
-        authority_metrics: &Arc<AuthorityMetrics>,
+        _commit_round: Round,
+        _authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<ConsensusCertificateResult> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transaction");
 
