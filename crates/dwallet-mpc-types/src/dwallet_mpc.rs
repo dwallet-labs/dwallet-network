@@ -179,3 +179,43 @@ pub enum SecpNetworkDkgOutputVersion {
 pub enum DecryptionKeyReshareOutputVersion {
     V1(MPCPublicInput),
 }
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum PublicKeyShareAndProofVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedDKGPublicOutputVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedDKGSecretOutputVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum CentralizedSignOutputVersion {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedDWalletPublicOutputVersions {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedSecretShareVersions {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum ImportedDwalletOutgoingMessageVersions {
+    V1(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum EncryptedSecretShareAndProofVersions {
+    V1(Vec<u8>),
+}

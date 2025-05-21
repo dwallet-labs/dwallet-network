@@ -11,11 +11,7 @@ use class_groups::{
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion, DWalletMPCNetworkKeyScheme,
-    MPCPublicInput, MPCPublicOutput, PresignOutputVersion, SecpNetworkDkgOutputVersion,
-    SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{CentralizedDKGPublicOutputVersion, CentralizedDKGSecretOutputVersion, CentralizedSignOutputVersion, DWalletDKGFirstOutputVersion, DWalletDKGSecondOutputVersion, DWalletMPCNetworkKeyScheme, EncryptedSecretShareAndProofVersions, ImportedDWalletPublicOutputVersions, ImportedDwalletOutgoingMessageVersions, ImportedSecretShareVersions, MPCPublicInput, MPCPublicOutput, PresignOutputVersion, PublicKeyShareAndProofVersion, SecpNetworkDkgOutputVersion, SerializedWrappedMPCPublicOutput};
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
@@ -80,21 +76,6 @@ pub struct CentralizedDKGWasmResult {
     pub public_key_share_and_proof: Vec<u8>,
     pub public_output: Vec<u8>,
     pub centralized_secret_output: Vec<u8>,
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum PublicKeyShareAndProofVersion {
-    V1(Vec<u8>),
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedDKGPublicOutputVersion {
-    V1(Vec<u8>),
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedDKGSecretOutputVersion {
-    V1(Vec<u8>),
 }
 
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
@@ -173,11 +154,6 @@ pub fn create_dkg_output(
             })
         }
     }
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedSignOutputVersion {
-    V1(Vec<u8>),
 }
 
 /// Executes the centralized phase of the Sign protocol,
@@ -276,19 +252,6 @@ pub fn sample_dwallet_secret_key_inner(
         &mut OsRng,
     )?;
     Ok(bcs::to_bytes(&secret_key)?)
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedDWalletPublicOutputVersions {
-    V1(Vec<u8>),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedSecretShareVersions {
-    V1(Vec<u8>),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedDwalletOutgoingMessageVersions {
-    V1(Vec<u8>),
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
@@ -400,11 +363,6 @@ pub fn centralized_public_share_from_decentralized_output_inner(
             bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
         }
     }
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum EncryptedSecretShareAndProofVersions {
-    V1(Vec<u8>),
 }
 
 /// Encrypts the given secret key share with the given encryption key.
