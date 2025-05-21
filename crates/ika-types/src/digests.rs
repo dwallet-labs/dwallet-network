@@ -345,7 +345,9 @@ impl fmt::Display for DWalletCheckpointMessageDigest {
 
 impl fmt::Debug for DWalletCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("CheckpointDigest").field(&self.0).finish()
+        f.debug_tuple("DWalletCheckpointDigest")
+            .field(&self.0)
+            .finish()
     }
 }
 
@@ -448,7 +450,7 @@ impl fmt::Display for DWalletCheckpointContentsDigest {
 
 impl fmt::Debug for DWalletCheckpointContentsDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("CheckpointContentsDigest")
+        f.debug_tuple("DWalletCheckpointContentsDigest")
             .field(&self.0)
             .finish()
     }
@@ -805,7 +807,9 @@ impl fmt::Display for SystemCheckpointDigest {
 
 impl fmt::Debug for SystemCheckpointDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("CheckpointDigest").field(&self.0).finish()
+        f.debug_tuple("SystemCheckpointDigest")
+            .field(&self.0)
+            .finish()
     }
 }
 

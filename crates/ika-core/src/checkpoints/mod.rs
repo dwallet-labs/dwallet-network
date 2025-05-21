@@ -1,10 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-mod dwallet_checkpoint_output;
 mod dwallet_checkpoint_metrics;
+mod dwallet_checkpoint_output;
 
 use crate::authority::AuthorityState;
+pub use crate::checkpoints::dwallet_checkpoint_metrics::DWalletCheckpointMetrics;
 use crate::checkpoints::dwallet_checkpoint_output::{
     CertifiedDWalletCheckpointMessageOutput, DWalletCheckpointOutput,
 };
@@ -12,7 +13,6 @@ pub use crate::checkpoints::dwallet_checkpoint_output::{
     LogDWalletCheckpointOutput, SendDWalletCheckpointToStateSync,
     SubmitDWalletCheckpointToConsensus,
 };
-pub use crate::checkpoints::dwallet_checkpoint_metrics::DWalletCheckpointMetrics;
 use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
 use mysten_metrics::{monitored_future, monitored_scope};
 use parking_lot::Mutex;
@@ -146,7 +146,7 @@ impl DWalletCheckpointStore {
     pub fn new(path: &Path) -> Arc<Self> {
         Arc::new(Self::open_tables_read_write(
             path.to_path_buf(),
-            MetricConf::new("checkpoint"),
+            MetricConf::new("dwallet_checkpoint"),
             None,
             None,
         ))
@@ -157,7 +157,7 @@ impl DWalletCheckpointStore {
             path.to_path_buf(),
             None,
             None,
-            MetricConf::new("checkpoint_readonly"),
+            MetricConf::new("dwallet_checkpoint_readonly"),
         )
     }
 
@@ -289,8 +289,9 @@ impl DWalletCheckpointStore {
     pub fn get_highest_verified_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
-        let highest_verified = if let Some(highest_verified) =
-            self.watermarks.get(&DWalletCheckpointWatermark::HighestVerified)?
+        let highest_verified = if let Some(highest_verified) = self
+            .watermarks
+            .get(&DWalletCheckpointWatermark::HighestVerified)?
         {
             highest_verified
         } else {
@@ -302,8 +303,9 @@ impl DWalletCheckpointStore {
     pub fn get_highest_synced_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
-        let highest_synced = if let Some(highest_synced) =
-            self.watermarks.get(&DWalletCheckpointWatermark::HighestSynced)?
+        let highest_synced = if let Some(highest_synced) = self
+            .watermarks
+            .get(&DWalletCheckpointWatermark::HighestSynced)?
         {
             highest_synced
         } else {
@@ -315,8 +317,9 @@ impl DWalletCheckpointStore {
     pub fn get_highest_executed_checkpoint_seq_number(
         &self,
     ) -> Result<Option<DWalletCheckpointSequenceNumber>, TypedStoreError> {
-        if let Some(highest_executed) =
-            self.watermarks.get(&DWalletCheckpointWatermark::HighestExecuted)?
+        if let Some(highest_executed) = self
+            .watermarks
+            .get(&DWalletCheckpointWatermark::HighestExecuted)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -327,8 +330,9 @@ impl DWalletCheckpointStore {
     pub fn get_highest_executed_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
-        let highest_executed = if let Some(highest_executed) =
-            self.watermarks.get(&DWalletCheckpointWatermark::HighestExecuted)?
+        let highest_executed = if let Some(highest_executed) = self
+            .watermarks
+            .get(&DWalletCheckpointWatermark::HighestExecuted)?
         {
             highest_executed
         } else {
@@ -823,7 +827,7 @@ impl DWalletCheckpointBuilder {
         height: DWalletCheckpointHeight,
         new_checkpoints: Vec<DWalletCheckpointMessage>,
     ) -> IkaResult {
-        let _scope = monitored_scope("CheckpointBuilder::write_checkpoints");
+        let _scope = monitored_scope("DWalletCheckpointBuilder::write_checkpoints");
         //let mut batch = self.tables.checkpoint_content.batch();
         // let mut all_tx_digests =
         //     Vec::with_capacity(new_checkpoints.iter().map(|(_, c)| c.size()).sum());
@@ -903,7 +907,7 @@ impl DWalletCheckpointBuilder {
         &self,
         messages: Vec<MessageKind>,
     ) -> anyhow::Result<Vec<Vec<MessageKind>>> {
-        let _guard = monitored_scope("CheckpointBuilder::split_checkpoint_chunks");
+        let _guard = monitored_scope("DWalletCheckpointBuilder::split_checkpoint_chunks");
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
         let mut chunk_size: usize = 0;
@@ -948,7 +952,7 @@ impl DWalletCheckpointBuilder {
         all_messages: Vec<MessageKind>,
         details: &PendingDWalletCheckpointInfo,
     ) -> anyhow::Result<Vec<DWalletCheckpointMessage>> {
-        let _scope = monitored_scope("CheckpointBuilder::create_checkpoints");
+        let _scope = monitored_scope("DWalletCheckpointBuilder::create_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
         let mut last_checkpoint = self.epoch_store.last_built_checkpoint_message()?;
@@ -1306,9 +1310,11 @@ impl DWalletCheckpointAggregator {
                     self.metrics
                         .last_certified_dwallet_checkpoint
                         .set(current.dwallet_checkpoint_message.sequence_number as i64);
-                    current.dwallet_checkpoint_message.report_dwallet_checkpoint_age(
-                        &self.metrics.last_certified_dwallet_checkpoint_age,
-                    );
+                    current
+                        .dwallet_checkpoint_message
+                        .report_dwallet_checkpoint_age(
+                            &self.metrics.last_certified_dwallet_checkpoint_age,
+                        );
                     result.push(checkpoint_message.into_inner());
                     self.current = None;
                     continue 'outer;

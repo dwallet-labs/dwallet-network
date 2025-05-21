@@ -11,8 +11,8 @@ use axum::{
 use base64::Engine;
 use humantime::parse_duration;
 use serde::Deserialize;
-use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use telemetry_subscribers::TracingHandle;
 use tracing::info;
 

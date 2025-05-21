@@ -121,9 +121,9 @@ use crate::metrics::RateTracker;
 use crate::stake_aggregator::StakeAggregator;
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
+use crate::checkpoints::DWalletCheckpointStore;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
-use crate::checkpoints::DWalletCheckpointStore;
 
 pub mod authority_per_epoch_store;
 

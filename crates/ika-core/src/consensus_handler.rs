@@ -540,7 +540,7 @@ impl<C> ConsensusHandler<C> {
 
 pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
     match &transaction.kind {
-        ConsensusTransactionKind::DWalletCheckpointSignature(_) => "checkpoint_signature",
+        ConsensusTransactionKind::DWalletCheckpointSignature(_) => "dwallet_checkpoint_signature",
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",

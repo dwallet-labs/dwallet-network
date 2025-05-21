@@ -31,8 +31,8 @@ use tokio::runtime::Handle;
 use tokio::sync::{broadcast, watch, Mutex};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
-use tracing::{debug, warn};
 use tracing::info;
+use tracing::{debug, warn};
 
 pub use handle::IkaNodeHandle;
 use ika_archival::reader::ArchiveReaderBalancer;
@@ -46,8 +46,8 @@ use ika_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
 use ika_core::checkpoints::{
-    DWalletCheckpointService, DWalletCheckpointStore, DWalletCheckpointMetrics, SendDWalletCheckpointToStateSync,
-    SubmitDWalletCheckpointToConsensus,
+    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
+    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
 };
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
@@ -355,7 +355,8 @@ impl IkaNode {
 
         info!("creating checkpoint store");
 
-        let dwallet_checkpoint_store = DWalletCheckpointStore::new(&config.db_path().join("dwallet_checkpoints"));
+        let dwallet_checkpoint_store =
+            DWalletCheckpointStore::new(&config.db_path().join("dwallet_checkpoints"));
         let system_checkpoint_store =
             SystemCheckpointStore::new(&config.db_path().join("system_checkpoints"));
 
@@ -1220,7 +1221,7 @@ impl IkaNode {
                         warn!("Error in checkpoint service task: {:?}", err);
                     }
                 }
-                info!("Checkpoint service has shut down.");
+                info!("DWallet checkpoint service has shut down.");
 
                 system_checkpoint_service_tasks.abort_all();
                 while let Some(result) = system_checkpoint_service_tasks.join_next().await {
@@ -1231,7 +1232,7 @@ impl IkaNode {
                         warn!("Error in system_checkpoint service task: {:?}", err);
                     }
                 }
-                info!("system_checkpoint service has shut down.");
+                info!("System checkpoint service has shut down.");
 
                 consensus_manager.shutdown().await;
                 info!("Consensus has shut down.");

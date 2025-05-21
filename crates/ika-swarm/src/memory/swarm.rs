@@ -21,8 +21,7 @@ use ika_node::IkaNodeHandle;
 use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::{
-    CommitteeConfig, ConfigBuilder, ProtocolVersionsConfig,
-    SupportedProtocolVersionsCallback,
+    CommitteeConfig, ConfigBuilder, ProtocolVersionsConfig, SupportedProtocolVersionsCallback,
 };
 use ika_swarm_config::validator_initialization_config::ValidatorInitializationConfig;
 use ika_types::crypto::AuthorityName;
