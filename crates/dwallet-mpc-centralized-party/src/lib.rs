@@ -420,9 +420,9 @@ pub fn encrypt_secret_key_share_and_prove(
             network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
+    let secret_key_share: CentralizedDKGSecretOutputVersion = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
-        MPCPublicOutput::V1(secret_key_share) => {
+        CentralizedDKGSecretOutputVersion::V1(secret_key_share) => {
             let encryption_key = bcs::from_bytes(&encryption_key)?;
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
             let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
