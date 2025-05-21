@@ -1,4 +1,7 @@
-use dwallet_mpc_types::dwallet_mpc::{DWalletDKGSecondOutputVersion, EncryptedSecretShareAndProofVersions, MPCPublicOutput, SerializedWrappedMPCPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletDKGSecondOutputVersion, EncryptedSecretShareAndProofVersions, MPCPublicOutput,
+    SerializedWrappedMPCPublicOutput,
+};
 use fastcrypto::traits::ToFromBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::EncryptedShareVerificationRequestEvent;
@@ -13,9 +16,10 @@ pub(crate) fn verify_encrypted_share(
     verification_data: &EncryptedShareVerificationRequestEvent,
     protocol_public_parameters: &Vec<u8>,
 ) -> DwalletMPCResult<()> {
-    let encrypted_centralized_secret_share_and_proof = match bcs::from_bytes(&verification_data.encrypted_centralized_secret_share_and_proof)? {
-        EncryptedSecretShareAndProofVersions::V1(output) => output
-    }; 
+    let encrypted_centralized_secret_share_and_proof =
+        match bcs::from_bytes(&verification_data.encrypted_centralized_secret_share_and_proof)? {
+            EncryptedSecretShareAndProofVersions::V1(output) => output,
+        };
     verify_centralized_secret_key_share_proof(
         &encrypted_centralized_secret_share_and_proof,
         &verification_data.decentralized_public_output,
@@ -33,12 +37,6 @@ fn verify_centralized_secret_key_share_proof(
     encryption_key: &Vec<u8>,
     protocol_public_parameters: &Vec<u8>,
 ) -> anyhow::Result<()> {
-    let dkg_public_output = bcs::from_bytes(serialized_dkg_public_output)?;
-    match dkg_public_output {
-        DWalletDKGSecondOutputVersion::V1(dkg_public_output) => {
-            <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_encryption_of_centralized_party_share_proof(
-                &bcs::from_bytes(&protocol_public_parameters)?, bcs::from_bytes(&dkg_public_output)?, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&encrypted_centralized_secret_share_and_proof)?, &mut OsRng).map_err(Into::<anyhow::Error>::into)?;
-            Ok(())
-        }
-    }
+    <AsyncProtocol as Protocol>::verify_encryption_of_centralized_party_share_proof(
+                &bcs::from_bytes(&protocol_public_parameters)?, bcs::from_bytes(&serialized_dkg_public_output)?, bcs::from_bytes(&encryption_key)?, bcs::from_bytes(&encrypted_centralized_secret_share_and_proof)?, &mut OsRng).map_err(Into::<anyhow::Error>::into)?;
 }
