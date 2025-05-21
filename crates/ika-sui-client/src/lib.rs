@@ -1167,7 +1167,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(full_output
             .into_iter()
             .sorted()
-            .fold(Vec::new(), |mut acc, (k, mut v)| {
+            .fold(Vec::new(), |mut acc, (_, mut v)| {
                 acc.append(&mut v);
                 acc
             }))

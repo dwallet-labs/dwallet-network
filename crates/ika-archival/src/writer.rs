@@ -4,8 +4,8 @@
 
 use crate::{
     create_file_metadata, read_manifest, write_manifest, CheckpointUpdates, FileMetadata, FileType,
-    Manifest, SystemCheckpointUpdates, DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
-    DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES,
+    Manifest, SystemCheckpointUpdates, DWALLET_CHECKPOINT_FILE_MAGIC,
+    DWALLET_CHECKPOINT_FILE_SUFFIX, EPOCH_DIR_PREFIX, MAGIC_BYTES,
     SYSTEM_CHECKPOINT_FILE_MAGIC, SYSTEM_CHECKPOINT_FILE_SUFFIX,
 };
 use anyhow::Result;
@@ -44,13 +44,13 @@ impl ArchiveMetrics {
         let this = Self {
             latest_dwallet_checkpoint_archived: register_int_gauge_with_registry!(
                 "latest_dwallet_checkpoint_archived",
-                "Latest dwallet coordinator checkpoint to have archived to the remote store",
+                "Latest dwallet checkpoint to have archived to the remote store",
                 registry
             )
             .unwrap(),
             latest_system_checkpoint_archived: register_int_gauge_with_registry!(
                 "latest_system_checkpoint_archived",
-                "Latest params message to have archived to the remote store",
+                "Latest system checkpoint to have archived to the remote store",
                 registry
             )
             .unwrap(),
@@ -59,9 +59,9 @@ impl ArchiveMetrics {
     }
 }
 
-/// [`DwalletCoordinatorCheckpointWriter`] writes checkpoints and summaries.
+/// [`DWalletCheckpointWriter`] writes checkpoints and summaries.
 /// It creates multiple *.chk and *.sum files
-struct DwalletCoordinatorCheckpointWriter {
+struct DWalletCheckpointWriter {
     root_dir_path: PathBuf,
     epoch_num: u64,
     dwallet_checkpoint_range: Range<u64>,
@@ -76,8 +76,8 @@ struct DwalletCoordinatorCheckpointWriter {
     commit_file_size: usize,
 }
 
-impl DwalletCoordinatorCheckpointWriter {
-    fn new(
+impl DWalletCheckpointWriter {
+    pub fn new(
         root_dir_path: PathBuf,
         file_compression: FileCompression,
         storage_format: StorageFormat,
@@ -96,12 +96,12 @@ impl DwalletCoordinatorCheckpointWriter {
         let checkpoint_file = Self::next_file(
             &epoch_dir,
             checkpoint_sequence_num,
-            DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX,
-            DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+            DWALLET_CHECKPOINT_FILE_SUFFIX,
+            DWALLET_CHECKPOINT_FILE_MAGIC,
             storage_format,
             file_compression,
         )?;
-        Ok(DwalletCoordinatorCheckpointWriter {
+        Ok(DWalletCheckpointWriter {
             root_dir_path,
             epoch_num,
             dwallet_checkpoint_range: checkpoint_sequence_num..checkpoint_sequence_num,
@@ -171,13 +171,13 @@ impl DwalletCoordinatorCheckpointWriter {
         let off = self.wbuf.get_ref().stream_position()?;
         self.wbuf.get_ref().set_len(off)?;
         let file_path = self.epoch_dir().join(format!(
-            "{}.{DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX}",
+            "{}.{DWALLET_CHECKPOINT_FILE_SUFFIX}",
             self.dwallet_checkpoint_range.start
         ));
         self.compress(&file_path)?;
         let file_metadata = create_file_metadata(
             &file_path,
-            FileType::DWalletCoordinatorCheckpointMessage,
+            FileType::DWalletCheckpointMessage,
             self.epoch_num,
             self.dwallet_checkpoint_range.clone(),
         )?;
@@ -236,8 +236,8 @@ impl DwalletCoordinatorCheckpointWriter {
         let f = Self::next_file(
             &self.epoch_dir(),
             self.dwallet_checkpoint_range.start,
-            DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX,
-            DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+            DWALLET_CHECKPOINT_FILE_SUFFIX,
+            DWALLET_CHECKPOINT_FILE_MAGIC,
             self.storage_format,
             self.file_compression,
         )?;
@@ -372,7 +372,7 @@ impl SystemCheckpointWriter {
             .system_checkpoint_range
             .end
             .checked_add(1)
-            .context("IkaSystemCheckpoint sequence num overflow")?;
+            .context("System checkpoint sequence num overflow")?;
         Ok(())
     }
     fn finalize(&mut self) -> Result<FileMetadata> {
@@ -404,7 +404,7 @@ impl SystemCheckpointWriter {
                 &mut self.manifest,
             );
             info!(
-                "IkaSystemCheckpoint file cut for: {:?}",
+                "System checkpoint file cut for: {:?}",
                 system_checkpoint_updates
             );
             self.sender.blocking_send(system_checkpoint_updates)?;
@@ -540,7 +540,7 @@ impl ArchiveWriter {
         let (sender, receiver) = mpsc::channel::<CheckpointUpdates>(100);
         let (sender_system_checkpoint, receiver_system_checkpoint) =
             mpsc::channel::<SystemCheckpointUpdates>(100);
-        let checkpoint_writer = DwalletCoordinatorCheckpointWriter::new(
+        let checkpoint_writer = DWalletCheckpointWriter::new(
             self.local_staging_dir_root.clone(),
             self.file_compression,
             self.storage_format,
@@ -598,7 +598,7 @@ impl ArchiveWriter {
 
     async fn start_tailing_checkpoints<S>(
         start_checkpoint_sequence_number: CheckpointSequenceNumber,
-        mut checkpoint_writer: DwalletCoordinatorCheckpointWriter,
+        mut checkpoint_writer: DWalletCheckpointWriter,
         store: S,
         mut kill: tokio::sync::broadcast::Receiver<()>,
     ) -> Result<()>
@@ -637,21 +637,21 @@ impl ArchiveWriter {
         S: WriteStore + Send + Sync + 'static,
     {
         let mut system_checkpoint_sequence_number = start_system_checkpoint_sequence_number;
-        info!("Starting system_checkpoint tailing from sequence number: {system_checkpoint_sequence_number}");
+        info!("Starting system checkpoint tailing from sequence number: {system_checkpoint_sequence_number}");
 
         while kill.try_recv().is_err() {
             if let Some(system_checkpoint_message) = store
                 .get_system_checkpoint_by_sequence_number(system_checkpoint_sequence_number)
-                .map_err(|_| anyhow!("Failed to read system_checkpoint message from store"))?
+                .map_err(|_| anyhow!("Failed to read system checkpoint message from store"))?
             {
                 system_checkpoint_writer.write(system_checkpoint_message.into_inner())?;
                 system_checkpoint_sequence_number = system_checkpoint_sequence_number
                     .checked_add(1)
-                    .context("system_checkpoint seq number overflow")?;
-                // There is more system_checkpoints to tail, so continue without sleeping
+                    .context("System checkpoint seq number overflow")?;
+                // There is more system checkpoints to tail, so continue without sleeping
                 continue;
             }
-            // IkaSystemCheckpoint with `system_checkpoint_sequence_number` is not available to read from store yet,
+            // System checkpoint with `system_checkpoint_sequence_number` is not available to read from store yet,
             // sleep for sometime and then retry
             tokio::time::sleep(Duration::from_secs(3)).await;
         }

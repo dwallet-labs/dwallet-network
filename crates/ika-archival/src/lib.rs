@@ -85,11 +85,11 @@ use tracing::{info};
 ///│      sha3 <32 bytes>         │
 ///└──────────────────────────────┘
 pub const SYSTEM_CHECKPOINT_FILE_MAGIC: u32 = 0x0000C0DE;
-pub const DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC: u32 = 0x00000DAD;
+pub const DWALLET_CHECKPOINT_FILE_MAGIC: u32 = 0x00000DAD;
 const MANIFEST_FILE_MAGIC: u32 = 0x00C0FFEE;
 const MAGIC_BYTES: usize = 4;
 const SYSTEM_CHECKPOINT_FILE_SUFFIX: &str = "system_checkpoint";
-const DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX: &str = "dwallet_coordinator_checkpoint";
+const DWALLET_CHECKPOINT_FILE_SUFFIX: &str = "dwallet_checkpoint";
 const EPOCH_DIR_PREFIX: &str = "epoch_";
 const MANIFEST_FILENAME: &str = "MANIFEST";
 
@@ -99,7 +99,7 @@ const MANIFEST_FILENAME: &str = "MANIFEST";
 #[repr(u8)]
 pub enum FileType {
     SystemCheckpointMessage = 0,
-    DWalletCoordinatorCheckpointMessage = 1,
+    DWalletCheckpointMessage = 1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -114,8 +114,8 @@ impl FileMetadata {
     pub fn file_path(&self) -> Path {
         let dir_path = Path::from(format!("{}{}", EPOCH_DIR_PREFIX, self.epoch_num));
         match self.file_type {
-            FileType::DWalletCoordinatorCheckpointMessage => dir_path.child(&*format!(
-                "{}.{DWALLET_COORDINATOR_CHECKPOINT_FILE_SUFFIX}",
+            FileType::DWalletCheckpointMessage => dir_path.child(&*format!(
+                "{}.{DWALLET_CHECKPOINT_FILE_SUFFIX}",
                 self.checkpoint_seq_range.start
             )),
             FileType::SystemCheckpointMessage => dir_path.child(&*format!(
@@ -129,7 +129,7 @@ impl FileMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ManifestV1 {
     pub archive_version: u8,
-    pub dwallet_coordinator_checkpoint_seq_num: u64,
+    pub dwallet_checkpoint_seq_num: u64,
     pub system_checkpoint_seq_num: u64,
     pub file_metadata: Vec<FileMetadata>,
     pub epoch: u64,
@@ -143,12 +143,12 @@ pub enum Manifest {
 impl Manifest {
     pub fn new(
         epoch: u64,
-        next_dwallet_coordinator_checkpoint_seq_num: u64,
+        next_dwallet_checkpoint_seq_num: u64,
         next_system_checkpoint_seq_num: u64,
     ) -> Self {
         Manifest::V1(ManifestV1 {
             archive_version: 1,
-            dwallet_coordinator_checkpoint_seq_num: next_dwallet_coordinator_checkpoint_seq_num,
+            dwallet_checkpoint_seq_num: next_dwallet_checkpoint_seq_num,
             system_checkpoint_seq_num: next_system_checkpoint_seq_num,
             file_metadata: vec![],
             epoch,
@@ -166,7 +166,7 @@ impl Manifest {
     }
     pub fn next_dwallet_checkpoint_seq_num(&self) -> u64 {
         match self {
-            Manifest::V1(manifest) => manifest.dwallet_coordinator_checkpoint_seq_num,
+            Manifest::V1(manifest) => manifest.dwallet_checkpoint_seq_num,
         }
     }
 
@@ -188,7 +188,7 @@ impl Manifest {
                     .file_metadata
                     .extend(vec![checkpoint_file_metadata]);
                 manifest.epoch = epoch_num;
-                manifest.dwallet_coordinator_checkpoint_seq_num = checkpoint_sequence_number;
+                manifest.dwallet_checkpoint_seq_num = checkpoint_sequence_number;
             }
         }
     }
@@ -423,7 +423,7 @@ where
     };
     let archive_reader = ArchiveReader::new(config, &metrics)?;
     archive_reader.sync_manifest_once().await?;
-    let latest_checkpoint_in_archive = archive_reader.latest_available_dwallet_coordinator_checkpoint().await?;
+    let latest_checkpoint_in_archive = archive_reader.latest_available_dwallet_checkpoint().await?;
     info!(
         "Latest available checkpoint in archive store: {}",
         latest_checkpoint_in_archive

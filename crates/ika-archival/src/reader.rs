@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
-    read_manifest, FileMetadata, FileType, Manifest, DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+    read_manifest, FileMetadata, FileType, Manifest, DWALLET_CHECKPOINT_FILE_MAGIC,
     SYSTEM_CHECKPOINT_FILE_MAGIC,
 };
 use anyhow::{anyhow, Context, Result};
@@ -36,7 +36,7 @@ use tracing::info;
 #[derive(Debug)]
 pub struct ArchiveReaderMetrics {
     pub archive_actions_read: IntCounterVec,
-    pub archive_dwallet_coordinator_checkpoints_read: IntCounterVec,
+    pub archive_dwallet_checkpoints_read: IntCounterVec,
     pub archive_system_checkpoint_read: IntCounterVec,
 }
 
@@ -50,9 +50,9 @@ impl ArchiveReaderMetrics {
                 registry
             )
             .unwrap(),
-            archive_dwallet_coordinator_checkpoints_read: register_int_counter_vec_with_registry!(
-                "archive_dwallet_coordinator_checkpoints_read",
-                "Number of dwallet coordinator checkpoints read from the archive",
+            archive_dwallet_checkpoints_read: register_int_counter_vec_with_registry!(
+                "archive_dwallet_checkpoints_read",
+                "Number of dwallet checkpoints read from the archive",
                 &["bucket"],
                 registry
             )
@@ -92,9 +92,7 @@ impl ArchiveReaderBalancer {
             .iter()
             .filter(|r| r.use_for_pruning_watermark())
         {
-            let latest_checkpoint = reader
-                .latest_available_dwallet_coordinator_checkpoint()
-                .await;
+            let latest_checkpoint = reader.latest_available_dwallet_checkpoint().await;
             info!(
                 "Latest archived checkpoint in remote store: {:?} is: {:?}",
                 reader.remote_store_identifier(),
@@ -112,7 +110,7 @@ impl ArchiveReaderBalancer {
         let mut archives_with_complete_range = vec![];
         for reader in self.readers.iter() {
             let latest_checkpoint = reader
-                .latest_available_dwallet_coordinator_checkpoint()
+                .latest_available_dwallet_checkpoint()
                 .await
                 .unwrap_or(0);
             if latest_checkpoint >= checkpoint_range.end {
@@ -130,7 +128,7 @@ impl ArchiveReaderBalancer {
         let mut archives_with_partial_range = vec![];
         for reader in self.readers.iter() {
             let latest_checkpoint = reader
-                .latest_available_dwallet_coordinator_checkpoint()
+                .latest_available_dwallet_checkpoint()
                 .await
                 .unwrap_or(0);
             if latest_checkpoint >= checkpoint_range.start {
@@ -198,7 +196,7 @@ impl ArchiveReader {
         let mut checkpoint_files: Vec<_> = files
             .clone()
             .into_iter()
-            .filter(|f| f.file_type == FileType::DWalletCoordinatorCheckpointMessage)
+            .filter(|f| f.file_type == FileType::DWalletCheckpointMessage)
             .collect();
 
         checkpoint_files.sort_by_key(|f| f.checkpoint_seq_range.start);
@@ -282,7 +280,7 @@ impl ArchiveReader {
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
                     make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
-                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+                        DWALLET_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -331,7 +329,7 @@ impl ArchiveReader {
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
                     make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
-                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+                        DWALLET_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -368,12 +366,14 @@ impl ArchiveReader {
         stream
             .buffer_unordered(self.concurrency)
             .try_fold(Vec::new(), |mut acc, checkpoint_data| async move {
-                let checkpoint_result: Result<Vec<CertifiedDWalletCheckpointMessage>, anyhow::Error> =
-                    make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
-                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
-                        checkpoint_data.reader(),
-                    )
-                    .map(|checkpoint_iter| checkpoint_iter.collect::<Vec<_>>());
+                let checkpoint_result: Result<
+                    Vec<CertifiedDWalletCheckpointMessage>,
+                    anyhow::Error,
+                > = make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
+                    DWALLET_CHECKPOINT_FILE_MAGIC,
+                    checkpoint_data.reader(),
+                )
+                .map(|checkpoint_iter| checkpoint_iter.collect::<Vec<_>>());
 
                 match checkpoint_result {
                     Ok(checkpoints) => {
@@ -441,7 +441,7 @@ impl ArchiveReader {
             .try_for_each(|checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
                     make_iterator::<CertifiedDWalletCheckpointMessage, Reader<Bytes>>(
-                        DWALLET_COORDINATOR_CHECKPOINT_FILE_MAGIC,
+                        DWALLET_CHECKPOINT_FILE_MAGIC,
                         checkpoint_data.reader(),
                     )
                     .and_then(|checkpoint_iter| {
@@ -465,7 +465,7 @@ impl ArchiveReader {
                                     .inc_by(size as u64);
                                 checkpoint_counter.fetch_add(1, Ordering::Relaxed);
                                 self.archive_reader_metrics
-                                    .archive_dwallet_coordinator_checkpoints_read
+                                    .archive_dwallet_checkpoints_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(1);
                                 Ok::<(), anyhow::Error>(())
@@ -477,9 +477,7 @@ impl ArchiveReader {
     }
 
     /// Return latest available checkpoint in archive
-    pub async fn latest_available_dwallet_coordinator_checkpoint(
-        &self,
-    ) -> Result<CheckpointSequenceNumber> {
+    pub async fn latest_available_dwallet_checkpoint(&self) -> Result<CheckpointSequenceNumber> {
         let manifest = self.manifest.lock().await.clone();
         manifest
             .next_dwallet_checkpoint_seq_num()
@@ -662,9 +660,7 @@ impl ArchiveReader {
         S: WriteStore + Clone,
     {
         store
-            .get_system_checkpoint_by_sequence_number(
-                certified_system_checkpoint.sequence_number,
-            )
+            .get_system_checkpoint_by_sequence_number(certified_system_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
             .map(Ok::<VerifiedSystemCheckpoint, anyhow::Error>)
             .unwrap_or_else(|| {
@@ -692,11 +688,11 @@ impl ArchiveReader {
         let latest_available_system_checkpoint = manifest
             .next_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("IkaSystemCheckpoint seq num underflow")?;
+            .context("System checkpoint seq num underflow")?;
 
         if system_checkpoint_range.start > latest_available_system_checkpoint {
             return Err(anyhow!(
-                "Latest available system_checkpoint is: {}",
+                "Latest available system checkpoint is: {}",
                 latest_available_system_checkpoint
             ));
         }
@@ -727,14 +723,13 @@ impl ArchiveReader {
         let latest_available_system_checkpoint = manifest
             .next_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("IkaSystemCheckpoint seq num underflow")?;
+            .context("System checkpoint seq num underflow")?;
 
         let mut ordered_system_checkpoints = system_checkpoints;
         ordered_system_checkpoints.sort();
-        if *ordered_system_checkpoints.first().unwrap() > latest_available_system_checkpoint
-        {
+        if *ordered_system_checkpoints.first().unwrap() > latest_available_system_checkpoint {
             return Err(anyhow!(
-                "Latest available system_checkpoint is: {}",
+                "Latest available system checkpoint is: {}",
                 latest_available_system_checkpoint
             ));
         }
@@ -753,7 +748,7 @@ impl ArchiveReader {
                         std::cmp::Ordering::Equal
                     }
                 })
-                .expect("Archive does not contain system_checkpoint {system_checkpoint}");
+                .expect("Archive does not contain system checkpoint {system_checkpoint}");
             system_checkpoints_filtered.push(system_checkpoint_files[index].clone());
         }
 
@@ -797,21 +792,20 @@ impl ArchiveReader {
         let latest_available_system_checkpoint = manifest
             .next_system_checkpoint_seq_num()
             .checked_sub(1)
-            .context("Params message seq num underflow")?;
+            .context("System checkpoint seq num underflow")?;
 
         if system_checkpoint_range.start > latest_available_system_checkpoint {
             return Err(anyhow!(
-                "Latest available params message is: {}",
+                "Latest available system checkpoint is: {}",
                 latest_available_system_checkpoint
             ));
         }
 
         let files: Vec<FileMetadata> = self.verify_manifest(manifest).await?;
 
-        let start_index = match files
-            .binary_search_by_key(&system_checkpoint_range.start, |c| {
-                c.checkpoint_seq_range.start
-            }) {
+        let start_index = match files.binary_search_by_key(&system_checkpoint_range.start, |c| {
+            c.checkpoint_seq_range.start
+        }) {
             Ok(index) => index,
             Err(index) => index - 1,
         };
