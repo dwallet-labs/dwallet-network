@@ -134,9 +134,8 @@ pub fn create_dkg_output(
             .context("advance() failed on the DKGCentralizedParty")?;
 
             // Centralized Public Key Share and Proof.
-            let public_key_share_and_proof = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?),
-            );
+            let public_key_share_and_proof = MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?);
+            
             let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
 
             // Public Output:
@@ -233,9 +232,9 @@ pub fn advance_centralized_sign_party(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
+            let signed_message = MPCPublicOutputClassGroups::V1(
                 bcs::to_bytes(&round_result.outgoing_message)?,
-            ));
+            );
             let signed_message = bcs::to_bytes(&signed_message)?;
             Ok(signed_message)
         }
@@ -282,9 +281,9 @@ pub fn create_imported_dwallet_centralized_step_inner(
         Ok(round_result) => {
             let public_output = round_result.public_output;
             let outgoing_message = round_result.outgoing_message;
-            let secret_share = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
+            let secret_share = MPCPublicOutputClassGroups::V1(
                 bcs::to_bytes(&round_result.private_output)?,
-            ));
+            );
             Ok((
                 bcs::to_bytes(&secret_share)?,
                 bcs::to_bytes(&public_output)?,
