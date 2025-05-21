@@ -32,34 +32,6 @@ use sui_types::collection_types::{Table, TableVec};
 use sui_types::id::ID;
 use sui_types::message_envelope::Message;
 use sui_types::SUI_SYSTEM_ADDRESS;
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletImportedKeyVerificationRequestEventOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletDKGFirstOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletDKGSecondOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum PresignOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum SignOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum SecpNetworkDkgOutputVersion {
-    V1(MPCPublicInput),
-}
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DecryptionKeyReshareOutputVersion {
-    V1(MPCPublicInput),
-}
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {

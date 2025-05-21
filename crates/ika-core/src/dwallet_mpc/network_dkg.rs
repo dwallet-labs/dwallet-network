@@ -17,14 +17,14 @@ use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionK
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCPublicOutput,
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
-    SerializedWrappedMPCPublicOutput,
+    SecpNetworkDkgOutputVersion, SerializedWrappedMPCPublicOutput,
 };
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState,
-    MPCProtocolInitData, SecpNetworkDkgOutputVersion, SessionInfo, StartNetworkDKGEvent,
+    MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
 };
 use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};

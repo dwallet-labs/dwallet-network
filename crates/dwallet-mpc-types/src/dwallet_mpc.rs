@@ -144,3 +144,38 @@ impl TryFrom<u32> for DWalletMPCNetworkKeyScheme {
 }
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum DWalletImportedKeyVerificationRequestEventOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum DWalletDKGFirstOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum DWalletDKGSecondOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum PresignOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum SignOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum SecpNetworkDkgOutputVersion {
+    V1(MPCPublicInput),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum DecryptionKeyReshareOutputVersion {
+    V1(MPCPublicInput),
+}
