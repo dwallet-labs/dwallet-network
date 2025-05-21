@@ -2,14 +2,7 @@ use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
-    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
-    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
-    SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicInput, MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT, DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT, DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
@@ -135,7 +128,7 @@ impl Debug for MPCProtocolInitData {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PresignSessionState {
     /// The verified output from the first party of the Presign protocol.
-    pub first_presign_party_output: MPCPublicOutput,
+    pub first_presign_party_output: MPCPublicOutputClassGroups,
     /// The public input for the second party of the Presign protocol.
     pub second_party_public_input: MPCPublicInput,
 }
