@@ -14,9 +14,7 @@ use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCSessionStatus,
 };
-use fastcrypto::hash::HashFunction;
 use group::PartyID;
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
@@ -29,7 +27,6 @@ use ika_types::messages_dwallet_mpc::{
     StartPartialSignaturesVerificationEvent, StartPresignFirstRoundEvent, StartSignEvent,
     ThresholdNotReachedReport,
 };
-use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -38,7 +35,6 @@ use std::sync::{Arc, Weak};
 use tokio::sync::watch;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
-use typed_store::Map;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -48,7 +44,7 @@ use typed_store::Map;
 /// The correct way to use the manager is to create it along with all other Ika components
 /// at the start of each epoch.
 /// Ensuring it is destroyed when the epoch ends and providing a clean slate for each new epoch.
-pub struct DWalletMPCManager {
+pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,
     /// MPC sessions that where created.
@@ -266,14 +262,6 @@ impl DWalletMPCManager {
                     error!(
                         ?err,
                         "dWallet MPC session failed — threshold not reached with error",
-                    );
-                }
-            }
-            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
-                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
-                    error!(
-                        "dWallet MPC session failed with threshold not reached with error: {:?}",
-                        err
                     );
                 }
             }
@@ -753,6 +741,8 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Flags the given authorities as malicious.
     /// Future messages from these authorities will be ignored.
     pub(crate) fn flag_authorities_as_malicious(&mut self, malicious_parties: &[AuthorityName]) {

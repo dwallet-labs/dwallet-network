@@ -348,7 +348,7 @@ where
                         next_system_checkpoint_sequence_number,
                     )
                 {
-                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
+                    if let Some(_dwallet_2pc_mpc_secp256k1_id) =
                         system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
                         let active_members: BlsCommittee =

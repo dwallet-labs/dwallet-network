@@ -29,12 +29,9 @@ impl EpochStartConfiguration {
         // We only need to implement this function for the latest version.
         // When a new version is introduced, this function should be updated.
         match self {
-            Self::V1(config) => {
-                Self::V1(EpochStartConfigurationV1 {
-                    system_state: config.system_state.new_at_next_epoch_for_testing(),
-                })
-            }
-            _ => unreachable!("This function is only implemented for the latest version of EpochStartConfiguration"),
+            Self::V1(config) => Self::V1(EpochStartConfigurationV1 {
+                system_state: config.system_state.new_at_next_epoch_for_testing(),
+            }),
         }
     }
 

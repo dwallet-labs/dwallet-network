@@ -27,7 +27,6 @@ use ika_types::messages_dwallet_mpc::{
 };
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
-use sha3::Digest as Sha3Digest;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -355,6 +354,7 @@ fn get_verify_partial_signatures_session_info(
     }
 }
 
+#[allow(unused)]
 fn calculate_total_voting_weight(
     weighted_parties: &HashMap<PartyID, Weight>,
     parties: &HashSet<PartyID>,
@@ -451,6 +451,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
     /// round -> {party -> message}
     messages: HashMap<usize, HashMap<PartyID, M>>,
+    #[allow(dead_code)]
     malicious_parties: Vec<PartyID>,
 }
 
@@ -498,7 +499,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) async fn session_input_from_event(
+pub(super) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
@@ -535,7 +536,8 @@ pub(crate) async fn session_input_from_event(
         {
             let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+            // todo(zeev): do we need it here?
+            let _protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
@@ -668,7 +670,9 @@ pub(crate) async fn session_input_from_event(
     }
 }
 
+// todo(zeev): why?
 // TODO (#683): Parse the network key version from the network key object ID
+#[allow(unused)]
 pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
     0
 }

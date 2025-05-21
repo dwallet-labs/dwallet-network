@@ -16,7 +16,6 @@ use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
 use im::HashSet;
-use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
@@ -285,7 +284,7 @@ where
         let output = sui_client
             .get_network_decryption_key_with_full_data(network_dec_key_shares)
             .await
-            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(e.to_string()))?;
 
         instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
             output.current_epoch,

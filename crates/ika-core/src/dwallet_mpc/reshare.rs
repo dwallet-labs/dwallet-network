@@ -7,7 +7,7 @@ use class_groups::{
 };
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
-use group::{secp256k1, GroupElement, PartyID};
+use group::{secp256k1, PartyID};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
@@ -88,7 +88,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             bcs::from_bytes(&network_dkg_public_output)?,
         )
         .map_err(|e| {
-            DwalletMPCError::TwoPCMPCError("failed to generate public input".to_string())
+            DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
         })?;
 
         Ok(bcs::to_bytes(&public_input)?)

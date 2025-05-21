@@ -29,6 +29,8 @@ use tracing::{info, warn};
 #[derive(Clone)]
 pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
     checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
     system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
@@ -274,6 +276,8 @@ impl TransactionVerifier for IkaTxValidator {
 }
 
 pub struct IkaTxValidatorMetrics {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     certificate_signatures_verified: IntCounter,
     dwallet_checkpoint_signatures_verified: IntCounter,
     system_checkpoint_signatures_verified: IntCounter,

@@ -13,7 +13,6 @@ use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
-use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,9 +28,11 @@ const READ_INTERVAL_MS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Round,
+    #[allow(dead_code)]
     read_messages: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
     epoch_id: EpochId,
+    #[allow(dead_code)]
     notify: Arc<Notify>,
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,

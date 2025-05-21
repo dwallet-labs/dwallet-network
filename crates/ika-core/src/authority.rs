@@ -15,7 +15,6 @@ use prometheus::{
     register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Histogram,
     HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Registry,
 };
-use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::{collections::HashMap, pin::Pin, sync::Arc, vec};
@@ -27,7 +26,6 @@ use ika_types::committee::EpochId;
 use ika_types::committee::ProtocolVersion;
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::sui::SystemInnerTrait;
 use ika_types::supported_protocol_versions::{ProtocolConfig, SupportedProtocolVersions};
 use sui_macros::fail_point;
 use sui_types::crypto::Signer;
@@ -627,6 +625,8 @@ pub struct AuthorityState {
     /// The signature key of the authority.
     pub secret: StableSyncAuthoritySigner,
 
+    // todo(zeev): why is it here?
+    #[allow(dead_code)]
     perpetual_tables: Arc<AuthorityPerpetualTables>,
 
     epoch_store: ArcSwap<AuthorityPerEpochStore>,
@@ -678,6 +678,7 @@ impl AuthorityState {
             .check_system_overload_at_signing
     }
 
+    #[allow(dead_code)]
     fn update_overload_metrics(&self, source: &str) {
         self.metrics
             .transaction_overload_sources
@@ -905,7 +906,7 @@ impl AuthorityState {
     fn is_protocol_version_supported_v1(
         current_protocol_version: ProtocolVersion,
         proposed_protocol_version: ProtocolVersion,
-        protocol_config: &ProtocolConfig,
+        _protocol_config: &ProtocolConfig,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         mut buffer_stake_bps: u64,

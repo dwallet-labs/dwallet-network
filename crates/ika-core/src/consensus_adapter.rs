@@ -213,6 +213,7 @@ pub trait ConsensusClient: Sync + Send + 'static {
     ) -> IkaResult<BlockStatusReceiver>;
 }
 
+#[allow(unused)]
 /// Submit Ika certificates to the consensus.
 pub struct ConsensusAdapter {
     /// The network client connecting to the consensus node of this authority.
@@ -342,8 +343,8 @@ impl ConsensusAdapter {
 
     fn await_submit_delay(
         &self,
-        committee: &Committee,
-        transactions: &[ConsensusTransaction],
+        _committee: &Committee,
+        _transactions: &[ConsensusTransaction],
     ) -> (impl Future<Output = ()>, usize, usize, usize) {
         // if transactions.iter().any(|tx| tx.is_user_transaction()) {
         //     // UserTransactions are generally sent to just one validator and should
@@ -378,6 +379,7 @@ impl ConsensusAdapter {
         (tokio::time::sleep(Duration::ZERO), 0, 0, 0)
     }
 
+    #[allow(unused)]
     /// Overrides the latency and the position if there are defined settings for `max_submit_position` and
     /// `submit_delay_step_override`. If the `max_submit_position` has defined, then that will always be used
     /// irrespective of any so far decision. Same for the `submit_delay_step_override`.
@@ -395,6 +397,7 @@ impl ConsensusAdapter {
         (delay_step, position)
     }
 
+    #[allow(unused)]
     /// Check when this authority should submit the certificate to consensus.
     /// This sorts all authorities based on pseudo-random distribution derived from transaction hash.
     ///
@@ -412,6 +415,7 @@ impl ConsensusAdapter {
         self.check_submission_wrt_connectivity_and_scores(positions)
     }
 
+    #[allow(unused)]
     /// This function runs the following algorithm to decide whether or not to submit a transaction
     /// to consensus.
     ///
@@ -870,7 +874,6 @@ impl ConsensusAdapter {
                     //     self.metrics.sequencing_certificate_processed.with_label_values(&["synced_checkpoint"]).inc();
                     // }
                 }
-                ProcessedMethod::Checkpoint
             });
         }
 

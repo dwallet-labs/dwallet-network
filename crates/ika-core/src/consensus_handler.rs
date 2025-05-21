@@ -33,7 +33,6 @@ use crate::{
             AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
             ExecutionIndicesWithStats,
         },
-        epoch_start_configuration::EpochStartConfigTrait,
         AuthorityMetrics, AuthorityState,
     },
     checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
@@ -107,6 +106,8 @@ impl ConsensusHandlerInitializer {
         )
     }
 
+    // todo(zeev): fix
+    #[allow(dead_code)]
     pub(crate) fn metrics(&self) -> &Arc<AuthorityMetrics> {
         &self.state.metrics
     }
@@ -521,6 +522,7 @@ impl MysticetiConsensusHandler {
 }
 
 impl<C> ConsensusHandler<C> {
+    #[allow(dead_code)]
     fn epoch(&self) -> EpochId {
         self.epoch_store.epoch()
     }
@@ -679,7 +681,7 @@ pub struct ConsensusCommitInfo {
 }
 
 impl ConsensusCommitInfo {
-    fn new(protocol_config: &ProtocolConfig, consensus_commit: &impl ConsensusCommitAPI) -> Self {
+    fn new(_protocol_config: &ProtocolConfig, consensus_commit: &impl ConsensusCommitAPI) -> Self {
         Self {
             round: consensus_commit.leader_round(),
             timestamp: consensus_commit.commit_timestamp_ms(),

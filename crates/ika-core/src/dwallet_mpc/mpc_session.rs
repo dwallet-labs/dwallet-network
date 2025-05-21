@@ -7,8 +7,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
-use itertools::Itertools;
-use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -61,7 +59,7 @@ pub struct MPCEventData {
 /// and the messages that are pending to be sent to the session.
 // TODO (#539): Simplify struct to only contain session related data.
 #[derive(Clone)]
-pub(super) struct DWalletMPCSession {
+pub(crate) struct DWalletMPCSession {
     /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
     /// All the messages that have been received for this session.
@@ -495,9 +493,6 @@ impl DWalletMPCSession {
                     decryption_key_shares,
                 )
             }
-            _ => {
-                unreachable!("Unsupported MPC protocol type")
-            }
         }
     }
 
@@ -639,6 +634,8 @@ impl DWalletMPCSession {
         }
     }
 
+    // todo(zeev): why is it here?
+    #[allow(dead_code)]
     /// Helper function to spawn a task for submitting messages to consensus.
     fn spawn_submit_to_consensus(
         tokio_runtime_handle: &Handle,

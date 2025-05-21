@@ -14,6 +14,8 @@ use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
+// todo(zeev): fix dead code
+#[allow(dead_code)]
 /// The index of the last sign cryptographic round.
 /// Needed to be known in advance as this cryptographic step should ideally get computed only once
 /// by the `sign aggregation` protocol.
@@ -22,6 +24,7 @@ pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
 /// computation round.
 /// Used to determine how long a validator should wait before running the final step of the sign
 /// MPC flow.
+#[allow(dead_code)]
 pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 15;
 
 pub(super) type SignFirstParty =

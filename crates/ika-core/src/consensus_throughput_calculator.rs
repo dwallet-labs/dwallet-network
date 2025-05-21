@@ -58,7 +58,7 @@ pub struct ThroughputProfileRanges {
 }
 
 impl ThroughputProfileRanges {
-    pub fn from_chain(chain_id: ChainIdentifier) -> ThroughputProfileRanges {
+    pub fn from_chain(_chain_id: ChainIdentifier) -> ThroughputProfileRanges {
         let to_profiles = |medium: u64, high: u64| -> Vec<ThroughputProfile> {
             vec![
                 ThroughputProfile {

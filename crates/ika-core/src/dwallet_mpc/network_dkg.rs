@@ -19,7 +19,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
     NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
 };
-use group::{ristretto, secp256k1, GroupElement, PartyID};
+use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
@@ -189,7 +189,9 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_decryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(
+                "".to_string(),
+            ))?
             .decryption_key_share_public_parameters
             .clone())
     }
@@ -345,7 +347,7 @@ fn generate_secp256k1_dkg_party_public_input(
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
     )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
@@ -359,7 +361,7 @@ fn generate_ristretto_dkg_party_public_input(
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
     )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 

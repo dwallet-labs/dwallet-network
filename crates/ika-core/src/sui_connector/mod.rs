@@ -48,8 +48,11 @@ pub struct SuiNotifier {
 pub struct SuiConnectorService {
     sui_client: Arc<SuiClient<SuiSdkClient>>,
     sui_executor: SuiExecutor<SuiSdkClient>,
+    #[allow(dead_code)]
     task_handles: Vec<JoinHandle<()>>,
+    #[allow(dead_code)]
     sui_connector_config: SuiConnectorConfig,
+    #[allow(dead_code)]
     metrics: Arc<SuiConnectorMetrics>,
 }
 
@@ -97,7 +100,7 @@ impl SuiConnectorService {
             network_keys_sender,
         )
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
+        .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
         Ok(Self {
             sui_client,
             sui_executor,

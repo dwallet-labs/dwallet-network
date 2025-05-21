@@ -13,8 +13,6 @@ use crate::system_checkpoints::system_checkpoint_output::{
 pub use crate::system_checkpoints::system_checkpoint_output::{
     LogSystemCheckpointOutput, SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus,
 };
-use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use itertools::Itertools;
 use mysten_metrics::{monitored_future, monitored_scope};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -30,8 +28,6 @@ use ika_types::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage, SystemCheckpointTimestamp,
     TrustedSystemCheckpoint, VerifiedSystemCheckpoint,
 };
-use ika_types::sui::SystemInnerTrait;
-use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -128,6 +124,8 @@ pub struct SystemCheckpointStore {
     pub(crate) locally_computed_system_checkpoints:
         DBMap<SystemCheckpointSequenceNumber, SystemCheckpoint>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// A map from epoch ID to the sequence number of the last system_checkpoint in that epoch.
     epoch_last_system_checkpoint_map: DBMap<EpochId, SystemCheckpointSequenceNumber>,
 
@@ -396,6 +394,7 @@ pub enum SystemCheckpointWatermark {
 }
 
 pub struct SystemCheckpointBuilder {
+    #[allow(dead_code)]
     state: Arc<AuthorityState>,
     tables: Arc<SystemCheckpointStore>,
     epoch_store: Arc<AuthorityPerEpochStore>,
@@ -418,6 +417,7 @@ pub struct SystemCheckpointAggregator {
     metrics: Arc<SystemCheckpointMetrics>,
 }
 
+// todo(zeev): see why some fields are not used.
 // This holds information to aggregate signatures for one system_checkpoint
 pub struct SystemCheckpointSignatureAggregator {
     next_index: u64,
@@ -425,7 +425,9 @@ pub struct SystemCheckpointSignatureAggregator {
     digest: SystemCheckpointDigest,
     /// Aggregates voting stake for each signed system_checkpoint proposal by authority
     signatures_by_digest: MultiStakeAggregator<SystemCheckpointDigest, SystemCheckpoint, true>,
+    #[allow(dead_code)]
     tables: Arc<SystemCheckpointStore>,
+    #[allow(dead_code)]
     state: Arc<AuthorityState>,
     metrics: Arc<SystemCheckpointMetrics>,
 }

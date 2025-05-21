@@ -129,7 +129,9 @@ pub struct DWalletCheckpointStore {
     pub(crate) locally_computed_dwallet_checkpoints:
         DBMap<DWalletCheckpointSequenceNumber, DWalletCheckpointMessage>,
 
-    /// A map from epoch ID to the sequence number of the last dwallet_checkpoint in that epoch.
+    // todo(zeev): why is it not used?
+    /// A map from epoch ID to the sequence number of the last dwallet-checkpoint in that epoch.
+    #[allow(dead_code)]
     epoch_last_dwallet_checkpoint_map: DBMap<EpochId, DWalletCheckpointSequenceNumber>,
 
     /// Watermarks used to determine the highest verified, fully synced, and
@@ -515,6 +517,8 @@ pub enum DWalletCheckpointWatermark {
 }
 
 pub struct DWalletCheckpointBuilder {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     state: Arc<AuthorityState>,
     tables: Arc<DWalletCheckpointStore>,
     epoch_store: Arc<AuthorityPerEpochStore>,
@@ -545,7 +549,10 @@ pub struct DWalletCheckpointSignatureAggregator {
     /// Aggregates voting stake for each signed dwallet_checkpoint proposal by authority.
     signatures_by_digest:
         MultiStakeAggregator<DWalletCheckpointMessageDigest, DWalletCheckpointMessage, true>,
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     tables: Arc<DWalletCheckpointStore>,
+    #[allow(dead_code)]
     state: Arc<AuthorityState>,
     metrics: Arc<DWalletCheckpointMetrics>,
 }

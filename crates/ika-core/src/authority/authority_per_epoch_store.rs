@@ -111,7 +111,9 @@ const OVERRIDE_PROTOCOL_UPGRADE_BUFFER_STAKE_INDEX: u64 = 0;
 pub const EPOCH_DB_PREFIX: &str = "epoch_";
 
 // Types for randomness DKG.
+#[allow(unused)]
 pub(crate) type PkG = bls12381::G2Element;
+#[allow(unused)]
 pub(crate) type EncG = bls12381::G2Element;
 
 // CertLockGuard and CertTxGuard are functionally identical right now, but we retain a distinction
@@ -289,14 +291,23 @@ pub struct AuthorityPerEpochStore {
 
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     // Subscribers will get notified when a transaction is executed via checkpoint execution.
     executed_transactions_to_checkpoint_notify_read:
         NotifyRead<MessageDigest, DWalletCheckpointSequenceNumber>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     executed_digests_notify_read: NotifyRead<TransactionKey, MessageDigest>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Get notified when a synced checkpoint has reached CheckpointExecutor.
     synced_checkpoint_notify_read: NotifyRead<DWalletCheckpointSequenceNumber, ()>,
+
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Caches the highest synced checkpoint sequence number as this has been notified from the CheckpointExecutor
     highest_synced_checkpoint: RwLock<DWalletCheckpointSequenceNumber>,
 
@@ -313,6 +324,8 @@ pub struct AuthorityPerEpochStore {
     /// will start with the new epoch(and will open instance of per-epoch store for a new epoch).
     epoch_alive: tokio::sync::RwLock<bool>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// MutexTable for transaction locks (prevent concurrent execution of same transaction)
     mutex_table: MutexTable<MessageDigest>,
 
@@ -328,6 +341,8 @@ pub struct AuthorityPerEpochStore {
     pub(crate) metrics: Arc<EpochMetrics>,
     epoch_start_configuration: Arc<EpochStartConfiguration>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     executed_in_epoch_table_enabled: once_cell::sync::OnceCell<bool>,
 
     /// Chain identifier
@@ -344,6 +359,8 @@ pub struct AuthorityPerEpochStore {
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
 #[derive(DBMapUtils)]
 pub struct AuthorityEpochTables {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Transactions that were executed in the current epoch.
     executed_in_epoch: DBMap<MessageDigest, ()>,
 
@@ -390,6 +407,8 @@ pub struct AuthorityEpochTables {
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Maps non-digest TransactionKeys to the corresponding digest after execution, for use
     /// by checkpoint builder.
     transaction_key_to_digest: DBMap<TransactionKey, MessageDigest>,
@@ -442,6 +461,8 @@ pub struct AuthorityEpochTables {
     pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
 
+// todo(zeev): why is it not used?
+#[allow(dead_code)]
 fn signed_transactions_table_default_config() -> DBOptions {
     default_db_options()
         .optimize_for_write_throughput()
@@ -1135,18 +1156,6 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
@@ -1323,22 +1332,20 @@ impl AuthorityPerEpochStore {
         });
         self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
 
-        system_checkpoint_verified_messages
-            .iter()
-            .for_each(|message| {
-                if let SystemCheckpointKind::NextConfigVersion(version) = message {
-                    if let Ok(tables) = self.tables() {
-                        if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
-                            warn!(
-                                ?e,
-                                "Failed to insert next protocol config version into the table"
-                            );
-                        }
-                    } else {
-                        warn!("Failed to insert params message digest into the table");
+        system_checkpoint_verified_messages.iter().for_each(
+            |SystemCheckpointKind::NextConfigVersion(version)| {
+                if let Ok(tables) = self.tables() {
+                    if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
+                        warn!(
+                            ?e,
+                            "Failed to insert the next protocol config version into the table"
+                        );
                     }
+                } else {
+                    warn!("Failed to insert params message digest into the table");
                 }
-            });
+            },
+        );
 
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
@@ -1402,7 +1409,7 @@ impl AuthorityPerEpochStore {
         for tx in transactions {
             let key = tx.0.transaction.key();
             let mut ignored = false;
-            let mut filter_roots = false;
+            // let mut filter_roots = false;
             match self
                 .process_consensus_transaction(
                     output,
@@ -1441,13 +1448,13 @@ impl AuthorityPerEpochStore {
                 }
                 ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
                 ConsensusCertificateResult::IgnoredSystem => {
-                    filter_roots = true;
+                    // filter_roots = true;
                 }
                 // Note: ignored external transactions must not be recorded as processed. Otherwise
                 // they may not get reverted after restart during epoch change.
                 ConsensusCertificateResult::Ignored => {
                     ignored = true;
-                    filter_roots = true;
+                    // filter_roots = true;
                 }
             }
             if !ignored {
@@ -1496,7 +1503,7 @@ impl AuthorityPerEpochStore {
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+            .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
                 Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
                     Ok(Some(session_info)) => {
                         info!(
@@ -1550,10 +1557,9 @@ impl AuthorityPerEpochStore {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
                         ..
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
+                    // todo(zeev):
+                    // ThresholdNotReachedReport is used twice here,
+                    // need to figure out which one.
                     }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
@@ -1624,10 +1630,10 @@ impl AuthorityPerEpochStore {
         let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
             certificate_author_index: _,
             certificate_author,
-            consensus_index,
+            consensus_index: _consensus_index,
             transaction,
         }) = transaction;
-        let tracking_id = transaction.get_tracking_id();
+        let _tracking_id = transaction.get_tracking_id();
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -2248,6 +2254,8 @@ impl AuthorityPerEpochStore {
             .insert(&(system_checkpoint_seq, index), info)?)
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
@@ -2294,6 +2302,8 @@ impl AuthorityPerEpochStore {
 
 #[derive(Default)]
 pub(crate) struct ConsensusCommitOutput {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,

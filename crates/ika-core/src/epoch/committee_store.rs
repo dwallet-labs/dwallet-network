@@ -120,6 +120,8 @@ impl CommitteeStore {
             .map_err(Into::into)
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     fn database_is_empty(&self) -> bool {
         self.tables.committee_map.unbounded_iter().next().is_none()
     }
