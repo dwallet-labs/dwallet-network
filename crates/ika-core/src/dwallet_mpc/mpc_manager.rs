@@ -24,7 +24,7 @@ use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedSecpNetworkDkgOutput,
+    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput,
 };
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::ToFromBytes;
@@ -534,7 +534,7 @@ impl DWalletMPCManager {
     pub(super) async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<VersionedSecpNetworkDkgOutput> {
+    ) -> DwalletMPCResult<VersionedNetworkDkgOutput> {
         self.network_keys
             .get_network_dkg_public_output(key_id)
             .await

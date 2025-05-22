@@ -16,8 +16,9 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedCentralizedDKGPublicOutput, VersionedDwalletDKGFirstRoundPublicOutput,
     VersionedDwalletDKGSecondRoundPublicOutput, VersionedDwalletUserSecretShare,
     VersionedEncryptedUserShare, VersionedImportedDWalletPublicOutput,
-    VersionedImportedDwalletOutgoingMessage, VersionedImportedSecretShare, VersionedPresignOutput,
-    VersionedPublicKeyShareAndProof, VersionedSecpNetworkDkgOutput, VersionedUserSignedMessage,
+    VersionedImportedDwalletOutgoingMessage, VersionedImportedSecretShare,
+    VersionedNetworkDkgOutput, VersionedPresignOutput, VersionedPublicKeyShareAndProof,
+    VersionedUserSignedMessage,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
@@ -305,11 +306,10 @@ fn protocol_public_parameters_by_key_scheme(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
-    let mpc_public_output: VersionedSecpNetworkDkgOutput =
-        bcs::from_bytes(&network_dkg_public_output)?;
+    let mpc_public_output: VersionedNetworkDkgOutput = bcs::from_bytes(&network_dkg_public_output)?;
 
     match &mpc_public_output {
-        VersionedSecpNetworkDkgOutput::V1(network_dkg_public_output) => {
+        VersionedNetworkDkgOutput::V1(network_dkg_public_output) => {
             let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
