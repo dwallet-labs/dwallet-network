@@ -815,7 +815,7 @@ impl DWalletMPCSession {
                     && self.agreed_mpc_protocol.is_some())
                 {
                     let epoch_store = self.epoch_store()?;
-                    let delay = epoch_store
+                    let protocol_consensus_rounds_delay = epoch_store
                         .protocol_config()
                         .consensus_rounds_delay_per_mpc_protocol
                         .get(&self.agreed_mpc_protocol.clone().unwrap())
@@ -823,13 +823,29 @@ impl DWalletMPCSession {
                         .get(&(self.current_round as u64))
                         .unwrap_or(&0u64)
                         .clone();
-                    if self.consensus_rounds_since_quorum_reached >= delay as usize {
+                    if self.consensus_rounds_since_quorum_reached
+                        >= protocol_consensus_rounds_delay as usize
+                    {
+                        info!(
+                            ?protocol_consensus_rounds_delay,
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            "Quorum reached for MPC session and delay passed, advancing to next round",
+                        );
                         self.consensus_rounds_since_quorum_reached = 0;
                         Ok(ReadyToAdvanceCheckResult {
                             is_ready: true,
                             malicious_parties: vec![],
                         })
                     } else {
+                        info!(
+                            ?protocol_consensus_rounds_delay,
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            "Quorum reached for MPC session but delay not passed yet, waiting another round",
+                        );
                         self.consensus_rounds_since_quorum_reached += 1;
                         Ok(ReadyToAdvanceCheckResult {
                             is_ready: false,
