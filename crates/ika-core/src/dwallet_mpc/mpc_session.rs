@@ -102,8 +102,6 @@ pub(super) struct DWalletMPCSession {
     // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
     /// A mapping between the MPC protocol of this session to the authorities that voted for it.
-    /// A quorum over the MPC protocol of the session is needed before performing any cryptographic computation,
-    /// as the protocol must be known to determine the protocol-specific consensus rounds delay.
     mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
     /// The MPC protocol that was agreed upon by a quorum of the authorities.
     agreed_mpc_protocol: Option<String>,
