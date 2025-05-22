@@ -4,12 +4,10 @@
 use crate::committee::{Committee, EpochId};
 use crate::crypto::{
     AuthorityKeyPair, AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo,
-    AuthoritySignInfoTrait, AuthoritySignature, AuthorityStrongQuorumSignInfo, EmptySignInfo,
-    Signer,
+    AuthoritySignature, EmptySignInfo, Signer,
 };
 use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};
-use crate::messages_checkpoint::CheckpointSequenceNumber;
 use fastcrypto::traits::KeyPair;
 use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};

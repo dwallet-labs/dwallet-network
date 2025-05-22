@@ -1371,7 +1371,7 @@ public(package) fun request_dwallet_dkg_second_round(
         _ => abort EWrongState
     };
 
-    
+
     let dwallet_id = dwallet.id.to_inner();
 
     let dwallet_network_decryption_key_id = dwallet.dwallet_network_decryption_key_id;
@@ -2205,6 +2205,8 @@ public(package) fun process_checkpoint_message_by_quorum(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
+    assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
+
     let mut intent_bytes = CHECKPOINT_MESSAGE_INTENT;
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&self.current_epoch));
@@ -2219,7 +2221,6 @@ fun process_checkpoint_message(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    assert!(!self.active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
 
     let mut bcs_body = bcs::new(copy message);
 
@@ -2250,8 +2251,6 @@ fun process_checkpoint_message(
 
         let message_data_type = bcs_body.peel_vec_length();
             // Parses checkpoint BCS bytes directly.
-            // Messages with `message_data_type` 1 & 2 are handled by the system module,
-            // but their bytes must be extracted here to allow correct parsing of types 3 and above.
             // This step only extracts the bytes without further processing.
             if (message_data_type == 0) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());

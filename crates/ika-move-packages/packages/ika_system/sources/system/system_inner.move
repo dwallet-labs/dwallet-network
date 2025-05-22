@@ -23,9 +23,11 @@ use sui::table::Table;
 use sui::vec_set::{VecSet};
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
+use sui::bcs;
 use std::string::String;
 
-const BASIS_POINT_DENOMINATOR: u16 = 10000;
+const BASIS_POINT_DENOMINATOR: u16 = 10_000;
+const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 
 /// The params of the system.
 public struct SystemParametersV1 has store {
@@ -47,6 +49,7 @@ public struct SystemInnerV1 has store {
     epoch: u64,
     /// The current protocol version, starting from 1.
     protocol_version: u64,
+    next_protocol_version: Option<u64>,
     /// Upgrade caps for this package and others like ika coin of the ika protocol.
     upgrade_caps: vector<UpgradeCap>,
     /// Contains all information about the validators.
@@ -57,15 +60,15 @@ public struct SystemInnerV1 has store {
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
-    /// The total messages processed.
-    total_messages_processed: u64,
     /// The fees paid for computation.
     remaining_rewards: Balance<IKA>,
     /// List of authorized protocol cap ids.
-    authorized_protocol_cap_ids: vector<ID>, 
+    authorized_protocol_cap_ids: vector<ID>,
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
+    last_processed_ika_system_checkpoint_sequence_number: Option<u64>,
+    previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -89,7 +92,7 @@ public struct SystemProtocolCapVerifiedEvent has copy, drop {
 
 /// Event containing system-level checkpoint information, emitted during
 /// the checkpoint submmision message.
-public struct SystemCheckpointInfoEvent has copy, drop {
+public struct SystemIkaSystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
     timestamp_ms: u64,
@@ -99,6 +102,9 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 const EBpsTooLarge: u64 = 1;
 const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
 const EHaveNotReachedEndEpochTime: u64 = 3;
+const EActiveBlsCommitteeMustInitialize: u64 = 4;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 5;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 6;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -130,16 +136,18 @@ public(package) fun create(
     let system_state = SystemInnerV1 {
         epoch: 0,
         protocol_version,
+        next_protocol_version: option::none(),
         upgrade_caps,
         validator_set,
         parameters,
         protocol_treasury,
         epoch_start_timestamp_ms,
-        total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_secp256k1_id: option::none(),
         dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
+        last_processed_ika_system_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_ika_system_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -181,7 +189,7 @@ public(package) fun create_system_parameters(
 // ==== public(package) functions ====
 
 public(package) fun initialize(
-    self: &mut SystemInnerV1,    
+    self: &mut SystemInnerV1,
     clock: &Clock,
     package_id: ID,
     ctx: &mut TxContext,
@@ -258,7 +266,7 @@ public(package) fun request_remove_validator_candidate(
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
 public(package) fun request_add_validator(
-    self: &mut SystemInnerV1, 
+    self: &mut SystemInnerV1,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -511,6 +519,9 @@ public(package) fun advance_epoch(
     let total_reward_amount_before_distribution = total_reward.value();
     let new_epoch = current_epoch + 1;
     self.epoch = new_epoch;
+    if (self.next_protocol_version.is_some()) {
+        self.protocol_version = self.next_protocol_version.extract();
+    };
 
     self
         .validator_set
@@ -650,14 +661,7 @@ public(package) fun authorize_update_message_by_cap(
     package_id: ID,
     digest: vector<u8>,
 ): UpgradeTicket {
-    let protocol_cap_id = object::id(cap);
-
-    assert!(self.authorized_protocol_cap_ids.contains(&protocol_cap_id), EUnauthorizedProtocolCap);
-
-    event::emit(SystemProtocolCapVerifiedEvent {
-        epoch: self.epoch,
-        protocol_cap_id: object::id(cap),
-    });
+    self.verify_cap(cap);
 
     self.authorize_update_message(package_id, digest)
 }
@@ -681,6 +685,73 @@ public(package) fun commit_upgrade(
     let old_package_id = self.upgrade_caps[index].package();
     self.upgrade_caps[index].commit(receipt);
     old_package_id
+}
+
+public(package) fun process_ika_system_checkpoint_by_cap(
+    self: &mut SystemInnerV1,
+    cap: &ProtocolCap,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+)  {
+    self.verify_cap(cap);
+    self.process_ika_system_checkpoint(message, ctx);
+}
+
+public(package) fun process_ika_system_checkpoint_by_quorum(
+    self: &mut SystemInnerV1,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    let active_committee = self.validator_set.active_committee();
+    assert!(!active_committee.members().is_empty(), EActiveBlsCommitteeMustInitialize);
+
+    let mut intent_bytes = PARAMS_MESSAGE_INTENT;
+    intent_bytes.append(message);
+    intent_bytes.append(bcs::to_bytes(&self.epoch));
+
+    active_committee.verify_certificate(self.epoch, &signature, &signers_bitmap, &intent_bytes);
+
+    self.process_ika_system_checkpoint(message, ctx);
+}
+
+public(package) fun process_ika_system_checkpoint(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
+    let mut bcs_body = bcs::new(copy message);
+
+    let epoch = bcs_body.peel_u64();
+    assert!(epoch == self.epoch, EIncorrectEpochInIkaSystemCheckpoint);
+
+    let sequence_number = bcs_body.peel_u64();
+
+    if(self.last_processed_ika_system_checkpoint_sequence_number.is_none()) {
+        assert!(sequence_number == 0, EWrongIkaSystemCheckpointSequenceNumber);
+        self.last_processed_ika_system_checkpoint_sequence_number.fill(sequence_number);
+    } else {
+        assert!(sequence_number > 0 && *self.last_processed_ika_system_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
+        self.last_processed_ika_system_checkpoint_sequence_number.swap(sequence_number);
+    };
+
+    let timestamp_ms = bcs_body.peel_u64();
+
+    event::emit(SystemIkaSystemCheckpointInfoEvent {
+        epoch,
+        sequence_number,
+        timestamp_ms,
+    });
+
+    let len = bcs_body.peel_vec_length();
+    let mut i = 0;
+    while (i < len) {
+
+        let message_data_type = bcs_body.peel_vec_length();
+            // Parses params message BCS bytes directly.
+            if (message_data_type == 0) {
+                let next_protocol_version = bcs_body.peel_u64();
+                self.next_protocol_version.fill(next_protocol_version);
+            };
+        i = i + 1;
+    };
 }
 
 #[test_only]

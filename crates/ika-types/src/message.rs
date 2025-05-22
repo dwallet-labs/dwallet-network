@@ -4,7 +4,6 @@
 
 use crate::crypto::default_hash;
 use crate::digests::MessageDigest;
-use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};

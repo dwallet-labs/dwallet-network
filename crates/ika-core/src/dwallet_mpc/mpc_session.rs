@@ -1,47 +1,35 @@
-use base64::alphabet::STANDARD;
 use base64::engine::general_purpose;
 use base64::Engine;
-use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
-use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput,
+    MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
-use itertools::Itertools;
-use k256::elliptic_curve::pkcs8::der::Encode;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
-use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
+use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{
-    message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
-};
-use ika_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
-use ika_types::committee::StakeUnit;
-use ika_types::crypto::AuthorityName;
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, PresignSessionState,
-    SessionInfo, SessionType, StartEncryptedShareVerificationEvent, StartPresignFirstRoundEvent,
-    ThresholdNotReachedReport,
+    DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType,
+    StartEncryptedShareVerificationEvent, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::id::ID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -69,7 +57,7 @@ pub struct MPCEventData {
 /// and the messages that are pending to be sent to the session.
 // TODO (#539): Simplify struct to only contain session related data.
 #[derive(Clone)]
-pub(super) struct DWalletMPCSession {
+pub(crate) struct DWalletMPCSession {
     /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
     /// All the messages that have been received for this session.
@@ -505,9 +493,6 @@ impl DWalletMPCSession {
                     decryption_key_shares,
                 )
             }
-            _ => {
-                unreachable!("Unsupported MPC protocol type")
-            }
         }
     }
 
@@ -647,24 +632,5 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             },
         }
-    }
-
-    /// Helper function to spawn a task for submitting messages to consensus.
-    fn spawn_submit_to_consensus(
-        tokio_runtime_handle: &Handle,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        messages: Vec<ConsensusTransaction>,
-    ) {
-        tokio_runtime_handle.spawn(async move {
-            for msg in messages {
-                if let Err(err) = consensus_adapter
-                    .submit_to_consensus(&vec![msg], &epoch_store)
-                    .await
-                {
-                    error!("failed to submit an MPC message to consensus: {:?}", err);
-                }
-            }
-        });
     }
 }

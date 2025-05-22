@@ -5095,6 +5095,7 @@ the function will abort with this error.
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
+    <b>assert</b>!(!self.active_committee.members().is_empty(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>);
     <b>let</b> <b>mut</b> intent_bytes = <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_CHECKPOINT_MESSAGE_INTENT">CHECKPOINT_MESSAGE_INTENT</a>;
     intent_bytes.append(message);
     intent_bytes.append(bcs::to_bytes(&self.current_epoch));
@@ -5127,7 +5128,6 @@ the function will abort with this error.
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
-    <b>assert</b>!(!self.active_committee.members().is_empty(), <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>);
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> epoch = bcs_body.peel_u64();
     <b>assert</b>!(epoch == self.current_epoch, <a href="../ika_system/dwallet_2pc_mpc_secp256k1_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_secp256k1_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>);
@@ -5150,8 +5150,6 @@ the function will abort with this error.
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
             // Parses checkpoint BCS bytes directly.
-            // Messages with `message_data_type` 1 & 2 are handled by the <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>module</b>,
-            // but their bytes must be extracted here to allow correct parsing of types 3 and above.
             // This step only extracts the bytes without further processing.
             <b>if</b> (message_data_type == 0) {
                 <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());

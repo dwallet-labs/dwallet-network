@@ -9,9 +9,7 @@ use crypto_bigint::rand_core::{OsRng, RngCore};
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
-use fastcrypto::traits::{FromUniformBytes, ToFromBytes};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
