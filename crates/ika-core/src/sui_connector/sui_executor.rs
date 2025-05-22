@@ -42,7 +42,7 @@ pub enum StopReason {
 
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
-    checkpoint_store: Arc<DWalletCheckpointStore>,
+    dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
     system_checkpoint_store: Arc<SystemCheckpointStore>,
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
@@ -61,7 +61,7 @@ where
 {
     pub fn new(
         ika_system_package_id: ObjectID,
-        checkpoint_store: Arc<DWalletCheckpointStore>,
+        dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_notifier: Option<SuiNotifier>,
         sui_client: Arc<SuiClient<C>>,
@@ -69,7 +69,7 @@ where
     ) -> Self {
         Self {
             ika_system_package_id,
-            checkpoint_store,
+            dwallet_checkpoint_store,
             system_checkpoint_store,
             sui_notifier,
             sui_client,
@@ -233,7 +233,7 @@ where
 
         let mut interval = time::interval(Duration::from_millis(120));
 
-        let mut last_submitted_checkpoint: Option<u64> = None;
+        let mut last_submitted_dwallet_checkpoint: Option<u64> = None;
         let mut last_submitted_system_checkpoint: Option<u64> = None;
 
         let mut epoch_switch_state = EpochSwitchState {
@@ -262,11 +262,12 @@ where
                 .sui_client
                 .must_get_dwallet_coordinator_inner_v1()
                 .await;
-            let last_processed_checkpoint_sequence_number: Option<u64> =
+            let last_processed_dwallet_checkpoint_sequence_number: Option<u64> =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
-            let next_checkpoint_sequence_number = last_processed_checkpoint_sequence_number
-                .map(|s| s + 1)
-                .unwrap_or(0);
+            let next_dwallet_checkpoint_sequence_number =
+                last_processed_dwallet_checkpoint_sequence_number
+                    .map(|s| s + 1)
+                    .unwrap_or(0);
 
             let last_processed_system_checkpoint_sequence_number: Option<u64> =
                 system_state_inner.last_processed_system_checkpoint_sequence_number();
@@ -275,13 +276,15 @@ where
                     .map(|s| s + 1)
                     .unwrap_or(0);
 
-            if last_submitted_checkpoint.is_some()
-                && last_submitted_checkpoint.unwrap() >= next_checkpoint_sequence_number
+            if last_submitted_dwallet_checkpoint.is_some()
+                && last_submitted_dwallet_checkpoint.unwrap()
+                    >= next_dwallet_checkpoint_sequence_number
             {
                 continue;
             }
             if last_submitted_system_checkpoint.is_some()
-                && last_submitted_system_checkpoint.unwrap() >= next_checkpoint_sequence_number
+                && last_submitted_system_checkpoint.unwrap()
+                    >= next_dwallet_checkpoint_sequence_number
             {
                 continue;
             }
@@ -289,32 +292,34 @@ where
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(sui_notifier, &system_state_inner, &mut epoch_switch_state)
                     .await;
-                if let Ok(Some(checkpoint_message)) = self
-                    .checkpoint_store
-                    .get_dwallet_checkpoint_by_sequence_number(next_checkpoint_sequence_number)
+                if let Ok(Some(dwallet_checkpoint_message)) = self
+                    .dwallet_checkpoint_store
+                    .get_dwallet_checkpoint_by_sequence_number(
+                        next_dwallet_checkpoint_sequence_number,
+                    )
                 {
                     // todo(zeev): add system checkpoints in here.
                     self.metrics.dwallet_checkpoint_write_requests_total.inc();
                     self.metrics
                         .dwallet_checkpoint_sequence
-                        .set(next_checkpoint_sequence_number as i64);
+                        .set(next_dwallet_checkpoint_sequence_number as i64);
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
                         system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
                         let active_members: BlsCommittee =
                             system_state_inner.validator_set().clone().active_committee;
-                        let auth_sig = checkpoint_message.auth_sig();
+                        let auth_sig = dwallet_checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
                             Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
                         let message = bcs::to_bytes::<DWalletCheckpointMessage>(
-                            &checkpoint_message.into_message(),
+                            &dwallet_checkpoint_message.into_message(),
                         )
                         .expect("Serializing checkpoint message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
 
-                        let task = Self::handle_checkpoint_execution_task(
+                        let task = Self::handle_dwallet_checkpoint_execution_task(
                             self.ika_system_package_id,
                             dwallet_2pc_mpc_secp256k1_id,
                             signature,
@@ -330,13 +335,14 @@ where
                                 self.metrics.dwallet_checkpoint_writes_success_total.inc();
                                 self.metrics
                                     .last_written_dwallet_checkpoint_sequence
-                                    .set(next_checkpoint_sequence_number as i64);
-                                last_submitted_checkpoint = Some(next_checkpoint_sequence_number);
-                                info!("Sui transaction successfully executed for checkpoint sequence number: {}", next_checkpoint_sequence_number);
+                                    .set(next_dwallet_checkpoint_sequence_number as i64);
+                                last_submitted_dwallet_checkpoint =
+                                    Some(next_dwallet_checkpoint_sequence_number);
+                                info!("Sui transaction successfully executed for dwallet checkpoint sequence number: {}", next_dwallet_checkpoint_sequence_number);
                             }
                             Err(err) => {
                                 self.metrics.dwallet_checkpoint_writes_failure_total.inc();
-                                error!("Sui transaction execution failed for checkpoint sequence number: {}, error: {}", next_checkpoint_sequence_number, err);
+                                error!("Sui transaction execution failed for dwallet checkpoint sequence number: {}, error: {}", next_dwallet_checkpoint_sequence_number, err);
                             }
                         };
                     }
@@ -587,7 +593,7 @@ where
         Ok(())
     }
 
-    async fn handle_checkpoint_execution_task(
+    async fn handle_dwallet_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
         dwallet_2pc_mpc_secp256k1_id: ObjectID,
         signature: Vec<u8>,
