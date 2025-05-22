@@ -38,7 +38,7 @@ pub enum MPCProtocolInitData {
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
-    DWalletImportedKeyVerificationRequestEvent(
+    DWalletImportedKeyVerificationRequest(
         DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
     ),
     /// The first round of the DKG protocol.
@@ -92,7 +92,7 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
@@ -119,7 +119,7 @@ impl Debug for MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }

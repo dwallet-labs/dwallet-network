@@ -269,9 +269,7 @@ fn dwallet_imported_key_verification_request_event_session_info(
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id.clone(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(
-            deserialized_event,
-        ),
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
     }
 }
 

@@ -222,7 +222,7 @@ impl CryptographicComputationsOrchestrator {
                     .advance_calls_for_make_dwallet_user_secret_key_shares_public
                     .inc()
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 dwallet_mpc_metrics
                     .advance_calls_for_import_dwallet_verification
                     .inc();
@@ -304,7 +304,7 @@ impl CryptographicComputationsOrchestrator {
                     .make_dwallet_user_secret_key_shares_public_completion_duration
                     .set(computation_duration as i64);
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 dwallet_mpc_metrics
                     .advance_completions_for_import_dwallet_verification
                     .inc();

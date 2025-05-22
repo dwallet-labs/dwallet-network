@@ -1790,7 +1790,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(init_event) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(init_event) => {
                 let SessionType::User { sequence_number } = init_event.session_type else {
                     unreachable!(
                         "MakeDWalletUserSecretKeySharesPublic round should be a user session"

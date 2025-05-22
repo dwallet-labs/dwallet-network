@@ -283,7 +283,10 @@ pub fn create_imported_dwallet_centralized_step_inner(
         &mut OsRng,
     ) {
         Ok(round_result) => {
+            // The outgoing message and the public output are sent to the network.
+            // They include the encrypted network share, encrypted by the network encryption key.
             let public_output = round_result.public_output;
+
             let outgoing_message = round_result.outgoing_message;
             let secret_share = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
                 bcs::to_bytes(&round_result.private_output)?,

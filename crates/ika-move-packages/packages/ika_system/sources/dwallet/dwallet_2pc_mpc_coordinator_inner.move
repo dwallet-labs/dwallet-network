@@ -347,6 +347,7 @@ public struct DWallet has key, store {
     /// The MPC network decryption key id that is used to decrypt this dWallet.
     dwallet_network_encryption_key_id: ID,
 
+    /// Key was imported.
     is_imported_key_dwallet: bool,
 
     /// A table mapping id to their encryption key object.

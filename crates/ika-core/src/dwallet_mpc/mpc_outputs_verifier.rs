@@ -271,7 +271,7 @@ impl DWalletMPCOutputsVerifier {
                     .make_dwallet_user_secret_key_shares_public_round_completions_count
                     .inc();
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 self.dwallet_mpc_metrics
                     .import_dwallet_verification_round_completions_count
                     .inc();

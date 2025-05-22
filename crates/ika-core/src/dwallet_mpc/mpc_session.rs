@@ -365,7 +365,7 @@ impl DWalletMPCSession {
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(event_data) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
