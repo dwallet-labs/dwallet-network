@@ -457,8 +457,12 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// The unique session identifier for the DWallet.
     pub dwallet_id: ObjectID,
 
+    /// The Encrypted user secret key share object ID.
     pub encrypted_user_secret_key_share_id: ObjectID,
 
+    /// The message delivered to the decentralized party from a centralized party.
+    /// Includes the encrypted decentralized secret key share and
+    /// the associated cryptographic proof of encryption.
     pub centralized_party_message: Vec<u8>,
 
     /// The unique identifier of the dWallet capability associated with this session.
@@ -467,7 +471,7 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
 
-    /// The `EncryptionKey` object used for encrypting the secret key share.
+    /// The user `EncryptionKey` object used for encrypting the user secret key share.
     pub encryption_key: Vec<u8>,
 
     /// The unique identifier of the `EncryptionKey` object.
