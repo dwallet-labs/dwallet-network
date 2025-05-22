@@ -967,9 +967,9 @@ impl DWalletCheckpointBuilder {
             last_checkpoint_seq = Some(self.previous_epoch_last_dwallet_checkpoint_sequence_number);
         }
         info!(
-            next_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
+            next_dwallet_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
             checkpoint_timestamp = details.timestamp_ms,
-            "Creating checkpoint(s) for {} messages",
+            "Creating dwallet checkpoint(s) for {} messages",
             all_messages.len(),
         );
 
