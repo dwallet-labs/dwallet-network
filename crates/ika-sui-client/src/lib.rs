@@ -258,9 +258,9 @@ where
                             "Can't serialize SystemInner v1: {e}"
                         ))
                     })?;
-                let system_state_inner = dynamic_field_inner.value;
+                let ika_system_state_inner = dynamic_field_inner.value;
 
-                Ok(SystemInner::V1(system_state_inner))
+                Ok(SystemInner::V1(ika_system_state_inner))
             }
             _ => Err(IkaError::SuiClientInternalError(format!(
                 "Unsupported SystemInner version: {}",

@@ -78,7 +78,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_SHALLOW_V2: u64 = 18446744073709551606; // u
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64::MAX - 8
 
-/// Rust version of the Move ika::system::SystemState type
+/// Rust version of the Move ika::system::IkaSystemState type
 /// In Rust, this type should rarely be used since it's just a thin
 /// wrapper used to access the inner object.
 /// Within this module, we use it to determine the current version of the system state inner object type,
@@ -102,17 +102,17 @@ pub struct DWalletCoordinator {
 }
 
 impl System {
-    pub fn type_(system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: system_package_address,
+            address: ika_system_package_address,
             name: SYSTEM_STRUCT_NAME.to_owned(),
             module: SYSTEM_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 
-    pub fn type_tag(system_package_address: AccountAddress) -> TypeTag {
-        TypeTag::Struct(Box::new(Self::type_(system_package_address)))
+    pub fn type_tag(ika_system_package_address: AccountAddress) -> TypeTag {
+        TypeTag::Struct(Box::new(Self::type_(ika_system_package_address)))
     }
 }
 
@@ -141,7 +141,7 @@ pub trait SystemInnerTrait {
 }
 
 /// [`SystemInner`] provides an abstraction over multiple versions of
-/// the inner [`SystemStateInner`] object.
+/// the inner [`IkaSystemStateInner`] object.
 /// This should be the primary interface to the system state object in Rust.
 /// We use enum dispatch to dispatch all methods defined in [`SystemInnerTrait`] to the actual
 /// implementation in the inner types.
@@ -189,9 +189,9 @@ pub struct ClassGroupsPublicKeyAndProofBuilder;
 
 impl ClassGroupsPublicKeyAndProofBuilder {
     /// Return the Move struct tag for this type
-    pub fn type_(system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: system_package_address,
+            address: ika_system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProofBuilder").to_owned(),
             module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
@@ -208,9 +208,9 @@ pub struct ClassGroupsPublicKeyAndProof {
 
 impl ClassGroupsPublicKeyAndProof {
     /// Return the Move struct tag for this type
-    pub fn type_(system_package_address: AccountAddress) -> StructTag {
+    pub fn type_(ika_system_package_address: AccountAddress) -> StructTag {
         StructTag {
-            address: system_package_address,
+            address: ika_system_package_address,
             name: ident_str!("ClassGroupsPublicKeyAndProof").to_owned(),
             module: CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],

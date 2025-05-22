@@ -185,7 +185,7 @@ pub enum IkaError {
     MissingCommitteeAtEpoch(EpochId),
 
     #[error("Failed to read or deserialize system state related data structures on-chain: {0}")]
-    SystemStateReadError(String),
+    IkaSystemStateReadError(String),
 
     #[error("Unexpected version error: {0}")]
     UnexpectedVersion(String),
