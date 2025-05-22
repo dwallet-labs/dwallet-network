@@ -38,7 +38,7 @@ use tracing::info;
 pub struct ArchiveReaderMetrics {
     pub archive_actions_read: IntCounterVec,
     pub archive_dwallet_checkpoints_read: IntCounterVec,
-    pub archive_system_checkpoint_read: IntCounterVec,
+    pub archive_system_checkpoints_read: IntCounterVec,
 }
 
 impl ArchiveReaderMetrics {
@@ -58,8 +58,8 @@ impl ArchiveReaderMetrics {
                 registry
             )
             .unwrap(),
-            archive_system_checkpoint_read: register_int_counter_vec_with_registry!(
-                "archive_system_checkpoint_read",
+            archive_system_checkpoints_read: register_int_counter_vec_with_registry!(
+                "archive_system_checkpoints_read",
                 "Number of system checkpoints read from the archive",
                 &["bucket"],
                 registry
@@ -870,7 +870,7 @@ impl ArchiveReader {
                                     .inc_by(size as u64);
                                 system_checkpoint_counter.fetch_add(1, Ordering::Relaxed);
                                 self.archive_reader_metrics
-                                    .archive_system_checkpoint_read
+                                    .archive_system_checkpoints_read
                                     .with_label_values(&[&self.bucket])
                                     .inc_by(1);
                                 Ok::<(), anyhow::Error>(())

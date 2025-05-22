@@ -40,7 +40,6 @@ use ika_types::{base_types::ObjectRef, crypto::AuthorityStrongQuorumSignInfo, ob
 use ika_types::{base_types::SequenceNumber, gas_coin::GasCoin};
 use ika_types::{
     base_types::{AuthorityName, IkaAddress},
-    system_state::SystemStateTrait,
 };
 use tokio::time::sleep;
 use tracing::{error, info, warn};
