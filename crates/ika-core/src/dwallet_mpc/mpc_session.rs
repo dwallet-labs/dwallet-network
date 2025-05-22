@@ -103,6 +103,7 @@ pub(super) struct DWalletMPCSession {
     pub(crate) attempts_count: usize,
     pub mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
     pub agreed_mpc_protocol: Option<String>,
+    pub consensus_rounds_since_quorum_reached: usize,
 }
 
 impl DWalletMPCSession {
@@ -783,7 +784,9 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
+    pub(crate) fn check_quorum_for_next_crypto_round(
+        &mut self,
+    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
         match self.status {
             MPCSessionStatus::Active => {
                 // MPC First round doesn't require a threshold of messages to advance.
@@ -806,21 +809,35 @@ impl DWalletMPCSession {
                         && self.received_more_messages_since_last_advance
                         && self.agreed_mpc_protocol.is_some())
                 {
-                    ReadyToAdvanceCheckResult {
-                        is_ready: true,
-                        malicious_parties: vec![],
+                    let epoch_store = self.epoch_store()?;
+                    let delay = epoch_store.protocol_config()
+                        .consensus_rounds_delay_per_mpc_protocol
+                        .get(&self.agreed_mpc_protocol.clone().unwrap())
+                        .unwrap_or(&0u64);
+                    if self.consensus_rounds_since_quorum_reached >= *delay as usize {
+                        self.consensus_rounds_since_quorum_reached = 0;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: true,
+                            malicious_parties: vec![],
+                        })
+                    } else {
+                        self.consensus_rounds_since_quorum_reached += 1;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: false,
+                            malicious_parties: vec![],
+                        })
                     }
                 } else {
-                    ReadyToAdvanceCheckResult {
+                    Ok(ReadyToAdvanceCheckResult {
                         is_ready: false,
                         malicious_parties: vec![],
-                    }
+                    })
                 }
             }
-            _ => ReadyToAdvanceCheckResult {
+            _ => Ok(ReadyToAdvanceCheckResult {
                 is_ready: false,
                 malicious_parties: vec![],
-            },
+            }),
         }
     }
 
