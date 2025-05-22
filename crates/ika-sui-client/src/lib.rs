@@ -222,9 +222,9 @@ where
                         "Can't serialize DWalletCoordinatorInner v1: {e}"
                     ))
                 })?;
-                let system_state_inner = dynamic_field_inner.value;
+                let ika_system_state_inner = dynamic_field_inner.value;
 
-                Ok(DWalletCoordinatorInner::V1(system_state_inner))
+                Ok(DWalletCoordinatorInner::V1(ika_system_state_inner))
             }
             _ => Err(IkaError::SuiClientInternalError(format!(
                 "Unsupported DWalletCoordinatorInner version: {}",
