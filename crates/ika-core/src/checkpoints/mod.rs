@@ -98,9 +98,9 @@ impl PendingDWalletCheckpoint {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct BuilderCheckpointMessage {
+pub struct BuilderDWalletCheckpointMessage {
     pub dwallet_checkpoint_message: DWalletCheckpointMessage,
-    // The Height at which this dwallet_checkpoint message was built.
+    // The Height at which this `dwallet_checkpoint` message was built.
     // None for genesis dwallet_checkpoint.
     pub dwallet_checkpoint_height: Option<DWalletCheckpointHeight>,
     pub position_in_commit: usize,
@@ -526,9 +526,9 @@ pub struct DWalletCheckpointBuilder {
     notify_aggregator: Arc<Notify>,
     output: Box<dyn DWalletCheckpointOutput>,
     metrics: Arc<DWalletCheckpointMetrics>,
-    max_messages_per_checkpoint: usize,
-    max_checkpoint_size_bytes: usize,
-    previous_epoch_last_checkpoint_sequence_number: u64,
+    max_messages_per_dwallet_checkpoint: usize,
+    max_dwallet_checkpoint_size_bytes: usize,
+    previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
 }
 
 pub struct DWalletCheckpointAggregator {
@@ -566,9 +566,9 @@ impl DWalletCheckpointBuilder {
         output: Box<dyn DWalletCheckpointOutput>,
         notify_aggregator: Arc<Notify>,
         metrics: Arc<DWalletCheckpointMetrics>,
-        max_messages_per_checkpoint: usize,
-        max_checkpoint_size_bytes: usize,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        max_messages_per_dwallet_checkpoint: usize,
+        max_dwallet_checkpoint_size_bytes: usize,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
     ) -> Self {
         Self {
             state,
@@ -578,28 +578,28 @@ impl DWalletCheckpointBuilder {
             output,
             notify_aggregator,
             metrics,
-            max_messages_per_checkpoint,
-            max_checkpoint_size_bytes,
-            previous_epoch_last_checkpoint_sequence_number,
+            max_messages_per_dwallet_checkpoint,
+            max_dwallet_checkpoint_size_bytes,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
         }
     }
 
     async fn run(mut self) {
-        info!("Starting CheckpointBuilder");
+        info!("Starting DWalletCheckpointBuilder");
         loop {
-            self.maybe_build_checkpoints().await;
+            self.maybe_build_dwallet_checkpoints().await;
 
             self.notify.notified().await;
         }
     }
 
-    async fn maybe_build_checkpoints(&mut self) {
+    async fn maybe_build_dwallet_checkpoints(&mut self) {
         let _scope = monitored_scope("BuildDWalletCheckpoints");
 
         // Collect info about the most recently built dwallet_checkpoint.
         let checkpoint_message = self
             .epoch_store
-            .last_built_checkpoint_message_builder()
+            .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
         let mut last_height = checkpoint_message
             .clone()
@@ -610,7 +610,7 @@ impl DWalletCheckpointBuilder {
         let min_checkpoint_interval_ms = self
             .epoch_store
             .protocol_config()
-            .min_checkpoint_interval_ms_as_option()
+            .min_dwallet_checkpoint_interval_ms_as_option()
             .unwrap_or_default();
         let mut grouped_pending_checkpoints = Vec::new();
         let mut checkpoints_iter = self
@@ -906,12 +906,12 @@ impl DWalletCheckpointBuilder {
             // FullDWalletCheckpointContents struct. If this code is modified, that struct
             // should also be updated accordingly.
             let size = bcs::serialized_size(&message)?;
-            if chunk.len() == self.max_messages_per_checkpoint
-                || (chunk_size + size) > self.max_checkpoint_size_bytes
+            if chunk.len() == self.max_messages_per_dwallet_checkpoint
+                || (chunk_size + size) > self.max_dwallet_checkpoint_size_bytes
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_checkpoint_size_bytes);
+                    warn!("Size of single transaction ({size}) exceeds max checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_dwallet_checkpoint_size_bytes);
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -964,7 +964,7 @@ impl DWalletCheckpointBuilder {
         // Once we initialize, the active committee starts in Epoch 1.
         // So there is no previous committee in epoch 1.
         if epoch != 1 && last_checkpoint_seq.is_none() {
-            last_checkpoint_seq = Some(self.previous_epoch_last_checkpoint_sequence_number);
+            last_checkpoint_seq = Some(self.previous_epoch_last_dwallet_checkpoint_sequence_number);
         }
         info!(
             next_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
@@ -1036,7 +1036,7 @@ impl DWalletCheckpointBuilder {
             let first_checkpoint_of_epoch = index == 0
                 && (last_checkpoint_seq.is_none()
                     || last_checkpoint_seq.unwrap()
-                        == self.previous_epoch_last_checkpoint_sequence_number);
+                        == self.previous_epoch_last_dwallet_checkpoint_sequence_number);
             if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();

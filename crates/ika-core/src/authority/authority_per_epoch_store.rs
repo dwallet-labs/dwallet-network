@@ -36,7 +36,7 @@ use super::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::authority::{AuthorityMetrics, AuthorityState};
 use crate::checkpoints::{
-    BuilderCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
+    BuilderDWalletCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
     PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1,
 };
 
@@ -405,7 +405,7 @@ pub struct AuthorityEpochTables {
     /// Because we don't want to create checkpoints with empty content(see CheckpointBuilder::write_checkpoint),
     /// the sequence number of checkpoint does not match height here.
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
-    pending_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
+    pending_dwallet_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
     // todo(zeev): why is it not used?
     #[allow(dead_code)]
@@ -415,11 +415,12 @@ pub struct AuthorityEpochTables {
 
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
-    pending_checkpoint_signatures:
+    pending_dwallet_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_checkpoint_message_v1: DBMap<DWalletCheckpointSequenceNumber, BuilderCheckpointMessage>,
+    builder_dwallet_checkpoint_message_v1:
+        DBMap<DWalletCheckpointSequenceNumber, BuilderDWalletCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_system_checkpoints: DBMap<SystemCheckpointHeight, PendingSystemCheckpoint>,
@@ -444,6 +445,7 @@ pub struct AuthorityEpochTables {
     /// ProtocolConfig::buffer_stake_for_protocol_upgrade_bps
     override_protocol_upgrade_buffer_stake: DBMap<u64, u64>,
 
+    // todo(zeev): why is it not used in system checkpoint?
     /// When transaction is executed via checkpoint executor, we store association here
     pub(crate) executed_transactions_to_checkpoint:
         DBMap<MessageDigest, DWalletCheckpointSequenceNumber>,
@@ -556,7 +558,7 @@ impl AuthorityEpochTables {
         let key = (checkpoint_seq, starting_index);
         debug!("Scanning pending checkpoint signatures from {:?}", key);
         let iter = self
-            .pending_checkpoint_signatures
+            .pending_dwallet_checkpoint_signatures
             .unbounded_iter()
             .skip_to(&key)?;
         Ok::<_, IkaError>(iter)
@@ -1998,7 +2000,7 @@ impl AuthorityPerEpochStore {
         last: Option<DWalletCheckpointHeight>,
     ) -> IkaResult<Vec<(DWalletCheckpointHeight, PendingDWalletCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_checkpoints.unbounded_iter();
+        let mut iter = tables.pending_dwallet_checkpoints.unbounded_iter();
         if let Some(last_processed_height) = last {
             iter = iter.skip_to(&(last_processed_height + 1))?;
         }
@@ -2009,7 +2011,7 @@ impl AuthorityPerEpochStore {
         &self,
         index: &DWalletCheckpointHeight,
     ) -> IkaResult<Option<PendingDWalletCheckpoint>> {
-        Ok(self.tables()?.pending_checkpoints.get(index)?)
+        Ok(self.tables()?.pending_dwallet_checkpoints.get(index)?)
     }
 
     pub fn process_pending_checkpoint(
@@ -2021,39 +2023,39 @@ impl AuthorityPerEpochStore {
         // All created checkpoints are inserted in builder_checkpoint_summary in a single batch.
         // This means that upon restart we can use BuilderCheckpointSummary::commit_height
         // from the last built summary to resume building checkpoints.
-        let mut batch = tables.pending_checkpoints.batch();
+        let mut batch = tables.pending_dwallet_checkpoints.batch();
         for (position_in_commit, summary) in checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
-            let summary = BuilderCheckpointMessage {
+            let summary = BuilderDWalletCheckpointMessage {
                 dwallet_checkpoint_message: summary,
                 dwallet_checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
-                &tables.builder_checkpoint_message_v1,
+                &tables.builder_dwallet_checkpoint_message_v1,
                 [(&sequence_number, summary)],
             )?;
         }
 
         // find all pending checkpoints <= commit_height and remove them
         let iter = tables
-            .pending_checkpoints
+            .pending_dwallet_checkpoints
             .safe_range_iter(0..=commit_height);
         let keys = iter
             .map(|c| c.map(|(h, _)| h))
             .collect::<Result<Vec<_>, _>>()?;
 
-        batch.delete_batch(&tables.pending_checkpoints, &keys)?;
+        batch.delete_batch(&tables.pending_dwallet_checkpoints, &keys)?;
 
         Ok(batch.write()?)
     }
 
-    pub fn last_built_checkpoint_message_builder(
+    pub fn last_built_dwallet_checkpoint_message_builder(
         &self,
-    ) -> IkaResult<Option<BuilderCheckpointMessage>> {
+    ) -> IkaResult<Option<BuilderDWalletCheckpointMessage>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
@@ -2065,7 +2067,7 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<Option<(DWalletCheckpointSequenceNumber, DWalletCheckpointMessage)>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .unbounded_iter()
             .skip_to_last()
             .next()
@@ -2078,7 +2080,7 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<Option<DWalletCheckpointMessage>> {
         Ok(self
             .tables()?
-            .builder_checkpoint_message_v1
+            .builder_dwallet_checkpoint_message_v1
             .get(&sequence)?
             .map(|s| s.dwallet_checkpoint_message))
     }
@@ -2086,7 +2088,7 @@ impl AuthorityPerEpochStore {
     pub fn get_last_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
-            .pending_checkpoint_signatures
+            .pending_dwallet_checkpoint_signatures
             .unbounded_iter()
             .skip_to_last()
             .next()
@@ -2102,7 +2104,7 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<()> {
         Ok(self
             .tables()?
-            .pending_checkpoint_signatures
+            .pending_dwallet_checkpoint_signatures
             .insert(&(checkpoint_seq, index), info)?)
     }
 
@@ -2412,7 +2414,7 @@ impl ConsensusCommitOutput {
         }
 
         batch.insert_batch(
-            &tables.pending_checkpoints,
+            &tables.pending_dwallet_checkpoints,
             self.pending_checkpoints
                 .into_iter()
                 .map(|cp| (cp.height(), cp)),

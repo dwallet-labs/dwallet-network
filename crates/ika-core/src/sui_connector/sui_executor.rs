@@ -88,22 +88,23 @@ where
     async fn run_epoch_switch(
         &self,
         sui_notifier: &SuiNotifier,
-        system_state_inner: &SystemInner,
+        ika_system_state_inner: &SystemInner,
         epoch_switch_state: &mut EpochSwitchState,
     ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
             error!("failed to get clock when running epoch switch");
             return;
         };
-        let Some(dwallet_2pc_mpc_secp256k1_id) = system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        let Some(dwallet_2pc_mpc_secp256k1_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
         else {
             error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
             return;
         };
-        let SystemInner::V1(system_inner_v1) = &system_state_inner;
+        let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
 
-        let mid_epoch_time = system_state_inner.epoch_start_timestamp_ms()
-            + (system_state_inner.epoch_duration_ms() / 2);
+        let mid_epoch_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + (ika_system_state_inner.epoch_duration_ms() / 2);
         let next_epoch_committee_is_empty =
             system_inner_v1.validator_set.next_epoch_committee.is_none();
         if clock.timestamp_ms > mid_epoch_time
@@ -137,8 +138,8 @@ where
         };
 
         // The Epoch was finished.
-        let epoch_finish_time =
-            system_state_inner.epoch_start_timestamp_ms() + system_state_inner.epoch_duration_ms();
+        let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
+            + ika_system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
@@ -244,16 +245,16 @@ where
 
         loop {
             interval.tick().await;
-            let system_state_inner = self.sui_client.must_get_system_inner_object().await;
-            let epoch_on_sui: u64 = system_state_inner.epoch();
+            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
+            let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
                 info!(epoch, "Finished epoch");
                 let epoch_start_system_state = self
                     .sui_client
-                    .get_epoch_start_system_until_success(&system_state_inner)
+                    .get_epoch_start_system_until_success(&ika_system_state_inner)
                     .await;
-                return StopReason::EpochComplete(system_state_inner, epoch_start_system_state);
+                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
             }
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
@@ -270,7 +271,7 @@ where
                     .unwrap_or(0);
 
             let last_processed_system_checkpoint_sequence_number: Option<u64> =
-                system_state_inner.last_processed_system_checkpoint_sequence_number();
+                ika_system_state_inner.last_processed_system_checkpoint_sequence_number();
             let next_system_checkpoint_sequence_number =
                 last_processed_system_checkpoint_sequence_number
                     .map(|s| s + 1)
@@ -290,8 +291,12 @@ where
             }
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
-                self.run_epoch_switch(sui_notifier, &system_state_inner, &mut epoch_switch_state)
-                    .await;
+                self.run_epoch_switch(
+                    sui_notifier,
+                    &ika_system_state_inner,
+                    &mut epoch_switch_state,
+                )
+                .await;
                 if let Ok(Some(dwallet_checkpoint_message)) = self
                     .dwallet_checkpoint_store
                     .get_dwallet_checkpoint_by_sequence_number(
@@ -304,10 +309,12 @@ where
                         .dwallet_checkpoint_sequence
                         .set(next_dwallet_checkpoint_sequence_number as i64);
                     if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee =
-                            system_state_inner.validator_set().clone().active_committee;
+                        let active_members: BlsCommittee = ika_system_state_inner
+                            .validator_set()
+                            .clone()
+                            .active_committee;
                         let auth_sig = dwallet_checkpoint_message.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =
@@ -355,10 +362,12 @@ where
                     )
                 {
                     if let Some(_dwallet_2pc_mpc_secp256k1_id) =
-                        system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
                     {
-                        let active_members: BlsCommittee =
-                            system_state_inner.validator_set().clone().active_committee;
+                        let active_members: BlsCommittee = ika_system_state_inner
+                            .validator_set()
+                            .clone()
+                            .active_committee;
                         let auth_sig = system_checkpoint.auth_sig();
                         let signature = auth_sig.signature.as_bytes().to_vec();
                         let signers_bitmap =

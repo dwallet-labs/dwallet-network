@@ -304,11 +304,11 @@ where
 
     pub async fn get_epoch_start_system(
         &self,
-        system_state_inner: &SystemInner,
+        ika_system_state_inner: &SystemInner,
     ) -> IkaResult<EpochStartSystem> {
-        match system_state_inner {
-            SystemInner::V1(system_state_inner) => {
-                let validator_ids = system_state_inner
+        match ika_system_state_inner {
+            SystemInner::V1(ika_system_state_inner) => {
+                let validator_ids = ika_system_state_inner
                     .validator_set
                     .active_committee
                     .members
@@ -319,7 +319,7 @@ where
                 let validators = self
                     .inner
                     .get_validators_from_object_table(
-                        system_state_inner.validator_set.validators.id,
+                        ika_system_state_inner.validator_set.validators.id,
                         validator_ids,
                     )
                     .await
@@ -342,7 +342,7 @@ where
                 let network_decryption_keys = self
                     .inner
                     .get_network_decryption_keys(
-                        &system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
+                        &ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
                     )
                     .await
                     .unwrap_or_default();
@@ -374,7 +374,7 @@ where
                         ))
                     })?;
 
-                let validators = system_state_inner
+                let validators = ika_system_state_inner
                     .validator_set
                     .active_committee
                     .members
@@ -409,17 +409,17 @@ where
                     .collect::<Vec<_>>();
 
                 let epoch_start_system_state = EpochStartSystem::new_v1(
-                    system_state_inner.epoch,
-                    system_state_inner.protocol_version,
-                    system_state_inner.epoch_start_timestamp_ms,
-                    system_state_inner.epoch_duration_ms(),
+                    ika_system_state_inner.epoch,
+                    ika_system_state_inner.protocol_version,
+                    ika_system_state_inner.epoch_start_timestamp_ms,
+                    ika_system_state_inner.epoch_duration_ms(),
                     validators,
                     network_decryption_keys_data,
-                    system_state_inner
+                    ika_system_state_inner
                         .validator_set
                         .active_committee
                         .quorum_threshold,
-                    system_state_inner
+                    ika_system_state_inner
                         .validator_set
                         .active_committee
                         .validity_threshold,
@@ -433,13 +433,13 @@ where
     /// Get the validators' info by their IDs.
     pub async fn get_validators_info_by_ids(
         &self,
-        system_state_inner: &SystemInnerV1,
+        ika_system_state_inner: &SystemInnerV1,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<StakingPool>, IkaError> {
         let validators = self
             .inner
             .get_validators_from_object_table(
-                system_state_inner.validator_set.validators.id,
+                ika_system_state_inner.validator_set.validators.id,
                 validator_ids,
             )
             .await

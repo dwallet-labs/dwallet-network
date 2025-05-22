@@ -967,8 +967,10 @@ impl IkaNode {
 
         let certified_checkpoint_output = SendDWalletCheckpointToStateSync::new(state_sync_handle);
         let max_tx_per_checkpoint = max_tx_per_checkpoint(epoch_store.protocol_config());
-        let max_checkpoint_size_bytes =
-            epoch_store.protocol_config().max_checkpoint_size_bytes() as usize;
+        let max_dwallet_checkpoint_size_bytes = epoch_store
+            .protocol_config()
+            .max_dwallet_checkpoint_size_bytes()
+            as usize;
 
         DWalletCheckpointService::spawn(
             state.clone(),
@@ -978,7 +980,7 @@ impl IkaNode {
             Box::new(certified_checkpoint_output),
             checkpoint_metrics,
             max_tx_per_checkpoint,
-            max_checkpoint_size_bytes,
+            max_dwallet_checkpoint_size_bytes,
             previous_epoch_last_checkpoint_sequence_number,
         )
     }
@@ -1482,7 +1484,7 @@ async fn health_check_handler(
 
 #[cfg(not(test))]
 fn max_tx_per_checkpoint(protocol_config: &ProtocolConfig) -> usize {
-    protocol_config.max_messages_per_checkpoint() as usize
+    protocol_config.max_messages_per_dwallet_checkpoint() as usize
 }
 
 #[cfg(test)]
