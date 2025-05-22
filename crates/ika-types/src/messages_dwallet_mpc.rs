@@ -41,7 +41,7 @@ pub enum MPCProtocolInitData {
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
     DWalletImportedKeyVerificationRequestEvent(
-        DWalletMPCSuiEvent<DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT_NAME>,
+        DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
     ),
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
