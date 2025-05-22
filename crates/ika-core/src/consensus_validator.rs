@@ -32,7 +32,7 @@ pub struct IkaTxValidator {
     // todo(zeev): why is it not used?
     #[allow(dead_code)]
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-    checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
+    dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
     system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
@@ -41,7 +41,7 @@ impl IkaTxValidator {
     pub fn new(
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-        checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
+        dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
         system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
@@ -53,7 +53,7 @@ impl IkaTxValidator {
         Self {
             authority_state,
             consensus_overload_checker,
-            checkpoint_service,
+            dwallet_checkpoint_service,
             system_checkpoint_service,
             metrics,
         }
@@ -89,12 +89,15 @@ impl IkaTxValidator {
         // verify the certificate signatures as a batch
         let ckpt_count = ckpt_batch.len();
 
-        Self::batch_verify_all_certificates_and_checkpoints(epoch_store.committee(), &ckpt_batch)
-            .tap_err(|e| warn!("batch verification error: {}", e))?;
+        Self::batch_verify_all_certificates_and_dwallet_checkpoints(
+            epoch_store.committee(),
+            &ckpt_batch,
+        )
+        .tap_err(|e| warn!("batch verification error: {}", e))?;
 
         // All checkpoint sigs have been verified, forward them to the checkpoint service
         for ckpt in ckpt_messages {
-            self.checkpoint_service
+            self.dwallet_checkpoint_service
                 .notify_checkpoint_signature(&epoch_store, ckpt)?;
         }
 
@@ -123,17 +126,17 @@ impl IkaTxValidator {
     }
 
     /// Verifies all certificates - if any fail return error.
-    fn batch_verify_all_certificates_and_checkpoints(
+    fn batch_verify_all_certificates_and_dwallet_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedDWalletCheckpointMessage],
+        dwallet_checkpoints: &[&SignedDWalletCheckpointMessage],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
-        for ckpt in checkpoints {
+        for ckpt in dwallet_checkpoints {
             ckpt.data().verify_epoch(committee.epoch())?;
         }
 
-        Self::batch_verify(committee, checkpoints)
+        Self::batch_verify(committee, dwallet_checkpoints)
     }
 
     fn batch_verify(
