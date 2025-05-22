@@ -792,23 +792,27 @@ impl DWalletMPCSession {
             MPCSessionStatus::Active => {
                 // MPC First round doesn't require a threshold of messages to advance.
                 // This is the round after the MPC event.
-                if self.current_round == 1
-                    || (self
-                        .weighted_threshold_access_structure
-                        .is_authorized_subset(
-                            &self
-                                .serialized_full_messages
-                                // Check if we have the threshold of messages for the previous round
-                                // to advance to the next round.
-                                .get(&(self.current_round - 1))
-                                .unwrap_or(&HashMap::new())
-                                .keys()
-                                .cloned()
-                                .collect::<HashSet<PartyID>>(),
-                        )
-                        .is_ok()
-                        && self.received_more_messages_since_last_advance
-                        && self.agreed_mpc_protocol.is_some())
+                if self.current_round == 1 {
+                    Ok(ReadyToAdvanceCheckResult {
+                        is_ready: true,
+                        malicious_parties: vec![],
+                    })
+                } else if (self
+                    .weighted_threshold_access_structure
+                    .is_authorized_subset(
+                        &self
+                            .serialized_full_messages
+                            // Check if we have the threshold of messages for the previous round
+                            // to advance to the next round.
+                            .get(&(self.current_round - 1))
+                            .unwrap_or(&HashMap::new())
+                            .keys()
+                            .cloned()
+                            .collect::<HashSet<PartyID>>(),
+                    )
+                    .is_ok()
+                    && self.received_more_messages_since_last_advance
+                    && self.agreed_mpc_protocol.is_some())
                 {
                     let epoch_store = self.epoch_store()?;
                     let delay = epoch_store
