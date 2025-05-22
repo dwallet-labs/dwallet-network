@@ -2,8 +2,8 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,MPCSessionPublicOutput, MPCSessionStatus,
-    SerializedWrappedMPCPublicOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput,
+    MPCSessionStatus, SerializedWrappedMPCPublicOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
