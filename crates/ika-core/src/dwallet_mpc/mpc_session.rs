@@ -821,8 +821,9 @@ impl DWalletMPCSession {
                         .get(&self.agreed_mpc_protocol.clone().unwrap())
                         .unwrap_or(&HashMap::from([(self.current_round as u64, 0u64)]))
                         .get(&(self.current_round as u64))
-                        .unwrap_or(&0u64);
-                    if self.consensus_rounds_since_quorum_reached >= *delay as usize {
+                        .unwrap_or(&0u64)
+                        .clone();
+                    if self.consensus_rounds_since_quorum_reached >= delay as usize {
                         self.consensus_rounds_since_quorum_reached = 0;
                         Ok(ReadyToAdvanceCheckResult {
                             is_ready: true,
