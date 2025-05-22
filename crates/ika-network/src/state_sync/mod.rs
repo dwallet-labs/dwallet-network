@@ -636,9 +636,6 @@ where
         &mut self,
         checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
-        if *checkpoint.sequence_number() == 0 {
-            return;
-        }
         // // Always check previous_digest matches in case there is a gap between
         // // state sync and consensus.
         // let prev_digest = *self.store.get_dwallet_checkpoint_by_sequence_number(checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
@@ -690,10 +687,6 @@ where
         &mut self,
         system_checkpoint: Box<VerifiedSystemCheckpoint>,
     ) {
-        if *system_checkpoint.sequence_number() == 0 {
-            return;
-        }
-
         let latest_system_checkpoint_sequence_number = self
             .store
             .get_highest_verified_system_checkpoint()
