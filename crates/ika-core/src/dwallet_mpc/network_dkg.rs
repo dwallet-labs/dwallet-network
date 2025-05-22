@@ -22,10 +22,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, MPCProtocolInitData, SessionInfo,
-    StartNetworkDKGEvent,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkDecryptionKeyState, MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent};
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
@@ -372,6 +369,9 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     if key_data.current_reconfiguration_public_output.is_empty() {
+        if key_data.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+            return Err(DwalletMPCError::WaitingForNetworkKey(key_data.id.clone()));
+        }
         instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
             epoch,
             key_scheme,

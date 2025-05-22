@@ -63,7 +63,7 @@ public struct SystemInnerV1 has store {
     /// The fees paid for computation.
     remaining_rewards: Balance<IKA>,
     /// List of authorized protocol cap ids.
-    authorized_protocol_cap_ids: vector<ID>, 
+    authorized_protocol_cap_ids: vector<ID>,
     // TODO: maybe change that later
     dwallet_2pc_mpc_secp256k1_id: Option<ID>,
     dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
@@ -101,9 +101,10 @@ public struct SystemIkaSystemCheckpointInfoEvent has copy, drop {
 // Errors
 const EBpsTooLarge: u64 = 1;
 const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
-const EActiveBlsCommitteeMustInitialize: u64 = 3;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 4;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 5;
+const EHaveNotReachedEndEpochTime: u64 = 3;
+const EActiveBlsCommitteeMustInitialize: u64 = 4;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 5;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 6;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -188,7 +189,7 @@ public(package) fun create_system_parameters(
 // ==== public(package) functions ====
 
 public(package) fun initialize(
-    self: &mut SystemInnerV1,    
+    self: &mut SystemInnerV1,
     clock: &Clock,
     package_id: ID,
     ctx: &mut TxContext,
@@ -207,7 +208,6 @@ public(package) fun initialize(
     let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
     let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
     let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    dwallet_2pc_mpc_secp256k1_inner.lock_last_active_session_sequence_number();
     self.advance_epoch(dwallet_2pc_mpc_secp256k1_inner, clock, ctx);
 
     self.dwallet_2pc_mpc_secp256k1_id.fill(object::id(&dwallet_2pc_mpc_secp256k1));
@@ -266,7 +266,7 @@ public(package) fun request_remove_validator_candidate(
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
 public(package) fun request_add_validator(
-    self: &mut SystemInnerV1, 
+    self: &mut SystemInnerV1,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -567,6 +567,15 @@ public(package) fun process_mid_epoch(
         self.parameters.lock_active_committee,
     );
     self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+}
+
+public(package) fun lock_last_active_session_sequence_number(
+    self: &SystemInnerV1,
+    dwallet_coordinator: &mut DWalletCoordinatorInner,
+    clock: &Clock,
+) {
+    assert!(clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
+    dwallet_coordinator.lock_last_active_session_sequence_number();
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,

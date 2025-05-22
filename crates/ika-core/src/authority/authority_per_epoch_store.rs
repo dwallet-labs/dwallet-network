@@ -49,7 +49,6 @@ use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
-use crate::dwallet_mpc::mpc_session::FAILED_SESSION_OUTPUT;
 use crate::dwallet_mpc::session_info_from_event;
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
@@ -60,8 +59,10 @@ use crate::system_checkpoints::{
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
     SystemCheckpointServiceNotify,
 };
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
+use dwallet_classgroups_types::{ClassGroupsEncryptionKeyAndProof};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput,
+};
 use group::PartyID;
 use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
@@ -1782,23 +1783,14 @@ impl AuthorityPerEpochStore {
             validator=?self.name,
             mpc_protocol=?session_info.mpc_round,
             session_id=?session_info.session_id,
-            "creating session output checkpoint transaction"
+            "Creating session output checkpoint transaction"
         );
-        let rejected = output == FAILED_SESSION_OUTPUT.to_vec();
+        let (is_rejected, output) = match bcs::from_bytes(&output)? {
+            MPCSessionPublicOutput::CompletedSuccessfully(output) => (false, output),
+            MPCSessionPublicOutput::SessionFailed => (true, vec![]),
+        };
         match &session_info.mpc_round {
             MPCProtocolInitData::DKGFirst(event_data) => {
-                if rejected {
-                    // This should never happen because the dWallet DKG first round
-                    // receives no user input,
-                    // so a failure is necessarily due to a bug on our end.
-                    error!(
-                        validator=?self.name,
-                        mpc_protocol=?session_info.mpc_round,
-                        session_id=?session_info.session_id,
-                        "rejected DWalletDKGFirstRound MPC session, this should never happen"
-                    );
-                    return Ok(ConsensusCertificateResult::Ignored);
-                }
                 let SessionType::User { sequence_number } = event_data.session_type else {
                     unreachable!("DKGFirst round should be a user session");
                 };
@@ -1806,6 +1798,7 @@ impl AuthorityPerEpochStore {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
                     session_sequence_number: sequence_number,
+                    rejected: is_rejected,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
@@ -1821,7 +1814,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encrypted_user_secret_key_share_id
                         .to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1835,7 +1828,7 @@ impl AuthorityPerEpochStore {
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1850,7 +1843,7 @@ impl AuthorityPerEpochStore {
                     dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                     is_future_sign: init_event.event_data.is_future_sign,
                     sign_id: init_event.event_data.sign_id.to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1865,7 +1858,7 @@ impl AuthorityPerEpochStore {
                         .event_data
                         .encrypted_user_secret_key_share_id
                         .to_vec(),
-                    rejected,
+                    rejected: is_rejected,
                     session_sequence_number: sequence_number,
                 });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
@@ -1882,56 +1875,60 @@ impl AuthorityPerEpochStore {
                             .event_data
                             .partial_centralized_signed_message_id
                             .to_vec(),
-                        rejected,
+                        rejected: is_rejected,
                         session_sequence_number: sequence_number,
                     },
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => {
-                if rejected {
-                    // This should never happen because Network DKG receives no user input,
-                    // so a failure is necessarily due to a bug on our end.
-                    error!(
-                        validator=?self.name,
-                        mpc_protocol=?session_info.mpc_round,
-                        session_id=?session_info.session_id,
-                        "rejected NetworkDkg MPC session, this should never happen"
-                    );
-                    return Ok(ConsensusCertificateResult::Ignored);
-                }
-                match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = Self::slice_network_decryption_key_public_output_into_messages(
+            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = if is_rejected {
+                        vec![Secp256K1NetworkKeyPublicOutputSlice {
+                            dwallet_network_decryption_key_id: init_event
+                                .event_data
+                                .dwallet_network_decryption_key_id
+                                .clone()
+                                .to_vec(),
+                            public_output: vec![],
+                            is_last: true,
+                            rejected: true,
+                        }]
+                    } else {
+                        Self::slice_network_decryption_key_public_output_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
-                        );
+                        )
+                    };
 
-                        let messages: Vec<_> = slices
-                            .into_iter()
-                            .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
-                            .collect();
-                        Ok(self.process_consensus_system_bulk_transaction(&messages))
-                    }
-                    DWalletMPCNetworkKeyScheme::Ristretto => {
-                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                    }
+                    let messages: Vec<_> = slices
+                        .into_iter()
+                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .collect();
+                    Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
-            }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                }
+            },
             MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
-                if rejected {
-                    error!(
-                        validator=?self.name,
-                        mpc_protocol=?session_info.mpc_round,
-                        session_id=?session_info.session_id,
-                        "rejected DecryptionKeyReshare MPC session, this should never happen"
-                    );
-                    return Ok(ConsensusCertificateResult::Ignored);
-                }
-                let slices = Self::slice_network_decryption_key_public_output_into_messages(
-                    &init_event.event_data.dwallet_network_decryption_key_id,
-                    output,
-                );
+                let slices = if is_rejected {
+                    vec![Secp256K1NetworkKeyPublicOutputSlice {
+                        dwallet_network_decryption_key_id: init_event
+                            .event_data
+                            .dwallet_network_decryption_key_id
+                            .clone()
+                            .to_vec(),
+                        public_output: vec![],
+                        is_last: true,
+                        rejected: true,
+                    }]
+                } else {
+                    Self::slice_network_decryption_key_public_output_into_messages(
+                        &init_event.event_data.dwallet_network_decryption_key_id,
+                        output,
+                    )
+                };
 
                 let messages: Vec<_> = slices
                     .into_iter()
@@ -1963,6 +1960,7 @@ impl AuthorityPerEpochStore {
                     .to_vec(),
                 public_output: (*public_chunk).to_vec(),
                 is_last: i == public_chunks.len() - 1,
+                rejected: false,
             });
         }
         slices

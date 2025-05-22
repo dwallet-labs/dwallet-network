@@ -187,15 +187,6 @@ the SystemInnerVX version, or vice versa.
 ## Constants
 
 
-<a name="(ika_system=0x0)_system_EHaveNotReachedEndEpochTime"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>: u64 = 3;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_system_EInvalidMigration"></a>
 
 
@@ -1076,9 +1067,7 @@ Locks the MPC sessions that should get completed as part of the current epoch.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_lock_epoch_sessions">request_lock_epoch_sessions</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator, clock: &Clock
 ) {
-    <b>let</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a> = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <b>assert</b>!(clock.timestamp_ms() &gt; <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_start_timestamp_ms() + (<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_duration_ms()), <a href="../ika_system/system.md#(ika_system=0x0)_system_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
-    dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().lock_last_active_session_sequence_number();
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().lock_last_active_session_sequence_number(dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>(), clock);
 }
 </code></pre>
 

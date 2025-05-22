@@ -2,7 +2,7 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionStatus,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,MPCSessionPublicOutput, MPCSessionStatus,
     SerializedWrappedMPCPublicOutput,
 };
 use group::helpers::DeduplicateAndSort;
@@ -33,12 +33,10 @@ use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
-pub const FAILED_SESSION_OUTPUT: [u8; 1] = [1];
-
-/// The result of the check if the session is ready to advance.
+/// Represents the result of checking whether the session is ready to advance.
 ///
-/// Returns whether the session is ready to advance or not, and a list of the malicious parties that were detected
-/// while performing the check.
+/// This structure contains a flag indicating if the session is ready to advance,
+/// and a list of malicious parties detected during the check.
 pub(crate) struct ReadyToAdvanceCheckResult {
     pub(crate) is_ready: bool,
     pub(crate) malicious_parties: Vec<PartyID>,
@@ -182,8 +180,9 @@ impl DWalletMPCSession {
                 if !malicious_parties.is_empty() {
                     self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
-                let consensus_message =
-                    self.new_dwallet_mpc_output_message(public_output.clone())?;
+                let consensus_message = self.new_dwallet_mpc_output_message(
+                    MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
+                )?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -243,7 +242,7 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
-                    self.new_dwallet_mpc_output_message(FAILED_SESSION_OUTPUT.to_vec())?;
+                    self.new_dwallet_mpc_output_message(MPCSessionPublicOutput::SessionFailed)?;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&vec![consensus_message], &epoch_store)
@@ -262,8 +261,9 @@ impl DWalletMPCSession {
     /// Errors if the epoch was switched in the middle and was not available.
     fn new_dwallet_mpc_output_message(
         &self,
-        output: Vec<u8>,
+        output: MPCSessionPublicOutput,
     ) -> DwalletMPCResult<ConsensusTransaction> {
+        let output = bcs::to_bytes(&output)?;
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };

@@ -244,7 +244,10 @@ CompletedDWalletNetworkDKGDecryptionKeyEvent
 DWalletDKGFirstRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
-CompletedDKGFirstdRoundEvent
+CompletedDKGFirstRoundEvent
+	public struct
+	0x0::dwallet_2pc_mpc_secp256k1_inner
+RejectedDWalletDKGSFirstRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_secp256k1_inner
 DWalletDKGSecondRoundRequestEvent
@@ -1268,6 +1271,9 @@ advance_epoch
 	public(package) fun
 	0x0::system_inner
 process_mid_epoch
+	public(package) fun
+	0x0::system_inner
+lock_last_active_session_sequence_number
 	public(package) fun
 	0x0::system_inner
 epoch
