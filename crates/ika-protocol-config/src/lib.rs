@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::*;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
+    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
+    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
+    ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME,
+    PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME,
+    START_NETWORK_DKG_EVENT_STRUCT_NAME,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::collections::HashMap;
@@ -14,7 +24,6 @@ use sui_protocol_config_macros::{
     ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters, ProtocolConfigOverride,
 };
 use tracing::{info, warn};
-use dwallet_mpc_types::dwallet_mpc::{DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT, DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME};
 
 /// The minimum and maximum protocol versions supported by this build.
 const MIN_PROTOCOL_VERSION: u64 = 1;
@@ -366,14 +375,32 @@ impl ProtocolConfig {
             // higher confidence.
             consensus_bad_nodes_stake_threshold: Some(20),
             consensus_rounds_delay_per_mpc_protocol: HashMap::from([
-                (DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string(), 0u64),
+                (
+                    DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string(),
+                    0u64,
+                ),
                 (FUTURE_SIGN_REQUEST_EVENT_NAME.to_string(), 0u64),
-                (ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string(), 0u64),
+                (
+                    ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string(),
+                    0u64,
+                ),
                 (START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string(), 0u64),
-                (DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(), 0u64),
-                (DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string(), 0u64),
-                (DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string(), 0u64),
-                (DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(), 0u64),
+                (
+                    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(),
+                    0u64,
+                ),
+                (
+                    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string(),
+                    0u64,
+                ),
+                (
+                    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string(),
+                    0u64,
+                ),
+                (
+                    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(),
+                    0u64,
+                ),
                 (PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(), 0u64),
                 (SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(), 0u64),
             ]),
