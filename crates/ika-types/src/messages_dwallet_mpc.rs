@@ -214,7 +214,7 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
-    pub mpc_protocol: String
+    pub mpc_protocol: String,
 }
 
 /// The message unique key in the consensus network.
