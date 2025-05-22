@@ -6,7 +6,7 @@ use std::{
     collections::BTreeSet,
     sync::atomic::{AtomicBool, Ordering},
 };
-
+use std::collections::HashMap;
 use clap::*;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -200,6 +200,8 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+    
+    consensus_rounds_delay_per_mpc_protocol: HashMap<MPCIn, u64>,
 }
 
 // feature flags

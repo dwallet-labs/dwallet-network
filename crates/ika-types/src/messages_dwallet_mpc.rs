@@ -2,14 +2,7 @@ use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
-    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
-    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
-    SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT, DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT, DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
@@ -39,7 +32,7 @@ pub enum MPCProtocolInitData {
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
     DWalletImportedKeyVerificationRequestEvent(
-        DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
+        DWalletMPCSuiEvent<DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT_NAME>,
     ),
     /// The first round of the DKG protocol.
     DKGFirst(DWalletMPCSuiEvent<DWalletDKGFirstRoundRequestEvent>),
@@ -70,6 +63,41 @@ pub enum MPCProtocolInitData {
     EncryptedShareVerification(DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
+}
+
+impl ToString for MPCProtocolInitData {
+    fn to_string(&self) -> String {
+        match self {
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DKGFirst(_) => {
+                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::Presign(_) => {
+                PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::Sign(_) => {
+                SIGN_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {}
+        }
+    }
 }
 
 impl Display for MPCProtocolInitData {
@@ -267,7 +295,7 @@ impl DWalletMPCEventTrait for EncryptedShareVerificationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: ident_str!("EncryptedShareVerificationRequestEvent").to_owned(),
+            name: ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
