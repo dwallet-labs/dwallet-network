@@ -571,7 +571,7 @@ impl DWalletMPCManager {
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
                 let Ok(quorum_check_result) = session.check_quorum_for_next_crypto_round() else {
-                  None  
+                  return None  
                 };
                 if quorum_check_result.is_ready {
                     session.received_more_messages_since_last_advance = false;
