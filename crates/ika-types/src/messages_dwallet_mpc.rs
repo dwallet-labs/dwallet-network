@@ -74,39 +74,6 @@ pub enum MPCProtocolInitData {
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
 }
 
-impl ToString for MPCProtocolInitData {
-    fn to_string(&self) -> String {
-        match self {
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
-                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
-            }
-            MPCProtocolInitData::DKGFirst(_) => {
-                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::DKGSecond(_) => {
-                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::Presign(_) => PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-            MPCProtocolInitData::Sign(_) => SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-            MPCProtocolInitData::NetworkDkg(_, _) => {
-                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
-                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
-            }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
-                FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
-            }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
-            }
-        }
-    }
-}
-
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
