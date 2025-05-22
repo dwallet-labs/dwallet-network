@@ -2,7 +2,7 @@ use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::dwallet_mpc_error::DwalletMPCError;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT, DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT, DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData, DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT, DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT, DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME};
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
@@ -96,7 +96,7 @@ impl ToString for MPCProtocolInitData {
                 FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_string()
+                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
             }
         }
     }
@@ -647,7 +647,7 @@ impl DWalletMPCEventTrait for DWalletDecryptionKeyReshareRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_owned(),
+            name: DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
