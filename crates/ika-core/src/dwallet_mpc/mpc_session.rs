@@ -803,7 +803,8 @@ impl DWalletMPCSession {
                                 .collect::<HashSet<PartyID>>(),
                         )
                         .is_ok()
-                        && self.received_more_messages_since_last_advance)
+                        && self.received_more_messages_since_last_advance
+                        && self.agreed_mpc_protocol.is_some())
                 {
                     ReadyToAdvanceCheckResult {
                         is_ready: true,
