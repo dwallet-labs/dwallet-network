@@ -106,13 +106,6 @@ impl MPCProtocolInitData {
             }
         }
     }
-
-    fn get_consensus_rounds_delay(&self, protocol_config: &ProtocolConfig) -> u64 {
-        *protocol_config
-            .consensus_rounds_delay_per_mpc_protocol
-            .get(&self.get_event_name())
-            .unwrap_or(&0)
-    }
 }
 
 impl Display for MPCProtocolInitData {
