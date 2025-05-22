@@ -17,6 +17,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
 };
 use group::PartyID;
+use ika_protocol_config::ProtocolConfig;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
@@ -72,6 +73,46 @@ pub enum MPCProtocolInitData {
     EncryptedShareVerification(DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
+}
+
+impl MPCProtocolInitData {
+    fn get_event_name(&self) -> String {
+        match self {
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DKGFirst(_) => {
+                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::Presign(_) => PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::Sign(_) => SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
+            }
+        }
+    }
+
+    fn get_consensus_rounds_delay(&self, protocol_config: &ProtocolConfig) -> u64 {
+        *protocol_config
+            .consensus_rounds_delay_per_mpc_protocol
+            .get(&self.get_event_name())
+            .unwrap_or(&0)
+    }
 }
 
 impl Display for MPCProtocolInitData {

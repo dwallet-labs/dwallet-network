@@ -211,7 +211,7 @@ pub struct ProtocolConfig {
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
 
-    consensus_rounds_delay_per_mpc_protocol: HashMap<String, u64>,
+    pub consensus_rounds_delay_per_mpc_protocol: HashMap<String, u64>,
 }
 
 // feature flags
