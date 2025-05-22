@@ -132,6 +132,7 @@ impl DWalletMPCSession {
             attempts_count: 0,
             mpc_protocol_to_voting_authorities: HashMap::new(),
             agreed_mpc_protocol: None,
+            consensus_rounds_since_quorum_reached: 0,
         }
     }
 
@@ -810,7 +811,8 @@ impl DWalletMPCSession {
                         && self.agreed_mpc_protocol.is_some())
                 {
                     let epoch_store = self.epoch_store()?;
-                    let delay = epoch_store.protocol_config()
+                    let delay = epoch_store
+                        .protocol_config()
                         .consensus_rounds_delay_per_mpc_protocol
                         .get(&self.agreed_mpc_protocol.clone().unwrap())
                         .unwrap_or(&0u64);
