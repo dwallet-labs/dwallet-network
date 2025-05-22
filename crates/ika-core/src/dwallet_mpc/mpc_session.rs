@@ -101,9 +101,9 @@ pub(super) struct DWalletMPCSession {
     // The *total* number of attempts to advance that failed in the session.
     // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
-    pub mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
-    pub agreed_mpc_protocol: Option<String>,
-    pub consensus_rounds_since_quorum_reached: usize,
+    mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
+    agreed_mpc_protocol: Option<String>,
+    consensus_rounds_since_quorum_reached: usize,
 }
 
 impl DWalletMPCSession {
