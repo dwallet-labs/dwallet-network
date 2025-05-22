@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use clap::*;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
+use std::collections::HashMap;
 use std::{
     cell::RefCell,
     collections::BTreeSet,
     sync::atomic::{AtomicBool, Ordering},
 };
-use std::collections::HashMap;
-use clap::*;
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use sui_protocol_config_macros::{
     ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters, ProtocolConfigOverride,
 };
@@ -200,7 +200,7 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
-    
+
     consensus_rounds_delay_per_mpc_protocol: HashMap<MPCIn, u64>,
 }
 

@@ -31,8 +31,7 @@ pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
 pub const ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME: &'static IdentStr =
     ident_str!("EncryptedShareVerificationRequestEvent");
-pub const FUTURE_SIGN_REQUEST_EVENT_NAME: &'static IdentStr =
-    ident_str!("FutureSignRequestEvent");
+pub const FUTURE_SIGN_REQUEST_EVENT_NAME: &'static IdentStr = ident_str!("FutureSignRequestEvent");
 pub const DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME: &'static IdentStr =
     ident_str!("DWalletDecryptionKeyReshareRequestEvent");
 
