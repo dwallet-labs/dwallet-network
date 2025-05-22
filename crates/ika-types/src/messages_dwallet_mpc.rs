@@ -76,7 +76,7 @@ pub enum MPCProtocolInitData {
 }
 
 impl MPCProtocolInitData {
-    fn get_event_name(&self) -> String {
+    pub fn get_event_name(&self) -> String {
         match self {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
@@ -214,6 +214,7 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number, starts from 0.
     pub round_number: usize,
+    pub mpc_protocol: String
 }
 
 /// The message unique key in the consensus network.

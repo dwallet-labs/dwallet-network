@@ -675,6 +675,11 @@ impl DWalletMPCSession {
             message,
             self.session_id.clone(),
             self.current_round,
+            self.mpc_event_data
+                .clone()
+                .unwrap()
+                .init_protocol_data
+                .get_event_name(),
         ))
     }
 
