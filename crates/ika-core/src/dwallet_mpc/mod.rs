@@ -536,15 +536,6 @@ pub(super) async fn session_input_from_event(
         {
             let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
-            // todo(zeev): do we need it here?
-            let _protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event
-                    .event_data
-                    .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof

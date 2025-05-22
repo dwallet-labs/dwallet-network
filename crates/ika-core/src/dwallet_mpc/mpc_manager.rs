@@ -741,15 +741,6 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Flags the given authorities as malicious.
-    /// Future messages from these authorities will be ignored.
-    pub(crate) fn flag_authorities_as_malicious(&mut self, malicious_parties: &[AuthorityName]) {
-        self.malicious_handler
-            .report_malicious_actors(&malicious_parties);
-    }
-
     /// Spawns a new MPC session if the number of active sessions is below the limit.
     /// Otherwise, add the session to the pending queue.
     pub(super) fn push_new_mpc_session(

@@ -1557,13 +1557,6 @@ impl AuthorityPerEpochStore {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
                         ..
-                    // todo(zeev):
-                    // ThresholdNotReachedReport is used twice here,
-                    // need to figure out which one.
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
                     }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind:

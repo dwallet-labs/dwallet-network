@@ -633,25 +633,4 @@ impl DWalletMPCSession {
             },
         }
     }
-
-    // todo(zeev): why is it here?
-    #[allow(dead_code)]
-    /// Helper function to spawn a task for submitting messages to consensus.
-    fn spawn_submit_to_consensus(
-        tokio_runtime_handle: &Handle,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        messages: Vec<ConsensusTransaction>,
-    ) {
-        tokio_runtime_handle.spawn(async move {
-            for msg in messages {
-                if let Err(err) = consensus_adapter
-                    .submit_to_consensus(&vec![msg], &epoch_store)
-                    .await
-                {
-                    error!("failed to submit an MPC message to consensus: {:?}", err);
-                }
-            }
-        });
-    }
 }
