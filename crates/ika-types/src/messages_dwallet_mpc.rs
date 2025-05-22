@@ -442,7 +442,8 @@ impl DWalletMPCEventTrait for DWalletDKGFirstRoundRequestEvent {
     }
 }
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGFirstRoundRequestEvent`.
+/// Represents the Rust version of the Move struct
+/// `ika_system::dwallet_2pc_mpc_coordinator_inner::MakeDWalletUserSecretKeySharesPublicRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
     pub public_user_secret_key_shares: Vec<u8>,
