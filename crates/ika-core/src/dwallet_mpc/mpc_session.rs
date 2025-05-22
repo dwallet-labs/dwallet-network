@@ -102,6 +102,7 @@ pub(super) struct DWalletMPCSession {
     // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
     pub mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
+    pub agreed_mpc_protocol: Option<String>,
 }
 
 impl DWalletMPCSession {
@@ -129,6 +130,7 @@ impl DWalletMPCSession {
             received_more_messages_since_last_advance: false,
             attempts_count: 0,
             mpc_protocol_to_voting_authorities: HashMap::new(),
+            agreed_mpc_protocol: None,
         }
     }
 
@@ -717,7 +719,6 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.received_more_messages_since_last_advance = true;
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -730,7 +731,19 @@ impl DWalletMPCSession {
             );
             return Ok(());
         }
-        // TODO (#876): Set the maximum message size to the smallest size possible.
+        self.received_more_messages_since_last_advance = true;
+        let committee = self.epoch_store()?.committee().clone();
+        if self.agreed_mpc_protocol.is_none() {
+            if self
+                .mpc_protocol_to_voting_authorities
+                .entry(message.mpc_protocol.clone())
+                .or_insert(StakeAggregator::new(committee))
+                .insert_generic(message.authority, ())
+                .is_quorum_reached()
+            {
+                self.agreed_mpc_protocol = Some(message.mpc_protocol.clone());
+            }
+        }
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
