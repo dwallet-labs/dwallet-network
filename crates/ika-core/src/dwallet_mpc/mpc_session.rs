@@ -34,6 +34,7 @@ use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{
     message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
 };
+use crate::stake_aggregator::StakeAggregator;
 use ika_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
@@ -47,7 +48,6 @@ use ika_types::messages_dwallet_mpc::{
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
-use crate::stake_aggregator::StakeAggregator;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
