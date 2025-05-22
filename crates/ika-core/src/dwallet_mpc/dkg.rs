@@ -3,8 +3,8 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    CentralizedDKGPublicOutputVersion, MPCPublicInput, PublicKeyShareAndProofVersion,
-    SerializedWrappedMPCPublicOutput,
+    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedCentralizedDKGPublicOutput,
+    VersionedPublicKeyShareAndProof,
 };
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::Party;
@@ -62,18 +62,18 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
         first_round_output_buf: SerializedWrappedMPCPublicOutput,
         centralized_party_public_key_share_buf: SerializedWrappedMPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let first_round_output_buf: CentralizedDKGPublicOutputVersion =
+        let first_round_output_buf: VersionedCentralizedDKGPublicOutput =
             bcs::from_bytes(&first_round_output_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
-        let centralized_party_public_key_share: PublicKeyShareAndProofVersion =
+        let centralized_party_public_key_share: VersionedPublicKeyShareAndProof =
             bcs::from_bytes(&centralized_party_public_key_share_buf)
                 .map_err(|e| DwalletMPCError::BcsError(e))?;
         match first_round_output_buf {
-            CentralizedDKGPublicOutputVersion::V1(first_round_output) => {
+            VersionedCentralizedDKGPublicOutput::V1(first_round_output) => {
                 let first_round_output: <DKGFirstParty as Party>::PublicOutput =
                     bcs::from_bytes(&first_round_output)
                         .map_err(|e| DwalletMPCError::BcsError(e))?;
                 let centralized_party_public_key_share = match centralized_party_public_key_share {
-                    PublicKeyShareAndProofVersion::V1(centralized_party_public_key_share) => {
+                    VersionedPublicKeyShareAndProof::V1(centralized_party_public_key_share) => {
                         bcs::from_bytes(&centralized_party_public_key_share)
                             .map_err(|e| DwalletMPCError::BcsError(e))?
                     }

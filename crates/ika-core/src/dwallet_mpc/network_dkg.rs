@@ -16,8 +16,8 @@ use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, NetworkDecryptionKeyPublicData,
-    NetworkDecryptionKeyPublicOutputType, SecpNetworkDkgOutputVersion,
-    SerializedWrappedMPCPublicOutput,
+    NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
+    VersionedSecpNetworkDkgOutput,
 };
 use group::{ristretto, secp256k1, GroupElement, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -74,7 +74,7 @@ fn get_decryption_key_shares_from_public_output(
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     match shares.state {
         NetworkDecryptionKeyPublicOutputType::NetworkDkg => match &shares.latest_public_output {
-            SecpNetworkDkgOutputVersion::V1(public_output) => {
+            VersionedSecpNetworkDkgOutput::V1(public_output) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
 
@@ -89,7 +89,7 @@ fn get_decryption_key_shares_from_public_output(
             }
         },
         NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.latest_public_output {
-            SecpNetworkDkgOutputVersion::V1(public_output) => {
+            VersionedSecpNetworkDkgOutput::V1(public_output) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
 
@@ -236,7 +236,7 @@ impl DwalletMPCNetworkKeys {
     pub async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<SecpNetworkDkgOutputVersion> {
+    ) -> DwalletMPCResult<VersionedSecpNetworkDkgOutput> {
         Ok(self
             .network_encryption_keys
             .get(key_id)
@@ -275,7 +275,7 @@ pub(crate) fn advance_network_dkg(
                     private_output,
                 }) => {
                     let public_output =
-                        bcs::to_bytes(&SecpNetworkDkgOutputVersion::V1(public_output))?;
+                        bcs::to_bytes(&VersionedSecpNetworkDkgOutput::V1(public_output))?;
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
                         malicious_parties,
@@ -413,10 +413,10 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
     network_dkg_public_output: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    let mpc_public_output: SecpNetworkDkgOutputVersion =
+    let mpc_public_output: VersionedSecpNetworkDkgOutput =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match &mpc_public_output {
-        SecpNetworkDkgOutputVersion::V1(public_output_bytes) => {
+        VersionedSecpNetworkDkgOutput::V1(public_output_bytes) => {
             let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(&public_output_bytes)?;
             let decryption_key_share_public_parameters = public_output
@@ -444,11 +444,11 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    let mpc_public_output: SecpNetworkDkgOutputVersion =
+    let mpc_public_output: VersionedSecpNetworkDkgOutput =
         bcs::from_bytes(public_output_bytes).map_err(|e| DwalletMPCError::BcsError(e))?;
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => match &mpc_public_output {
-            SecpNetworkDkgOutputVersion::V1(public_output_bytes) => {
+            VersionedSecpNetworkDkgOutput::V1(public_output_bytes) => {
                 let public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output_bytes)?;
                 let decryption_key_share_public_parameters = public_output

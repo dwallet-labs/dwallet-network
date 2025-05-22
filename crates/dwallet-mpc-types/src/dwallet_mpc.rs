@@ -105,7 +105,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     pub state: NetworkDecryptionKeyPublicOutputType,
     /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
-    pub latest_public_output: SecpNetworkDkgOutputVersion,
+    pub latest_public_output: VersionedSecpNetworkDkgOutput,
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
@@ -113,7 +113,7 @@ pub struct NetworkDecryptionKeyPublicData {
 
     /// The public output of the `NetworkDKG` process (the first and only one).
     /// On first instance it will be equal to `latest_public_output`.
-    pub network_dkg_output: SecpNetworkDkgOutputVersion,
+    pub network_dkg_output: VersionedSecpNetworkDkgOutput,
 }
 
 #[repr(u32)]
@@ -146,76 +146,76 @@ impl TryFrom<u32> for DWalletMPCNetworkKeyScheme {
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletImportedKeyVerificationRequestEventOutputVersion {
+pub enum VersionedDWalletImportedKeyVerificationOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletDKGFirstOutputVersion {
+pub enum VersionedDwalletDKGFirstRoundPublicOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DWalletDKGSecondOutputVersion {
+pub enum VersionedDwalletDKGSecondRoundPublicOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum PresignOutputVersion {
+pub enum VersionedPresignOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum SignOutputVersion {
+pub enum VersionedSignOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
-pub enum SecpNetworkDkgOutputVersion {
+pub enum VersionedSecpNetworkDkgOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum DecryptionKeyReshareOutputVersion {
+pub enum VersionedDecryptionKeyReshareOutput {
     V1(MPCPublicInput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum PublicKeyShareAndProofVersion {
+pub enum VersionedPublicKeyShareAndProof {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedDKGPublicOutputVersion {
+pub enum VersionedCentralizedDKGPublicOutput {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedDKGSecretOutputVersion {
+pub enum VersionedDwalletUserSecretShare {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum CentralizedSignOutputVersion {
+pub enum VersionedUserSignedMessage {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedDWalletPublicOutputVersions {
+pub enum VersionedImportedDWalletPublicOutput {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedSecretShareVersions {
+pub enum VersionedImportedSecretShare {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum ImportedDwalletOutgoingMessageVersions {
+pub enum VersionedImportedDwalletOutgoingMessage {
     V1(Vec<u8>),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum EncryptedSecretShareAndProofVersions {
+pub enum VersionedEncryptedUserShare {
     V1(Vec<u8>),
 }
