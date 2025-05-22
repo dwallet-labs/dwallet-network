@@ -21,9 +21,9 @@ pub use staking::*;
 pub use system_inner_v1::*;
 
 #[cfg(msim)]
-use self::simtest_system_state_inner::{
-    SimTestSystemStateInnerDeepV2, SimTestSystemStateInnerShallowV2, SimTestSystemStateInnerV1,
-    SimTestValidatorDeepV2, SimTestValidatorV1,
+use self::simtest_ika_system_state_inner::{
+    SimTestIkaSystemStateInnerDeepV2, SimTestIkaSystemStateInnerShallowV2,
+    SimTestIkaSystemStateInnerV1, SimTestValidatorDeepV2, SimTestValidatorV1,
 };
 
 /// Default computation price of 1000 NIka
@@ -78,7 +78,7 @@ pub const IKA_SYSTEM_STATE_SIM_TEST_SHALLOW_V2: u64 = 18446744073709551606; // u
 #[cfg(msim)]
 pub const IKA_SYSTEM_STATE_SIM_TEST_DEEP_V2: u64 = 18446744073709551607; // u64::MAX - 8
 
-/// Rust version of the Move ika::system::IkaSystemState type
+/// Rust version of the Move ika::ika_system::IkaSystemState type
 /// In Rust, this type should rarely be used since it's just a thin
 /// wrapper used to access the inner object.
 /// Within this module, we use it to determine the current version of the system state inner object type,
