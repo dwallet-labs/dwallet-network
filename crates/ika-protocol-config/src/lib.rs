@@ -393,7 +393,7 @@ impl ProtocolConfig {
                 ),
                 (
                     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(),
-                    HashMap::from([(2, 5)]),
+                    HashMap::from([]),
                 ),
                 (
                     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string(),
