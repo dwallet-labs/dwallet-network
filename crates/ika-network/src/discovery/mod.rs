@@ -221,7 +221,7 @@ impl DiscoveryEventLoop {
                 }))
                 .collect(),
         };
-        for (peer_id, address) in initial_peers.iter() {
+        for (peer_id, address) in initial_peers.into_iter() {
             let anemo_address = if let Some(address) = address {
                 let Ok(address) = address.to_anemo_address() else {
                     debug!(p2p_address=?address, "Can't convert p2p address to anemo address");
