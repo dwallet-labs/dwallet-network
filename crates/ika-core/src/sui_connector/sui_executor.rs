@@ -612,18 +612,29 @@ where
         ];
         args.extend(messages);
 
-        ptb.move_call(
+        let args = args
+            .into_iter()
+            .map(|arg| {
+                ptb.input(arg).map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!(
+                        "can't serialize `arg`: {e}"
+                    ))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let gas_fee_reimbursement_sui = ptb.programmable_move_call(
             ika_system_package_id,
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+        );
+
+        ptb.command(sui_types::transaction::Command::MergeCoins(
+            Argument::GasCoin,
+            vec![gas_fee_reimbursement_sui],
+        ));
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,

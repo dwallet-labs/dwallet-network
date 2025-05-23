@@ -15,6 +15,8 @@ use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::validator_metadata::{ValidatorMetadata};
 use ika_system::extended_field::{Self, ExtendedField};
 use ika_system::pending_active_set::{Self, PendingActiveSet};
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletCoordinatorInner};
+use ika_system::dwallet_pricing::{DWalletPricing};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -108,9 +110,6 @@ const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch ca
 #[error]
 const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
 
-#[error]
-const EAlreadyInitialized: vector<u8> = b"Protocol cannot be initialized more than one time.";
-
 // ==== initialization ====
 
 public(package) fun new(
@@ -129,14 +128,6 @@ public(package) fun new(
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
     }
-}
-
-public(package) fun initialize(self: &mut ValidatorSet) {
-    assert!(self.active_committee.members().is_empty(), EAlreadyInitialized);
-    self.process_pending_validators();
-    self.active_committee = self.next_epoch_active_committee.extract();
-    self.activate_added_validators(1);
-    self.total_stake = self.calculate_total_stakes();
 }
 
 // ==== functions to add or remove validators ====
@@ -522,6 +513,18 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_pricing_vote(
+    self: &mut ValidatorSet,
+    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.verify_operation_cap(cap);
+    dwallet_coordinator_inner.set_pricing_vote(validator_id, pricing);
 }
 
 // ==== epoch change functions ====

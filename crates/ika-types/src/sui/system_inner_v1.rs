@@ -90,27 +90,32 @@ pub struct SystemInnerV1 {
     // TODO: Use getters instead of all pub.
 }
 
-/// Rust version of the Move PricingPerOperation type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct PricingPerOperation {
+pub struct DWalletPricing {
+    pub pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletPricingKey {
+    pub curve: u32,
+    pub signature_algorithm: Option<u32>,
+    pub protocol: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletPricingValue {
     pub consensus_validation_ika: u64,
     pub computation_ika: u64,
     pub gas_fee_reimbursement_sui: u64,
+    pub gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
-/// Rust version of the Move DWalletPricing2PcMpcSecp256K1 type
+
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricing2PcMpcSecp256K1 {
-    id: ObjectID,
-    dkg_first_round: PricingPerOperation,
-    dkg_second_round: PricingPerOperation,
-    re_encrypt_user_share: PricingPerOperation,
-    presign: PricingPerOperation,
-    sign: PricingPerOperation,
-    future_sign: PricingPerOperation,
-    sign_with_partial_user_signature: PricingPerOperation,
-    make_dwallet_user_secret_key_shares_public: PricingPerOperation,
-    imported_key_dwallet_verification: PricingPerOperation,
+pub struct DWalletPricingCalculationVotes {
+    pub bls_committee: BlsCommittee,
+    pub default_pricing: DWalletPricing,
+    pub working_pricing: DWalletPricing,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type
@@ -118,7 +123,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
     pub sessions: ObjectTable,
-    pub session_start_events: Bag,
+    pub user_requested_sessions_events: Bag,
     pub number_of_completed_sessions: u64,
     pub started_system_sessions_count: u64,
     pub completed_system_sessions_count: u64,
@@ -131,7 +136,10 @@ pub struct DWalletCoordinatorInnerV1 {
     pub encryption_keys: ObjectTable,
     pub presigns: ObjectTable,
     pub partial_centralized_signed_messages: ObjectTable,
-    pub pricing: DWalletPricing2PcMpcSecp256K1,
+    pub pricing: DWalletPricing,
+    pub default_pricing: DWalletPricing,
+    pub pricing_votes: Table,
+    pub pricing_calculation_votes: Option<DWalletPricingCalculationVotes>,
     pub gas_fee_reimbursement_sui: Balance,
     pub consensus_validation_fee_charged_ika: Balance,
     pub active_committee: BlsCommittee,

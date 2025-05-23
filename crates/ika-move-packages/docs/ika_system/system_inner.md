@@ -10,7 +10,6 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Struct `SystemProtocolCapVerifiedEvent`](#(ika_system=0x0)_system_inner_SystemProtocolCapVerifiedEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_create)
--  [Function `advance_network_keys`](#(ika_system=0x0)_system_inner_advance_network_keys)
 -  [Function `create_system_parameters`](#(ika_system=0x0)_system_inner_create_system_parameters)
 -  [Function `initialize`](#(ika_system=0x0)_system_inner_initialize)
 -  [Function `request_add_validator_candidate`](#(ika_system=0x0)_system_inner_request_add_validator_candidate)
@@ -31,9 +30,10 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `set_next_epoch_p2p_address`](#(ika_system=0x0)_system_inner_set_next_epoch_p2p_address)
 -  [Function `set_next_epoch_consensus_address`](#(ika_system=0x0)_system_inner_set_next_epoch_consensus_address)
 -  [Function `set_next_epoch_protocol_pubkey_bytes`](#(ika_system=0x0)_system_inner_set_next_epoch_protocol_pubkey_bytes)
+-  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes)
 -  [Function `set_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_system_inner_set_next_epoch_consensus_pubkey_bytes)
 -  [Function `set_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_system_inner_set_next_epoch_class_groups_pubkey_and_proof_bytes)
--  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes)
+-  [Function `set_pricing_vote`](#(ika_system=0x0)_system_inner_set_pricing_vote)
 -  [Function `advance_epoch`](#(ika_system=0x0)_system_inner_advance_epoch)
 -  [Function `process_mid_epoch`](#(ika_system=0x0)_system_inner_process_mid_epoch)
 -  [Function `lock_last_active_session_sequence_number`](#(ika_system=0x0)_system_inner_lock_last_active_session_sequence_number)
@@ -48,7 +48,7 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `next_epoch_active_committee`](#(ika_system=0x0)_system_inner_next_epoch_active_committee)
 -  [Function `verify_cap`](#(ika_system=0x0)_system_inner_verify_cap)
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap)
--  [Function `set_supported_curves_to_signature_algorithms_to_hash_schemes`](#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes)
+-  [Function `set_supported_and_pricing`](#(ika_system=0x0)_system_inner_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms)
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_inner_authorize_update_message_by_cap)
 -  [Function `authorize_update_message`](#(ika_system=0x0)_system_inner_authorize_update_message)
@@ -103,6 +103,7 @@ title: Module `(ika_system=0x0)::system_inner`
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../sui/package.md#sui_package">sui::package</a>;
+<b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
@@ -483,36 +484,6 @@ This function will be called only once in init.
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_advance_network_keys"></a>
-
-## Function `advance_network_keys`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_network_keys">advance_network_keys</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_network_keys">advance_network_keys</a>(
-    self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> DWalletCoordinatorInner
-): Balance&lt;IKA&gt; {
-    <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
-    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| {
-        total_reward.join(<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.advance_epoch_dwallet_network_encryption_key(cap));
-    });
-    total_reward
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_system_inner_create_system_parameters"></a>
 
 ## Function `create_system_parameters`
@@ -561,7 +532,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -572,10 +543,14 @@ This function will be called only once in init.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
-    clock: &Clock,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     package_id: ID,
+    cap: &ProtocolCap,
+    clock: &Clock,
     ctx: &<b>mut</b> TxContext,
 ) {
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(cap);
     <b>let</b> now = clock.timestamp_ms();
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> == 0 && now &gt;= self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>().members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
@@ -586,8 +561,7 @@ This function will be called only once in init.
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_mid_epoch">process_mid_epoch</a>(
         self.parameters.lock_active_committee,
     );
-    <b>let</b> pricing = <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_create_dwallet_pricing_2pc_mpc_secp256k1">ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1</a>(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    <b>let</b> <b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_create_dwallet_coordinator">dwallet_2pc_mpc_coordinator::create_dwallet_coordinator</a>(package_id, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>(), pricing, ctx);
+    <b>let</b> <b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_create_dwallet_coordinator">dwallet_2pc_mpc_coordinator::create_dwallet_coordinator</a>(package_id, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.inner_mut();
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>, clock, ctx);
     self.dwallet_2pc_mpc_coordinator_id.fill(object::id(&<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>));
@@ -1163,6 +1137,36 @@ The change will only take effects starting from the next epoch.
 
 </details>
 
+<a name="(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes"></a>
+
+## Function `set_next_epoch_network_pubkey_bytes`
+
+Sets a validator's public key of network key.
+The change will only take effects starting from the next epoch.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, network_pubkey_bytes: vector&lt;u8&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
+    network_pubkey_bytes: vector&lt;u8&gt;,
+    cap: &ValidatorOperationCap
+) {
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(network_pubkey_bytes, cap);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_system_inner_set_next_epoch_consensus_pubkey_bytes"></a>
 
 ## Function `set_next_epoch_consensus_pubkey_bytes`
@@ -1223,15 +1227,15 @@ The change will only take effects starting from the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes"></a>
+<a name="(ika_system=0x0)_system_inner_set_pricing_vote"></a>
 
-## Function `set_next_epoch_network_pubkey_bytes`
+## Function `set_pricing_vote`
 
-Sets a validator's public key of network key.
+Sets a validator's pricing vote.
 The change will only take effects starting from the next epoch.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, network_pubkey_bytes: vector&lt;u8&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_pricing_vote">set_pricing_vote</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, dwallet_coordinator_inner: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -1240,12 +1244,13 @@ The change will only take effects starting from the next epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_pricing_vote">set_pricing_vote</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
-    network_pubkey_bytes: vector&lt;u8&gt;,
-    cap: &ValidatorOperationCap
+    dwallet_coordinator_inner: &<b>mut</b> DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
 ) {
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(network_pubkey_bytes, cap);
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_pricing_vote">set_pricing_vote</a>(dwallet_coordinator_inner, pricing, cap);
 }
 </code></pre>
 
@@ -1298,12 +1303,10 @@ gas coins.
         stake_subsidy.join(self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.stake_subsidy_for_distribution(ctx));
     };
     <b>let</b> stake_subsidy_amount = stake_subsidy.value();
-    <b>let</b> consensus_validation_rewards = dwallet_coordinator.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>());
-    <b>let</b> computation_rewards = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_network_keys">advance_network_keys</a>(dwallet_coordinator);
-    <b>let</b> total_computation_fees = consensus_validation_rewards.value() + computation_rewards.value();
+    <b>let</b> dwallet_computatio_and_consensus_validation_rewards = dwallet_coordinator.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
+    <b>let</b> total_computation_fees = dwallet_computatio_and_consensus_validation_rewards.value();
     <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
-    total_reward.join(consensus_validation_rewards);
-    total_reward.join(computation_rewards);
+    total_reward.join(dwallet_computatio_and_consensus_validation_rewards);
     total_reward.join(stake_subsidy);
     total_reward.join(self.remaining_rewards.withdraw_all());
     <b>let</b> total_reward_amount_before_distribution = total_reward.value();
@@ -1366,7 +1369,8 @@ gas coins.
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_mid_epoch">process_mid_epoch</a>(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reconfiguration_event(cap, ctx));
+    <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>().extract();
+    dwallet_coordinator_inner.mid_epoch_reconfiguration(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
 </code></pre>
 
@@ -1698,13 +1702,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes"></a>
+<a name="(ika_system=0x0)_system_inner_set_supported_and_pricing"></a>
 
-## Function `set_supported_curves_to_signature_algorithms_to_hash_schemes`
+## Function `set_supported_and_pricing`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_and_pricing">set_supported_and_pricing</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, default_pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
 </code></pre>
 
 
@@ -1713,14 +1717,15 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_and_pricing">set_supported_and_pricing</a>(
     self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>: &<b>mut</b> DWalletCoordinatorInner,
+    default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
-    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(supported_curves_to_signature_algorithms_to_hash_schemes);
+    <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_supported_and_pricing">set_supported_and_pricing</a>(default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes);
 }
 </code></pre>
 

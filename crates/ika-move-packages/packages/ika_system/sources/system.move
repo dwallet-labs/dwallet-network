@@ -56,6 +56,7 @@ use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_coordinator::{DWalletCoordinator};
 use ika_system::validator_metadata::ValidatorMetadata;
+use ika_system::dwallet_pricing::DWalletPricing;
 use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::table::Table;
@@ -116,12 +117,15 @@ public(package) fun create(
 
 public fun initialize(
     self: &mut System,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(clock, package_id, ctx);
+    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -368,6 +372,16 @@ public fun set_next_epoch_protocol_pubkey_bytes(
     self.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
 }
 
+/// Sets a validator's public key of network key.
+/// The change will only take effects starting from the next epoch.
+public fun set_next_epoch_network_pubkey_bytes(
+    self: &mut System,
+    network_pubkey: vector<u8>,
+    cap: &ValidatorOperationCap,
+) {
+    let self = self.inner_mut();
+    self.set_next_epoch_network_pubkey_bytes(network_pubkey, cap)
+}
 
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
@@ -392,16 +406,16 @@ public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
 }
 
-
-/// Sets a validator's public key of network key.
+/// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_network_pubkey_bytes(
+public fun set_pricing_vote(
     self: &mut System,
-    network_pubkey: vector<u8>,
+    dwallet_coordinator: &mut DWalletCoordinator,
+    pricing: DWalletPricing,
     cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.set_next_epoch_network_pubkey_bytes(network_pubkey, cap)
+    self.set_pricing_vote(dwallet_coordinator.inner_mut(), pricing, cap)
 }
 
 /// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
@@ -450,14 +464,15 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
 }
 
-public fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
+public fun set_supported_and_pricing(
     self: &mut System,
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     protocol_cap: &ProtocolCap,
 ) {
     let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    self.inner_mut().set_supported_curves_to_signature_algorithms_to_hash_schemes(dwallet_2pc_mpc_coordinator_inner, supported_curves_to_signature_algorithms_to_hash_schemes, protocol_cap);
+    self.inner_mut().set_supported_and_pricing(dwallet_2pc_mpc_coordinator_inner, default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, protocol_cap);
 }
 
 public fun set_paused_curves_and_signature_algorithms(

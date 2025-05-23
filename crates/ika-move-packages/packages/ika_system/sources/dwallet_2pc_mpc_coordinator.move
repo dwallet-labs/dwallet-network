@@ -4,11 +4,9 @@
 module ika_system::dwallet_2pc_mpc_coordinator;
 
 use ika::ika::IKA;
-use sui::balance::Balance;
 use sui::sui::SUI;
 use sui::coin::{Coin};
 use sui::dynamic_field;
-use ika_system::dwallet_pricing::{DWalletPricing2PcMpcSecp256K1};
 use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     Self,
     DWalletCoordinatorInner,
@@ -23,6 +21,8 @@ use ika_system::dwallet_2pc_mpc_coordinator_inner::{
     VerifiedPartialUserSignatureCap
 };
 use ika_system::bls_committee::BlsCommittee;
+use ika_system::dwallet_pricing::DWalletPricing;
+use sui::vec_map::VecMap;
 
 public struct DWalletCoordinator has key {
     id: UID,
@@ -45,13 +45,15 @@ public(package) fun create_dwallet_coordinator(
     package_id: ID,
     epoch: u64,
     active_committee: BlsCommittee,
-    pricing: DWalletPricing2PcMpcSecp256K1,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
 ): DWalletCoordinator {
     let dwallet_coordinator_inner = dwallet_2pc_mpc_coordinator_inner::create_dwallet_coordinator_inner(
         epoch,
         active_committee,
         pricing,
+        supported_curves_to_signature_algorithms_to_hash_schemes,
         ctx,
     );
     let mut self = DWalletCoordinator {
@@ -80,12 +82,12 @@ public fun process_checkpoint_message_by_quorum(
     message3: vector<u8>,
     message4: vector<u8>,
     ctx: &mut TxContext,
-) {
+): Coin<SUI> {
     message.append(message2);
     message.append(message3);
     message.append(message4);
     let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx)
 }
 
 public(package) fun request_dwallet_network_encryption_key_dkg(
@@ -93,13 +95,6 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
     ctx: &mut TxContext
 ): DWalletNetworkEncryptionKeyCap {
     self.inner_mut().request_dwallet_network_encryption_key_dkg(ctx)
-}
-
-public(package) fun advance_epoch(
-    self: &mut DWalletCoordinator,
-    committee: BlsCommittee,
-): Balance<IKA> {
-    self.inner_mut().advance_epoch(committee)
 }
 
 public fun get_active_encryption_key(

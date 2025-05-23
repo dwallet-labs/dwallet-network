@@ -15,6 +15,7 @@ use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
 use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner};
+use ika_system::dwallet_pricing::DWalletPricing;
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -137,17 +138,6 @@ public(package) fun create(
     system_state
 }
 
-public(package) fun advance_network_keys(
-    self: &SystemInnerV1, dwallet_2pc_mpc_coordinator: &mut DWalletCoordinatorInner
-): Balance<IKA> {
-    let mut total_reward = sui::balance::zero<IKA>();
-
-    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| {
-        total_reward.join(dwallet_2pc_mpc_coordinator.advance_epoch_dwallet_network_encryption_key(cap));
-    });
-    total_reward
-}
-
 public(package) fun create_system_parameters(
     epoch_duration_ms: u64,
     stake_subsidy_start_epoch: u64,
@@ -173,11 +163,15 @@ public(package) fun create_system_parameters(
 // ==== public(package) functions ====
 
 public(package) fun initialize(
-    self: &mut SystemInnerV1,    
-    clock: &Clock,
+    self: &mut SystemInnerV1,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     package_id: ID,
+    cap: &ProtocolCap,
+    clock: &Clock,
     ctx: &mut TxContext,
 ) {
+    self.verify_cap(cap);
     let now = clock.timestamp_ms();
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
@@ -189,8 +183,7 @@ public(package) fun initialize(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
+    let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
     let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     self.advance_epoch(dwallet_2pc_mpc_coordinator_inner, clock, ctx);
 
@@ -421,6 +414,16 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     self.validator_set.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession_bytes, cap, ctx);
 }
 
+/// Sets a validator's public key of network key.
+/// The change will only take effects starting from the next epoch.
+public(package) fun set_next_epoch_network_pubkey_bytes(
+    self: &mut SystemInnerV1,
+    network_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap
+) {
+    self.validator_set.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
+}
+
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_pubkey_bytes(
@@ -442,15 +445,15 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.validator_set.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
 }
 
-
-/// Sets a validator's public key of network key.
+/// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_network_pubkey_bytes(
+public(package) fun set_pricing_vote(
     self: &mut SystemInnerV1,
-    network_pubkey_bytes: vector<u8>,
-    cap: &ValidatorOperationCap
+    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
 ) {
-    self.validator_set.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
+    self.validator_set.set_pricing_vote(dwallet_coordinator_inner, pricing, cap);
 }
 
 /// This function should be called at the end of an epoch, and advances the system to the next epoch.
@@ -488,14 +491,12 @@ public(package) fun advance_epoch(
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
-    let computation_rewards = self.advance_network_keys(dwallet_coordinator);
+    let dwallet_computatio_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
 
-    let total_computation_fees = consensus_validation_rewards.value() + computation_rewards.value();
+    let total_computation_fees = dwallet_computatio_and_consensus_validation_rewards.value();
 
     let mut total_reward = sui::balance::zero<IKA>();
-    total_reward.join(consensus_validation_rewards);
-    total_reward.join(computation_rewards);
+    total_reward.join(dwallet_computatio_and_consensus_validation_rewards);
     total_reward.join(stake_subsidy);
     total_reward.join(self.remaining_rewards.withdraw_all());
 
@@ -547,7 +548,8 @@ public(package) fun process_mid_epoch(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reconfiguration_event(cap, ctx));
+    let next_epoch_active_committee = self.validator_set.next_epoch_active_committee().extract();
+    dwallet_coordinator_inner.mid_epoch_reconfiguration(next_epoch_active_committee, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
 
 public(package) fun lock_last_active_session_sequence_number(
@@ -636,14 +638,15 @@ public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 
-public(package) fun set_supported_curves_to_signature_algorithms_to_hash_schemes(
+public(package) fun set_supported_and_pricing(
     self: &SystemInnerV1,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
+    default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     protocol_cap: &ProtocolCap,
 ) {
     self.verify_cap(protocol_cap);
-    dwallet_2pc_mpc_coordinator_inner.set_supported_curves_to_signature_algorithms_to_hash_schemes(supported_curves_to_signature_algorithms_to_hash_schemes);
+    dwallet_2pc_mpc_coordinator_inner.set_supported_and_pricing(default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes);
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(
