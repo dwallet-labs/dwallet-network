@@ -300,15 +300,16 @@ impl DiscoveryEventLoop {
 
     fn handle_tick(&mut self, _now: std::time::Instant, now_unix: u64) {
         self.update_our_info_timestamp(now_unix);
-
-        self.tasks
-            .spawn(query_connected_peers_for_their_known_peers(
-                self.network.clone(),
-                self.discovery_config.clone(),
-                self.state.clone(),
-                self.metrics.clone(),
-                self.allowlisted_peers.clone(),
-            ));
+        if self.config.fixed_peers.is_none() {
+            self.tasks
+                .spawn(query_connected_peers_for_their_known_peers(
+                    self.network.clone(),
+                    self.discovery_config.clone(),
+                    self.state.clone(),
+                    self.metrics.clone(),
+                    self.allowlisted_peers.clone(),
+                ));
+        }
 
         // Cull old peers older than a day
         self.state
@@ -362,19 +363,34 @@ impl DiscoveryEventLoop {
         }
 
         // If we aren't connected to anything and we aren't presently trying to connect to anyone
-        // we need to try the seed peers
+        // we need to try the seed peers or the fixed peers again
         if self.dial_seed_peers_task.is_none()
             && state.connected_peers.is_empty()
             && self.pending_dials.is_empty()
-            && !self.config.seed_peers.is_empty()
         {
-            let abort_handle = self.tasks.spawn(try_to_connect_to_seed_peers(
-                self.network.clone(),
-                self.discovery_config.clone(),
-                self.config.seed_peers.clone(),
-            ));
+            match &self.config.fixed_peers {
+                Some(fixed_peers) => {
+                    let abort_handle = self.tasks.spawn(try_to_connect_to_peers(
+                        self.network.clone(),
+                        self.discovery_config.clone(),
+                        fixed_peers.clone(),
+                    ));
 
-            self.dial_seed_peers_task = Some(abort_handle);
+                    self.dial_seed_peers_task = Some(abort_handle);        
+                }
+                None => {
+                    if !self.config.seed_peers.is_empty() {
+                        let abort_handle = self.tasks.spawn(try_to_connect_to_peers(
+                            self.network.clone(),
+                            self.discovery_config.clone(),
+                            self.config.seed_peers.clone(),
+                        ));
+
+                        self.dial_seed_peers_task = Some(abort_handle);
+                    }
+                }
+            }
+            
         }
     }
 }
@@ -402,7 +418,7 @@ async fn try_to_connect_to_peer(network: Network, info: NodeInfo) {
     }
 }
 
-async fn try_to_connect_to_seed_peers(
+async fn try_to_connect_to_peers(
     network: Network,
     config: Arc<DiscoveryConfig>,
     seed_peers: Vec<SeedPeer>,
