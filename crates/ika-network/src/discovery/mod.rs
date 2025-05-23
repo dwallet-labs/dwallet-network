@@ -376,7 +376,7 @@ impl DiscoveryEventLoop {
                         fixed_peers.clone(),
                     ));
 
-                    self.dial_seed_peers_task = Some(abort_handle);        
+                    self.dial_seed_peers_task = Some(abort_handle);
                 }
                 None => {
                     if !self.config.seed_peers.is_empty() {
@@ -390,7 +390,6 @@ impl DiscoveryEventLoop {
                     }
                 }
             }
-            
         }
     }
 }
