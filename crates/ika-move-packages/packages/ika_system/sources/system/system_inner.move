@@ -700,6 +700,26 @@ public(package) fun commit_upgrade(
     old_package_id
 }
 
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+public(package) fun calculate_rewards(
+    self: &SystemInnerV1,
+    node_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.validator_set.calculate_rewards(node_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Check whether StakedIka can be withdrawn directly.
+public(package) fun can_withdraw_staked_ika_early(self: &SystemInnerV1, staked_ika: &StakedIka): bool {
+    self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
+}
+
 #[test_only]
 /// Return the current validator set
 public(package) fun validator_set(self: &SystemInnerV1): &ValidatorSet {

@@ -1103,3 +1103,30 @@ public fun is_inactive_validator(self: &mut ValidatorSet, validator_id: ID): boo
     let validator = self.get_validator(validator_id);
     validator.is_withdrawing()
 }
+
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+public(package) fun calculate_rewards(
+    self: &ValidatorSet,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    let validator = self.get_validator(validator_id);
+    validator.calculate_rewards(staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Check whether StakedIka can be withdrawn directly.
+public(package) fun can_withdraw_staked_ika_early(
+    self: &ValidatorSet,
+    staked_ika: &StakedIka,
+    current_epoch: u64,
+): bool {
+    let validator_id = staked_ika.validator_id();
+    let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
+    staked_ika.can_withdraw_early(is_next_committee, current_epoch)
+}

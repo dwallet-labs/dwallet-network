@@ -77,6 +77,8 @@ the SystemInnerVX version, or vice versa.
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_authorize_update_message_by_cap)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
 -  [Function `migrate`](#(ika_system=0x0)_system_migrate)
+-  [Function `calculate_rewards`](#(ika_system=0x0)_system_calculate_rewards)
+-  [Function `can_withdraw_staked_ika_early`](#(ika_system=0x0)_system_can_withdraw_staked_ika_early)
 -  [Function `inner_mut`](#(ika_system=0x0)_system_inner_mut)
 -  [Function `inner`](#(ika_system=0x0)_system_inner)
 
@@ -1323,6 +1325,66 @@ to migrate changes in the <code><a href="../ika_system/system_inner.md#(ika_syst
     // Set the new package id.
     <b>assert</b>!(self.new_package_id.is_some(), <a href="../ika_system/system.md#(ika_system=0x0)_system_EInvalidMigration">EInvalidMigration</a>);
     self.package_id = self.new_package_id.extract();
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_calculate_rewards"></a>
+
+## Function `calculate_rewards`
+
+Calculate the rewards for an amount with value <code>staked_principal</code>, staked in the validator with
+the given <code>validator_id</code> between <code>activation_epoch</code> and <code>withdraw_epoch</code>.
+
+This function can be used with <code>dev_inspect</code> to calculate the expected rewards for a <code>StakedIka</code>
+object or, more generally, the returns provided by a given validator over a given period.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_principal: u64, activation_epoch: u64, withdraw_epoch: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(
+    self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(validator_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_can_withdraw_staked_ika_early"></a>
+
+## Function `can_withdraw_staked_ika_early`
+
+Call <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_can_withdraw_early">staked_ika::can_withdraw_early</a></code> to allow calling this method in applications.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &(ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &StakedIka): bool {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>)
 }
 </code></pre>
 

@@ -1297,6 +1297,12 @@ is_validator_candidate
 is_inactive_validator
 	public fun
 	0x0::validator_set
+calculate_rewards
+	public(package) fun
+	0x0::validator_set
+can_withdraw_staked_ika_early
+	public(package) fun
+	0x0::validator_set
 ProtocolTreasury
 	public struct
 	0x0::protocol_treasury
@@ -1468,6 +1474,12 @@ authorize_update_message
 commit_upgrade
 	public(package) fun
 	0x0::system_inner
+calculate_rewards
+	public(package) fun
+	0x0::system_inner
+can_withdraw_staked_ika_early
+	public(package) fun
+	0x0::system_inner
 epoch_duration_ms
 	public(package) fun
 	0x0::system_inner
@@ -1577,6 +1589,12 @@ commit_upgrade
 	public fun
 	0x0::system
 migrate
+	public fun
+	0x0::system
+calculate_rewards
+	public fun
+	0x0::system
+can_withdraw_staked_ika_early
 	public fun
 	0x0::system
 inner_mut

@@ -63,6 +63,8 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `pending_active_set`](#(ika_system=0x0)_validator_set_pending_active_set)
 -  [Function `is_validator_candidate`](#(ika_system=0x0)_validator_set_is_validator_candidate)
 -  [Function `is_inactive_validator`](#(ika_system=0x0)_validator_set_is_inactive_validator)
+-  [Function `calculate_rewards`](#(ika_system=0x0)_validator_set_calculate_rewards)
+-  [Function `can_withdraw_staked_ika_early`](#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early)
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
@@ -2411,6 +2413,70 @@ Returns true if the validator identified by <code>validator_id</code> is of an i
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_inactive_validator">is_inactive_validator</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): bool {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_withdrawing()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_calculate_rewards"></a>
+
+## Function `calculate_rewards`
+
+Calculate the rewards for an amount with value <code>staked_principal</code>, staked in the validator with
+the given <code>validator_id</code> between <code>activation_epoch</code> and <code>withdraw_epoch</code>.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_principal: u64, activation_epoch: u64, withdraw_epoch: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(staked_principal, activation_epoch, withdraw_epoch)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early"></a>
+
+## Function `can_withdraw_staked_ika_early`
+
+Check whether StakedIka can be withdrawn directly.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &(ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>, current_epoch: u64): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &StakedIka,
+    current_epoch: u64,
+): bool {
+    <b>let</b> validator_id = <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.validator_id();
+    <b>let</b> is_next_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some_and!(|c| c.contains(&validator_id));
+    <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.can_withdraw_early(is_next_committee, current_epoch)
 }
 </code></pre>
 

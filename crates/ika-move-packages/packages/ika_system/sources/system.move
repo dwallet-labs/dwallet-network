@@ -529,6 +529,28 @@ public fun migrate(
     self.package_id = self.new_package_id.extract();
 }
 
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+///
+/// This function can be used with `dev_inspect` to calculate the expected rewards for a `StakedIka`
+/// object or, more generally, the returns provided by a given validator over a given period.
+public fun calculate_rewards(
+    self: &System,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.inner().calculate_rewards(validator_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Call `staked_ika::can_withdraw_early` to allow calling this method in applications.
+public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka): bool {
+    self.inner().can_withdraw_staked_ika_early(staked_ika)
+}
+
 // === Internals ===
 
 /// Get a mutable reference to `SystemInnerVX` from the `System`.
