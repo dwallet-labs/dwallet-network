@@ -201,16 +201,27 @@ impl DiscoveryEventLoop {
     }
 
     fn configure_preferred_peers(&mut self) {
-        for (peer_id, address) in self
-            .discovery_config
-            .allowlisted_peers
-            .iter()
-            .map(|sp| (sp.peer_id, sp.address.clone()))
-            .chain(self.config.seed_peers.iter().filter_map(|ap| {
-                ap.peer_id
-                    .map(|peer_id| (peer_id, Some(ap.address.clone())))
-            }))
-        {
+        let initial_peers: Vec<_> = match &self.config.fixed_peers {
+            Some(fixed_peers) => fixed_peers
+                .iter()
+                .filter_map(|fixed_peer| {
+                    fixed_peer
+                        .peer_id
+                        .map(|peer_id| (peer_id, Some(fixed_peer.address.clone())))
+                })
+                .collect(),
+            None => self
+                .discovery_config
+                .allowlisted_peers
+                .iter()
+                .map(|sp| (sp.peer_id, sp.address.clone()))
+                .chain(self.config.seed_peers.iter().filter_map(|ap| {
+                    ap.peer_id
+                        .map(|peer_id| (peer_id, Some(ap.address.clone())))
+                }))
+                .collect(),
+        };
+        for (peer_id, address) in initial_peers.iter() {
             let anemo_address = if let Some(address) = address {
                 let Ok(address) = address.to_anemo_address() else {
                     debug!(p2p_address=?address, "Can't convert p2p address to anemo address");
