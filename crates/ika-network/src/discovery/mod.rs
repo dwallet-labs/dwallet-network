@@ -202,14 +202,17 @@ impl DiscoveryEventLoop {
 
     fn configure_preferred_peers(&mut self) {
         let initial_peers: Vec<_> = match &self.config.fixed_peers {
-            Some(fixed_peers) => fixed_peers
-                .iter()
-                .filter_map(|fixed_peer| {
-                    fixed_peer
-                        .peer_id
-                        .map(|peer_id| (peer_id, Some(fixed_peer.address.clone())))
-                })
-                .collect(),
+            Some(fixed_peers) => {
+                warn!(?fixed_peers, "connecting to fixed peers");
+                fixed_peers
+                    .iter()
+                    .filter_map(|fixed_peer| {
+                        fixed_peer
+                            .peer_id
+                            .map(|peer_id| (peer_id, Some(fixed_peer.address.clone())))
+                    })
+                    .collect()
+            },
             None => self
                 .discovery_config
                 .allowlisted_peers
