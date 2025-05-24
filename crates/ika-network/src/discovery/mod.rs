@@ -25,7 +25,7 @@ use tokio::{
     sync::oneshot,
     task::{AbortHandle, JoinSet},
 };
-use tracing::{debug, info, trace};
+use tracing::{debug, info, trace, warn};
 
 const TIMEOUT: Duration = Duration::from_secs(1);
 const ONE_DAY_MILLISECONDS: u64 = 24 * 60 * 60 * 1_000;
@@ -301,6 +301,7 @@ impl DiscoveryEventLoop {
     fn handle_tick(&mut self, _now: std::time::Instant, now_unix: u64) {
         self.update_our_info_timestamp(now_unix);
         if self.config.fixed_peers.is_none() {
+            warn!("no fixed peers, looking for more peers");
             self.tasks
                 .spawn(query_connected_peers_for_their_known_peers(
                     self.network.clone(),
@@ -370,6 +371,7 @@ impl DiscoveryEventLoop {
         {
             match &self.config.fixed_peers {
                 Some(fixed_peers) => {
+                    warn!(?fixed_peers, "connecting to the fixed peers");
                     let abort_handle = self.tasks.spawn(try_to_connect_to_peers(
                         self.network.clone(),
                         self.discovery_config.clone(),

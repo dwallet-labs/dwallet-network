@@ -21,6 +21,7 @@ pub struct P2pConfig {
     /// connection is established with these nodes.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub seed_peers: Vec<SeedPeer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fixed_peers: Option<Vec<SeedPeer>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub anemo_config: Option<anemo::Config>,
