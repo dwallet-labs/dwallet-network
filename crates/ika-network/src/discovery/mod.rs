@@ -284,6 +284,7 @@ impl DiscoveryEventLoop {
                         self.state.clone(),
                         self.metrics.clone(),
                         self.allowlisted_peers.clone(),
+                        self.config.fixed_peers.is_some(),
                     ));
                 }
             }
@@ -310,7 +311,7 @@ impl DiscoveryEventLoop {
                 self.state.clone(),
                 self.metrics.clone(),
                 self.allowlisted_peers.clone(),
-                self.config.fixed_peers.is_some()
+                self.config.fixed_peers.is_some(),
             ));
 
         // Cull old peers older than a day
@@ -454,6 +455,7 @@ async fn query_peer_for_their_known_peers(
     state: Arc<RwLock<State>>,
     metrics: Metrics,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
+    has_fixed_peers: bool,
 ) {
     let mut client = DiscoveryClient::new(peer);
 
@@ -475,7 +477,13 @@ async fn query_peer_for_their_known_peers(
             },
         );
     if let Some(found_peers) = found_peers {
-        update_known_peers(state, metrics, found_peers, allowlisted_peers, );
+        update_known_peers(
+            state,
+            metrics,
+            found_peers,
+            allowlisted_peers,
+            has_fixed_peers,
+        );
     }
 }
 
@@ -524,7 +532,13 @@ async fn query_connected_peers_for_their_known_peers(
         .collect::<Vec<_>>()
         .await;
 
-    update_known_peers(state, metrics, found_peers, allowlisted_peers, has_fixed_peers);
+    update_known_peers(
+        state,
+        metrics,
+        found_peers,
+        allowlisted_peers,
+        has_fixed_peers,
+    );
 }
 
 fn update_known_peers(
