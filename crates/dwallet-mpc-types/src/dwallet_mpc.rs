@@ -26,10 +26,18 @@ pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
     ident_str!("ValidatorDataForDWalletSecretShare");
 pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
+    ident_str!("DWalletNetworkDKGEncryptionKeyRequestEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
+
+/// MPC session public output sent through the consensus.
+/// Used to indicate the session status.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MPCSessionPublicOutput {
+    CompletedSuccessfully(SerializedWrappedMPCPublicOutput),
+    SessionFailed,
+}
 
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;

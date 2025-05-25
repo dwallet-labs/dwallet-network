@@ -4,7 +4,6 @@
 
 use crate::crypto::default_hash;
 use crate::digests::MessageDigest;
-use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
@@ -15,6 +14,7 @@ use strum::IntoStaticStr;
 pub struct DKGFirstRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
+    pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
@@ -71,6 +71,7 @@ pub struct Secp256K1NetworkKeyPublicOutputSlice {
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub is_last: bool,
+    pub rejected: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
