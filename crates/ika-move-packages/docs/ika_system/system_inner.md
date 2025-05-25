@@ -345,7 +345,7 @@ the epoch advancement message.
 
 ## Struct `SystemProtocolCapVerifiedEvent`
 
-Event emitted during verifing quorum checkpoint submmision signature.
+Event emitted during verifying quorum checkpoint submission signature.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemProtocolCapVerifiedEvent">SystemProtocolCapVerifiedEvent</a> <b>has</b> <b>copy</b>, drop
@@ -378,7 +378,7 @@ Event emitted during verifing quorum checkpoint submmision signature.
 ## Struct `SystemCheckpointInfoEvent`
 
 Event containing system-level checkpoint information, emitted during
-the system checkpoint submmision message.
+the system checkpoint submission message.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> <b>has</b> <b>copy</b>, drop
@@ -675,7 +675,7 @@ This function will be called only once in init.
 
 ## Function `request_add_validator_candidate`
 
-Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
+Can be called by anyone who wishes to become a validator candidate and starts accusing delegated
 stakes in their staking pool. Once they have at least <code>MIN_VALIDATOR_JOINING_STAKE</code> amount of stake they
 can call <code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_add_validator">request_add_validator</a></code> to officially become an active validator at the next epoch.
 Aborts if the caller is already a pending or active validator, or a validator candidate.
@@ -1401,10 +1401,10 @@ gas coins.
         stake_subsidy.join(self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.stake_subsidy_for_distribution(ctx));
     };
     <b>let</b> stake_subsidy_amount = stake_subsidy.value();
-    <b>let</b> dwallet_computatio_and_consensus_validation_rewards = dwallet_coordinator.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
-    <b>let</b> total_computation_fees = dwallet_computatio_and_consensus_validation_rewards.value();
+    <b>let</b> dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
+    <b>let</b> total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
     <b>let</b> <b>mut</b> total_reward = <a href="../sui/balance.md#sui_balance_zero">sui::balance::zero</a>&lt;IKA&gt;();
-    total_reward.join(dwallet_computatio_and_consensus_validation_rewards);
+    total_reward.join(dwallet_computation_and_consensus_validation_rewards);
     total_reward.join(stake_subsidy);
     total_reward.join(self.remaining_rewards.withdraw_all());
     <b>let</b> total_reward_amount_before_distribution = total_reward.value();

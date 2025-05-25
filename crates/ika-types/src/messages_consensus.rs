@@ -212,7 +212,11 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, Box::new(session_info), output),
+            kind: ConsensusTransactionKind::DWalletMPCOutput(
+                authority,
+                Box::new(session_info),
+                output,
+            ),
         }
     }
 

@@ -70,8 +70,7 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
         match first_round_output_buf {
             VersionedCentralizedDKGPublicOutput::V1(first_round_output) => {
                 let first_round_output: <DKGFirstParty as Party>::PublicOutput =
-                    bcs::from_bytes(&first_round_output)
-                        .map_err(DwalletMPCError::BcsError)?;
+                    bcs::from_bytes(&first_round_output).map_err(DwalletMPCError::BcsError)?;
                 let centralized_party_public_key_share = match centralized_party_public_key_share {
                     VersionedPublicKeyShareAndProof::V1(centralized_party_public_key_share) => {
                         bcs::from_bytes(&centralized_party_public_key_share)

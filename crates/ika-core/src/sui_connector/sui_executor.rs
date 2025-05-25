@@ -252,7 +252,10 @@ where
                     .sui_client
                     .get_epoch_start_system_until_success(&ika_system_state_inner)
                     .await;
-                return StopReason::EpochComplete(Box::new(ika_system_state_inner), epoch_start_system_state);
+                return StopReason::EpochComplete(
+                    Box::new(ika_system_state_inner),
+                    epoch_start_system_state,
+                );
             }
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");

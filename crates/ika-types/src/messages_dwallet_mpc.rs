@@ -21,9 +21,12 @@ use sui_types::collection_types::{Table, TableVec};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
+    /// Make the dWallet user secret key shares public, so the network can control it.
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
+
+    /// Import a secret key to a dWallet.
     DWalletImportedKeyVerificationRequest(
         DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
     ),

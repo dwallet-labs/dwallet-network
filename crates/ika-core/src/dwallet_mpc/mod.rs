@@ -283,12 +283,12 @@ fn dkg_second_public_input(
     protocol_public_parameters: &[u8],
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters.to_vec(),
-            deserialized_event.first_round_output.clone(),
-            deserialized_event
-                .centralized_public_key_share_and_proof
-                .clone(),
-        )
+        protocol_public_parameters.to_vec(),
+        deserialized_event.first_round_output.clone(),
+        deserialized_event
+            .centralized_public_key_share_and_proof
+            .clone(),
+    )
 }
 
 fn dkg_second_party_session_info(
@@ -309,16 +309,15 @@ pub(crate) fn presign_public_input(
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
     <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
-            deserialized_event.dwallet_public_output.clone().ok_or(
-                DwalletMPCError::MPCSessionError {
-                    session_id,
-                    error: "presign public input cannot be None as we only support ECDSA"
-                        .to_string(),
-                },
-            )?,
-        )
+        protocol_public_parameters,
+        // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
+        deserialized_event.dwallet_public_output.clone().ok_or(
+            DwalletMPCError::MPCSessionError {
+                session_id,
+                error: "presign public input cannot be None as we only support ECDSA".to_string(),
+            },
+        )?,
+    )
 }
 
 fn presign_party_session_info(
@@ -376,27 +375,27 @@ fn sign_session_public_input(
     )?;
 
     <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event
-                .event_data
-                .dwallet_decentralized_public_output
-                .clone(),
-            bcs::to_bytes(
-                &message_digest(
-                    &deserialized_event.event_data.message.clone(),
-                    &Hash::try_from(deserialized_event.event_data.hash_scheme)
-                        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-                )
-                .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-            )?,
-            deserialized_event.event_data.presign.clone(),
-            deserialized_event
-                .event_data
-                .message_centralized_signature
-                .clone(),
-            bcs::from_bytes(&decryption_pp)?,
-            expected_decrypters,
-        )
+        protocol_public_parameters,
+        deserialized_event
+            .event_data
+            .dwallet_decentralized_public_output
+            .clone(),
+        bcs::to_bytes(
+            &message_digest(
+                &deserialized_event.event_data.message.clone(),
+                &Hash::try_from(deserialized_event.event_data.hash_scheme)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+            )
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+        )?,
+        deserialized_event.event_data.presign.clone(),
+        deserialized_event
+            .event_data
+            .message_centralized_signature
+            .clone(),
+        bcs::from_bytes(&decryption_pp)?,
+        expected_decrypters,
+    )
 }
 
 fn sign_party_session_info(
@@ -695,7 +694,10 @@ pub(super) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                dkg_second_public_input(&deserialized_event.event_data, &protocol_public_parameters)?,
+                dkg_second_public_input(
+                    &deserialized_event.event_data,
+                    &protocol_public_parameters,
+                )?,
                 None,
             ))
         }

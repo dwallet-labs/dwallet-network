@@ -58,7 +58,6 @@ pub struct DWalletMPCMetrics {
     pub(crate) decryption_key_reshare_round_completions_count: IntGauge,
     pub(crate) decryption_key_reshare_completion_duration: IntGauge,
 
-    // todo(zeev): fix unused metrics.
     // MakeDWalletUserSecretKeySharesPublic.
     pub(crate) advance_calls_for_make_dwallet_user_secret_key_shares_public: IntGauge,
     pub(crate) advance_completions_for_make_dwallet_user_secret_key_shares_public: IntGauge,

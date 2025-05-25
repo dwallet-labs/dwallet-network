@@ -7,9 +7,8 @@ use anyhow::{anyhow, Context};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
-    CiphertextSpaceGroupElement, DecryptionKey, EncryptionKey,
-    Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-    SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CiphertextSpaceGroupElement, DecryptionKey, EncryptionKey, Secp256k1DecryptionKey,
+    SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, SerializedWrappedMPCPublicOutput,
@@ -25,7 +24,7 @@ use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use mpc::two_party::{Round};
+use mpc::two_party::Round;
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
@@ -179,7 +178,8 @@ pub fn advance_centralized_sign_party(
             let VersionedPresignOutput::V1(presign) = presign;
             let centralized_party_secret_key_share: VersionedDwalletUserSecretShare =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
-            let VersionedDwalletUserSecretShare::V1(centralized_party_secret_key_share) = centralized_party_secret_key_share;
+            let VersionedDwalletUserSecretShare::V1(centralized_party_secret_key_share) =
+                centralized_party_secret_key_share;
             let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
             let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
                 { secp256k1::SCALAR_LIMBS },
@@ -400,7 +400,8 @@ pub fn decrypt_user_share_inner(
             network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let VersionedEncryptedUserShare::V1(encrypted_user_share_and_proof) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let VersionedEncryptedUserShare::V1(encrypted_user_share_and_proof) =
+        bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let public_parameters = homomorphic_encryption::PublicParameters::<

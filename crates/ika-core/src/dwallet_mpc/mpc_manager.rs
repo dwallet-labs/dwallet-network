@@ -277,6 +277,7 @@ impl DWalletMPCManager {
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
+        // Previously malicious actors are ignored.
         if self
             .malicious_handler
             .get_malicious_actors_names()

@@ -189,9 +189,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                             }
                         }
                     }
-                    Err(error) => InsertResult::Failed {
-                        error,
-                    },
+                    Err(error) => InsertResult::Failed { error },
                 }
             }
             // The following is necessary to change the template type of InsertResult.

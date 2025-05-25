@@ -522,8 +522,7 @@ where
     pub async fn get_available_move_packages(
         &self,
     ) -> IkaResult<Vec<(ObjectID, MovePackageDigest)>> {
-        self
-            .inner
+        self.inner
             .get_available_move_packages(self.ika_package_id, self.ika_system_package_id)
             .await
             .map_err(|e| {
@@ -579,8 +578,7 @@ where
     }
 
     pub async fn get_latest_checkpoint_sequence_number(&self) -> IkaResult<u64> {
-        self
-            .inner
+        self.inner
             .get_latest_checkpoint_sequence_number()
             .await
             .map_err(|e| {
@@ -637,8 +635,7 @@ where
         &self,
     ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
         let system_inner = self.must_get_system_inner_object().await;
-        self
-            .inner
+        self.inner
             .get_network_encryption_keys(
                 system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys(),
             )
@@ -956,8 +953,8 @@ impl SuiClientInner for SuiSdkClient {
                     object_id
                 )))?;
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-                validator_class_groups_public_key_and_proof_bytes
-                    [key_slice.name as usize] = key_slice.value.clone();
+                validator_class_groups_public_key_and_proof_bytes[key_slice.name as usize] =
+                    key_slice.value.clone();
             }
             let validator_class_groups_public_key_and_proof: Result<
                 Vec<SingleEncryptionKeyAndProof>,

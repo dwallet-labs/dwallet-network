@@ -4,8 +4,8 @@ import type { TransactionResult } from '@mysten/sui/dist/cjs/transactions/Transa
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,
 	isActiveDWallet,
@@ -87,7 +87,7 @@ async function approveMessageTX(
 ) {
 	const dWalletStateData = await getDWalletSecpState(conf);
 	const messageApproval = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::approve_message`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::approve_message`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -135,7 +135,7 @@ export async function sign(
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
 	const [verifiedPresignCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_presign_cap`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -147,7 +147,7 @@ export async function sign(
 	});
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -216,7 +216,7 @@ export async function createUnverifiedPartialUserSignatureCap(
 	});
 
 	const [verifiedPresignCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_presign_cap`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -228,7 +228,7 @@ export async function createUnverifiedPartialUserSignatureCap(
 	});
 
 	const [unverifiedPartialUserSignatureCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_future_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_future_sign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -289,7 +289,7 @@ export async function verifySignWithPartialUserSignatures(
 	const tx = new Transaction();
 
 	const [verifiedPartialUserSignatureCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_partial_user_signature_cap`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_partial_user_signature_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -319,7 +319,7 @@ export async function verifySignWithPartialUserSignatures(
 			obj &&
 			'objectType' in obj &&
 			obj.objectType! ===
-				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::VerifiedPartialUserSignatureCap`
+				`${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME}::VerifiedPartialUserSignatureCap`
 		) {
 			return obj.objectId;
 		}
@@ -343,7 +343,7 @@ export async function completeFutureSign(
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_sign_with_partial_user_signature`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign_with_partial_user_signature`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,

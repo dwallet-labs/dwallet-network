@@ -42,7 +42,7 @@ impl CommitteeStore {
             db_options,
             None,
         );
-        
+
         Self {
             tables,
             cache: RwLock::new(HashMap::new()),
