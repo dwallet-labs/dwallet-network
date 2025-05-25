@@ -1,4 +1,3 @@
-;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
@@ -8,8 +7,6 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
-
-
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
@@ -24,8 +21,14 @@ import {
 	isDWalletWithPublicUserSecretKeyShares,
 	makeDWalletUserSecretKeySharesPublicRequestEvent,
 } from '../../src/dwallet-mpc/publish_secret_share';
-import { isDWalletWithPublicUserSecretKeyShares, makeDWalletUserSecretKeySharesPublicRequestEvent } from '../../src/dwallet-mpc/publish_secret_share';
-import { completeFutureSign, createUnverifiedPartialUserSignatureCap, Hash, sign, verifySignWithPartialUserSignatures } from '../../src/dwallet-mpc/sign';
+import {
+	completeFutureSign,
+	createUnverifiedPartialUserSignatureCap,
+	Hash,
+	sign,
+	verifySignWithPartialUserSignatures,
+} from '../../src/dwallet-mpc/sign';
+import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
