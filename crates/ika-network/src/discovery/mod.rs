@@ -284,7 +284,7 @@ impl DiscoveryEventLoop {
                         self.state.clone(),
                         self.metrics.clone(),
                         self.allowlisted_peers.clone(),
-                        self.config.fixed_peers.is_some(),
+                        self.config.fixed_peers.clone(),
                     ));
                 }
             }
@@ -311,7 +311,7 @@ impl DiscoveryEventLoop {
                 self.state.clone(),
                 self.metrics.clone(),
                 self.allowlisted_peers.clone(),
-                self.config.fixed_peers.is_some(),
+                self.config.fixed_peers.clone(),
             ));
 
         // Cull old peers older than a day
@@ -455,7 +455,7 @@ async fn query_peer_for_their_known_peers(
     state: Arc<RwLock<State>>,
     metrics: Metrics,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    has_fixed_peers: bool,
+    fixed_peers: Option<Vec<SeedPeer>>,
 ) {
     let mut client = DiscoveryClient::new(peer);
 
@@ -477,13 +477,7 @@ async fn query_peer_for_their_known_peers(
             },
         );
     if let Some(found_peers) = found_peers {
-        update_known_peers(
-            state,
-            metrics,
-            found_peers,
-            allowlisted_peers,
-            has_fixed_peers,
-        );
+        update_known_peers(state, metrics, found_peers, allowlisted_peers, &fixed_peers);
     }
 }
 
@@ -493,7 +487,7 @@ async fn query_connected_peers_for_their_known_peers(
     state: Arc<RwLock<State>>,
     metrics: Metrics,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    has_fixed_peers: bool,
+    fixed_peers: Option<Vec<SeedPeer>>,
 ) {
     use rand::seq::IteratorRandom;
 
@@ -532,13 +526,7 @@ async fn query_connected_peers_for_their_known_peers(
         .collect::<Vec<_>>()
         .await;
 
-    update_known_peers(
-        state,
-        metrics,
-        found_peers,
-        allowlisted_peers,
-        has_fixed_peers,
-    );
+    update_known_peers(state, metrics, found_peers, allowlisted_peers, &fixed_peers);
 }
 
 fn update_known_peers(
@@ -546,7 +534,7 @@ fn update_known_peers(
     metrics: Metrics,
     found_peers: Vec<SignedNodeInfo>,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    has_fixed_peers: bool,
+    fixed_peers: &Option<Vec<SeedPeer>>,
 ) {
     use std::collections::hash_map::Entry;
 
@@ -622,7 +610,15 @@ fn update_known_peers(
                 if !peer.addresses.is_empty() {
                     metrics.inc_num_peers_with_external_address();
                 }
-                if !has_fixed_peers {
+                if fixed_peers.is_none()
+                    || fixed_peers
+                        .clone()
+                        .unwrap()
+                        .iter()
+                        .map(|peer| peer.peer_id)
+                        .collect::<Vec<_>>()
+                        .contains(&Some(peer.peer_id))
+                {
                     v.insert(peer);
                 }
             }
