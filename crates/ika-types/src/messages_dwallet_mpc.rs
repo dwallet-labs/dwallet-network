@@ -7,7 +7,8 @@ use dwallet_mpc_types::dwallet_mpc::{
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicOutput, DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
+    MPCMessage, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
 };
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
@@ -110,20 +111,6 @@ impl Debug for MPCProtocolInitData {
             }
         }
     }
-}
-
-/// The optional state of the Presign session, if the first round party was
-/// completed and agreed on.
-/// If the first presign round was completed and agreed on,
-/// the [`DWalletMPCSession`] `session_specific_state` will hold
-/// this state.
-/// If the first round was not completed, the `session_specific_state` will be `None`.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct PresignSessionState {
-    /// The verified output from the first party of the Presign protocol.
-    pub first_presign_party_output: MPCPublicOutput,
-    /// The public input for the second party of the Presign protocol.
-    pub second_party_public_input: MPCPublicInput,
 }
 
 /// This is a wrapper type for the [`SuiEvent`] type that is being used to write it to the local RocksDB.

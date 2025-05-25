@@ -460,9 +460,9 @@ export async function decryptAndVerifyReceivedUserShare(
 	}
 	const cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const decryptedSecretShare = decrypt_user_share(
-		cgKeyPair.encryptionKey,
 		cgKeyPair.decryptionKey,
 		encryptedSecretShareAndProof,
+		networkDecryptionKeyPublicOutput,
 	);
 	// Before validating this centralized output,
 	// we are making sure it was signed by us.

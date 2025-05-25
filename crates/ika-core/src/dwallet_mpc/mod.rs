@@ -10,7 +10,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
+    SerializedWrappedMPCPublicOutput,
 };
 use group::PartyID;
 use ika_types::committee::Committee;
@@ -509,14 +509,11 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
-            let wrapped_public_output = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&public_output)?),
-            );
             let private_output = bcs::to_bytes(&private_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
-                public_output: bcs::to_bytes(&wrapped_public_output)?,
+                public_output: bcs::to_bytes(&public_output)?,
             }
         }
     })
