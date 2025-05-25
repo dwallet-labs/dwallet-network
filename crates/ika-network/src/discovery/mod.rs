@@ -373,7 +373,6 @@ impl DiscoveryEventLoop {
         {
             match &self.config.fixed_peers {
                 Some(fixed_peers) => {
-                    warn!(?fixed_peers, "connecting to the fixed peers");
                     let abort_handle = self.tasks.spawn(try_to_connect_to_peers(
                         self.network.clone(),
                         self.discovery_config.clone(),
