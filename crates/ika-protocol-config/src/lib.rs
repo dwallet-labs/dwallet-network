@@ -395,9 +395,7 @@ impl ProtocolConfig {
             consensus_rounds_delay_per_mpc_protocol: HashMap::from([
                 (
                     DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string(),
-                    HashMap::from([
-                        (3, 20)
-                    ]),
+                    HashMap::from([(3, 20)]),
                 ),
                 (
                     FUTURE_SIGN_REQUEST_EVENT_NAME.to_string(),
@@ -409,9 +407,7 @@ impl ProtocolConfig {
                 ),
                 (
                     START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string(),
-                    HashMap::from([
-                        (3, 20)
-                    ]),
+                    HashMap::from([(3, 20)]),
                 ),
                 (
                     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(),
@@ -435,9 +431,7 @@ impl ProtocolConfig {
                 ),
                 (
                     SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-                    HashMap::from([
-                        (2, 2)
-                    ]),
+                    HashMap::from([(2, 2)]),
                 ),
             ]),
         };
