@@ -517,17 +517,6 @@ impl DWalletMPCEventTrait for DWalletImportedKeyVerificationRequestEvent {
     }
 }
 
-/// Represents the Rust version of the Move struct
-/// `ika_system::dwallet_2pc_mpc_coordinator_inner::MakeDWalletUserSecretKeySharesPublicRequestEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
-    pub public_user_secret_key_shares: Vec<u8>,
-    pub public_output: Vec<u8>,
-    pub curve: u32,
-    pub dwallet_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
-}
-
 impl DWalletMPCEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
