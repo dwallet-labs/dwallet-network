@@ -615,9 +615,9 @@ fn update_known_peers(
                         .clone()
                         .unwrap()
                         .iter()
-                        .map(|peer| peer.peer_id)
-                        .collect::<Vec<_>>()
-                        .contains(&Some(peer.peer_id))
+                        .filter_map(|peer| peer.peer_id.clone())
+                        .collect::<Vec<PeerId>>()
+                        .contains(&peer.peer_id)
                 {
                     v.insert(peer);
                 }
