@@ -7,12 +7,12 @@ use anyhow::{anyhow, Context};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
-    CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
+    CiphertextSpaceGroupElement, DecryptionKey, EncryptionKey,
     Secp256k1DecryptionKey, SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, SerializedWrappedMPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, SerializedWrappedMPCPublicOutput,
     VersionedCentralizedDKGPublicOutput, VersionedDwalletDKGFirstRoundPublicOutput,
     VersionedDwalletDKGSecondRoundPublicOutput, VersionedDwalletUserSecretShare,
     VersionedEncryptedUserShare, VersionedImportedDWalletPublicOutput,
@@ -28,13 +28,11 @@ use homomorphic_encryption::{
 use mpc::two_party::{Round};
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
-use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
-use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -440,6 +438,7 @@ pub fn decrypt_user_share_inner(
     Ok(secret_share_bytes)
 }
 
+// todo(zeev): what is this function?
 /// Derives a dWallets` public key share from a private key share.
 fn cg_secp256k1_public_key_share_from_secret_share(
     secret_key_share: Vec<u8>,

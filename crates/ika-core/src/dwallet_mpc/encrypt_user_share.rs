@@ -2,8 +2,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedEncryptedUserShare,
 };
-use group::GroupElement;
-use homomorphic_encryption::GroupsPublicParametersAccessors;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::EncryptedShareVerificationRequestEvent;
 use rand_core::OsRng;

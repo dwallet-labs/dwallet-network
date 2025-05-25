@@ -12,8 +12,8 @@ use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event}
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput,
+    DWalletMPCNetworkKeyScheme,
+    MPCSessionStatus, VersionedNetworkDkgOutput,
 };
 use group::PartyID;
 use ika_config::NodeConfig;

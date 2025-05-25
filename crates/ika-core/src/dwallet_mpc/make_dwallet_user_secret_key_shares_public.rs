@@ -1,13 +1,8 @@
-use anyhow::anyhow;
-use class_groups::Secp256k1EncryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedImportedSecretShare,
 };
-use group::{CyclicGroupElement, GroupElement};
-use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, PlaintextSpaceGroupElement};
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.
