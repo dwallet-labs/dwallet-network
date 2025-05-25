@@ -4,10 +4,9 @@
 use std::net::{IpAddr, SocketAddr};
 
 use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, sample_seed,
-    write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
+    generate_class_groups_keypair_and_proof_from_seed, sample_seed, ClassGroupsKeyPairAndProof,
 };
-use fastcrypto::traits::{KeyPair, ToFromBytes};
+use fastcrypto::traits::KeyPair;
 use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_NIKA;
 use ika_config::local_ip_utils;
 use ika_config::validator_info::ValidatorInfo;
@@ -59,7 +58,7 @@ impl ValidatorInitializationConfig {
         let worker_public_key: NetworkPublicKey = self.consensus_key_pair.public().clone();
         let network_address = self.network_address.clone();
         let current_epoch_consensus_address = self.current_epoch_consensus_address.clone();
-        let next_epoch_consensus_address = self.next_epoch_consensus_address.clone();
+        let _next_epoch_consensus_address = self.next_epoch_consensus_address.clone();
 
         ValidatorInfo {
             name,
@@ -221,6 +220,7 @@ fn default_socket_address() -> SocketAddr {
     local_ip_utils::new_local_tcp_socket_for_testing()
 }
 
+#[allow(unused)]
 fn default_multiaddr_address() -> Multiaddr {
     local_ip_utils::new_local_tcp_address_for_testing()
 }

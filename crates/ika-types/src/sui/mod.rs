@@ -9,16 +9,10 @@ use enum_dispatch::enum_dispatch;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::{TableVec, VecMap};
-use sui_types::storage::ObjectStore;
 use sui_types::versioned::Versioned;
-use sui_types::MoveTypeTagTrait;
-use system_inner_v1::SystemInnerV1;
-use system_inner_v1::UpgradeCap;
 
 pub mod epoch_start_system;
 pub mod staking;
@@ -133,6 +127,9 @@ impl System {
 pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
     fn protocol_version(&self) -> u64;
+    fn next_protocol_version(&self) -> Option<u64>;
+    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64>;
+    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64;
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
@@ -177,7 +174,6 @@ impl SystemInner {
     pub fn into_init_version_for_tooling(self) -> SystemInnerInit {
         match self {
             SystemInner::V1(inner) => inner,
-            _ => unreachable!(),
         }
     }
 }

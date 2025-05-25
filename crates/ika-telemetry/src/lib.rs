@@ -8,9 +8,13 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::trace;
 
+#[allow(unused_variables)]
 pub(crate) const GA_API_SECRET: &str = "zeq-aYEzS0aGdRJ8kNZTEg";
+#[allow(unused_variables)]
 pub(crate) const GA_EVENT_NAME: &str = "node_telemetry_event";
+#[allow(unused_variables)]
 pub(crate) const GA_MEASUREMENT_ID: &str = "G-96DM59YK2F";
+#[allow(unused_variables)]
 pub(crate) const GA_URL: &str = "https://www.google-analytics.com/mp/collect";
 // need this hardcoded client ID as only existing client is valid.
 // see below for details:
@@ -38,7 +42,7 @@ struct IpResponse {
     ip: String,
 }
 
-pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool) {
+pub async fn send_telemetry_event(_state: Arc<AuthorityState>, is_validator: bool) {
     let git_rev = env!("CARGO_PKG_VERSION").to_string();
     let ip_address = get_ip().await;
     // let chain_identifier = match state.get_chain_identifier() {
@@ -70,7 +74,7 @@ pub async fn send_telemetry_event(state: Arc<AuthorityState>, is_validator: bool
         ]),
     };
 
-    let telemetry_payload = TelemetryPayload {
+    let _telemetry_payload = TelemetryPayload {
         client_id: HARDCODED_CLIENT_ID.into(),
         events: vec![telemetry_event],
     };
@@ -90,6 +94,7 @@ async fn get_ip() -> String {
     }
 }
 
+#[allow(unused)]
 async fn send_telemetry_event_impl(telemetry_payload: TelemetryPayload) {
     let client = reqwest::Client::new();
     let response_result = client

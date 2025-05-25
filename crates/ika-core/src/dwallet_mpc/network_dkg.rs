@@ -9,8 +9,8 @@ use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
 use class_groups::{
-    DecryptionKeyShare, Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, SECRET_KEY_SHARE_LIMBS,
+    Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
@@ -19,20 +19,17 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicOutputClassGroups, NetworkDecryptionKeyPublicData,
     NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
 };
-use group::{ristretto, secp256k1, GroupElement, PartyID};
+use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState,
     MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
 };
-use mpc::secret_sharing::shamir::over_the_integers::PrecomputedValues;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::warn;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -192,7 +189,9 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_encryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(
+                "".to_string(),
+            ))?
             .decryption_key_share_public_parameters
             .clone())
     }
@@ -348,7 +347,7 @@ fn generate_secp256k1_dkg_party_public_input(
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
     )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
@@ -362,7 +361,7 @@ fn generate_ristretto_dkg_party_public_input(
         DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
         encryption_keys_and_proofs,
     )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType)?;
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
@@ -372,7 +371,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     key_data: DWalletNetworkDecryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-    if (key_data.current_reconfiguration_public_output.is_empty()) {
+    if key_data.current_reconfiguration_public_output.is_empty() {
         if key_data.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
             return Err(DwalletMPCError::WaitingForNetworkKey(key_data.id.clone()));
         }

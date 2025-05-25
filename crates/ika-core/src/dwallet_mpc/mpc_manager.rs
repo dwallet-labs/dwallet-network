@@ -1,71 +1,39 @@
-use crate::authority::authority_per_epoch_store::{
-    AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusCommitOutput,
-};
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use ika_types::error::{IkaError, IkaResult};
+use ika_types::error::IkaResult;
 use sui_types::base_types::ObjectID;
 
-use crate::dwallet_mpc::cryptographic_computations_orchestrator::{
-    ComputationUpdate, CryptographicComputationsOrchestrator,
-};
+use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::malicious_handler::{MaliciousHandler, ReportStatus};
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
 use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
-use crate::dwallet_mpc::party_id_to_authority_name;
-use crate::dwallet_mpc::sign::{
-    LAST_SIGN_ROUND_INDEX, SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS,
-};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
-use class_groups::DecryptionKeyShare;
-use crypto_bigint::Zero;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCPublicOutput,
-    MPCSessionStatus, NetworkDecryptionKeyPublicData,
+    DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCSessionStatus,
 };
-use fastcrypto::hash::HashFunction;
-use fastcrypto::traits::ToFromBytes;
-use futures::future::err;
 use group::PartyID;
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_config::NodeConfig;
-use ika_types::committee::{Committee, EpochId, StakeUnit};
+use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
-use ika_types::crypto::AuthorityPublicKeyBytes;
-use ika_types::crypto::DefaultHash;
-use ika_types::digests::Digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
+    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
     DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait,
     DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent,
     FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo,
     SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
 };
-use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
-use shared_crypto::intent::HashingIntentScope;
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::ops::Deref;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
-use sui_json_rpc_types::SuiEvent;
-use sui_storage::mutex_table::MutexGuard;
-use sui_types::digests::TransactionDigest;
-use sui_types::event::Event;
-use sui_types::id::ID;
-use tokio::runtime::Handle;
-use tokio::sync::mpsc::error::TryRecvError;
-use tokio::sync::mpsc::UnboundedSender;
-use tokio::sync::{watch, OnceCell};
-use tracing::{debug, error, info, warn};
+use tokio::sync::watch;
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
-use typed_store::Map;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -75,7 +43,7 @@ use typed_store::Map;
 /// The correct way to use the manager is to create it along with all other Ika components
 /// at the start of each epoch.
 /// Ensuring it is destroyed when the epoch ends and providing a clean slate for each new epoch.
-pub struct DWalletMPCManager {
+pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,
     /// MPC sessions that where created.
@@ -300,14 +268,6 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
-                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
-                    error!(
-                        "dWallet MPC session failed with threshold not reached with error: {:?}",
-                        err
-                    );
-                }
-            }
         }
     }
 
@@ -498,7 +458,7 @@ impl DWalletMPCManager {
                 _ => HashMap::new(),
             },
         });
-        if let Some(mut session) = self.mpc_sessions.get_mut(&session_info.session_id) {
+        if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
                 "received an event for an existing session with `session_id`: {:?}",
                 session_info.session_id
@@ -785,13 +745,6 @@ impl DWalletMPCManager {
         self.malicious_handler
             .report_malicious_actors(&malicious_parties_names);
         Ok(())
-    }
-
-    /// Flags the given authorities as malicious.
-    /// Future messages from these authorities will be ignored.
-    pub(crate) fn flag_authorities_as_malicious(&mut self, malicious_parties: &[AuthorityName]) {
-        self.malicious_handler
-            .report_malicious_actors(&malicious_parties);
     }
 
     /// Spawns a new MPC session if the number of active sessions is below the limit.

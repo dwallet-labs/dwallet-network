@@ -87,6 +87,8 @@ impl MaliciousHandler {
         &self.malicious_actors
     }
 
+    // todo(zeev): fix this.
+    #[allow(dead_code)]
     pub(crate) fn get_malicious_actors_ids(
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,

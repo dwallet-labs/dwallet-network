@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use crate::committee::StakeUnit;
 use crate::error::IkaError;
+use crate::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use serde::{Deserialize, Serialize};
 use strum::AsRefStr;
 use sui_types::base_types::{AuthorityName, EpochId, ObjectRef, TransactionDigest};
@@ -14,7 +15,6 @@ use sui_types::effects::{
     CertifiedTransactionEffects, TransactionEffects, TransactionEvents,
     VerifiedCertifiedTransactionEffects,
 };
-use sui_types::messages_checkpoint::CheckpointSequenceNumber;
 use sui_types::object::Object;
 use sui_types::transaction::{Transaction, VerifiedTransaction};
 use thiserror::Error;
@@ -86,8 +86,8 @@ pub enum EffectsFinalityInfo {
     /// Effects are certified by a quorum of validators.
     Certified(AuthorityStrongQuorumSignInfo),
 
-    /// Effects are included in a checkpoint.
-    Checkpointed(EpochId, CheckpointSequenceNumber),
+    /// Effects are included in a dwallet checkpoint.
+    Checkpointed(EpochId, DWalletCheckpointSequenceNumber),
 
     /// A quorum of validators have acknowledged effects.
     QuorumExecuted(EpochId),

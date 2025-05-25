@@ -8,11 +8,7 @@ use core::panic;
 use dwallet_classgroups_types::{
     ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
 };
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
-use fastcrypto::traits::ToFromBytes;
 use ika_move_packages::BuiltInIkaMovePackages;
-use ika_types::committee::StakeUnit;
-use ika_types::crypto::AuthorityName;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
@@ -28,44 +24,27 @@ use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
 use itertools::Itertools;
-use move_binary_format::binary_config::BinaryConfig;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::annotated_value::MoveEnumLayout;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
-use sui_json_rpc_api::BridgeReadApiClient;
-use sui_json_rpc_types::{
-    DevInspectResults, SuiData, SuiMoveValue, SuiObjectDataFilter, SuiObjectResponseQuery,
-};
 use sui_json_rpc_types::{EventFilter, Page, SuiEvent};
 use sui_json_rpc_types::{
     EventPage, SuiObjectDataOptions, SuiTransactionBlockResponse,
     SuiTransactionBlockResponseOptions,
 };
+use sui_json_rpc_types::{SuiData, SuiObjectDataFilter, SuiObjectResponseQuery};
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
-use sui_types::balance::Balance;
-use sui_types::base_types::SequenceNumber;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::clock::Clock;
-use sui_types::collection_types::{Table, TableVec};
+use sui_types::collection_types::Table;
 use sui_types::dynamic_field::Field;
 use sui_types::gas_coin::GasCoin;
-use sui_types::id::{ID, UID};
 use sui_types::move_package::MovePackage;
-use sui_types::object::{MoveObject, Object, Owner};
-use sui_types::parse_sui_type_tag;
-use sui_types::transaction::Argument;
-use sui_types::transaction::CallArg;
-use sui_types::transaction::Command;
+use sui_types::object::Owner;
 use sui_types::transaction::ObjectArg;
-use sui_types::transaction::ProgrammableTransaction;
 use sui_types::transaction::Transaction;
-use sui_types::transaction::TransactionKind;
 use sui_types::TypeTag;
 use sui_types::{
     base_types::{ObjectID, SuiAddress},
@@ -643,12 +622,7 @@ where
             };
             let DWalletCoordinatorInner::V1(inner_v1) = self
                 .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
-                .await
-            else {
-                error!("fetched a wrong version of dwallet coordinator inner, trying again");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
+                .await;
             return inner_v1;
         }
     }
@@ -1176,7 +1150,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(full_output
             .into_iter()
             .sorted()
-            .fold(Vec::new(), |mut acc, (k, mut v)| {
+            .fold(Vec::new(), |mut acc, (_, mut v)| {
                 acc.append(&mut v);
                 acc
             }))
