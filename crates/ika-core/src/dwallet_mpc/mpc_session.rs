@@ -677,17 +677,24 @@ impl DWalletMPCSession {
         &self,
         message: MPCMessage,
     ) -> DwalletMPCResult<ConsensusTransaction> {
+        let mpc_protocol = if self.current_round == 1 {
+            Some(
+                self.mpc_event_data
+                    .clone()
+                    // Safe to unwrap as the event data must be set before advancing the session.
+                    .unwrap()
+                    .init_protocol_data
+                    .get_event_name(),
+            )
+        } else {
+            None
+        };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
             self.session_id.clone(),
             self.current_round,
-            self.mpc_event_data
-                .clone()
-                // Safe to unwrap as the event data must be set before advancing the session.
-                .unwrap()
-                .init_protocol_data
-                .get_event_name(),
+            mpc_protocol,
         ))
     }
 
@@ -737,14 +744,16 @@ impl DWalletMPCSession {
         self.received_more_messages_since_last_advance = true;
         let committee = self.epoch_store()?.committee().clone();
         if self.agreed_mpc_protocol.is_none() {
-            if self
-                .mpc_protocol_to_voting_authorities
-                .entry(message.mpc_protocol.clone())
-                .or_insert(StakeAggregator::new(committee))
-                .insert_generic(message.authority, ())
-                .is_quorum_reached()
-            {
-                self.agreed_mpc_protocol = Some(message.mpc_protocol.clone());
+            if let Some(mpc_protocol) = message.mpc_protocol.clone() {
+                if self
+                    .mpc_protocol_to_voting_authorities
+                    .entry(mpc_protocol.clone())
+                    .or_insert(StakeAggregator::new(committee))
+                    .insert_generic(message.authority, ())
+                    .is_quorum_reached()
+                {
+                    self.agreed_mpc_protocol = Some(mpc_protocol);
+                }
             }
         }
         info!(
