@@ -103,9 +103,7 @@ where
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
+            let SystemInner::V1(system_inner) = system_inner;
             let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -202,9 +200,7 @@ where
                     HashMap::new()
                 });
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
+            let SystemInner::V1(system_inner) = system_inner;
             if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())

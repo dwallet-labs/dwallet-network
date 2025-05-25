@@ -139,7 +139,7 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &Vec<u8>,
+        output: &[u8],
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
@@ -154,7 +154,7 @@ impl DWalletMPCOutputsVerifier {
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
 
-        let ref mut session_output_data = self
+        let session_output_data = self
             .mpc_sessions_outputs
             .entry(session_info.session_id)
             .or_insert(SessionOutputsData {
@@ -181,11 +181,11 @@ impl DWalletMPCOutputsVerifier {
         }
         session_output_data
             .authorities_that_sent_output
-            .insert(origin_authority.clone());
+            .insert(origin_authority);
 
         if session_output_data
             .session_output_to_voting_authorities
-            .entry((output.clone(), session_info.clone()))
+            .entry((output.to_owned(), session_info.clone()))
             .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
@@ -194,9 +194,9 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.clear_data();
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
-            self.update_completed_sessions_metric(&session_info);
+            self.update_completed_sessions_metric(session_info);
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
+                result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
                 malicious_actors: vec![],
             });
         }

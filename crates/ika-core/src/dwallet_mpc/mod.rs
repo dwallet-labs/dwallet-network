@@ -108,7 +108,7 @@ pub(crate) fn party_ids_to_authority_names(
 ) -> DwalletMPCResult<Vec<AuthorityName>> {
     party_ids
         .iter()
-        .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
+        .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
@@ -238,9 +238,9 @@ fn start_encrypted_share_verification_session_info(
     }
 }
 
-fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
+fn dkg_first_public_input(protocol_public_parameters: &[u8]) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters,
+        protocol_public_parameters.to_vec(),
     )
 }
 
@@ -281,11 +281,11 @@ fn dkg_first_party_session_info(
 
 fn dkg_second_public_input(
     deserialized_event: DWalletDKGSecondRoundRequestEvent,
-    protocol_public_parameters: Vec<u8>,
+    protocol_public_parameters: &[u8],
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
         <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
+            protocol_public_parameters.to_vec(),
             deserialized_event.first_round_output.clone(),
             deserialized_event
                 .centralized_public_key_share_and_proof
@@ -686,7 +686,7 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
-            Ok((dkg_first_public_input(protocol_public_parameters)?, None))
+            Ok((dkg_first_public_input(&protocol_public_parameters)?, None))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config) =>
@@ -702,7 +702,7 @@ pub(super) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                dkg_second_public_input(deserialized_event.event_data, protocol_public_parameters)?,
+                dkg_second_public_input(deserialized_event.event_data, &protocol_public_parameters)?,
                 None,
             ))
         }

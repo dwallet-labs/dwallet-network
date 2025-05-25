@@ -74,22 +74,17 @@ impl DWalletMPCService {
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
         let system_inner = self.sui_client.must_get_system_inner_object().await;
-        let system_inner = match system_inner {
-            SystemInner::V1(system_inner) => system_inner,
-        };
+        let SystemInner::V1(system_inner) = system_inner;
         if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
-            match coordinator_state {
-                DWalletCoordinatorInner::V1(inner_state) => {
-                    self.dwallet_mpc_manager
-                        .update_last_session_to_complete_in_current_epoch(
-                            inner_state.last_session_to_complete_in_current_epoch,
-                        );
-                }
-            }
+            let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
+            self.dwallet_mpc_manager
+                .update_last_session_to_complete_in_current_epoch(
+                    inner_state.last_session_to_complete_in_current_epoch,
+                );
         }
     }
 

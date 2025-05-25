@@ -20,7 +20,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedNetworkDkgOutput, VersionedPresignOutput, VersionedPublicKeyShareAndProof,
     VersionedUserSignedMessage,
 };
-use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
+use group::{secp256k1, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
@@ -436,23 +436,6 @@ pub fn decrypt_user_share_inner(
     };
     let secret_share_bytes = bcs::to_bytes(&plaintext.value())?;
     Ok(secret_share_bytes)
-}
-
-// todo(zeev): what is this function?
-/// Derives a dWallets` public key share from a private key share.
-fn cg_secp256k1_public_key_share_from_secret_share(
-    secret_key_share: Vec<u8>,
-) -> anyhow::Result<group::secp256k1::GroupElement> {
-    let public_parameters = group::secp256k1::group_element::PublicParameters::default();
-    let generator_group_element =
-        group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
-            &public_parameters,
-        )?;
-    Ok(
-        generator_group_element.scale(&crypto_bigint::Uint::<{ SCALAR_LIMBS }>::from_be_slice(
-            &secret_key_share,
-        )),
-    )
 }
 
 /// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.

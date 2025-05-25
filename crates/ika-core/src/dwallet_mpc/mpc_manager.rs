@@ -327,7 +327,7 @@ impl DWalletMPCManager {
                         .keys()
                         .cloned()
                         .collect::<Vec<PartyID>>(),
-                    &*epoch_store,
+                    &epoch_store,
                 )?);
             session
                 .serialized_full_messages
@@ -449,7 +449,7 @@ impl DWalletMPCManager {
         if let Err(err) = self.increment_metrics_for_event(&event) {
             warn!(?err, "Failed to increment metrics for event...");
         }
-        let (public_input, private_input) = session_input_from_event(event, &self).await?;
+        let (public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = Some(MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -522,8 +522,7 @@ impl DWalletMPCManager {
         self.network_keys
             .validator_private_dec_key_data
             .validator_decryption_key_shares
-            .get(&key_id)
-            .map(|v| v.clone())
+            .get(key_id).cloned()
             .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
@@ -781,7 +780,7 @@ impl DWalletMPCManager {
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
-        self.mpc_sessions.insert(session_id.clone(), new_session);
+        self.mpc_sessions.insert(*session_id, new_session);
     }
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {
