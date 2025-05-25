@@ -829,7 +829,7 @@ impl DWalletMPCSession {
                         .protocol_config()
                         .consensus_rounds_delay_per_mpc_protocol
                         .get(&self.agreed_mpc_protocol.clone().unwrap())
-                        .unwrap_or(&HashMap::from([(self.current_round as u64, 0u64)]))
+                        .unwrap_or_default()
                         .get(&(self.current_round as u64))
                         .unwrap_or(&0u64)
                         .clone();
