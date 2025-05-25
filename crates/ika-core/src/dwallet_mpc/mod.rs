@@ -280,7 +280,7 @@ fn dkg_first_party_session_info(
 }
 
 fn dkg_second_public_input(
-    deserialized_event: DWalletDKGSecondRoundRequestEvent,
+    deserialized_event: &DWalletDKGSecondRoundRequestEvent,
     protocol_public_parameters: &[u8],
 ) -> DwalletMPCResult<Vec<u8>> {
     Ok(
@@ -702,7 +702,7 @@ pub(super) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                dkg_second_public_input(deserialized_event.event_data, &protocol_public_parameters)?,
+                dkg_second_public_input(&deserialized_event.event_data, &protocol_public_parameters)?,
                 None,
             ))
         }
