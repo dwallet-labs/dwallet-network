@@ -684,6 +684,7 @@ impl DWalletMPCSession {
             self.current_round,
             self.mpc_event_data
                 .clone()
+                // Safe to unwrap as the event data must be set before advancing the session.
                 .unwrap()
                 .init_protocol_data
                 .get_event_name(),
