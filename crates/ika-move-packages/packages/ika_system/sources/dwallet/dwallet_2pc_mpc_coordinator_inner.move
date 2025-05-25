@@ -3301,7 +3301,8 @@ fun process_checkpoint_message(
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
-                self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last);
+                let rejected = bcs_body.peel_bool();
+                self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
             } else if (message_data_type == 8) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_user_secret_key_shares = bcs_body.peel_vec_u8();
