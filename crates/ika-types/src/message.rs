@@ -93,24 +93,6 @@ pub struct DWalletImportedKeyVerificationOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct MakeDWalletUserSecretKeySharesPublicOutput {
-    pub dwallet_id: Vec<u8>,
-    pub public_user_secret_key_shares: Vec<u8>,
-    pub rejected: bool,
-    pub session_sequence_number: u64,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct DWalletImportedKeyVerificationOutput {
-    pub dwallet_id: Vec<u8>,
-    pub public_output: Vec<u8>,
-    pub encrypted_user_secret_key_share_id: Vec<u8>,
-    pub session_id: Vec<u8>,
-    pub rejected: bool,
-    pub session_sequence_number: u64,
-}
-
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]

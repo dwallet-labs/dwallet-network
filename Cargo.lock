@@ -5399,6 +5399,7 @@ dependencies = [
  "mysten-network",
  "prometheus",
  "rand 0.8.5",
+ "rayon",
  "sui-macros",
  "sui-simulator",
  "sui-tls",
