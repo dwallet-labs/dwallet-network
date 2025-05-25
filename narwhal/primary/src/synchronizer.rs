@@ -72,7 +72,7 @@ struct Inner {
     gc_round: AtomicU64,
     // Highest round of certificate accepted into the certificate store.
     highest_processed_round: AtomicU64,
-    // Highest round of verfied certificate that has been received.
+    // Highest round of verified certificate that has been received.
     highest_received_round: AtomicU64,
     // Client for fetching payloads.
     client: NetworkClient,
