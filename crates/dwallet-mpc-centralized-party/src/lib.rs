@@ -32,8 +32,7 @@ use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
-use twopc_mpc::secp256k1::class_groups::{
-    ProtocolPublicParameters};
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
