@@ -381,7 +381,7 @@ impl ProtocolConfig {
             // higher confidence.
             consensus_bad_nodes_stake_threshold: Some(20),
         };
-        for cur in 2..=version.0 {
+        if let Some(cur) = (2..=version.0).next() {
             match cur {
                 1 => unreachable!(),
                 // Use this template when making changes:
