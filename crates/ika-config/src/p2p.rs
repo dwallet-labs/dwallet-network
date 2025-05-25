@@ -25,6 +25,8 @@ pub struct P2pConfig {
     /// connection is established with these nodes.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub seed_peers: Vec<SeedPeer>,
+    /// A list of fixed peers that the node will always try to connect to.
+    /// If this field is set, the node will not find new peers through discovery.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fixed_peers: Option<Vec<SeedPeer>>,
     #[serde(skip_serializing_if = "Option::is_none")]
