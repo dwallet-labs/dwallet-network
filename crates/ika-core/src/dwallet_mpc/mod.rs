@@ -32,9 +32,6 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
-use ika_types::messages_dwallet_mpc::{
-    FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
-};
 use jsonrpsee::core::Serialize;
 use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
