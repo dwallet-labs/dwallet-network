@@ -136,44 +136,29 @@ create
 init_staked_ika_display
 	fun
 	0x0::display
-PricingPerOperation
+DWalletPricing
 	public struct
 	0x0::dwallet_pricing
-DWalletPricing2PcMpcSecp256K1
+DWalletPricingKey
 	public struct
 	0x0::dwallet_pricing
-create_dwallet_pricing_2pc_mpc_secp256k1
+DWalletPricingValue
+	public struct
+	0x0::dwallet_pricing
+DWalletPricingCalculationVotes
+	public struct
+	0x0::dwallet_pricing
+empty
 	public fun
 	0x0::dwallet_pricing
-zero
+insert_or_update_dwallet_pricing
 	public fun
 	0x0::dwallet_pricing
-dkg_first_round
-	public fun
+insert_or_update_dwallet_pricing_value
+	fun
 	0x0::dwallet_pricing
-dkg_second_round
-	public fun
-	0x0::dwallet_pricing
-re_encrypt_user_share
-	public fun
-	0x0::dwallet_pricing
-presign
-	public fun
-	0x0::dwallet_pricing
-sign
-	public fun
-	0x0::dwallet_pricing
-future_sign
-	public fun
-	0x0::dwallet_pricing
-sign_with_partial_user_signature
-	public fun
-	0x0::dwallet_pricing
-make_dwallet_user_secret_key_share_public
-	public fun
-	0x0::dwallet_pricing
-imported_key_dwallet_verification
-	public fun
+try_get_dwallet_pricing_value
+	public(package) fun
 	0x0::dwallet_pricing
 consensus_validation_ika
 	public fun
@@ -183,6 +168,30 @@ computation_ika
 	0x0::dwallet_pricing
 gas_fee_reimbursement_sui
 	public fun
+	0x0::dwallet_pricing
+gas_fee_reimbursement_sui_for_system_calls
+	public fun
+	0x0::dwallet_pricing
+new_pricing_calculation
+	public(package) fun
+	0x0::dwallet_pricing
+committee_members_for_pricing_calculation_votes
+	public(package) fun
+	0x0::dwallet_pricing
+calculate_pricing_quorum_below
+	public(package) fun
+	0x0::dwallet_pricing
+pricing_value_quorum_below
+	public(package) fun
+	0x0::dwallet_pricing
+quorum_below
+	fun
+	0x0::dwallet_pricing
+is_calculation_completed
+	public(package) fun
+	0x0::dwallet_pricing
+calculated_pricing
+	public(package) fun
 	0x0::dwallet_pricing
 DWalletCoordinatorInner
 	public struct
@@ -241,16 +250,22 @@ DWalletEvent
 CreatedEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletNetworkDKGDecryptionKeyRequestEvent
+DWalletNetworkDKGEncryptionKeyRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletDecryptionKeyReshareRequestEvent
+CompletedDWalletNetworkDKGEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletDecryptionKeyReshareEvent
+RejectedDWalletNetworkDKGEncryptionKeyEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletNetworkDKGDecryptionKeyEvent
+DWalletEncryptionKeyReconfigurationRequestEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedDWalletEncryptionKeyReconfigurationEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedDWalletEncryptionKeyReconfigurationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletDKGFirstRoundRequestEvent
@@ -377,10 +392,16 @@ respond_dwallet_network_encryption_key_reconfiguration
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 advance_epoch_dwallet_network_encryption_key
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+mid_epoch_reconfiguration
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+calculate_pricing_votes
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 emit_start_reconfiguration_event
-	public(package) fun
+	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_network_encryption_key
 	fun
@@ -535,10 +556,16 @@ process_checkpoint_message_by_quorum
 process_checkpoint_message
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-set_supported_curves_to_signature_algorithms_to_hash_schemes
+set_supported_and_pricing
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+verify_pricing_exists_for_all_protocols
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 set_paused_curves_and_signature_algorithms
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_pricing_vote
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCoordinator
@@ -554,9 +581,6 @@ process_checkpoint_message_by_quorum
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_network_encryption_key_dkg
-	public(package) fun
-	0x0::dwallet_2pc_mpc_coordinator
-advance_epoch
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator
 get_active_encryption_key
@@ -931,6 +955,15 @@ advance_epoch
 process_pending_stake
 	public(package) fun
 	0x0::validator
+verify_validator_cap
+	public(package) fun
+	0x0::validator
+verify_operation_cap
+	public(package) fun
+	0x0::validator
+verify_commission_cap
+	public(package) fun
+	0x0::validator
 set_name
 	public(package) fun
 	0x0::validator
@@ -1111,9 +1144,6 @@ ValidatorLeaveEvent
 new
 	public(package) fun
 	0x0::validator_set
-initialize
-	public(package) fun
-	0x0::validator_set
 request_add_validator_candidate
 	public(package) fun
 	0x0::validator_set
@@ -1175,6 +1205,9 @@ set_next_epoch_consensus_pubkey_bytes
 	public(package) fun
 	0x0::validator_set
 set_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::validator_set
+set_pricing_vote
 	public(package) fun
 	0x0::validator_set
 process_mid_epoch
@@ -1270,6 +1303,12 @@ is_validator_candidate
 is_inactive_validator
 	public fun
 	0x0::validator_set
+calculate_rewards
+	public(package) fun
+	0x0::validator_set
+can_withdraw_staked_ika_early
+	public(package) fun
+	0x0::validator_set
 ProtocolTreasury
 	public struct
 	0x0::protocol_treasury
@@ -1309,10 +1348,10 @@ SystemEpochInfoEvent
 SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner
-create
-	public(package) fun
+SystemCheckpointInfoEvent
+	public struct
 	0x0::system_inner
-advance_network_keys
+create
 	public(package) fun
 	0x0::system_inner
 create_system_parameters
@@ -1375,19 +1414,25 @@ set_next_epoch_consensus_address
 set_next_epoch_protocol_pubkey_bytes
 	public(package) fun
 	0x0::system_inner
+set_next_epoch_network_pubkey_bytes
+	public(package) fun
+	0x0::system_inner
 set_next_epoch_consensus_pubkey_bytes
 	public(package) fun
 	0x0::system_inner
 set_next_epoch_class_groups_pubkey_and_proof_bytes
 	public(package) fun
 	0x0::system_inner
-set_next_epoch_network_pubkey_bytes
+set_pricing_vote
 	public(package) fun
 	0x0::system_inner
 advance_epoch
 	public(package) fun
 	0x0::system_inner
 process_mid_epoch
+	public(package) fun
+	0x0::system_inner
+lock_last_active_session_sequence_number
 	public(package) fun
 	0x0::system_inner
 epoch
@@ -1423,7 +1468,7 @@ verify_cap
 request_dwallet_network_encryption_key_dkg_by_cap
 	public(package) fun
 	0x0::system_inner
-set_supported_curves_to_signature_algorithms_to_hash_schemes
+set_supported_and_pricing
 	public(package) fun
 	0x0::system_inner
 set_paused_curves_and_signature_algorithms
@@ -1436,6 +1481,21 @@ authorize_update_message
 	fun
 	0x0::system_inner
 commit_upgrade
+	public(package) fun
+	0x0::system_inner
+process_checkpoint_message_by_cap
+	public(package) fun
+	0x0::system_inner
+process_checkpoint_message_by_quorum
+	public(package) fun
+	0x0::system_inner
+process_checkpoint_message
+	public(package) fun
+	0x0::system_inner
+calculate_rewards
+	public(package) fun
+	0x0::system_inner
+can_withdraw_staked_ika_early
 	public(package) fun
 	0x0::system_inner
 epoch_duration_ms
@@ -1504,13 +1564,16 @@ set_next_epoch_consensus_address
 set_next_epoch_protocol_pubkey_bytes
 	public fun
 	0x0::system
+set_next_epoch_network_pubkey_bytes
+	public fun
+	0x0::system
 set_next_epoch_consensus_pubkey_bytes
 	public fun
 	0x0::system
 set_next_epoch_class_groups_pubkey_and_proof_bytes
 	public fun
 	0x0::system
-set_next_epoch_network_pubkey_bytes
+set_pricing_vote
 	public fun
 	0x0::system
 token_exchange_rates
@@ -1531,7 +1594,7 @@ request_advance_epoch
 request_dwallet_network_encryption_key_dkg_by_cap
 	public fun
 	0x0::system
-set_supported_curves_to_signature_algorithms_to_hash_schemes
+set_supported_and_pricing
 	public fun
 	0x0::system
 set_paused_curves_and_signature_algorithms
@@ -1543,7 +1606,19 @@ authorize_update_message_by_cap
 commit_upgrade
 	public fun
 	0x0::system
+process_checkpoint_message_by_cap
+	public fun
+	0x0::system
+process_checkpoint_message_by_quorum
+	public fun
+	0x0::system
 migrate
+	public fun
+	0x0::system
+calculate_rewards
+	public fun
+	0x0::system
+can_withdraw_staked_ika_early
 	public fun
 	0x0::system
 inner_mut

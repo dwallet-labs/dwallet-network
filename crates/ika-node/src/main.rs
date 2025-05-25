@@ -15,7 +15,7 @@ use ika_core::runtime::IkaRuntimes;
 use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
 use ika_types::digests::ChainIdentifier;
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
 use sui_types::committee::EpochId;
@@ -40,7 +40,7 @@ struct Args {
     run_with_range_epoch: Option<EpochId>,
 
     #[clap(long, group = "exclusive")]
-    run_with_range_checkpoint: Option<CheckpointSequenceNumber>,
+    run_with_range_checkpoint: Option<DWalletCheckpointSequenceNumber>,
 }
 
 fn main() {

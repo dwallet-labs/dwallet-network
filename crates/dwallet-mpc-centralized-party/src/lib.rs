@@ -22,7 +22,6 @@ use homomorphic_encryption::{
 use mpc::two_party::{Round, RoundResult};
 use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
-use std::fmt;
 use std::marker::PhantomData;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
@@ -32,9 +31,7 @@ use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
-use twopc_mpc::secp256k1::class_groups::{
-    ProtocolPublicParameters, FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
-};
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
@@ -177,23 +174,11 @@ pub fn advance_centralized_sign_party(
             let presign = bcs::from_bytes(&presign)?;
             let presign = match presign {
                 MPCPublicOutput::V1(output) => output,
-                _ => {
-                    return Err(anyhow!(
-                        "invalid presign output version: expected ClassGroups::V1, got {:?}",
-                        presign
-                    ));
-                }
             };
             let centralized_party_secret_key_share: MPCPublicOutput =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
             let centralized_party_secret_key_share = match centralized_party_secret_key_share {
                 MPCPublicOutput::V1(output) => output,
-                _ => {
-                    return Err(anyhow!(
-                        "invalid centralized public output version: expected ClassGroups::V1, got {:?}",
-                        centralized_party_secret_key_share
-                    ));
-                }
             };
             let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
             let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<

@@ -26,7 +26,7 @@ use ika_types::gas::GasCostSummary;
 use ika_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use ika_types::quorum_driver_types::EffectsFinalityInfo;
 use ika_types::quorum_driver_types::FinalizedEffects;
-use ika_types::sui::ika_system_state_summary::IkaSystemStateSummary;
+use ika_types::sui::system_state_summary::SystemStateSummary;
 use ika_types::transaction::Argument;
 use ika_types::transaction::CallArg;
 use ika_types::transaction::ObjectArg;
@@ -40,7 +40,6 @@ use ika_types::{base_types::ObjectRef, crypto::AuthorityStrongQuorumSignInfo, ob
 use ika_types::{base_types::SequenceNumber, gas_coin::GasCoin};
 use ika_types::{
     base_types::{AuthorityName, IkaAddress},
-    ika_system_state::IkaSystemStateTrait,
 };
 use tokio::time::sleep;
 use tracing::{error, info, warn};
@@ -205,7 +204,7 @@ pub trait ValidatorProxy {
         account_address: IkaAddress,
     ) -> Result<Vec<(u64, Object)>, anyhow::Error>;
 
-    async fn get_latest_system_state_object(&self) -> Result<IkaSystemStateSummary, anyhow::Error>;
+    async fn get_latest_system_state_object(&self) -> Result<SystemStateSummary, anyhow::Error>;
 
     async fn execute_transaction_block(&self, tx: Transaction) -> anyhow::Result<ExecutionEffects>;
 
@@ -315,12 +314,12 @@ impl ValidatorProxy for LocalValidatorAggregatorProxy {
         unimplemented!("Not available for local proxy");
     }
 
-    async fn get_latest_system_state_object(&self) -> Result<IkaSystemStateSummary, anyhow::Error> {
+    async fn get_latest_system_state_object(&self) -> Result<SystemStateSummary, anyhow::Error> {
         let auth_agg = self.qd.authority_aggregator().load();
         Ok(auth_agg
             .get_latest_system_state_object_for_testing()
             .await?
-            .into_ika_system_state_summary())
+            .into_system_state_summary())
     }
 
     async fn execute_transaction_block(&self, tx: Transaction) -> anyhow::Result<ExecutionEffects> {
@@ -489,11 +488,11 @@ impl ValidatorProxy for FullNodeProxy {
         Ok(values_objects)
     }
 
-    async fn get_latest_system_state_object(&self) -> Result<IkaSystemStateSummary, anyhow::Error> {
+    async fn get_latest_system_state_object(&self) -> Result<SystemStateSummary, anyhow::Error> {
         Ok(self
             .ika_client
             .governance_api()
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await?)
     }
 
@@ -549,7 +548,7 @@ impl ValidatorProxy for FullNodeProxy {
         let validators = self
             .ika_client
             .governance_api()
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await?
             .active_validators;
         Ok(validators.into_iter().map(|v| v.ika_address).collect())

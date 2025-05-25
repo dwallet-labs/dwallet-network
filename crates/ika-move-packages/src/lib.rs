@@ -113,7 +113,7 @@ impl IkaMovePackage {
         ika_dependencies.extend(self.dependencies.iter());
         for name in self.ika_dependencies.iter() {
             let Some(id) = ika_dependencies_map.get(*name) else {
-                return anyhow::bail!("Missing ika dependency {}", name);
+                unreachable!("Missing ika dependency {}", name);
             };
             ika_dependencies.push(*id);
         }
