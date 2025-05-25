@@ -3,7 +3,11 @@
 
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
-use ika_types::messages_checkpoint::{CheckpointMessageDigest, CheckpointSequenceNumber};
+use ika_types::digests::SystemCheckpointDigest;
+use ika_types::messages_dwallet_checkpoint::{
+    DWalletCheckpointMessageDigest, DWalletCheckpointSequenceNumber,
+};
+use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
 use serde::{Deserialize, Serialize};
 use sui_types::multiaddr::Multiaddr;
 
@@ -89,18 +93,21 @@ pub struct AllowlistedPeer {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct StateSyncConfig {
-    /// List of "known-good" checkpoints that state sync will be forced to use. State sync will
-    /// skip verification of pinned checkpoints, and reject checkpoints with digests that don't
+    /// List of "known-good" dwallet checkpoints that state sync will be forced to use. State sync will
+    /// skip verification of pinned dwallet checkpoints, and reject dwallet checkpoints with digests that don't
     /// match pinned values for a given sequence number.
     ///
     /// This can be used:
     /// - in case of a fork, to prevent the node from syncing to the wrong chain.
     /// - in case of a network stall, to force the node to proceed with a manually-injected
-    ///   checkpoint.
+    ///   dwallet checkpoint.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_checkpoints: Vec<(CheckpointSequenceNumber, CheckpointMessageDigest)>,
+    pub pinned_dwallet_checkpoints: Vec<(
+        DWalletCheckpointSequenceNumber,
+        DWalletCheckpointMessageDigest,
+    )>,
 
-    /// Query peers for their latest checkpoint every interval period.
+    /// Query peers for their latest dwallet checkpoint every interval period.
     ///
     /// If unspecified, this will default to `5,000` milliseconds.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -112,31 +119,31 @@ pub struct StateSyncConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mailbox_capacity: Option<usize>,
 
-    /// Size of the broadcast channel use for notifying other systems of newly sync'ed checkpoints.
+    /// Size of the broadcast channel use for notifying other systems of newly sync'ed dwallet checkpoints.
     ///
     /// If unspecified, this will default to `1,024`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub synced_checkpoint_broadcast_channel_capacity: Option<usize>,
+    pub synced_dwallet_checkpoint_broadcast_channel_capacity: Option<usize>,
 
-    /// Set the upper bound on the number of checkpoint headers to be downloaded concurrently.
+    /// Set the upper bound on the number of dwallet checkpoint headers to be downloaded concurrently.
     ///
     /// If unspecified, this will default to `400`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub checkpoint_header_download_concurrency: Option<usize>,
+    pub dwallet_checkpoint_header_download_concurrency: Option<usize>,
 
-    /// Set the upper bound on the number of checkpoint contents to be downloaded concurrently.
+    /// Set the upper bound on the number of dwallet checkpoint contents to be downloaded concurrently.
     ///
     /// If unspecified, this will default to `400`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub checkpoint_content_download_concurrency: Option<usize>,
+    pub dwallet_checkpoint_content_download_concurrency: Option<usize>,
 
-    /// Set the upper bound on the number of individual transactions contained in checkpoint
+    /// Set the upper bound on the number of individual transactions contained in dwallet checkpoint
     /// contents to be downloaded concurrently. If both this value and
-    /// `checkpoint_content_download_concurrency` are set, the lower of the two will apply.
+    /// `dwallet_checkpoint_content_download_concurrency` are set, the lower of the two will apply.
     ///
     /// If unspecified, this will default to `50,000`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub checkpoint_content_download_tx_concurrency: Option<u64>,
+    pub dwallet_checkpoint_content_download_tx_concurrency: Option<u64>,
 
     /// Set the timeout that should be used when sending most state-sync RPC requests.
     ///
@@ -144,41 +151,103 @@ pub struct StateSyncConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout_ms: Option<u64>,
 
-    /// Set the timeout that should be used when sending RPC requests to sync checkpoint contents.
+    /// Set the timeout that should be used when sending RPC requests to sync dwallet checkpoint contents.
     ///
     /// If unspecified, this will default to `10,000` milliseconds.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub checkpoint_content_timeout_ms: Option<u64>,
+    pub dwallet_checkpoint_content_timeout_ms: Option<u64>,
 
-    /// Per-peer rate-limit (in requests/sec) for the PushCheckpointMessage RPC.
+    /// Per-peer rate-limit (in requests/sec) for the PushDWalletCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub push_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub push_dwallet_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
-    /// Per-peer rate-limit (in requests/sec) for the GetCheckpointMessage RPC.
+    /// Per-peer rate-limit (in requests/sec) for the GetDWalletCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_rate_limit: Option<NonZeroU32>,
+    pub get_dwallet_checkpoint_message_rate_limit: Option<NonZeroU32>,
 
-    /// Per-peer inflight limit for the GetCheckpointMessage RPC.
+    /// Per-peer inflight limit for the GetDWalletCheckpointMessage RPC.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_inflight_limit: Option<usize>,
+    pub get_dwallet_checkpoint_message_inflight_limit: Option<usize>,
 
-    /// Per-checkpoint inflight limit for the GetCheckpointMessage RPC. This is enforced globally
+    /// Per-dwallet checkpoint inflight limit for the GetDWalletCheckpointMessage RPC. This is enforced globally
     /// across all peers.
     ///
     /// If unspecified, this will default to no limit.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub get_checkpoint_message_per_checkpoint_limit: Option<usize>,
+    pub get_dwallet_checkpoint_message_per_checkpoint_limit: Option<usize>,
 
     /// The amount of time to wait before retry if there are no peers to sync content from.
     /// If unspecified, this will set to default value
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wait_interval_when_no_peer_to_sync_content_ms: Option<u64>,
+
+    /// List of "known-good" system checkpoints that state sync will be forced to use. State sync will
+    /// skip verification of pinned system checkpoints, and reject system checkpoints with digests that don't
+    /// match pinned values for a given sequence number.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub pinned_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+
+    /// Size of the broadcast channel use for notifying other systems of newly sync'ed system checkpoints.
+    ///
+    /// If unspecified, this will default to `1,024`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub synced_system_checkpoint_broadcast_channel_capacity: Option<usize>,
+
+    /// Set the upper bound on the number of system checkpoint headers to be downloaded concurrently.
+    ///
+    /// If unspecified, this will default to `400`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_checkpoint_header_download_concurrency: Option<usize>,
+
+    /// Set the upper bound on the number of system checkpoint contents to be downloaded concurrently.
+    ///
+    /// If unspecified, this will default to `400`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_checkpoint_content_download_concurrency: Option<usize>,
+
+    /// Set the upper bound on the number of individual transactions contained in system checkpoint
+    /// contents to be downloaded concurrently.
+    ///
+    /// If unspecified, this will default to `50,000`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_checkpoint_content_download_tx_concurrency: Option<u64>,
+
+    /// Set the timeout that should be used when sending RPC requests to sync system checkpoint contents.
+    ///
+    /// If unspecified, this will default to `10,000` milliseconds.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_checkpoint_content_timeout_ms: Option<u64>,
+
+    /// Per-peer rate-limit (in requests/sec) for the PushSystemCheckpointMessage RPC.
+    ///
+    /// If unspecified, this will default to no limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub push_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
+
+    /// Per-peer rate-limit (in requests/sec) for the GetSystemCheckpointMessage RPC.
+    ///
+    /// If unspecified, this will default to no limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_system_checkpoint_message_rate_limit: Option<NonZeroU32>,
+
+    /// Per-peer inflight limit for the GetSystemCheckpointMessage RPC.
+    ///
+    /// If unspecified, this will default to no limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_system_checkpoint_message_inflight_limit: Option<usize>,
+
+    /// Per-system checkpoint inflight limit for the GetSystemCheckpointMessage RPC. This is enforced globally
+    /// across all peers.
+    ///
+    /// If unspecified, this will default to no limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub get_system_checkpoint_message_per_checkpoint_limit: Option<usize>,
 }
 
 impl StateSyncConfig {
@@ -194,32 +263,46 @@ impl StateSyncConfig {
         self.mailbox_capacity.unwrap_or(MAILBOX_CAPACITY)
     }
 
-    pub fn synced_checkpoint_broadcast_channel_capacity(&self) -> usize {
-        const SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
+    pub fn synced_dwallet_checkpoint_broadcast_channel_capacity(&self) -> usize {
+        const SYNCED_DWALLET_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
 
-        self.synced_checkpoint_broadcast_channel_capacity
-            .unwrap_or(SYNCED_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
+        self.synced_dwallet_checkpoint_broadcast_channel_capacity
+            .unwrap_or(SYNCED_DWALLET_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
-    pub fn checkpoint_header_download_concurrency(&self) -> usize {
-        const CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
+    pub fn synced_system_checkpoint_broadcast_channel_capacity(&self) -> usize {
+        const SYNCED_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY: usize = 1_024;
 
-        self.checkpoint_header_download_concurrency
-            .unwrap_or(CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
+        self.synced_system_checkpoint_broadcast_channel_capacity
+            .unwrap_or(SYNCED_SYSTEM_CHECKPOINT_BROADCAST_CHANNEL_CAPACITY)
     }
 
-    pub fn checkpoint_content_download_concurrency(&self) -> usize {
-        const CHECKPOINT_CONTENT_DOWNLOAD_CONCURRENCY: usize = 400;
+    pub fn dwallet_checkpoint_header_download_concurrency(&self) -> usize {
+        const DWALLET_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
 
-        self.checkpoint_content_download_concurrency
-            .unwrap_or(CHECKPOINT_CONTENT_DOWNLOAD_CONCURRENCY)
+        self.dwallet_checkpoint_header_download_concurrency
+            .unwrap_or(DWALLET_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
     }
 
-    pub fn checkpoint_content_download_tx_concurrency(&self) -> u64 {
-        const CHECKPOINT_CONTENT_DOWNLOAD_TX_CONCURRENCY: u64 = 50_000;
+    pub fn system_checkpoint_header_download_concurrency(&self) -> usize {
+        const SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY: usize = 400;
 
-        self.checkpoint_content_download_tx_concurrency
-            .unwrap_or(CHECKPOINT_CONTENT_DOWNLOAD_TX_CONCURRENCY)
+        self.system_checkpoint_header_download_concurrency
+            .unwrap_or(SYSTEM_CHECKPOINT_HEADER_DOWNLOAD_CONCURRENCY)
+    }
+
+    pub fn dwallet_checkpoint_content_download_concurrency(&self) -> usize {
+        const DWALLET_CHECKPOINT_CONTENT_DOWNLOAD_CONCURRENCY: usize = 400;
+
+        self.dwallet_checkpoint_content_download_concurrency
+            .unwrap_or(DWALLET_CHECKPOINT_CONTENT_DOWNLOAD_CONCURRENCY)
+    }
+
+    pub fn dwallet_checkpoint_content_download_tx_concurrency(&self) -> u64 {
+        const DWALLET_CHECKPOINT_CONTENT_DOWNLOAD_TX_CONCURRENCY: u64 = 50_000;
+
+        self.dwallet_checkpoint_content_download_tx_concurrency
+            .unwrap_or(DWALLET_CHECKPOINT_CONTENT_DOWNLOAD_TX_CONCURRENCY)
     }
 
     pub fn timeout(&self) -> Duration {
@@ -230,10 +313,10 @@ impl StateSyncConfig {
             .unwrap_or(DEFAULT_TIMEOUT)
     }
 
-    pub fn checkpoint_content_timeout(&self) -> Duration {
+    pub fn dwallet_checkpoint_content_timeout(&self) -> Duration {
         const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 
-        self.checkpoint_content_timeout_ms
+        self.dwallet_checkpoint_content_timeout_ms
             .map(Duration::from_millis)
             .unwrap_or(DEFAULT_TIMEOUT)
     }

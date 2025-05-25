@@ -2,17 +2,26 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::AuthorityName;
-use crate::messages_checkpoint::{CheckpointSequenceNumber, CheckpointSignatureMessage};
+use crate::messages_dwallet_checkpoint::{
+    DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
+};
 use crate::messages_dwallet_mpc::{
     DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
     ThresholdNotReachedReport,
 };
-use crate::supported_protocol_versions::SupportedProtocolVersionsWithHashes;
+use crate::messages_system_checkpoints::{
+    SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
+};
+use crate::supported_protocol_versions::{
+    SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
+};
 use byteorder::{BigEndian, ReadBytesExt};
+use ika_protocol_config::Chain;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
 
@@ -30,7 +39,7 @@ pub struct ConsensusTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ConsensusTransactionKey {
-    CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
+    DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
@@ -40,13 +49,19 @@ pub enum ConsensusTransactionKey {
     DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
+    SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
 impl Debug for ConsensusTransactionKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CheckpointSignature(name, seq) => {
-                write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
+            Self::DWalletCheckpointSignature(name, seq) => {
+                write!(
+                    f,
+                    "DWalletCheckpointSignature({:?}, {:?})",
+                    name.concise(),
+                    seq
+                )
             }
             Self::CapabilityNotification(name, generation) => write!(
                 f,
@@ -80,6 +95,14 @@ impl Debug for ConsensusTransactionKey {
                     report,
                 )
             }
+            ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {
+                write!(
+                    f,
+                    "SystemCheckpointSignature({:?}, {:?})",
+                    name.concise(),
+                    seq
+                )
+            }
         }
     }
 }
@@ -94,9 +117,6 @@ pub struct AuthorityCapabilitiesV1 {
     pub authority: AuthorityName,
     /// Generation number set by sending authority. Used to determine which of multiple
     /// AuthorityCapabilities messages from the same authority is the most recent.
-    ///
-    /// (Currently, we just set this to the current time in milliseconds since the epoch, but this
-    /// should not be interpreted as a timestamp.)
     pub generation: u64,
 
     /// ProtocolVersions that the authority supports.
@@ -105,6 +125,32 @@ pub struct AuthorityCapabilitiesV1 {
     /// A list of package id to move package digest to
     /// determine whether to do a protocol upgrade on sui.
     pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+}
+
+impl AuthorityCapabilitiesV1 {
+    pub fn new(
+        authority: AuthorityName,
+        chain: Chain,
+        supported_protocol_versions: SupportedProtocolVersions,
+        available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+    ) -> Self {
+        let generation = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Sui did not exist prior to 1970")
+            .as_millis()
+            .try_into()
+            .expect("This build of sui is not supported in the year 500,000,000");
+        Self {
+            authority,
+            generation,
+            supported_protocol_versions:
+                SupportedProtocolVersionsWithHashes::from_supported_versions(
+                    supported_protocol_versions,
+                    chain,
+                ),
+            available_move_packages,
+        }
+    }
 }
 
 impl Debug for AuthorityCapabilitiesV1 {
@@ -123,13 +169,14 @@ impl Debug for AuthorityCapabilitiesV1 {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
-    CheckpointSignature(Box<CheckpointSignatureMessage>),
+    DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
+    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -139,7 +186,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
-        mpc_protocol: String,
+        mpc_protocol: Option<String>,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
@@ -198,16 +245,41 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_checkpoint_signature_message(data: CheckpointSignatureMessage) -> Self {
+    pub fn new_dwallet_checkpoint_signature_message(
+        data: DWalletCheckpointSignatureMessage,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.checkpoint_message
+        data.dwallet_checkpoint_message
             .auth_sig()
             .signature
             .hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::CheckpointSignature(Box::new(data)),
+            kind: ConsensusTransactionKind::DWalletCheckpointSignature(Box::new(data)),
+        }
+    }
+
+    pub fn new_system_checkpoint_signature_message(data: SystemCheckpointSignatureMessage) -> Self {
+        let mut hasher = DefaultHasher::new();
+        data.system_checkpoint
+            .auth_sig()
+            .signature
+            .hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::SystemCheckpointSignature(Box::new(data)),
+        }
+    }
+
+    pub fn new_capability_notification_v1(data: AuthorityCapabilitiesV1) -> Self {
+        let mut hasher = DefaultHasher::new();
+        data.authority.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::CapabilityNotificationV1(data),
         }
     }
 
@@ -219,10 +291,10 @@ impl ConsensusTransaction {
 
     pub fn key(&self) -> ConsensusTransactionKey {
         match &self.kind {
-            ConsensusTransactionKind::CheckpointSignature(data) => {
-                ConsensusTransactionKey::CheckpointSignature(
-                    data.checkpoint_message.auth_sig().authority,
-                    data.checkpoint_message.sequence_number,
+            ConsensusTransactionKind::DWalletCheckpointSignature(data) => {
+                ConsensusTransactionKey::DWalletCheckpointSignature(
+                    data.dwallet_checkpoint_message.auth_sig().authority,
+                    data.dwallet_checkpoint_message.sequence_number,
                 )
             }
             ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
@@ -250,6 +322,12 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report) => {
                 ConsensusTransactionKey::DWalletMPCThresholdNotReached(*authority, report.clone())
+            }
+            ConsensusTransactionKind::SystemCheckpointSignature(data) => {
+                ConsensusTransactionKey::SystemCheckpointSignature(
+                    data.system_checkpoint.auth_sig().authority,
+                    data.system_checkpoint.sequence_number,
+                )
             }
         }
     }

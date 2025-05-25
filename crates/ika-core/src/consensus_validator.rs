@@ -3,35 +3,37 @@
 
 use std::sync::Arc;
 
+use crate::system_checkpoints::SystemCheckpointServiceNotify;
 use crate::{
-    authority::{authority_per_epoch_store::AuthorityPerEpochStore, AuthorityState},
-    checkpoints::CheckpointServiceNotify,
+    authority::AuthorityState, checkpoints::DWalletCheckpointServiceNotify,
     consensus_adapter::ConsensusOverloadChecker,
 };
 use consensus_core::{TransactionIndex, TransactionVerifier, ValidationError};
-use fastcrypto_tbls::dkg_v1;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthoritySignInfoTrait;
 use ika_types::crypto::VerificationObligation;
 use ika_types::intent::Intent;
 use ika_types::message_envelope::Message;
-use ika_types::messages_checkpoint::SignedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::SignedDWalletCheckpointMessage;
+use ika_types::messages_system_checkpoints::SignedSystemCheckpoint;
 use ika_types::{
     error::{IkaError, IkaResult},
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
 use mysten_metrics::monitored_scope;
 use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
-use sui_types::transaction::Transaction;
 use tap::TapFallible;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 /// Allows verifying the validity of transactions
 #[derive(Clone)]
 pub struct IkaTxValidator {
     authority_state: Arc<AuthorityState>,
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-    checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+    dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
+    system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
     metrics: Arc<IkaTxValidatorMetrics>,
 }
 
@@ -39,7 +41,8 @@ impl IkaTxValidator {
     pub fn new(
         authority_state: Arc<AuthorityState>,
         consensus_overload_checker: Arc<dyn ConsensusOverloadChecker>,
-        checkpoint_service: Arc<dyn CheckpointServiceNotify + Send + Sync>,
+        dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
+        system_checkpoint_service: Arc<dyn SystemCheckpointServiceNotify + Send + Sync>,
         metrics: Arc<IkaTxValidatorMetrics>,
     ) -> Self {
         let epoch_store = authority_state.load_epoch_store_one_call_per_task().clone();
@@ -50,7 +53,8 @@ impl IkaTxValidator {
         Self {
             authority_state,
             consensus_overload_checker,
-            checkpoint_service,
+            dwallet_checkpoint_service,
+            system_checkpoint_service,
             metrics,
         }
     }
@@ -60,53 +64,85 @@ impl IkaTxValidator {
 
         let mut ckpt_messages = Vec::new();
         let mut ckpt_batch = Vec::new();
+
+        let mut system_checkpoints = Vec::new();
+        let mut params_batch = Vec::new();
+
         for tx in txs.iter() {
             match tx {
-                ConsensusTransactionKind::CheckpointSignature(signature) => {
+                ConsensusTransactionKind::DWalletCheckpointSignature(signature) => {
                     ckpt_messages.push(signature.as_ref());
-                    ckpt_batch.push(&signature.checkpoint_message);
+                    ckpt_batch.push(&signature.dwallet_checkpoint_message);
                 }
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
                 | ConsensusTransactionKind::DWalletMPCMaliciousReport(..)
                 | ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {}
+                ConsensusTransactionKind::SystemCheckpointSignature(signature) => {
+                    system_checkpoints.push(signature.as_ref());
+                    params_batch.push(&signature.system_checkpoint);
+                }
             }
         }
 
         // verify the certificate signatures as a batch
         let ckpt_count = ckpt_batch.len();
 
-        Self::batch_verify_all_certificates_and_checkpoints(epoch_store.committee(), &ckpt_batch)
-            .tap_err(|e| warn!("batch verification error: {}", e))?;
+        Self::batch_verify_all_certificates_and_dwallet_checkpoints(
+            epoch_store.committee(),
+            &ckpt_batch,
+        )
+        .tap_err(|e| warn!("batch verification error: {}", e))?;
 
         // All checkpoint sigs have been verified, forward them to the checkpoint service
         for ckpt in ckpt_messages {
-            self.checkpoint_service
+            self.dwallet_checkpoint_service
                 .notify_checkpoint_signature(&epoch_store, ckpt)?;
         }
 
         self.metrics
-            .checkpoint_signatures_verified
+            .dwallet_checkpoint_signatures_verified
             .inc_by(ckpt_count as u64);
+
+        let params_count = params_batch.len();
+
+        Self::batch_verify_all_certificates_and_system_checkpoints(
+            epoch_store.committee(),
+            &params_batch,
+        )
+        .tap_err(|e| warn!("batch verification error: {}", e))?;
+
+        // All checkpoint sigs have been verified, forward them to the checkpoint service
+        for ckpt in system_checkpoints {
+            self.system_checkpoint_service
+                .notify_system_checkpoint_signature(&epoch_store, ckpt)?;
+        }
+
+        self.metrics
+            .system_checkpoint_signatures_verified
+            .inc_by(params_count as u64);
         Ok(())
     }
 
     /// Verifies all certificates - if any fail return error.
-    fn batch_verify_all_certificates_and_checkpoints(
+    fn batch_verify_all_certificates_and_dwallet_checkpoints(
         committee: &Committee,
-        checkpoints: &[&SignedCheckpointMessage],
+        dwallet_checkpoints: &[&SignedDWalletCheckpointMessage],
     ) -> IkaResult {
         // certs.data() is assumed to be verified already by the caller.
 
-        for ckpt in checkpoints {
+        for ckpt in dwallet_checkpoints {
             ckpt.data().verify_epoch(committee.epoch())?;
         }
 
-        Self::batch_verify(committee, checkpoints)
+        Self::batch_verify(committee, dwallet_checkpoints)
     }
 
-    fn batch_verify(committee: &Committee, checkpoints: &[&SignedCheckpointMessage]) -> IkaResult {
+    fn batch_verify(
+        committee: &Committee,
+        checkpoints: &[&SignedDWalletCheckpointMessage],
+    ) -> IkaResult {
         let mut obligation = VerificationObligation::default();
 
         for ckpt in checkpoints {
@@ -119,7 +155,40 @@ impl IkaTxValidator {
         Ok(obligation.verify_all()?)
     }
 
-    async fn vote_transactions(&self, txs: Vec<ConsensusTransactionKind>) -> Vec<TransactionIndex> {
+    /// Verifies all certificates - if any fail return error.
+    fn batch_verify_all_certificates_and_system_checkpoints(
+        committee: &Committee,
+        checkpoints: &[&SignedSystemCheckpoint],
+    ) -> IkaResult {
+        // certs.data() is assumed to be verified already by the caller.
+
+        for ckpt in checkpoints {
+            ckpt.data().verify_epoch(committee.epoch())?;
+        }
+
+        Self::batch_verify_system_checkpoints(committee, checkpoints)
+    }
+
+    fn batch_verify_system_checkpoints(
+        committee: &Committee,
+        checkpoints: &[&SignedSystemCheckpoint],
+    ) -> IkaResult {
+        let mut obligation = VerificationObligation::default();
+
+        for ckpt in checkpoints {
+            let idx =
+                obligation.add_message(ckpt.data(), ckpt.epoch(), Intent::ika_app(ckpt.scope()));
+            ckpt.auth_sig()
+                .add_to_verification_obligation(committee, &mut obligation, idx)?;
+        }
+
+        Ok(obligation.verify_all()?)
+    }
+
+    async fn vote_transactions(
+        &self,
+        _txs: Vec<ConsensusTransactionKind>,
+    ) -> Vec<TransactionIndex> {
         vec![]
         //let epoch_store = self.authority_state.load_epoch_store_one_call_per_task();
         // if !epoch_store.protocol_config().mysticeti_fastpath() {
@@ -210,8 +279,11 @@ impl TransactionVerifier for IkaTxValidator {
 }
 
 pub struct IkaTxValidatorMetrics {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     certificate_signatures_verified: IntCounter,
-    checkpoint_signatures_verified: IntCounter,
+    dwallet_checkpoint_signatures_verified: IntCounter,
+    system_checkpoint_signatures_verified: IntCounter,
 }
 
 impl IkaTxValidatorMetrics {
@@ -223,9 +295,15 @@ impl IkaTxValidatorMetrics {
                 registry
             )
             .unwrap(),
-            checkpoint_signatures_verified: register_int_counter_with_registry!(
-                "checkpoint_signatures_verified",
-                "Number of checkpoint verified in consensus batch verifier",
+            dwallet_checkpoint_signatures_verified: register_int_counter_with_registry!(
+                "dwallet_checkpoint_signatures_verified",
+                "Number of dwallet checkpoint verified in consensus batch verifier",
+                registry
+            )
+            .unwrap(),
+            system_checkpoint_signatures_verified: register_int_counter_with_registry!(
+                "system_checkpoint_signatures_verified",
+                "Number of system checkpoints signatures verified in consensus batch verifier",
                 registry
             )
             .unwrap(),

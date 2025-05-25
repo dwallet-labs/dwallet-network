@@ -62,20 +62,25 @@ the SystemInnerVX version, or vice versa.
 -  [Function `set_next_epoch_p2p_address`](#(ika_system=0x0)_system_set_next_epoch_p2p_address)
 -  [Function `set_next_epoch_consensus_address`](#(ika_system=0x0)_system_set_next_epoch_consensus_address)
 -  [Function `set_next_epoch_protocol_pubkey_bytes`](#(ika_system=0x0)_system_set_next_epoch_protocol_pubkey_bytes)
+-  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes)
 -  [Function `set_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_system_set_next_epoch_consensus_pubkey_bytes)
 -  [Function `set_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_system_set_next_epoch_class_groups_pubkey_and_proof_bytes)
--  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes)
+-  [Function `set_pricing_vote`](#(ika_system=0x0)_system_set_pricing_vote)
 -  [Function `token_exchange_rates`](#(ika_system=0x0)_system_token_exchange_rates)
 -  [Function `active_committee`](#(ika_system=0x0)_system_active_committee)
 -  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_system_request_reconfig_mid_epoch)
 -  [Function `request_lock_epoch_sessions`](#(ika_system=0x0)_system_request_lock_epoch_sessions)
 -  [Function `request_advance_epoch`](#(ika_system=0x0)_system_request_advance_epoch)
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_request_dwallet_network_encryption_key_dkg_by_cap)
--  [Function `set_supported_curves_to_signature_algorithms_to_hash_schemes`](#(ika_system=0x0)_system_set_supported_curves_to_signature_algorithms_to_hash_schemes)
+-  [Function `set_supported_and_pricing`](#(ika_system=0x0)_system_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_set_paused_curves_and_signature_algorithms)
 -  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_authorize_update_message_by_cap)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
+-  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_process_checkpoint_message_by_cap)
+-  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_process_checkpoint_message_by_quorum)
 -  [Function `migrate`](#(ika_system=0x0)_system_migrate)
+-  [Function `calculate_rewards`](#(ika_system=0x0)_system_calculate_rewards)
+-  [Function `can_withdraw_staked_ika_early`](#(ika_system=0x0)_system_can_withdraw_staked_ika_early)
 -  [Function `inner_mut`](#(ika_system=0x0)_system_inner_mut)
 -  [Function `inner`](#(ika_system=0x0)_system_inner)
 
@@ -128,6 +133,7 @@ the SystemInnerVX version, or vice versa.
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
 <b>use</b> <a href="../sui/package.md#sui_package">sui::package</a>;
+<b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
@@ -185,15 +191,6 @@ the SystemInnerVX version, or vice versa.
 <a name="@Constants_0"></a>
 
 ## Constants
-
-
-<a name="(ika_system=0x0)_system_EHaveNotReachedEndEpochTime"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>: u64 = 3;
-</code></pre>
-
 
 
 <a name="(ika_system=0x0)_system_EInvalidMigration"></a>
@@ -283,7 +280,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -294,12 +291,15 @@ This function will be called only once in init.
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
+    cap: &ProtocolCap,
     clock: &Clock,
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> package_id = self.package_id;
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(clock, package_id, ctx);
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
 }
 </code></pre>
 
@@ -882,6 +882,37 @@ The change will only take effects starting from the next epoch.
 
 </details>
 
+<a name="(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes"></a>
+
+## Function `set_next_epoch_network_pubkey_bytes`
+
+Sets a validator's public key of network key.
+The change will only take effects starting from the next epoch.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, network_pubkey: vector&lt;u8&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    network_pubkey: vector&lt;u8&gt;,
+    cap: &ValidatorOperationCap,
+) {
+    <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(network_pubkey, cap)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_system_set_next_epoch_consensus_pubkey_bytes"></a>
 
 ## Function `set_next_epoch_consensus_pubkey_bytes`
@@ -944,15 +975,15 @@ The change will only take effects starting from the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes"></a>
+<a name="(ika_system=0x0)_system_set_pricing_vote"></a>
 
-## Function `set_next_epoch_network_pubkey_bytes`
+## Function `set_pricing_vote`
 
-Sets a validator's public key of network key.
+Sets a validator's pricing vote.
 The change will only take effects starting from the next epoch.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, network_pubkey: vector&lt;u8&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_pricing_vote">set_pricing_vote</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, dwallet_coordinator: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
 </code></pre>
 
 
@@ -961,13 +992,14 @@ The change will only take effects starting from the next epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_pricing_vote">set_pricing_vote</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
-    network_pubkey: vector&lt;u8&gt;,
+    dwallet_coordinator: &<b>mut</b> DWalletCoordinator,
+    pricing: DWalletPricing,
     cap: &ValidatorOperationCap,
 ) {
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(network_pubkey, cap)
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_set_pricing_vote">set_pricing_vote</a>(dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>(), pricing, cap)
 }
 </code></pre>
 
@@ -1076,9 +1108,7 @@ Locks the MPC sessions that should get completed as part of the current epoch.
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_lock_epoch_sessions">request_lock_epoch_sessions</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, dwallet_coordinator: &<b>mut</b> DWalletCoordinator, clock: &Clock
 ) {
-    <b>let</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a> = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    <b>assert</b>!(clock.timestamp_ms() &gt; <a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_start_timestamp_ms() + (<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>.epoch_duration_ms()), <a href="../ika_system/system.md#(ika_system=0x0)_system_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
-    dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().lock_last_active_session_sequence_number();
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().lock_last_active_session_sequence_number(dwallet_coordinator.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>(), clock);
 }
 </code></pre>
 
@@ -1143,13 +1173,13 @@ Advances the epoch to the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_set_supported_curves_to_signature_algorithms_to_hash_schemes"></a>
+<a name="(ika_system=0x0)_system_set_supported_and_pricing"></a>
 
-## Function `set_supported_curves_to_signature_algorithms_to_hash_schemes`
+## Function `set_supported_and_pricing`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_and_pricing">set_supported_and_pricing</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, default_pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
 </code></pre>
 
 
@@ -1158,14 +1188,15 @@ Advances the epoch to the next epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_and_pricing">set_supported_and_pricing</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>: &<b>mut</b> DWalletCoordinator,
+    default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>: &ProtocolCap,
 ) {
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_curves_to_signature_algorithms_to_hash_schemes">set_supported_curves_to_signature_algorithms_to_hash_schemes</a>(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>, supported_curves_to_signature_algorithms_to_hash_schemes, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_set_supported_and_pricing">set_supported_and_pricing</a>(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>, default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, <a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap">protocol_cap</a>);
 }
 </code></pre>
 
@@ -1266,6 +1297,65 @@ Advances the epoch to the next epoch.
 
 </details>
 
+<a name="(ika_system=0x0)_system_process_checkpoint_message_by_cap"></a>
+
+## Function `process_checkpoint_message_by_cap`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_cap">process_checkpoint_message_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_cap">process_checkpoint_message_by_cap</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    cap: &ProtocolCap,
+    message: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+) {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_cap">process_checkpoint_message_by_cap</a>(cap, message, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_process_checkpoint_message_by_quorum"></a>
+
+## Function `process_checkpoint_message_by_quorum`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    signature: vector&lt;u8&gt;,
+    signers_bitmap: vector&lt;u8&gt;,
+    message: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+) {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_system_migrate"></a>
 
 ## Function `migrate`
@@ -1296,6 +1386,66 @@ to migrate changes in the <code><a href="../ika_system/system_inner.md#(ika_syst
     // Set the new package id.
     <b>assert</b>!(self.new_package_id.is_some(), <a href="../ika_system/system.md#(ika_system=0x0)_system_EInvalidMigration">EInvalidMigration</a>);
     self.package_id = self.new_package_id.extract();
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_calculate_rewards"></a>
+
+## Function `calculate_rewards`
+
+Calculate the rewards for an amount with value <code>staked_principal</code>, staked in the validator with
+the given <code>validator_id</code> between <code>activation_epoch</code> and <code>withdraw_epoch</code>.
+
+This function can be used with <code>dev_inspect</code> to calculate the expected rewards for a <code>StakedIka</code>
+object or, more generally, the returns provided by a given validator over a given period.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_principal: u64, activation_epoch: u64, withdraw_epoch: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(
+    self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_calculate_rewards">calculate_rewards</a>(validator_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_can_withdraw_staked_ika_early"></a>
+
+## Function `can_withdraw_staked_ika_early`
+
+Call <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_can_withdraw_early">staked_ika::can_withdraw_early</a></code> to allow calling this method in applications.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &(ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &StakedIka): bool {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>)
 }
 </code></pre>
 

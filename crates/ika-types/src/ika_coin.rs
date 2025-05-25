@@ -12,7 +12,6 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::{Display, Formatter};
 
 use sui_types::{
-    balance::Balance,
     base_types::{ObjectID, SequenceNumber},
     coin::Coin,
     error::{ExecutionError, ExecutionErrorKind},

@@ -10,7 +10,7 @@ use std::{
 
 use arc_swap::ArcSwap;
 use consensus_config::Committee as ConsensusCommittee;
-use consensus_core::{CommitConsumerMonitor, TransactionIndex, VerifiedBlock};
+use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
@@ -20,47 +20,36 @@ use ika_types::messages_consensus::{
 };
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use lru::LruCache;
-use mpc::WeightedThresholdAccessStructure;
-use mysten_metrics::{
-    monitored_future,
-    monitored_mpsc::{self, UnboundedReceiver},
-    monitored_scope, spawn_monitored_task,
-};
+use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monitored_scope};
 use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
-use sui_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
+use sui_types::base_types::EpochId;
 
 use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
-use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
+use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
         authority_per_epoch_store::{
             AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
             ExecutionIndicesWithStats,
         },
-        epoch_start_configuration::EpochStartConfigTrait,
         AuthorityMetrics, AuthorityState,
     },
-    checkpoints::{CheckpointService, CheckpointServiceNotify},
+    checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     consensus_throughput_calculator::ConsensusThroughputCalculator,
-    consensus_types::consensus_output_api::{parse_block_transactions, ConsensusCommitAPI},
+    consensus_types::consensus_output_api::ConsensusCommitAPI,
     scoring_decision::update_low_scoring_authorities,
 };
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use tokio::task::JoinSet;
-use tracing::{debug, error, info, instrument, trace_span, warn};
+use tracing::{error, info, instrument, trace_span, warn};
 use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
-    checkpoint_service: Arc<CheckpointService>,
+    checkpoint_service: Arc<DWalletCheckpointService>,
+    system_checkpoint_service: Arc<SystemCheckpointService>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -69,7 +58,8 @@ pub struct ConsensusHandlerInitializer {
 impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        checkpoint_service: Arc<DWalletCheckpointService>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -77,6 +67,7 @@ impl ConsensusHandlerInitializer {
         Self {
             state,
             checkpoint_service,
+            system_checkpoint_service,
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
@@ -86,7 +77,7 @@ impl ConsensusHandlerInitializer {
     #[cfg(test)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
-        checkpoint_service: Arc<CheckpointService>,
+        checkpoint_service: Arc<DWalletCheckpointService>,
     ) -> Self {
         Self {
             state: state.clone(),
@@ -100,13 +91,14 @@ impl ConsensusHandlerInitializer {
         }
     }
 
-    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<CheckpointService> {
+    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<DWalletCheckpointService> {
         let new_epoch_start_state = self.epoch_store.epoch_start_state();
         let consensus_committee = new_epoch_start_state.get_consensus_committee();
 
         ConsensusHandler::new(
             self.epoch_store.clone(),
             self.checkpoint_service.clone(),
+            self.system_checkpoint_service.clone(),
             self.low_scoring_authorities.clone(),
             consensus_committee,
             self.state.metrics.clone(),
@@ -114,6 +106,8 @@ impl ConsensusHandlerInitializer {
         )
     }
 
+    // todo(zeev): fix
+    #[allow(dead_code)]
     pub(crate) fn metrics(&self) -> &Arc<AuthorityMetrics> {
         &self.state.metrics
     }
@@ -128,6 +122,7 @@ pub struct ConsensusHandler<C> {
     /// checking chain consistency, and accumulating per-epoch consensus output stats.
     last_consensus_stats: ExecutionIndicesWithStats,
     checkpoint_service: Arc<C>,
+    system_checkpoint_service: Arc<SystemCheckpointService>,
     /// Reputation scores used by consensus adapter that we update, forwarded from consensus
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     /// The consensus committee used to do stake computations for deciding set of low scoring authorities
@@ -147,6 +142,7 @@ impl<C> ConsensusHandler<C> {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_service: Arc<C>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
@@ -165,6 +161,7 @@ impl<C> ConsensusHandler<C> {
             epoch_store,
             last_consensus_stats,
             checkpoint_service,
+            system_checkpoint_service,
             low_scoring_authorities,
             committee,
             metrics,
@@ -179,7 +176,7 @@ impl<C> ConsensusHandler<C> {
     }
 }
 
-impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
+impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
@@ -365,12 +362,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             }
         }
 
-        let executable_transactions = self
+        let (executable_transactions, system_checkpoint_executable_transactions) = self
             .epoch_store
             .process_consensus_transactions_and_commit_boundary(
                 all_transactions,
                 &self.last_consensus_stats,
                 &self.checkpoint_service,
+                &self.system_checkpoint_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
             )
@@ -378,8 +376,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .expect("Unrecoverable error in consensus handler");
 
         // update the calculated throughput
-        self.throughput_calculator
-            .add_transactions(timestamp, executable_transactions.len() as u64);
+        self.throughput_calculator.add_transactions(
+            timestamp,
+            (executable_transactions.len() + system_checkpoint_executable_transactions.len())
+                as u64,
+        );
 
         fail_point_if!("correlated-crash-after-consensus-commit-boundary", || {
             let key = [commit_sub_dag_index, self.epoch_store.epoch()];
@@ -446,7 +447,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
@@ -497,7 +498,7 @@ pub(crate) struct MysticetiConsensusHandler {
 
 impl MysticetiConsensusHandler {
     pub(crate) fn new(
-        mut consensus_handler: ConsensusHandler<CheckpointService>,
+        mut consensus_handler: ConsensusHandler<DWalletCheckpointService>,
         mut commit_receiver: UnboundedReceiver<consensus_core::CommittedSubDag>,
         commit_consumer_monitor: Arc<CommitConsumerMonitor>,
     ) -> Self {
@@ -521,6 +522,7 @@ impl MysticetiConsensusHandler {
 }
 
 impl<C> ConsensusHandler<C> {
+    #[allow(dead_code)]
     fn epoch(&self) -> EpochId {
         self.epoch_store.epoch()
     }
@@ -528,7 +530,7 @@ impl<C> ConsensusHandler<C> {
 
 pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
     match &transaction.kind {
-        ConsensusTransactionKind::CheckpointSignature(_) => "checkpoint_signature",
+        ConsensusTransactionKind::DWalletCheckpointSignature(_) => "dwallet_checkpoint_signature",
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
         ConsensusTransactionKind::CapabilityNotificationV1(_) => "capability_notification_v1",
@@ -536,6 +538,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::DWalletMPCThresholdNotReached(..) => {
             "dwallet_mpc_threshold_not_reached"
         }
+        ConsensusTransactionKind::SystemCheckpointSignature(_) => "system_checkpoint_signature",
     }
 }
 
@@ -678,7 +681,7 @@ pub struct ConsensusCommitInfo {
 }
 
 impl ConsensusCommitInfo {
-    fn new(protocol_config: &ProtocolConfig, consensus_commit: &impl ConsensusCommitAPI) -> Self {
+    fn new(_protocol_config: &ProtocolConfig, consensus_commit: &impl ConsensusCommitAPI) -> Self {
         Self {
             round: consensus_commit.leader_round(),
             timestamp: consensus_commit.commit_timestamp_ms(),

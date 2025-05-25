@@ -8,14 +8,13 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
-use group::{GroupElement, PartyID};
+use group::PartyID;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, MPCProtocolInitData, SessionInfo};
+use ika_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
@@ -28,13 +27,14 @@ use tracing::info;
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
-    pub mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
+    mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
+    #[allow(dead_code)]
     voted_to_lock_committee: HashSet<PartyID>,
     /// The latest consensus round that was processed.
     /// Used to check if there's a need to perform a state sync —
@@ -117,6 +117,7 @@ impl DWalletMPCOutputsVerifier {
     /// If the total weighted stake of the authorities
     /// that have voted exceeds or equals the quorum threshold, it returns `true`.
     /// Otherwise, it returns `false`.
+    #[allow(dead_code)]
     pub(crate) fn append_vote_and_check_committee_lock(
         &mut self,
         authority_name: AuthorityName,
@@ -271,7 +272,7 @@ impl DWalletMPCOutputsVerifier {
                     .make_dwallet_user_secret_key_shares_public_round_completions_count
                     .inc();
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 self.dwallet_mpc_metrics
                     .import_dwallet_verification_round_completions_count
                     .inc();
