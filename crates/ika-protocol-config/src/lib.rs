@@ -396,7 +396,7 @@ impl ProtocolConfig {
                 (
                     DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string(),
                     HashMap::from([
-                        3, 20
+                        (3, 20)
                     ]),
                 ),
                 (
