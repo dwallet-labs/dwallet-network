@@ -730,7 +730,7 @@ pub async fn init_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
-    let ika_system_object_id = object_changes
+    let ika_system_object_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -742,8 +742,7 @@ pub async fn init_initialize(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let protocol_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -752,7 +751,7 @@ pub async fn init_initialize(
         type_params: vec![],
     };
 
-    let protocol_cap_id = object_changes
+    let protocol_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -764,8 +763,7 @@ pub async fn init_initialize(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
@@ -1072,7 +1070,7 @@ async fn request_add_validator_candidate(
         type_params: vec![],
     };
 
-    let validator_cap_id = object_changes
+    let validator_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1084,8 +1082,7 @@ async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let validator_cap = context
         .get_client()
@@ -1119,7 +1116,7 @@ pub async fn publish_ika_system_package_to_sui(
         ika_system_package_dependencies,
     )
     .await?;
-    let ika_system_package_id = object_changes
+    let ika_system_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
@@ -1127,8 +1124,7 @@ pub async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let init_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -1137,7 +1133,7 @@ pub async fn publish_ika_system_package_to_sui(
         type_params: vec![],
     };
 
-    let init_cap_id = object_changes
+    let init_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1149,10 +1145,9 @@ pub async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let ika_system_package_upgrade_cap_id = object_changes
+    let ika_system_package_upgrade_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1164,8 +1159,7 @@ pub async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     Ok((
         ika_system_package_id,
@@ -1195,7 +1189,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 
     let object_changes = response.object_changes.unwrap();
 
-    let builder_id = object_changes
+    let builder_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1211,8 +1205,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let builder_ref = client
         .transaction_builder()
@@ -1273,7 +1266,7 @@ async fn create_class_groups_public_key_and_proof_object(
         .object_changes
         .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
 
-    let obj_id = object_changes
+    let obj_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1289,8 +1282,7 @@ async fn create_class_groups_public_key_and_proof_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
 
@@ -1304,7 +1296,7 @@ async fn add_public_keys_and_proofs_with_rng(
     ika_system_package_id: ObjectID,
     range: (u8, u8),
     cg_builder_object_id: ObjectID,
-    class_groups_public_key_and_proof: &Box<ClassGroupsEncryptionKeyAndProof>,
+    class_groups_public_key_and_proof: &ClassGroupsEncryptionKeyAndProof,
 ) -> anyhow::Result<()> {
     let mut first_ptb = ProgrammableTransactionBuilder::new();
     let builder_object_ref = client
@@ -1348,7 +1340,7 @@ pub async fn publish_ika_package_to_sui(
         ika_package.dependencies.clone(),
     )
     .await?;
-    let ika_package_id = object_changes
+    let ika_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
@@ -1356,10 +1348,9 @@ pub async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let treasury_cap_id = object_changes
+    let treasury_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1371,10 +1362,9 @@ pub async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let ika_package_upgrade_cap_id = object_changes
+    let ika_package_upgrade_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1386,8 +1376,7 @@ pub async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     Ok((ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id))
 }

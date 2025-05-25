@@ -673,8 +673,8 @@ impl AuthorityPerEpochStore {
         for (name, _) in self.committee().voting_rights.iter() {
             let party_id = self.authority_name_to_party_id(name)?;
             let public_key =
-                bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                bcs::from_bytes(self.committee().class_groups_public_key_and_proof(name)?)
+                    .map_err(DwalletMPCError::BcsError)?;
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
@@ -688,8 +688,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .dwallet_mpc_events
             .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -702,8 +701,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .dwallet_mpc_completed_sessions
             .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -817,7 +815,7 @@ impl AuthorityPerEpochStore {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
-            self.committee.voting_rights.iter().cloned().collect(),
+            self.committee.voting_rights.to_vec(),
             self.committee.class_groups_public_keys_and_proofs.clone(),
             self.committee.quorum_threshold,
             self.committee.validity_threshold,
@@ -1371,7 +1369,7 @@ impl AuthorityPerEpochStore {
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
-        for key in notifications.iter().cloned() {
+        for key in notifications {
             self.consensus_notify_read.notify(&key, &());
         }
     }
