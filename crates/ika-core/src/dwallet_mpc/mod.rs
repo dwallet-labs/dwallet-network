@@ -12,7 +12,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
 };
-use eyre::ContextCompat;
 use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -32,8 +31,6 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
-use jsonrpsee::core::Serialize;
-use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};

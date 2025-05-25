@@ -31,8 +31,6 @@ use ika_types::messages_dwallet_mpc::{
     MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::id::ID;
-use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -541,9 +539,6 @@ impl DWalletMPCSession {
                         Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput)
                     }
                 }
-            }
-            _ => {
-                unreachable!("Unsupported MPC protocol type")
             }
         }
     }

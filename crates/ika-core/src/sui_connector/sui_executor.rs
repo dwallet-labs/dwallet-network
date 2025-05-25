@@ -24,7 +24,6 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
-use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
