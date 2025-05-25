@@ -180,5 +180,31 @@ describe('Test dWallet MPC', () => {
 		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
 		console.log({ ...dwallet });
+		console.log('Running publish secret share...');
+		await makeDWalletUserSecretKeySharesPublicRequestEvent(
+			conf,
+			dwallet.dwalletID,
+			dwallet.secret_share,
+		);
+		const dwalletWithSecretShare = await getObjectWithType(
+			conf,
+			dwallet.dwalletID,
+			isDWalletWithPublicUserSecretKeyShares,
+		);
+		console.log(`secretShare: ${dwalletWithSecretShare}`);
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwalletWithSecretShare.id.id);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		await sign(
+			conf,
+			completedPresign.id.id,
+			dwalletWithSecretShare.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletWithSecretShare.public_user_secret_key_share.at(0)!,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
 	});
 });
