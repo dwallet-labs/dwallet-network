@@ -303,7 +303,7 @@ impl DiscoveryEventLoop {
 
     fn handle_tick(&mut self, _now: std::time::Instant, now_unix: u64) {
         self.update_our_info_timestamp(now_unix);
-        if self.config.fixed_peers.is_none() {
+        // if self.config.fixed_peers.is_none() {
             warn!("no fixed peers, looking for more peers");
             self.tasks
                 .spawn(query_connected_peers_for_their_known_peers(
@@ -313,7 +313,7 @@ impl DiscoveryEventLoop {
                     self.metrics.clone(),
                     self.allowlisted_peers.clone(),
                 ));
-        }
+        // }
 
         // Cull old peers older than a day
         self.state
@@ -608,7 +608,7 @@ fn update_known_peers(
                 if !peer.addresses.is_empty() {
                     metrics.inc_num_peers_with_external_address();
                 }
-                v.insert(peer);
+                // v.insert(peer);
             }
         }
     }
