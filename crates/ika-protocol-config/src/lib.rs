@@ -409,7 +409,9 @@ impl ProtocolConfig {
                 ),
                 (
                     START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string(),
-                    HashMap::from([]),
+                    HashMap::from([
+                        (3, 20)
+                    ]),
                 ),
                 (
                     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string(),
