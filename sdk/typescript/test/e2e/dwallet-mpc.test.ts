@@ -128,7 +128,7 @@ describe('Test dWallet MPC', () => {
 			completedPresign.id.id,
 			dwalletWithSecretShare.dwallet_cap_id,
 			Buffer.from('hello world'),
-			dwalletWithSecretShare.public_user_secret_key_share.vec.at(0)!,
+			dwalletWithSecretShare.public_user_secret_key_share.at(0)!,
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
@@ -169,6 +169,13 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should create an imported dWallet', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
+	});
+
+	it('should create an imported dWallet, publish its secret share and sign with it', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
