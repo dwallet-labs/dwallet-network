@@ -8,252 +8,210 @@
 ///   - **computation_ika**: The computation_ika IKA price.
 ///   - **gas_fee_reimbursement_sui**: The SUI reimbursement.
 /// 
-/// The main struct, `DWalletPricing2PcMpcSecp256K1`, now holds one `PricingPerOperation` per operation.
+/// The main struct, `DWalletPricing`, now holds one `PricingPerOperation` per operation.
 /// The DKG operation is split into two separate rounds:
 ///   - `dkg_first_round`
 ///   - `dkg_second_round`
 module ika_system::dwallet_pricing;
 
+use sui::priority_queue::{Self, PriorityQueue};
+use ika_system::bls_committee::BlsCommittee;
+use sui::vec_map::{Self, VecMap};
+
+
+/// Holds pricing information for a dWallet.
+/// The vector is indexed by the curve and signature algorithm and protocol.
+public struct DWalletPricing has copy, drop, store {
+    /// The pricing for each curve and signature algorithm and protocol. 
+    /// The first key is the curve, the second is the signature algorithm, the third is the protocol.
+    pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+}
+
+public struct DWalletPricingKey has copy, drop, store {
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+}
+
 /// Holds pricing information for a single operation.
 /// The fields are ordered so that the consensus validation price is first.
-public struct PricingPerOperation has copy, drop, store {
+public struct DWalletPricingValue has copy, drop, store {
     consensus_validation_ika: u64,
     computation_ika: u64,
     gas_fee_reimbursement_sui: u64,
+    gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
-/// Represents pricing information for various operations in a dWallet.
-/// Each operation is represented by its own `PricingPerOperation`:
-/// - `dkg_first_round`: Pricing for the first round of distributed key generation.
-/// - `dkg_second_round`: Pricing for the second round of distributed key generation.
-/// - `re_encrypt_user_share`: Pricing for re-encrypting user shares.
-/// - `presign`: Pricing for ECDSA presigning.
-/// - `sign`: Pricing for ECDSA signing.
-/// - `future_sign`: Pricing for ECDSA future signing.
-/// - `sign_with_partial_user_signature`: Pricing for ECDSA signing with partial user signature.
-public struct DWalletPricing2PcMpcSecp256K1 has key, store {
-    id: UID,
-    dkg_first_round: PricingPerOperation,
-    dkg_second_round: PricingPerOperation,
-    re_encrypt_user_share: PricingPerOperation,
-    presign: PricingPerOperation,
-    sign: PricingPerOperation,
-    future_sign: PricingPerOperation,
-    sign_with_partial_user_signature: PricingPerOperation,
-    make_dwallet_user_secret_key_share_public: PricingPerOperation,
-    imported_key_dwallet_verification: PricingPerOperation,
+public struct DWalletPricingCalculationVotes has copy, drop, store {
+    bls_committee: BlsCommittee,
+    default_pricing: DWalletPricing,
+    working_pricing: DWalletPricing,
 }
 
-/// Creates a new [`DWalletPricing2PcMpcSecp256K1`] object.
+/// Creates a new [`DWalletPricing`] object.
 ///
-/// Initializes pricing data for each operation by providing values for the three pricing fields for each operation.
+/// Initializes the table with the given pricing values for each operation.
 ///
 /// # Parameters
-///
-/// - **DKG First Round Pricing:**
-///   - `dkg_first_round_consensus_validation_ika`: Consensus validation IKA price.
-///   - `dkg_first_round_computation_ika`: Computation IKA price.
-///   - `dkg_first_round_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **DKG Second Round Pricing:**
-///   - `dkg_second_round_consensus_validation_ika`: Consensus validation IKA price.
-///   - `dkg_second_round_computation_ika`: Computation IKA price.
-///   - `dkg_second_round_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **Re-encrypt User Share Pricing:**
-///   - `re_encrypt_consensus_validation_ika`: Consensus validation IKA price.
-///   - `re_encrypt_computation_ika`: Computation IKA price.
-///   - `re_encrypt_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **ECDSA Presign Pricing:**
-///   - `presign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `presign_computation_ika`: Computation IKA price.
-///   - `presign_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **ECDSA Sign Pricing:**
-///   - `sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `sign_computation_ika`: Computation IKA price.
-///   - `sign_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **ECDSA Future Sign Pricing:**
-///   - `future_sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `future_sign_computation_ika`: Computation IKA price.
-///   - `future_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
-/// - **ECDSA Sign with Partial User Signature Pricing:**
-///   - `partial_sign_consensus_validation_ika`: Consensus validation IKA price.
-///   - `partial_sign_computation_ika`: Computation IKA price.
-///   - `partial_sign_gas_fee_reimbursement_sui`: SUI reimbursement.
-///
+/// 
 /// - `ctx`: The transaction context.
 ///
 /// # Returns
 ///
-/// A newly created instance of `DWalletPricing2PcMpcSecp256K1`.
-public fun create_dwallet_pricing_2pc_mpc_secp256k1(
-    // DKG First Round Pricing
-    dkg_first_round_consensus_validation_ika: u64,
-    dkg_first_round_computation_ika: u64,
-    dkg_first_round_gas_fee_reimbursement_sui: u64,
-
-    // DKG Second Round Pricing
-    dkg_second_round_consensus_validation_ika: u64,
-    dkg_second_round_computation_ika: u64,
-    dkg_second_round_gas_fee_reimbursement_sui: u64,
-
-    // Re-encrypt User Share Pricing
-    re_encrypt_consensus_validation_ika: u64,
-    re_encrypt_computation_ika: u64,
-    re_encrypt_gas_fee_reimbursement_sui: u64,
-
-    // ECDSA Presign Pricing
-    presign_consensus_validation_ika: u64,
-    presign_computation_ika: u64,
-    presign_gas_fee_reimbursement_sui: u64,
-
-    // ECDSA Sign Pricing
-    sign_consensus_validation_ika: u64,
-    sign_computation_ika: u64,
-    sign_gas_fee_reimbursement_sui: u64,
-
-    // ECDSA Future Sign Pricing
-    future_sign_consensus_validation_ika: u64,
-    future_sign_computation_ika: u64,
-    future_sign_gas_fee_reimbursement_sui: u64,
-
-    // ECDSA Sign with Partial User Signature Pricing
-    partial_sign_consensus_validation_ika: u64,
-    partial_sign_computation_ika: u64,
-    partial_sign_gas_fee_reimbursement_sui: u64,
-
-    // Make DWallet User Secret Key Share Public Pricing
-    make_dwallet_user_secret_key_share_public_consensus_validation_ika: u64,
-    make_dwallet_user_secret_key_share_public_computation_ika: u64,
-    make_dwallet_user_secret_key_share_public_gas_fee_reimbursement_sui: u64,
-
-    // Imported Key DWallet Verification Pricing
-    imported_key_dwallet_verification_consensus_validation_ika: u64,
-    imported_key_dwallet_verification_computation_ika: u64,
-    imported_key_dwallet_verification_gas_fee_reimbursement_sui: u64,
-
-    ctx: &mut TxContext
-): DWalletPricing2PcMpcSecp256K1 {
-    DWalletPricing2PcMpcSecp256K1 {
-        id: object::new(ctx),
-        dkg_first_round: PricingPerOperation {
-            consensus_validation_ika: dkg_first_round_consensus_validation_ika,
-            computation_ika: dkg_first_round_computation_ika,
-            gas_fee_reimbursement_sui: dkg_first_round_gas_fee_reimbursement_sui,
-        },
-        dkg_second_round: PricingPerOperation {
-            consensus_validation_ika: dkg_second_round_consensus_validation_ika,
-            computation_ika: dkg_second_round_computation_ika,
-            gas_fee_reimbursement_sui: dkg_second_round_gas_fee_reimbursement_sui,
-        },
-        re_encrypt_user_share: PricingPerOperation {
-            consensus_validation_ika: re_encrypt_consensus_validation_ika,
-            computation_ika: re_encrypt_computation_ika,
-            gas_fee_reimbursement_sui: re_encrypt_gas_fee_reimbursement_sui,
-        },
-        presign: PricingPerOperation {
-            consensus_validation_ika: presign_consensus_validation_ika,
-            computation_ika: presign_computation_ika,
-            gas_fee_reimbursement_sui: presign_gas_fee_reimbursement_sui,
-        },
-        sign: PricingPerOperation {
-            consensus_validation_ika: sign_consensus_validation_ika,
-            computation_ika: sign_computation_ika,
-            gas_fee_reimbursement_sui: sign_gas_fee_reimbursement_sui,
-        },
-        future_sign: PricingPerOperation {
-            consensus_validation_ika: future_sign_consensus_validation_ika,
-            computation_ika: future_sign_computation_ika,
-            gas_fee_reimbursement_sui: future_sign_gas_fee_reimbursement_sui,
-        },
-        sign_with_partial_user_signature: PricingPerOperation {
-            consensus_validation_ika: partial_sign_consensus_validation_ika,
-            computation_ika: partial_sign_computation_ika,
-            gas_fee_reimbursement_sui: partial_sign_gas_fee_reimbursement_sui,
-        },
-        make_dwallet_user_secret_key_share_public: PricingPerOperation {
-            consensus_validation_ika: make_dwallet_user_secret_key_share_public_consensus_validation_ika,
-            computation_ika: make_dwallet_user_secret_key_share_public_computation_ika,
-            gas_fee_reimbursement_sui: make_dwallet_user_secret_key_share_public_gas_fee_reimbursement_sui,
-        },
-        imported_key_dwallet_verification: PricingPerOperation {
-            consensus_validation_ika: imported_key_dwallet_verification_consensus_validation_ika,
-            computation_ika: imported_key_dwallet_verification_computation_ika,
-            gas_fee_reimbursement_sui: imported_key_dwallet_verification_gas_fee_reimbursement_sui,
-        },
+/// A newly created instance of `DWalletPricing`.
+public fun empty(): DWalletPricing {
+    DWalletPricing {
+        pricing_map: vec_map::empty(),
     }
 }
 
-
-/// Returns zero `PricingPerOperation`.
-public fun zero(): PricingPerOperation {
-    PricingPerOperation {
-        consensus_validation_ika: 0,
-        computation_ika: 0,
-        gas_fee_reimbursement_sui: 0,
-    }
+/// Inserts pricing information for a specific operation into the [`DWalletPricing`] table.
+///
+/// # Parameters
+///
+/// - `self`: The [`DWalletPricing`] object.
+/// - `key`: The key for the operation.
+/// - `value`: The pricing information for the operation.
+/// 
+/// # Returns
+/// 
+/// The [`DWalletPricing`] object.
+public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, consensus_validation_ika: u64, computation_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
+    self.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, DWalletPricingValue {
+        consensus_validation_ika,
+        computation_ika,
+        gas_fee_reimbursement_sui,
+        gas_fee_reimbursement_sui_for_system_calls,
+    })
 }
 
-/// Returns `PricingPerOperation` for the DKG first round.
-public fun dkg_first_round(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.dkg_first_round
+fun insert_or_update_dwallet_pricing_value(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: DWalletPricingValue) {
+    let key = DWalletPricingKey {
+        curve,
+        signature_algorithm,
+        protocol,
+    };
+    if(self.pricing_map.contains(&key)) {
+        let existing_value = &mut self.pricing_map[&key];
+        *existing_value = value;
+    } else {
+        self.pricing_map.insert(key, value);
+    };
 }
 
-/// Returns `PricingPerOperation` for the DKG second round.
-public fun dkg_second_round(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.dkg_second_round
+/// Returns the pricing information for a specific operation from the [`DWalletPricing`] table.
+///
+/// # Parameters
+///
+/// - `self`: The [`DWalletPricing`] object.
+/// - `key`: The key for the operation.
+/// 
+/// # Returns
+/// 
+/// The pricing information for the operation.
+public(package) fun try_get_dwallet_pricing_value(self: &DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32): Option<DWalletPricingValue> {
+    let key = DWalletPricingKey {
+        curve,
+        signature_algorithm,
+        protocol,
+    };
+    self.pricing_map.try_get(&key)
 }
 
-/// Returns `PricingPerOperation` for the re-encrypt user share.
-public fun re_encrypt_user_share(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.re_encrypt_user_share
-}
-
-/// Returns `PricingPerOperation` for the ECDSA presign.
-public fun presign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.presign
-}
-
-/// Returns `PricingPerOperation` for the ECDSA sign.
-public fun sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.sign
-}
-
-/// Returns `PricingPerOperation` for the ECDSA future sign.
-public fun future_sign(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.future_sign
-}
-
-/// Returns `PricingPerOperation` for the ECDSA sign with partial user signature.
-public fun sign_with_partial_user_signature(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.sign_with_partial_user_signature
-}
-
-/// Returns `PricingPerOperation` for the make dWallet user secret key share public.
-public fun make_dwallet_user_secret_key_share_public(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.make_dwallet_user_secret_key_share_public
-}
-
-/// Returns `PricingPerOperation` for the imported key dWallet verification.
-public fun imported_key_dwallet_verification(self: &DWalletPricing2PcMpcSecp256K1): PricingPerOperation {
-    self.imported_key_dwallet_verification
-}
-
-/// Getter for the consensus_validation_ika field of a PricingPerOperation.
-public fun consensus_validation_ika(self: &PricingPerOperation): u64 {
+/// Getter for the consensus_validation_ika field of a DWalletPricingValue.
+public fun consensus_validation_ika(self: &DWalletPricingValue): u64 {
     self.consensus_validation_ika
 }
 
-/// Getter for the computation_ika field of a PricingPerOperation.
-public fun computation_ika(self: &PricingPerOperation): u64 {
+/// Getter for the computation_ika field of a DWalletPricingValue.
+public fun computation_ika(self: &DWalletPricingValue): u64 {
     self.computation_ika
 }
 
-/// Getter for the gas_fee_reimbursement_sui field of a PricingPerOperation.
-public fun gas_fee_reimbursement_sui(self: &PricingPerOperation): u64 {
+/// Getter for the gas_fee_reimbursement_sui field of a DWalletPricingValue.
+public fun gas_fee_reimbursement_sui(self: &DWalletPricingValue): u64 {
     self.gas_fee_reimbursement_sui
+}
+
+/// Getter for the gas_fee_reimbursement_sui_for_system_calls field of a DWalletPricingValue.
+public fun gas_fee_reimbursement_sui_for_system_calls(self: &DWalletPricingValue): u64 {
+    self.gas_fee_reimbursement_sui_for_system_calls
+}
+
+public(package) fun new_pricing_calculation(bls_committee: BlsCommittee, default_pricing: DWalletPricing): DWalletPricingCalculationVotes {
+    DWalletPricingCalculationVotes {
+        bls_committee,
+        default_pricing,
+        working_pricing: empty(),
+    }
+}
+
+public(package) fun committee_members_for_pricing_calculation_votes(calculation: &DWalletPricingCalculationVotes): vector<ID> {
+    calculation.bls_committee.members().map_ref!(|member| {
+        member.validator_id()
+    })
+}
+
+public(package) fun calculate_pricing_quorum_below(calculation: &mut DWalletPricingCalculationVotes, pricings: vector<DWalletPricing>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
+    let mut values = vector[];
+    pricings.do_ref!(|pricing| {
+        let value = pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol);
+        values.push_back(value.get_with_default(calculation.default_pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol).extract()));
+    });
+    let value = pricing_value_quorum_below(calculation.bls_committee, values);
+    calculation.working_pricing.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, value);
+}
+
+public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, values: vector<DWalletPricingValue>): DWalletPricingValue {
+    let mut consensus_validation_ika = priority_queue::new(vector[]);
+    let mut computation_ika = priority_queue::new(vector[]);
+    let mut gas_fee_reimbursement_sui = priority_queue::new(vector[]);
+    let mut gas_fee_reimbursement_sui_for_system_calls = priority_queue::new(vector[]);
+    values.do_ref!(|value| {
+        consensus_validation_ika.insert(value.consensus_validation_ika(), 1);
+        computation_ika.insert(value.computation_ika(), 1);
+        gas_fee_reimbursement_sui.insert(value.gas_fee_reimbursement_sui(), 1);
+        gas_fee_reimbursement_sui_for_system_calls.insert(value.gas_fee_reimbursement_sui_for_system_calls(), 1);
+    });
+    let consensus_validation_ika_quorum_below = quorum_below(bls_committee, &mut consensus_validation_ika);
+    let computation_ika_quorum_below = quorum_below(bls_committee, &mut computation_ika);
+    let gas_fee_reimbursement_sui_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui);
+    let gas_fee_reimbursement_sui_for_system_calls_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui_for_system_calls);
+    DWalletPricingValue {
+        consensus_validation_ika: consensus_validation_ika_quorum_below,
+        computation_ika: computation_ika_quorum_below,
+        gas_fee_reimbursement_sui: gas_fee_reimbursement_sui_quorum_below,
+        gas_fee_reimbursement_sui_for_system_calls: gas_fee_reimbursement_sui_for_system_calls_quorum_below,
+    }
+}
+
+/// Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal to this.
+fun quorum_below(bls_committee: BlsCommittee, vote_queue: &mut PriorityQueue<u64>): u64 {
+    let mut sum_votes = bls_committee.total_voting_power();
+    // We have a quorum initially, so we remove nodes until doing so breaks the quorum.
+    // The value at that point is the minimum value with support from a quorum.
+    loop {
+        let (value, votes) = vote_queue.pop_max();
+        sum_votes = sum_votes - votes;
+        if (!bls_committee.is_quorum_threshold(sum_votes)) {
+            return value
+        };
+    }
+}
+
+public(package) fun is_calculation_completed(calculation: &DWalletPricingCalculationVotes): bool {
+    let mut i = 0;
+    let (keys, _) = calculation.default_pricing.pricing_map.into_keys_values();
+    while (i < keys.length()) {
+        let key = keys[i];
+        if(calculation.working_pricing.pricing_map.try_get(&key).is_none()) {
+            return false
+        };
+        i = i + 1;
+    };
+    true
+}
+
+public(package) fun calculated_pricing(calculation: &DWalletPricingCalculationVotes): DWalletPricing {
+    calculation.working_pricing
 }

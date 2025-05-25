@@ -2330,7 +2330,7 @@ dependencies = [
  "hybrid-array",
  "num-traits",
  "rand_core 0.6.4",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -3011,7 +3011,7 @@ dependencies = [
  "digest 0.11.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "rfc6979 0.5.0-pre.4",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "signature 2.0.0",
  "spki 0.8.0-rc.1",
 ]
@@ -3074,7 +3074,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47"
 dependencies = [
  "base16ct 0.2.0",
- "base64ct",
  "crypto-bigint 0.5.5",
  "digest 0.10.7",
  "ff 0.13.0",
@@ -3084,8 +3083,6 @@ dependencies = [
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "sec1 0.7.3",
- "serde_json",
- "serdect 0.2.0",
  "subtle",
  "zeroize",
 ]
@@ -3105,7 +3102,7 @@ dependencies = [
  "pkcs8 0.11.0-rc.2",
  "rand_core 0.6.4",
  "sec1 0.8.0-rc.3",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -4899,16 +4896,6 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "idna"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "634d9b1461af396cad843f47fdba5597a4f9e6ddd4bfb6ff5d85028c25cb12f6"
-dependencies = [
- "unicode-bidi",
- "unicode-normalization",
-]
-
-[[package]]
-name = "idna"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "686f825264d630750a544639377bae737628043f20d38bbc029e8f29ea968a7e"
@@ -5411,6 +5398,7 @@ dependencies = [
  "mysten-network",
  "prometheus",
  "rand 0.8.5",
+ "rayon",
  "sui-macros",
  "sui-simulator",
  "sui-tls",
@@ -5485,52 +5473,24 @@ version = "0.1.0"
 dependencies = [
  "anemo",
  "anyhow",
- "async-trait",
  "bcs",
- "bincode",
  "byteorder",
- "chrono",
  "consensus-config",
- "coset",
- "criterion",
  "derive_more 1.0.0",
  "dwallet-mpc-types",
  "enum_dispatch",
- "expect-test",
  "eyre",
  "fastcrypto",
- "fastcrypto-tbls",
  "fastcrypto-zkp",
  "group 0.1.0",
  "ika-protocol-config",
- "im",
- "indexmap 2.7.1",
- "itertools 0.13.0",
  "jsonrpsee",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
  "move-core-types",
- "move-disassembler",
- "move-ir-types",
  "move-vm-profiler",
  "move-vm-test-utils",
- "move-vm-types",
- "mysten-metrics",
  "mysten-network",
- "nonempty 0.9.0",
- "num-bigint 0.4.6",
- "num-traits",
- "num_enum 0.6.1",
  "once_cell",
- "p256",
- "parking_lot 0.12.3",
- "passkey-authenticator",
- "passkey-client",
- "passkey-types",
  "prometheus",
- "proptest",
- "proptest-derive 0.5.1",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "roaring",
@@ -5540,24 +5500,19 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "serde_with",
- "serde_yaml",
  "shared-crypto",
- "signature 2.2.0",
  "static_assertions",
  "strum 0.24.1",
  "strum_macros 0.24.3",
  "sui-config",
- "sui-enum-compat-util",
  "sui-json-rpc-types",
  "sui-macros",
  "sui-types",
  "tap",
  "thiserror 1.0.69",
- "tokio",
  "tonic 0.12.3",
  "tracing",
  "typed-store-error",
- "url",
 ]
 
 [[package]]
@@ -6125,7 +6080,7 @@ dependencies = [
  "ecdsa 0.17.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "once_cell",
- "serdect 0.3.0-rc.0",
+ "serdect",
 ]
 
 [[package]]
@@ -6137,7 +6092,7 @@ dependencies = [
  "ecdsa 0.17.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "once_cell",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "sha2 0.11.0-pre.4",
 ]
 
@@ -8373,38 +8328,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "passkey-authenticator"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4017d27e98940a98358b43a3fe19cb3d7b7c821c3b35634d8087230e92445579"
-dependencies = [
- "async-trait",
- "coset",
- "log",
- "p256",
- "passkey-types",
- "rand 0.8.5",
-]
-
-[[package]]
-name = "passkey-client"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f14d42b14749cc7927add34a9932b3b3cc5349a633384850baa67183061439dd"
-dependencies = [
- "ciborium",
- "coset",
- "idna 0.5.0",
- "passkey-authenticator",
- "passkey-types",
- "public-suffix",
- "serde",
- "serde_json",
- "typeshare",
- "url",
-]
-
-[[package]]
 name = "passkey-types"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9194,12 +9117,6 @@ checksum = "200b9ff220857e53e184257720a14553b2f4aa02577d2ed9842d45d4b9654810"
 dependencies = [
  "cc",
 ]
-
-[[package]]
-name = "public-suffix"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68a59553bc595dc1514e7d713e6167cf1c4d68ef6fcc2d10ad834a97a1ca9bc4"
 
 [[package]]
 name = "quanta"
@@ -10358,7 +10275,6 @@ dependencies = [
  "der 0.7.9",
  "generic-array",
  "pkcs8 0.10.2",
- "serdect 0.2.0",
  "subtle",
  "zeroize",
 ]
@@ -10373,7 +10289,7 @@ dependencies = [
  "der 0.8.0-rc.1",
  "hybrid-array",
  "pkcs8 0.11.0-rc.2",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -10622,16 +10538,6 @@ dependencies = [
  "ryu",
  "serde",
  "yaml-rust",
-]
-
-[[package]]
-name = "serdect"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
-dependencies = [
- "base16ct 0.2.0",
- "serde",
 ]
 
 [[package]]
@@ -14715,7 +14621,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32f8b686cadd1473f4bd0117a5d28d36b1ade384ea9b5069a1c40aefed7fda60"
 dependencies = [
  "form_urlencoded",
- "idna 1.0.3",
+ "idna",
  "percent-encoding",
  "serde",
 ]

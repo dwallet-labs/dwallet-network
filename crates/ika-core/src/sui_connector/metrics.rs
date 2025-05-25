@@ -1,18 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use mysten_common::metrics::{push_metrics, MetricsPushClient};
-use mysten_metrics::RegistryService;
 use prometheus::{
-    register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
-    register_int_counter_with_registry, register_int_gauge_vec_with_registry,
-    register_int_gauge_with_registry, HistogramVec, IntCounter, IntCounterVec, IntGauge,
-    IntGaugeVec, Registry,
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
+    Registry,
 };
 use std::sync::Arc;
-use std::time::Duration;
-use sui_types::crypto::NetworkKeyPair;
 
+#[allow(unused)]
 const FINE_GRAINED_LATENCY_SEC_BUCKETS: &[f64] = &[
     0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9,
     1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5,
@@ -26,20 +21,20 @@ pub struct SuiConnectorMetrics {
 
     pub gas_coin_balance: IntGauge,
 
-    /// Sequence number of the next checkpoint to write to Sui.
-    pub(crate) next_checkpoint_sequence: IntGauge,
+    /// Sequence number of the next dwallet checkpoint to write to Sui.
+    pub(crate) dwallet_checkpoint_sequence: IntGauge,
 
-    /// Sequence number of the last checkpoint successfully written to Sui.
-    pub(crate) last_written_checkpoint_sequence: IntGauge,
+    /// Sequence number of the last dwallet checkpoint successfully written to Sui.
+    pub(crate) last_written_dwallet_checkpoint_sequence: IntGauge,
 
-    /// Total number of checkpoint write requests sent to Sui.
-    pub(crate) checkpoint_write_requests_total: IntGauge,
+    /// Total number of dwallet checkpoint write requests sent to Sui.
+    pub(crate) dwallet_checkpoint_write_requests_total: IntGauge,
 
-    /// Total number of successful checkpoint writes to Sui.
-    pub(crate) checkpoint_writes_success_total: IntGauge,
+    /// Total number of successful dwallet checkpoint writes to Sui.
+    pub(crate) dwallet_checkpoint_writes_success_total: IntGauge,
 
-    /// Total number of failed checkpoint writes to Sui.
-    pub(crate) checkpoint_writes_failure_total: IntGauge,
+    /// Total number of failed dwallet checkpoint writes to Sui.
+    pub(crate) dwallet_checkpoint_writes_failure_total: IntGauge,
 }
 
 impl SuiConnectorMetrics {
@@ -59,37 +54,37 @@ impl SuiConnectorMetrics {
             )
             .unwrap(),
 
-            next_checkpoint_sequence: register_int_gauge_with_registry!(
-                "sui_connector_next_checkpoint_sequence",
-                "Sequence number of the next checkpoint to write to Sui",
+            dwallet_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_dwallet_checkpoint_sequence",
+                "Sequence number of the next dwallet checkpoint to write to Sui",
                 registry,
             )
             .unwrap(),
 
-            last_written_checkpoint_sequence: register_int_gauge_with_registry!(
-                "sui_connector_last_written_checkpoint_sequence",
-                "Sequence number of the last checkpoint successfully written to Sui",
+            last_written_dwallet_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_last_written_dwallet_checkpoint_sequence",
+                "Sequence number of the last dwallet checkpoint successfully written to Sui",
                 registry,
             )
             .unwrap(),
 
-            checkpoint_write_requests_total: register_int_gauge_with_registry!(
-                "sui_connector_checkpoint_write_requests_total",
-                "Total number of checkpoint write requests sent to Sui",
+            dwallet_checkpoint_write_requests_total: register_int_gauge_with_registry!(
+                "sui_connector_dwallet_checkpoint_write_requests_total",
+                "Total number of dwallet checkpoint write requests sent to Sui",
                 registry,
             )
             .unwrap(),
 
-            checkpoint_writes_success_total: register_int_gauge_with_registry!(
-                "sui_connector_checkpoint_writes_success_total",
-                "Total number of successful checkpoint writes to Sui",
+            dwallet_checkpoint_writes_success_total: register_int_gauge_with_registry!(
+                "sui_connector_dwallet_checkpoint_writes_success_total",
+                "Total number of successful dwallet checkpoint writes to Sui",
                 registry,
             )
             .unwrap(),
 
-            checkpoint_writes_failure_total: register_int_gauge_with_registry!(
-                "sui_connector_checkpoint_writes_failure_total",
-                "Total number of failed checkpoint writes to Sui",
+            dwallet_checkpoint_writes_failure_total: register_int_gauge_with_registry!(
+                "sui_connector_dwallet_checkpoint_writes_failure_total",
+                "Total number of failed dwallet checkpoint writes to Sui",
                 registry,
             )
             .unwrap(),

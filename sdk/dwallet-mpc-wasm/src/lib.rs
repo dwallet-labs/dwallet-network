@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use dwallet_mpc_centralized_party::{
-    advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
-    create_dkg_output, create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
+    advance_centralized_sign_party, create_dkg_output,
+    create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
     public_keys_from_dwallet_output, sample_dwallet_secret_key_inner, verify_secret_share,
 };
@@ -64,17 +64,6 @@ pub fn encrypt_secret_share(
         network_dkg_public_output,
     )
     .map_err(to_js_err)?;
-    Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
-}
-
-/// Get the centralized party public share out of the decentralized dkg output.
-#[wasm_bindgen]
-pub fn centralized_public_share_from_decentralized_output(
-    decentralized_output: Vec<u8>,
-) -> Result<JsValue, JsError> {
-    let encryption_and_proof =
-        centralized_public_share_from_decentralized_output_inner(decentralized_output)
-            .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 

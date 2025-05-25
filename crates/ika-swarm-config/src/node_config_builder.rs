@@ -118,7 +118,7 @@ impl ValidatorConfigBuilder {
             // Set a shorter timeout for checkpoint content download in tests, since
             // checkpoint pruning also happens much faster, and the network is local.
             state_sync: Some(StateSyncConfig {
-                checkpoint_content_timeout_ms: Some(10_000),
+                dwallet_checkpoint_content_timeout_ms: Some(10_000),
                 ..Default::default()
             }),
             ..Default::default()
@@ -320,7 +320,7 @@ impl FullnodeConfigBuilder {
                 // checkpoint pruning also happens much faster,
                 // and the network is local.
                 state_sync: Some(StateSyncConfig {
-                    checkpoint_content_timeout_ms: Some(10_000),
+                    dwallet_checkpoint_content_timeout_ms: Some(10_000),
                     ..Default::default()
                 }),
                 ..Default::default()

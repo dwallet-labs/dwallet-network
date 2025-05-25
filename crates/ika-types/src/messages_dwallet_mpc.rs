@@ -1,7 +1,4 @@
-use crate::crypto::default_hash;
 use crate::crypto::AuthorityName;
-use crate::digests::DWalletMPCOutputDigest;
-use crate::dwallet_mpc_error::DwalletMPCError;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
@@ -11,34 +8,25 @@ use dwallet_mpc_types::dwallet_mpc::{
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPublicOutput, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    MPCMessage, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
 };
-use group::PartyID;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use shared_crypto::intent::IntentScope;
-use std::collections::HashMap;
 use std::fmt::{Debug, Display};
-use sui_json_rpc_types::SuiEvent;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-use sui_types::id::ID;
-use sui_types::message_envelope::Message;
-use sui_types::SUI_SYSTEM_ADDRESS;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
-    DWalletImportedKeyVerificationRequestEvent(
+    DWalletImportedKeyVerificationRequest(
         DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
     ),
     /// The first round of the DKG protocol.
@@ -69,7 +57,7 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
-    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>),
+    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>),
 }
 
 impl Display for MPCProtocolInitData {
@@ -92,7 +80,7 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
@@ -119,25 +107,11 @@ impl Debug for MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
     }
-}
-
-/// The optional state of the Presign session, if the first round party was
-/// completed and agreed on.
-/// If the first presign round was completed and agreed on,
-/// the [`DWalletMPCSession`] `session_specific_state` will hold
-/// this state.
-/// If the first round was not completed, the `session_specific_state` will be `None`.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct PresignSessionState {
-    /// The verified output from the first party of the Presign protocol.
-    pub first_presign_party_output: MPCPublicOutput,
-    /// The public input for the second party of the Presign protocol.
-    pub second_party_public_input: MPCPublicInput,
 }
 
 /// This is a wrapper type for the [`SuiEvent`] type that is being used to write it to the local RocksDB.
@@ -457,8 +431,12 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// The unique session identifier for the DWallet.
     pub dwallet_id: ObjectID,
 
+    /// The Encrypted user secret key share object ID.
     pub encrypted_user_secret_key_share_id: ObjectID,
 
+    /// The message delivered to the decentralized party from a centralized party.
+    /// Includes the encrypted decentralized secret key share and
+    /// the associated cryptographic proof of encryption.
     pub centralized_party_message: Vec<u8>,
 
     /// The unique identifier of the dWallet capability associated with this session.
@@ -467,7 +445,7 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
 
-    /// The `EncryptionKey` object used for encrypting the secret key share.
+    /// The user `EncryptionKey` object used for encrypting the user secret key share.
     pub encryption_key: Vec<u8>,
 
     /// The unique identifier of the `EncryptionKey` object.
@@ -599,7 +577,7 @@ pub struct DWalletNetworkDecryptionKey {
     pub network_dkg_public_output: TableVec,
     /// The fees paid for computation in IKA.
     pub computation_fee_charged_ika: Balance,
-    pub state: DWalletNetworkDecryptionKeyState,
+    pub state: DWalletNetworkEncryptionKeyState,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -609,29 +587,35 @@ pub struct DWalletNetworkDecryptionKeyData {
     pub current_epoch: u64,
     pub current_reconfiguration_public_output: Vec<u8>,
     pub network_dkg_public_output: Vec<u8>,
-    pub state: DWalletNetworkDecryptionKeyState,
+    pub state: DWalletNetworkEncryptionKeyState,
 }
 
-/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKeyShares`.
+/// Represents the Rust version of the Move enum `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyState`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum DWalletNetworkDecryptionKeyState {
+pub enum DWalletNetworkEncryptionKeyState {
     AwaitingNetworkDKG,
     NetworkDKGCompleted,
-    AwaitingNetworkReconfiguration,
-    AwaitingNextEpochReconfiguration,
+    /// Reconfiguration request was sent to the network, but didn't finish yet.
+    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
+    AwaitingNetworkReconfiguration {
+        is_first: bool,
+    },
+    /// Reconfiguration request finished, but we didn't switch an epoch yet.
+    /// We need to wait for the next epoch to update the reconfiguration public outputs.
+    AwaitingNextEpochToUpdateReconfiguration,
     NetworkReconfigurationCompleted,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct DWalletDecryptionKeyReshareRequestEvent {
+pub struct DWalletEncryptionKeyReconfigurationRequestEvent {
     pub dwallet_network_decryption_key_id: ObjectID,
 }
 
-impl DWalletMPCEventTrait for DWalletDecryptionKeyReshareRequestEvent {
+impl DWalletMPCEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: ident_str!("DWalletDecryptionKeyReshareRequestEvent").to_owned(),
+            name: ident_str!("DWalletEncryptionKeyReconfigurationRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
