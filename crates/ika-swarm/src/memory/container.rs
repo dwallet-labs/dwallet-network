@@ -12,6 +12,8 @@ use sui_types::base_types::ConciseableName;
 use telemetry_subscribers::get_global_telemetry_config;
 use tracing::{info, trace};
 
+const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
+
 #[derive(Debug)]
 pub(crate) struct Container {
     join_handle: Option<thread::JoinHandle<()>>,
@@ -90,6 +92,7 @@ impl Container {
                     builder
                 }
             };
+            builder.thread_stack_size(SIXTEEN_MEGA_BYTES);
             let runtime = builder.enable_all().build().unwrap();
 
             runtime.block_on(async move {

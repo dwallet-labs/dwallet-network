@@ -106,7 +106,7 @@ describe('Test dWallet MPC', () => {
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		console.log('Running publishing its secret share...');
+		console.log('Running publish secret share...');
 		await makeDWalletUserSecretKeySharesPublicRequestEvent(
 			conf,
 			dwallet.dwalletID,
@@ -156,8 +156,8 @@ describe('Test dWallet MPC', () => {
 
 	it('should create an imported dWallet', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const secretShare = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
-		const dwallet = await createImportedDWallet(conf, secretShare);
-		console.log({ dwallet });
+		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
 	});
 });

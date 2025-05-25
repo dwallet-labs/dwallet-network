@@ -16,7 +16,6 @@
 //! — Sends `Started` notifications when computations begin
 //! — Sends `Completed` notifications when computations finish
 //! — Updates the running sessions count accordingly
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -72,7 +71,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
-        let (completed_computation_channel_sender, mut completed_computation_channel_receiver) =
+        let (completed_computation_channel_sender, completed_computation_channel_receiver) =
             tokio::sync::mpsc::unbounded_channel();
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
@@ -222,6 +221,16 @@ impl CryptographicComputationsOrchestrator {
                     .advance_calls_for_make_dwallet_user_secret_key_shares_public
                     .inc()
             }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_import_dwallet_verification
+                    .inc();
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_make_dwallet_user_secret_key_shares_public
+                    .inc()
+            }
             MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
                 dwallet_mpc_metrics
                     .advance_calls_for_import_dwallet_verification
@@ -304,7 +313,7 @@ impl CryptographicComputationsOrchestrator {
                     .make_dwallet_user_secret_key_shares_public_completion_duration
                     .set(computation_duration as i64);
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 dwallet_mpc_metrics
                     .advance_completions_for_import_dwallet_verification
                     .inc();
