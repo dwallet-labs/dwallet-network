@@ -3300,7 +3300,8 @@ fun process_checkpoint_message(
                  let public_user_secret_key_shares = bcs_body.peel_vec_u8();
                  let rejected = bcs_body.peel_bool();
                  let session_sequence_number = bcs_body.peel_u64();
-                 self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                 let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
              };
         i = i + 1;
     };
