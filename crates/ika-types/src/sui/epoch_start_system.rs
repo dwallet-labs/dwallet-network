@@ -4,23 +4,20 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use super::DEFAULT_VALIDATOR_COMPUTATION_PRICE;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use crate::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
-use dwallet_mpc_types::dwallet_mpc::{
-    ClassGroupsPublicKeyAndProofBytes, NetworkDecryptionKeyPublicData,
-};
+use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::bls12381;
-use fastcrypto::traits::{KeyPair, ToFromBytes, VerifyingKey};
+use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_protocol_config::ProtocolVersion;
 use rand::prelude::StdRng;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
-use sui_types::base_types::{EpochId, ObjectID, SuiAddress};
+use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::multiaddr::Multiaddr;
 use tracing::{error, warn};
 

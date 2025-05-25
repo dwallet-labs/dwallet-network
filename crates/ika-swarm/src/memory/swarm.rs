@@ -6,9 +6,7 @@ use anyhow::Result;
 use futures::future::try_join_all;
 use rand::rngs::OsRng;
 use std::collections::HashMap;
-use std::net::SocketAddr;
 use std::num::NonZeroUsize;
-use std::time::Duration;
 use std::{
     ops,
     path::{Path, PathBuf},
@@ -23,17 +21,14 @@ use ika_node::IkaNodeHandle;
 use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::network_config_builder::{
-    CommitteeConfig, ConfigBuilder, ProtocolVersionsConfig, StateAccumulatorV2EnabledConfig,
-    SupportedProtocolVersionsCallback,
+    CommitteeConfig, ConfigBuilder, ProtocolVersionsConfig, SupportedProtocolVersionsCallback,
 };
-use ika_swarm_config::node_config_builder::FullnodeConfigBuilder;
 use ika_swarm_config::validator_initialization_config::ValidatorInitializationConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_macros::nondeterministic;
-use sui_types::object::Object;
 use tempfile::TempDir;
-use tracing::info;
+use tracing::{error, info};
 
 pub struct SwarmBuilder<R = OsRng> {
     rng: R,
@@ -196,6 +191,14 @@ impl<R> SwarmBuilder<R> {
 impl<R: rand::RngCore + rand::CryptoRng> SwarmBuilder<R> {
     /// Create the configured Swarm.
     pub async fn build(self) -> Result<Swarm, anyhow::Error> {
+        const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
+        if let Err(err) = rayon::ThreadPoolBuilder::new()
+            .stack_size(SIXTEEN_MEGA_BYTES)
+            .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
+            .build_global()
+        {
+            error!("Failed to create rayon thread pool: {:?}", err);
+        }
         let dir = if let Some(dir) = self.dir {
             SwarmDirectory::Persistent(dir)
         } else {

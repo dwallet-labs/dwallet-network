@@ -126,13 +126,13 @@ pub fn sample_dwallet_secret_key(
 pub fn create_imported_dwallet_centralized_step(
     network_decryption_key_public_output: Vec<u8>,
     dwallet_id: String,
-    secret_share: Vec<u8>,
+    secret_key: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
         &create_imported_dwallet_centralized_step_inner(
             network_decryption_key_public_output,
             dwallet_id,
-            secret_share,
+            secret_key,
         )
         .map_err(to_js_err)?,
     )?)
