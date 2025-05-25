@@ -12,7 +12,8 @@ use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event}
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCSessionStatus,
+    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput,
 };
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -276,6 +277,13 @@ impl DWalletMPCManager {
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
+        if self
+            .malicious_handler
+            .get_malicious_actors_names()
+            .contains(&origin_authority)
+        {
+            return Ok(());
+        }
         let committee = self.epoch_store()?.committee().clone();
         let current_voters_for_report = self
             .threshold_not_reached_reports
@@ -491,7 +499,7 @@ impl DWalletMPCManager {
     pub(super) async fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<MPCPublicOutput> {
+    ) -> DwalletMPCResult<VersionedNetworkDkgOutput> {
         self.network_keys
             .get_network_dkg_public_output(key_id)
             .await

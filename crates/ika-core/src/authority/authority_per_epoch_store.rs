@@ -54,12 +54,15 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
+use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
     SystemCheckpointServiceNotify,
 };
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput};
 use group::PartyID;
 use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
@@ -1888,7 +1891,7 @@ impl AuthorityPerEpochStore {
                             rejected: true,
                         }]
                     } else {
-                        Self::slice_network_decryption_key_public_output_into_messages(
+                        Self::slice_network_dkg_public_output_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
                         )
@@ -1917,7 +1920,7 @@ impl AuthorityPerEpochStore {
                         rejected: true,
                     }]
                 } else {
-                    Self::slice_network_decryption_key_public_output_into_messages(
+                    Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
                     )
@@ -1972,7 +1975,7 @@ impl AuthorityPerEpochStore {
 
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_decryption_key_public_output_into_messages(
+    fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
     ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {

@@ -12,8 +12,13 @@ use class_groups::{
     SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicOutput, MPCPublicOutputClassGroups,
-    SerializedWrappedMPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, MPCPublicInput, SerializedWrappedMPCPublicOutput,
+    VersionedCentralizedDKGPublicOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDwalletDKGSecondRoundPublicOutput, VersionedDwalletUserSecretShare,
+    VersionedEncryptedUserShare, VersionedImportedDWalletPublicOutput,
+    VersionedImportedDwalletOutgoingMessage, VersionedImportedSecretShare,
+    VersionedNetworkDkgOutput, VersionedPresignOutput, VersionedPublicKeyShareAndProof,
+    VersionedUserSignedMessage,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
@@ -32,7 +37,7 @@ use twopc_mpc::dkg::centralized_party::trusted_dealer::class_groups::Message;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
-use twopc_mpc::secp256k1::class_groups::{EncryptionOfSecretShareProof, ProtocolPublicParameters};
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
@@ -101,7 +106,7 @@ pub struct CentralizedDKGWasmResult {
 /// Return an error if decoding or advancing the protocol fails.
 /// This is okay since a malicious blockchain can always block a client.
 pub fn create_dkg_output(
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
     decentralized_first_round_public_output: SerializedWrappedMPCPublicOutput,
     session_id: String,
@@ -109,14 +114,12 @@ pub fn create_dkg_output(
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
     match decentralized_first_round_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-            decentralized_first_round_public_output,
-        )) => {
+        VersionedDwalletDKGFirstRoundPublicOutput::V1(decentralized_first_round_public_output) => {
             let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
                 bcs::from_bytes(&decentralized_first_round_public_output)
                     .context("failed to deserialize decentralized first round DKG output")?;
             let public_parameters = bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-                network_decryption_key_public_output,
+                network_dkg_public_output,
                 key_scheme,
             )?)?;
 
@@ -131,22 +134,23 @@ pub fn create_dkg_output(
             .context("advance() failed on the DKGCentralizedParty")?;
 
             // Centralized Public Key Share and Proof.
-            let public_key_share_and_proof = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.outgoing_message)?),
-            );
+            let public_key_share_and_proof =
+                VersionedPublicKeyShareAndProof::V1(bcs::to_bytes(&round_result.outgoing_message)?);
+
             let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
 
             // Public Output:
             // centralized_public_key_share + public_key + decentralized_party_public_key_share
-            let public_output = bcs::to_bytes(&round_result.public_output)?;
+            let public_output = bcs::to_bytes(&VersionedCentralizedDKGPublicOutput::V1(
+                bcs::to_bytes(&round_result.public_output)?,
+            ))?;
             // Centralized Secret Key Share.
             // Warning:
             // The secret (private)
             // key share returned from this function should never be sent
             // and should always be kept private.
-            let centralized_secret_output = MPCPublicOutput::ClassGroups(
-                MPCPublicOutputClassGroups::V1(bcs::to_bytes(&round_result.private_output)?),
-            );
+            let centralized_secret_output =
+                VersionedDwalletUserSecretShare::V1(bcs::to_bytes(&round_result.private_output)?);
             let centralized_secret_output = bcs::to_bytes(&centralized_secret_output)?;
             Ok(CentralizedDKGWasmResult {
                 public_output,
@@ -163,7 +167,7 @@ pub fn create_dkg_output(
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
     decentralized_party_dkg_public_output: SerializedWrappedMPCPublicOutput,
     centralized_party_secret_key_share: SerializedWrappedMPCPublicOutput,
@@ -174,17 +178,15 @@ pub fn advance_centralized_sign_party(
     let decentralized_party_dkg_public_output =
         bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     match decentralized_party_dkg_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-            decentralized_party_dkg_public_output,
-        )) => {
+        VersionedDwalletDKGSecondRoundPublicOutput::V1(decentralized_party_dkg_public_output) => {
             let presign = bcs::from_bytes(&presign)?;
             let presign = match presign {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                VersionedPresignOutput::V1(output) => output,
             };
-            let centralized_party_secret_key_share: MPCPublicOutput =
+            let centralized_party_secret_key_share: VersionedDwalletUserSecretShare =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
             let centralized_party_secret_key_share = match centralized_party_secret_key_share {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+                VersionedDwalletUserSecretShare::V1(output) => output,
             };
             let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
             let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
@@ -206,7 +208,7 @@ pub fn advance_centralized_sign_party(
                         centralized_public_output.clone(),
                         presign,
                         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-                            network_decryption_key_public_output.clone(),
+                            network_dkg_public_output.clone(),
                             key_scheme,
                         )?)?,
                     ),
@@ -220,9 +222,8 @@ pub fn advance_centralized_sign_party(
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
-            let signed_message = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-                bcs::to_bytes(&round_result.outgoing_message)?,
-            ));
+            let signed_message =
+                VersionedUserSignedMessage::V1(bcs::to_bytes(&round_result.outgoing_message)?);
             let signed_message = bcs::to_bytes(&signed_message)?;
             Ok(signed_message)
         }
@@ -230,11 +231,11 @@ pub fn advance_centralized_sign_party(
 }
 
 pub fn sample_dwallet_secret_key_inner(
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-            network_decryption_key_public_output,
+            network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
     let secret_key = twopc_mpc::secp256k1::Scalar::sample(
@@ -247,13 +248,13 @@ pub fn sample_dwallet_secret_key_inner(
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,
     secret_key: Vec<u8>,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-            network_decryption_key_public_output,
+            network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
     let secret_key = bcs::from_bytes(&secret_key)?;
@@ -267,18 +268,19 @@ pub fn create_imported_dwallet_centralized_step_inner(
         &mut OsRng,
     ) {
         Ok(round_result) => {
-            // The outgoing message and the public output are sent to the network.
-            // They include the encrypted network share, encrypted by the network encryption key.
             let public_output = round_result.public_output;
-
             let outgoing_message = round_result.outgoing_message;
-            let secret_share = MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-                bcs::to_bytes(&round_result.private_output)?,
-            ));
+            let secret_share = round_result.private_output;
             Ok((
-                bcs::to_bytes(&secret_share)?,
-                bcs::to_bytes(&public_output)?,
-                bcs::to_bytes(&outgoing_message)?,
+                bcs::to_bytes(&VersionedImportedSecretShare::V1(bcs::to_bytes(
+                    &secret_share,
+                )?))?,
+                bcs::to_bytes(&VersionedImportedDWalletPublicOutput::V1(bcs::to_bytes(
+                    &public_output,
+                )?))?,
+                bcs::to_bytes(&VersionedImportedDwalletOutgoingMessage::V1(bcs::to_bytes(
+                    &outgoing_message,
+                )?))?,
             ))
         }
         Err(e) => Err(e.into()),
@@ -286,23 +288,21 @@ pub fn create_imported_dwallet_centralized_step_inner(
 }
 
 fn protocol_public_parameters_by_key_scheme(
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<Vec<u8>> {
-    let mpc_public_output: MPCPublicOutput =
-        bcs::from_bytes(&network_decryption_key_public_output)?;
+    let mpc_public_output: VersionedNetworkDkgOutput = bcs::from_bytes(&network_dkg_public_output)?;
 
     match &mpc_public_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(
-            network_decryption_key_public_output,
-        )) => {
+        VersionedNetworkDkgOutput::V1(network_dkg_public_output) => {
             let key_scheme = DWalletMPCNetworkKeyScheme::try_from(key_scheme)?;
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let network_decryption_key_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
-                        bcs::from_bytes(&network_decryption_key_public_output)?;
-                    let encryption_scheme_public_parameters = network_decryption_key_public_output
-                        .default_encryption_scheme_public_parameters::<secp256k1::GroupElement>()?;
+                    let network_dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
+                        bcs::from_bytes(&network_dkg_public_output)?;
+                    let encryption_scheme_public_parameters = network_dkg_public_output
+                        .default_encryption_scheme_public_parameters::<secp256k1::GroupElement>(
+                    )?;
                     Ok(bcs::to_bytes(&ProtocolPublicParameters::new::<
                         { secp256k1::SCALAR_LIMBS },
                         { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
@@ -337,24 +337,11 @@ pub fn generate_secp256k1_cg_keypair_from_seed_internal(
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
     let setup_parameters = get_setup_parameters_secp256k1();
-    let (encryption_key, decryption_key) =
+    let (encryption_scheme_public_parameters, decryption_key) =
         Secp256k1DecryptionKey::generate(setup_parameters, &mut rng)?;
     let decryption_key = bcs::to_bytes(&decryption_key.decryption_key)?;
-    let encryption_key = bcs::to_bytes(&encryption_key)?;
+    let encryption_key = bcs::to_bytes(&encryption_scheme_public_parameters.encryption_key)?;
     Ok((encryption_key, decryption_key))
-}
-
-pub fn centralized_public_share_from_decentralized_output_inner(
-    dkg_output: SerializedWrappedMPCPublicOutput,
-) -> anyhow::Result<Vec<u8>> {
-    let dkg_output = bcs::from_bytes(&dkg_output)?;
-    match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-                bcs::from_bytes(&dkg_output)?;
-            bcs::to_bytes(&dkg_output.centralized_party_public_key_share).map_err(Into::into)
-        }
-    }
 }
 
 /// Encrypts the given secret key share with the given encryption key.
@@ -363,49 +350,22 @@ pub fn centralized_public_share_from_decentralized_output_inner(
 pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: SerializedWrappedMPCPublicOutput,
     encryption_key: Vec<u8>,
-    network_decryption_key_public_output: SerializedWrappedMPCPublicOutput,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-            network_decryption_key_public_output,
+            network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-
-    let language_public_parameters = construct_encryption_of_discrete_log_public_parameters::<
-        SCALAR_LIMBS,
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        { SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-        secp256k1::GroupElement,
-    >(
-        protocol_public_params
-            .scalar_group_public_parameters
-            .clone(),
-        protocol_public_params.group_public_parameters.clone(),
-        bcs::from_bytes(&encryption_key)?,
-    );
-    let randomness = class_groups::RandomnessSpaceGroupElement::<
-        { SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-    >::sample(
-        language_public_parameters
-            .encryption_scheme_public_parameters
-            .randomness_space_public_parameters(),
-        &mut OsRng,
-    )?;
-
-    let secret_key_share: MPCPublicOutput = bcs::from_bytes(&secret_key_share)?;
+    let secret_key_share: VersionedDwalletUserSecretShare = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(secret_key_share)) => {
-            let parsed_secret_key_share = bcs::from_bytes(&secret_key_share)?;
-            let witness = (parsed_secret_key_share, randomness).into();
-            let (proof, statements) = EncryptionOfSecretShareProof::prove(
-                &PhantomData,
-                &language_public_parameters,
-                vec![witness],
-                &mut OsRng,
-            )?;
-            // todo(scaly): why is it derived from statements?
-            let (encryption_of_discrete_log, _) = statements.first().unwrap().clone().into();
-            Ok(bcs::to_bytes(&(proof, encryption_of_discrete_log.value()))?)
+        VersionedDwalletUserSecretShare::V1(secret_key_share) => {
+            let encryption_key = bcs::from_bytes(&encryption_key)?;
+            let secret_key_share = bcs::from_bytes(&secret_key_share)?;
+            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
+            Ok(bcs::to_bytes(&VersionedEncryptedUserShare::V1(
+                bcs::to_bytes(&result)?,
+            ))?)
         }
     }
 }
@@ -415,16 +375,16 @@ pub fn encrypt_secret_key_share_and_prove(
 pub fn verify_secret_share(
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
 ) -> anyhow::Result<bool> {
     let protocol_public_params: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
-            network_decryption_key_public_output,
+            network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
+        VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {
             let dkg_output = bcs::from_bytes(&dkg_output)?;
             let secret_share = bcs::from_bytes(&secret_share)?;
             Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
@@ -439,24 +399,35 @@ pub fn verify_secret_share(
 
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
-    encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let (_, encryption_of_discrete_log): (
-        EncryptionOfSecretShareProof,
-        CiphertextSpaceValue<SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
-    ) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
-    let public_parameters: homomorphic_encryption::PublicParameters<
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_dkg_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
+    let encrypted_user_share_and_proof = match bcs::from_bytes(&encrypted_user_share_and_proof)? {
+        VersionedEncryptedUserShare::V1(output) => output,
+    };
+    let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let decryption_key = bcs::from_bytes(&decryption_key)?;
+    let public_parameters = homomorphic_encryption::PublicParameters::<
         SCALAR_LIMBS,
-        Secp256k1EncryptionKey,
-    > = bcs::from_bytes(&encryption_key)?;
+        crate::Secp256k1EncryptionKey,
+    >::new_from_secret_key(
+        protocol_public_params
+            .encryption_scheme_public_parameters
+            .setup_parameters
+            .clone(),
+        decryption_key,
+    )?;
     let ciphertext = CiphertextSpaceGroupElement::new(
         encryption_of_discrete_log,
         &public_parameters.ciphertext_space_public_parameters(),
     )?;
 
-    let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key: DecryptionKey<
         SCALAR_LIMBS,
         SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS,

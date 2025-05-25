@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use dwallet_mpc_centralized_party::{
-    advance_centralized_sign_party, centralized_public_share_from_decentralized_output_inner,
-    create_dkg_output, create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
+    advance_centralized_sign_party, create_dkg_output,
+    create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
     public_keys_from_dwallet_output, sample_dwallet_secret_key_inner, verify_secret_share,
 };
@@ -12,13 +12,13 @@ use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
     key_scheme: u32,
     decentralized_first_round_public_output: Vec<u8>,
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let dkg_centralized_result = &create_dkg_output(
-        network_decryption_key_public_output,
+        network_dkg_public_output,
         key_scheme,
         decentralized_first_round_public_output,
         session_id,
@@ -56,39 +56,28 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
 pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let encryption_and_proof = encrypt_secret_key_share_and_prove(
         secret_key_share,
         encryption_key,
-        network_decryption_key_public_output,
+        network_dkg_public_output,
     )
     .map_err(to_js_err)?;
-    Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
-}
-
-/// Get the centralized party public share out of the decentralized dkg output.
-#[wasm_bindgen]
-pub fn centralized_public_share_from_decentralized_output(
-    decentralized_output: Vec<u8>,
-) -> Result<JsValue, JsError> {
-    let encryption_and_proof =
-        centralized_public_share_from_decentralized_output_inner(decentralized_output)
-            .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)
 }
 
 /// Decrypts the given encrypted user share using the given decryption key.
 #[wasm_bindgen]
 pub fn decrypt_user_share(
-    encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let decrypted_secret_share = decrypt_user_share_inner(
-        encryption_key,
         decryption_key,
         encrypted_user_share_and_proof,
+        network_dkg_public_output,
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
@@ -100,39 +89,32 @@ pub fn decrypt_user_share(
 pub fn verify_user_share(
     secret_share: Vec<u8>,
     dkg_output: Vec<u8>,
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     Ok(JsValue::from(
-        verify_secret_share(
-            secret_share,
-            dkg_output,
-            network_decryption_key_public_output,
-        )
-        .map_err(to_js_err)?,
+        verify_secret_share(secret_share, dkg_output, network_dkg_public_output)
+            .map_err(to_js_err)?,
     ))
 }
 
 #[wasm_bindgen]
-pub fn sample_dwallet_secret_key(
-    network_decryption_key_public_output: Vec<u8>,
-) -> Result<JsValue, JsError> {
+pub fn sample_dwallet_secret_key(network_dkg_public_output: Vec<u8>) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
-        &sample_dwallet_secret_key_inner(network_decryption_key_public_output)
-            .map_err(to_js_err)?,
+        &sample_dwallet_secret_key_inner(network_dkg_public_output).map_err(to_js_err)?,
     )?)
 }
 
 #[wasm_bindgen]
 pub fn create_imported_dwallet_centralized_step(
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
     dwallet_id: String,
-    secret_key: Vec<u8>,
+    secret_share: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
         &create_imported_dwallet_centralized_step_inner(
-            network_decryption_key_public_output,
+            network_dkg_public_output,
             dwallet_id,
-            secret_key,
+            secret_share,
         )
         .map_err(to_js_err)?,
     )?)
@@ -148,7 +130,7 @@ pub fn public_keys_from_dkg_output(dkg_output: Vec<u8>) -> Result<JsValue, JsErr
 
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
-    network_decryption_key_public_output: Vec<u8>,
+    network_dkg_public_output: Vec<u8>,
     key_scheme: u32,
     decentralized_party_dkg_public_output: Vec<u8>,
     centralized_party_dkg_secret_output: Vec<u8>,
@@ -157,7 +139,7 @@ pub fn create_sign_centralized_output(
     hash_type: u32,
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
-        network_decryption_key_public_output,
+        network_dkg_public_output,
         key_scheme,
         decentralized_party_dkg_public_output,
         centralized_party_dkg_secret_output,

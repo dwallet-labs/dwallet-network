@@ -4,6 +4,9 @@ use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput,
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
+    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
+    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
@@ -25,10 +28,11 @@ use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
 use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::message::MessageKind::DWalletImportedKeyVerificationOutput;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
+    AdvanceResult, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::id::ID;
@@ -364,7 +368,9 @@ impl DWalletMPCSession {
                     bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
                 )
                     .into();
-                crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<
+                    DWalletImportedKeyVerificationParty,
+                >(
                     // we are using the dWallet ID as a unique session identifier,
                     // as no two dWallets will ever have the same ID
                     // or be used for any other import session.
@@ -374,7 +380,24 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output = bcs::to_bytes(
+                            &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
+                        )?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
@@ -385,14 +408,32 @@ impl DWalletMPCSession {
                     "Advancing DKG first party",
                 );
                 let public_input = bcs::from_bytes(public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
+
+                let result = crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output = bcs::to_bytes(
+                            &VersionedDwalletDKGFirstRoundPublicOutput::V1(public_output),
+                        )?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
@@ -408,7 +449,11 @@ impl DWalletMPCSession {
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
                         &EncryptedShareVerificationRequestEvent {
-                            decentralized_public_output: public_output.clone(),
+                            decentralized_public_output: bcs::to_bytes(
+                                &VersionedDwalletDKGSecondRoundPublicOutput::V1(
+                                    public_output.clone(),
+                                ),
+                            )?,
                             encrypted_centralized_secret_share_and_proof: event_data
                                 .event_data
                                 .encrypted_centralized_secret_share_and_proof
@@ -429,29 +474,76 @@ impl DWalletMPCSession {
                         &bcs::to_bytes(&public_input.protocol_public_parameters)?,
                     )?;
                 }
-                Ok(result)
+                match result.clone() {
+                    AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    } => {
+                        let public_output = bcs::to_bytes(
+                            &VersionedDwalletDKGSecondRoundPublicOutput::V1(public_output),
+                        )?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => Ok(result),
+                }
             }
             MPCProtocolInitData::Presign(..) => {
                 let public_input = bcs::from_bytes(public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output =
+                            bcs::to_bytes(&VersionedPresignOutput::V1(public_output))?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(public_input)?;
-                crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
                     mpc_event_data.decryption_share.clone(),
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output = bcs::to_bytes(&VersionedSignOutput::V1(public_output))?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
                 session_id,
@@ -510,14 +602,30 @@ impl DWalletMPCSession {
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
-                crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                let result = crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
                     decryption_key_shares,
-                )
+                );
+                match result.clone() {
+                    Ok(AsynchronousRoundResult::Finalize {
+                        public_output,
+                        malicious_parties,
+                        private_output,
+                    }) => {
+                        let public_output =
+                            bcs::to_bytes(&VersionedDecryptionKeyReshareOutput::V1(public_output))?;
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        })
+                    }
+                    _ => result,
+                }
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
                 match verify_secret_share(
