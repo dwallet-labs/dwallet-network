@@ -537,32 +537,6 @@ impl DWalletMPCEventTrait for DWalletImportedKeyVerificationRequestEvent {
     }
 }
 
-impl DWalletMPCEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
-impl DWalletMPCEventTrait for DWalletImportedKeyVerificationRequestEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
-    fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
-        StructTag {
-            address: *packages_config.ika_system_package_id,
-            name: DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 /// Represents the Rust version of the Move
 /// struct `ika_system::dwallet_2pc_mpc_coordinator_inner::SignRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
