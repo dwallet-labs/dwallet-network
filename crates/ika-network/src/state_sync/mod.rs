@@ -650,7 +650,7 @@ where
             .store
             .get_highest_verified_dwallet_checkpoint()
             .expect("store operation should not fail")
-            .map(|checkpoint| checkpoint.sequence_number().clone());
+            .map(|checkpoint| *checkpoint.sequence_number());
 
         // If this is an older checkpoint, just ignore it
         if latest_checkpoint_sequence_number.as_ref() >= Some(checkpoint.sequence_number()) {

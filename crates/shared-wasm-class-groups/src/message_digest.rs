@@ -40,6 +40,7 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp25
                 .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
     };
+    #[allow(clippy::useless_conversion)]
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     Ok(U256::from(m).into())
 }

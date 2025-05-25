@@ -122,7 +122,7 @@ pub fn create_dkg_output(
             let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
             let round_result = DKGCentralizedParty::advance(
-                decentralized_first_round_public_output.clone(),
+                decentralized_first_round_public_output,
                 &(),
                 &(public_parameters, session_id).into(),
                 &mut OsRng,
@@ -176,14 +176,10 @@ pub fn advance_centralized_sign_party(
     match decentralized_party_dkg_public_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(decentralized_party_dkg_public_output) => {
             let presign = bcs::from_bytes(&presign)?;
-            let presign = match presign {
-                VersionedPresignOutput::V1(output) => output,
-            };
+            let VersionedPresignOutput::V1(presign) = presign;
             let centralized_party_secret_key_share: VersionedDwalletUserSecretShare =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
-            let centralized_party_secret_key_share = match centralized_party_secret_key_share {
-                VersionedDwalletUserSecretShare::V1(output) => output,
-            };
+            let VersionedDwalletUserSecretShare::V1(centralized_party_secret_key_share) = centralized_party_secret_key_share;
             let decentralized_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput = bcs::from_bytes(&decentralized_party_dkg_public_output)?;
             let centralized_public_output = twopc_mpc::class_groups::DKGCentralizedPartyOutput::<
                 { secp256k1::SCALAR_LIMBS },
@@ -295,7 +291,7 @@ fn protocol_public_parameters_by_key_scheme(
             match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
                     let network_dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
-                        bcs::from_bytes(&network_dkg_public_output)?;
+                        bcs::from_bytes(network_dkg_public_output)?;
                     let encryption_scheme_public_parameters = network_dkg_public_output
                         .default_encryption_scheme_public_parameters::<secp256k1::GroupElement>(
                     )?;
@@ -404,9 +400,7 @@ pub fn decrypt_user_share_inner(
             network_dkg_public_output,
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?)?;
-    let encrypted_user_share_and_proof = match bcs::from_bytes(&encrypted_user_share_and_proof)? {
-        VersionedEncryptedUserShare::V1(output) => output,
-    };
+    let VersionedEncryptedUserShare::V1(encrypted_user_share_and_proof) = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let public_parameters = homomorphic_encryption::PublicParameters::<
@@ -421,7 +415,7 @@ pub fn decrypt_user_share_inner(
     )?;
     let ciphertext = CiphertextSpaceGroupElement::new(
         encryption_of_discrete_log,
-        &public_parameters.ciphertext_space_public_parameters(),
+        public_parameters.ciphertext_space_public_parameters(),
     )?;
 
     let decryption_key: DecryptionKey<

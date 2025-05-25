@@ -19,9 +19,8 @@ use ika_types::sui::{
     INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
     PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
-    VALIDATOR_METADATA_MODULE_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -625,7 +624,7 @@ pub async fn ika_system_initialize(
         type_params: vec![],
     };
 
-    let dwallet_2pc_mpc_coordinator_id = object_changes
+    let dwallet_2pc_mpc_coordinator_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -637,8 +636,7 @@ pub async fn ika_system_initialize(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 

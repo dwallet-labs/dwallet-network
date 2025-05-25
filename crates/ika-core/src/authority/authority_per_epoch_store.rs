@@ -1595,7 +1595,7 @@ impl AuthorityPerEpochStore {
                         ..
                     }) => Some(DWalletMPCOutputMessage {
                         authority: origin_authority.clone(),
-                        session_info: session_info.clone(),
+                        session_info: *session_info.clone(),
                         output: output.clone(),
                     }),
                     _ => None,
@@ -1631,7 +1631,7 @@ impl AuthorityPerEpochStore {
             }) => {
                 self.process_dwallet_mpc_output(
                     certificate_author.clone(),
-                    session_info.clone(),
+                    *session_info.clone(),
                     output.clone(),
                 )
                 .await
