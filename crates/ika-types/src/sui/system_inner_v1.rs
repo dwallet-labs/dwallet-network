@@ -111,7 +111,6 @@ pub struct DWalletPricingValue {
     pub gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletPricingCalculationVotes {
     pub bls_committee: BlsCommittee,

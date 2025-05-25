@@ -284,7 +284,8 @@ where
                     &mut epoch_switch_state,
                 )
                 .await;
-                if Some(next_dwallet_checkpoint_sequence_number) > last_submitted_dwallet_checkpoint {
+                if Some(next_dwallet_checkpoint_sequence_number) > last_submitted_dwallet_checkpoint
+                {
                     if let Ok(Some(dwallet_checkpoint_message)) = self
                         .dwallet_checkpoint_store
                         .get_dwallet_checkpoint_by_sequence_number(
@@ -305,12 +306,14 @@ where
                                 .active_committee;
                             let auth_sig = dwallet_checkpoint_message.auth_sig();
                             let signature = auth_sig.signature.as_bytes().to_vec();
-                            let signers_bitmap =
-                                Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
+                            let signers_bitmap = Self::calculate_signers_bitmap(
+                                &auth_sig.signers_map,
+                                &active_members,
+                            );
                             let message = bcs::to_bytes::<DWalletCheckpointMessage>(
                                 &dwallet_checkpoint_message.into_message(),
                             )
-                                .expect("Serializing checkpoint message cannot fail");
+                            .expect("Serializing checkpoint message cannot fail");
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
 
@@ -324,7 +327,7 @@ where
                                 &self.sui_client,
                                 &self.metrics,
                             )
-                                .await;
+                            .await;
                             match task {
                                 Ok(_) => {
                                     self.metrics.dwallet_checkpoint_writes_success_total.inc();
@@ -360,11 +363,14 @@ where
                                 .active_committee;
                             let auth_sig = system_checkpoint.auth_sig();
                             let signature = auth_sig.signature.as_bytes().to_vec();
-                            let signers_bitmap =
-                                Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                            let message =
-                                bcs::to_bytes::<SystemCheckpoint>(&system_checkpoint.into_message())
-                                    .expect("Serializing system_checkpoint message cannot fail");
+                            let signers_bitmap = Self::calculate_signers_bitmap(
+                                &auth_sig.signers_map,
+                                &active_members,
+                            );
+                            let message = bcs::to_bytes::<SystemCheckpoint>(
+                                &system_checkpoint.into_message(),
+                            )
+                            .expect("Serializing system_checkpoint message cannot fail");
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
 
@@ -377,7 +383,7 @@ where
                                 &self.sui_client,
                                 &self.metrics,
                             )
-                                .await;
+                            .await;
                             match task {
                                 Ok(_) => {
                                     last_submitted_system_checkpoint =
@@ -669,9 +675,7 @@ where
             .into_iter()
             .map(|arg| {
                 ptb.input(arg).map_err(|e| {
-                    IkaError::SuiConnectorSerializationError(format!(
-                        "can't serialize `arg`: {e}"
-                    ))
+                    IkaError::SuiConnectorSerializationError(format!("can't serialize `arg`: {e}"))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;

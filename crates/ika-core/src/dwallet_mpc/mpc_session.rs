@@ -26,9 +26,8 @@ use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, MPCProtocolInitData, MaliciousReport,
-    SessionInfo, SessionType, EncryptedShareVerificationRequestEvent,
-    ThresholdNotReachedReport,
+    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 

@@ -19,9 +19,9 @@ use ika_types::sui::{
     INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
     PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME,
-    SET_SUPPORTED_AND_PRICING, SYSTEM_MODULE_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SET_SUPPORTED_AND_PRICING,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -359,15 +359,28 @@ pub async fn ika_system_initialize(
     let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
     let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
 
-    let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&DKG_FIRST_ROUND_PROTOCOL_FLAG)?))?;
-    let dkg_second_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&DKG_SECOND_ROUND_PROTOCOL_FLAG)?))?;
-    let re_encrypt_user_share_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG)?))?;
-    let make_dwallet_user_secret_key_share_public_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG)?))?;
-    let imported_key_dwallet_verification_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG)?))?;
+    let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    )?))?;
+    let dkg_second_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    )?))?;
+    let re_encrypt_user_share_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG,
+    )?))?;
+    let make_dwallet_user_secret_key_share_public_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG)?,
+    ))?;
+    let imported_key_dwallet_verification_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG)?,
+    ))?;
     let presign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&PRESIGN_PROTOCOL_FLAG)?))?;
     let sign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&SIGN_PROTOCOL_FLAG)?))?;
-    let future_sign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&FUTURE_SIGN_PROTOCOL_FLAG)?))?;
-    let sign_with_partial_user_signature_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?))?;
+    let future_sign_protocol_flag =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&FUTURE_SIGN_PROTOCOL_FLAG)?))?;
+    let sign_with_partial_user_signature_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
+    ))?;
 
     let zero_price = ptb.input(CallArg::Pure(bcs::to_bytes(&0u64)?))?;
 
@@ -595,7 +608,7 @@ pub async fn ika_system_initialize(
             dwallet_pricing,
             supported_curves_to_signature_algorithms_to_hash_schemes,
             protocol_cap_arg,
-            clock_arg
+            clock_arg,
         ],
     );
 

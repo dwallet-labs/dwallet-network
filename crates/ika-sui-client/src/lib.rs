@@ -159,7 +159,13 @@ where
             }
             let missed_events = self
                 .inner
-                .get_missed_events(dwallet_coordinator_inner.user_requested_sessions_events.id.id.bytes)
+                .get_missed_events(
+                    dwallet_coordinator_inner
+                        .user_requested_sessions_events
+                        .id
+                        .id
+                        .bytes,
+                )
                 .await
                 .map_err(|e| {
                     error!("failed to get missed events: {e}");
