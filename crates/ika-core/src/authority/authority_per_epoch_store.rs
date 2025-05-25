@@ -1888,7 +1888,7 @@ impl AuthorityPerEpochStore {
                             rejected: true,
                         }]
                     } else {
-                        Self::slice_network_decryption_key_public_output_into_messages(
+                        Self::slice_network_dkg_public_output_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
                         )
@@ -1917,7 +1917,7 @@ impl AuthorityPerEpochStore {
                         rejected: true,
                     }]
                 } else {
-                    Self::slice_network_decryption_key_public_output_into_messages(
+                    Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
                     )
