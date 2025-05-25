@@ -57,6 +57,63 @@ export function isPresign(obj: any): obj is Presign {
 	);
 }
 
+import type { SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
+
+export async function executeTransactionAndGetMainEvent<TEvent>(
+	conf: Config,
+	transaction: Transaction,
+	eventPredicate: (event: any) => event is TEvent,
+	errorMessagePrefix: string,
+	options?: SuiTransactionBlockResponseOptions,
+): Promise<TEvent> {
+	const optionsOrDefault = options ?? { showEffects: true, showEvents: true };
+	const result = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction,
+		options: optionsOrDefault,
+	});
+
+	if (result.errors !== undefined) {
+		throw new Error(`${errorMessagePrefix} with errors ${result.errors.join(', ')}`);
+	}
+
+	const mainEvent = result.events?.at(0)?.parsedJson;
+	if (!eventPredicate(mainEvent)) {
+		throw new Error(`${errorMessagePrefix}: invalid event type received.`);
+	}
+
+	return mainEvent;
+}
+
+import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+
+export function handleIKACoin(tx: Transaction, conf: Config): TransactionResult {
+	const emptyIKACoin = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::zero`,
+		arguments: [],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+	tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
+		arguments: [emptyIKACoin],
+		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
+	});
+	return emptyIKACoin;
+}
+
+export async function getDWalletStateArg(
+	conf: Config,
+	tx: Transaction,
+	mutable: boolean,
+): Promise<TransactionResult> {
+	const dWalletStateData = await getDWalletSecpState(conf);
+	return tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable,
+	});
+}
+
 export async function getObjectWithType<TObject>(
 	conf: Config,
 	objectID: string,
@@ -320,4 +377,26 @@ export interface DWallet {
 export interface EncryptedDWalletData {
 	dwallet_id: string;
 	encrypted_user_secret_key_share_id: string;
+}
+
+export async function waitForCondition<T>(
+	conf: Config,
+	conditionFn: () => Promise<T | null>,
+	errorMessage: string,
+): Promise<T> {
+	const startTime = Date.now();
+	const pollingInterval = 5000; // 5 seconds
+
+	while (Date.now() - startTime <= conf.timeout) {
+		const result = await conditionFn();
+		if (result !== null) {
+			return result;
+		}
+		await delay(pollingInterval);
+	}
+
+	const secondsPassed = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`${errorMessage} within ${conf.timeout / (60 * 1000)} minutes (${secondsPassed} seconds passed).`,
+	);
 }

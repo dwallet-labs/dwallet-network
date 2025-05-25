@@ -1,9 +1,7 @@
-import path from 'path';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
+// Removed Ed25519Keypair, SuiClient, getFullnodeUrl, getFaucetHost, requestSuiFromFaucetV1, path
+// Config will be imported if still needed for explicit typing, otherwise removed too.
 import { acceptEncryptedUserShare, createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	decryptAndVerifyReceivedUserShare,
@@ -13,12 +11,13 @@ import {
 } from '../../src/dwallet-mpc/encrypt-user-share';
 import {
 	checkpointCreationTime,
-	Config,
+	Config, // Keep Config if sourceConf/destConf are explicitly typed
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
 } from '../../src/dwallet-mpc/globals';
+import { generateConfig } from '../utils/test-utils'; // Import from the new location
 
-const fiveMinutes = 5 * 60 * 1000;
+// const fiveMinutes = 5 * 60 * 1000; // This is defined in test-utils.ts now
 
 describe('Test dWallet MPC', () => {
 	let sourceConf: Config;
@@ -67,25 +66,3 @@ describe('Test dWallet MPC', () => {
 		console.log(`Secret share has been transferred successfully ${encryptedShareObjID}`);
 	});
 });
-
-async function generateConfig(dWalletSeed: Uint8Array, suiSeed: string): Promise<Config> {
-	const sourceKeypair = Ed25519Keypair.deriveKeypairFromSeed(suiSeed);
-	const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
-		Buffer.from(dWalletSeed).toString('hex'),
-	);
-	const source = sourceKeypair.getPublicKey().toSuiAddress();
-	const sourceSuiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	await requestSuiFromFaucetV1({
-		host: getFaucetHost('localnet'),
-		recipient: source,
-	});
-
-	return {
-		suiClientKeypair: sourceKeypair,
-		client: sourceSuiClient,
-		timeout: fiveMinutes,
-		ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
-		dWalletSeed: dWalletSeed,
-		encryptedSecretShareSigningKeypair,
-	};
-}

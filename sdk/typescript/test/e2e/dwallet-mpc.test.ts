@@ -1,17 +1,14 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import path from 'path';
+// Removed path, getFullnodeUrl, SuiClient, getFaucetHost, requestSuiFromFaucetV1, Ed25519Keypair
 import { sample_dwallet_secret_key } from '@dwallet-network/dwallet-mpc-wasm';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
-	Config,
+	Config, // Keep Config for typing `conf`
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
@@ -29,34 +26,20 @@ import {
 	sign,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
+import { generateConfig } from '../utils/test-utils'; // Import from the new location
 
-const fiveMinutes = 5 * 60 * 1000;
+// const fiveMinutes = 5 * 60 * 1000; // This is defined in test-utils.ts now
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
-		const dWalletSeed = new Uint8Array(32).fill(8);
-		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
-			Buffer.from(dWalletSeed).toString('hex'),
-		);
-		const address = keypair.getPublicKey().toSuiAddress();
-		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		await requestSuiFromFaucetV1({
-			host: getFaucetHost('localnet'),
-			recipient: address,
-		});
-
-		conf = {
-			suiClientKeypair: keypair,
-			client: suiClient,
-			timeout: fiveMinutes,
-			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
-			dWalletSeed,
-			encryptedSecretShareSigningKeypair,
-		};
-		await delay(2000);
+		// Replace manual config with a call to generateConfig
+		// Using dWalletSeed.fill(8) and suiSeed '0x1' to match the previous pattern
+		// or encrypt-secret-share.test.ts for consistency.
+		// The original dWalletSeed was new Uint8Array(32).fill(8)
+		// The original keypair was from seed '0x1'
+		conf = await generateConfig(new Uint8Array(32).fill(8), '0x1');
+		await delay(checkpointCreationTime); // checkpointCreationTime is 2000ms, kept from original
 	});
 
 	it('read the network decryption key', async () => {

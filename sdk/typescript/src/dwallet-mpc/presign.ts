@@ -4,9 +4,11 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import {
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	getDWalletSecpState,
+	// getDWalletSecpState, // No longer directly used
+	executeTransactionAndGetMainEvent,
+	getDWalletStateArg,
 	getObjectWithType,
-	SUI_PACKAGE_ID,
+	handleIKACoin,
 } from './globals.js';
 import type { Config } from './globals.ts';
 
@@ -35,21 +37,14 @@ function isCompletedPresign(event: any): event is CompletedPresign {
 
 export async function presign(conf: Config, dwallet_id: string): Promise<CompletedPresign> {
 	const tx = new Transaction();
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const dWalletStateData = await getDWalletSecpState(conf);
+	const emptyIKACoin = handleIKACoin(tx, conf);
+	// const dWalletStateData = await getDWalletSecpState(conf); // No longer needed
+	const dwalletStateArg = await getDWalletStateArg(conf, tx, true);
 
 	const presignCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.pure.id(dwallet_id),
 			tx.pure.u32(0),
 			emptyIKACoin,
@@ -59,24 +54,12 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 
 	tx.transferObjects([presignCap], conf.suiClientKeypair.toSuiAddress());
 
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartPresignEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
+	const startSessionEvent = await executeTransactionAndGetMainEvent<StartPresignEvent>(
+		conf,
+		tx,
+		isStartPresignEvent,
+		'Presign failed',
+	);
 
 	return await getObjectWithType(conf, startSessionEvent.event_data.presign_id, isCompletedPresign);
 }

@@ -10,13 +10,14 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config, EncryptedDWalletData } from './globals.js';
 import {
-	delay,
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	executeTransactionAndGetMainEvent,
 	getDWalletSecpState,
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
 	SUI_PACKAGE_ID,
+	waitForCondition,
 } from './globals.js';
 
 /**
@@ -360,17 +361,14 @@ export async function transferEncryptedSecretShare(
 		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 
-	const result = await sourceConf.client.signAndExecuteTransaction({
-		signer: sourceConf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
-	});
-	const startVerificationEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
-		throw new Error('invalid start DKG first round event');
-	}
+	const startVerificationEvent =
+		await executeTransactionAndGetMainEvent<StartEncryptedShareVerificationEvent>(
+			sourceConf,
+			tx,
+			isStartEncryptedShareVerificationEvent,
+			'Transfer encrypted secret share failed',
+		);
+
 	await waitForChainVerification(
 		sourceConf,
 		startVerificationEvent.event_data.encrypted_user_secret_key_share_id,
@@ -390,30 +388,30 @@ function isVerifiedEncryptedUserSecretKeyShare(
 	return obj.state.variant === 'NetworkVerificationCompleted';
 }
 
-async function waitForChainVerification(conf: Config, encryptedSecretShareObjID: string) {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		await delay(5_000);
-		const dwallet = await conf.client.getObject({
-			id: encryptedSecretShareObjID,
-			options: {
-				showContent: true,
-			},
-		});
-		if (isMoveObject(dwallet?.data?.content)) {
-			const dwalletMoveObject = dwallet?.data?.content?.fields;
-			if (isVerifiedEncryptedUserSecretKeyShare(dwalletMoveObject)) {
-				return;
+async function waitForChainVerification(
+	conf: Config,
+	encryptedSecretShareObjID: string,
+): Promise<void> {
+	return waitForCondition(
+		conf,
+		async () => {
+			const dwallet = await conf.client.getObject({
+				id: encryptedSecretShareObjID,
+				options: {
+					showContent: true,
+				},
+			});
+			if (isMoveObject(dwallet?.data?.content)) {
+				const dwalletMoveObject = dwallet?.data?.content?.fields;
+				if (isVerifiedEncryptedUserSecretKeyShare(dwalletMoveObject)) {
+					// Condition met, return a non-null value (actual value doesn't matter here)
+					return true;
+				}
 			}
-		}
-	}
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch the VerifiedEncryptedUserSecretKeyShare object within ${
-			conf.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
+			// Condition not met yet
+			return null;
+		},
+		'timeout: unable to fetch the VerifiedEncryptedUserSecretKeyShare object',
 	);
 }
 

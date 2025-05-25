@@ -9,14 +9,16 @@ import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { Config, DWallet, SharedObjectData } from './globals.js';
 import {
 	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	getDwalletSecp256k1ObjID,
-	getDWalletSecpState,
-	getInitialSharedVersion,
+	// getDwalletSecp256k1ObjID, // No longer directly used
+	// getDWalletSecpState, // No longer directly used
+	// getInitialSharedVersion, // No longer directly used
+	executeTransactionAndGetMainEvent,
+	getDWalletStateArg,
 	getNetworkDecryptionKeyID,
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
+	handleIKACoin,
 	isActiveDWallet,
-	SUI_PACKAGE_ID,
 } from './globals.js';
 
 interface NewImportedKeyDWalletEvent {
@@ -55,10 +57,10 @@ export async function createImportedDWallet(conf: Config, secretKey: Uint8Array)
 		classGroupsSecpKeyPair.encryptionKey,
 		networkDecryptionKeyPublicOutput,
 	);
-	const dwalletState = await getDWalletSecpState(conf);
+	// const dwalletState = await getDWalletSecpState(conf); // No longer needed here
 	const encryptedSecretShareID = await verifyImportedDWalletMoveCall(
 		conf,
-		dwalletState,
+		// dwalletState, // No longer passed
 		importedDWalletData.dwallet_cap_id,
 		outgoing_message,
 		encryptedUserShareAndProof,
@@ -83,38 +85,29 @@ export async function createImportedDWalletMoveCall(
 ): Promise<NewImportedKeyDWalletEvent> {
 	const tx = new Transaction();
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
-	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf);
+	const dwalletStateArg = await getDWalletStateArg(conf, tx, true);
+	// const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf); // No longer needed
 	const dwalletCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::new_imported_key_dwallet`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dwalletSecp256k1ID,
-				initialSharedVersion: await getInitialSharedVersion(conf, dwalletSecp256k1ID),
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.pure.id(networkDecryptionKeyID),
 			tx.pure.u32(0),
 		],
 	});
 	tx.transferObjects([dwalletCap], conf.suiClientKeypair.toSuiAddress());
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const creationEvent = result.events?.at(0)?.parsedJson;
-	if (!isNewImportedKeyDWalletEvent(creationEvent)) {
-		throw new Error('Failed to create imported dWallet');
-	}
-	return creationEvent;
+
+	return executeTransactionAndGetMainEvent<NewImportedKeyDWalletEvent>(
+		conf,
+		tx,
+		isNewImportedKeyDWalletEvent,
+		'Failed to create imported dWallet',
+	);
 }
 
 export async function verifyImportedDWalletMoveCall(
 	conf: Config,
-	dWalletStateData: SharedObjectData,
+	// dWalletStateData: SharedObjectData, // No longer needed
 	dwalletCapID: string,
 	centralized_party_message: Uint8Array,
 	encrypted_centralized_secret_share_and_proof: Uint8Array,
@@ -122,11 +115,7 @@ export async function verifyImportedDWalletMoveCall(
 	dwalletID: string,
 ): Promise<string> {
 	const tx = new Transaction();
-	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dWalletStateData.object_id,
-		initialSharedVersion: dWalletStateData.initial_shared_version,
-		mutable: true,
-	});
+	const dwalletStateArg = await getDWalletStateArg(conf, tx, true);
 	const dwalletCapArg = tx.object(dwalletCapID);
 	const centralizedPublicOutputArg = tx.pure(bcs.vector(bcs.u8()).serialize(user_public_output));
 	const encryptedCentralizedSecretShareAndProofArg = tx.pure(
@@ -144,11 +133,7 @@ export async function verifyImportedDWalletMoveCall(
 			.serialize(conf.encryptedSecretShareSigningKeypair.getPublicKey().toRawBytes()),
 	);
 
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	const emptyIKACoin = handleIKACoin(tx, conf);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_imported_key_dwallet_verification`,
 		arguments: [
@@ -163,26 +148,15 @@ export async function verifyImportedDWalletMoveCall(
 			tx.gas,
 		],
 	});
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	if (result.errors !== undefined) {
-		throw new Error(`DKG second round failed with errors ${result.errors}`);
-	}
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isDWalletImportedKeyVerificationRequestEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
+
+	const startSessionEvent =
+		await executeTransactionAndGetMainEvent<DWalletImportedKeyVerificationRequestEvent>(
+			conf,
+			tx,
+			isDWalletImportedKeyVerificationRequestEvent,
+			'Imported dWallet verification failed',
+		);
+
 	await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	return startSessionEvent.event_data.encrypted_user_secret_key_share_id;
 }
