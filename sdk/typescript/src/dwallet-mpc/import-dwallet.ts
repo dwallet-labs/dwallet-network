@@ -34,17 +34,19 @@ function isNewImportedKeyDWalletEvent(event: any): event is NewImportedKeyDWalle
 	return event.dwallet_id !== undefined && event.dwallet_cap_id !== undefined;
 }
 
-export async function createImportedDWallet(
-	conf: Config,
-	secretShare: Uint8Array,
-): Promise<DWallet> {
+// todo(zeev): refactor for a better API
+// https://github.com/dwallet-labs/dwallet-network/pull/1040/files#r2097645823
+export async function createImportedDWallet(conf: Config, secretKey: Uint8Array): Promise<DWallet> {
 	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 	const importedDWalletData = await createImportedDWalletMoveCall(conf);
 
+	// The outgoing message and the public output are sent to the network.
+	// They include the encrypted network share, encrypted by the network encryption key.
 	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
 		networkDecryptionKeyPublicOutput,
+		// remove 0x prefix.
 		importedDWalletData.dwallet_id.slice(2),
-		secretShare,
+		secretKey,
 	);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 

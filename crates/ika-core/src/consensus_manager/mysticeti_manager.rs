@@ -11,7 +11,6 @@ use ika_config::NodeConfig;
 use ika_types::{committee::EpochId, sui::epoch_start_system::EpochStartSystemTrait};
 use mysten_metrics::{RegistryID, RegistryService};
 use prometheus::Registry;
-use sui_protocol_config::ConsensusNetwork;
 use tokio::sync::Mutex;
 use tracing::info;
 
@@ -147,7 +146,9 @@ impl ConsensusManagerTrait for MysticetiManager {
             );
         }
 
+        // todo(zeev): fix this compare.
         // This can only be changed for all validators together at the same epoch
+        #[allow(unused_comparisons)]
         let mut protocol_config = if epoch >= 0 {
             sui_protocol_config::ProtocolConfig::get_for_version(
                 sui_protocol_config::ProtocolVersion::new(70),
