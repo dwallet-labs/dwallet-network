@@ -33,7 +33,7 @@ use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_pub
 use twopc_mpc::secp256k1::class_groups::{EncryptionOfSecretShareProof, ProtocolPublicParameters};
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
+type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
 pub type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 
 /// Contains the public keys of the DWallet.
@@ -354,15 +354,24 @@ pub fn encrypt_secret_key_share_and_prove(
 pub fn verify_secret_share(
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
+    network_decryption_key_public_output: Vec<u8>,
 ) -> anyhow::Result<bool> {
+    let protocol_public_params: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_decryption_key_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            let expected_public_key =
-                cg_secp256k1_public_key_share_from_secret_share(secret_share)?;
-            let dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput =
-        bcs::from_bytes(&dkg_output)?;
-            Ok(dkg_output.centralized_party_public_key_share == expected_public_key.value())
+            let dkg_output = bcs::from_bytes(&dkg_output)?;
+            let secret_share = bcs::from_bytes(&secret_share)?;
+            Ok(<twopc_mpc::secp256k1::class_groups::AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
+                &protocol_public_params,
+                dkg_output,
+                secret_share,
+            )
+                .is_ok())
         }
     }
 }
@@ -397,9 +406,7 @@ pub fn decrypt_user_share_inner(
         .decrypt(&ciphertext, &public_parameters).into() else {
         return Err(anyhow!("Decryption failed"));
     };
-    let secret_share_bytes = crypto_bigint::U256::from(&plaintext.value())
-        .to_be_bytes()
-        .to_vec();
+    let secret_share_bytes = bcs::to_bytes(&plaintext.value())?;
     Ok(secret_share_bytes)
 }
 

@@ -18,6 +18,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
+use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
@@ -493,6 +494,32 @@ impl DWalletMPCSession {
                     public_input,
                     decryption_key_shares,
                 )
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+                match verify_secret_share(
+                    &mpc_event_data.public_input,
+                    init_event.event_data.public_user_secret_key_shares.clone(),
+                    init_event.event_data.public_output.clone(),
+                ) {
+                    Ok(..) => Ok(AsynchronousRoundResult::Finalize {
+                        public_output: init_event.event_data.public_user_secret_key_shares.clone(),
+                        private_output: vec![],
+                        malicious_parties: vec![],
+                    }),
+                    Err(err) => {
+                        error!(
+                            ?err,
+                            session_id=?self.session_id,
+                            validator=?self.epoch_store()?.name,
+                            crypto_round=?self.current_round,
+                            "failed to verify secret share"
+                        );
+                        Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput)
+                    }
+                }
+            }
+            _ => {
+                unreachable!("Unsupported MPC protocol type")
             }
         }
     }

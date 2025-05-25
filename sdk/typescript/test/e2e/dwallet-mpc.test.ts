@@ -13,8 +13,13 @@ import {
 	Config,
 	delay,
 	getNetworkDecryptionKeyPublicOutput,
+	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
+import {
+	isDWalletWithPublicUserSecretKeyShares,
+	makeDWalletUserSecretKeySharesPublicRequestEvent,
+} from '../../src/dwallet-mpc/publish_secret_share';
 import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
@@ -93,6 +98,26 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
+	it('should create a dwallet and publish its secret share', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		console.log('Creating dWallet...');
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		await delay(checkpointCreationTime);
+		console.log('Running publish secret share...');
+		await makeDWalletUserSecretKeySharesPublicRequestEvent(
+			conf,
+			dwallet.dwalletID,
+			dwallet.secret_share,
+		);
+		const secretShare = await getObjectWithType(
+			conf,
+			dwallet.dwalletID,
+			isDWalletWithPublicUserSecretKeyShares,
+		);
+		console.log(`secretShare: ${secretShare}`);
+	});
+
 	it('should complete future sign', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
@@ -103,16 +128,15 @@ describe('Test dWallet MPC', () => {
 		const completedPresign = await presign(conf, dwallet.dwalletID);
 		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 		await delay(checkpointCreationTime);
-		const unverifiedPartialUserSignatureCapID =
-			await createUnverifiedPartialUserSignatureCap(
-				conf,
-				completedPresign.id.id,
-				dwallet.dwallet_cap_id,
-				Buffer.from('hello world'),
-				dwallet.secret_share,
-				networkDecryptionKeyPublicOutput,
-				Hash.KECCAK256,
-			);
+		const unverifiedPartialUserSignatureCapID = await createUnverifiedPartialUserSignatureCap(
+			conf,
+			completedPresign.id.id,
+			dwallet.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwallet.secret_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
 		await delay(checkpointCreationTime);
 		const verifiedPartialUserSignatureCapID = await verifySignWithPartialUserSignatures(
 			conf,

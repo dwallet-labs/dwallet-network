@@ -17,7 +17,6 @@ use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::FutureSignRequestEvent;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletDKGFirstRoundRequestEvent, SignRequestEvent,
 };
@@ -29,6 +28,11 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::messages_dwallet_mpc::{
     DWalletEncryptionKeyReconfigurationRequestEvent, StartNetworkDKGEvent,
 };
+use ika_types::messages_dwallet_mpc::{
+    FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
+};
+use jsonrpsee::core::Serialize;
+use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
@@ -51,6 +55,7 @@ pub mod network_dkg;
 mod presign;
 
 pub mod dwallet_mpc_metrics;
+mod make_dwallet_user_secret_key_shares_public;
 mod reshare;
 pub(crate) mod sign;
 
@@ -128,6 +133,19 @@ pub(crate) fn session_info_from_event(
     packages_config: &IkaPackagesConfig,
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
+        t if t
+            == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            Ok(Some(
+                make_dwallet_user_secret_key_shares_public_request_event_session_info(
+                    deserialize_event_or_dynamic_field::<
+                        MakeDWalletUserSecretKeySharesPublicRequestEvent,
+                    >(&event.contents)?,
+                ),
+            ))
+        }
         t if t
             == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(packages_config) =>
         {
@@ -213,6 +231,19 @@ fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResu
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
     )
+}
+
+fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
+    deserialized_event: DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_id: deserialized_event.session_id.clone(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
+            deserialized_event,
+        ),
+    }
 }
 
 fn dkg_first_party_session_info(
@@ -526,6 +557,24 @@ pub(super) async fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
+        t if t
+            == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            let deserialized_event: DWalletMPCSuiEvent<
+                MakeDWalletUserSecretKeySharesPublicRequestEvent,
+            > = deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_decryption_key_id,
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+            )?;
+            Ok((protocol_public_parameters, None))
+        }
         t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config

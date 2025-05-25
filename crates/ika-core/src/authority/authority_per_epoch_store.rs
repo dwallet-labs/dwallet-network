@@ -66,9 +66,9 @@ use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
-    SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
+    MakeDWalletUserSecretKeySharesPublicOutput, MessageKind, PartialSignatureVerificationOutput,
+    PresignOutput, Secp256K1NetworkKeyPublicOutputSlice, SignOutput,
 };
 use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
@@ -1927,6 +1927,22 @@ impl AuthorityPerEpochStore {
                     .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::MakeDWalletUserSecretKeySharesPublic(
+                    MakeDWalletUserSecretKeySharesPublicOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec(),
+                        public_user_secret_key_shares: output,
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
         }
     }

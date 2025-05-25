@@ -3295,7 +3295,14 @@ fun process_checkpoint_message(
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
                 self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
-            };
+            } else if (message_data_type == 8) {
+                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                 let public_user_secret_key_shares = bcs_body.peel_vec_u8();
+                 let rejected = bcs_body.peel_bool();
+                 let session_sequence_number = bcs_body.peel_u64();
+                 let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+             };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;

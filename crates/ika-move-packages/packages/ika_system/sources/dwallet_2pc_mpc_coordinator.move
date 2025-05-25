@@ -231,6 +231,23 @@ public fun request_imported_key_dwallet_verification(
     )
 }
 
+public fun request_make_dwallet_user_secret_key_shares_public(
+    self: &mut DWalletCoordinator,
+    dwallet_id: ID,
+    public_user_secret_key_shares: vector<u8>,
+    payment_ika: &mut Coin<IKA>,
+    payment_sui: &mut Coin<SUI>,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().request_make_dwallet_user_secret_key_share_public(
+        dwallet_id,
+        public_user_secret_key_shares,
+        payment_ika,
+        payment_sui,
+        ctx,
+    )
+}
+
 public fun request_re_encrypt_user_share_for(
     self: &mut DWalletCoordinator,
     dwallet_id: ID,
