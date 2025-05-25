@@ -6,14 +6,12 @@ use crate::committee::StakeUnit;
 use crate::crypto::{AuthorityName, AuthorityPublicKey};
 use fastcrypto::traits::ToFromBytes;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
 use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
-use sui_types::id::ID;
 
-/// Rust version of the Move ika::ika_system::SystemParameters type
+/// Rust version of the Move ika::ika_system::SystemParameters type.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemParametersV1 {
     /// The duration of an epoch, in milliseconds.
@@ -76,6 +74,7 @@ pub struct UpgradeCap {
 pub struct SystemInnerV1 {
     pub epoch: u64,
     pub protocol_version: u64,
+    pub next_protocol_version: Option<u64>,
     pub upgrade_caps: Vec<UpgradeCap>,
     pub validator_set: ValidatorSetV1,
     pub parameters: SystemParametersV1,
@@ -86,31 +85,37 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_network_encryption_keys: Vec<DWalletNetworkEncryptionKeyCap>,
+    pub last_processed_system_checkpoint_sequence_number: Option<u64>,
+    pub previous_epoch_last_system_checkpoint_sequence_number: u64,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
 
-/// Rust version of the Move PricingPerOperation type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct PricingPerOperation {
+pub struct DWalletPricing {
+    pub pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletPricingKey {
+    pub curve: u32,
+    pub signature_algorithm: Option<u32>,
+    pub protocol: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletPricingValue {
     pub consensus_validation_ika: u64,
     pub computation_ika: u64,
     pub gas_fee_reimbursement_sui: u64,
+    pub gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
-/// Rust version of the Move DWalletPricing2PcMpcSecp256K1 type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricing2PcMpcSecp256K1 {
-    id: ObjectID,
-    dkg_first_round: PricingPerOperation,
-    dkg_second_round: PricingPerOperation,
-    re_encrypt_user_share: PricingPerOperation,
-    presign: PricingPerOperation,
-    sign: PricingPerOperation,
-    future_sign: PricingPerOperation,
-    sign_with_partial_user_signature: PricingPerOperation,
-    make_dwallet_user_secret_key_shares_public: PricingPerOperation,
-    imported_key_dwallet_verification: PricingPerOperation,
+pub struct DWalletPricingCalculationVotes {
+    pub bls_committee: BlsCommittee,
+    pub default_pricing: DWalletPricing,
+    pub working_pricing: DWalletPricing,
 }
 
 /// Rust version of the Move DWalletCoordinatorInner type
@@ -118,7 +123,7 @@ pub struct DWalletPricing2PcMpcSecp256K1 {
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
     pub sessions: ObjectTable,
-    pub session_start_events: Bag,
+    pub user_requested_sessions_events: Bag,
     pub number_of_completed_sessions: u64,
     pub started_system_sessions_count: u64,
     pub completed_system_sessions_count: u64,
@@ -131,7 +136,10 @@ pub struct DWalletCoordinatorInnerV1 {
     pub encryption_keys: ObjectTable,
     pub presigns: ObjectTable,
     pub partial_centralized_signed_messages: ObjectTable,
-    pub pricing: DWalletPricing2PcMpcSecp256K1,
+    pub pricing: DWalletPricing,
+    pub default_pricing: DWalletPricing,
+    pub pricing_votes: Table,
+    pub pricing_calculation_votes: Option<DWalletPricingCalculationVotes>,
     pub gas_fee_reimbursement_sui: Balance,
     pub consensus_validation_fee_charged_ika: Balance,
     pub active_committee: BlsCommittee,
@@ -177,6 +185,18 @@ impl SystemInnerTrait for SystemInnerV1 {
 
     fn protocol_version(&self) -> u64 {
         self.protocol_version
+    }
+
+    fn next_protocol_version(&self) -> Option<u64> {
+        self.next_protocol_version
+    }
+
+    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64> {
+        self.last_processed_system_checkpoint_sequence_number
+    }
+
+    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64 {
+        self.previous_epoch_last_system_checkpoint_sequence_number
     }
 
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {

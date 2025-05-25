@@ -20,7 +20,7 @@ pub struct AuthorityPerpetualTables {
     pub(crate) epoch_start_configuration: DBMap<(), EpochStartConfiguration>,
 
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
-    pub(crate) pruned_checkpoint: DBMap<(), CheckpointSequenceNumber>,
+    pub(crate) pruned_checkpoint: DBMap<(), DWalletCheckpointSequenceNumber>,
 
     /// pending events from sui received but not yet executed
     pending_events: DBMap<EventID, Vec<u8>>,
@@ -65,14 +65,14 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn get_highest_pruned_checkpoint(&self) -> IkaResult<CheckpointSequenceNumber> {
+    pub fn get_highest_pruned_checkpoint(&self) -> IkaResult<DWalletCheckpointSequenceNumber> {
         Ok(self.pruned_checkpoint.get(&())?.unwrap_or_default())
     }
 
     pub fn set_highest_pruned_checkpoint(
         &self,
         wb: &mut DBBatch,
-        checkpoint_number: CheckpointSequenceNumber,
+        checkpoint_number: DWalletCheckpointSequenceNumber,
     ) -> IkaResult {
         wb.insert_batch(&self.pruned_checkpoint, [((), checkpoint_number)])?;
         Ok(())
@@ -80,7 +80,7 @@ impl AuthorityPerpetualTables {
 
     pub fn set_highest_pruned_checkpoint_without_wb(
         &self,
-        checkpoint_number: CheckpointSequenceNumber,
+        checkpoint_number: DWalletCheckpointSequenceNumber,
     ) -> IkaResult {
         let mut wb = self.pruned_checkpoint.batch();
         self.set_highest_pruned_checkpoint(&mut wb, checkpoint_number)?;

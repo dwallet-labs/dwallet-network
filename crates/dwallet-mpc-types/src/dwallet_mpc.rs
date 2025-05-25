@@ -28,7 +28,7 @@ pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
 pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
     ident_str!("ValidatorDataForDWalletSecretShare");
 pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("DWalletNetworkDKGDecryptionKeyRequestEvent");
+    ident_str!("DWalletNetworkDKGEncryptionKeyRequestEvent");
 pub const ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME: &'static IdentStr =
     ident_str!("EncryptedShareVerificationRequestEvent");
 pub const FUTURE_SIGN_REQUEST_EVENT_NAME: &'static IdentStr = ident_str!("FutureSignRequestEvent");
@@ -38,17 +38,19 @@ pub const DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME: &'static IdentStr =
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
+/// MPC session public output sent through the consensus.
+/// Used to indicate the session status.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MPCSessionPublicOutput {
+    CompletedSuccessfully(SerializedWrappedMPCPublicOutput),
+    SessionFailed,
+}
+
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
-/// The MPC Public Output for Class Groups based protocols.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash, PartialOrd,
-)]
-pub enum MPCPublicOutput {
-    /// Serialized Public Output.
-    V1(Vec<u8>),
-}
+/// The MPC Public Output.
+pub type MPCPublicOutput = Vec<u8>;
 
 /// Alias for an MPC private output.
 pub type MPCPrivateOutput = Vec<u8>;
@@ -152,75 +154,75 @@ pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedDWalletImportedKeyVerificationOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedDwalletDKGFirstRoundPublicOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedDwalletDKGSecondRoundPublicOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedPresignOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedSignOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub enum VersionedNetworkDkgOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedDecryptionKeyReshareOutput {
-    V1(MPCPublicInput),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedPublicKeyShareAndProof {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedCentralizedDKGPublicOutput {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedDwalletUserSecretShare {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedUserSignedMessage {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedImportedDWalletPublicOutput {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedImportedSecretShare {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedImportedDwalletOutgoingMessage {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedEncryptedUserShare {
-    V1(Vec<u8>),
+    V1(MPCPublicOutput),
 }

@@ -14,7 +14,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use eyre::ContextCompat;
 use group::PartyID;
-use ika_types::committee::{Committee, CommitteeTrait};
+use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
@@ -27,7 +27,10 @@ use ika_types::messages_dwallet_mpc::{
     PresignRequestEvent, SessionInfo,
 };
 use ika_types::messages_dwallet_mpc::{
-    DWalletDecryptionKeyReshareRequestEvent, StartNetworkDKGEvent,
+    DWalletEncryptionKeyReconfigurationRequestEvent, StartNetworkDKGEvent,
+};
+use ika_types::messages_dwallet_mpc::{
+    FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
@@ -36,16 +39,13 @@ use jsonrpsee::core::Serialize;
 use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::vec::Vec;
-use sui_types::base_types::{EpochId, ObjectID, TransactionDigest};
+use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::dynamic_field::Field;
-use sui_types::id::{ID, UID};
+use sui_types::id::ID;
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -207,12 +207,13 @@ pub(crate) fn session_info_from_event(
             )?))
         }
         t if t
-            == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+            == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
-                deserialize_event_or_dynamic_field(&event.contents)?;
+            let deserialized_event: DWalletMPCSuiEvent<
+                DWalletEncryptionKeyReconfigurationRequestEvent,
+            > = deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(
                 reshare::network_decryption_key_reshare_session_info_from_event(deserialized_event),
             ))
@@ -269,9 +270,7 @@ fn dwallet_imported_key_verification_request_event_session_info(
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id.clone(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(
-            deserialized_event,
-        ),
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
     }
 }
 
@@ -358,7 +357,7 @@ fn get_expected_decrypters(
         + (total_votes as f64 * 0.05).floor() as u32;
     let mut votes_sum = 0;
     let mut expected_decrypters = vec![];
-    while (votes_sum < expected_decrypters_votes) {
+    while votes_sum < expected_decrypters_votes {
         let authority_name = shuffled_committee.pop().unwrap();
         let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
         votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;
@@ -435,6 +434,7 @@ fn get_verify_partial_signatures_session_info(
     }
 }
 
+#[allow(unused)]
 fn calculate_total_voting_weight(
     weighted_parties: &HashMap<PartyID, Weight>,
     parties: &HashSet<PartyID>,
@@ -528,6 +528,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
     /// round -> {party -> message}
     messages: HashMap<usize, HashMap<PartyID, M>>,
+    #[allow(dead_code)]
     malicious_parties: Vec<PartyID>,
 }
 
@@ -575,7 +576,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) async fn session_input_from_event(
+pub(super) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
@@ -641,20 +642,13 @@ pub(crate) async fn session_input_from_event(
             ))
         }
         t if t
-            == &DWalletMPCSuiEvent::<DWalletDecryptionKeyReshareRequestEvent>::type_(
+            == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent> =
-                deserialize_event_or_dynamic_field(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event
-                    .event_data
-                    .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
-            )?;
+            let deserialized_event: DWalletMPCSuiEvent<
+                DWalletEncryptionKeyReconfigurationRequestEvent,
+            > = deserialize_event_or_dynamic_field(&event.contents)?;
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof
@@ -792,7 +786,9 @@ pub(crate) async fn session_input_from_event(
     }
 }
 
+// todo(zeev): why?
 // TODO (#683): Parse the network key version from the network key object ID
+#[allow(unused)]
 pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
     0
 }
