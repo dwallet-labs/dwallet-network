@@ -22,10 +22,11 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCEvent, DWalletMPCEventTrait,
-    DWalletMPCMessage, DWalletMPCSuiEvent, EncryptedShareVerificationRequestEvent,
-    FutureSignRequestEvent, MPCProtocolInitData, MaliciousReport, PresignRequestEvent, SessionInfo,
-    SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
+    DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent,
+    EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, MaliciousReport, PresignRequestEvent,
+    SessionInfo, SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -434,6 +435,16 @@ impl DWalletMPCManager {
             t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
                 self.dwallet_mpc_metrics
                     .received_events_start_partial_signature_verification_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_make_dwallet_user_secret_key_shares_public_count
+                    .inc();
+            }
+            t if t == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(packages_config) => {
+                self.dwallet_mpc_metrics
+                    .received_events_start_import_dwallet_verification_count
                     .inc();
             }
             _ => {}
