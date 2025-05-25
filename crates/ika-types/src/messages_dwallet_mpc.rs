@@ -537,57 +537,6 @@ impl DWalletMPCEventTrait for DWalletImportedKeyVerificationRequestEvent {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct DWalletImportedKeyVerificationRequestEvent {
-    /// The unique session identifier for the DWallet.
-    pub dwallet_id: ObjectID,
-
-    /// The Encrypted user secret key share object ID.
-    pub encrypted_user_secret_key_share_id: ObjectID,
-
-    /// The message delivered to the decentralized party from a centralized party.
-    /// Includes the encrypted decentralized secret key share and
-    /// the associated cryptographic proof of encryption.
-    pub centralized_party_message: Vec<u8>,
-
-    /// The unique identifier of the dWallet capability associated with this session.
-    pub dwallet_cap_id: ObjectID,
-
-    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
-    pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-
-    /// The user `EncryptionKey` object used for encrypting the user secret key share.
-    pub encryption_key: Vec<u8>,
-
-    /// The unique identifier of the `EncryptionKey` object.
-    pub encryption_key_id: ObjectID,
-
-    pub encryption_key_address: SuiAddress,
-
-    /// The public output of the centralized party in the DKG process.
-    pub user_public_output: Vec<u8>,
-
-    /// The Ed25519 public key of the initiator,
-    /// used to verify the signature on the centralized public output.
-    pub signer_public_key: Vec<u8>,
-
-    /// The MPC network decryption key id that is used to decrypt associated dWallet.
-    pub dwallet_network_encryption_key_id: ObjectID,
-
-    /// The elliptic curve used for the dWallet.
-    pub curve: u32,
-}
-
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletDKGFirstRoundRequestEvent`.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
-    pub public_user_secret_key_shares: Vec<u8>,
-    pub public_output: Vec<u8>,
-    pub curve: u32,
-    pub dwallet_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
-}
-
 impl DWalletMPCEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
