@@ -487,20 +487,34 @@ public(package) fun process_pending_stake(
     validator.num_shares = exchange_rate.convert_to_share_amount(validator.ika_balance);
 }
 
+
+public(package) fun verify_validator_cap(self: &Validator, cap: &ValidatorCap) {
+    assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
+    assert!(object::id(cap) == self.validator_cap_id, EAuthorizationFailure);
+}
+
+public(package) fun verify_operation_cap(self: &Validator, cap: &ValidatorOperationCap) {
+    assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
+    assert!(object::id(cap) == self.operation_cap_id, EAuthorizationFailure);
+}
+
+public(package) fun verify_commission_cap(self: &Validator, cap: &ValidatorCommissionCap) {
+    assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
+    assert!(object::id(cap) == self.commission_cap_id, EAuthorizationFailure);
+}
+
 // === Validator parameters ===
 
 /// Sets the name of the validator.
 public(package) fun set_name(self: &mut Validator, name: String, cap: &ValidatorOperationCap) {
-    assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
-    assert!(object::id(cap) == self.operation_cap_id, EAuthorizationFailure);
+    self.verify_operation_cap(cap);
 
     self.validator_info.set_name(name);
 }
 
 /// Sets the node metadata.
 public(package) fun set_validator_metadata(self: &mut Validator, cap: &ValidatorOperationCap, metadata: ValidatorMetadata) {
-    assert!(cap.validator_id() == self.id.to_inner(), EAuthorizationFailure);
-    assert!(object::id(cap) == self.operation_cap_id, EAuthorizationFailure);
+    self.verify_operation_cap(cap);
 
     self.validator_info.set_validator_metadata(metadata);
 }
@@ -512,8 +526,7 @@ public(package) fun set_next_commission(
     current_epoch: u64,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     assert!(commission_rate <= BASIS_POINT_DENOMINATOR, EIncorrectCommissionRate);
     validator.pending_commission_rate.insert_or_replace(current_epoch + 2, commission_rate as u64);
@@ -524,8 +537,7 @@ public(package) fun set_next_epoch_network_address(
     network_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_network_address(network_address);
 }
@@ -535,8 +547,7 @@ public(package) fun set_next_epoch_p2p_address(
     p2p_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_p2p_address(p2p_address);
 }
@@ -546,8 +557,7 @@ public(package) fun set_next_epoch_consensus_address(
     consensus_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_consensus_address(consensus_address);
 }
@@ -559,8 +569,7 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     cap: &ValidatorOperationCap,
     ctx: &TxContext,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession, ctx);
 }
@@ -570,8 +579,7 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
     network_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes);
 }
@@ -581,8 +589,7 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     consensus_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes);
 }
@@ -592,8 +599,7 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     cap: &ValidatorOperationCap,
 ) {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.operation_cap_id, EAuthorizationFailure);
+    validator.verify_operation_cap(cap);
 
     validator.validator_info.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes);
 }
@@ -687,8 +693,7 @@ public(package) fun rotate_operation_cap(
     ctx: &mut TxContext,
 ): ValidatorOperationCap {
     let validator_id = cap.validator_id();
-    assert!(validator_id == self.id.to_inner(), EAuthorizationFailure);
-    assert!(object::id(cap) == self.operation_cap_id, EAuthorizationFailure);
+    self.verify_validator_cap(cap);
     let operation_cap = validator_cap::new_validator_operation_cap(validator_id, ctx);
     self.operation_cap_id = object::id(&operation_cap);
     operation_cap
@@ -702,8 +707,7 @@ public(package) fun rotate_commission_cap(
     ctx: &mut TxContext,
 ): ValidatorCommissionCap {
     let validator_id = cap.validator_id();
-    assert!(validator_id == self.id.to_inner(), EAuthorizationFailure);
-    assert!(object::id(cap) == self.commission_cap_id, EAuthorizationFailure);
+    self.verify_validator_cap(cap);
     let commission_cap = validator_cap::new_validator_commission_cap(validator_id, ctx);
     self.commission_cap_id = object::id(&commission_cap);
     commission_cap
@@ -716,8 +720,7 @@ public(package) fun collect_commission(
     cap: &ValidatorCommissionCap,
     amount: Option<u64>,
 ): Balance<IKA> {
-    assert!(cap.validator_id() == validator.validator_id(), EAuthorizationFailure);
-    assert!(object::id(cap) == validator.commission_cap_id, EAuthorizationFailure);
+    validator.verify_commission_cap(cap);
     if (amount.is_some()) {
         validator.commission.split(*amount.borrow())
     } else {

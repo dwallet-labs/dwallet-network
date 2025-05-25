@@ -1,17 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use mysten_common::metrics::{push_metrics, MetricsPushClient};
-use mysten_metrics::RegistryService;
-use prometheus::{
-    register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
-    register_int_counter_with_registry, register_int_gauge_vec_with_registry,
-    register_int_gauge_with_registry, HistogramVec, IntCounter, IntCounterVec, IntGauge,
-    IntGaugeVec, Registry,
-};
+use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
 use std::sync::Arc;
-use std::time::Duration;
-use sui_types::crypto::NetworkKeyPair;
 
 #[derive(Clone, Debug)]
 pub struct SuiClientMetrics {

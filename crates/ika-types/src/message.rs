@@ -4,7 +4,6 @@
 
 use crate::crypto::default_hash;
 use crate::digests::MessageDigest;
-use fastcrypto::hash::HashFunction;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
@@ -16,6 +15,7 @@ use sui_types::base_types::ObjectID;
 pub struct DKGFirstRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
+    pub rejected: bool,
     pub session_sequence_number: u64,
 }
 
@@ -72,6 +72,15 @@ pub struct Secp256K1NetworkKeyPublicOutputSlice {
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub is_last: bool,
+    pub rejected: bool,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct MakeDWalletUserSecretKeySharesPublicOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_user_secret_key_shares: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]

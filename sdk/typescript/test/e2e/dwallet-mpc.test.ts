@@ -12,12 +12,20 @@ import { beforeEach, describe, it } from 'vitest';
 
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { checkpointCreationTime, Config, delay, getNetworkDecryptionKeyPublicOutput, getObjectWithType } from '../../src/dwallet-mpc/globals';
-import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
+import {
+	checkpointCreationTime,
+	Config,
+	delay,
+	getNetworkDecryptionKeyPublicOutput,
+	getObjectWithType,
+} from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
+import {
+	isDWalletWithPublicUserSecretKeyShares,
+	makeDWalletUserSecretKeySharesPublicRequestEvent,
+} from '../../src/dwallet-mpc/publish_secret_share';
 import { isDWalletWithPublicUserSecretKeyShares, makeDWalletUserSecretKeySharesPublicRequestEvent } from '../../src/dwallet-mpc/publish_secret_share';
 import { completeFutureSign, createUnverifiedPartialUserSignatureCap, Hash, sign, verifySignWithPartialUserSignatures } from '../../src/dwallet-mpc/sign';
-
 
 const fiveMinutes = 5 * 60 * 1000;
 describe('Test dWallet MPC', () => {
@@ -95,7 +103,7 @@ describe('Test dWallet MPC', () => {
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
 		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
-		console.log('Running publishing its secret share...');
+		console.log('Running publish secret share...');
 		await makeDWalletUserSecretKeySharesPublicRequestEvent(
 			conf,
 			dwallet.dwalletID,
