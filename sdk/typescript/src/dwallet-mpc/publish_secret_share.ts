@@ -56,8 +56,10 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 
 interface DWalletWithPublicUserSecretKeyShares {
 	public_user_secret_key_share: {
-		vec: [];
+		vec: [Uint8Array];
 	};
+	id: { id: string };
+	dwallet_cap_id: string;
 }
 
 export function isDWalletWithPublicUserSecretKeyShares(

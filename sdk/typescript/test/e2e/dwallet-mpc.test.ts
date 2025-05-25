@@ -112,12 +112,26 @@ describe('Test dWallet MPC', () => {
 			dwallet.dwalletID,
 			dwallet.secret_share,
 		);
-		const secretShare = await getObjectWithType(
+		const dwalletWithSecretShare = await getObjectWithType(
 			conf,
 			dwallet.dwalletID,
 			isDWalletWithPublicUserSecretKeyShares,
 		);
-		console.log(`secretShare: ${secretShare}`);
+		console.log(`secretShare: ${dwalletWithSecretShare}`);
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwalletWithSecretShare.id.id);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		await sign(
+			conf,
+			completedPresign.id.id,
+			dwalletWithSecretShare.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletWithSecretShare.public_user_secret_key_share.vec.at(0)!,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
 	});
 
 	it('should complete future sign', async () => {
