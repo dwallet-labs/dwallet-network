@@ -435,7 +435,9 @@ impl ProtocolConfig {
                 ),
                 (
                     SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-                    HashMap::from([]),
+                    HashMap::from([
+                        (2, 2)
+                    ]),
                 ),
             ]),
         };
