@@ -62,8 +62,8 @@ use crate::system_checkpoints::{
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput};
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
+use dwallet_classgroups_types::{ClassGroupsDecryptionKey};
+use dwallet_mpc_types::dwallet_mpc::{NetworkDecryptionKeyPublicData};
 use group::PartyID;
 use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
