@@ -70,7 +70,7 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequestEvent(_) => {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
             }
             MPCProtocolInitData::DKGFirst(_) => {
