@@ -297,7 +297,7 @@ impl SystemCheckpointStore {
         batch.insert_batch(
             &self.system_checkpoint_sequence_by_digest,
             [(
-                system_checkpoint.digest().clone(),
+                *system_checkpoint.digest(),
                 system_checkpoint.sequence_number(),
             )],
         )?;
@@ -488,13 +488,13 @@ impl SystemCheckpointBuilder {
             .min_system_checkpoint_interval_ms_as_option()
             .unwrap_or_default();
         let mut grouped_pending_system_checkpoints = Vec::new();
-        let mut system_checkpoints_iter = self
+        let system_checkpoints_iter = self
             .epoch_store
             .get_pending_system_checkpoints(last_height)
             .expect("unexpected epoch store error")
             .into_iter()
             .peekable();
-        while let Some((height, pending)) = system_checkpoints_iter.next() {
+        for (height, pending) in system_checkpoints_iter {
             // Group PendingSystemCheckpoints until:
             // - minimum interval has elapsed ...
             let current_timestamp = pending.details().timestamp_ms;
@@ -711,7 +711,7 @@ impl SystemCheckpointBuilder {
             all_messages.len(),
         );
 
-        if all_messages.len() != 0 {
+        if !all_messages.is_empty() {
             info!(
                 "SystemCheckpointBuilder::create_system_checkpoints: {} messages to be included in system_checkpoint",
                 all_messages.len()

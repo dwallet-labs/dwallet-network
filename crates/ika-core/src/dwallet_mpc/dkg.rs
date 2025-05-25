@@ -52,7 +52,7 @@ impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
         protocol_public_parameters: Vec<u8>,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let input: Self::PublicInput = bcs::from_bytes(&protocol_public_parameters)?;
-        bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
+        bcs::to_bytes(&input).map_err(DwalletMPCError::BcsError)
     }
 }
 
@@ -63,19 +63,19 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
         centralized_party_public_key_share_buf: SerializedWrappedMPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let first_round_output_buf: VersionedCentralizedDKGPublicOutput =
-            bcs::from_bytes(&first_round_output_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
+            bcs::from_bytes(&first_round_output_buf).map_err(DwalletMPCError::BcsError)?;
         let centralized_party_public_key_share: VersionedPublicKeyShareAndProof =
             bcs::from_bytes(&centralized_party_public_key_share_buf)
-                .map_err(|e| DwalletMPCError::BcsError(e))?;
+                .map_err(DwalletMPCError::BcsError)?;
         match first_round_output_buf {
             VersionedCentralizedDKGPublicOutput::V1(first_round_output) => {
                 let first_round_output: <DKGFirstParty as Party>::PublicOutput =
                     bcs::from_bytes(&first_round_output)
-                        .map_err(|e| DwalletMPCError::BcsError(e))?;
+                        .map_err(DwalletMPCError::BcsError)?;
                 let centralized_party_public_key_share = match centralized_party_public_key_share {
                     VersionedPublicKeyShareAndProof::V1(centralized_party_public_key_share) => {
                         bcs::from_bytes(&centralized_party_public_key_share)
-                            .map_err(|e| DwalletMPCError::BcsError(e))?
+                            .map_err(DwalletMPCError::BcsError)?
                     }
                 };
 
@@ -85,7 +85,7 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
                     centralized_party_public_key_share,
                 )
                     .into();
-                bcs::to_bytes(&input).map_err(|e| DwalletMPCError::BcsError(e))
+                bcs::to_bytes(&input).map_err(DwalletMPCError::BcsError)
             }
         }
     }

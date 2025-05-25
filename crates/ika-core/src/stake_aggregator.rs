@@ -190,7 +190,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                         }
                     }
                     Err(error) => InsertResult::Failed {
-                        error: error.into(),
+                        error,
                     },
                 }
             }

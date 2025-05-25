@@ -92,7 +92,7 @@ impl DWalletMPCOutputsVerifier {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         DWalletMPCOutputsVerifier {
-            epoch_store: Arc::downgrade(&epoch_store),
+            epoch_store: Arc::downgrade(epoch_store),
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_sessions_outputs: HashMap::new(),
             weighted_parties: epoch_store

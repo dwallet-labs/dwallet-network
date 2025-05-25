@@ -146,7 +146,7 @@ impl DWalletMPCService {
                             .network_keys
                             .update_network_key(
                                 *key_id,
-                                &key_data,
+                                key_data,
                                 &self.dwallet_mpc_manager.weighted_threshold_access_structure,
                             )
                             .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
@@ -212,13 +212,10 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                self.dwallet_mpc_manager
-                    .mpc_sessions
-                    .get_mut(&session_id)
-                    .map(|session| {
-                        session.clear_data();
-                        session.status = MPCSessionStatus::Finished;
-                    });
+                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    session.clear_data();
+                    session.status = MPCSessionStatus::Finished;
+                }
             }
             let Ok(events_from_sui) = self
                 .epoch_store

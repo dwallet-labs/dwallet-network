@@ -42,11 +42,11 @@ impl CommitteeStore {
             db_options,
             None,
         );
-        let store = Self {
+        
+        Self {
             tables,
             cache: RwLock::new(HashMap::new()),
-        };
-        store
+        }
     }
 
     pub fn new_for_testing(_genesis_committee: &Committee) -> Self {

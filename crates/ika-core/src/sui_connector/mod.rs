@@ -258,9 +258,8 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
         &IntentMessage::new(Intent::sui_transaction(), &tx_data),
         sui_key,
     );
-    let transaction = Transaction::from_data(tx_data, vec![signature]);
 
-    transaction
+    Transaction::from_data(tx_data, vec![signature])
 }
 
 pub async fn pick_highest_balance_coin(

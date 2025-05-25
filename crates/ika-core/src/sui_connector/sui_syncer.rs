@@ -147,14 +147,14 @@ where
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
-            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .get_validators_info_by_ids(system_inner, validator_ids)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = sui_client
             .get_class_groups_public_keys_and_proofs(&validators)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
@@ -253,7 +253,7 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key.clone());
+                        all_network_keys_data.insert(key_id, key.clone());
                         network_keys_cache.insert((key_id, key.epoch));
                     }
                     Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {

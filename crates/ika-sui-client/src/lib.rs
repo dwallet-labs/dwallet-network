@@ -739,11 +739,13 @@ pub trait SuiClientInner: Send + Sync {
         dwallet_coordinator_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error>;
 
+    #[allow(clippy::ptr_arg)]
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<StakingPool>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
+    #[allow(clippy::ptr_arg)]
     async fn get_network_encryption_keys(
         &self,
         network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
