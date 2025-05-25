@@ -66,9 +66,10 @@ use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput,
-    MakeDWalletUserSecretKeySharesPublicOutput, MessageKind, PartialSignatureVerificationOutput,
-    PresignOutput, Secp256K1NetworkKeyPublicOutputSlice, SignOutput,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
+    EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
+    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
+    SignOutput,
 };
 use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
@@ -1938,6 +1939,28 @@ impl AuthorityPerEpochStore {
                     MakeDWalletUserSecretKeySharesPublicOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                         public_user_secret_key_shares: output,
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::DWalletImportedKeyVerificationOutput(
+                    DWalletImportedKeyVerificationOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
+                        public_output: output,
+                        encrypted_user_secret_key_share_id: init_event
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec()
+                            .clone(),
+                        session_id: init_event.session_id.to_vec().clone(),
                         rejected: is_rejected,
                         session_sequence_number: sequence_number,
                     },

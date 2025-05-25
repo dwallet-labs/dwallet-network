@@ -18,7 +18,8 @@ use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, SignRequestEvent,
+    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletImportedKeyVerificationRequestEvent,
+    SignRequestEvent,
 };
 use ika_types::messages_dwallet_mpc::{
     DWalletDKGSecondRoundRequestEvent, DWalletMPCEventTrait, DWalletMPCSuiEvent,
@@ -134,6 +135,19 @@ pub(crate) fn session_info_from_event(
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t
+            == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            Ok(Some(
+                dwallet_imported_key_verification_request_event_session_info(
+                    deserialize_event_or_dynamic_field::<DWalletImportedKeyVerificationRequestEvent>(
+                        &event.contents,
+                    )?,
+                ),
+            ))
+        }
+        t if t
             == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
                 packages_config,
             ) =>
@@ -243,6 +257,17 @@ fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
         mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
             deserialized_event,
         ),
+    }
+}
+
+fn dwallet_imported_key_verification_request_event_session_info(
+    deserialized_event: DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_id: deserialized_event.session_id.clone(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
     }
 }
 
@@ -557,6 +582,23 @@ pub(super) async fn session_input_from_event(
 ) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
+        t if t
+            == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            let deserialized_event: DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_encryption_key_id,
+                DWalletMPCNetworkKeyScheme::Secp256k1,
+            )?;
+            Ok((protocol_public_parameters, None))
+        }
         t if t
             == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
                 packages_config,

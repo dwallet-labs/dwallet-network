@@ -369,6 +369,7 @@ public struct DWallet has key, store {
     /// The MPC network encryption key id that is used to encrypt this dWallet network secret key share.
     dwallet_network_encryption_key_id: ID,
 
+    /// Key was imported.
     is_imported_key_dwallet: bool,
 
     /// A table mapping id to their encryption key object.
@@ -689,7 +690,6 @@ public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
     /// The elliptic curve used for the dWallet.
     curve: u32,
 }
-
 
 public struct CompletedDWalletImportedKeyVerificationEvent has copy, drop, store {
     dwallet_id: ID,
@@ -2122,6 +2122,11 @@ public(package) fun accept_encrypted_user_share(
     );
 }
 
+public struct NewImportedKeyDWalletEvent has copy, drop {
+    dwallet_id: ID,
+    dwallet_cap_id: ID,
+}
+
 /// Creates a new imported key dWallet, by creating a new `DWallet` object with `is_imported_key_dwallet` set and the state at `AwaitingUserImportedKeyInitiation`,
 /// alongside a corresponding `ImportedKeyDWalletCap`.
 ///
@@ -2157,7 +2162,10 @@ public(package) fun new_imported_key_dwallet(
         sign_sessions: object_table::new(ctx),
         state: DWalletState::AwaitingUserImportedKeyInitiation,
     });
-
+    event::emit(NewImportedKeyDWalletEvent {
+        dwallet_id,
+        dwallet_cap_id,
+    });
     dwallet_cap
 }
 
@@ -3296,13 +3304,29 @@ fun process_checkpoint_message(
                 let rejected = bcs_body.peel_bool();
                 self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
             } else if (message_data_type == 8) {
-                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-                 let public_user_secret_key_shares = bcs_body.peel_vec_u8();
-                 let rejected = bcs_body.peel_bool();
-                 let session_sequence_number = bcs_body.peel_u64();
-                 let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_user_secret_key_shares = bcs_body.peel_vec_u8();
+                let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
+                let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-             };
+            } else if (message_data_type == 9) {
+                let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let public_output = bcs_body.peel_vec_u8();
+                let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let rejected = bcs_body.peel_bool();
+                let session_sequence_number = bcs_body.peel_u64();
+                let gas_fee_reimbursement_sui = self.respond_imported_key_dwallet_verification(
+                    dwallet_id,
+                    public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
+                    rejected,
+                    session_sequence_number
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;

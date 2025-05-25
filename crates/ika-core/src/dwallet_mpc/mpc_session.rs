@@ -16,7 +16,7 @@ use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
+use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty, DWalletImportedKeyVerificationParty};
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
@@ -31,6 +31,8 @@ use ika_types::messages_dwallet_mpc::{
     MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::id::ID;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -352,6 +354,28 @@ impl DWalletMPCSession {
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
         let public_input = &mpc_event_data.public_input;
         match &mpc_event_data.init_protocol_data {
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
+                let dwallet_id = CommitmentSizedNumber::from_le_slice(
+                    event_data.event_data.dwallet_id.to_vec().as_slice(),
+                );
+                let public_input = (
+                    bcs::from_bytes(public_input)?,
+                    dwallet_id,
+                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
+                )
+                    .into();
+                crate::dwallet_mpc::advance_and_serialize::<DWalletImportedKeyVerificationParty>(
+                    // we are using the dWallet ID as a unique session identifier,
+                    // as no two dWallets will ever have the same ID
+                    // or be used for any other import session.
+                    dwallet_id,
+                    self.party_id,
+                    &self.weighted_threshold_access_structure,
+                    self.serialized_full_messages.clone(),
+                    public_input,
+                    (),
+                )
+            }
             MPCProtocolInitData::DKGFirst(..) => {
                 info!(
                     mpc_protocol=?mpc_event_data.init_protocol_data,

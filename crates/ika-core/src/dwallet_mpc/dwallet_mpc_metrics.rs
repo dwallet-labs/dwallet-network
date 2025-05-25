@@ -64,11 +64,50 @@ pub struct DWalletMPCMetrics {
     pub(crate) received_events_start_make_dwallet_user_secret_key_shares_public_count: IntGauge,
     pub(crate) make_dwallet_user_secret_key_shares_public_round_completions_count: IntGauge,
     pub(crate) make_dwallet_user_secret_key_shares_public_completion_duration: IntGauge,
+
+    // ImportDWalletVerification.
+    pub(crate) advance_calls_for_import_dwallet_verification: IntGauge,
+    pub(crate) advance_completions_for_import_dwallet_verification: IntGauge,
+    pub(crate) received_events_start_import_dwallet_verification_count: IntGauge,
+    pub(crate) import_dwallet_verification_round_completions_count: IntGauge,
+    pub(crate) import_dwallet_verification_completion_duration: IntGauge,
 }
 
 impl DWalletMPCMetrics {
     pub fn new(registry: &Registry) -> Arc<Self> {
         let this = Self {
+            // ImportDWalletVerification.
+            advance_calls_for_import_dwallet_verification: register_int_gauge_with_registry!(
+                "advance_calls_for_import_dwallet_verification",
+                "Number of advance calls made during the import dWallet verification phase",
+                registry
+            )
+                .unwrap(),
+            advance_completions_for_import_dwallet_verification: register_int_gauge_with_registry!(
+                "advance_completions_for_import_dwallet_verification",
+                "Number of advance completions made during the import dWallet verification phase",
+                registry
+            )
+                .unwrap(),
+            received_events_start_import_dwallet_verification_count: register_int_gauge_with_registry!(
+                "received_events_start_import_dwallet_verification_count",
+                "Number of start events received for the import dWallet verification phase",
+                registry
+            )
+                .unwrap(),
+            import_dwallet_verification_round_completions_count: register_int_gauge_with_registry!(
+                "import_dwallet_verification_round_completions_count",
+                "Total number of completions for the import dWallet verification phase",
+                registry
+            )
+                .unwrap(),
+            import_dwallet_verification_completion_duration: register_int_gauge_with_registry!(
+                "import_dwallet_verification_completion_duration",
+                "Duration of the last completion for the import dWallet verification phase",
+                registry
+            )
+                .unwrap(),
+
             // MakeDWalletUserSecretKeySharesPublic.
             advance_calls_for_make_dwallet_user_secret_key_shares_public: register_int_gauge_with_registry!(
                 "advance_calls_for_make_dwallet_user_secret_key_shares_public",

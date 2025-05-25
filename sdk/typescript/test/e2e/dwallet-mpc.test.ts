@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
+import { sample_dwallet_secret_key } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -15,6 +16,7 @@ import {
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
+import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	isDWalletWithPublicUserSecretKeyShares,
@@ -150,5 +152,12 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 			verifiedPartialUserSignatureCapID,
 		);
+	});
+
+	it('should create an imported dWallet', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
 	});
 });

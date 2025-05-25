@@ -352,6 +352,9 @@ MessageApproval
 ImportedKeyMessageApproval
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
+NewImportedKeyDWalletEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkEncryptionKeyState
 	public enum
 	0x0::dwallet_2pc_mpc_coordinator_inner
