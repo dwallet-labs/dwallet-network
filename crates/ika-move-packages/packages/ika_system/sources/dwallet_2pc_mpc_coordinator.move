@@ -193,7 +193,7 @@ public fun request_dwallet_dkg_second_round(
     )
 }
 
-public(package) fun calculate_pricing_votes(
+public fun calculate_pricing_votes(
     self: &mut DWalletCoordinator,
     curve: u32,
     signature_algorithm: Option<u32>,
