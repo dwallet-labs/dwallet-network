@@ -252,6 +252,25 @@ pub fn sample_dwallet_keypair_inner(
     Ok((bytes_secret_key, bytes_public_key))
 }
 
+pub fn verify_secp_signature_inner(
+    public_key: Vec<u8>,
+    signature: Vec<u8>,
+    message: Vec<u8>,
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+) -> anyhow::Result<bool> {
+    let protocol_public_parameters: ProtocolPublicParameters =
+        bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
+            network_dkg_public_output,
+            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+        )?)?;
+    let public_key = twopc_mpc::secp256k1::GroupElement::new(
+        bcs::from_bytes(&public_key)?,
+        &protocol_public_parameters.group_public_parameters,
+    )?;
+    let message: secp256k1::Scalar = bcs::from_bytes(&message)?;
+    Ok(true)
+}
+
 pub fn create_imported_dwallet_centralized_step_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     dwallet_id: String,

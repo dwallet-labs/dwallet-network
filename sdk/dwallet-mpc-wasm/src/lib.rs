@@ -105,6 +105,13 @@ pub fn sample_dwallet_keypair(network_dkg_public_output: Vec<u8>) -> Result<JsVa
 }
 
 #[wasm_bindgen]
+pub fn verify_secp_signature(public_key: Vec<u8>, signature: Vec<u8>, message: Vec<u8>) -> Result<JsValue, JsError> {
+    Ok(serde_wasm_bindgen::to_value(
+        &verify_secp_signature_inner(public_key, signature, message).map_err(to_js_err)?,
+    )?)
+}
+
+#[wasm_bindgen]
 pub fn create_imported_dwallet_centralized_step(
     network_dkg_public_output: Vec<u8>,
     dwallet_id: String,
