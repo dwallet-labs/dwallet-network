@@ -18,7 +18,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedEncryptedUserShare, VersionedImportedDWalletPublicOutput,
     VersionedImportedDwalletOutgoingMessage, VersionedImportedSecretShare,
     VersionedNetworkDkgOutput, VersionedPresignOutput, VersionedPublicKeyShareAndProof,
-    VersionedUserSignedMessage,
+    VersionedSignOutput, VersionedUserSignedMessage,
 };
 use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
 use homomorphic_encryption::{
@@ -263,6 +263,9 @@ pub fn verify_secp_signature_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     hash_type: u32,
 ) -> anyhow::Result<bool> {
+    let signature = match bcs::from_bytes(&signature)? {
+        VersionedSignOutput::V1(signature) => signature,
+    };
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_dkg_public_output,
