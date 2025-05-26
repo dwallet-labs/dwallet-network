@@ -156,6 +156,7 @@ where
                 &self.sui_client,
                 self.ika_system_package_id,
                 &sui_notifier,
+                dwallet_2pc_mpc_coordinator_id,
             )
             .await
             {
@@ -470,6 +471,7 @@ where
         sui_client: &Arc<SuiClient<C>>,
         ika_system_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
+        dwallet_coordinator_id: ObjectID,
     ) -> anyhow::Result<()> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -479,6 +481,9 @@ where
         let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
         let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
         let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
+        let dwallet_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_coordinator_id)
+            .await;
 
         let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
             &DKG_FIRST_ROUND_PROTOCOL_FLAG,
@@ -509,31 +514,36 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![zero, none_option, dkg_first_round_protocol_flag],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![zero, none_option, dkg_second_round_protocol_flag],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![zero, none_option, re_encrypt_user_share_protocol_flag],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
             vec![
+                ptb.input(CallArg::Object(dwallet_coordinator_arg))?,
+                zero,
+                none_option,
+                dkg_first_round_protocol_flag,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, zero, none_option, dkg_second_round_protocol_flag],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, zero, none_option, re_encrypt_user_share_protocol_flag],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, 
                 zero,
                 none_option,
                 make_dwallet_user_secret_key_share_public_protocol_flag,
@@ -545,7 +555,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, 
                 zero,
                 none_option,
                 imported_key_dwallet_verification_protocol_flag,
@@ -557,7 +567,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![zero, zero_option, presign_protocol_flag],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, zero, zero_option, presign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -565,7 +575,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![zero, zero_option, sign_protocol_flag],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, zero, zero_option, sign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -573,7 +583,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![zero, zero_option, future_sign_protocol_flag],
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, zero, zero_option, future_sign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -581,10 +591,10 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![
+            vec![ptb.input(CallArg::Object(dwallet_coordinator_arg))?, 
                 zero,
                 zero_option,
-                sign_with_partial_user_signature_protocol_flag
+                sign_with_partial_user_signature_protocol_flag,
             ],
         );
         let transaction = super::build_sui_transaction(
