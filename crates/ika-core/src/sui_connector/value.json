@@ -1,0 +1,1842 @@
+{
+  "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner",
+  "fields": {
+    "active_committee": {
+      "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommittee",
+      "fields": {
+        "aggregated_protocol_pubkey": {
+          "type": "0x2::group_ops::Element<0x2::bls12381::G1>",
+          "fields": {
+            "bytes": [
+              183,
+              17,
+              223,
+              84,
+              91,
+              11,
+              39,
+              103,
+              183,
+              48,
+              19,
+              236,
+              183,
+              162,
+              97,
+              14,
+              61,
+              220,
+              61,
+              183,
+              46,
+              66,
+              238,
+              197,
+              89,
+              46,
+              79,
+              217,
+              58,
+              152,
+              85,
+              166,
+              95,
+              245,
+              146,
+              183,
+              234,
+              130,
+              26,
+              219,
+              231,
+              5,
+              160,
+              204,
+              101,
+              38,
+              144,
+              251
+            ]
+          }
+        },
+        "members": [
+          {
+            "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+            "fields": {
+              "protocol_pubkey": {
+                "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                "fields": {
+                  "bytes": [
+                    17,
+                    131,
+                    58,
+                    131,
+                    253,
+                    223,
+                    59,
+                    241,
+                    19,
+                    171,
+                    232,
+                    105,
+                    48,
+                    81,
+                    43,
+                    71,
+                    167,
+                    242,
+                    226,
+                    114,
+                    162,
+                    83,
+                    104,
+                    134,
+                    133,
+                    139,
+                    200,
+                    84,
+                    246,
+                    185,
+                    215,
+                    66,
+                    100,
+                    108,
+                    195,
+                    60,
+                    238,
+                    255,
+                    217,
+                    3,
+                    74,
+                    66,
+                    152,
+                    58,
+                    175,
+                    130,
+                    10,
+                    56,
+                    3,
+                    50,
+                    94,
+                    252,
+                    175,
+                    187,
+                    226,
+                    241,
+                    75,
+                    121,
+                    93,
+                    68,
+                    150,
+                    204,
+                    45,
+                    34,
+                    135,
+                    214,
+                    136,
+                    107,
+                    124,
+                    140,
+                    12,
+                    76,
+                    141,
+                    91,
+                    122,
+                    131,
+                    72,
+                    148,
+                    129,
+                    57,
+                    180,
+                    82,
+                    81,
+                    125,
+                    20,
+                    185,
+                    51,
+                    36,
+                    176,
+                    128,
+                    141,
+                    99,
+                    0,
+                    50,
+                    213,
+                    247
+                  ]
+                }
+              },
+              "validator_id": "0x46cf2c0ea13f9cdcdd41a526d46ac1e5758d4c1cbc8d5a3df2a3042411b16b3e"
+            }
+          },
+          {
+            "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+            "fields": {
+              "protocol_pubkey": {
+                "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                "fields": {
+                  "bytes": [
+                    24,
+                    51,
+                    153,
+                    115,
+                    73,
+                    106,
+                    152,
+                    34,
+                    194,
+                    239,
+                    109,
+                    32,
+                    47,
+                    20,
+                    136,
+                    74,
+                    219,
+                    122,
+                    2,
+                    111,
+                    60,
+                    246,
+                    107,
+                    249,
+                    125,
+                    160,
+                    61,
+                    41,
+                    7,
+                    70,
+                    109,
+                    246,
+                    105,
+                    27,
+                    84,
+                    80,
+                    186,
+                    192,
+                    13,
+                    22,
+                    216,
+                    93,
+                    244,
+                    146,
+                    254,
+                    80,
+                    238,
+                    119,
+                    10,
+                    133,
+                    27,
+                    229,
+                    217,
+                    101,
+                    204,
+                    254,
+                    37,
+                    125,
+                    8,
+                    148,
+                    13,
+                    101,
+                    81,
+                    39,
+                    219,
+                    48,
+                    46,
+                    148,
+                    137,
+                    72,
+                    241,
+                    202,
+                    213,
+                    195,
+                    170,
+                    99,
+                    107,
+                    47,
+                    47,
+                    255,
+                    16,
+                    251,
+                    167,
+                    85,
+                    202,
+                    197,
+                    35,
+                    118,
+                    11,
+                    178,
+                    97,
+                    191,
+                    213,
+                    163,
+                    13,
+                    176
+                  ]
+                }
+              },
+              "validator_id": "0x71818ef2bfb6dfa7520bd0efcfe1ade7e654b53b8ed86a1047df94f34f9d85a8"
+            }
+          },
+          {
+            "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+            "fields": {
+              "protocol_pubkey": {
+                "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                "fields": {
+                  "bytes": [
+                    20,
+                    32,
+                    115,
+                    162,
+                    64,
+                    147,
+                    210,
+                    187,
+                    247,
+                    17,
+                    135,
+                    46,
+                    161,
+                    39,
+                    10,
+                    153,
+                    123,
+                    211,
+                    186,
+                    90,
+                    213,
+                    148,
+                    42,
+                    239,
+                    3,
+                    218,
+                    175,
+                    94,
+                    87,
+                    58,
+                    1,
+                    181,
+                    83,
+                    160,
+                    2,
+                    84,
+                    238,
+                    42,
+                    37,
+                    248,
+                    205,
+                    104,
+                    48,
+                    5,
+                    176,
+                    237,
+                    200,
+                    158,
+                    1,
+                    128,
+                    234,
+                    7,
+                    171,
+                    205,
+                    82,
+                    39,
+                    27,
+                    1,
+                    126,
+                    159,
+                    115,
+                    162,
+                    47,
+                    92,
+                    23,
+                    136,
+                    3,
+                    112,
+                    157,
+                    195,
+                    131,
+                    209,
+                    231,
+                    193,
+                    207,
+                    164,
+                    254,
+                    255,
+                    149,
+                    255,
+                    29,
+                    30,
+                    178,
+                    219,
+                    220,
+                    158,
+                    136,
+                    248,
+                    207,
+                    160,
+                    222,
+                    99,
+                    236,
+                    23,
+                    109,
+                    128
+                  ]
+                }
+              },
+              "validator_id": "0x05a634c049c7cd4e8efb242d186d633fbc19fb5fb274f0ca34e615632085d7e9"
+            }
+          },
+          {
+            "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+            "fields": {
+              "protocol_pubkey": {
+                "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                "fields": {
+                  "bytes": [
+                    20,
+                    181,
+                    169,
+                    48,
+                    7,
+                    176,
+                    230,
+                    60,
+                    100,
+                    138,
+                    126,
+                    99,
+                    211,
+                    231,
+                    118,
+                    202,
+                    144,
+                    58,
+                    9,
+                    107,
+                    81,
+                    225,
+                    117,
+                    222,
+                    20,
+                    33,
+                    171,
+                    13,
+                    207,
+                    111,
+                    142,
+                    206,
+                    107,
+                    198,
+                    44,
+                    121,
+                    189,
+                    122,
+                    51,
+                    104,
+                    86,
+                    119,
+                    236,
+                    208,
+                    243,
+                    183,
+                    128,
+                    211,
+                    14,
+                    211,
+                    172,
+                    120,
+                    152,
+                    147,
+                    169,
+                    171,
+                    2,
+                    134,
+                    4,
+                    17,
+                    232,
+                    26,
+                    246,
+                    140,
+                    26,
+                    232,
+                    237,
+                    201,
+                    130,
+                    153,
+                    217,
+                    37,
+                    249,
+                    137,
+                    51,
+                    136,
+                    221,
+                    64,
+                    105,
+                    76,
+                    163,
+                    23,
+                    130,
+                    51,
+                    171,
+                    75,
+                    84,
+                    176,
+                    141,
+                    91,
+                    42,
+                    215,
+                    30,
+                    196,
+                    55,
+                    200
+                  ]
+                }
+              },
+              "validator_id": "0x1e03bf9630150746075e7ef066a1b7f68342e5561784765fe11620ef29de054f"
+            }
+          }
+        ],
+        "quorum_threshold": "3",
+        "validity_threshold": "2"
+      }
+    },
+    "completed_system_sessions_count": "2",
+    "consensus_validation_fee_charged_ika": "0",
+    "current_epoch": "1",
+    "default_pricing": {
+      "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricing",
+      "fields": {
+        "pricing_map": {
+          "type": "0x2::vec_map::VecMap<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+          "fields": {
+            "contents": [
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 0,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 1,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 2,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 3,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 4,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 5,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 6,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 7,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 8,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "dwallet_network_encryption_keys": {
+      "type": "0x2::object_table::ObjectTable<0x2::object::ID, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKey>",
+      "fields": {
+        "id": {
+          "id": "0x32c563713aa110847f65e568fdea75e8d2d3a1df74c79f3a0627aa37a26b06f6"
+        },
+        "size": "1"
+      }
+    },
+    "dwallets": {
+      "type": "0x2::object_table::ObjectTable<0x2::object::ID, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::DWallet>",
+      "fields": {
+        "id": {
+          "id": "0x29682900174825d54a99e5a67a4348d1ef2c78bafe380adc55828fd260e4c257"
+        },
+        "size": "0"
+      }
+    },
+    "encryption_keys": {
+      "type": "0x2::object_table::ObjectTable<address, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::EncryptionKey>",
+      "fields": {
+        "id": {
+          "id": "0xa543c37a82654b73615973b0b7a26635cc6b78098c8acd750eb5b844ef45c8ad"
+        },
+        "size": "0"
+      }
+    },
+    "extra_fields": {
+      "type": "0x2::bag::Bag",
+      "fields": {
+        "id": {
+          "id": "0x40763df02b5b37f35c9f82899d749c5a7718fe6fce79bd8f60f89b010220ceee"
+        },
+        "size": "0"
+      }
+    },
+    "gas_fee_reimbursement_sui": "0",
+    "last_processed_checkpoint_sequence_number": "1",
+    "last_user_initiated_session_to_complete_in_current_epoch": "0",
+    "locked_last_user_initiated_session_to_complete_in_current_epoch": true,
+    "max_active_sessions_buffer": "100",
+    "next_session_sequence_number": "1",
+    "number_of_completed_user_initiated_sessions": "0",
+    "partial_centralized_signed_messages": {
+      "type": "0x2::object_table::ObjectTable<0x2::object::ID, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::PartialUserSignature>",
+      "fields": {
+        "id": {
+          "id": "0x57713a30dffd5d01498fe4c610f5c5e19273f75499fd21f7cca639f548eb976c"
+        },
+        "size": "0"
+      }
+    },
+    "paused_curves": [],
+    "paused_hash_schemes": [],
+    "paused_signature_algorithms": [],
+    "presign_sessions": {
+      "type": "0x2::object_table::ObjectTable<0x2::object::ID, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::PresignSession>",
+      "fields": {
+        "id": {
+          "id": "0x7450b42eb1fd511e01b343122aff0523bc6e26f8a71cf01446ea63b4f2ac53f2"
+        },
+        "size": "0"
+      }
+    },
+    "previous_committee": {
+      "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommittee",
+      "fields": {
+        "aggregated_protocol_pubkey": {
+          "type": "0x2::group_ops::Element<0x2::bls12381::G1>",
+          "fields": {
+            "bytes": [
+              192,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        "members": [],
+        "quorum_threshold": "0",
+        "validity_threshold": "0"
+      }
+    },
+    "previous_epoch_last_checkpoint_sequence_number": "0",
+    "pricing": {
+      "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricing",
+      "fields": {
+        "pricing_map": {
+          "type": "0x2::vec_map::VecMap<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+          "fields": {
+            "contents": [
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 0,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 1,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 2,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 3,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 4,
+                      "signature_algorithm": null
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 5,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 6,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 7,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                "fields": {
+                  "key": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                    "fields": {
+                      "curve": 0,
+                      "protocol": 8,
+                      "signature_algorithm": 0
+                    }
+                  },
+                  "value": {
+                    "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                    "fields": {
+                      "computation_ika": "0",
+                      "consensus_validation_ika": "0",
+                      "gas_fee_reimbursement_sui": "0",
+                      "gas_fee_reimbursement_sui_for_system_calls": "0"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "pricing_calculation_votes": {
+      "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingCalculationVotes",
+      "fields": {
+        "bls_committee": {
+          "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommittee",
+          "fields": {
+            "aggregated_protocol_pubkey": {
+              "type": "0x2::group_ops::Element<0x2::bls12381::G1>",
+              "fields": {
+                "bytes": [
+                  183,
+                  17,
+                  223,
+                  84,
+                  91,
+                  11,
+                  39,
+                  103,
+                  183,
+                  48,
+                  19,
+                  236,
+                  183,
+                  162,
+                  97,
+                  14,
+                  61,
+                  220,
+                  61,
+                  183,
+                  46,
+                  66,
+                  238,
+                  197,
+                  89,
+                  46,
+                  79,
+                  217,
+                  58,
+                  152,
+                  85,
+                  166,
+                  95,
+                  245,
+                  146,
+                  183,
+                  234,
+                  130,
+                  26,
+                  219,
+                  231,
+                  5,
+                  160,
+                  204,
+                  101,
+                  38,
+                  144,
+                  251
+                ]
+              }
+            },
+            "members": [
+              {
+                "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+                "fields": {
+                  "protocol_pubkey": {
+                    "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                    "fields": {
+                      "bytes": [
+                        17,
+                        131,
+                        58,
+                        131,
+                        253,
+                        223,
+                        59,
+                        241,
+                        19,
+                        171,
+                        232,
+                        105,
+                        48,
+                        81,
+                        43,
+                        71,
+                        167,
+                        242,
+                        226,
+                        114,
+                        162,
+                        83,
+                        104,
+                        134,
+                        133,
+                        139,
+                        200,
+                        84,
+                        246,
+                        185,
+                        215,
+                        66,
+                        100,
+                        108,
+                        195,
+                        60,
+                        238,
+                        255,
+                        217,
+                        3,
+                        74,
+                        66,
+                        152,
+                        58,
+                        175,
+                        130,
+                        10,
+                        56,
+                        3,
+                        50,
+                        94,
+                        252,
+                        175,
+                        187,
+                        226,
+                        241,
+                        75,
+                        121,
+                        93,
+                        68,
+                        150,
+                        204,
+                        45,
+                        34,
+                        135,
+                        214,
+                        136,
+                        107,
+                        124,
+                        140,
+                        12,
+                        76,
+                        141,
+                        91,
+                        122,
+                        131,
+                        72,
+                        148,
+                        129,
+                        57,
+                        180,
+                        82,
+                        81,
+                        125,
+                        20,
+                        185,
+                        51,
+                        36,
+                        176,
+                        128,
+                        141,
+                        99,
+                        0,
+                        50,
+                        213,
+                        247
+                      ]
+                    }
+                  },
+                  "validator_id": "0x46cf2c0ea13f9cdcdd41a526d46ac1e5758d4c1cbc8d5a3df2a3042411b16b3e"
+                }
+              },
+              {
+                "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+                "fields": {
+                  "protocol_pubkey": {
+                    "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                    "fields": {
+                      "bytes": [
+                        24,
+                        51,
+                        153,
+                        115,
+                        73,
+                        106,
+                        152,
+                        34,
+                        194,
+                        239,
+                        109,
+                        32,
+                        47,
+                        20,
+                        136,
+                        74,
+                        219,
+                        122,
+                        2,
+                        111,
+                        60,
+                        246,
+                        107,
+                        249,
+                        125,
+                        160,
+                        61,
+                        41,
+                        7,
+                        70,
+                        109,
+                        246,
+                        105,
+                        27,
+                        84,
+                        80,
+                        186,
+                        192,
+                        13,
+                        22,
+                        216,
+                        93,
+                        244,
+                        146,
+                        254,
+                        80,
+                        238,
+                        119,
+                        10,
+                        133,
+                        27,
+                        229,
+                        217,
+                        101,
+                        204,
+                        254,
+                        37,
+                        125,
+                        8,
+                        148,
+                        13,
+                        101,
+                        81,
+                        39,
+                        219,
+                        48,
+                        46,
+                        148,
+                        137,
+                        72,
+                        241,
+                        202,
+                        213,
+                        195,
+                        170,
+                        99,
+                        107,
+                        47,
+                        47,
+                        255,
+                        16,
+                        251,
+                        167,
+                        85,
+                        202,
+                        197,
+                        35,
+                        118,
+                        11,
+                        178,
+                        97,
+                        191,
+                        213,
+                        163,
+                        13,
+                        176
+                      ]
+                    }
+                  },
+                  "validator_id": "0x71818ef2bfb6dfa7520bd0efcfe1ade7e654b53b8ed86a1047df94f34f9d85a8"
+                }
+              },
+              {
+                "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+                "fields": {
+                  "protocol_pubkey": {
+                    "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                    "fields": {
+                      "bytes": [
+                        20,
+                        32,
+                        115,
+                        162,
+                        64,
+                        147,
+                        210,
+                        187,
+                        247,
+                        17,
+                        135,
+                        46,
+                        161,
+                        39,
+                        10,
+                        153,
+                        123,
+                        211,
+                        186,
+                        90,
+                        213,
+                        148,
+                        42,
+                        239,
+                        3,
+                        218,
+                        175,
+                        94,
+                        87,
+                        58,
+                        1,
+                        181,
+                        83,
+                        160,
+                        2,
+                        84,
+                        238,
+                        42,
+                        37,
+                        248,
+                        205,
+                        104,
+                        48,
+                        5,
+                        176,
+                        237,
+                        200,
+                        158,
+                        1,
+                        128,
+                        234,
+                        7,
+                        171,
+                        205,
+                        82,
+                        39,
+                        27,
+                        1,
+                        126,
+                        159,
+                        115,
+                        162,
+                        47,
+                        92,
+                        23,
+                        136,
+                        3,
+                        112,
+                        157,
+                        195,
+                        131,
+                        209,
+                        231,
+                        193,
+                        207,
+                        164,
+                        254,
+                        255,
+                        149,
+                        255,
+                        29,
+                        30,
+                        178,
+                        219,
+                        220,
+                        158,
+                        136,
+                        248,
+                        207,
+                        160,
+                        222,
+                        99,
+                        236,
+                        23,
+                        109,
+                        128
+                      ]
+                    }
+                  },
+                  "validator_id": "0x05a634c049c7cd4e8efb242d186d633fbc19fb5fb274f0ca34e615632085d7e9"
+                }
+              },
+              {
+                "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::bls_committee::BlsCommitteeMember",
+                "fields": {
+                  "protocol_pubkey": {
+                    "type": "0x2::group_ops::Element<0x2::bls12381::UncompressedG1>",
+                    "fields": {
+                      "bytes": [
+                        20,
+                        181,
+                        169,
+                        48,
+                        7,
+                        176,
+                        230,
+                        60,
+                        100,
+                        138,
+                        126,
+                        99,
+                        211,
+                        231,
+                        118,
+                        202,
+                        144,
+                        58,
+                        9,
+                        107,
+                        81,
+                        225,
+                        117,
+                        222,
+                        20,
+                        33,
+                        171,
+                        13,
+                        207,
+                        111,
+                        142,
+                        206,
+                        107,
+                        198,
+                        44,
+                        121,
+                        189,
+                        122,
+                        51,
+                        104,
+                        86,
+                        119,
+                        236,
+                        208,
+                        243,
+                        183,
+                        128,
+                        211,
+                        14,
+                        211,
+                        172,
+                        120,
+                        152,
+                        147,
+                        169,
+                        171,
+                        2,
+                        134,
+                        4,
+                        17,
+                        232,
+                        26,
+                        246,
+                        140,
+                        26,
+                        232,
+                        237,
+                        201,
+                        130,
+                        153,
+                        217,
+                        37,
+                        249,
+                        137,
+                        51,
+                        136,
+                        221,
+                        64,
+                        105,
+                        76,
+                        163,
+                        23,
+                        130,
+                        51,
+                        171,
+                        75,
+                        84,
+                        176,
+                        141,
+                        91,
+                        42,
+                        215,
+                        30,
+                        196,
+                        55,
+                        200
+                      ]
+                    }
+                  },
+                  "validator_id": "0x1e03bf9630150746075e7ef066a1b7f68342e5561784765fe11620ef29de054f"
+                }
+              }
+            ],
+            "quorum_threshold": "3",
+            "validity_threshold": "2"
+          }
+        },
+        "default_pricing": {
+          "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricing",
+          "fields": {
+            "pricing_map": {
+              "type": "0x2::vec_map::VecMap<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+              "fields": {
+                "contents": [
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 0,
+                          "signature_algorithm": null
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 1,
+                          "signature_algorithm": null
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 2,
+                          "signature_algorithm": null
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 3,
+                          "signature_algorithm": null
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 4,
+                          "signature_algorithm": null
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 5,
+                          "signature_algorithm": 0
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 6,
+                          "signature_algorithm": 0
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 7,
+                          "signature_algorithm": 0
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "0x2::vec_map::Entry<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+                    "fields": {
+                      "key": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey",
+                        "fields": {
+                          "curve": 0,
+                          "protocol": 8,
+                          "signature_algorithm": 0
+                        }
+                      },
+                      "value": {
+                        "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue",
+                        "fields": {
+                          "computation_ika": "0",
+                          "consensus_validation_ika": "0",
+                          "gas_fee_reimbursement_sui": "0",
+                          "gas_fee_reimbursement_sui_for_system_calls": "0"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "working_pricing": {
+          "type": "0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricing",
+          "fields": {
+            "pricing_map": {
+              "type": "0x2::vec_map::VecMap<0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingKey, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricingValue>",
+              "fields": {
+                "contents": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "pricing_votes": {
+      "type": "0x2::table::Table<0x2::object::ID, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_pricing::DWalletPricing>",
+      "fields": {
+        "id": {
+          "id": "0xd5d31c8d0b626a681b865e93d3b7e0a4eab259982b5c388cb27ac74816000715"
+        },
+        "size": "0"
+      }
+    },
+    "sessions": {
+      "type": "0x2::object_table::ObjectTable<u64, 0x41f895522a1c53d03012fcf3b3277fca86e0ea45ed250586b9ee0ac110d8432c::dwallet_2pc_mpc_coordinator_inner::DWalletSession>",
+      "fields": {
+        "id": {
+          "id": "0x5fbf77bdd75e825acdc1a137c1803deb1387c645c683487525d5aa1462de0ddb"
+        },
+        "size": "0"
+      }
+    },
+    "signature_algorithms_allowed_global_presign": [],
+    "started_system_sessions_count": "2",
+    "supported_curves_to_signature_algorithms_to_hash_schemes": {
+      "type": "0x2::vec_map::VecMap<u32, 0x2::vec_map::VecMap<u32, vector<u32>>>",
+      "fields": {
+        "contents": [
+          {
+            "type": "0x2::vec_map::Entry<u32, 0x2::vec_map::VecMap<u32, vector<u32>>>",
+            "fields": {
+              "key": 0,
+              "value": {
+                "type": "0x2::vec_map::VecMap<u32, vector<u32>>",
+                "fields": {
+                  "contents": [
+                    {
+                      "type": "0x2::vec_map::Entry<u32, vector<u32>>",
+                      "fields": {
+                        "key": 0,
+                        "value": [
+                          0,
+                          1
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "total_messages_processed": "20",
+    "user_requested_sessions_events": {
+      "type": "0x2::bag::Bag",
+      "fields": {
+        "id": {
+          "id": "0x1b6adb6e1b6b43b66d9ce62c1cd35af05628a3071d314e151d7dc28c3f5e928d"
+        },
+        "size": "0"
+      }
+    }
+  }
+}

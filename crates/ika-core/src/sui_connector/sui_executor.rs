@@ -627,9 +627,15 @@ where
         )
         .await;
 
-        sui_client
+        let result = sui_client
             .execute_transaction_block_with_effects(transaction)
             .await?;
+        if !result.errors.is_empty() {
+            for error in result.errors {
+                error!(?error, "Error executing transaction block");
+            }
+            panic!("shoot");
+        }
 
         Ok(())
     }
