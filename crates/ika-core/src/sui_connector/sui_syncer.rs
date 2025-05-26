@@ -5,12 +5,9 @@
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::generate_access_structure_from_committee;
-use crate::dwallet_mpc::network_dkg::{
-    instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output, DwalletMPCNetworkKeys,
-};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
-use group::PartyID;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
@@ -19,16 +16,13 @@ use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
 use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
 use im::HashSet;
-use itertools::Itertools;
-use mpc::{Weight, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
-use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
-use sui_types::BRIDGE_PACKAGE_ID;
 use sui_types::{event::EventID, Identifier};
+use tokio::sync::watch;
 use tokio::sync::watch::Sender;
-use tokio::sync::{watch, RwLock};
 use tokio::{
     sync::Notify,
     task::JoinHandle,
@@ -109,9 +103,7 @@ where
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
+            let SystemInner::V1(system_inner) = system_inner;
             let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -155,14 +147,14 @@ where
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
-            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .get_validators_info_by_ids(system_inner, validator_ids)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = sui_client
             .get_class_groups_public_keys_and_proofs(&validators)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
@@ -200,7 +192,7 @@ where
         'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
-            let network_decryption_keys = sui_client
+            let network_encryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
                 .unwrap_or_else(|e| {
@@ -208,10 +200,8 @@ where
                     HashMap::new()
                 });
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
-            if network_decryption_keys
+            let SystemInner::V1(system_inner) = system_inner;
+            if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
@@ -220,7 +210,7 @@ where
             }
             let active_bls_committee = system_inner.get_ika_active_committee();
             let active_committee = system_inner.read_bls_committee(&active_bls_committee);
-            let current_keys = system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys();
+            let current_keys = system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache
                     .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
@@ -254,7 +244,7 @@ where
                     }
                 };
             let mut all_network_keys_data = HashMap::new();
-            for (key_id, network_dec_key_shares) in network_decryption_keys.into_iter() {
+            for (key_id, network_dec_key_shares) in network_encryption_keys.into_iter() {
                 match Self::fetch_and_init_network_key(
                     &sui_client,
                     &network_dec_key_shares,
@@ -263,7 +253,7 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key.clone());
+                        all_network_keys_data.insert(key_id, key.clone());
                         network_keys_cache.insert((key_id, key.epoch));
                     }
                     Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {
@@ -296,7 +286,7 @@ where
         let output = sui_client
             .get_network_decryption_key_with_full_data(network_dec_key_shares)
             .await
-            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(e.to_string()))?;
 
         instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
             output.current_epoch,

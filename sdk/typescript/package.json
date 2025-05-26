@@ -146,8 +146,8 @@
 	"dependencies": {
 		"@dwallet-network/dwallet-mpc-wasm": "workspace:*",
 		"@graphql-typed-document-node/core": "^3.2.0",
-		"@mysten/bcs": "^1.4.0",
-		"@mysten/sui": "^1.21.2",
+		"@mysten/bcs": "^1.6.1",
+		"@mysten/sui": "^1.29.1",
 		"@noble/curves": "^1.4.2",
 		"@noble/hashes": "^1.4.0",
 		"@scure/bip32": "^1.4.0",

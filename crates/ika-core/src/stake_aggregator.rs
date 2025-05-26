@@ -39,6 +39,8 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn from_iter<I: Iterator<Item = (AuthorityName, S)>>(
         committee: Arc<Committee>,
         data: I,
@@ -91,6 +93,8 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn contains_key(&self, authority: &AuthorityName) -> bool {
         self.data.contains_key(authority)
     }
@@ -111,6 +115,8 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         self.total_votes >= self.committee.threshold::<STRENGTH>()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn validator_sig_count(&self) -> usize {
         self.data.len()
     }
@@ -183,9 +189,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                             }
                         }
                     }
-                    Err(error) => InsertResult::Failed {
-                        error: error.into(),
-                    },
+                    Err(error) => InsertResult::Failed { error },
                 }
             }
             // The following is necessary to change the template type of InsertResult.
@@ -236,10 +240,14 @@ impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH> {
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn unique_key_count(&self) -> usize {
         self.stake_maps.len()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn total_votes(&self) -> StakeUnit {
         self.stake_maps
             .values()
@@ -277,6 +285,8 @@ impl<K, V, const STRENGTH: bool> MultiStakeAggregator<K, V, STRENGTH>
 where
     K: Clone + Ord,
 {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn get_all_unique_values(&self) -> BTreeMap<K, (Vec<AuthorityName>, StakeUnit)> {
         self.stake_maps
             .iter()
@@ -294,12 +304,16 @@ where
         self.stake_maps.get(k).map(|(_, agg)| agg.keys())
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// The sum of all remaining stake, i.e. all stake not yet
     /// committed by vote to a specific value
     pub fn uncommitted_stake(&self) -> StakeUnit {
         self.committee.total_votes() - self.total_votes()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// Total stake of the largest faction
     pub fn plurality_stake(&self) -> StakeUnit {
         self.stake_maps
@@ -309,12 +323,16 @@ where
             .unwrap_or_default()
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     /// If true, there isn't enough uncommitted stake to reach quorum for any value
     pub fn quorum_unreachable(&self) -> bool {
         self.uncommitted_stake() + self.plurality_stake() < self.committee.threshold::<STRENGTH>()
     }
 }
 
+// todo(zeev): why is it not used?
+#[allow(dead_code)]
 /// Like MultiStakeAggregator, but for counting votes for a generic value instead of an envelope, in
 /// scenarios where byzantine validators may submit multiple votes for different values.
 pub struct GenericMultiStakeAggregator<K, const STRENGTH: bool> {
@@ -327,6 +345,8 @@ impl<K, const STRENGTH: bool> GenericMultiStakeAggregator<K, STRENGTH>
 where
     K: Hash + Eq,
 {
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn new(committee: Arc<Committee>) -> Self {
         Self {
             committee,
@@ -335,6 +355,8 @@ where
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn insert(
         &mut self,
         authority: AuthorityName,
@@ -352,6 +374,8 @@ where
         agg.insert_generic(authority, ())
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn has_quorum_for_key(&self, k: &K) -> bool {
         if let Some(entry) = self.stake_maps.get(k) {
             entry.has_quorum()
@@ -360,6 +384,8 @@ where
         }
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     pub fn votes_for_authority(&self, authority: AuthorityName) -> u64 {
         self.votes_per_authority
             .get(&authority)

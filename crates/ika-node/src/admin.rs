@@ -8,21 +8,11 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use base64::Engine;
 use humantime::parse_duration;
-use ika_types::error::IkaError;
 use serde::Deserialize;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    str::FromStr,
-};
-use sui_types::{
-    base_types::AuthorityName,
-    crypto::{RandomnessPartialSignature, RandomnessRound, RandomnessSignature},
-};
 use telemetry_subscribers::TracingHandle;
-use tokio::sync::oneshot;
 use tracing::info;
 
 // Example commands:
@@ -63,7 +53,9 @@ const TRACING_ROUTE: &str = "/enable-tracing";
 const TRACING_RESET_ROUTE: &str = "/reset-tracing";
 const SET_BUFFER_STAKE_ROUTE: &str = "/set-override-buffer-stake";
 const CLEAR_BUFFER_STAKE_ROUTE: &str = "/clear-override-buffer-stake";
+#[allow(dead_code)]
 const FORCE_CLOSE_EPOCH: &str = "/force-close-epoch";
+#[allow(dead_code)]
 const CAPABILITIES: &str = "/capabilities";
 const NODE_CONFIG: &str = "/node-config";
 
@@ -217,11 +209,6 @@ async fn capabilities(State(state): State<Arc<AppState>>) -> (StatusCode, String
     // Only one of v1 or v2 will be populated at a time
     let capabilities = epoch_store.get_capabilities_v1();
     let mut output = String::new();
-    for capability in capabilities.unwrap_or_default() {
-        output.push_str(&format!("{:?}\n", capability));
-    }
-
-    let capabilities = epoch_store.get_capabilities_v1();
     for capability in capabilities.unwrap_or_default() {
         output.push_str(&format!("{:?}\n", capability));
     }

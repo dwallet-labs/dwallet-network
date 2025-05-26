@@ -17,6 +17,7 @@ concurrency:
 env:
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   GH_PRIVATE_REPO_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
+  PROFILE: dev
 
 jobs:
   code-quality:

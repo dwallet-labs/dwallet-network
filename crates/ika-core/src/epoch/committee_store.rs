@@ -42,14 +42,14 @@ impl CommitteeStore {
             db_options,
             None,
         );
-        let store = Self {
+
+        Self {
             tables,
             cache: RwLock::new(HashMap::new()),
-        };
-        store
+        }
     }
 
-    pub fn new_for_testing(genesis_committee: &Committee) -> Self {
+    pub fn new_for_testing(_genesis_committee: &Committee) -> Self {
         let dir = std::env::temp_dir();
         let path = dir.join(format!("DB_{:?}", nondeterministic!(ObjectID::random())));
         Self::new(path, None)
@@ -120,6 +120,8 @@ impl CommitteeStore {
             .map_err(Into::into)
     }
 
+    // todo(zeev): why is it not used?
+    #[allow(dead_code)]
     fn database_is_empty(&self) -> bool {
         self.tables.committee_map.unbounded_iter().next().is_none()
     }

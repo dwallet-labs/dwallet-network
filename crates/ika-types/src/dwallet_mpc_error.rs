@@ -28,8 +28,8 @@ pub enum DwalletMPCError {
     #[error("message de/serialization error occurred in the dWallet MPC process: {0}")]
     BcsError(#[from] bcs::Error),
 
-    #[error("received an invalid/unknown MPC party type")]
-    InvalidMPCPartyType,
+    #[error("received an invalid/unknown MPC party type: {0}")]
+    InvalidMPCPartyType(String),
 
     #[error("malicious parties have been detected: {0:?}")]
     MaliciousParties(Vec<PartyID>),
@@ -72,8 +72,8 @@ pub enum DwalletMPCError {
     #[error("failed to find a message in batch: {0:?}")]
     MissingMessageInBatch(Vec<u8>),
 
-    #[error("missing dwallet mpc decryption key shares")]
-    MissingDwalletMPCDecryptionKeyShares,
+    #[error("missing dwallet mpc decryption key shares: {0}")]
+    MissingDwalletMPCDecryptionKeyShares(String),
 
     #[error("network decryption key is not ready for use")]
     NetworkDecryptionKeyNotReady,
@@ -146,6 +146,9 @@ pub enum DwalletMPCError {
 
     #[error("waiting for network key with ID: {0}")]
     WaitingForNetworkKey(ObjectID),
+
+    #[error("the dwallet secret does not match the dwallet output")]
+    DWalletSecretNotMatchedDWalletOutput,
 
     #[error(
         "decryption key epoch out of sync: {key_id:?} expected epoch: {expected_epoch} but got: {actual_epoch}"

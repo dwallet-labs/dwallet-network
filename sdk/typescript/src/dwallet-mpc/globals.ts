@@ -3,8 +3,8 @@
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
+export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
+export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -27,8 +27,8 @@ export interface Config {
 
 // noinspection JSUnusedGlobalSymbols
 export enum MPCKeyScheme {
-	Secp256k1 = 1,
-	Ristretto = 2,
+	Secp256k1 = 0,
+	Ristretto = 1,
 }
 
 /**
@@ -96,8 +96,8 @@ interface IKASystemStateInner {
 	fields: {
 		value: {
 			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_2pc_mpc_secp256k1_network_decryption_keys: Array<any>;
+				dwallet_2pc_mpc_coordinator_id: string;
+				dwallet_2pc_mpc_coordinator_network_encryption_keys: Array<any>;
 			};
 		};
 	};
@@ -131,6 +131,7 @@ interface MoveDynamicField {
 	};
 }
 
+// todo(zeev): fix this
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
@@ -146,8 +147,8 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_encryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
 
@@ -166,7 +167,7 @@ export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
 		throw new Error('Invalid inner system state');
 	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
@@ -187,6 +188,7 @@ export async function getInitialSharedVersion(c: Config, objectID: string): Prom
 	return owner.Shared?.initial_shared_version;
 }
 
+// todo(zeev): fix naming and fix the types.
 export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
 	const dwalletSecp256k1ObjID = await getDwalletSecp256k1ObjID(c);
 	const initialSharedVersion = await getInitialSharedVersion(c, dwalletSecp256k1ObjID);
@@ -295,12 +297,12 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('Invalid inner system state');
 	}
 
-	const network_decryption_keys =
+	const network_encryption_keys =
 		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
+			.dwallet_2pc_mpc_coordinator_network_encryption_keys;
 	const decryptionKeyID =
-		network_decryption_keys[network_decryption_keys.length - 1]?.fields
-			?.dwallet_network_decryption_key_id;
+		network_encryption_keys[network_encryption_keys.length - 1]?.fields
+			?.dwallet_network_encryption_key_id;
 	if (!decryptionKeyID) {
 		throw new Error('No network decryption key found');
 	}

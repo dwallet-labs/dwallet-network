@@ -10,7 +10,7 @@ use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_storage::object_store::util::path_to_filesystem;
 use ika_storage::{FileCompression, StorageFormat};
 use ika_swarm_config::test_utils::{empty_contents, CommitteeFixture};
-use ika_types::messages_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
+use ika_types::messages_dwallet_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
 use ika_types::storage::{ReadStore, SharedInMemoryStore, SingleCheckpointSharedInMemoryStore};
 use more_asserts as ma;
 use object_store::DynObjectStore;
@@ -130,12 +130,12 @@ async fn insert_checkpoints_and_verify_manifest(
 
                 if let Some(prev_tail) = prev_tail {
                     // Ensure checkpoint sequence number in manifest never moves back
-                    assert!(manifest.next_checkpoint_seq_num() >= prev_tail);
-                    if manifest.next_checkpoint_seq_num() > prev_tail {
+                    assert!(manifest.next_dwallet_checkpoint_seq_num() >= prev_tail);
+                    if manifest.next_dwallet_checkpoint_seq_num() > prev_tail {
                         num_verified_iterations += 1;
                     }
                 }
-                prev_tail = Some(manifest.next_checkpoint_seq_num());
+                prev_tail = Some(manifest.next_dwallet_checkpoint_seq_num());
                 // Break out of the loop once we have ensured that we noticed MANIFEST
                 // got updated at least 5 times
                 if num_verified_iterations > 5 {
@@ -203,7 +203,7 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,
@@ -214,7 +214,7 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
     }
     ma::assert_ge!(latest_archived_checkpoint_seq_num, 10);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?
@@ -240,12 +240,14 @@ async fn test_archive_reader_e2e() -> Result<(), anyhow::Error> {
         .await?;
     ma::assert_ge!(
         read_store
-            .get_highest_verified_checkpoint()?
+            .get_highest_verified_dwallet_checkpoint()?
             .sequence_number,
         latest_archived_checkpoint_seq_num
     );
     ma::assert_ge!(
-        read_store.get_highest_synced_checkpoint()?.sequence_number,
+        read_store
+            .get_highest_synced_dwallet_checkpoint()?
+            .sequence_number,
         latest_archived_checkpoint_seq_num
     );
     kill.send(())?;
@@ -262,7 +264,7 @@ async fn test_verify_archive_with_oneshot_store() -> Result<(), anyhow::Error> {
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,
@@ -273,7 +275,7 @@ async fn test_verify_archive_with_oneshot_store() -> Result<(), anyhow::Error> {
     }
     ma::assert_ge!(latest_archived_checkpoint_seq_num, 10);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?
@@ -308,7 +310,7 @@ async fn test_verify_archive_with_oneshot_store_bad_data() -> Result<(), anyhow:
         insert_checkpoints_and_verify_manifest(&test_state, test_store.clone(), None).await?;
         let new_latest_archived_checkpoint_seq_num = test_state
             .archive_reader
-            .latest_available_checkpoint()
+            .latest_available_dwallet_checkpoint()
             .await?;
         ma::assert_ge!(
             new_latest_archived_checkpoint_seq_num,
@@ -347,7 +349,7 @@ async fn test_verify_archive_with_oneshot_store_bad_data() -> Result<(), anyhow:
     }
     ma::assert_gt!(num_files_corrupted, 0);
     let genesis_checkpoint = test_store
-        .get_checkpoint_by_sequence_number(0)?
+        .get_dwallet_checkpoint_by_sequence_number(0)?
         .context("Missing genesis checkpoint")?;
     let genesis_checkpoint_content = test_store
         .get_full_checkpoint_contents_by_sequence_number(0)?
