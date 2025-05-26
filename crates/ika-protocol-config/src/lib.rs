@@ -446,6 +446,7 @@ impl ProtocolConfig {
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
 
+        #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
                 1 => unreachable!(),
