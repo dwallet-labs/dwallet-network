@@ -762,6 +762,7 @@ impl DWalletMPCSession {
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
+            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
             "Received DWallet mpc message",
         );
         if message.round_number == 0 {
@@ -842,6 +843,7 @@ impl DWalletMPCSession {
                             ?self.current_round,
                             ?self.agreed_mpc_protocol,
                             ?self.session_id,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
                             "Quorum reached for MPC session and delay passed, advancing to next round",
                         );
                         self.consensus_rounds_since_quorum_reached = 0;
@@ -855,6 +857,7 @@ impl DWalletMPCSession {
                             ?self.consensus_rounds_since_quorum_reached,
                             ?self.current_round,
                             ?self.agreed_mpc_protocol,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
                             "Quorum reached for MPC session but delay not passed yet, waiting another round",
                         );
                         self.consensus_rounds_since_quorum_reached += 1;
