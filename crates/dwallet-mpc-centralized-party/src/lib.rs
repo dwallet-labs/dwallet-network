@@ -245,11 +245,15 @@ pub fn sample_dwallet_keypair_inner(
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
-    let bytes_secret_key = bcs::to_bytes(&secret_key)?;
-    let expected_public_key =
-        cg_secp256k1_public_key_share_from_secret_share(bytes_secret_key.clone())?;
+    let public_parameters = group::secp256k1::group_element::PublicParameters::default();
+    let generator_group_element =
+        group::secp256k1::group_element::GroupElement::generator_from_public_parameters(
+            &public_parameters,
+        )?;
+
+    let expected_public_key = secret_key * generator_group_element;
     let bytes_public_key = bcs::to_bytes(&expected_public_key.value())?;
-    Ok((bytes_secret_key, bytes_public_key))
+    Ok((bcs::to_bytes(&secret_key)?, bytes_public_key))
 }
 
 pub fn verify_secp_signature_inner(

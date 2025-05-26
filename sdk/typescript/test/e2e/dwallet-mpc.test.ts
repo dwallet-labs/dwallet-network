@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import {
-	sample_dwallet_keypair,
-	sample_dwallet_secret_key,
-	verify_secp_signature,
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -174,14 +170,14 @@ describe('Test dWallet MPC', () => {
 
 	it('should create an imported dWallet', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const [secretKey, _publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
 		console.log({ ...dwallet });
 	});
 
 	it('should create an imported dWallet, publish its secret share and sign with it', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const [secretKey, _publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
 		console.log({ ...dwallet });
 		console.log('Running publish secret share...');
@@ -232,12 +228,13 @@ describe('Test dWallet MPC', () => {
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
-		verify_secp_signature(
+		const isValid = verify_secp_signature(
 			publicKey,
 			signature.state.fields.signature,
 			Buffer.from('hello world'),
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
+		console.log({ isValid });
 	});
 });
