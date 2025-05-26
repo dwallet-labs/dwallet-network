@@ -271,6 +271,7 @@ where
             ran_mid_epoch: false,
             ran_lock_last_session: false,
             ran_request_advance_epoch: false,
+            calculated_protocol_pricing: false,
         };
 
         loop {
