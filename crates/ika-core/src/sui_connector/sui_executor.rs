@@ -636,6 +636,7 @@ where
             }
             panic!("shoot");
         }
+        info!(?result.digest, "successfully executed transaction block for protocol pricing calculation");
 
         Ok(())
     }
