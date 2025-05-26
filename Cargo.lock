@@ -5029,7 +5029,6 @@ dependencies = [
  "consensus-core",
  "count-min-sketch",
  "criterion",
- "crypto-bigint 0.6.0-rc.6",
  "dashmap",
  "derive_more 1.0.0",
  "diffy",

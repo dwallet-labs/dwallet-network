@@ -152,7 +152,7 @@ impl IkaTxValidator {
                 .add_to_verification_obligation(committee, &mut obligation, idx)?;
         }
 
-        Ok(obligation.verify_all()?)
+        obligation.verify_all()
     }
 
     /// Verifies all certificates - if any fail return error.
@@ -182,7 +182,7 @@ impl IkaTxValidator {
                 .add_to_verification_obligation(committee, &mut obligation, idx)?;
         }
 
-        Ok(obligation.verify_all()?)
+        obligation.verify_all()
     }
 
     async fn vote_transactions(

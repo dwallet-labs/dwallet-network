@@ -271,7 +271,7 @@ RejectedDWalletEncryptionKeyReconfigurationEvent
 DWalletDKGFirstRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletDKGFirstdRoundEvent
+CompletedDWalletDKGFirstRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedDWalletDKGFirstRoundEvent
@@ -599,9 +599,6 @@ request_dwallet_dkg_first_round
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_second_round
-	public fun
-	0x0::dwallet_2pc_mpc_coordinator
-calculate_pricing_votes
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 new_imported_key_dwallet

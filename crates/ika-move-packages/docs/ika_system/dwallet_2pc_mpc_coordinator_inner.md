@@ -33,7 +33,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `CompletedDWalletEncryptionKeyReconfigurationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent)
 -  [Struct `RejectedDWalletEncryptionKeyReconfigurationEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletEncryptionKeyReconfigurationEvent)
 -  [Struct `DWalletDKGFirstRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGFirstRoundRequestEvent)
--  [Struct `CompletedDWalletDKGFirstdRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstdRoundEvent)
+-  [Struct `CompletedDWalletDKGFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstRoundEvent)
 -  [Struct `RejectedDWalletDKGFirstRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletDKGFirstRoundEvent)
 -  [Struct `DWalletDKGSecondRoundRequestEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGSecondRoundRequestEvent)
 -  [Struct `CompletedDWalletDKGSecondRoundEvent`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGSecondRoundEvent)
@@ -191,12 +191,12 @@ which also stores the encrypted encryption key shares of each validator and thei
 
 For the user side, the secret key share is stored encrypted to the user encryption key (in <code>encryption_keys</code>) inside the dWallet,
 together with a signature on the public key (shares).
-Together, these constitute the necessairy information to create a signature with the user.
+Together, these constitute the necessary information to create a signature with the user.
 
 Next, <code>presign_sessions</code> holds the outputs of the Presign protocol which are later used for the signing protocol,
 and <code>partial_centralized_signed_messages</code> holds the partial signatures of users awaiting for a future sign once a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">MessageApproval</a></code> is presented.
 
-Additionally, this structure holds management infromation, like the <code>previous_committee</code> and <code>active_committee</code> comittees,
+Additionally, this structure holds management information, like the <code>previous_committee</code> and <code>active_committee</code> committees,
 information regarding <code>pricing</code>, all the <code>sessions</code> and the <code>next_session_sequence_number</code> that will be used for the next session,
 and various other fields, like the supported and paused curves, signing algorithms and hashes.
 
@@ -254,7 +254,7 @@ and various other fields, like the supported and paused curves, signing algorith
 <dd>
  The last MPC session to process in the current epoch.
  The validators of the Ika network must always begin sessions,
- when they become available to them, so long their sequence numebr is lesser or equal to this value.
+ when they become available to them, so long their sequence number is lesser or equal to this value.
  Initialized to <code>0</code>, as when the system is initialized no user-requested session exists so none should be started
  and we shouldn't wait for any to complete before advancing epoch (until the first session is created),
  and updated at every new session creation or completion, and when advancing epochs,
@@ -996,8 +996,8 @@ created after the Distributed key generation (DKG) process.
 <dd>
  If not set, the user secret key shares is not public, and the user will need to
  keep it encrypted using encrypted user secret key shares. It is
- the case where we have zero trust for the dWallet becuase the
- user particiation is required.
+ the case where we have zero trust for the dWallet because the
+ user participation is required.
  If set, the user secret key shares is public, the network can sign
  without the user participation. In this case, it is trust minimalized
  security for the user.
@@ -1524,9 +1524,9 @@ initiate the first round of the DKG.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstdRoundEvent"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstRoundEvent"></a>
 
-## Struct `CompletedDWalletDKGFirstdRoundEvent`
+## Struct `CompletedDWalletDKGFirstRoundEvent`
 
 An event emitted when the first round of the DKG process is completed.
 
@@ -1536,7 +1536,7 @@ The user should catch this event to generate inputs for
 the second round and call the <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_request_dwallet_dkg_second_round">request_dwallet_dkg_second_round</a>()</code> function.
 
 
-<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstdRoundEvent">CompletedDWalletDKGFirstdRoundEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstRoundEvent">CompletedDWalletDKGFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -2759,7 +2759,7 @@ Represents a message that was approved to be signed by the dWallet corresponding
 - **<code>dwallet_id</code>**: The identifier of the dWallet
 associated with this approval.
 - **<code>hash_scheme</code>**: The message hash scheme to use for signing.
-- **<code>signature_algorithm</code>**: The signature algoirthm with which the message can be signed.
+- **<code>signature_algorithm</code>**: The signature algorithm with which the message can be signed.
 - **<code>message</code>**: The message that has been approved.
 
 
@@ -2812,7 +2812,7 @@ Represents a message that was approved to be signed by the imported key dWallet 
 - **<code>dwallet_id</code>**: The identifier of the dWallet
 associated with this approval.
 - **<code>hash_scheme</code>**: The message hash scheme to use for signing.
-- **<code>signature_algorithm</code>**: The signature algoirthm with which the message can be signed.
+- **<code>signature_algorithm</code>**: The signature algorithm with which the message can be signed.
 - **<code>message</code>**: The message that has been approved.
 
 
@@ -3863,7 +3863,7 @@ with <code>is_last_chunk</code> set for the last call.
 
 ## Function `respond_dwallet_network_encryption_key_reconfiguration`
 
-Complete the Recondiguration session
+Complete the Reconfiguration session
 and store the public output corresponding to the reconfigured network (threshold) encryption key.
 
 Note: assumes the public output is divided into chunks and each <code>network_public_output_chunk</code> is delivered in order,
@@ -3941,7 +3941,7 @@ with <code>is_last_chunk</code> set for the last call.
 ## Function `advance_epoch_dwallet_network_encryption_key`
 
 Advance the <code>current_epoch</code> and <code>state</code> of the network encryption key corresponding to <code>cap</code>,
-finalizing the reonconfiguration of that key, and readying it for use in the next epoch.
+finalizing the reconfiguration of that key, and readying it for use in the next epoch.
 
 
 <pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_advance_epoch_dwallet_network_encryption_key">advance_epoch_dwallet_network_encryption_key</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap</a>): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;
@@ -4133,9 +4133,9 @@ Emit an event to the Ika network to request a reconfiguration session for the ne
 Advance the epoch.
 
 Checks that all the current epoch sessions are completed,
-and updates the required metadata for the next epoch's sessions manageement.
+and updates the required metadata for the next epoch's sessions management.
 
-Sets the current and previous comittees.
+Sets the current and previous committees.
 
 Unlocks and updates <code>last_user_initiated_session_to_complete_in_current_epoch</code>.
 
@@ -4923,7 +4923,7 @@ Session sequence numbers are sequential, so ch
 ## Function `remove_user_initiated_session_and_charge`
 
 Removes a user-initiated session and its corresponding event, charging the pre-paid gas amounts in both Sui and Ika
-to be later distributed as part of the consensus validation and gas reimburesement fees.
+to be later distributed as part of the consensus validation and gas reimbursement fees.
 
 Increments <code>number_of_completed_user_initiated_sessions</code>.
 
@@ -5002,7 +5002,7 @@ Also emits an event with the output.
                 });
                 DWalletState::NetworkRejectedDKGRequest
             } <b>else</b> {
-                event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstdRoundEvent">CompletedDWalletDKGFirstdRoundEvent</a> {
+                event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletDKGFirstRoundEvent">CompletedDWalletDKGFirstRoundEvent</a> {
                     dwallet_id,
                     first_round_output,
                 });
@@ -5194,7 +5194,7 @@ Also emits an event with the public output.
 Requests a re-encryption of the user share of the dWallet by having the Ika network
 verify a zk-proof that the encryption matches the public share of the dWallet.
 
-This can be used as part of granting access or transfering the dWallet.
+This can be used as part of granting access or transferring the dWallet.
 
 Creates a new <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EncryptedUserSecretKeyShare">EncryptedUserSecretKeyShare</a></code> object, with the state awaiting the network verification.
 Emits an event to request the verification by the network.
@@ -6084,7 +6084,7 @@ Finally it emits the sign event.
     id.delete();
     // Check that the presign is global, or that it belongs to this dWallet.
     <b>assert</b>!(presign_dwallet_id.is_none() || presign_dwallet_id.is_some_and!(|id| id == dwallet_id), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMessageApprovalMismatch">EMessageApprovalMismatch</a>);
-    // Santicy checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
+    // Sanity checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
     <b>assert</b>!(presign_cap_id == cap_id, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist">EPresignNotExist</a>);
     <b>assert</b>!(presign_id == presign_cap_presign_id, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist">EPresignNotExist</a>);
     <b>assert</b>!(presign_cap_dwallet_id == presign_dwallet_id, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist">EPresignNotExist</a>);
@@ -6421,7 +6421,7 @@ more details on when this may be used.
 
 ## Function `is_partial_user_signature_valid`
 
-Checks that the partial user signature coresponding to <code>cap</code> is valid, by assuring it is in the <code>NetworkVerificationCompleted</code>.
+Checks that the partial user signature corresponding to <code>cap</code> is valid, by assuring it is in the <code>NetworkVerificationCompleted</code>.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_is_partial_user_signature_valid">is_partial_user_signature_valid</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPartialUserSignatureCap</a>): bool
@@ -6450,7 +6450,7 @@ Checks that the partial user signature coresponding to <code>cap</code> is valid
 
 ## Function `verify_partial_user_signature_cap`
 
-Verifies that the partial user signature coresponding to <code>cap</code> is valid,
+Verifies that the partial user signature corresponding to <code>cap</code> is valid,
 deleting the <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">UnverifiedPartialUserSignatureCap</a></code> object and returning a new <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPartialUserSignatureCap">VerifiedPartialUserSignatureCap</a></code> in its place.
 
 

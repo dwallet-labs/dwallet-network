@@ -3,7 +3,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
 import {
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,
 	SUI_PACKAGE_ID,
@@ -23,7 +23,7 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 	const dWalletStateData = await getDWalletSecpState(conf);
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_make_dwallet_user_secret_key_shares_public`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_make_dwallet_user_secret_key_shares_public`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
