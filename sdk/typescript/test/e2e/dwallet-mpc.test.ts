@@ -26,7 +26,7 @@ import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
 	Hash,
-	sign,
+	sign, signWithImportedDWallet,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
@@ -233,7 +233,7 @@ describe('Test dWallet MPC', () => {
 		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 		await delay(checkpointCreationTime);
 		console.log('Running Sign...');
-		const signature = await sign(
+		const signature = await signWithImportedDWallet(
 			conf,
 			completedPresign.id.id,
 			dwallet.dwallet_cap_id,
