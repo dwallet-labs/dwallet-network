@@ -235,6 +235,7 @@ impl DWalletMPCSession {
                     validator=?self.epoch_store()?.name,
                     crypto_round=?self.current_round,
                     party_id=?self.party_id,
+                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
                     "MPC session failed"
                 );
                 self.report_threshold_not_reached(tokio_runtime_handle)
@@ -378,9 +379,6 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
-                let public_input = match bcs::from_bytes(&public_input)? {
-                    VersionedImportedDWalletPublicOutput::V1(public_input) => public_input,
-                };
                 let centralized_party_message =
                     match bcs::from_bytes(&event_data.event_data.centralized_party_message)? {
                         VersionedImportedDWalletPublicOutput::V1(centralized_party_message) => {
