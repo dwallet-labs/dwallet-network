@@ -268,7 +268,8 @@ pub fn verify_secp_signature_inner(
         &protocol_public_parameters.group_public_parameters,
     )?;
     let message: secp256k1::Scalar = bcs::from_bytes(&message)?;
-    Ok(true)
+    let (r, s): (secp256k1::Scalar, secp256k1::Scalar) = bcs::from_bytes(&signature)?;
+    Ok(verify_signature(r, s, message, public_key).is_ok())
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(

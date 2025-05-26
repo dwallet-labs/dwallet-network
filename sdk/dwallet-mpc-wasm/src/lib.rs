@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use dwallet_mpc_centralized_party::{
-    advance_centralized_sign_party, create_dkg_output,
+    advance_centralized_sign_party, create_dkg_output, verify_secp_signature_inner,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
     public_keys_from_dwallet_output, sample_dwallet_keypair_inner, verify_secret_share,
@@ -105,9 +105,9 @@ pub fn sample_dwallet_keypair(network_dkg_public_output: Vec<u8>) -> Result<JsVa
 }
 
 #[wasm_bindgen]
-pub fn verify_secp_signature(public_key: Vec<u8>, signature: Vec<u8>, message: Vec<u8>) -> Result<JsValue, JsError> {
+pub fn verify_secp_signature(public_key: Vec<u8>, signature: Vec<u8>, message: Vec<u8>, network_dkg_public_output: Vec<u8>) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
-        &verify_secp_signature_inner(public_key, signature, message).map_err(to_js_err)?,
+        &verify_secp_signature_inner(public_key, signature, message, network_dkg_public_output).map_err(to_js_err)?,
     )?)
 }
 
