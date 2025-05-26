@@ -205,6 +205,7 @@ where
             && all_immediate_sessions_completed
             && next_epoch_committee_exists
             && !epoch_switch_state.ran_request_advance_epoch
+            && coordinator.pricing_calculation_votes.is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
