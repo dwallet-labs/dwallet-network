@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { sample_dwallet_secret_key } from '@dwallet-network/dwallet-mpc-wasm';
+import {
+	sample_dwallet_keypair,
+	sample_dwallet_secret_key,
+	verify_secp_signature,
+} from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -203,6 +207,35 @@ describe('Test dWallet MPC', () => {
 			dwalletWithSecretShare.dwallet_cap_id,
 			Buffer.from('hello world'),
 			dwalletWithSecretShare.public_user_secret_key_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
+	});
+
+	it('should create an imported dWallet, sign with it & verify the signature agains the original public key', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const [secretKey, publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
+		console.log('Running publish secret share...');
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwallet.dwalletID);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		const signature = await sign(
+			conf,
+			completedPresign.id.id,
+			dwallet.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwallet.secret_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
+		verify_secp_signature(
+			publicKey,
+			signature.state.fields.signature,
+			Buffer.from('hello world'),
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);

@@ -257,6 +257,7 @@ pub fn verify_secp_signature_inner(
     signature: Vec<u8>,
     message: Vec<u8>,
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+    hash_type: u32,
 ) -> anyhow::Result<bool> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
@@ -267,9 +268,10 @@ pub fn verify_secp_signature_inner(
         bcs::from_bytes(&public_key)?,
         &protocol_public_parameters.group_public_parameters,
     )?;
-    let message: secp256k1::Scalar = bcs::from_bytes(&message)?;
+    let hashed_message = message_digest(&message, &hash_type.try_into()?)
+        .context("Message digest failed")?;
     let (r, s): (secp256k1::Scalar, secp256k1::Scalar) = bcs::from_bytes(&signature)?;
-    Ok(verify_signature(r, s, message, public_key).is_ok())
+    Ok(verify_signature(r, s, hashed_message, public_key).is_ok())
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
