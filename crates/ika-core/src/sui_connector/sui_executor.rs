@@ -34,6 +34,16 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
+const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
+const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
+const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
+const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
+const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
+const PRESIGN_PROTOCOL_FLAG: u32 = 5;
+const SIGN_PROTOCOL_FLAG: u32 = 6;
+const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
+const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
     EpochComplete(SystemInner, EpochStartSystem),
@@ -430,6 +440,209 @@ where
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
+    }
+
+    async fn calculate_protocols_pricing(ika_system_package_id: ObjectID) -> IkaResult<()> {
+        let mut ptb = ProgrammableTransactionBuilder::new();
+        let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
+        let zero_and_one_value =
+            ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
+        let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
+        let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
+        let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
+
+        let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &DKG_FIRST_ROUND_PROTOCOL_FLAG,
+        )?))?;
+        let dkg_second_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &DKG_SECOND_ROUND_PROTOCOL_FLAG,
+        )?))?;
+        let re_encrypt_user_share_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG,
+        )?))?;
+        let make_dwallet_user_secret_key_share_public_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG)?,
+        ))?;
+        let imported_key_dwallet_verification_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG)?,
+        ))?;
+        let presign_protocol_flag =
+            ptb.input(CallArg::Pure(bcs::to_bytes(&PRESIGN_PROTOCOL_FLAG)?))?;
+        let sign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&SIGN_PROTOCOL_FLAG)?))?;
+        let future_sign_protocol_flag =
+            ptb.input(CallArg::Pure(bcs::to_bytes(&FUTURE_SIGN_PROTOCOL_FLAG)?))?;
+        let sign_with_partial_user_signature_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
+        ))?;
+
+        let zero_price = ptb.input(CallArg::Pure(bcs::to_bytes(&0u64)?))?;
+
+        let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: ika_system_object_id,
+            initial_shared_version: init_system_shared_version,
+            mutable: true,
+        }))?;
+
+        let dwallet_pricing = ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("empty").into(),
+            vec![],
+            vec![],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                none_option,
+                dkg_first_round_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                none_option,
+                dkg_second_round_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                none_option,
+                re_encrypt_user_share_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                none_option,
+                make_dwallet_user_secret_key_share_public_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                none_option,
+                imported_key_dwallet_verification_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                zero_option,
+                presign_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                zero_option,
+                sign_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                zero_option,
+                future_sign_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            ident_str!("dwallet_pricing").into(),
+            ident_str!("insert_or_update_dwallet_pricing").into(),
+            vec![],
+            vec![
+                dwallet_pricing,
+                zero,
+                zero_option,
+                sign_with_partial_user_signature_protocol_flag,
+                zero_price,
+                zero_price,
+                zero_price,
+                zero_price,
+            ],
+        );
     }
 
     async fn process_mid_epoch(
