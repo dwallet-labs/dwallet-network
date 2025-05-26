@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use ika_types::committee::ProtocolVersion;
-use ika_types::ika_coin::NIKA_PER_IKA;
+use ika_types::ika_coin::INKU_PER_IKA;
 use serde::{Deserialize, Serialize};
 
 /// Minimum number of active validators at any moment.
@@ -15,7 +15,7 @@ pub const MAX_VALIDATOR_COUNT: u64 = 115;
 
 /// Lower-bound on the amount of stake required to become a validator.
 /// 30 million IKA.
-pub const MIN_VALIDATOR_JOINING_STAKE_NIKA: u64 = 30_000_000 * NIKA_PER_IKA;
+pub const MIN_VALIDATOR_JOINING_STAKE_INKU: u64 = 30_000_000 * INKU_PER_IKA;
 
 /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
 pub const REWARD_SLASHING_RATE: u16 = 10_000;
@@ -130,7 +130,7 @@ impl InitiationParameters {
     }
 
     fn default_min_validator_joining_stake() -> u64 {
-        MIN_VALIDATOR_JOINING_STAKE_NIKA
+        MIN_VALIDATOR_JOINING_STAKE_INKU
     }
 
     fn default_reward_slashing_rate() -> u16 {

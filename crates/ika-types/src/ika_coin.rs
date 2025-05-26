@@ -20,14 +20,14 @@ use sui_types::{
 };
 
 /// The number of NIka per Ika token
-pub const NIKA_PER_IKA: u64 = 1_000_000_000;
+pub const INKU_PER_IKA: u64 = 1_000_000_000;
 
 /// Total supply denominated in Ika
 pub const TOTAL_SUPPLY_IKA: u64 = 10_000_000_000;
 
 // Note: cannot use checked arithmetic here since `const unwrap` is still unstable.
 /// Total supply denominated in NIka
-pub const TOTAL_SUPPLY_NIKA: u64 = TOTAL_SUPPLY_IKA * NIKA_PER_IKA;
+pub const TOTAL_SUPPLY_INKU: u64 = TOTAL_SUPPLY_IKA * INKU_PER_IKA;
 
 pub const IKA_MODULE_NAME: &IdentStr = ident_str!("ika");
 pub const IKA_STRUCT_NAME: &IdentStr = ident_str!("IKA");
