@@ -18,6 +18,7 @@ import {
 	isActiveDWallet,
 	SUI_PACKAGE_ID,
 } from './globals.js';
+import { acceptEncryptedUserShare } from './dkg';
 
 interface NewImportedKeyDWalletEvent {
 	dwallet_id: string;
@@ -66,6 +67,10 @@ export async function createImportedDWallet(conf: Config, secretKey: Uint8Array)
 		importedDWalletData.dwallet_id,
 	);
 	const dwallet = await getObjectWithType(conf, importedDWalletData.dwallet_id, isActiveDWallet);
+	await acceptEncryptedUserShare(conf, {
+		dwallet_id: dwallet.id.id,
+		encrypted_user_secret_key_share_id: encryptedSecretShareID,
+	});
 	return {
 		dwalletID: importedDWalletData.dwallet_id,
 		dwallet_cap_id: importedDWalletData.dwallet_cap_id,
