@@ -554,12 +554,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![
-                dwallet_pricing,
-                zero,
-                zero_option,
-                presign_protocol_flag,
-            ],
+            vec![dwallet_pricing, zero, zero_option, presign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -567,12 +562,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![
-                dwallet_pricing,
-                zero,
-                zero_option,
-                sign_protocol_flag,
-            ],
+            vec![dwallet_pricing, zero, zero_option, sign_protocol_flag],
         );
 
         ptb.programmable_move_call(
