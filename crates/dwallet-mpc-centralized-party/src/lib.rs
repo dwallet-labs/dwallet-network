@@ -38,6 +38,7 @@ use twopc_mpc::dkg::Protocol;
 use twopc_mpc::languages::class_groups::construct_encryption_of_discrete_log_public_parameters;
 use twopc_mpc::languages::KnowledgeOfDiscreteLogProof;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
+use twopc_mpc::sign::verify_signature;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedPartyRound;
@@ -230,9 +231,9 @@ pub fn advance_centralized_sign_party(
     }
 }
 
-pub fn sample_dwallet_secret_key_inner(
+pub fn sample_dwallet_keypair_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
-) -> anyhow::Result<Vec<u8>> {
+) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_dkg_public_output,
@@ -244,7 +245,11 @@ pub fn sample_dwallet_secret_key_inner(
             .scalar_group_public_parameters,
         &mut OsRng,
     )?;
-    Ok(bcs::to_bytes(&secret_key)?)
+    let bytes_secret_key = bcs::to_bytes(&secret_key)?;
+    let expected_public_key =
+        cg_secp256k1_public_key_share_from_secret_share(bytes_secret_key.clone())?;
+    let bytes_public_key = bcs::to_bytes(&expected_public_key.value())?;
+    Ok((bytes_secret_key, bytes_public_key))
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
