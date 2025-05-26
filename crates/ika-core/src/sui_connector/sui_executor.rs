@@ -121,39 +121,38 @@ where
         if clock.timestamp_ms > mid_epoch_time
             && next_epoch_committee_is_empty
             && self.is_completed_network_dkg_for_all_keys().await
+            && !epoch_switch_state.ran_mid_epoch
         {
-            if !epoch_switch_state.ran_mid_epoch {
-                info!("Calling `process_mid_epoch()`");
-                if let Err(e) = Self::process_mid_epoch(
-                    self.ika_system_package_id,
-                    dwallet_2pc_mpc_coordinator_id,
-                    &sui_notifier,
-                    &self.sui_client,
-                )
-                .await
-                {
-                    error!("`process_mid_epoch()` failed: {:?}", e);
-                } else {
-                    info!("`process_mid_epoch()` successful");
-                    epoch_switch_state.ran_mid_epoch = true;
-                }
+            info!("Calling `process_mid_epoch()`");
+            if let Err(e) = Self::process_mid_epoch(
+                self.ika_system_package_id,
+                dwallet_2pc_mpc_coordinator_id,
+                &sui_notifier,
+                &self.sui_client,
+            )
+            .await
+            {
+                error!("`process_mid_epoch()` failed: {:?}", e);
+            } else {
+                info!("`process_mid_epoch()` successful");
+                epoch_switch_state.ran_mid_epoch = true;
             }
-            if !epoch_switch_state.calculated_protocol_pricing {
-                info!("Calculating protocols pricing");
-                match Self::calculate_protocols_pricing(
-                    &self.sui_client,
-                    self.ika_system_package_id,
-                    &sui_notifier,
-                )
-                .await
-                {
-                    Ok(..) => {
-                        info!("Successfully calculated protocols pricing");
-                        epoch_switch_state.calculated_protocol_pricing = true;
-                    }
-                    Err(err) => {
-                        error!(?err, "Failed to calculate protocols pricing");
-                    }
+        }
+        if clock.timestamp_ms > mid_epoch_time && !epoch_switch_state.calculated_protocol_pricing {
+            info!("Calculating protocols pricing");
+            match Self::calculate_protocols_pricing(
+                &self.sui_client,
+                self.ika_system_package_id,
+                &sui_notifier,
+            )
+            .await
+            {
+                Ok(..) => {
+                    info!("Successfully calculated protocols pricing");
+                    epoch_switch_state.calculated_protocol_pricing = true;
+                }
+                Err(err) => {
+                    error!(?err, "Failed to calculate protocols pricing");
                 }
             }
         }
