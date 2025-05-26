@@ -5,6 +5,7 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import { acceptEncryptedUserShare } from './dkg.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { Config, DWallet, SharedObjectData } from './globals.js';
 import {
@@ -18,7 +19,6 @@ import {
 	isActiveDWallet,
 	SUI_PACKAGE_ID,
 } from './globals.js';
-import { acceptEncryptedUserShare } from './dkg';
 
 interface NewImportedKeyDWalletEvent {
 	dwallet_id: string;
