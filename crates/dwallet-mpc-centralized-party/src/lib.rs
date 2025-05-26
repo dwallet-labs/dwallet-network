@@ -268,8 +268,8 @@ pub fn verify_secp_signature_inner(
         bcs::from_bytes(&public_key)?,
         &protocol_public_parameters.group_public_parameters,
     )?;
-    let hashed_message = message_digest(&message, &hash_type.try_into()?)
-        .context("Message digest failed")?;
+    let hashed_message =
+        message_digest(&message, &hash_type.try_into()?).context("Message digest failed")?;
     let (r, s): (secp256k1::Scalar, secp256k1::Scalar) = bcs::from_bytes(&signature)?;
     Ok(verify_signature(r, s, hashed_message, public_key).is_ok())
 }
