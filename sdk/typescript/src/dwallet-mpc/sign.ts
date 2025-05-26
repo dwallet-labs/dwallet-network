@@ -221,7 +221,7 @@ export async function signWithImportedDWallet(
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
 	const [verifiedPresignCap] = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_imported_key_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::verify_presign_cap`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -233,7 +233,7 @@ export async function signWithImportedDWallet(
 	});
 
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_imported_key_sign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
