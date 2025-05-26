@@ -1,7 +1,14 @@
 use base64::engine::general_purpose;
 use base64::Engine;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput, VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput, VersionedImportedDWalletPublicOutput, VersionedImportedDwalletOutgoingMessage, VersionedImportedSecretShare, VersionedPresignOutput, VersionedSignOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput,
+    MPCSessionStatus, SerializedWrappedMPCPublicOutput,
+    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
+    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    VersionedImportedDWalletPublicOutput, VersionedImportedDwalletOutgoingMessage,
+    VersionedImportedSecretShare, VersionedPresignOutput, VersionedSignOutput,
+};
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
@@ -372,11 +379,14 @@ impl DWalletMPCSession {
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
                 let public_input = match bcs::from_bytes(&public_input)? {
-                    VersionedImportedDWalletPublicOutput::V1(public_input) => public_input
+                    VersionedImportedDWalletPublicOutput::V1(public_input) => public_input,
                 };
-                let centralized_party_message = match bcs::from_bytes(&event_data.event_data.centralized_party_message)? {
-                    VersionedImportedDWalletPublicOutput::V1(centralized_party_message) => centralized_party_message
-                };
+                let centralized_party_message =
+                    match bcs::from_bytes(&event_data.event_data.centralized_party_message)? {
+                        VersionedImportedDWalletPublicOutput::V1(centralized_party_message) => {
+                            centralized_party_message
+                        }
+                    };
                 let public_input = (
                     bcs::from_bytes(&public_input)?,
                     dwallet_id,
