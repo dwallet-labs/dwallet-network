@@ -26,7 +26,8 @@ import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
 	Hash,
-	sign, signWithImportedDWallet,
+	sign,
+	signWithImportedDWallet,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
