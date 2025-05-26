@@ -76,7 +76,7 @@ impl CryptographicComputationsOrchestrator {
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
-        if !(available_cores_for_computations > 0) {
+        if available_cores_for_computations == 0 {
             error!(
                 "failed to get available parallelism, no CPU cores available for cryptographic computations"
             );
@@ -216,6 +216,16 @@ impl CryptographicComputationsOrchestrator {
                     .advance_calls_for_decryption_key_reshare
                     .inc();
             }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_make_dwallet_user_secret_key_shares_public
+                    .inc()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_import_dwallet_verification
+                    .inc();
+            }
         }
     }
 
@@ -283,6 +293,22 @@ impl CryptographicComputationsOrchestrator {
                     .inc();
                 dwallet_mpc_metrics
                     .decryption_key_reshare_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_make_dwallet_user_secret_key_shares_public
+                    .inc();
+                dwallet_mpc_metrics
+                    .make_dwallet_user_secret_key_shares_public_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_import_dwallet_verification
+                    .inc();
+                dwallet_mpc_metrics
+                    .import_dwallet_verification_completion_duration
                     .set(computation_duration as i64);
             }
         }

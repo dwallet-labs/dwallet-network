@@ -37,7 +37,7 @@ impl IkaMovePackage {
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 
     pub fn bytes(&self) -> &[Vec<u8>] {
@@ -74,7 +74,7 @@ impl IkaMovePackage {
                     if name.as_str() == n && !address_identifiers_map.contains_key(n) {
                         address_identifiers_map
                             .insert(n.clone(), cloned_module.address_identifiers.len() as u16);
-                        module.address_identifiers.push(id.clone().into());
+                        module.address_identifiers.push((*id).into());
                     }
                 }
             }

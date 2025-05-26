@@ -92,7 +92,7 @@ impl DWalletMPCOutputsVerifier {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         DWalletMPCOutputsVerifier {
-            epoch_store: Arc::downgrade(&epoch_store),
+            epoch_store: Arc::downgrade(epoch_store),
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_sessions_outputs: HashMap::new(),
             weighted_parties: epoch_store
@@ -139,7 +139,7 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &Vec<u8>,
+        output: &[u8],
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
@@ -154,7 +154,7 @@ impl DWalletMPCOutputsVerifier {
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
 
-        let ref mut session_output_data = self
+        let session_output_data = self
             .mpc_sessions_outputs
             .entry(session_info.session_id)
             .or_insert(SessionOutputsData {
@@ -181,11 +181,11 @@ impl DWalletMPCOutputsVerifier {
         }
         session_output_data
             .authorities_that_sent_output
-            .insert(origin_authority.clone());
+            .insert(origin_authority);
 
         if session_output_data
             .session_output_to_voting_authorities
-            .entry((output.clone(), session_info.clone()))
+            .entry((output.to_owned(), session_info.clone()))
             .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
@@ -194,9 +194,9 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.clear_data();
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
-            self.update_completed_sessions_metric(&session_info);
+            self.update_completed_sessions_metric(session_info);
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
+                result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
                 malicious_actors: vec![],
             });
         }
@@ -265,6 +265,16 @@ impl DWalletMPCOutputsVerifier {
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 self.dwallet_mpc_metrics
                     .decryption_key_reshare_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                self.dwallet_mpc_metrics
+                    .make_dwallet_user_secret_key_shares_public_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                self.dwallet_mpc_metrics
+                    .import_dwallet_verification_round_completions_count
                     .inc();
             }
         }

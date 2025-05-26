@@ -109,6 +109,19 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
+    // Probe rounds received by peers from every authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_round_prober: bool,
+
+    // Set number of leaders per round for Mysticeti commits.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mysticeti_num_leaders_per_round: Option<usize>,
+
+    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
+    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_linearize_subdag_v2: bool,
 }
 
 #[allow(unused)]
@@ -215,6 +228,22 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
+
+    /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
+    /// `max_tx_size_bytes` with some additional headroom.
+    consensus_max_transaction_size_bytes: Option<u64>,
+
+    /// The maximum number of transactions included in a consensus block.
+    consensus_max_num_transactions_in_block: Option<u64>,
+
+    /// The maximum size of transactions included in a consensus block.
+    consensus_max_transactions_in_block_bytes: Option<u64>,
+
+    /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
+    /// is disabled.
+    consensus_gc_depth: Option<u32>,
 }
 
 // feature flags
@@ -230,6 +259,27 @@ impl ProtocolConfig {
     //         )))
     //     }
     // }
+
+    pub fn consensus_round_prober(&self) -> bool {
+        self.feature_flags.consensus_round_prober
+    }
+
+    pub fn mysticeti_num_leaders_per_round(&self) -> Option<usize> {
+        self.feature_flags.mysticeti_num_leaders_per_round
+    }
+
+    pub fn consensus_linearize_subdag_v2(&self) -> bool {
+        let res = self.feature_flags.consensus_linearize_subdag_v2;
+        assert!(
+            !res || self.gc_depth() > 0,
+            "The consensus linearize sub dag V2 requires GC to be enabled"
+        );
+        res
+    }
+
+    pub fn gc_depth(&self) -> u32 {
+        self.consensus_gc_depth.unwrap_or(0)
+    }
 }
 
 #[cfg(not(msim))]
@@ -355,7 +405,7 @@ impl ProtocolConfig {
 
         // IMPORTANT: Never modify the value of any constant for a pre-existing protocol version.
         // To change the values here you must create a new protocol version with the new values!
-        let cfg = Self {
+        let mut cfg = Self {
             // will be overwritten before being returned
             version,
 
@@ -380,7 +430,23 @@ impl ProtocolConfig {
             // responsibility is shared amongst more nodes. We can increase that once we do have
             // higher confidence.
             consensus_bad_nodes_stake_threshold: Some(20),
+
+            // TODO (#873): Implement a production grade configuration upgrade mechanism
+            // We use the `_for_testing` functions because they are currently the only way
+            // to modify Sui's protocol configuration from external crates.
+            // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
+            // in the Sui repository to address this limitation.
+            // This value has been derived from monitoring the largest message
+            // size in real world scenarios.
+            consensus_max_transaction_size_bytes: Some(315218930),
+            consensus_max_transactions_in_block_bytes: Some(315218930),
+            consensus_max_num_transactions_in_block: Some(512),
+            consensus_gc_depth: None,
         };
+
+        cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
+
+        #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
                 1 => unreachable!(),

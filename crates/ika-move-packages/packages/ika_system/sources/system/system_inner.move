@@ -13,8 +13,9 @@ use ika_system::bls_committee::{BlsCommittee};
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::validator_metadata::ValidatorMetadata;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_secp256k1_inner::{DWalletNetworkDecryptionKeyCap, DWalletCoordinatorInner};
+use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner};
+use ika_system::dwallet_pricing::DWalletPricing;
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -25,6 +26,7 @@ use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::bcs;
 use std::string::String;
+use sui::vec_map::VecMap;
 
 const BASIS_POINT_DENOMINATOR: u16 = 10_000;
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
@@ -60,15 +62,17 @@ public struct SystemInnerV1 has store {
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
+    /// The total messages processed.
+    total_messages_processed: u64,
     /// The fees paid for computation.
     remaining_rewards: Balance<IKA>,
     /// List of authorized protocol cap ids.
     authorized_protocol_cap_ids: vector<ID>,
     // TODO: maybe change that later
-    dwallet_2pc_mpc_secp256k1_id: Option<ID>,
-    dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector<DWalletNetworkDecryptionKeyCap>,
-    last_processed_ika_system_checkpoint_sequence_number: Option<u64>,
-    previous_epoch_last_ika_system_checkpoint_sequence_number: u64,
+    dwallet_2pc_mpc_coordinator_id: Option<ID>,
+    dwallet_2pc_mpc_coordinator_network_encryption_keys: vector<DWalletNetworkEncryptionKeyCap>,
+    last_processed_checkpoint_sequence_number: Option<u64>,
+    previous_epoch_last_checkpoint_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -84,15 +88,15 @@ public struct SystemEpochInfoEvent has copy, drop {
     total_stake_rewards_distributed: u64,
 }
 
-/// Event emitted during verifing quorum checkpoint submmision signature.
+/// Event emitted during verifying quorum checkpoint submission signature.
 public struct SystemProtocolCapVerifiedEvent has copy, drop {
     epoch: u64,
     protocol_cap_id: ID,
 }
 
 /// Event containing system-level checkpoint information, emitted during
-/// the checkpoint submmision message.
-public struct SystemIkaSystemCheckpointInfoEvent has copy, drop {
+/// the system checkpoint submission message.
+public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
     timestamp_ms: u64,
@@ -142,26 +146,16 @@ public(package) fun create(
         parameters,
         protocol_treasury,
         epoch_start_timestamp_ms,
+        total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
-        dwallet_2pc_mpc_secp256k1_id: option::none(),
-        dwallet_2pc_mpc_secp256k1_network_decryption_keys: vector[],
-        last_processed_ika_system_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_ika_system_checkpoint_sequence_number: 0,
+        dwallet_2pc_mpc_coordinator_id: option::none(),
+        dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
+        last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
-}
-
-public(package) fun advance_network_keys(
-    self: &SystemInnerV1, dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinatorInner
-): Balance<IKA> {
-    let mut total_reward = sui::balance::zero<IKA>();
-
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| {
-        total_reward.join(dwallet_2pc_mpc_secp256k1.advance_epoch_dwallet_network_decryption_key(cap));
-    });
-    total_reward
 }
 
 public(package) fun create_system_parameters(
@@ -190,10 +184,14 @@ public(package) fun create_system_parameters(
 
 public(package) fun initialize(
     self: &mut SystemInnerV1,
-    clock: &Clock,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     package_id: ID,
+    cap: &ProtocolCap,
+    clock: &Clock,
     ctx: &mut TxContext,
 ) {
+    self.verify_cap(cap);
     let now = clock.timestamp_ms();
     assert!(self.epoch == 0 && now >= self.epoch_start_timestamp_ms, ECannotInitialize);
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
@@ -205,16 +203,15 @@ public(package) fun initialize(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    let pricing = ika_system::dwallet_pricing::create_dwallet_pricing_2pc_mpc_secp256k1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ctx);
-    let mut dwallet_2pc_mpc_secp256k1 = dwallet_2pc_mpc_secp256k1::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, ctx);
-    let dwallet_2pc_mpc_secp256k1_inner = dwallet_2pc_mpc_secp256k1.inner_mut();
-    self.advance_epoch(dwallet_2pc_mpc_secp256k1_inner, clock, ctx);
+    let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.advance_epoch(dwallet_2pc_mpc_coordinator_inner, clock, ctx);
 
-    self.dwallet_2pc_mpc_secp256k1_id.fill(object::id(&dwallet_2pc_mpc_secp256k1));
-    dwallet_2pc_mpc_secp256k1.share_dwallet_coordinator();
+    self.dwallet_2pc_mpc_coordinator_id.fill(object::id(&dwallet_2pc_mpc_coordinator));
+    dwallet_2pc_mpc_coordinator.share_dwallet_coordinator();
 }
 
-/// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
+/// Can be called by anyone who wishes to become a validator candidate and starts accusing delegated
 /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they
 /// can call `request_add_validator` to officially become an active validator at the next epoch.
 /// Aborts if the caller is already a pending or active validator, or a validator candidate.
@@ -437,6 +434,16 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     self.validator_set.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey_bytes, proof_of_possession_bytes, cap, ctx);
 }
 
+/// Sets a validator's public key of network key.
+/// The change will only take effects starting from the next epoch.
+public(package) fun set_next_epoch_network_pubkey_bytes(
+    self: &mut SystemInnerV1,
+    network_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap
+) {
+    self.validator_set.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
+}
+
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_pubkey_bytes(
@@ -458,15 +465,15 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.validator_set.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
 }
 
-
-/// Sets a validator's public key of network key.
+/// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_network_pubkey_bytes(
+public(package) fun set_pricing_vote(
     self: &mut SystemInnerV1,
-    network_pubkey_bytes: vector<u8>,
-    cap: &ValidatorOperationCap
+    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
 ) {
-    self.validator_set.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
+    self.validator_set.set_pricing_vote(dwallet_coordinator_inner, pricing, cap);
 }
 
 /// This function should be called at the end of an epoch, and advances the system to the next epoch.
@@ -504,14 +511,12 @@ public(package) fun advance_epoch(
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee());
-    let computation_rewards = self.advance_network_keys(dwallet_coordinator);
+    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
 
-    let total_computation_fees = consensus_validation_rewards.value() + computation_rewards.value();
+    let total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
 
     let mut total_reward = sui::balance::zero<IKA>();
-    total_reward.join(consensus_validation_rewards);
-    total_reward.join(computation_rewards);
+    total_reward.join(dwallet_computation_and_consensus_validation_rewards);
     total_reward.join(stake_subsidy);
     total_reward.join(self.remaining_rewards.withdraw_all());
 
@@ -566,7 +571,8 @@ public(package) fun process_mid_epoch(
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,
     );
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.do_ref!(|cap| dwallet_coordinator_inner.emit_start_reshare_event(cap, ctx));
+    let next_epoch_active_committee = self.validator_set.next_epoch_active_committee().extract();
+    dwallet_coordinator_inner.mid_epoch_reconfiguration(next_epoch_active_committee, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
 
 public(package) fun lock_last_active_session_sequence_number(
@@ -644,15 +650,38 @@ fun verify_cap(
     });
 }
 
-public(package) fun request_dwallet_network_decryption_key_dkg_by_cap(
+public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut SystemInnerV1,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_secp256k1.request_dwallet_network_decryption_key_dkg(ctx);
-    self.dwallet_2pc_mpc_secp256k1_network_decryption_keys.push_back(key_cap);
+    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_encryption_key_dkg(ctx);
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
+}
+
+public(package) fun set_supported_and_pricing(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
+    default_pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_coordinator_inner.set_supported_and_pricing(default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes);
+}
+
+public(package) fun set_paused_curves_and_signature_algorithms(
+    self: &SystemInnerV1,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
+    protocol_cap: &ProtocolCap,
+) {
+    self.verify_cap(protocol_cap);
+    dwallet_2pc_mpc_coordinator_inner.set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms, paused_hash_schemes);
 }
 
 public(package) fun authorize_update_message_by_cap(
@@ -687,17 +716,17 @@ public(package) fun commit_upgrade(
     old_package_id
 }
 
-public(package) fun process_ika_system_checkpoint_by_cap(
+public(package) fun process_checkpoint_message_by_cap(
     self: &mut SystemInnerV1,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
 )  {
     self.verify_cap(cap);
-    self.process_ika_system_checkpoint(message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
-public(package) fun process_ika_system_checkpoint_by_quorum(
+public(package) fun process_checkpoint_message_by_quorum(
     self: &mut SystemInnerV1,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
@@ -713,10 +742,10 @@ public(package) fun process_ika_system_checkpoint_by_quorum(
 
     active_committee.verify_certificate(self.epoch, &signature, &signers_bitmap, &intent_bytes);
 
-    self.process_ika_system_checkpoint(message, ctx);
+    self.process_checkpoint_message(message, ctx);
 }
 
-public(package) fun process_ika_system_checkpoint(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
+public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -724,17 +753,17 @@ public(package) fun process_ika_system_checkpoint(self: &mut SystemInnerV1, mess
 
     let sequence_number = bcs_body.peel_u64();
 
-    if(self.last_processed_ika_system_checkpoint_sequence_number.is_none()) {
+    if(self.last_processed_checkpoint_sequence_number.is_none()) {
         assert!(sequence_number == 0, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_ika_system_checkpoint_sequence_number.fill(sequence_number);
+        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
     } else {
-        assert!(sequence_number > 0 && *self.last_processed_ika_system_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_ika_system_checkpoint_sequence_number.swap(sequence_number);
+        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
+        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
     };
 
     let timestamp_ms = bcs_body.peel_u64();
 
-    event::emit(SystemIkaSystemCheckpointInfoEvent {
+    event::emit(SystemCheckpointInfoEvent {
         epoch,
         sequence_number,
         timestamp_ms,
@@ -752,7 +781,28 @@ public(package) fun process_ika_system_checkpoint(self: &mut SystemInnerV1, mess
             };
         i = i + 1;
     };
+    self.total_messages_processed = self.total_messages_processed + i;
 }
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+public(package) fun calculate_rewards(
+    self: &SystemInnerV1,
+    node_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.validator_set.calculate_rewards(node_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Check whether StakedIka can be withdrawn directly.
+public(package) fun can_withdraw_staked_ika_early(self: &SystemInnerV1, staked_ika: &StakedIka): bool {
+    self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
+}
+
 
 #[test_only]
 /// Return the current validator set

@@ -55,9 +55,9 @@ fn check_diff(checked_in: &Path, built: &Path) {
             .unwrap();
         if !output.status.success() {
             let header =
-                "Generated and checked-in ika-framework packages and/or docs do not match.\n\
+                "Generated and checked-in ika-move-packages packages and/or docs do not match.\n\
                  Re-run with `UPDATE=1` to update checked-in packages and docs. e.g.\n\n\
-                 UPDATE=1 cargo test -p ika-framework --test build-system-packages";
+                 UPDATE=1 cargo test -p ika-move-packages --test build_ika_move_packages";
 
             panic!(
                 "{header}\n\n{}\n\n{}",

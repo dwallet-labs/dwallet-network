@@ -12,10 +12,10 @@ pub enum Hash {
     SHA256 = 1,
 }
 
-impl TryFrom<u8> for Hash {
+impl TryFrom<u32> for Hash {
     type Error = anyhow::Error;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Hash::KECCAK256),
             1 => Ok(Hash::SHA256),
@@ -40,6 +40,7 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp25
                 .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
     };
+    #[allow(clippy::useless_conversion)]
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     Ok(U256::from(m).into())
 }

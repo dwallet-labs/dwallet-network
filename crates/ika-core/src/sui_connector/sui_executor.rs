@@ -14,7 +14,7 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyState;
+use ika_types::messages_dwallet_mpc::DWalletNetworkEncryptionKeyState;
 use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
@@ -24,7 +24,6 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
-use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
@@ -34,9 +33,8 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-#[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
-    EpochComplete(SystemInner, EpochStartSystem),
+    EpochComplete(Box<SystemInner>, EpochStartSystem),
     RunWithRangeCondition,
 }
 
@@ -95,10 +93,10 @@ where
             error!("failed to get clock when running epoch switch");
             return;
         };
-        let Some(dwallet_2pc_mpc_secp256k1_id) =
-            ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+        let Some(dwallet_2pc_mpc_coordinator_id) =
+            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
         else {
-            error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when running epoch switch");
+            error!("failed to get `dwallet_2pc_mpc_coordinator_id` when running epoch switch");
             return;
         };
         let SystemInner::V1(system_inner_v1) = &ika_system_state_inner;
@@ -115,8 +113,8 @@ where
             info!("Calling `process_mid_epoch()`");
             if let Err(e) = Self::process_mid_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
-                &sui_notifier,
+                dwallet_2pc_mpc_coordinator_id,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -130,7 +128,7 @@ where
 
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
             .await
         else {
             error!("failed to get dwallet coordinator inner when running epoch switch");
@@ -148,8 +146,8 @@ where
             info!("Calling `lock_last_active_session_sequence_number()`");
             if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
-                &sui_notifier,
+                dwallet_2pc_mpc_coordinator_id,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -180,8 +178,8 @@ where
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
-                dwallet_2pc_mpc_secp256k1_id,
-                &sui_notifier,
+                dwallet_2pc_mpc_coordinator_id,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -195,16 +193,16 @@ where
     }
 
     async fn is_completed_network_dkg_for_all_keys(&self) -> bool {
-        let network_decryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
-            Ok(network_decryption_keys) => network_decryption_keys,
+        let network_encryption_keys = match self.sui_client.get_dwallet_mpc_network_keys().await {
+            Ok(network_encryption_keys) => network_encryption_keys,
             Err(e) => {
                 error!("failed to get dwallet MPC network keys: {e}");
                 return false;
             }
         };
 
-        for (_, key) in network_decryption_keys.iter() {
-            if key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG {
+        for (_, key) in network_encryption_keys.iter() {
+            if key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {
                 return false;
             }
         }
@@ -254,7 +252,10 @@ where
                     .sui_client
                     .get_epoch_start_system_until_success(&ika_system_state_inner)
                     .await;
-                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
+                return StopReason::EpochComplete(
+                    Box::new(ika_system_state_inner),
+                    epoch_start_system_state,
+                );
             }
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
@@ -277,19 +278,6 @@ where
                     .map(|s| s + 1)
                     .unwrap_or(0);
 
-            if last_submitted_dwallet_checkpoint.is_some()
-                && last_submitted_dwallet_checkpoint.unwrap()
-                    >= next_dwallet_checkpoint_sequence_number
-            {
-                continue;
-            }
-            if last_submitted_system_checkpoint.is_some()
-                && last_submitted_system_checkpoint.unwrap()
-                    >= next_dwallet_checkpoint_sequence_number
-            {
-                continue;
-            }
-
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(
                     sui_notifier,
@@ -297,107 +285,117 @@ where
                     &mut epoch_switch_state,
                 )
                 .await;
-                if let Ok(Some(dwallet_checkpoint_message)) = self
-                    .dwallet_checkpoint_store
-                    .get_dwallet_checkpoint_by_sequence_number(
-                        next_dwallet_checkpoint_sequence_number,
-                    )
+                if Some(next_dwallet_checkpoint_sequence_number) > last_submitted_dwallet_checkpoint
                 {
-                    // todo(zeev): add system checkpoints in here.
-                    self.metrics.dwallet_checkpoint_write_requests_total.inc();
-                    self.metrics
-                        .dwallet_checkpoint_sequence
-                        .set(next_dwallet_checkpoint_sequence_number as i64);
-                    if let Some(dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
+                    if let Ok(Some(dwallet_checkpoint_message)) = self
+                        .dwallet_checkpoint_store
+                        .get_dwallet_checkpoint_by_sequence_number(
+                            next_dwallet_checkpoint_sequence_number,
+                        )
                     {
-                        let active_members: BlsCommittee = ika_system_state_inner
-                            .validator_set()
-                            .clone()
-                            .active_committee;
-                        let auth_sig = dwallet_checkpoint_message.auth_sig();
-                        let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap =
-                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message = bcs::to_bytes::<DWalletCheckpointMessage>(
-                            &dwallet_checkpoint_message.into_message(),
-                        )
-                        .expect("Serializing checkpoint message cannot fail");
+                        // todo(zeev): add system checkpoints in here.
+                        self.metrics.dwallet_checkpoint_write_requests_total.inc();
+                        self.metrics
+                            .dwallet_checkpoint_sequence
+                            .set(next_dwallet_checkpoint_sequence_number as i64);
+                        if let Some(dwallet_2pc_mpc_coordinator_id) =
+                            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
+                        {
+                            let active_members: BlsCommittee = ika_system_state_inner
+                                .validator_set()
+                                .clone()
+                                .active_committee;
+                            let auth_sig = dwallet_checkpoint_message.auth_sig();
+                            let signature = auth_sig.signature.as_bytes().to_vec();
+                            let signers_bitmap = Self::calculate_signers_bitmap(
+                                &auth_sig.signers_map,
+                                &active_members,
+                            );
+                            let message = bcs::to_bytes::<DWalletCheckpointMessage>(
+                                &dwallet_checkpoint_message.into_message(),
+                            )
+                            .expect("Serializing checkpoint message cannot fail");
 
-                        info!("Signers_bitmap: {:?}", signers_bitmap);
+                            info!("Signers_bitmap: {:?}", signers_bitmap);
 
-                        let task = Self::handle_dwallet_checkpoint_execution_task(
-                            self.ika_system_package_id,
-                            dwallet_2pc_mpc_secp256k1_id,
-                            signature,
-                            signers_bitmap,
-                            message,
-                            &sui_notifier,
-                            &self.sui_client,
-                            &self.metrics,
-                        )
-                        .await;
-                        match task {
-                            Ok(_) => {
-                                self.metrics.dwallet_checkpoint_writes_success_total.inc();
-                                self.metrics
-                                    .last_written_dwallet_checkpoint_sequence
-                                    .set(next_dwallet_checkpoint_sequence_number as i64);
-                                last_submitted_dwallet_checkpoint =
-                                    Some(next_dwallet_checkpoint_sequence_number);
-                                info!("Sui transaction successfully executed for dwallet checkpoint sequence number: {}", next_dwallet_checkpoint_sequence_number);
-                            }
-                            Err(err) => {
-                                self.metrics.dwallet_checkpoint_writes_failure_total.inc();
-                                error!("Sui transaction execution failed for dwallet checkpoint sequence number: {}, error: {}", next_dwallet_checkpoint_sequence_number, err);
-                            }
-                        };
+                            let task = Self::handle_dwallet_checkpoint_execution_task(
+                                self.ika_system_package_id,
+                                dwallet_2pc_mpc_coordinator_id,
+                                signature,
+                                signers_bitmap,
+                                message,
+                                sui_notifier,
+                                &self.sui_client,
+                                &self.metrics,
+                            )
+                            .await;
+                            match task {
+                                Ok(_) => {
+                                    self.metrics.dwallet_checkpoint_writes_success_total.inc();
+                                    self.metrics
+                                        .last_written_dwallet_checkpoint_sequence
+                                        .set(next_dwallet_checkpoint_sequence_number as i64);
+                                    last_submitted_dwallet_checkpoint =
+                                        Some(next_dwallet_checkpoint_sequence_number);
+                                    info!("Sui transaction successfully executed for dwallet checkpoint sequence number: {}", next_dwallet_checkpoint_sequence_number);
+                                }
+                                Err(err) => {
+                                    self.metrics.dwallet_checkpoint_writes_failure_total.inc();
+                                    error!("Sui transaction execution failed for dwallet checkpoint sequence number: {}, error: {}", next_dwallet_checkpoint_sequence_number, err);
+                                }
+                            };
+                        }
                     }
                 }
 
-                if let Ok(Some(system_checkpoint)) = self
-                    .system_checkpoint_store
-                    .get_system_checkpoint_by_sequence_number(
-                        next_system_checkpoint_sequence_number,
-                    )
-                {
-                    if let Some(_dwallet_2pc_mpc_secp256k1_id) =
-                        ika_system_state_inner.dwallet_2pc_mpc_secp256k1_id()
-                    {
-                        let active_members: BlsCommittee = ika_system_state_inner
-                            .validator_set()
-                            .clone()
-                            .active_committee;
-                        let auth_sig = system_checkpoint.auth_sig();
-                        let signature = auth_sig.signature.as_bytes().to_vec();
-                        let signers_bitmap =
-                            Self::calculate_signers_bitmap(&auth_sig.signers_map, &active_members);
-                        let message =
-                            bcs::to_bytes::<SystemCheckpoint>(&system_checkpoint.into_message())
-                                .expect("Serializing system_checkpoint message cannot fail");
-
-                        info!("Signers_bitmap: {:?}", signers_bitmap);
-
-                        let task = Self::handle_system_checkpoint_execution_task(
-                            self.ika_system_package_id,
-                            signature,
-                            signers_bitmap,
-                            message,
-                            &sui_notifier,
-                            &self.sui_client,
-                            &self.metrics,
+                if Some(next_system_checkpoint_sequence_number) > last_submitted_system_checkpoint {
+                    if let Ok(Some(system_checkpoint)) = self
+                        .system_checkpoint_store
+                        .get_system_checkpoint_by_sequence_number(
+                            next_system_checkpoint_sequence_number,
                         )
-                        .await;
-                        match task {
-                            Ok(_) => {
-                                last_submitted_system_checkpoint =
-                                    Some(next_system_checkpoint_sequence_number);
-                                info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
-                            }
-                            Err(err) => {
-                                error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
-                            }
-                        };
+                    {
+                        if let Some(_dwallet_2pc_mpc_coordinator_id) =
+                            ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
+                        {
+                            let active_members: BlsCommittee = ika_system_state_inner
+                                .validator_set()
+                                .clone()
+                                .active_committee;
+                            let auth_sig = system_checkpoint.auth_sig();
+                            let signature = auth_sig.signature.as_bytes().to_vec();
+                            let signers_bitmap = Self::calculate_signers_bitmap(
+                                &auth_sig.signers_map,
+                                &active_members,
+                            );
+                            let message = bcs::to_bytes::<SystemCheckpoint>(
+                                &system_checkpoint.into_message(),
+                            )
+                            .expect("Serializing system_checkpoint message cannot fail");
+
+                            info!("Signers_bitmap: {:?}", signers_bitmap);
+
+                            let task = Self::handle_system_checkpoint_execution_task(
+                                self.ika_system_package_id,
+                                signature,
+                                signers_bitmap,
+                                message,
+                                sui_notifier,
+                                &self.sui_client,
+                                &self.metrics,
+                            )
+                            .await;
+                            match task {
+                                Ok(_) => {
+                                    last_submitted_system_checkpoint =
+                                        Some(next_system_checkpoint_sequence_number);
+                                    info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
+                                }
+                                Err(err) => {
+                                    error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
+                                }
+                            };
+                        }
                     }
                 }
             }
@@ -437,7 +435,7 @@ where
 
     async fn process_mid_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -451,13 +449,15 @@ where
 
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -492,7 +492,7 @@ where
 
     async fn lock_last_session_to_complete_in_current_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -507,13 +507,15 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -548,7 +550,7 @@ where
 
     async fn process_request_advance_epoch(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
     ) -> IkaResult<()> {
@@ -563,13 +565,15 @@ where
         let ika_system_state_arg = sui_client.get_mutable_system_arg_must_succeed().await;
         let clock_arg = sui_client.get_clock_arg_must_succeed().await;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         let args = vec![
             CallArg::Object(ika_system_state_arg),
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Object(clock_arg),
         ];
 
@@ -604,7 +608,7 @@ where
 
     async fn handle_dwallet_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
         signature: Vec<u8>,
         signers_bitmap: Vec<u8>,
         message: Vec<u8>,
@@ -641,8 +645,10 @@ where
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
-        let dwallet_2pc_mpc_secp256k1_arg = sui_client
-            .get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(dwallet_2pc_mpc_secp256k1_id)
+        let dwallet_2pc_mpc_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
+                dwallet_2pc_mpc_coordinator_id,
+            )
             .await;
 
         info!(
@@ -652,7 +658,7 @@ where
 
         let messages = Self::break_down_checkpoint_message(message);
         let mut args = vec![
-            CallArg::Object(dwallet_2pc_mpc_secp256k1_arg),
+            CallArg::Object(dwallet_2pc_mpc_coordinator_arg),
             CallArg::Pure(bcs::to_bytes(&signature).map_err(|e| {
                 IkaError::SuiConnectorSerializationError(format!(
                     "can't serialize `signature`: {e}"
@@ -666,18 +672,27 @@ where
         ];
         args.extend(messages);
 
-        ptb.move_call(
+        let args = args
+            .into_iter()
+            .map(|arg| {
+                ptb.input(arg).map_err(|e| {
+                    IkaError::SuiConnectorSerializationError(format!("can't serialize `arg`: {e}"))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let gas_fee_reimbursement_sui = ptb.programmable_move_call(
             ika_system_package_id,
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
-        )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+        );
+
+        ptb.command(sui_types::transaction::Command::MergeCoins(
+            Argument::GasCoin,
+            vec![gas_fee_reimbursement_sui],
+        ));
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -761,7 +776,7 @@ where
         ptb.move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
-            ident_str!("process_system_checkpoint_by_quorum").into(),
+            PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME.into(),
             vec![],
             args,
         )

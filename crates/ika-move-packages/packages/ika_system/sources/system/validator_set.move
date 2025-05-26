@@ -15,6 +15,8 @@ use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::validator_metadata::{ValidatorMetadata};
 use ika_system::extended_field::{Self, ExtendedField};
 use ika_system::pending_active_set::{Self, PendingActiveSet};
+use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletCoordinatorInner};
+use ika_system::dwallet_pricing::{DWalletPricing};
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::coin::Coin;
@@ -108,9 +110,6 @@ const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch ca
 #[error]
 const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
 
-#[error]
-const EAlreadyInitialized: vector<u8> = b"Protocol cannot be initialized more than one time.";
-
 // ==== initialization ====
 
 public(package) fun new(
@@ -129,14 +128,6 @@ public(package) fun new(
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
     }
-}
-
-public(package) fun initialize(self: &mut ValidatorSet) {
-    assert!(self.active_committee.members().is_empty(), EAlreadyInitialized);
-    self.process_pending_validators();
-    self.active_committee = self.next_epoch_active_committee.extract();
-    self.activate_added_validators(1);
-    self.total_stake = self.calculate_total_stakes();
 }
 
 // ==== functions to add or remove validators ====
@@ -522,6 +513,18 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     let validator = self.get_validator_mut(validator_id);
     validator.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
     self.assert_no_pending_or_active_duplicates(validator_id);
+}
+
+public(package) fun set_pricing_vote(
+    self: &mut ValidatorSet,
+    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.verify_operation_cap(cap);
+    dwallet_coordinator_inner.set_pricing_vote(validator_id, pricing);
 }
 
 // ==== epoch change functions ====
@@ -943,16 +946,18 @@ fun distribute_reward(
     adjusted_staking_reward_amounts: &vector<u64>,
     staking_rewards: &mut Balance<IKA>,
 ) {
+    let pending_active_set = self.pending_active_set.borrow_mut();
     let members = *self.active_committee.members();
     let length = members.length();
     let mut i = 0;
     while (i < length) {
         let validator_id = members[i].validator_id();
-        let validator = self.get_validator_mut(validator_id);
+        let validator = &mut self.validators[validator_id];
         let staking_reward_amount = adjusted_staking_reward_amounts[i];
         let validator_rewards = staking_rewards.split(staking_reward_amount);
 
         validator.advance_epoch(validator_rewards, new_epoch);
+        pending_active_set.update(validator_id, validator.ika_balance_at_epoch(new_epoch));
         i = i + 1;
     }
 }
@@ -1097,4 +1102,31 @@ public fun is_validator_candidate(self: &mut ValidatorSet, validator_id: ID): bo
 public fun is_inactive_validator(self: &mut ValidatorSet, validator_id: ID): bool {
     let validator = self.get_validator(validator_id);
     validator.is_withdrawing()
+}
+
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+public(package) fun calculate_rewards(
+    self: &ValidatorSet,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    let validator = self.get_validator(validator_id);
+    validator.calculate_rewards(staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Check whether StakedIka can be withdrawn directly.
+public(package) fun can_withdraw_staked_ika_early(
+    self: &ValidatorSet,
+    staked_ika: &StakedIka,
+    current_epoch: u64,
+): bool {
+    let validator_id = staked_ika.validator_id();
+    let is_next_committee = self.next_epoch_active_committee.is_some_and!(|c| c.contains(&validator_id));
+    staked_ika.can_withdraw_early(is_next_committee, current_epoch)
 }

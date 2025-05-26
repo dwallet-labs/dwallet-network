@@ -650,7 +650,7 @@ where
             .store
             .get_highest_verified_dwallet_checkpoint()
             .expect("store operation should not fail")
-            .map(|checkpoint| checkpoint.sequence_number().clone());
+            .map(|checkpoint| *checkpoint.sequence_number());
 
         // If this is an older checkpoint, just ignore it
         if latest_checkpoint_sequence_number.as_ref() >= Some(checkpoint.sequence_number()) {
@@ -691,12 +691,10 @@ where
             .store
             .get_highest_verified_system_checkpoint()
             .expect("store operation should not fail")
-            .map(|system_checkpoint| system_checkpoint.sequence_number().clone());
+            .map(|system_checkpoint| *system_checkpoint.sequence_number());
 
-        // If this is an older system_checkpoint, just ignore it
-        if latest_system_checkpoint_sequence_number.as_ref()
-            >= Some(system_checkpoint.sequence_number())
-        {
+        // If this is an older system_checkpoint, ignore it.
+        if latest_system_checkpoint_sequence_number >= Some(*system_checkpoint.sequence_number()) {
             return;
         }
 
@@ -1194,11 +1192,7 @@ where
     while let Some((maybe_checkpoint, next, _maybe_peer_id)) = request_stream.next().await {
         assert_eq!(
             current
-                .map(|s| s
-                    .sequence_number()
-                    .clone()
-                    .checked_add(1)
-                    .expect("exhausted u64"))
+                .map(|s| s.sequence_number().checked_add(1).expect("exhausted u64"))
                 .unwrap_or(0),
             next
         );
@@ -1548,11 +1542,7 @@ where
     while let Some((maybe_system_checkpoint, next, _maybe_peer_id)) = request_stream.next().await {
         assert_eq!(
             current
-                .map(|s| s
-                    .sequence_number()
-                    .clone()
-                    .checked_add(1)
-                    .expect("exhausted u64"))
+                .map(|s| s.sequence_number().checked_add(1).expect("exhausted u64"))
                 .unwrap_or(0),
             next
         );

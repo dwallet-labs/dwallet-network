@@ -10,7 +10,6 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Struct `ValidatorLeaveEvent`](#(ika_system=0x0)_validator_set_ValidatorLeaveEvent)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#(ika_system=0x0)_validator_set_new)
--  [Function `initialize`](#(ika_system=0x0)_validator_set_initialize)
 -  [Function `request_add_validator_candidate`](#(ika_system=0x0)_validator_set_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#(ika_system=0x0)_validator_set_request_remove_validator_candidate)
 -  [Function `update_pending_active_set`](#(ika_system=0x0)_validator_set_update_pending_active_set)
@@ -32,6 +31,7 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_network_pubkey_bytes)
 -  [Function `set_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_consensus_pubkey_bytes)
 -  [Function `set_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_class_groups_pubkey_and_proof_bytes)
+-  [Function `set_pricing_vote`](#(ika_system=0x0)_validator_set_set_pricing_vote)
 -  [Function `process_mid_epoch`](#(ika_system=0x0)_validator_set_process_mid_epoch)
 -  [Function `advance_epoch`](#(ika_system=0x0)_validator_set_advance_epoch)
 -  [Function `activate_added_validators`](#(ika_system=0x0)_validator_set_activate_added_validators)
@@ -63,11 +63,16 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `pending_active_set`](#(ika_system=0x0)_validator_set_pending_active_set)
 -  [Function `is_validator_candidate`](#(ika_system=0x0)_validator_set_is_validator_candidate)
 -  [Function `is_inactive_validator`](#(ika_system=0x0)_validator_set_is_inactive_validator)
+-  [Function `calculate_rewards`](#(ika_system=0x0)_validator_set_calculate_rewards)
+-  [Function `can_withdraw_staked_ika_early`](#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early)
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
+<b>use</b> (ika_system=0x0)::<b>address</b>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a>;
+<b>use</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing">dwallet_pricing</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field">extended_field</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr">multiaddr</a>;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>;
@@ -96,11 +101,15 @@ title: Module `(ika_system=0x0)::validator_set`
 <b>use</b> <a href="../sui/deny_list.md#sui_deny_list">sui::deny_list</a>;
 <b>use</b> <a href="../sui/dynamic_field.md#sui_dynamic_field">sui::dynamic_field</a>;
 <b>use</b> <a href="../sui/dynamic_object_field.md#sui_dynamic_object_field">sui::dynamic_object_field</a>;
+<b>use</b> <a href="../sui/ed25519.md#sui_ed25519">sui::ed25519</a>;
 <b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
+<b>use</b> <a href="../sui/hash.md#sui_hash">sui::hash</a>;
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
+<b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
+<b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
 <b>use</b> <a href="../sui/transfer.md#sui_transfer">sui::transfer</a>;
@@ -351,16 +360,6 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EAlreadyInitialized"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAlreadyInitialized">EAlreadyInitialized</a>: vector&lt;u8&gt; = b"Protocol cannot be initialized more than one time.";
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
 
 
@@ -501,34 +500,6 @@ The epoch value corresponds to the first epoch this change takes place.
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
     }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_validator_set_initialize"></a>
-
-## Function `initialize`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_initialize">initialize</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>) {
-    <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members().is_empty(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAlreadyInitialized">EAlreadyInitialized</a>);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_validators">process_pending_validators</a>();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_activate_added_validators">activate_added_validators</a>(1);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_total_stake">total_stake</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_total_stakes">calculate_total_stakes</a>();
 }
 </code></pre>
 
@@ -1287,6 +1258,38 @@ Request to set commission rate for the validator.
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_next_epoch_class_groups_pubkey_and_proof_bytes">set_next_epoch_class_groups_pubkey_and_proof_bytes</a>(class_groups_pubkey_and_proof_bytes, cap);
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_assert_no_pending_or_active_duplicates">assert_no_pending_or_active_duplicates</a>(validator_id);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_pricing_vote"></a>
+
+## Function `set_pricing_vote`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_pricing_vote">set_pricing_vote</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, dwallet_coordinator_inner: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_pricing_vote">set_pricing_vote</a>(
+    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    dwallet_coordinator_inner: &<b>mut</b> DWalletCoordinatorInner,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
+) {
+    <b>let</b> validator_id = cap.validator_id();
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_verify_operation_cap">verify_operation_cap</a>(cap);
+    dwallet_coordinator_inner.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_pricing_vote">set_pricing_vote</a>(validator_id, pricing);
 }
 </code></pre>
 
@@ -2067,15 +2070,17 @@ Distribute rewards to validators and stakers
     adjusted_staking_reward_amounts: &vector&lt;u64&gt;,
     staking_rewards: &<b>mut</b> Balance&lt;IKA&gt;,
 ) {
+    <b>let</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a> = self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut();
     <b>let</b> members = *self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.members();
     <b>let</b> length = members.length();
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; length) {
         <b>let</b> validator_id = members[i].validator_id();
-        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
+        <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = &<b>mut</b> self.validators[validator_id];
         <b>let</b> staking_reward_amount = adjusted_staking_reward_amounts[i];
         <b>let</b> validator_rewards = staking_rewards.split(staking_reward_amount);
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(validator_rewards, new_epoch);
+        <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.update(validator_id, <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.ika_balance_at_epoch(new_epoch));
         i = i + 1;
     }
 }
@@ -2408,6 +2413,70 @@ Returns true if the validator identified by <code>validator_id</code> is of an i
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_is_inactive_validator">is_inactive_validator</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, validator_id: ID): bool {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.is_withdrawing()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_calculate_rewards"></a>
+
+## Function `calculate_rewards`
+
+Calculate the rewards for an amount with value <code>staked_principal</code>, staked in the validator with
+the given <code>validator_id</code> between <code>activation_epoch</code> and <code>withdraw_epoch</code>.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_principal: u64, activation_epoch: u64, withdraw_epoch: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_calculate_rewards">calculate_rewards</a>(staked_principal, activation_epoch, withdraw_epoch)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early"></a>
+
+## Function `can_withdraw_staked_ika_early`
+
+Check whether StakedIka can be withdrawn directly.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &(ika_system=0x0)::<a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">staked_ika::StakedIka</a>, current_epoch: u64): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_can_withdraw_staked_ika_early">can_withdraw_staked_ika_early</a>(
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>: &StakedIka,
+    current_epoch: u64,
+): bool {
+    <b>let</b> validator_id = <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.validator_id();
+    <b>let</b> is_next_committee = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some_and!(|c| c.contains(&validator_id));
+    <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika">staked_ika</a>.can_withdraw_early(is_next_committee, current_epoch)
 }
 </code></pre>
 

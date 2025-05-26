@@ -424,7 +424,7 @@ impl DWalletCheckpointStore {
         let mut batch = self.dwallet_certified_checkpoints.batch();
         batch.insert_batch(
             &self.dwallet_checkpoint_message_sequence_by_digest,
-            [(checkpoint.digest().clone(), checkpoint.sequence_number())],
+            [(*checkpoint.digest(), checkpoint.sequence_number())],
         )?;
         batch.insert_batch(
             &self.dwallet_certified_checkpoints,
@@ -613,13 +613,13 @@ impl DWalletCheckpointBuilder {
             .min_dwallet_checkpoint_interval_ms_as_option()
             .unwrap_or_default();
         let mut grouped_pending_checkpoints = Vec::new();
-        let mut checkpoints_iter = self
+        let checkpoints_iter = self
             .epoch_store
             .get_pending_checkpoints(last_height)
             .expect("unexpected epoch store error")
             .into_iter()
             .peekable();
-        while let Some((height, pending)) = checkpoints_iter.next() {
+        for (height, pending) in checkpoints_iter {
             // Group PendingCheckpoints until:
             // - minimum interval has elapsed ...
             let current_timestamp = pending.details().timestamp_ms;
