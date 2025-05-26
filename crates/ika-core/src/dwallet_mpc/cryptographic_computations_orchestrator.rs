@@ -177,6 +177,7 @@ impl CryptographicComputationsOrchestrator {
                     session_id=?session.session_id,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
+                    current_round = session.pending_quorum_for_highest_round_number - 1,
                     "MPC session advanced successfully"
                 );
             }
@@ -187,6 +188,8 @@ impl CryptographicComputationsOrchestrator {
                 dwallet_mpc_metrics.clone(),
                 elapsed.as_millis(),
             );
+            // Measure computation_channel_sender.send(...)
+            let start_send = Instant::now();
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
                     error=?err,
@@ -194,8 +197,11 @@ impl CryptographicComputationsOrchestrator {
                     "failed to send a finished computation message"
                 );
             } else {
+                let elapsed_ms = start_send.elapsed().as_millis();
                 info!(
+                    duration_ms = elapsed_ms,
                     mpc_protocol=?mpc_protocol,
+                    duration_seconds = elapsed_ms / 1000,
                     "Computation update message sent"
                 );
             }

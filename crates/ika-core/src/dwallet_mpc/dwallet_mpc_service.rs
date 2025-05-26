@@ -219,7 +219,7 @@ impl DWalletMPCService {
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                error!("failed to load DB tables from the epoch store");
+                warn!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self

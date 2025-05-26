@@ -519,10 +519,11 @@ impl AuthorityEpochTables {
         impl Iterator<Item = ((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
     > {
         let key = (checkpoint_seq, starting_index);
-        debug!("Scanning pending checkpoint signatures from {:?}", key);
+        info!(key=?key, "Scanning pending checkpoint signatures from");
         let iter = self
             .pending_checkpoint_signatures
             .unbounded_iter()
+            // key >= DB DATA.
             .skip_to(&key)?;
         Ok::<_, IkaError>(iter)
     }
