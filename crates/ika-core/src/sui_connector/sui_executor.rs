@@ -164,7 +164,7 @@ where
                     epoch_switch_state.calculated_protocol_pricing = true;
                 }
                 Err(err) => {
-                    error!(?err, "Failed to calculate protocols pricing");
+                    error!(?err, "failed to calculate protocols pricing");
                 }
             }
         }
