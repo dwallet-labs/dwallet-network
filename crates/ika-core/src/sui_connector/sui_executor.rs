@@ -471,6 +471,10 @@ where
         ika_system_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
     ) -> anyhow::Result<()> {
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
         let mut ptb = ProgrammableTransactionBuilder::new();
         let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
         let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
@@ -580,13 +584,9 @@ where
             vec![
                 zero,
                 zero_option,
-                sign_with_partial_user_signature_protocol_flag,
+                sign_with_partial_user_signature_protocol_flag
             ],
         );
-        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        let gas_coin = gas_coins
-            .first()
-            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
             ptb.finish(),
