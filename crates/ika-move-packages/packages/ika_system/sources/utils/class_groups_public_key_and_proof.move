@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 /// This module defines the data structures for the Class Groups public key and proof.
 /// 
 /// The full Class Groups public key consists of 13 public keys, each with a corresponding proof.

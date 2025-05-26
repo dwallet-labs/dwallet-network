@@ -1753,14 +1753,14 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "commitment",
  "crypto-bigint 0.6.0-rc.6",
  "crypto-primes",
  "group 0.1.0",
  "homomorphic_encryption",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "maurer",
  "merlin",
  "mpc",
@@ -1770,7 +1770,7 @@ dependencies = [
  "rayon",
  "serde",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -1901,13 +1901,13 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "group 0.1.0",
  "merlin",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -2320,7 +2320,7 @@ dependencies = [
  "hybrid-array",
  "num-traits",
  "rand_core 0.6.4",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -2999,7 +2999,7 @@ dependencies = [
  "digest 0.11.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "rfc6979 0.5.0-pre.4",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "signature 2.0.0",
  "spki 0.8.0-rc.1",
 ]
@@ -3062,7 +3062,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47"
 dependencies = [
  "base16ct 0.2.0",
- "base64ct",
  "crypto-bigint 0.5.5",
  "digest 0.10.7",
  "ff 0.13.0",
@@ -3072,8 +3071,6 @@ dependencies = [
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "sec1 0.7.3",
- "serde_json",
- "serdect 0.2.0",
  "subtle",
  "zeroize",
 ]
@@ -3093,7 +3090,7 @@ dependencies = [
  "pkcs8 0.11.0-rc.2",
  "rand_core 0.6.4",
  "sec1 0.8.0-rc.3",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -3131,7 +3128,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "commitment",
  "crypto-bigint 0.6.0-rc.6",
@@ -3144,7 +3141,7 @@ dependencies = [
  "proof",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tiresias",
 ]
 
@@ -4222,12 +4219,12 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "k256 0.14.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon",
  "serde",
@@ -4235,7 +4232,7 @@ dependencies = [
  "sha3 0.9.1",
  "subtle",
  "subtle-ng",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -4500,14 +4497,14 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "getrandom 0.2.15",
  "group 0.1.0",
  "mpc",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -4884,16 +4881,6 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
-
-[[package]]
-name = "idna"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "634d9b1461af396cad843f47fdba5597a4f9e6ddd4bfb6ff5d85028c25cb12f6"
-dependencies = [
- "unicode-bidi",
- "unicode-normalization",
-]
 
 [[package]]
 name = "idna"
@@ -5399,6 +5386,7 @@ dependencies = [
  "mysten-network",
  "prometheus",
  "rand 0.8.5",
+ "rayon",
  "sui-macros",
  "sui-simulator",
  "sui-tls",
@@ -5418,6 +5406,7 @@ dependencies = [
  "anemo",
  "anyhow",
  "bcs",
+ "clap",
  "dwallet-classgroups-types",
  "fastcrypto",
  "flate2",
@@ -5472,52 +5461,24 @@ version = "0.1.0"
 dependencies = [
  "anemo",
  "anyhow",
- "async-trait",
  "bcs",
- "bincode",
  "byteorder",
- "chrono",
  "consensus-config",
- "coset",
- "criterion",
  "derive_more 1.0.0",
  "dwallet-mpc-types",
  "enum_dispatch",
- "expect-test",
  "eyre",
  "fastcrypto",
- "fastcrypto-tbls",
  "fastcrypto-zkp",
  "group 0.1.0",
  "ika-protocol-config",
- "im",
- "indexmap 2.7.1",
- "itertools 0.13.0",
  "jsonrpsee",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
  "move-core-types",
- "move-disassembler",
- "move-ir-types",
  "move-vm-profiler",
  "move-vm-test-utils",
- "move-vm-types",
- "mysten-metrics",
  "mysten-network",
- "nonempty 0.9.0",
- "num-bigint 0.4.6",
- "num-traits",
- "num_enum 0.6.1",
  "once_cell",
- "p256",
- "parking_lot 0.12.3",
- "passkey-authenticator",
- "passkey-client",
- "passkey-types",
  "prometheus",
- "proptest",
- "proptest-derive 0.5.1",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "roaring",
@@ -5527,24 +5488,19 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "serde_with",
- "serde_yaml",
  "shared-crypto",
- "signature 2.2.0",
  "static_assertions",
  "strum 0.24.1",
  "strum_macros 0.24.3",
  "sui-config",
- "sui-enum-compat-util",
  "sui-json-rpc-types",
  "sui-macros",
  "sui-types",
  "tap",
  "thiserror 1.0.69",
- "tokio",
  "tonic 0.12.3",
  "tracing",
  "typed-store-error",
- "url",
 ]
 
 [[package]]
@@ -5812,6 +5768,15 @@ name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
 dependencies = [
  "either",
 ]
@@ -6103,7 +6068,7 @@ dependencies = [
  "ecdsa 0.17.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "once_cell",
- "serdect 0.3.0-rc.0",
+ "serdect",
 ]
 
 [[package]]
@@ -6115,7 +6080,7 @@ dependencies = [
  "ecdsa 0.17.0-pre.9",
  "elliptic-curve 0.14.0-rc.1",
  "once_cell",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "sha2 0.11.0-pre.4",
 ]
 
@@ -6309,9 +6274,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.25"
+version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
+checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 dependencies = [
  "serde",
 ]
@@ -6416,7 +6381,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "commitment",
  "crypto-bigint 0.6.0-rc.6",
@@ -6428,7 +6393,7 @@ dependencies = [
  "proof",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -7406,18 +7371,19 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "commitment",
  "crypto-bigint 0.6.0-rc.6",
  "gcd",
  "getrandom 0.2.15",
  "group 0.1.0",
+ "itertools 0.14.0",
  "rand 0.8.5",
  "rayon",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -8350,38 +8316,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "passkey-authenticator"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4017d27e98940a98358b43a3fe19cb3d7b7c821c3b35634d8087230e92445579"
-dependencies = [
- "async-trait",
- "coset",
- "log",
- "p256",
- "passkey-types",
- "rand 0.8.5",
-]
-
-[[package]]
-name = "passkey-client"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f14d42b14749cc7927add34a9932b3b3cc5349a633384850baa67183061439dd"
-dependencies = [
- "ciborium",
- "coset",
- "idna 0.5.0",
- "passkey-authenticator",
- "passkey-types",
- "public-suffix",
- "serde",
- "serde_json",
- "typeshare",
- "url",
-]
-
-[[package]]
 name = "passkey-types"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9010,7 +8944,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -9018,14 +8952,14 @@ dependencies = [
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
  "group 0.1.0",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "merlin",
  "mpc",
  "rand_core 0.6.4",
  "rayon",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -9171,12 +9105,6 @@ checksum = "200b9ff220857e53e184257720a14553b2f4aa02577d2ed9842d45d4b9654810"
 dependencies = [
  "cc",
 ]
-
-[[package]]
-name = "public-suffix"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68a59553bc595dc1514e7d713e6167cf1c4d68ef6fcc2d10ad834a97a1ca9bc4"
 
 [[package]]
 name = "quanta"
@@ -10335,7 +10263,6 @@ dependencies = [
  "der 0.7.9",
  "generic-array",
  "pkcs8 0.10.2",
- "serdect 0.2.0",
  "subtle",
  "zeroize",
 ]
@@ -10350,7 +10277,7 @@ dependencies = [
  "der 0.8.0-rc.1",
  "hybrid-array",
  "pkcs8 0.11.0-rc.2",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -10599,16 +10526,6 @@ dependencies = [
  "ryu",
  "serde",
  "yaml-rust",
-]
-
-[[package]]
-name = "serdect"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
-dependencies = [
- "base16ct 0.2.0",
- "serde",
 ]
 
 [[package]]
@@ -13689,7 +13606,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "crypto-bigint 0.6.0-rc.6",
  "crypto-primes",
@@ -13699,7 +13616,7 @@ dependencies = [
  "mpc",
  "serde",
  "subtle",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -14416,7 +14333,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=3ad27518#3ad275181dc2de14203df3b892512da4220f802e"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=98e222d5#98e222d51fdcfd8584320e768a0706d9e64a58a5"
 dependencies = [
  "class_groups",
  "commitment",
@@ -14431,7 +14348,7 @@ dependencies = [
  "proof",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tiresias",
 ]
 
@@ -14692,7 +14609,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32f8b686cadd1473f4bd0117a5d28d36b1ade384ea9b5069a1c40aefed7fda60"
 dependencies = [
  "form_urlencoded",
- "idna 1.0.3",
+ "idna",
  "percent-encoding",
  "serde",
 ]

@@ -6,17 +6,16 @@ use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups};
-use group::{secp256k1, GroupElement, PartyID};
+use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, VersionedNetworkDkgOutput};
+use group::{secp256k1, PartyID};
 use ika_types::committee::Committee;
-use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletDecryptionKeyReshareRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData, SessionInfo,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData,
+    SessionInfo,
 };
-use mpc::{Party, Weight, WeightedThresholdAccessStructure};
+use mpc::Party;
 use std::collections::HashMap;
-use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(super) type ReshareSecp256k1Party = Secp256k1Party;
 
@@ -25,9 +24,8 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
     fn generate_public_input(
         committee: &Committee,
         new_committee: Committee,
-        protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
-        network_dkg_public_output: MPCPublicOutput,
+        network_dkg_public_output: VersionedNetworkDkgOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
@@ -54,15 +52,13 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     fn generate_public_input(
         current_committee: &Committee,
         upcoming_committee: Committee,
-        protocol_public_parameters: Vec<u8>,
         decryption_key_share_public_parameters: Vec<u8>,
-        network_dkg_public_output: MPCPublicOutput,
+        network_dkg_public_output: VersionedNetworkDkgOutput,
     ) -> DwalletMPCResult<MPCPublicInput> {
         let network_dkg_public_output = match network_dkg_public_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
+            VersionedNetworkDkgOutput::V1(output) => output,
         };
         let current_committee = current_committee.clone();
-        let quorum_threshold = current_committee.quorum_threshold();
 
         let current_access_structure =
             generate_access_structure_from_committee(&current_committee)?;
@@ -93,7 +89,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             bcs::from_bytes(&network_dkg_public_output)?,
         )
         .map_err(|e| {
-            DwalletMPCError::TwoPCMPCError("failed to generate public input".to_string())
+            DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
         })?;
 
         Ok(bcs::to_bytes(&public_input)?)
@@ -101,7 +97,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
 }
 
 pub(super) fn network_decryption_key_reshare_session_info_from_event(
-    deserialized_event: DWalletMPCSuiEvent<DWalletDecryptionKeyReshareRequestEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),

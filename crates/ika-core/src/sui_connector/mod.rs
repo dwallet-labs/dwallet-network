@@ -1,41 +1,34 @@
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::checkpoints::CheckpointStore;
-use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
+use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
-use ika_sui_client::metrics::SuiClientMetrics;
-use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
-use mpc::WeightedThresholdAccessStructure;
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::Coin;
-use sui_keys::keypair_file::read_key;
 use sui_sdk::apis::CoinReadApi;
-use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
+use sui_sdk::SuiClient as SuiSdkClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use sui_types::event::EventID;
-use sui_types::object::Owner;
-use sui_types::transaction::{
-    ProgrammableTransaction, SenderSignedData, Transaction, TransactionData, TransactionKind,
-};
+use sui_types::transaction::{ProgrammableTransaction, Transaction, TransactionData};
 use sui_types::Identifier;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing::info;
 
@@ -45,7 +38,7 @@ pub mod sui_syncer;
 
 pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
 pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_secp256k1_inner");
+    ident_str!("dwallet_2pc_mpc_coordinator_inner");
 
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,
@@ -55,15 +48,19 @@ pub struct SuiNotifier {
 pub struct SuiConnectorService {
     sui_client: Arc<SuiClient<SuiSdkClient>>,
     sui_executor: SuiExecutor<SuiSdkClient>,
+    #[allow(dead_code)]
     task_handles: Vec<JoinHandle<()>>,
+    #[allow(dead_code)]
     sui_connector_config: SuiConnectorConfig,
+    #[allow(dead_code)]
     metrics: Arc<SuiConnectorMetrics>,
 }
 
 impl SuiConnectorService {
     pub async fn new(
         perpetual_tables: Arc<AuthorityPerpetualTables>,
-        checkpoint_store: Arc<CheckpointStore>,
+        checkpoint_store: Arc<DWalletCheckpointStore>,
+        system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
@@ -80,6 +77,7 @@ impl SuiConnectorService {
         let sui_executor = SuiExecutor::new(
             sui_connector_config.ika_system_package_id,
             checkpoint_store.clone(),
+            system_checkpoint_store.clone(),
             sui_notifier,
             sui_client.clone(),
             sui_connector_metrics.clone(),
@@ -102,7 +100,7 @@ impl SuiConnectorService {
             network_keys_sender,
         )
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to start sui syncer"))?;
+        .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
         Ok(Self {
             sui_client,
             sui_executor,
@@ -123,7 +121,7 @@ impl SuiConnectorService {
     async fn prepare_for_sui(
         sui_connector_config: SuiConnectorConfig,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
-        sui_connector_metrics: Arc<SuiConnectorMetrics>,
+        _sui_connector_metrics: Arc<SuiConnectorMetrics>,
     ) -> anyhow::Result<Option<SuiNotifier>> {
         let Some(sui_key_path) = sui_connector_config.notifier_client_key_pair else {
             return Ok(None);

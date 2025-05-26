@@ -75,3 +75,5 @@ docs/content/references/framework/**
 
 lcov.info
 ika_config.json
+*.log
+*.seed

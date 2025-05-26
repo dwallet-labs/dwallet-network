@@ -727,7 +727,7 @@ mod test {
             .into();
         let pruned_epoch = pruned_checkpoint.epoch();
         let expected_checkpoint = checkpoint_store
-            .epoch_last_checkpoint_map
+            .epoch_last_dwallet_checkpoint_map
             .get(&pruned_epoch)
             .unwrap()
             .unwrap();
