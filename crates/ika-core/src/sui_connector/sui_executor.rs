@@ -500,12 +500,28 @@ where
             bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
         ))?;
 
-        let dwallet_pricing = ptb.programmable_move_call(
+        ptb.programmable_move_call(
             ika_system_package_id,
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("empty").into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
+            vec![zero, none_option, dkg_first_round_protocol_flag],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
+            vec![zero, none_option, dkg_second_round_protocol_flag],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![zero, none_option, re_encrypt_user_share_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -514,46 +530,6 @@ where
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
-                dwallet_pricing,
-                zero,
-                none_option,
-                dkg_first_round_protocol_flag,
-            ],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![
-                dwallet_pricing,
-                zero,
-                none_option,
-                dkg_second_round_protocol_flag,
-            ],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![
-                dwallet_pricing,
-                zero,
-                none_option,
-                re_encrypt_user_share_protocol_flag,
-            ],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![
-                dwallet_pricing,
                 zero,
                 none_option,
                 make_dwallet_user_secret_key_share_public_protocol_flag,
@@ -566,7 +542,6 @@ where
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
-                dwallet_pricing,
                 zero,
                 none_option,
                 imported_key_dwallet_verification_protocol_flag,
@@ -578,7 +553,7 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![dwallet_pricing, zero, zero_option, presign_protocol_flag],
+            vec![zero, zero_option, presign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -586,7 +561,15 @@ where
             DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("calculate_pricing_votes").into(),
             vec![],
-            vec![dwallet_pricing, zero, zero_option, sign_protocol_flag],
+            vec![zero, zero_option, sign_protocol_flag],
+        );
+
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![zero, zero_option, future_sign_protocol_flag],
         );
 
         ptb.programmable_move_call(
@@ -595,20 +578,6 @@ where
             ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
-                dwallet_pricing,
-                zero,
-                zero_option,
-                future_sign_protocol_flag,
-            ],
-        );
-
-        ptb.programmable_move_call(
-            ika_system_package_id,
-            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-            ident_str!("calculate_pricing_votes").into(),
-            vec![],
-            vec![
-                dwallet_pricing,
                 zero,
                 zero_option,
                 sign_with_partial_user_signature_protocol_flag,
