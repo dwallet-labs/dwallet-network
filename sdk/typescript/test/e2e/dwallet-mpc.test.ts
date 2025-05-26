@@ -202,7 +202,7 @@ describe('Test dWallet MPC', () => {
 			completedPresign.id.id,
 			dwalletWithSecretShare.dwallet_cap_id,
 			Buffer.from('hello world'),
-			dwalletWithSecretShare.public_user_secret_key_share.at(0)!,
+			dwalletWithSecretShare.public_user_secret_key_share,
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
