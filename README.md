@@ -24,7 +24,7 @@ As Ika moves closer to its Mainnet launch, it will add support to many L1s and L
 
 ## Cryptography of dWallets - 2PC-MPC
 
-dWallets utilize the [2PC-MPC protocol](https://github.com/dwallet-labs/2pc-mpc), a two-party ECDSA protocol we designed specifically for dWallets, where the second party is fully emulated by a network of n parties.
+dWallets utilize the [2PC-MPC protocol](https://github.com/dwallet-labs/crypto/tree/main?tab=readme-ov-file#2pc-mpc), a two-party ECDSA protocol we designed specifically for dWallets, where the second party is fully emulated by a network of n parties.
 
 Besides its novel structure, enabling the noncollusivity of dWallets, and the autonomy and flexibility of a permissionless Ika, the 2PC-MPC protocol also dramatically improves upon the state of the art, allowing Ika to be scalable & massively-decentralized.
 
