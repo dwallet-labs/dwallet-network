@@ -138,7 +138,19 @@ where
                 epoch_switch_state.ran_mid_epoch = true;
             }
         }
-        if clock.timestamp_ms > mid_epoch_time && !epoch_switch_state.calculated_protocol_pricing {
+        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
+            .sui_client
+            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
+            .await
+        else {
+            error!("failed to get dwallet coordinator inner when running epoch switch");
+            return;
+        };
+
+        if clock.timestamp_ms > mid_epoch_time
+            && coordinator.pricing_calculation_votes.is_some()
+            && !epoch_switch_state.calculated_protocol_pricing
+        {
             info!("Calculating protocols pricing");
             match Self::calculate_protocols_pricing(
                 &self.sui_client,
@@ -156,15 +168,6 @@ where
                 }
             }
         }
-
-        let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
-            .sui_client
-            .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
-            .await
-        else {
-            error!("failed to get dwallet coordinator inner when running epoch switch");
-            return;
-        };
 
         // The Epoch was finished.
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
