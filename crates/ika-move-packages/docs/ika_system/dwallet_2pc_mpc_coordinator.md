@@ -16,6 +16,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 -  [Function `approve_imported_key_message`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_approve_imported_key_message)
 -  [Function `request_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_first_round)
 -  [Function `request_dwallet_dkg_second_round`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_second_round)
+-  [Function `calculate_pricing_votes`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes)
 -  [Function `new_imported_key_dwallet`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet)
 -  [Function `request_imported_key_dwallet_verification`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification)
 -  [Function `request_make_dwallet_user_secret_key_shares_public`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_make_dwallet_user_secret_key_shares_public)
@@ -504,6 +505,39 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         payment_sui,
         ctx
     )
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes"></a>
+
+## Function `calculate_pricing_votes`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes">calculate_pricing_votes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, curve: u32, signature_algorithm: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;, protocol: u32)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes">calculate_pricing_votes</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    curve: u32,
+    signature_algorithm: Option&lt;u32&gt;,
+    protocol: u32,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes">calculate_pricing_votes</a>(
+        curve,
+        signature_algorithm,
+        protocol,
+    );
 }
 </code></pre>
 
