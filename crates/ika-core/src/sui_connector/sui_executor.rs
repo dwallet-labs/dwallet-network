@@ -446,12 +446,8 @@ where
         sui_client: &Arc<SuiClient<C>>,
         ika_system_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
     ) -> anyhow::Result<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
-        let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
-        let zero_and_one_value =
-            ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
         let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
         let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
         let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
@@ -480,11 +476,9 @@ where
             bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
         ))?;
 
-        let zero_price = ptb.input(CallArg::Pure(bcs::to_bytes(&0u64)?))?;
-
         let dwallet_pricing = ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
             ident_str!("empty").into(),
             vec![],
             vec![],
@@ -492,154 +486,118 @@ where
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 none_option,
                 dkg_first_round_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 none_option,
                 dkg_second_round_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 none_option,
                 re_encrypt_user_share_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 none_option,
                 make_dwallet_user_secret_key_share_public_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 none_option,
                 imported_key_dwallet_verification_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 zero_option,
                 presign_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 zero_option,
                 sign_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 zero_option,
                 future_sign_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
 
         ptb.programmable_move_call(
             ika_system_package_id,
-            ident_str!("dwallet_pricing").into(),
-            ident_str!("insert_or_update_dwallet_pricing").into(),
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
             vec![],
             vec![
                 dwallet_pricing,
                 zero,
                 zero_option,
                 sign_with_partial_user_signature_protocol_flag,
-                zero_price,
-                zero_price,
-                zero_price,
-                zero_price,
             ],
         );
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
