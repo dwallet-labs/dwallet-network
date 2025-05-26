@@ -442,7 +442,12 @@ where
         slices
     }
 
-    async fn calculate_protocols_pricing(ika_system_package_id: ObjectID) -> IkaResult<()> {
+    async fn calculate_protocols_pricing(
+        sui_client: &Arc<SuiClient<C>>,
+        ika_system_package_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
+    ) -> anyhow::Result<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
         let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
         let zero_and_one_value =
@@ -476,12 +481,6 @@ where
         ))?;
 
         let zero_price = ptb.input(CallArg::Pure(bcs::to_bytes(&0u64)?))?;
-
-        let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: ika_system_object_id,
-            initial_shared_version: init_system_shared_version,
-            mutable: true,
-        }))?;
 
         let dwallet_pricing = ptb.programmable_move_call(
             ika_system_package_id,
@@ -643,6 +642,24 @@ where
                 zero_price,
             ],
         );
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+
+        Ok(())
     }
 
     async fn process_mid_epoch(
