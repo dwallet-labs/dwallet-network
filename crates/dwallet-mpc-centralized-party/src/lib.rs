@@ -306,7 +306,9 @@ pub fn create_imported_dwallet_centralized_step_inner(
             let outgoing_message = round_result.outgoing_message;
             let secret_share = round_result.private_output;
             Ok((
-                bcs::to_bytes(&secret_share)?,
+                bcs::to_bytes(&VersionedDwalletUserSecretShare::V1(bcs::to_bytes(
+                    &secret_share,
+                )?))?,
                 bcs::to_bytes(&VersionedImportedDWalletPublicOutput::V1(bcs::to_bytes(
                     &public_output,
                 )?))?,
