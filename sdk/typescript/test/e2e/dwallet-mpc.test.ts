@@ -6,7 +6,7 @@ import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { beforeEach, describe, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
@@ -250,6 +250,6 @@ describe('Test dWallet MPC', () => {
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
-		console.log({ isValid });
+		expect(isValid).toBeTruthy();
 	});
 });
