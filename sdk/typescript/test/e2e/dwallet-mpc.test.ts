@@ -208,12 +208,11 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should create an imported dWallet, sign with it & verify the signature agains the original public key', async () => {
+	it('should create an imported dWallet, sign with it & verify the signature against the original public key', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const [secretKey, publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
 		console.log({ ...dwallet });
-		console.log('Running publish secret share...');
 		console.log('Running Presign...');
 		const completedPresign = await presign(conf, dwallet.dwalletID);
 		console.log(`presign has been created successfully: ${completedPresign.id.id}`);

@@ -22,7 +22,7 @@ use sui_sdk::wallet_context::WalletContext;
 use tokio::runtime::Runtime;
 use tracing::info;
 
-const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 10;
+const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 100;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]
