@@ -405,7 +405,7 @@ impl ProtocolConfig {
 
         // IMPORTANT: Never modify the value of any constant for a pre-existing protocol version.
         // To change the values here you must create a new protocol version with the new values!
-        let cfg = Self {
+        let mut cfg = Self {
             // will be overwritten before being returned
             version,
 
