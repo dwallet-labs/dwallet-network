@@ -600,12 +600,15 @@ where
             .execute_transaction_block_with_effects(transaction)
             .await?;
         if !result.errors.is_empty() {
-            for error in result.errors {
-                error!(?error, "Error executing transaction block");
+            for error in result.errors.clone() {
+                error!(?error, "error executing transaction block");
             }
-            panic!("shoot");
+            return Err(anyhow::anyhow!(
+                "calculate_protocols_pricing failed with errors: {:?}",
+                result.errors
+            ));
         }
-        info!(?result.digest, "successfully executed transaction block for protocol pricing calculation");
+        info!(?result.digest, "Successfully executed transaction block for protocol pricing calculation");
 
         Ok(())
     }
