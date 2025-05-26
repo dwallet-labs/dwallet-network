@@ -26,6 +26,7 @@ use ika_types::sui::{
 use itertools::Itertools;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
+use move_core_types::ident_str;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
