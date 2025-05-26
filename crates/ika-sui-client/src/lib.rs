@@ -191,7 +191,7 @@ where
     async fn describe(&self) -> anyhow::Result<()> {
         let chain_id = self.inner.get_chain_identifier().await?;
         let checkpoint_sequence_number = self.inner.get_latest_checkpoint_sequence_number().await?;
-        tracing::info!(
+        info!(
             "SuiClient is connected to chain {chain_id}, current checkpoint sequence number: {checkpoint_sequence_number}"
         );
         Ok(())

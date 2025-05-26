@@ -193,6 +193,19 @@ public fun request_dwallet_dkg_second_round(
     )
 }
 
+public(package) fun calculate_pricing_votes(
+    self: &mut DWalletCoordinator,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+) {
+    self.inner_mut().calculate_pricing_votes(
+        curve,
+        signature_algorithm,
+        protocol,
+    );
+}
+
 public fun new_imported_key_dwallet(
     self: &mut DWalletCoordinator,
     dwallet_network_encryption_key_id: ID,

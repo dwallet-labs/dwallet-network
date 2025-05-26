@@ -1223,6 +1223,10 @@ public(package) fun mid_epoch_reconfiguration(
     dwallet_network_encryption_key_caps.do_ref!(|cap| self.emit_start_reconfiguration_event(cap, ctx));
 }
 
+// expose in wrapper
+// after mid config call it with all options
+// call it for every protocol right after process mid epoch
+// if we are not doing all options cannot perform advacne epoch
 public(package) fun calculate_pricing_votes(
     self: &mut DWalletCoordinatorInner,
     curve: u32,
