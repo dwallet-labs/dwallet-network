@@ -11,7 +11,7 @@ The installation script [can be found here](https://rustwasm.github.io/wasm-pack
 pnpm build:dev
 ```
 
-### Building for Web environment
+### Building for a Web environment
 
 ```shell
 pnpm build:release

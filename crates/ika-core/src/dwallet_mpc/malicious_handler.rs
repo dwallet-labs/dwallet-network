@@ -5,9 +5,7 @@
 //! This module handles:
 //! - Storing reported malicious actors.
 //! - Ensuring these reports are only considered valid if submitted by a quorum of validators.
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::stake_aggregator::StakeAggregator;
-use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
@@ -85,19 +83,6 @@ impl MaliciousHandler {
 
     pub(crate) fn get_malicious_actors_names(&self) -> &HashSet<AuthorityName> {
         &self.malicious_actors
-    }
-
-    // todo(zeev): fix this.
-    #[allow(dead_code)]
-    pub(crate) fn get_malicious_actors_ids(
-        &self,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> DwalletMPCResult<HashSet<PartyID>> {
-        Ok(self
-            .malicious_actors
-            .iter()
-            .map(|name| Ok(epoch_store.authority_name_to_party_id(name)?))
-            .collect::<DwalletMPCResult<HashSet<_>>>()?)
     }
 
     /// Reports a malicious actor disrupting the MPC process.

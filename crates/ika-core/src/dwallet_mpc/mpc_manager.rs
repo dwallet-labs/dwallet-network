@@ -12,8 +12,7 @@ use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event}
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput,
+    DWalletMPCNetworkKeyScheme, MPCSessionStatus, VersionedNetworkDkgOutput,
 };
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -278,6 +277,7 @@ impl DWalletMPCManager {
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
+        // Previously malicious actors are ignored.
         if self
             .malicious_handler
             .get_malicious_actors_names()
@@ -328,7 +328,7 @@ impl DWalletMPCManager {
                         .keys()
                         .cloned()
                         .collect::<Vec<PartyID>>(),
-                    &*epoch_store,
+                    &epoch_store,
                 )?);
             session
                 .serialized_full_messages
@@ -388,31 +388,31 @@ impl DWalletMPCManager {
             }
             t if t
                 == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
-                    packages_config,
-                ) =>
-            {
-                self.dwallet_mpc_metrics
-                    .received_events_start_decryption_key_reshare_count
-                    .inc();
-            }
+                packages_config,
+            ) =>
+                {
+                    self.dwallet_mpc_metrics
+                        .received_events_start_decryption_key_reshare_count
+                        .inc();
+                }
             t if t
                 == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(
-                    packages_config,
-                ) =>
-            {
-                self.dwallet_mpc_metrics
-                    .received_events_start_dwallet_dkg_first_round_count
-                    .inc();
-            }
+                packages_config,
+            ) =>
+                {
+                    self.dwallet_mpc_metrics
+                        .received_events_start_dwallet_dkg_first_round_count
+                        .inc();
+                }
             t if t
                 == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
-                    packages_config,
-                ) =>
-            {
-                self.dwallet_mpc_metrics
-                    .received_events_start_dwallet_dkg_second_round_count
-                    .inc();
-            }
+                packages_config,
+            ) =>
+                {
+                    self.dwallet_mpc_metrics
+                        .received_events_start_dwallet_dkg_second_round_count
+                        .inc();
+                }
             t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
                 self.dwallet_mpc_metrics
                     .received_events_start_presign_count
@@ -425,13 +425,13 @@ impl DWalletMPCManager {
             }
             t if t
                 == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
-                    packages_config,
-                ) =>
-            {
-                self.dwallet_mpc_metrics
-                    .received_events_start_encrypted_share_verification_count
-                    .inc();
-            }
+                packages_config,
+            ) =>
+                {
+                    self.dwallet_mpc_metrics
+                        .received_events_start_encrypted_share_verification_count
+                        .inc();
+                }
             t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
                 self.dwallet_mpc_metrics
                     .received_events_start_partial_signature_verification_count
@@ -460,7 +460,7 @@ impl DWalletMPCManager {
         if let Err(err) = self.increment_metrics_for_event(&event) {
             warn!(?err, "Failed to increment metrics for event...");
         }
-        let (public_input, private_input) = session_input_from_event(event, &self).await?;
+        let (public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = Some(MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -533,8 +533,8 @@ impl DWalletMPCManager {
         self.network_keys
             .validator_private_dec_key_data
             .validator_decryption_key_shares
-            .get(&key_id)
-            .map(|v| v.clone())
+            .get(key_id)
+            .cloned()
             .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
@@ -564,8 +564,7 @@ impl DWalletMPCManager {
         let malicious_parties: Vec<PartyID> = quorum_check_results
             .clone()
             .into_iter()
-            .map(|(_, malicious_parties)| malicious_parties)
-            .flatten()
+            .flat_map(|(_, malicious_parties)| malicious_parties)
             .collect();
         let ready_to_advance_sessions: Vec<DWalletMPCSession> = quorum_check_results
             .into_iter()
@@ -783,7 +782,7 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Active,
-            session_id.clone(),
+            *session_id,
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
@@ -792,16 +791,15 @@ impl DWalletMPCManager {
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
-        self.mpc_sessions.insert(session_id.clone(), new_session);
+        self.mpc_sessions.insert(*session_id, new_session);
     }
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {
-        let mut mut_receiver = self.next_epoch_committee_receiver.clone();
-        let next_epoch_committee = mut_receiver
+        self.next_epoch_committee_receiver
+            .clone()
             .wait_for(|committee| committee.epoch == self.epoch_id + 1)
             .await
             .expect("next epoch committee channel got closed unexpectedly")
-            .clone();
-        next_epoch_committee
+            .clone()
     }
 }

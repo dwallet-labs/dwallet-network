@@ -466,7 +466,6 @@ name = "dwallet-mpc-wasm"
 version = "0.1.6"
 dependencies = [
  "anyhow",
- "bcs",
  "dwallet-mpc-centralized-party",
  "serde-wasm-bindgen",
  "wasm-bindgen",

@@ -54,15 +54,12 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
-use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
     SystemCheckpointServiceNotify,
 };
-use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput};
 use group::PartyID;
 use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
@@ -84,8 +81,8 @@ use ika_types::messages_dwallet_checkpoint::{
 };
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, PresignRequestEvent,
-    SessionInfo, SessionType,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    SessionType,
 };
 use ika_types::messages_system_checkpoints::{
     SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
@@ -676,8 +673,8 @@ impl AuthorityPerEpochStore {
         for (name, _) in self.committee().voting_rights.iter() {
             let party_id = self.authority_name_to_party_id(name)?;
             let public_key =
-                bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                bcs::from_bytes(self.committee().class_groups_public_key_and_proof(name)?)
+                    .map_err(DwalletMPCError::BcsError)?;
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
@@ -691,8 +688,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .dwallet_mpc_events
             .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -705,8 +701,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .dwallet_mpc_completed_sessions
             .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -820,7 +815,7 @@ impl AuthorityPerEpochStore {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
-            self.committee.voting_rights.iter().cloned().collect(),
+            self.committee.voting_rights.to_vec(),
             self.committee.class_groups_public_keys_and_proofs.clone(),
             self.committee.quorum_threshold,
             self.committee.validity_threshold,
@@ -1374,8 +1369,8 @@ impl AuthorityPerEpochStore {
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
-        for key in notifications.iter().cloned() {
-            self.consensus_notify_read.notify(&key, &());
+        for key in notifications {
+            self.consensus_notify_read.notify(key, &());
         }
     }
 
@@ -1565,7 +1560,7 @@ impl AuthorityPerEpochStore {
                             ),
                         ..
                     }) => Some(DWalletMPCDBMessage::MaliciousReport(
-                        authority_name.clone(),
+                        *authority_name,
                         report.clone(),
                     )),
                     _ => None,
@@ -1597,8 +1592,8 @@ impl AuthorityPerEpochStore {
                             ),
                         ..
                     }) => Some(DWalletMPCOutputMessage {
-                        authority: origin_authority.clone(),
-                        session_info: session_info.clone(),
+                        authority: *origin_authority,
+                        session_info: *session_info.clone(),
                         output: output.clone(),
                     }),
                     _ => None,
@@ -1633,8 +1628,8 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 self.process_dwallet_mpc_output(
-                    certificate_author.clone(),
-                    session_info.clone(),
+                    *certificate_author,
+                    *session_info.clone(),
                     output.clone(),
                 )
                 .await
@@ -1679,9 +1674,9 @@ impl AuthorityPerEpochStore {
                         .versions
                         .iter()
                         .max_by(|(protocol_version_a, _), (protocol_version_b, _)| {
-                            protocol_version_a.cmp(&protocol_version_b)
+                            protocol_version_a.cmp(protocol_version_b)
                         })
-                        .map(|(protocol_version, _)| protocol_version.clone())
+                        .map(|(protocol_version, _)| *protocol_version)
                         .unwrap_or_else(|| {
                             warn!("No supported protocol versions found in capabilities");
                             self.protocol_version()
@@ -1743,7 +1738,7 @@ impl AuthorityPerEpochStore {
         match output_verification_result.result {
             OutputVerificationStatus::FirstQuorumReached(output) => self
                 .process_dwallet_transaction(output, session_info)
-                .map_err(|e| IkaError::from(e)),
+                .map_err(IkaError::from),
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
@@ -1765,9 +1760,9 @@ impl AuthorityPerEpochStore {
 
     fn process_consensus_system_bulk_transaction(
         &self,
-        system_transaction: &Vec<MessageKind>,
+        system_transaction: &[MessageKind],
     ) -> ConsensusCertificateResult {
-        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.clone())
+        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.to_owned())
     }
 
     fn process_dwallet_transaction(
@@ -1899,7 +1894,7 @@ impl AuthorityPerEpochStore {
 
                     let messages: Vec<_> = slices
                         .into_iter()
-                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .map(MessageKind::DwalletMPCNetworkDKGOutput)
                         .collect();
                     Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
@@ -1928,7 +1923,7 @@ impl AuthorityPerEpochStore {
 
                 let messages: Vec<_> = slices
                     .into_iter()
-                    .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
+                    .map(MessageKind::DwalletMPCNetworkReshareOutput)
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
             }
