@@ -12,8 +12,8 @@ use tracing::{error, info};
 use ika_config::node::RunWithRange;
 use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
-use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
+use ika_types::crypto::KeypairTraits;
 use ika_types::digests::ChainIdentifier;
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
@@ -47,10 +47,6 @@ fn main() {
     // Ensure that a validator never calls get_for_min_version/get_for_max_version_UNSAFE.
     // TODO: re-enable after we figure out how to eliminate crashes in prod because of this.
     // ProtocolConfig::poison_get_for_min_version();
-
-    move_vm_profiler::tracing_feature_enabled! {
-        panic!("Cannot run the ika-node binary with tracing feature enabled");
-    }
 
     let args = Args::parse();
     let mut config = NodeConfig::load(&args.config_path).unwrap();
