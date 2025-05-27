@@ -195,6 +195,14 @@ impl DWalletMPCOutputsVerifier {
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
             self.update_completed_sessions_metric(session_info);
+            let mpc_event_data = session_info.mpc_round.clone();
+            self.dwallet_mpc_metrics.add_received_event_start(
+                &mpc_event_data.get_event_name(),
+                &mpc_event_data.get_curve(),
+                &"",
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            );
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
                 malicious_actors: vec![],
@@ -225,58 +233,5 @@ impl DWalletMPCOutputsVerifier {
                 current_result: OutputVerificationStatus::NotEnoughVotes,
             },
         );
-    }
-
-    fn update_completed_sessions_metric(&self, session_info: &SessionInfo) {
-        match session_info.mpc_round {
-            MPCProtocolInitData::DKGFirst(_) => {
-                self.dwallet_mpc_metrics
-                    .dwallet_dkg_first_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::DKGSecond(_) => {
-                self.dwallet_mpc_metrics
-                    .dwallet_dkg_second_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::Presign(_) => {
-                self.dwallet_mpc_metrics
-                    .presign_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::Sign(_) => {
-                self.dwallet_mpc_metrics.sign_round_completions_count.inc();
-            }
-            MPCProtocolInitData::NetworkDkg(_, _) => {
-                self.dwallet_mpc_metrics
-                    .network_dkg_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
-                self.dwallet_mpc_metrics
-                    .encrypted_share_verification_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
-                self.dwallet_mpc_metrics
-                    .partial_signature_verification_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                self.dwallet_mpc_metrics
-                    .decryption_key_reshare_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                self.dwallet_mpc_metrics
-                    .make_dwallet_user_secret_key_shares_public_round_completions_count
-                    .inc();
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
-                self.dwallet_mpc_metrics
-                    .import_dwallet_verification_round_completions_count
-                    .inc();
-            }
-        }
     }
 }
