@@ -101,6 +101,28 @@ impl Display for MPCProtocolInitData {
 }
 
 impl MPCProtocolInitData {
+    pub fn get_curve(&self) -> Option<u32> {
+        match self {
+            MPCProtocolInitData::DKGFirst(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.curve)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
+                Some(event.event_data.curve)
+            }
+
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
+                Some(event.event_data.curve)
+            }
+        }
+    }
+
     pub fn get_event_name(&self) -> String {
         match self {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
