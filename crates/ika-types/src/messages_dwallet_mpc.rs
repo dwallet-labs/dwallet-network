@@ -123,7 +123,13 @@ impl MPCProtocolInitData {
         };
         let curve_str = match &curve {
             None => "".to_string(),
-            Some(curve) => curve.to_string(),
+            Some(curve) => {
+                if curve == &0 {
+                    "Secp256k1".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
         };
         curve_str
     }
@@ -176,9 +182,7 @@ impl MPCProtocolInitData {
             None => "".to_string(),
             Some(curve) => {
                 return if curve == &0 {
-                    "Secp256k1".to_string()
-                } else if curve == &1 {
-                    "Ristretto".to_string()
+                    "ECDSA".to_string()
                 } else {
                     "Unknown".to_string()
                 }
