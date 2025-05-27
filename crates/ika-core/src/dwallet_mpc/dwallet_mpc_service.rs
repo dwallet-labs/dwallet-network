@@ -21,7 +21,7 @@ use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::Notify;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
 const READ_INTERVAL_MS: u64 = 100;
@@ -74,22 +74,17 @@ impl DWalletMPCService {
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
         let system_inner = self.sui_client.must_get_system_inner_object().await;
-        let system_inner = match system_inner {
-            SystemInner::V1(system_inner) => system_inner,
-        };
-        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_secp256k1_id {
+        let SystemInner::V1(system_inner) = system_inner;
+        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
-            match coordinator_state {
-                DWalletCoordinatorInner::V1(inner_state) => {
-                    self.dwallet_mpc_manager
-                        .update_last_session_to_complete_in_current_epoch(
-                            inner_state.last_session_to_complete_in_current_epoch,
-                        );
-                }
-            }
+            let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
+            self.dwallet_mpc_manager
+                .update_last_session_to_complete_in_current_epoch(
+                    inner_state.last_session_to_complete_in_current_epoch,
+                );
         }
     }
 
@@ -125,14 +120,17 @@ impl DWalletMPCService {
                             session_id=?session_info.session_id,
                             session_type=?session_info.session_type,
                             mpc_round=?session_info.mpc_round,
-                            "Successfully processed missed event from Sui"
+                            "Successfully processed a missed event from Sui"
                         );
                     }
                     Ok(None) => {
                         warn!("Received an event that does not trigger the start of an MPC flow");
                     }
                     Err(e) => {
-                        error!("Error processing a missed event: {}", e);
+                        error!(
+                            erorr=?e,
+                            "error while processing a missed event"
+                        );
                     }
                 }
             }
@@ -151,7 +149,7 @@ impl DWalletMPCService {
                             .network_keys
                             .update_network_key(
                                 *key_id,
-                                &key_data,
+                                key_data,
                                 &self.dwallet_mpc_manager.weighted_threshold_access_structure,
                             )
                             .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
@@ -177,11 +175,11 @@ impl DWalletMPCService {
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
-                    error!("DWalletMPCService exit signal received");
+                    warn!("DWalletMPCService exit signal received");
                     break;
                 }
                 Err(err) => {
-                    error!("Failed to check DWalletMPCService exit signal: {:?}", err);
+                    warn!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
                     break;
                 }
                 Ok(false) => (),
@@ -198,14 +196,14 @@ impl DWalletMPCService {
             }
             self.update_network_keys().await;
 
-            info!("Running DWalletMPCService loop");
+            debug!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager
                 .cryptographic_computations_orchestrator
                 .check_for_completed_computations();
             self.update_last_session_to_complete_in_current_epoch()
                 .await;
             let Ok(tables) = self.epoch_store.tables() else {
-                error!("failed to load DB tables from the epoch store");
+                warn!("failed to load DB tables from the epoch store");
                 continue;
             };
             let Ok(completed_sessions) = self
@@ -213,17 +211,14 @@ impl DWalletMPCService {
                 .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
                 .await
             else {
-                error!("failed to load DWallet MPC events from the local DB");
+                error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
             for session_id in completed_sessions {
-                self.dwallet_mpc_manager
-                    .mpc_sessions
-                    .get_mut(&session_id)
-                    .map(|session| {
-                        session.clear_data();
-                        session.status = MPCSessionStatus::Finished;
-                    });
+                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    session.clear_data();
+                    session.status = MPCSessionStatus::Finished;
+                }
             }
             let Ok(events_from_sui) = self
                 .epoch_store
@@ -240,7 +235,16 @@ impl DWalletMPCService {
             }
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
-                .iter_with_bounds(Some(self.last_read_consensus_round + 1), None);
+                .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
+                .collect::<Result<Vec<_>, _>>();
+            let mpc_msgs_iter = match mpc_msgs_iter {
+                Ok(iter) => iter,
+                Err(e) => {
+                    error!(err=?e, "failed to load DWallet MPC messages from the local DB");
+                    continue;
+                }
+            };
+
             let mut new_messages = vec![];
             for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;

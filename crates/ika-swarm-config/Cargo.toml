@@ -46,6 +46,7 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 move-binary-format.workspace = true
 move-core-types.workspace = true
+clap.workspace = true
 serde_json.workspace = true
 flate2 = "1.0.35"
 

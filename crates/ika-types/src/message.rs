@@ -30,7 +30,7 @@ pub struct DKGSecondRoundOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PresignOutput {
-    pub dwallet_id: Vec<u8>,
+    pub dwallet_id: Option<Vec<u8>>,
     pub presign_id: Vec<u8>,
     pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
@@ -74,8 +74,26 @@ pub struct Secp256K1NetworkKeyPublicOutputSlice {
     pub rejected: bool,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct MakeDWalletUserSecretKeySharesPublicOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_user_secret_key_shares: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct DWalletImportedKeyVerificationOutput {
+    pub dwallet_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub encrypted_user_secret_key_share_id: Vec<u8>,
+    pub session_id: Vec<u8>,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
 // Note: the order of these fields, and the number must correspond to the Move code in
-// `dwallet_2pc_mpc_secp256k1_inner.move`.
+// `dwallet_2pc_mpc_coordinator_inner.move`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum MessageKind {
     DwalletDKGFirstRoundOutput(DKGFirstRoundOutput),
@@ -86,6 +104,8 @@ pub enum MessageKind {
     DwalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
     DwalletMPCNetworkDKGOutput(Secp256K1NetworkKeyPublicOutputSlice),
     DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
+    MakeDWalletUserSecretKeySharesPublic(MakeDWalletUserSecretKeySharesPublicOutput),
+    DWalletImportedKeyVerificationOutput(DWalletImportedKeyVerificationOutput),
 }
 
 impl MessageKind {
@@ -101,6 +121,12 @@ impl MessageKind {
                 "DwalletPartialSignatureVerificationOutput"
             }
             MessageKind::DwalletMPCNetworkReshareOutput(_) => "DwalletMPCNetworkReshareOutput",
+            MessageKind::MakeDWalletUserSecretKeySharesPublic(_) => {
+                "MakeDWalletUserSecretKeySharesPublic"
+            }
+            MessageKind::DWalletImportedKeyVerificationOutput(_) => {
+                "DWalletImportedKeyVerificationOutput"
+            }
         }
     }
 
@@ -143,6 +169,12 @@ impl Display for MessageKind {
             }
             MessageKind::DwalletMPCNetworkReshareOutput(_) => {
                 writeln!(writer, "MessageKind : DwalletMPCNetworkReshareOutput")?;
+            }
+            MessageKind::MakeDWalletUserSecretKeySharesPublic(_) => {
+                writeln!(writer, "MessageKind : MakeDWalletUserSecretKeySharesPublic")?;
+            }
+            MessageKind::DWalletImportedKeyVerificationOutput(_) => {
+                writeln!(writer, "MessageKind : DWalletImportedKeyVerificationOutput")?;
             }
         }
         write!(f, "{}", writer)

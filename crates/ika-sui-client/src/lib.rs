@@ -13,12 +13,12 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
-    DWalletNetworkDecryptionKeyState,
+    DWalletNetworkEncryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
 use ika_types::sui::system_inner_v1::{
-    DWalletCoordinatorInnerV1, DWalletNetworkDecryptionKeyCap, SystemInnerV1,
+    DWalletCoordinatorInnerV1, DWalletNetworkEncryptionKeyCap, SystemInnerV1,
 };
 use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
@@ -159,7 +159,13 @@ where
             }
             let missed_events = self
                 .inner
-                .get_missed_events(dwallet_coordinator_inner.session_start_events.id.id.bytes)
+                .get_missed_events(
+                    dwallet_coordinator_inner
+                        .user_requested_sessions_events
+                        .id
+                        .id
+                        .bytes,
+                )
                 .await
                 .map_err(|e| {
                     error!("failed to get missed events: {e}");
@@ -294,7 +300,7 @@ where
         validators: &Vec<StakingPool>,
     ) -> IkaResult<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>> {
         self.inner
-            .get_class_groups_public_keys_and_proofs(&validators)
+            .get_class_groups_public_keys_and_proofs(validators)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
@@ -332,38 +338,13 @@ where
                 let validators = validators
                     .iter()
                     .map(|v| {
-                        bcs::from_bytes::<StakingPool>(&v).map_err(|e| {
+                        bcs::from_bytes::<StakingPool>(v).map_err(|e| {
                             IkaError::SuiClientSerializationError(format!(
                                 "Can't serialize StakingPool: {e}"
                             ))
                         })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-
-                let network_decryption_keys = self
-                    .inner
-                    .get_network_decryption_keys(
-                        &ika_system_state_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys,
-                    )
-                    .await
-                    .unwrap_or_default();
-
-                let mut network_decryption_keys_data = HashMap::new();
-                for (key_id, key) in network_decryption_keys.iter() {
-                    let network_decryption_key = match self
-                        .inner
-                        .get_network_decryption_key_with_full_data(key)
-                        .await
-                    {
-                        Ok(key) => key,
-                        Err(e) => {
-                            return Err(IkaError::SuiClientInternalError(format!(
-                                "can't get_network_decryption_key_with_full_data: {e}"
-                            )));
-                        }
-                    };
-                    network_decryption_keys_data.insert(key_id.clone(), network_decryption_key);
-                }
 
                 let validators_class_groups_public_key_and_proof = self
                     .inner
@@ -415,7 +396,6 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
-                    network_decryption_keys_data,
                     ika_system_state_inner
                         .validator_set
                         .active_committee
@@ -452,7 +432,7 @@ where
         validators
             .iter()
             .map(|v| {
-                bcs::from_bytes::<StakingPool>(&v).map_err(|e| {
+                bcs::from_bytes::<StakingPool>(v).map_err(|e| {
                     IkaError::SuiClientSerializationError(format!(
                         "failed to de-serialize Validator info: {e}"
                     ))
@@ -494,19 +474,19 @@ where
         .await
     }
 
-    /// Retrieves the dwallet_2pc_mpc_secp256k1_id object arg from the Sui chain.
-    pub async fn get_mutable_dwallet_2pc_mpc_secp256k1_arg_must_succeed(
+    /// Retrieves the dwallet_2pc_mpc_coordinator_id object arg from the Sui chain.
+    pub async fn get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
         &self,
-        dwallet_2pc_mpc_secp256k1_id: ObjectID,
+        dwallet_2pc_mpc_coordinator_id: ObjectID,
     ) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
                 self.inner
-                    .get_mutable_shared_arg(dwallet_2pc_mpc_secp256k1_id),
+                    .get_mutable_shared_arg(dwallet_2pc_mpc_coordinator_id),
                 Duration::from_secs(30)
             ) else {
-                panic!("Failed to get dwallet_2pc_mpc_secp256k1_id object arg after retries");
+                panic!("Failed to get dwallet_2pc_mpc_coordinator_id object arg after retries");
             };
             system_arg
         })
@@ -516,13 +496,12 @@ where
     pub async fn get_available_move_packages(
         &self,
     ) -> IkaResult<Vec<(ObjectID, MovePackageDigest)>> {
-        Ok(self
-            .inner
+        self.inner
             .get_available_move_packages(self.ika_package_id, self.ika_system_package_id)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!("Can't get_available_move_packages: {e}"))
-            })?)
+            })
     }
 
     /// Query emitted Events that are defined in the given Move Module.
@@ -550,9 +529,9 @@ where
     }
 
     pub async fn get_chain_identifier(&self) -> IkaResult<String> {
-        Ok(self.inner.get_chain_identifier().await.map_err(|e| {
+        self.inner.get_chain_identifier().await.map_err(|e| {
             IkaError::SuiClientInternalError(format!("Can't get_chain_identifier: {e}"))
-        })?)
+        })
     }
 
     pub async fn get_reference_gas_price_until_success(&self) -> u64 {
@@ -573,15 +552,14 @@ where
     }
 
     pub async fn get_latest_checkpoint_sequence_number(&self) -> IkaResult<u64> {
-        Ok(self
-            .inner
+        self.inner
             .get_latest_checkpoint_sequence_number()
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
                     "Can't get_latest_checkpoint_sequence_number: {e}"
                 ))
-            })?)
+            })
     }
 
     pub async fn execute_transaction_block_with_effects(
@@ -601,8 +579,8 @@ where
                     .with_label_values(&["must_get_system_inner_object"])
                     .inc();
                 error!(
-                    "failed to get system inner object: {:?}",
-                    self.ika_system_object_id
+                    system_object_id=%self.ika_system_object_id,
+                    "failed to get system inner object",
                 );
                 continue;
             };
@@ -612,15 +590,16 @@ where
 
     pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
         loop {
-            let system_inner = self.must_get_system_inner_object().await;
-            let Some(dwallet_2pc_mpc_secp256k1_id) = system_inner.dwallet_2pc_mpc_secp256k1_id()
+            let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
+            let Some(dwallet_2pc_mpc_coordinator_id) =
+                system_inner.dwallet_2pc_mpc_coordinator_id()
             else {
-                error!("failed to get `dwallet_2pc_mpc_secp256k1_id` when fetching dwallet coordinator inner");
+                error!("failed to get `dwallet_2pc_mpc_coordinator_id` when fetching dwallet coordinator inner");
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
             let DWalletCoordinatorInner::V1(inner_v1) = self
-                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
+                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
                 .await;
             return inner_v1;
         }
@@ -629,16 +608,15 @@ where
     pub async fn get_dwallet_mpc_network_keys(
         &self,
     ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
-        let system_inner = self.must_get_system_inner_object().await;
-        Ok(self
-            .inner
-            .get_network_decryption_keys(
-                system_inner.dwallet_2pc_mpc_secp256k1_network_decryption_keys(),
+        let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
+        self.inner
+            .get_network_encryption_keys(
+                system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys(),
             )
             .await
             .map_err(|e| {
-                IkaError::SuiClientInternalError(format!("can't get_network_decryption_keys: {e}"))
-            })?)
+                IkaError::SuiClientInternalError(format!("can't get_network_encryption_keys: {e}"))
+            })
     }
 
     pub async fn get_network_decryption_key_with_full_data(
@@ -667,33 +645,46 @@ where
             let Ok(Ok(ika_system_state)) = res else {
                 self.sui_client_metrics
                     .sui_rpc_errors
-                    .with_label_values(&["get_dwallet_coordinator_inner_until_success"])
+                    .with_label_values(&["must_get_dwallet_coordinator_inner"])
                     .inc();
-                error!("Failed to get dwallet coordinator inner until success");
-                error!(?res);
+                warn!(?res, "Failed to get dwallet coordinator inner object");
                 continue;
             };
             return ika_system_state;
         }
     }
 
-    pub async fn get_epoch_start_system_until_success(
+    pub async fn must_get_epoch_start_system(
         &self,
         system_inner: &SystemInner,
     ) -> EpochStartSystem {
         loop {
-            let Ok(Ok(ika_system_state)) = retry_with_max_elapsed_time!(
-                self.get_epoch_start_system(&system_inner),
+            match retry_with_max_elapsed_time!(
+                self.get_epoch_start_system(system_inner),
                 Duration::from_secs(30)
-            ) else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["get_epoch_start_system_until_success"])
-                    .inc();
-                error!("Failed to get epoch start system until success");
-                continue;
-            };
-            return ika_system_state;
+            ) {
+                Ok(Ok(ika_system_state)) => return ika_system_state,
+                Ok(Err(err)) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_epoch_start_system"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        "Received error from `get_epoch_start_system()`. Retrying...",
+                    );
+                }
+                Err(err) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_epoch_start_system"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        "Received error from `get_epoch_start_system` retry wrapper. Retrying...",
+                    );
+                }
+            }
         }
     }
 
@@ -732,14 +723,16 @@ pub trait SuiClientInner: Send + Sync {
         dwallet_coordinator_id: ObjectID,
     ) -> Result<Vec<u8>, Self::Error>;
 
+    #[allow(clippy::ptr_arg)]
     async fn get_class_groups_public_keys_and_proofs(
         &self,
         validators: &Vec<StakingPool>,
     ) -> Result<HashMap<ObjectID, ClassGroupsEncryptionKeyAndProof>, self::Error>;
 
-    async fn get_network_decryption_keys(
+    #[allow(clippy::ptr_arg)]
+    async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
 
     async fn get_network_decryption_key_with_full_data(
@@ -947,8 +940,8 @@ impl SuiClientInner for SuiSdkClient {
                     object_id
                 )))?;
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
-                validator_class_groups_public_key_and_proof_bytes
-                    [key_slice.name.clone() as usize] = key_slice.value.clone();
+                validator_class_groups_public_key_and_proof_bytes[key_slice.name as usize] =
+                    key_slice.value.clone();
             }
             let validator_class_groups_public_key_and_proof: Result<
                 Vec<SingleEncryptionKeyAndProof>,
@@ -972,11 +965,11 @@ impl SuiClientInner for SuiSdkClient {
         Ok(class_groups_public_keys_and_proofs)
     }
 
-    async fn get_network_decryption_keys(
+    async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkDecryptionKeyCap>,
+        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
-        let mut network_decryption_keys = HashMap::new();
+        let mut network_encryption_keys = HashMap::new();
         for cap in network_decryption_caps {
             let key_id = cap.dwallet_network_decryption_key_id;
             let dynamic_field_response = self
@@ -995,14 +988,14 @@ impl SuiClientInner for SuiSdkClient {
                 key_id
             )))?;
 
-            network_decryption_keys.insert(
+            network_encryption_keys.insert(
                 key_id,
                 bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes).map_err(
                     |e| Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e)),
                 )?,
             );
         }
-        Ok(network_decryption_keys)
+        Ok(network_encryption_keys)
     }
 
     async fn get_network_decryption_key_with_full_data(
@@ -1014,9 +1007,12 @@ impl SuiClientInner for SuiSdkClient {
             .await?;
 
         let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
-            || key.state == DWalletNetworkDecryptionKeyState::AwaitingNetworkDKG
-            || key.state == DWalletNetworkDecryptionKeyState::NetworkDKGCompleted
-        {
+            || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
+            || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
+            || key.state
+                == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
+                    is_first: true,
+                }) {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
@@ -1290,17 +1286,20 @@ impl SuiClientInner for SuiSdkClient {
             }
         }
 
-        let dynamic_field_response = self
-            .read_api()
-            .multi_get_object_with_options(
-                validator_dynamic_ids.clone(),
-                SuiObjectDataOptions::bcs_lossless(),
-            )
-            .await?;
+        let mut dynamic_fields_agg = Vec::new();
+        // There is a limit in sui called "DEFAULT_RPC_QUERY_MAX_RESULT_LIMIT" which is set to 50.
+        for chunk in validator_dynamic_ids.chunks(50) {
+            let objects = self
+                .read_api()
+                .multi_get_object_with_options(chunk.to_vec(), SuiObjectDataOptions::bcs_lossless())
+                .await?;
+
+            dynamic_fields_agg.extend(objects);
+        }
+
         let mut validators = Vec::new();
-        for (dynamic_field, object_id) in dynamic_field_response
-            .iter()
-            .zip(validator_dynamic_ids.iter())
+        for (dynamic_field, object_id) in
+            dynamic_fields_agg.iter().zip(validator_dynamic_ids.iter())
         {
             let resp = dynamic_field.object().map_err(|e| {
                 Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))

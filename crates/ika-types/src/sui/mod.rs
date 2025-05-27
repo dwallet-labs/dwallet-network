@@ -43,7 +43,7 @@ pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
 pub const VALIDATOR_METADATA_MODULE_NAME: &IdentStr = ident_str!("validator_metadata");
 pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
 pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_secp256k1");
+    ident_str!("dwallet_2pc_mpc_coordinator");
 
 pub const INITIALIZE_FUNCTION_NAME: &IdentStr = ident_str!("initialize");
 pub const REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME: &IdentStr =
@@ -59,7 +59,10 @@ pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =
     ident_str!("request_lock_epoch_sessions");
 pub const REQUEST_ADVANCE_EPOCH_FUNCTION_NAME: &IdentStr = ident_str!("request_advance_epoch");
 pub const REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME: &IdentStr =
-    ident_str!("request_dwallet_network_decryption_key_dkg_by_cap");
+    ident_str!("request_dwallet_network_encryption_key_dkg_by_cap");
+pub const SET_SUPPORTED_AND_PRICING: &IdentStr = ident_str!("set_supported_and_pricing");
+pub const SET_PAUSED_CURVES_AND_SIGNATURE_ALGORITHMS_FUNCTION_NAME: &IdentStr =
+    ident_str!("set_paused_curves_and_signature_algorithms");
 
 pub const NEW_VALIDATOR_METADATA_FUNCTION_NAME: &IdentStr = ident_str!("new");
 
@@ -127,10 +130,10 @@ pub trait SystemInnerTrait {
     fn upgrade_caps(&self) -> &Vec<UpgradeCap>;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
-    fn dwallet_2pc_mpc_secp256k1_id(&self) -> Option<ObjectID>;
-    fn dwallet_2pc_mpc_secp256k1_network_decryption_keys(
+    fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID>;
+    fn dwallet_2pc_mpc_coordinator_network_encryption_keys(
         &self,
-    ) -> &Vec<DWalletNetworkDecryptionKeyCap>;
+    ) -> &Vec<DWalletNetworkEncryptionKeyCap>;
     fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee>;
     fn get_ika_active_committee(&self) -> BlsCommittee;
     fn read_bls_committee(

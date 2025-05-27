@@ -7,7 +7,7 @@ use dwallet_classgroups_types::{
     generate_class_groups_keypair_and_proof_from_seed, sample_seed, ClassGroupsKeyPairAndProof,
 };
 use fastcrypto::traits::KeyPair;
-use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_NIKA;
+use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_INKU;
 use ika_config::local_ip_utils;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::crypto::{
@@ -210,7 +210,7 @@ impl ValidatorInitializationConfigBuilder {
             commission_rate: DEFAULT_COMMISSION_RATE,
             current_epoch_consensus_address,
             next_epoch_consensus_address,
-            stake: MIN_VALIDATOR_JOINING_STAKE_NIKA,
+            stake: MIN_VALIDATOR_JOINING_STAKE_INKU,
             name: None,
         }
     }
@@ -226,7 +226,7 @@ fn default_multiaddr_address() -> Multiaddr {
 }
 
 fn default_stake() -> u64 {
-    MIN_VALIDATOR_JOINING_STAKE_NIKA
+    MIN_VALIDATOR_JOINING_STAKE_INKU
 }
 
 fn default_bls12381_key_pair() -> AuthorityKeyPair {

@@ -863,7 +863,7 @@ impl ConsensusAdapter {
                     processed = epoch_store.consensus_messages_processed_notify(vec![transaction_key]) => {
                         processed.expect("Storage error when waiting for consensus message processed");
                         self.metrics.sequencing_certificate_processed.with_label_values(&["consensus"]).inc();
-                        return ProcessedMethod::Consensus;
+                        ProcessedMethod::Consensus
                     },
                     // processed = epoch_store.transactions_executed_in_checkpoint_notify(transaction_digests), if !transaction_digests.is_empty() => {
                     //     processed.expect("Storage error when waiting for transaction executed in checkpoint");
@@ -1032,7 +1032,7 @@ impl<'a> InflightDropGuard<'a> {
     }
 }
 
-impl<'a> Drop for InflightDropGuard<'a> {
+impl Drop for InflightDropGuard<'_> {
     fn drop(&mut self) {
         self.adapter
             .num_inflight_transactions

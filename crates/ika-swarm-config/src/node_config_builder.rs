@@ -268,7 +268,7 @@ impl FullnodeConfigBuilder {
     pub fn build<R: rand::RngCore + rand::CryptoRng>(
         self,
         rng: &mut R,
-        validators: &Vec<ValidatorInitializationConfig>,
+        validators: &[ValidatorInitializationConfig],
         sui_rpc_url: String,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
@@ -329,7 +329,7 @@ impl FullnodeConfigBuilder {
 
         let localhost = local_ip_utils::localhost_for_testing();
 
-        let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
+        let notifier_client_key_pair = notifier_client_key_pair.map(KeyPairWithPath::new);
 
         NodeConfig {
             class_groups_key_pair_and_proof: None,

@@ -76,7 +76,7 @@ impl CryptographicComputationsOrchestrator {
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
-        if !(available_cores_for_computations > 0) {
+        if available_cores_for_computations == 0 {
             error!(
                 "failed to get available parallelism, no CPU cores available for cryptographic computations"
             );
@@ -84,7 +84,7 @@ impl CryptographicComputationsOrchestrator {
         }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
-            "available CPU cores for Rayon cryptographic computations"
+            "Available CPU cores for Rayon cryptographic computations"
         );
 
         Ok(CryptographicComputationsOrchestrator {
@@ -107,6 +107,7 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
+                        // todo(#1081): metadata.
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
@@ -145,21 +146,40 @@ impl CryptographicComputationsOrchestrator {
             &session.mpc_event_data.clone().unwrap().init_protocol_data,
             dwallet_mpc_metrics.clone(),
         );
+        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
         if let Err(err) = self
             .computation_channel_sender
             .send(ComputationUpdate::Started)
         {
+            // This should not happen, but error just in case.
             error!(
-                "failed to send a started computation message with error: {:?}",
-                err
+                session_id=?session.session_id,
+                mpc_protocol=?mpc_protocol,
+                error=?err,
+                "failed to send a `started` computation message",
             );
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
-                error!("failed to advance session with error: {:?}", err);
-            };
+                error!(
+                    error=?err,
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    "failed to advance an MPC session"
+                );
+            } else {
+                let elapsed_ms = start_advance.elapsed().as_millis();
+                info!(
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    duration_ms = elapsed_ms,
+                    duration_seconds = elapsed_ms / 1000,
+                    current_round = session.current_round,
+                    "MPC session advanced successfully"
+                );
+            }
             let elapsed = start_advance.elapsed();
             Self::update_completed_computation_metric(
                 // Safe to unwrap here (event must exist before this).
@@ -167,10 +187,21 @@ impl CryptographicComputationsOrchestrator {
                 dwallet_mpc_metrics.clone(),
                 elapsed.as_millis(),
             );
+            // Measure computation_channel_sender.send(...)
+            let start_send = Instant::now();
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
                 error!(
-                    "failed to send a finished computation message with error: {:?}",
-                    err
+                    error=?err,
+                    mpc_protocol=?mpc_protocol,
+                    "failed to send a finished computation message"
+                );
+            } else {
+                let elapsed_ms = start_send.elapsed().as_millis();
+                info!(
+                    duration_ms = elapsed_ms,
+                    mpc_protocol=?mpc_protocol,
+                    duration_seconds = elapsed_ms / 1000,
+                    "Computation update message sent"
                 );
             }
         });
@@ -214,6 +245,16 @@ impl CryptographicComputationsOrchestrator {
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 dwallet_mpc_metrics
                     .advance_calls_for_decryption_key_reshare
+                    .inc();
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_make_dwallet_user_secret_key_shares_public
+                    .inc()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_calls_for_import_dwallet_verification
                     .inc();
             }
         }
@@ -283,6 +324,22 @@ impl CryptographicComputationsOrchestrator {
                     .inc();
                 dwallet_mpc_metrics
                     .decryption_key_reshare_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_make_dwallet_user_secret_key_shares_public
+                    .inc();
+                dwallet_mpc_metrics
+                    .make_dwallet_user_secret_key_shares_public_completion_duration
+                    .set(computation_duration as i64);
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                dwallet_mpc_metrics
+                    .advance_completions_for_import_dwallet_verification
+                    .inc();
+                dwallet_mpc_metrics
+                    .import_dwallet_verification_completion_duration
                     .set(computation_duration as i64);
             }
         }

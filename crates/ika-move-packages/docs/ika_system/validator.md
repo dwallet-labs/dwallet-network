@@ -16,6 +16,9 @@ title: Module `(ika_system=0x0)::validator`
 -  [Function `withdraw_stake`](#(ika_system=0x0)_validator_withdraw_stake)
 -  [Function `advance_epoch`](#(ika_system=0x0)_validator_advance_epoch)
 -  [Function `process_pending_stake`](#(ika_system=0x0)_validator_process_pending_stake)
+-  [Function `verify_validator_cap`](#(ika_system=0x0)_validator_verify_validator_cap)
+-  [Function `verify_operation_cap`](#(ika_system=0x0)_validator_verify_operation_cap)
+-  [Function `verify_commission_cap`](#(ika_system=0x0)_validator_verify_commission_cap)
 -  [Function `set_name`](#(ika_system=0x0)_validator_set_name)
 -  [Function `set_validator_metadata`](#(ika_system=0x0)_validator_set_validator_metadata)
 -  [Function `set_next_commission`](#(ika_system=0x0)_validator_set_next_commission)
@@ -290,12 +293,12 @@ Represents the state of the validator.
 
 <dl>
 <dt>
-Variant <code>Active</code>
+Variant <code>PreActive</code>
 </dt>
 <dd>
 </dd>
 <dt>
-Variant <code>PreActive</code>
+Variant <code>Active</code>
 </dt>
 <dd>
 </dd>
@@ -332,22 +335,12 @@ Variant <code>Withdrawing</code>
 
 
 
-<a name="(ika_system=0x0)_validator_EActivationEpochNotReached"></a>
+<a name="(ika_system=0x0)_validator_EValidatorAlreadyUpdated"></a>
 
-Attempt to withdraw before <code><a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a></code>.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EActivationEpochNotReached">EActivationEpochNotReached</a>: u64 = 12;
-</code></pre>
+The epoch of the validator has already been advanced.
 
 
-
-<a name="(ika_system=0x0)_validator_EAuthorizationFailure"></a>
-
-Trying to collect commission or change receiver without authorization.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>: u64 = 15;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>: u64 = 0;
 </code></pre>
 
 
@@ -362,16 +355,6 @@ Error in a calculation. Indicates that a sanity check failed.
 
 
 
-<a name="(ika_system=0x0)_validator_EIncorrectCommissionRate"></a>
-
-Incorrect commission rate.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectCommissionRate">EIncorrectCommissionRate</a>: u64 = 14;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_validator_EIncorrectEpochAdvance"></a>
 
 The state of the validator and the parameters to advance the epoch are not consistent.
@@ -382,42 +365,22 @@ The state of the validator and the parameters to advance the epoch are not consi
 
 
 
-<a name="(ika_system=0x0)_validator_EIncorrectValidatorId"></a>
+<a name="(ika_system=0x0)_validator_EValidatorNotEmpty"></a>
 
-Trying to withdraw stake from the incorrect validator.
+Trying to destroy a non-empty validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_ENotStaked"></a>
+<a name="(ika_system=0x0)_validator_EValidatorIsNotPreActive"></a>
 
-StakedIka is already in <code>Withdrawing</code> state.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>: u64 = 8;
-</code></pre>
+Validator is not in <code>PreActive</code> state.
 
 
-
-<a name="(ika_system=0x0)_validator_ENotWithdrawing"></a>
-
-Trying to withdraw active stake.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotWithdrawing">ENotWithdrawing</a>: u64 = 10;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_EValidatorAlreadyUpdated"></a>
-
-The epoch of the validator has already been advanced.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>: u64 = 4;
 </code></pre>
 
 
@@ -442,32 +405,42 @@ Validator is not in <code>Active</code> state.
 
 
 
-<a name="(ika_system=0x0)_validator_EValidatorIsNotPreActive"></a>
+<a name="(ika_system=0x0)_validator_EZeroStake"></a>
 
-Validator is not in <code>PreActive</code> state.
+Trying to stake zero amount.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EValidatorNotEmpty"></a>
+<a name="(ika_system=0x0)_validator_ENotStaked"></a>
 
-Trying to destroy a non-empty validator.
+StakedIka is already in <code>Withdrawing</code> state.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>: u64 = 8;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EWithdrawDirectly"></a>
+<a name="(ika_system=0x0)_validator_EIncorrectValidatorId"></a>
 
-Requesting withdrawal for the stake that can be withdrawn directly.
+Trying to withdraw stake from the incorrect validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>: u64 = 13;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>: u64 = 9;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_ENotWithdrawing"></a>
+
+Trying to withdraw active stake.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotWithdrawing">ENotWithdrawing</a>: u64 = 10;
 </code></pre>
 
 
@@ -482,22 +455,52 @@ Attempt to withdraw before <code>withdraw_epoch</code>.
 
 
 
+<a name="(ika_system=0x0)_validator_EActivationEpochNotReached"></a>
+
+Attempt to withdraw before <code><a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a></code>.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EActivationEpochNotReached">EActivationEpochNotReached</a>: u64 = 12;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EWithdrawDirectly"></a>
+
+Requesting withdrawal for the stake that can be withdrawn directly.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>: u64 = 13;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EIncorrectCommissionRate"></a>
+
+Incorrect commission rate.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectCommissionRate">EIncorrectCommissionRate</a>: u64 = 14;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EAuthorizationFailure"></a>
+
+Trying to collect commission or change receiver without authorization.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>: u64 = 15;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_EZeroShares"></a>
 
 The number of shares for the staked IKA are zero.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroShares">EZeroShares</a>: u64 = 16;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_EZeroStake"></a>
-
-Trying to stake zero amount.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>: u64 = 7;
 </code></pre>
 
 
@@ -990,6 +993,81 @@ if the validator is not in the committee.
 
 </details>
 
+<a name="(ika_system=0x0)_validator_verify_validator_cap"></a>
+
+## Function `verify_validator_cap`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_validator_cap">verify_validator_cap</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_validator_cap">verify_validator_cap</a>(self: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, cap: &ValidatorCap) {
+    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_cap_id">validator_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_verify_operation_cap"></a>
+
+## Function `verify_operation_cap`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">validator_cap::ValidatorOperationCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(self: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, cap: &ValidatorOperationCap) {
+    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_verify_commission_cap"></a>
+
+## Function `verify_commission_cap`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_commission_cap">verify_commission_cap</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">validator_cap::ValidatorCommissionCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_commission_cap">verify_commission_cap</a>(self: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, cap: &ValidatorCommissionCap) {
+    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_validator_set_name"></a>
 
 ## Function `set_name`
@@ -1007,8 +1085,7 @@ Sets the name of the validator.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_name">set_name</a>(self: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, name: String, cap: &ValidatorOperationCap) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_name">set_name</a>(name);
 }
 </code></pre>
@@ -1034,8 +1111,7 @@ Sets the node metadata.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_validator_metadata">set_validator_metadata</a>(self: &<b>mut</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, cap: &ValidatorOperationCap, metadata: ValidatorMetadata) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_validator_metadata">set_validator_metadata</a>(metadata);
 }
 </code></pre>
@@ -1066,8 +1142,7 @@ Sets the next commission rate for the validator.
     current_epoch: u64,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_rate">commission_rate</a> &lt;= <a href="../ika_system/validator.md#(ika_system=0x0)_validator_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectCommissionRate">EIncorrectCommissionRate</a>);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.pending_commission_rate.insert_or_replace(current_epoch + 2, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_rate">commission_rate</a> <b>as</b> u64);
 }
@@ -1097,8 +1172,7 @@ Sets the next commission rate for the validator.
     network_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_network_address">set_next_epoch_network_address</a>(network_address);
 }
 </code></pre>
@@ -1127,8 +1201,7 @@ Sets the next commission rate for the validator.
     p2p_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_p2p_address">set_next_epoch_p2p_address</a>(p2p_address);
 }
 </code></pre>
@@ -1157,8 +1230,7 @@ Sets the next commission rate for the validator.
     consensus_address: String,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_consensus_address">set_next_epoch_consensus_address</a>(consensus_address);
 }
 </code></pre>
@@ -1189,8 +1261,7 @@ Sets the next commission rate for the validator.
     cap: &ValidatorOperationCap,
     ctx: &TxContext,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_protocol_pubkey_bytes">set_next_epoch_protocol_pubkey_bytes</a>(protocol_pubkey_bytes, proof_of_possession, ctx);
 }
 </code></pre>
@@ -1219,8 +1290,7 @@ Sets the next commission rate for the validator.
     network_pubkey_bytes: vector&lt;u8&gt;,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_network_pubkey_bytes">set_next_epoch_network_pubkey_bytes</a>(network_pubkey_bytes);
 }
 </code></pre>
@@ -1249,8 +1319,7 @@ Sets the next commission rate for the validator.
     consensus_pubkey_bytes: vector&lt;u8&gt;,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_consensus_pubkey_bytes">set_next_epoch_consensus_pubkey_bytes</a>(consensus_pubkey_bytes);
 }
 </code></pre>
@@ -1279,8 +1348,7 @@ Sets the next commission rate for the validator.
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     cap: &ValidatorOperationCap,
 ) {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_operation_cap">verify_operation_cap</a>(cap);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_set_next_epoch_class_groups_pubkey_and_proof_bytes">set_next_epoch_class_groups_pubkey_and_proof_bytes</a>(class_groups_pubkey_and_proof_bytes);
 }
 </code></pre>
@@ -1444,8 +1512,7 @@ thus revoking the previous cap's permission.
     ctx: &<b>mut</b> TxContext,
 ): ValidatorOperationCap {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> = cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>();
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_validator_cap">verify_validator_cap</a>(cap);
     <b>let</b> operation_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_operation_cap">validator_cap::new_validator_operation_cap</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>, ctx);
     self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_operation_cap_id">operation_cap_id</a> = object::id(&operation_cap);
     operation_cap
@@ -1479,8 +1546,7 @@ thus revoking the previous cap's permission.
     ctx: &<b>mut</b> TxContext,
 ): ValidatorCommissionCap {
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> = cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>();
-    <b>assert</b>!(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a> == self.id.to_inner(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_validator_cap">verify_validator_cap</a>(cap);
     <b>let</b> commission_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_new_validator_commission_cap">validator_cap::new_validator_commission_cap</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>, ctx);
     self.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a> = object::id(&commission_cap);
     commission_cap
@@ -1513,8 +1579,7 @@ the full commission is withdrawn.
     cap: &ValidatorCommissionCap,
     amount: Option&lt;u64&gt;,
 ): Balance&lt;IKA&gt; {
-    <b>assert</b>!(cap.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>() == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_validator_id">validator_id</a>(), <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
-    <b>assert</b>!(object::id(cap) == <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_commission_cap_id">commission_cap_id</a>, <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_verify_commission_cap">verify_commission_cap</a>(cap);
     <b>if</b> (amount.is_some()) {
         <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.commission.split(*amount.borrow())
     } <b>else</b> {

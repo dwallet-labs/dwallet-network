@@ -41,10 +41,8 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
 };
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCOutputMessage};
 use tokio::task::JoinSet;
 use tracing::{error, info, instrument, trace_span, warn};
-use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -395,52 +393,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     //     .send(executable_transactions);
     }
 
-    /// Loads all dWallet MPC messages from the epoch start from the epoch tables.
-    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
-    /// hence async code involving it can cause compilation errors.
-    async fn load_dwallet_mpc_messages_from_epoch_start(
-        &self,
-    ) -> IkaResult<Vec<DWalletMPCDBMessage>> {
-        Ok(self
-            .epoch_store
-            .tables()?
-            .dwallet_mpc_messages
-            .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
-            .collect())
-    }
-
-    /// Loads all dWallet MPC outputs from the epoch start from the epoch tables.
-    /// Needs to be a separate function because the DB table does not implement the `Send` trait,
-    /// hence async code involving it can cause compilation errors.
-    async fn load_dwallet_mpc_outputs_from_epoch_start(
-        &self,
-    ) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
-        Ok(self
-            .epoch_store
-            .tables()?
-            .dwallet_mpc_outputs
-            .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
-            .collect())
-    }
-
-    /// Loads all dWallet MPC events from the epoch start from the epoch tables.
-    /// Needed to be a separate function because the DB table does not implement the `Send` trait,
-    /// hence async code involving it can cause compilation errors.
-    async fn load_dwallet_mpc_events_from_epoch_start(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
-        Ok(self
-            .epoch_store
-            .tables()?
-            .dwallet_mpc_events
-            .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
-            .collect())
-    }
-
     /// Check if the dWallet MPC manager should perform a state sync.
     /// If so, block consensus and load all messages.
     /// This condition is only true if we process a round
@@ -463,10 +415,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        for event in self.load_dwallet_mpc_events_from_epoch_start().await? {
+        for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
             dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
-        for output in self.load_dwallet_mpc_outputs_from_epoch_start().await? {
+        for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
                 .await
@@ -477,7 +429,11 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 );
             }
         }
-        for message in self.load_dwallet_mpc_messages_from_epoch_start().await? {
+        for message in self
+            .epoch_store
+            .tables()?
+            .get_all_dwallet_mpc_dwallet_mpc_messages()?
+        {
             match message {
                 DWalletMPCDBMessage::Message(_)
                 | DWalletMPCDBMessage::EndOfDelivery

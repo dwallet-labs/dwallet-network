@@ -54,14 +54,16 @@ use ika_system::validator_set::ValidatorSet;
 use ika_system::bls_committee::BlsCommittee;
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{DWalletCoordinator};
+use ika_system::dwallet_2pc_mpc_coordinator::{DWalletCoordinator};
 use ika_system::validator_metadata::ValidatorMetadata;
+use ika_system::dwallet_pricing::DWalletPricing;
 use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::table::Table;
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use std::string::String;
+use sui::vec_map::VecMap;
 
 public struct System has key {
     id: UID,
@@ -115,12 +117,15 @@ public(package) fun create(
 
 public fun initialize(
     self: &mut System,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(clock, package_id, ctx);
+    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -367,6 +372,16 @@ public fun set_next_epoch_protocol_pubkey_bytes(
     self.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
 }
 
+/// Sets a validator's public key of network key.
+/// The change will only take effects starting from the next epoch.
+public fun set_next_epoch_network_pubkey_bytes(
+    self: &mut System,
+    network_pubkey: vector<u8>,
+    cap: &ValidatorOperationCap,
+) {
+    let self = self.inner_mut();
+    self.set_next_epoch_network_pubkey_bytes(network_pubkey, cap)
+}
 
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
@@ -391,16 +406,16 @@ public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
 }
 
-
-/// Sets a validator's public key of network key.
+/// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
-public fun set_next_epoch_network_pubkey_bytes(
+public fun set_pricing_vote(
     self: &mut System,
-    network_pubkey: vector<u8>,
+    dwallet_coordinator: &mut DWalletCoordinator,
+    pricing: DWalletPricing,
     cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.set_next_epoch_network_pubkey_bytes(network_pubkey, cap)
+    self.set_pricing_vote(dwallet_coordinator.inner_mut(), pricing, cap)
 }
 
 /// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
@@ -439,14 +454,37 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     inner_system.advance_epoch(inner_dwallet, clock, ctx);
 }
 
-public fun request_dwallet_network_decryption_key_dkg_by_cap(
+public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_secp256k1, cap, ctx);
+    self.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
+}
+
+public fun set_supported_and_pricing(
+    self: &mut System,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    default_pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    protocol_cap: &ProtocolCap,
+) {
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.inner_mut().set_supported_and_pricing(dwallet_2pc_mpc_coordinator_inner, default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, protocol_cap);
+}
+
+public fun set_paused_curves_and_signature_algorithms(
+    self: &mut System,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
+    protocol_cap: &ProtocolCap,
+) {
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.inner_mut().set_paused_curves_and_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_curves, paused_signature_algorithms, paused_hash_schemes, protocol_cap);
 }
 
 // === Upgrades ===
@@ -472,23 +510,23 @@ public fun commit_upgrade(
     }
 }
 
-public fun process_ika_system_checkpoint_by_cap(
+public fun process_checkpoint_message_by_cap(
     self: &mut System,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_ika_system_checkpoint_by_cap(cap, message, ctx);
+    self.inner_mut().process_checkpoint_message_by_cap(cap, message, ctx);
 }
 
-public fun process_ika_system_checkpoint_by_quorum(
+public fun process_checkpoint_message_by_quorum(
     self: &mut System,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().process_ika_system_checkpoint_by_quorum(signature, signers_bitmap, message, ctx);
+    self.inner_mut().process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
 /// Migrate the staking object to the new package id.
@@ -508,6 +546,28 @@ public fun migrate(
     // Set the new package id.
     assert!(self.new_package_id.is_some(), EInvalidMigration);
     self.package_id = self.new_package_id.extract();
+}
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+///
+/// This function can be used with `dev_inspect` to calculate the expected rewards for a `StakedIka`
+/// object or, more generally, the returns provided by a given validator over a given period.
+public fun calculate_rewards(
+    self: &System,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.inner().calculate_rewards(validator_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Call `staked_ika::can_withdraw_early` to allow calling this method in applications.
+public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka): bool {
+    self.inner().can_withdraw_staked_ika_early(staked_ika)
 }
 
 // === Internals ===

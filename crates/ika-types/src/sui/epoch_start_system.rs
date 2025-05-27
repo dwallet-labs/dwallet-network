@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
-use crate::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
@@ -33,9 +32,6 @@ pub trait EpochStartSystemTrait {
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
     fn get_authority_names_to_hostnames(&self) -> HashMap<AuthorityName, String>;
-    fn get_dwallet_network_decryption_keys(
-        &self,
-    ) -> &HashMap<ObjectID, DWalletNetworkDecryptionKeyData>;
 }
 
 /// This type captures the minimum amount of information from `System` needed by a validator
@@ -58,7 +54,6 @@ impl EpochStartSystem {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
         quorum_threshold: u64,
         validity_threshold: u64,
     ) -> Self {
@@ -68,7 +63,6 @@ impl EpochStartSystem {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
-            dwallet_network_decryption_keys,
             quorum_threshold,
             validity_threshold,
         })
@@ -87,7 +81,6 @@ impl EpochStartSystem {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
-                dwallet_network_decryption_keys: state.dwallet_network_decryption_keys.clone(),
                 quorum_threshold: 0,
                 validity_threshold: 0,
             }),
@@ -102,7 +95,6 @@ pub struct EpochStartSystemV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    dwallet_network_decryption_keys: HashMap<ObjectID, DWalletNetworkDecryptionKeyData>,
     quorum_threshold: u64,
     validity_threshold: u64,
 }
@@ -119,7 +111,6 @@ impl EpochStartSystemV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
-            dwallet_network_decryption_keys: HashMap::new(),
             quorum_threshold: 0,
             validity_threshold: 0,
         }
@@ -276,12 +267,6 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             })
             .collect()
     }
-
-    fn get_dwallet_network_decryption_keys(
-        &self,
-    ) -> &HashMap<ObjectID, DWalletNetworkDecryptionKeyData> {
-        &self.dwallet_network_decryption_keys
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -346,7 +331,6 @@ mod test {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 0,
             active_validators,
-            dwallet_network_decryption_keys: Default::default(),
         };
 
         // WHEN

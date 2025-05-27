@@ -24,12 +24,8 @@ use sui_types::event::EventID;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
+use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
-use typed_store::{
-    rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf},
-    traits::{TableSummary, TypedStoreDebug},
-    TypedStoreError,
-};
 
 use super::epoch_start_configuration::EpochStartConfigTrait;
 
@@ -66,7 +62,8 @@ use ika_protocol_config::{ProtocolConfig, ProtocolVersion};
 use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
-    DKGFirstRoundOutput, DKGSecondRoundOutput, EncryptedUserShareOutput, MessageKind,
+    DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
+    EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
     PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
     SignOutput,
 };
@@ -95,9 +92,7 @@ use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
-use sui_types::executable_transaction::{
-    TrustedExecutableTransaction, VerifiedExecutableTransaction,
-};
+use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
@@ -131,8 +126,8 @@ impl CertTxGuard {
 
 impl CertLockGuard {
     pub fn dummy_for_tests() -> Self {
-        let lock = Arc::new(tokio::sync::Mutex::new(()));
-        Self(lock.try_lock_owned().unwrap())
+        let lock = Arc::new(parking_lot::Mutex::new(()));
+        Self(lock.try_lock_arc().unwrap())
     }
 }
 
@@ -148,8 +143,6 @@ pub enum ConsensusCertificateResult {
     IkaTransaction(MessageKind),
     /// An executable transaction used for large output (e.g., network DKG).
     IkaBulkTransaction(Vec<MessageKind>),
-    /// A message was processed which updates randomness state.
-    RandomnessConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -406,15 +399,9 @@ pub struct AuthorityEpochTables {
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_dwallet_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Maps non-digest TransactionKeys to the corresponding digest after execution, for use
-    /// by checkpoint builder.
-    transaction_key_to_digest: DBMap<TransactionKey, MessageDigest>,
-
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
-    pending_dwallet_checkpoint_signatures:
+    pub(crate) pending_dwallet_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
@@ -426,7 +413,7 @@ pub struct AuthorityEpochTables {
 
     /// Stores pending signatures
     /// The key in this table is ika system checkpoint sequence number and an arbitrary integer
-    pending_system_checkpoint_signatures:
+    pub(crate) pending_system_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), SystemCheckpointSignatureMessage>,
 
     /// Maps sequence number to ika system checkpoint summary, used by SystemCheckpointBuilder to build checkpoint within epoch
@@ -490,7 +477,7 @@ fn pending_checkpoints_table_default_config() -> DBOptions {
 
 impl AuthorityEpochTables {
     pub fn open(epoch: EpochId, parent_path: &Path, db_options: Option<Options>) -> Self {
-        Self::open_tables_transactional(
+        Self::open_tables_read_write(
             Self::path(epoch, parent_path),
             MetricConf::new("epoch"),
             db_options,
@@ -511,17 +498,12 @@ impl AuthorityEpochTables {
         parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
     }
 
-    pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
-        self.pending_consensus_transactions
-            .unbounded_iter()
-            .map(|(_k, v)| v)
-            .collect()
-    }
-
-    pub fn reset_db_for_execution_since_genesis(&self) -> IkaResult {
-        // TODO: Add new tables that get added to the db automatically
-        self.executed_transactions_to_checkpoint.unsafe_clear()?;
-        Ok(())
+    pub fn get_all_pending_consensus_transactions(&self) -> IkaResult<Vec<ConsensusTransaction>> {
+        Ok(self
+            .pending_consensus_transactions
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     /// WARNING: This method is very subtle and can corrupt the database if used incorrectly.
@@ -542,49 +524,37 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_pending_checkpoint_signatures_iter(
-        &self,
-        checkpoint_seq: DWalletCheckpointSequenceNumber,
-        starting_index: u64,
-    ) -> IkaResult<
-        impl Iterator<
-                Item = (
-                    (DWalletCheckpointSequenceNumber, u64),
-                    DWalletCheckpointSignatureMessage,
-                ),
-            > + '_,
-    > {
-        let key = (checkpoint_seq, starting_index);
-        debug!("Scanning pending checkpoint signatures from {:?}", key);
-        let iter = self
-            .pending_dwallet_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to(&key)?;
-        Ok::<_, IkaError>(iter)
+    pub fn get_all_dwallet_mpc_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .dwallet_mpc_events
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
     }
 
-    pub fn get_pending_system_checkpoint_signatures_iter(
-        &self,
-        system_checkpoint_seq: SystemCheckpointSequenceNumber,
-        starting_index: u64,
-    ) -> IkaResult<
-        impl Iterator<
-                Item = (
-                    (SystemCheckpointSequenceNumber, u64),
-                    SystemCheckpointSignatureMessage,
-                ),
-            > + '_,
-    > {
-        let key = (system_checkpoint_seq, starting_index);
-        debug!(
-            "Scanning pending system_checkpoint signatures from {:?}",
-            key
-        );
-        let iter = self
-            .pending_system_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to(&key)?;
-        Ok::<_, IkaError>(iter)
+    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
+        Ok(self
+            .dwallet_mpc_messages
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
+    }
+
+    pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
+        Ok(self
+            .dwallet_mpc_outputs
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
     }
 }
 
@@ -674,8 +644,8 @@ impl AuthorityPerEpochStore {
         for (name, _) in self.committee().voting_rights.iter() {
             let party_id = self.authority_name_to_party_id(name)?;
             let public_key =
-                bcs::from_bytes(&self.committee().class_groups_public_key_and_proof(name)?)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                bcs::from_bytes(self.committee().class_groups_public_key_and_proof(name)?)
+                    .map_err(DwalletMPCError::BcsError)?;
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
@@ -688,9 +658,10 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .dwallet_mpc_events
-            .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .safe_iter_with_bounds(Some(round), None)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -702,9 +673,10 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .dwallet_mpc_completed_sessions
-            .iter_with_bounds(Some(round), None)
-            .map(|(_, events)| events)
-            .flatten()
+            .safe_iter_with_bounds(Some(round), None)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flat_map(|(_, events)| events)
             .collect())
     }
 
@@ -818,7 +790,7 @@ impl AuthorityPerEpochStore {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
-            self.committee.voting_rights.iter().cloned().collect(),
+            self.committee.voting_rights.to_vec(),
             self.committee.class_groups_public_keys_and_proofs.clone(),
             self.committee.quorum_threshold,
             self.committee.validity_threshold,
@@ -850,18 +822,13 @@ impl AuthorityPerEpochStore {
     }
 
     pub fn get_last_consensus_stats(&self) -> IkaResult<ExecutionIndicesWithStats> {
-        match self
-            .tables()?
-            .get_last_consensus_stats()
-            .map_err(IkaError::from)?
-        {
+        match self.tables()?.get_last_consensus_stats()? {
             Some(stats) => Ok(stats),
             None => {
                 let indices = self
                     .tables()?
                     .get_last_consensus_index()
-                    .map(|x| x.unwrap_or_default())
-                    .map_err(IkaError::from)?;
+                    .map(|x| x.unwrap_or_default())?;
                 Ok(ExecutionIndicesWithStats {
                     index: indices,
                     hash: 0, // unused
@@ -869,18 +836,6 @@ impl AuthorityPerEpochStore {
                 })
             }
         }
-    }
-
-    /// `pending_certificates` table related methods. Should only be used from TransactionManager.
-
-    /// Gets all pending certificates. Used during recovery.
-    pub fn all_pending_execution(&self) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        Ok(self
-            .tables()?
-            .pending_execution
-            .unbounded_iter()
-            .map(|(_, cert)| cert.into())
-            .collect())
     }
 
     /// Called when transaction outputs are committed to disk
@@ -906,9 +861,11 @@ impl AuthorityPerEpochStore {
     }
 
     pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
+        // The except() here is on purpose, because the epoch can't run without it.
         self.tables()
             .expect("recovery should not cross epoch boundary")
             .get_all_pending_consensus_transactions()
+            .expect("failed to get pending consensus transactions")
     }
 
     /// Returns true if all messages with the given keys were processed by consensus.
@@ -1029,13 +986,12 @@ impl AuthorityPerEpochStore {
     }
 
     pub fn get_capabilities_v1(&self) -> IkaResult<Vec<AuthorityCapabilitiesV1>> {
-        let result: Result<Vec<AuthorityCapabilitiesV1>, TypedStoreError> = self
+        Ok(self
             .tables()?
             .authority_capabilities_v1
-            .values()
-            .map_into()
-            .collect();
-        Ok(result?)
+            .safe_iter()
+            .map(|item| item.map(|(_, v)| v))
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn record_protocol_config_version_sent(
@@ -1052,9 +1008,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .protocol_config_version_sent
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(s, _)| s))
     }
 
@@ -1372,8 +1328,8 @@ impl AuthorityPerEpochStore {
     }
 
     fn process_notifications(&self, notifications: &[SequencedConsensusTransactionKey]) {
-        for key in notifications.iter().cloned() {
-            self.consensus_notify_read.notify(&key, &());
+        for key in notifications {
+            self.consensus_notify_read.notify(key, &());
         }
     }
 
@@ -1443,10 +1399,6 @@ impl AuthorityPerEpochStore {
                 //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
                 //     verified_certificates.push_back(cert);
                 // }
-                ConsensusCertificateResult::RandomnessConsensusMessage => {
-                    //randomness_state_updated = true;
-                    notifications.push(key.clone());
-                }
                 ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
                 ConsensusCertificateResult::IgnoredSystem => {
                     // filter_roots = true;
@@ -1499,7 +1451,7 @@ impl AuthorityPerEpochStore {
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
     async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
-        let pending_events = self.perpetual_tables.get_all_pending_events();
+        let pending_events = self.perpetual_tables.get_all_pending_events()?;
         self.perpetual_tables
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         let events: Vec<DWalletMPCEvent> = pending_events
@@ -1520,7 +1472,10 @@ impl AuthorityPerEpochStore {
                         Some(event)
                     }
                     Ok(None) => {
-                        warn!("Received an event that does not trigger the start of an MPC flow");
+                        warn!(
+                            event=?event,
+                            "Received an event that does not trigger the start of an MPC flow"
+                        );
                         None
                     }
                     Err(e) => {
@@ -1567,7 +1522,7 @@ impl AuthorityPerEpochStore {
                             ),
                         ..
                     }) => Some(DWalletMPCDBMessage::MaliciousReport(
-                        authority_name.clone(),
+                        *authority_name,
                         report.clone(),
                     )),
                     _ => None,
@@ -1599,8 +1554,8 @@ impl AuthorityPerEpochStore {
                             ),
                         ..
                     }) => Some(DWalletMPCOutputMessage {
-                        authority: origin_authority.clone(),
-                        session_info: session_info.clone(),
+                        authority: *origin_authority,
+                        session_info: *session_info.clone(),
                         output: output.clone(),
                     }),
                     _ => None,
@@ -1635,8 +1590,8 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 self.process_dwallet_mpc_output(
-                    certificate_author.clone(),
-                    session_info.clone(),
+                    *certificate_author,
+                    *session_info.clone(),
                     output.clone(),
                 )
                 .await
@@ -1681,9 +1636,9 @@ impl AuthorityPerEpochStore {
                         .versions
                         .iter()
                         .max_by(|(protocol_version_a, _), (protocol_version_b, _)| {
-                            protocol_version_a.cmp(&protocol_version_b)
+                            protocol_version_a.cmp(protocol_version_b)
                         })
-                        .map(|(protocol_version, _)| protocol_version.clone())
+                        .map(|(protocol_version, _)| *protocol_version)
                         .unwrap_or_else(|| {
                             warn!("No supported protocol versions found in capabilities");
                             self.protocol_version()
@@ -1745,7 +1700,7 @@ impl AuthorityPerEpochStore {
         match output_verification_result.result {
             OutputVerificationStatus::FirstQuorumReached(output) => self
                 .process_dwallet_transaction(output, session_info)
-                .map_err(|e| IkaError::from(e)),
+                .map_err(IkaError::from),
             OutputVerificationStatus::NotEnoughVotes => {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
@@ -1767,9 +1722,9 @@ impl AuthorityPerEpochStore {
 
     fn process_consensus_system_bulk_transaction(
         &self,
-        system_transaction: &Vec<MessageKind>,
+        system_transaction: &[MessageKind],
     ) -> ConsensusCertificateResult {
-        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.clone())
+        ConsensusCertificateResult::IkaBulkTransaction(system_transaction.to_owned())
     }
 
     fn process_dwallet_transaction(
@@ -1824,7 +1779,7 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::DwalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                    dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
                     rejected: is_rejected,
                     session_sequence_number: sequence_number,
@@ -1893,7 +1848,7 @@ impl AuthorityPerEpochStore {
                             rejected: true,
                         }]
                     } else {
-                        Self::slice_network_decryption_key_public_output_into_messages(
+                        Self::slice_network_dkg_public_output_into_messages(
                             &init_event.event_data.dwallet_network_decryption_key_id,
                             output,
                         )
@@ -1901,7 +1856,7 @@ impl AuthorityPerEpochStore {
 
                     let messages: Vec<_> = slices
                         .into_iter()
-                        .map(|slice| MessageKind::DwalletMPCNetworkDKGOutput(slice))
+                        .map(MessageKind::DwalletMPCNetworkDKGOutput)
                         .collect();
                     Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
@@ -1922,7 +1877,7 @@ impl AuthorityPerEpochStore {
                         rejected: true,
                     }]
                 } else {
-                    Self::slice_network_decryption_key_public_output_into_messages(
+                    Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
                     )
@@ -1930,16 +1885,54 @@ impl AuthorityPerEpochStore {
 
                 let messages: Vec<_> = slices
                     .into_iter()
-                    .map(|slice| MessageKind::DwalletMPCNetworkReshareOutput(slice))
+                    .map(MessageKind::DwalletMPCNetworkReshareOutput)
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::MakeDWalletUserSecretKeySharesPublic(
+                    MakeDWalletUserSecretKeySharesPublicOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec(),
+                        public_user_secret_key_shares: output,
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(init_event) => {
+                let SessionType::User { sequence_number } = init_event.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = MessageKind::DWalletImportedKeyVerificationOutput(
+                    DWalletImportedKeyVerificationOutput {
+                        dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
+                        public_output: output,
+                        encrypted_user_secret_key_share_id: init_event
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec()
+                            .clone(),
+                        session_id: init_event.session_id.to_vec().clone(),
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
         }
     }
 
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
-    fn slice_network_decryption_key_public_output_into_messages(
+    fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
     ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
@@ -1991,16 +1984,15 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    pub fn get_pending_checkpoints(
+    pub fn get_pending_dwallet_checkpoints(
         &self,
         last: Option<DWalletCheckpointHeight>,
     ) -> IkaResult<Vec<(DWalletCheckpointHeight, PendingDWalletCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_dwallet_checkpoints.unbounded_iter();
-        if let Some(last_processed_height) = last {
-            iter = iter.skip_to(&(last_processed_height + 1))?;
-        }
-        Ok(iter.collect())
+        let db_iter = tables
+            .pending_dwallet_checkpoints
+            .safe_iter_with_bounds(last.map(|height| height + 1), None);
+        Ok(db_iter.collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_pending_checkpoint(
@@ -2052,21 +2044,21 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_dwallet_checkpoint_message_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(_, s)| s))
     }
 
-    pub fn last_built_checkpoint_message(
+    pub fn last_built_dwallet_checkpoint_message(
         &self,
     ) -> IkaResult<Option<(DWalletCheckpointSequenceNumber, DWalletCheckpointMessage)>> {
         Ok(self
             .tables()?
             .builder_dwallet_checkpoint_message_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
     }
 
@@ -2081,13 +2073,13 @@ impl AuthorityPerEpochStore {
             .map(|s| s.dwallet_checkpoint_message))
     }
 
-    pub fn get_last_checkpoint_signature_index(&self) -> IkaResult<u64> {
+    pub fn get_last_dwallet_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
             .pending_dwallet_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|((_, index), _)| index)
             .unwrap_or_default())
     }
@@ -2137,11 +2129,10 @@ impl AuthorityPerEpochStore {
         last: Option<SystemCheckpointHeight>,
     ) -> IkaResult<Vec<(SystemCheckpointHeight, PendingSystemCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_system_checkpoints.unbounded_iter();
-        if let Some(last_processed_height) = last {
-            iter = iter.skip_to(&(last_processed_height + 1))?;
-        }
-        Ok(iter.collect())
+        let db_iter = tables
+            .pending_system_checkpoints
+            .safe_iter_with_bounds(last.map(|height| height + 1), None);
+        Ok(db_iter.collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_pending_system_checkpoint(
@@ -2164,7 +2155,7 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
-                system_checkpoint: summary,
+                system_checkpoint_message: summary,
                 system_checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
@@ -2193,9 +2184,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(_, s)| s))
     }
 
@@ -2205,10 +2196,10 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
-            .map(|(seq, s)| (seq, s.system_checkpoint)))
+            .transpose()?
+            .map(|(seq, s)| (seq, s.system_checkpoint_message)))
     }
 
     pub fn get_built_system_checkpoint_message(
@@ -2219,16 +2210,16 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.system_checkpoint))
+            .map(|s| s.system_checkpoint_message))
     }
 
     pub fn get_last_system_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
             .pending_system_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|((_, index), _)| index)
             .unwrap_or_default())
     }

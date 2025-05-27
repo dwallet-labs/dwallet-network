@@ -10,7 +10,6 @@ use std::sync::Arc;
 use sui_types::base_types::ObjectID;
 use typed_store::rocks::{default_db_options, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
-use typed_store::traits::{TableSummary, TypedStoreDebug};
 
 use typed_store::DBMapUtils;
 use typed_store::Map;
@@ -42,11 +41,11 @@ impl CommitteeStore {
             db_options,
             None,
         );
-        let store = Self {
+
+        Self {
             tables,
             cache: RwLock::new(HashMap::new()),
-        };
-        store
+        }
     }
 
     pub fn new_for_testing(_genesis_committee: &Committee) -> Self {
@@ -90,16 +89,17 @@ impl CommitteeStore {
     }
 
     // todo - make use of cache or remove this method
-    pub fn get_latest_committee(&self) -> Committee {
-        self.tables
+    pub fn get_latest_committee(&self) -> IkaResult<Committee> {
+        Ok(self
+            .tables
             .committee_map
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             // unwrap safe because we guarantee there is at least a genesis epoch
             // when initializing the store.
             .unwrap()
-            .1
+            .1)
     }
     /// Return the committee specified by `epoch`. If `epoch` is `None`, return the latest committee.
     // todo - make use of cache or remove this method
@@ -109,7 +109,7 @@ impl CommitteeStore {
                 .get_committee(&epoch)?
                 .ok_or(IkaError::MissingCommitteeAtEpoch(epoch))
                 .map(|c| Committee::clone(&*c))?,
-            None => self.get_latest_committee(),
+            None => self.get_latest_committee()?,
         })
     }
 
@@ -123,6 +123,6 @@ impl CommitteeStore {
     // todo(zeev): why is it not used?
     #[allow(dead_code)]
     fn database_is_empty(&self) -> bool {
-        self.tables.committee_map.unbounded_iter().next().is_none()
+        self.tables.committee_map.safe_iter().next().is_none()
     }
 }

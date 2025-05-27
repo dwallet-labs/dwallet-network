@@ -52,7 +52,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     let object_changes = response
         .object_changes
         .ok_or(anyhow::Error::msg("failed to get object changes"))?;
-    let builder_id = object_changes
+    let builder_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -68,8 +68,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get builder object id"))?
-        .clone();
+        .ok_or(anyhow::Error::msg("failed to get builder object id"))?;
 
     let builder_ref = client
         .transaction_builder()
@@ -122,7 +121,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
             .object_changes
             .clone()
             .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
-        let builder_id = object_changes
+        let builder_id = *object_changes
             .iter()
             .filter_map(|o| match o {
                 ObjectChange::Mutated {
@@ -140,8 +139,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
             .first()
             .ok_or(anyhow::Error::msg(
                 "failed to get ClassGroupsPublicKeyAndProofBuilder object id",
-            ))?
-            .clone();
+            ))?;
 
         builder_object_ref = client
             .transaction_builder()
@@ -167,7 +165,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         .object_changes
         .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
 
-    let obj_id = object_changes
+    let obj_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -185,8 +183,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         .first()
         .ok_or(anyhow::Error::msg(
             "failed to get ClassGroupsPublicKeyAndProof object id",
-        ))?
-        .clone();
+        ))?;
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
 
@@ -340,6 +337,11 @@ pub async fn request_add_validator_candidate(
         .clone()
         .ok_or(anyhow::Error::msg("failed to get object changes"))?;
 
+    if !response.errors.is_empty() {
+        println!("{:?}", response.errors);
+        panic!("Become-candidate failed")
+    }
+
     let validator_cap_type = StructTag {
         address: ika_system_package_id.into(),
         module: VALIDATOR_CAP_MODULE_NAME.into(),
@@ -347,7 +349,7 @@ pub async fn request_add_validator_candidate(
         type_params: vec![],
     };
 
-    let validator_cap_id = object_changes
+    let validator_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -359,8 +361,7 @@ pub async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?
-        .clone();
+        .ok_or(anyhow::Error::msg("failed to get validator cap object id"))?;
 
     let validator_cap = context
         .get_client()
@@ -416,7 +417,7 @@ pub async fn stake_ika(
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
-    Ok(execute_transaction(context, tx_data).await?)
+    execute_transaction(context, tx_data).await
 }
 
 pub async fn request_add_validator(
@@ -451,7 +452,7 @@ pub async fn request_add_validator(
 
     let tx_data = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
-    Ok(execute_transaction(context, tx_data).await?)
+    execute_transaction(context, tx_data).await
 }
 
 pub async fn request_remove_validator(
@@ -472,7 +473,7 @@ pub async fn request_remove_validator(
         validator_cap_ref,
     )))?];
 
-    Ok(call_ika_system(
+    call_ika_system(
         context,
         REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
         call_args,
@@ -481,7 +482,7 @@ pub async fn request_remove_validator(
         ika_system_package_id,
         ptb,
     )
-    .await?)
+    .await
 }
 
 async fn construct_unsigned_ika_system_txn(

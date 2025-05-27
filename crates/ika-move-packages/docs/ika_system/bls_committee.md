@@ -119,7 +119,7 @@ Represents the current committee in the system.
 
 ## Struct `CommitteeQuorumVerifiedEvent`
 
-Event emitted after verifing quorum of signature.
+Event emitted after verifying quorum of signature.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_CommitteeQuorumVerifiedEvent">CommitteeQuorumVerifiedEvent</a> <b>has</b> <b>copy</b>, drop
@@ -170,22 +170,22 @@ Event emitted after verifing quorum of signature.
 
 
 
-<a name="(ika_system=0x0)_bls_committee_EInvalidSignature"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: vector&lt;u8&gt; = b"Invalid certificate signature.";
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_bls_committee_EInvalidSignatureLength"></a>
 
 
 
 <pre><code>#[error]
 <b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignatureLength">EInvalidSignatureLength</a>: vector&lt;u8&gt; = b"The length of the provided bls signature is incorrect.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_bls_committee_EInvalidSignature"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: vector&lt;u8&gt; = b"Invalid certificate signature.";
 </code></pre>
 
 

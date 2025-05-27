@@ -17,7 +17,6 @@ sui-types.workspace = true
 sui-protocol-config.workspace = true
 
 move-binary-format.workspace = true
-move-core-types.workspace = true
 anyhow.workspace = true
 
 [dev-dependencies]
