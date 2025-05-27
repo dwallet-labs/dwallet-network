@@ -22,7 +22,7 @@ impl DWalletMPCMetrics {
             "signature_algorithm",
         ];
         Arc::new(Self {
-            received_events_start_count: register_int_gauge_vec_with_registry!(,
+            received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
                 "Number of received events start",
                 &metric_labels,
