@@ -53,5 +53,8 @@ impl DWalletMPCMetrics {
         for protocol in mpc_protocols {
             
         }
+        Self {
+            protocols_metrics
+        }
     }
 }
