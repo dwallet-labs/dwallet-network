@@ -581,7 +581,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_encryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
         }
@@ -599,7 +598,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
         }
@@ -618,7 +616,6 @@ pub(super) async fn session_input_from_event(
                     dwallet_mpc_manager
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
-                    DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
@@ -676,7 +673,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((dkg_first_public_input(&protocol_public_parameters)?, None))
         }
@@ -691,7 +687,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
                 dkg_second_public_input(
@@ -710,7 +705,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
                 presign_public_input(
@@ -730,7 +724,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
                 sign_session_public_input(
@@ -754,7 +747,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
         }
@@ -767,7 +759,6 @@ pub(super) async fn session_input_from_event(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
-                DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((protocol_public_parameters, None))
         }
