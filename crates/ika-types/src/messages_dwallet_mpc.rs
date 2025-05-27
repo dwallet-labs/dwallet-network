@@ -123,7 +123,13 @@ impl MPCProtocolInitData {
         };
         let curve_str = match &curve {
             None => "".to_string(),
-            Some(curve) => curve.to_string(),
+            Some(curve) => {
+                if curve == &0 {
+                    "Secp256k1".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
         };
         curve_str
     }
@@ -143,11 +149,18 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
         };
-        let hash_scheme = match &hash_scheme {
+        match &hash_scheme {
             None => "".to_string(),
-            Some(curve) => curve.to_string(),
-        };
-        hash_scheme
+            Some(hash_scheme) => {
+                if hash_scheme == &0 {
+                    "KECCAK256".to_string()
+                } else if hash_scheme == &1 {
+                    "SHA256".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
     }
 
     pub fn get_signature_algorithm(&self) -> String {
@@ -167,7 +180,13 @@ impl MPCProtocolInitData {
         };
         let signature_alg = match &signature_alg {
             None => "".to_string(),
-            Some(curve) => curve.to_string(),
+            Some(curve) => {
+                return if curve == &0 {
+                    "ECDSA".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
         };
         signature_alg
     }
