@@ -461,7 +461,7 @@ impl DWalletMPCManager {
             warn!(?err, "Failed to increment metrics for event...");
         }
         let (public_input, private_input) = session_input_from_event(event, self).await?;
-        let mpc_event_data = Some(MPCEventData {
+        let inner_mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
@@ -476,7 +476,15 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
-        });
+        };
+        let mpc_event_data = Some(inner_mpc_event_data.clone());
+        self.dwallet_mpc_metrics.add_advance_completion(
+            &inner_mpc_event_data.init_protocol_data.get_event_name(),
+            &inner_mpc_event_data.init_protocol_data.get_curve(),
+            &"",
+            &inner_mpc_event_data.init_protocol_data.get_hash_scheme(),
+            &inner_mpc_event_data.init_protocol_data.get_signature_algorithm(),
+        );
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
                 "received an event for an existing session with `session_id`: {:?}",
