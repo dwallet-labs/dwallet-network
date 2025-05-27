@@ -200,7 +200,7 @@ console.log({ result });
 
 ### Transfer Ika
 
-To transfer `1000` NIKA to another address:
+To transfer `1000` INKU to another address:
 
 ```typescript
 import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';

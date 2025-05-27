@@ -206,6 +206,15 @@ public fun new_imported_key_dwallet(
     )
 }
 
+public fun calculate_pricing_votes(
+    self: &mut DWalletCoordinator,
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+) {
+    self.inner_mut().calculate_pricing_votes(curve, signature_algorithm, protocol);
+}
+
 public fun request_imported_key_dwallet_verification(
     self: &mut DWalletCoordinator,
     dwallet_cap: &ImportedKeyDWalletCap,
