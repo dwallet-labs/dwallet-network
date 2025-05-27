@@ -422,28 +422,6 @@ impl CommitteeWithNetworkMetadata {
     pub fn validators(&self) -> &Vec<(AuthorityName, (StakeUnit, NetworkMetadata))> {
         &self.validators
     }
-
-    pub fn committee(&self) -> &Committee {
-        let quorum_threshold = (2 * self.validators.len() as u64).div_ceil(3);
-        let validity_threshold = (self.validators.len() as u64).div_ceil(3);
-        self.committee.get_or_init(|| {
-            Committee::new(
-                self.epoch_id,
-                self.validators
-                    .iter()
-                    .map(|(name, (stake, _))| (*name, *stake))
-                    .collect(),
-                self.validators
-                    .iter()
-                    .map(|(name, (_, metadata))| {
-                        (*name, metadata.class_groups_public_key_and_proof.clone())
-                    })
-                    .collect(),
-                quorum_threshold,
-                validity_threshold,
-            )
-        })
-    }
 }
 
 impl Display for CommitteeWithNetworkMetadata {
