@@ -123,6 +123,27 @@ impl MPCProtocolInitData {
         }
     }
 
+    pub fn get_hash_scheme(&self) -> Option<u32> {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => None,
+            MPCProtocolInitData::DKGSecond(_) => None,
+            MPCProtocolInitData::Presign(_) => None,
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.hash_scheme),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.hash_scheme)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                None
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                None
+            }
+        }
+    }
+    
     pub fn get_event_name(&self) -> String {
         match self {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
