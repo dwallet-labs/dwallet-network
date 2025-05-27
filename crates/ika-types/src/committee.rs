@@ -65,7 +65,7 @@ impl Committee {
         //let total_votes: StakeUnit = voting_rights.iter().map(|(_, votes)| *votes).sum();
         //assert_eq!(total_votes, TOTAL_VOTING_POWER);
 
-        let (expanded_keys, index_map) = Self::load_inner(&voting_rights);
+        let (expanded_keys, index_map) = Self::load_inner(&voting_rights, &public_keys);
 
         Committee {
             epoch,
@@ -116,13 +116,14 @@ impl Committee {
     // We call this if these have not yet been computed
     pub fn load_inner(
         voting_rights: &[(AuthorityName, StakeUnit)],
+        public_keys: &Vec<(AuthorityName, AuthorityPublicKey)>,
     ) -> (
         HashMap<AuthorityName, AuthorityPublicKey>,
         HashMap<AuthorityName, usize>,
     ) {
-        let expanded_keys: HashMap<AuthorityName, AuthorityPublicKey> = voting_rights
+        let expanded_keys: HashMap<AuthorityName, AuthorityPublicKey> = public_keys
             .iter()
-            .map(|(addr, _)| (*addr, *addr))
+            .map(|(addr, pub_key)| (*addr, pub_key.clone()))
             .collect();
 
         let index_map: HashMap<AuthorityName, usize> = voting_rights
