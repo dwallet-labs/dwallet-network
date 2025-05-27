@@ -183,7 +183,8 @@ where
                         .unwrap(),
                     AuthorityPublicKey::from_bytes(
                         &validator.validator_info.name.clone().into_bytes(),
-                    ).unwrap(),
+                    )
+                    .unwrap(),
                 )
             })
             .collect();
