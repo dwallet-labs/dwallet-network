@@ -143,7 +143,28 @@ impl MPCProtocolInitData {
             }
         }
     }
-    
+
+    pub fn get_signature_algorithm(&self) -> Option<u32> {
+        match self {
+            MPCProtocolInitData::DKGFirst(event) => None,
+            MPCProtocolInitData::DKGSecond(event) => None,
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::NetworkDkg(_, event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.hash_scheme)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                None
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
+                None
+            }
+        }
+    }
+
     pub fn get_event_name(&self) -> String {
         match self {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
