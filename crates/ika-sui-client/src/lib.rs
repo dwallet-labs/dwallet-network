@@ -346,31 +346,6 @@ where
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                let network_encryption_keys = self
-                    .inner
-                    .get_network_encryption_keys(
-                        &ika_system_state_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys,
-                    )
-                    .await
-                    .unwrap_or_default();
-
-                let mut network_encryption_keys_data = HashMap::new();
-                for (key_id, key) in network_encryption_keys.iter() {
-                    let network_decryption_key = match self
-                        .inner
-                        .get_network_decryption_key_with_full_data(key)
-                        .await
-                    {
-                        Ok(key) => key,
-                        Err(e) => {
-                            return Err(IkaError::SuiClientInternalError(format!(
-                                "can't get_network_decryption_key_with_full_data: {e}"
-                            )));
-                        }
-                    };
-                    network_encryption_keys_data.insert(*key_id, network_decryption_key);
-                }
-
                 let validators_class_groups_public_key_and_proof = self
                     .inner
                     .get_class_groups_public_keys_and_proofs(&validators)
@@ -421,7 +396,6 @@ where
                     ika_system_state_inner.epoch_start_timestamp_ms,
                     ika_system_state_inner.epoch_duration_ms(),
                     validators,
-                    network_encryption_keys_data,
                     ika_system_state_inner
                         .validator_set
                         .active_committee
