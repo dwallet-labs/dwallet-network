@@ -133,7 +133,7 @@ impl CryptographicComputationsOrchestrator {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
-    pub(super) fn spawn_session(
+    pub(super) async fn spawn_session(
         &mut self,
         session: &DWalletMPCSession,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -152,6 +152,7 @@ impl CryptographicComputationsOrchestrator {
         if let Err(err) = self
             .computation_channel_sender
             .send(ComputationUpdate::Started)
+            .await
         {
             error!(
                 "failed to send a started computation message with error: {:?}",
@@ -180,12 +181,18 @@ impl CryptographicComputationsOrchestrator {
                 &mpc_event_data.get_signature_algorithm(),
                 elapsed.as_millis() as i64,
             );
-            if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
-                error!(
-                    "failed to send a finished computation message with error: {:?}",
-                    err
-                );
-            }
+
+            handle.spawn(async move {
+                if let Err(err) = computation_channel_sender
+                    .send(ComputationUpdate::Completed)
+                    .await
+                {
+                    error!(
+                        ?err,
+                        "failed to send a finished computation message with error: {:?}"
+                    );
+                }
+            });
         });
         Ok(())
     }
