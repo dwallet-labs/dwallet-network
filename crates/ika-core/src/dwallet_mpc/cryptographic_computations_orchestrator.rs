@@ -107,7 +107,7 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
-                        // todo(zeev): protocol, session, etc..
+                        // todo(#1081): metadata.
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
