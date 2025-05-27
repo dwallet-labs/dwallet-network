@@ -271,7 +271,7 @@ RejectedDWalletEncryptionKeyReconfigurationEvent
 DWalletDKGFirstRoundRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedDWalletDKGFirstdRoundEvent
+CompletedDWalletDKGFirstRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedDWalletDKGFirstRoundEvent

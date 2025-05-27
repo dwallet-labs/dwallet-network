@@ -326,7 +326,7 @@ impl IkaNode {
             Some(epoch_options.options),
             EpochMetrics::new(&registry_service.default_registry()),
             epoch_start_configuration,
-            chain_identifier.clone(),
+            chain_identifier,
             perpetual_tables.clone(),
             packages_config,
         );
@@ -1089,7 +1089,7 @@ impl IkaNode {
 
             let cur_epoch_store = self.state.load_epoch_store_one_call_per_task();
 
-            if let Some(supported_versions) = self.config.supported_protocol_versions.clone() {
+            if let Some(supported_versions) = self.config.supported_protocol_versions {
                 let transaction = ConsensusTransaction::new_capability_notification_v1(
                     AuthorityCapabilitiesV1::new(
                         self.state.name,
@@ -1145,7 +1145,7 @@ impl IkaNode {
                 debug_assert!(!latest_system_state.safe_mode());
             }
 
-            if let Err(err) = self.end_of_epoch_channel.send(latest_system_state.clone()) {
+            if let Err(err) = self.end_of_epoch_channel.send(*latest_system_state) {
                 if self.state.is_fullnode(&cur_epoch_store) {
                     warn!(
                         "Failed to send end of epoch notification to subscriber: {:?}",

@@ -8,7 +8,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { Config, DWallet, SharedObjectData } from './globals.js';
 import {
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -85,7 +85,7 @@ export async function createImportedDWalletMoveCall(
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(conf);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf);
 	const dwalletCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::new_imported_key_dwallet`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::new_imported_key_dwallet`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletSecp256k1ID,
@@ -150,7 +150,7 @@ export async function verifyImportedDWalletMoveCall(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_imported_key_dwallet_verification`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_dwallet_verification`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,

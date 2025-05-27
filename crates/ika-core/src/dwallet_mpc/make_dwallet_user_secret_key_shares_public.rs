@@ -1,31 +1,18 @@
-use anyhow::anyhow;
-use class_groups::Secp256k1EncryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedImportedSecretShare,
 };
-use group::{CyclicGroupElement, GroupElement};
-use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, PlaintextSpaceGroupElement};
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(
-    protocol_public_parameters: &Vec<u8>,
+    protocol_public_parameters: &[u8],
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<()> {
     let secret_share: VersionedImportedSecretShare = bcs::from_bytes(&secret_share)?;
-    let secret_share = match secret_share {
-        VersionedImportedSecretShare::V1(output) => output,
-        _ => {
-            return Err(anyhow!(
-                "invalid centralized public output version: expected ClassGroups::V1, got {:?}",
-                secret_share
-            ));
-        }
-    };
+    let VersionedImportedSecretShare::V1(secret_share) = secret_share;
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {

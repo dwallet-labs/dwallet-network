@@ -12,7 +12,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
     SerializedWrappedMPCPublicOutput,
 };
-use eyre::ContextCompat;
 use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -32,8 +31,6 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
-use jsonrpsee::core::Serialize;
-use k256::elliptic_curve::ops::Reduce;
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
@@ -97,11 +94,10 @@ pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<AuthorityName> {
-    Ok(epoch_store
+    Ok(*epoch_store
         .committee()
         .authority_by_index(party_id as u32 - 1)
-        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?
-        .clone())
+        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?)
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
@@ -111,7 +107,7 @@ pub(crate) fn party_ids_to_authority_names(
 ) -> DwalletMPCResult<Vec<AuthorityName>> {
     party_ids
         .iter()
-        .map(|party_id| party_id_to_authority_name(*party_id, &epoch_store))
+        .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
@@ -241,9 +237,9 @@ fn start_encrypted_share_verification_session_info(
     }
 }
 
-fn dkg_first_public_input(protocol_public_parameters: Vec<u8>) -> DwalletMPCResult<Vec<u8>> {
+fn dkg_first_public_input(protocol_public_parameters: &[u8]) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters,
+        protocol_public_parameters.to_vec(),
     )
 }
 
@@ -252,7 +248,7 @@ fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
-        session_id: deserialized_event.session_id.clone(),
+        session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
             deserialized_event,
@@ -265,7 +261,7 @@ fn dwallet_imported_key_verification_request_event_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
-        session_id: deserialized_event.session_id.clone(),
+        session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
     }
@@ -283,17 +279,15 @@ fn dkg_first_party_session_info(
 }
 
 fn dkg_second_public_input(
-    deserialized_event: DWalletDKGSecondRoundRequestEvent,
-    protocol_public_parameters: Vec<u8>,
+    deserialized_event: &DWalletDKGSecondRoundRequestEvent,
+    protocol_public_parameters: &[u8],
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(
-        <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event.first_round_output.clone(),
-            deserialized_event
-                .centralized_public_key_share_and_proof
-                .clone(),
-        )?,
+    <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters.to_vec(),
+        deserialized_event.first_round_output.clone(),
+        deserialized_event
+            .centralized_public_key_share_and_proof
+            .clone(),
     )
 }
 
@@ -302,7 +296,7 @@ fn dkg_second_party_session_info(
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
-        session_id: ObjectID::from(deserialized_event.session_id),
+        session_id: deserialized_event.session_id,
         mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
 
         epoch: deserialized_event.epoch,
@@ -314,17 +308,14 @@ pub(crate) fn presign_public_input(
     deserialized_event: PresignRequestEvent,
     protocol_public_parameters: Vec<u8>,
 ) -> DwalletMPCResult<Vec<u8>> {
-    Ok(
-        <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
-            deserialized_event.dwallet_public_output.clone().ok_or(
-                DwalletMPCError::MPCSessionError {
-                    session_id,
-                    error: "presign public input cannot be None as we only support ECDSA"
-                        .to_string(),
-                },
-            )?,
+    <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+        // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
+        deserialized_event.dwallet_public_output.clone().ok_or(
+            DwalletMPCError::MPCSessionError {
+                session_id,
+                error: "presign public input cannot be None as we only support ECDSA".to_string(),
+            },
         )?,
     )
 }
@@ -383,29 +374,27 @@ fn sign_session_public_input(
         &deserialized_event.session_id,
     )?;
 
-    Ok(
-        <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
-            protocol_public_parameters,
-            deserialized_event
-                .event_data
-                .dwallet_decentralized_public_output
-                .clone(),
-            bcs::to_bytes(
-                &message_digest(
-                    &deserialized_event.event_data.message.clone(),
-                    &Hash::try_from(deserialized_event.event_data.hash_scheme)
-                        .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-                )
-                .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
-            )?,
-            deserialized_event.event_data.presign.clone(),
-            deserialized_event
-                .event_data
-                .message_centralized_signature
-                .clone(),
-            bcs::from_bytes(&decryption_pp)?,
-            expected_decrypters,
+    <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+        deserialized_event
+            .event_data
+            .dwallet_decentralized_public_output
+            .clone(),
+        bcs::to_bytes(
+            &message_digest(
+                &deserialized_event.event_data.message.clone(),
+                &Hash::try_from(deserialized_event.event_data.hash_scheme)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+            )
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
         )?,
+        deserialized_event.event_data.presign.clone(),
+        deserialized_event
+            .event_data
+            .message_centralized_signature
+            .clone(),
+        bcs::from_bytes(&decryption_pp)?,
+        expected_decrypters,
     )
 }
 
@@ -438,7 +427,7 @@ fn calculate_total_voting_weight(
 ) -> usize {
     let mut total_voting_weight = 0;
     for party in parties {
-        if let Some(weight) = weighted_parties.get(&party) {
+        if let Some(weight) = weighted_parties.get(party) {
             total_voting_weight += *weight as usize;
         }
     }
@@ -542,7 +531,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         let mut valid_messages = HashMap::new();
 
         for (party_id, message) in message_batch {
-            match bcs::from_bytes::<M>(&message) {
+            match bcs::from_bytes::<M>(message) {
                 Ok(value) => {
                     valid_messages.insert(*party_id, value);
                 }
@@ -689,7 +678,7 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
-            Ok((dkg_first_public_input(protocol_public_parameters)?, None))
+            Ok((dkg_first_public_input(&protocol_public_parameters)?, None))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config) =>
@@ -705,7 +694,10 @@ pub(super) async fn session_input_from_event(
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?;
             Ok((
-                dkg_second_public_input(deserialized_event.event_data, protocol_public_parameters)?,
+                dkg_second_public_input(
+                    &deserialized_event.event_data,
+                    &protocol_public_parameters,
+                )?,
                 None,
             ))
         }
@@ -779,7 +771,7 @@ pub(super) async fn session_input_from_event(
             )?;
             Ok((protocol_public_parameters, None))
         }
-        _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string()).into()),
+        _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string())),
     }
 }
 

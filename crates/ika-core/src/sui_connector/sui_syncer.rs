@@ -103,9 +103,7 @@ where
         loop {
             time::sleep(Duration::from_secs(2)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
+            let SystemInner::V1(system_inner) = system_inner;
             let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
                 debug!("ika next epoch active committee not found, retrying...");
                 continue;
@@ -149,14 +147,14 @@ where
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
-            .get_validators_info_by_ids(&system_inner, validator_ids)
+            .get_validators_info_by_ids(system_inner, validator_ids)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = sui_client
             .get_class_groups_public_keys_and_proofs(&validators)
             .await
-            .map_err(|e| DwalletMPCError::IkaError(e))?;
+            .map_err(DwalletMPCError::IkaError)?;
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
@@ -202,9 +200,7 @@ where
                     HashMap::new()
                 });
             let system_inner = sui_client.must_get_system_inner_object().await;
-            let system_inner = match system_inner {
-                SystemInner::V1(system_inner) => system_inner,
-            };
+            let SystemInner::V1(system_inner) = system_inner;
             if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
@@ -257,7 +253,7 @@ where
                 .await
                 {
                     Ok(key) => {
-                        all_network_keys_data.insert(key_id.clone(), key.clone());
+                        all_network_keys_data.insert(key_id, key.clone());
                         network_keys_cache.insert((key_id, key.epoch));
                     }
                     Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {

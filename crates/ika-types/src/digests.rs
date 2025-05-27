@@ -203,6 +203,8 @@ impl ChainIdentifier {
         // let mainnet_id = get_mainnet_chain_identifier();
         // let testnet_id = get_testnet_chain_identifier();
 
+        // todo(zeev): fix this
+        #[allow(clippy::match_single_binding)]
         let chain = match self {
             // id if *id == mainnet_id => Chain::Mainnet,
             // id if *id == testnet_id => Chain::Testnet,

@@ -76,7 +76,7 @@ impl CryptographicComputationsOrchestrator {
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
-        if !(available_cores_for_computations > 0) {
+        if available_cores_for_computations == 0 {
             error!(
                 "failed to get available parallelism, no CPU cores available for cryptographic computations"
             );
