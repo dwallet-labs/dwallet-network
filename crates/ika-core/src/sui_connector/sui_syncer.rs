@@ -205,8 +205,9 @@ where
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
+                // todo(zeev): this was a bugfix
                 // Gather all the (ObjectID, current epoch) pairs that are out of date.
-                let mismatches: Vec<(ObjectID, u64)> = network_decryption_keys
+                let mismatches: Vec<(ObjectID, u64)> = network_encryption_keys
                     .iter()
                     .filter(|(_, key)| key.current_epoch != system_inner.epoch())
                     .map(|(id, key)| (id.clone(), key.current_epoch))

@@ -369,9 +369,10 @@ impl DWalletMPCManager {
         }
         self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
+        let epoch_store = self.epoch_store()?;
         if self
             .malicious_handler
-            .is_malicious_actor(&self.epoch_store()?.name)
+            .is_malicious_actor(&epoch_store.name)
         {
             self.recognized_self_as_malicious = true;
             error!(
@@ -379,7 +380,6 @@ impl DWalletMPCManager {
                 reporting_authority=?reporting_authority,
                 malicious_actors=?report.malicious_actors,
                 session_id=?report.session_id,
-                advance_result=?report.advance_result,
                 "node recognized itself as malicious"
             );
         }

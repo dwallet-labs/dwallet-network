@@ -7,8 +7,6 @@ use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
-use base64::engine::general_purpose;
-use base64::Engine;
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -36,10 +34,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
 use serde_json::json;
-use sha3::digest::FixedOutput as Sha3FixedOutput;
-use sha3::Digest as Sha3Digest;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -51,7 +46,7 @@ use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::dynamic_field::Field;
 use sui_types::id::ID;
-use tracing::{info, warn};
+use tracing::{warn};
 
 mod cryptographic_computations_orchestrator;
 mod dkg;
@@ -460,7 +455,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
-    messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
+    serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
     // The ClassGroupsKeyPairAndProof, not needed for all protocols.
@@ -557,7 +552,7 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
+    messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
     let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
@@ -853,7 +848,7 @@ fn write_mpc_session_logs_to_disk(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
-    messages: &Vec<HashMap<PartyID, MPCMessage>>,
+    messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
     encoded_public_input: &MPCPublicInput,
     mpc_protocol_name: String,
     party_to_authority_map: &HashMap<PartyID, AuthorityName>,

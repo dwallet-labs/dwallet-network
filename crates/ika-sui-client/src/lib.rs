@@ -598,15 +598,9 @@ where
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
-            // todo(zeev): checkthis
             let DWalletCoordinatorInner::V1(inner_v1) = self
-                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_secp256k1_id)
-                .await
-            else {
-                error!("fetched a wrong version of dwallet coordinator inner, trying again");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
+                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
+                .await;
             return inner_v1;
         }
     }
@@ -651,10 +645,9 @@ where
             let Ok(Ok(ika_system_state)) = res else {
                 self.sui_client_metrics
                     .sui_rpc_errors
-                    .with_label_values(&["get_dwallet_coordinator_inner_until_success"])
+                    .with_label_values(&["must_get_dwallet_coordinator_inner"])
                     .inc();
-                error!("Failed to get dwallet coordinator inner until success");
-                error!(?res);
+                warn!(?res, "Failed to get dwallet coordinator inner object");
                 continue;
             };
             return ika_system_state;

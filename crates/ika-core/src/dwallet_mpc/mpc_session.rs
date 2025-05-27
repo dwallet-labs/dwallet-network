@@ -1,5 +1,3 @@
-use base64::engine::general_purpose;
-use base64::Engine;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput,
@@ -375,7 +373,7 @@ impl DWalletMPCSession {
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
                 let public_input = (
-                    bcs::from_bytes(public_input)?,
+                    bcs::from_bytes(encoded_public_input)?,
                     dwallet_id,
                     bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
                 )
