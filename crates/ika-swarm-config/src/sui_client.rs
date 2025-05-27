@@ -2,7 +2,7 @@ use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
-use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_NIKA};
+use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
@@ -885,7 +885,7 @@ async fn stake_ika(
     let ika_supply_id_arg =
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(ika_supply_ref)))?;
     let stake_amount = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &MIN_VALIDATOR_JOINING_STAKE_NIKA,
+        &MIN_VALIDATOR_JOINING_STAKE_INKU,
     )?))?;
 
     for validator_id in validator_ids {
