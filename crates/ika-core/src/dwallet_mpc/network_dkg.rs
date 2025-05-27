@@ -15,10 +15,9 @@ use class_groups::{
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage,
-    MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
-    VersionedNetworkDkgOutput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
+    SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;

@@ -46,7 +46,7 @@ use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::dynamic_field::Field;
 use sui_types::id::ID;
-use tracing::{warn};
+use tracing::warn;
 
 mod cryptographic_computations_orchestrator;
 mod dkg;

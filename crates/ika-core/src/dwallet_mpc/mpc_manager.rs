@@ -370,10 +370,7 @@ impl DWalletMPCManager {
         self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
         let epoch_store = self.epoch_store()?;
-        if self
-            .malicious_handler
-            .is_malicious_actor(&epoch_store.name)
-        {
+        if self.malicious_handler.is_malicious_actor(&epoch_store.name) {
             self.recognized_self_as_malicious = true;
             error!(
                 authority=?epoch_store.name,
