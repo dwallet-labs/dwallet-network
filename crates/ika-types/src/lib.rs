@@ -23,9 +23,9 @@ pub mod messages_system_checkpoints;
 pub mod metrics;
 pub mod storage;
 
+mod authority_name;
 pub mod dwallet_mpc_error;
 pub mod messages_dwallet_mpc;
 pub mod quorum_driver_types;
 pub mod sui;
 pub mod supported_protocol_versions;
-mod authority_name;
