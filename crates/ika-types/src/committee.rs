@@ -278,10 +278,7 @@ impl Committee {
                 .map(|key| {
                     (
                         AuthorityName::new(
-                            key.public().pubkey.to_bytes()[..32]
-                                .iter()
-                                .try_into()
-                                .unwrap(),
+                            key.public().pubkey.to_bytes()[..32].try_into().unwrap(),
                         ),
                         /* voting right */ 1,
                     )
