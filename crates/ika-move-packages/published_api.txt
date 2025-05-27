@@ -1108,10 +1108,19 @@ set_max_validator_count
 set_min_validator_count
 	public(package) fun
 	0x0::pending_active_set
+set_max_validator_change_count
+	public(package) fun
+	0x0::pending_active_set
+reset_validator_changes
+	public(package) fun
+	0x0::pending_active_set
 max_validator_count
 	public(package) fun
 	0x0::pending_active_set
 min_validator_count
+	public(package) fun
+	0x0::pending_active_set
+max_validator_change_count
 	public(package) fun
 	0x0::pending_active_set
 size

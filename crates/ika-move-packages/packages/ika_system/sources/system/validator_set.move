@@ -116,6 +116,7 @@ public(package) fun new(
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
+    max_validator_change_count: u64,
     ctx: &mut TxContext,
 ): ValidatorSet {
     ValidatorSet {
@@ -124,7 +125,7 @@ public(package) fun new(
         active_committee: bls_committee::empty(),
         next_epoch_active_committee: option::none(),
         previous_committee: bls_committee::empty(),
-        pending_active_set: extended_field::new(pending_active_set::new(min_validator_count, max_validator_count, min_validator_joining_stake), ctx),
+        pending_active_set: extended_field::new(pending_active_set::new(min_validator_count, max_validator_count, min_validator_joining_stake, max_validator_change_count), ctx),
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
     }
@@ -620,6 +621,8 @@ public(package) fun advance_epoch(
 
     // Activate validators that were added during `process_mid_epoch`
     self.activate_added_validators(new_epoch);
+
+    self.pending_active_set.borrow_mut().reset_validator_changes();
 
     // Emit events after we have processed all the rewards distribution and pending stakes.
     self.emit_validator_epoch_events(

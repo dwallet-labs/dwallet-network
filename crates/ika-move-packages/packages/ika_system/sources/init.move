@@ -55,6 +55,7 @@ public fun initialize(
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
+    max_validator_change_count: u64,
     reward_slashing_rate: u16,
     lock_active_committee: bool,
     ctx: &mut TxContext,
@@ -81,6 +82,7 @@ public fun initialize(
         min_validator_count,
         max_validator_count,
         min_validator_joining_stake,
+        max_validator_change_count,
         ctx,
     );
 
