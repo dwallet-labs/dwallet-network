@@ -172,22 +172,22 @@ The validator is already part of the active set.
 
 
 
-<a name="(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached"></a>
-
-The maximum number of validator changes has been reached.
-
-
-<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>: u64 = 4;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount"></a>
 
 The minimum active set size must be maintained.
 
 
 <pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached"></a>
+
+The maximum number of validator changes has been reached.
+
+
+<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>: u64 = 4;
 </code></pre>
 
 

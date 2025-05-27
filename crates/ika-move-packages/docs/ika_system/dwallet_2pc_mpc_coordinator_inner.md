@@ -3618,6 +3618,15 @@ Variant <code>System</code>
 
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotSetDuringVotesCalculation"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotSetDuringVotesCalculation">ECannotSetDuringVotesCalculation</a>: u64 = 30;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint"></a>
 
 
@@ -7140,6 +7149,7 @@ IMPORTANT: every time a new protocol is added, this function must be updated wit
     validator_id: ID,
     pricing_vote: DWalletPricing,
 ) {
+    <b>assert</b>!(self.pricing_calculation_votes.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotSetDuringVotesCalculation">ECannotSetDuringVotesCalculation</a>);
     <b>if</b>(self.pricing_votes.contains(validator_id)) {
         <b>let</b> vote = self.pricing_votes.borrow_mut(validator_id);
         *vote = pricing_vote;
