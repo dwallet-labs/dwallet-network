@@ -177,6 +177,13 @@ impl CryptographicComputationsOrchestrator {
                 error!("failed to advance session with error: {:?}", err);
             };
             let elapsed = start_advance.elapsed();
+            dwallet_mpc_metrics.add_advance_completion(
+                &mpc_event_data.get_event_name(),
+                &curve_str,
+                &session.current_round.to_string(),
+                &hash_scheme_str,
+                &signature_algorithm_str,
+            );
             Self::update_completed_computation_metric(
                 // Safe to unwrap here (event must exist before this).
                 &session.mpc_event_data.unwrap().init_protocol_data,
