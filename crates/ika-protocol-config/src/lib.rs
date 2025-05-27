@@ -140,6 +140,10 @@ struct FeatureFlags {
     // If true, enabled batched block sync in consensus.
     #[serde(skip_serializing_if = "is_false")]
     consensus_batched_block_sync: bool,
+
+    // If true, enforces checkpoint timestamps are non-decreasing.
+    #[serde(skip_serializing_if = "is_false")]
+    enforce_checkpoint_timestamp_monotonicity: bool,
 }
 
 #[allow(unused)]
@@ -324,6 +328,10 @@ impl ProtocolConfig {
         self.feature_flags.consensus_batched_block_sync
     }
 
+    pub fn enforce_checkpoint_timestamp_monotonicity(&self) -> bool {
+        self.feature_flags.enforce_checkpoint_timestamp_monotonicity
+    }
+
     pub fn consensus_zstd_compression(&self) -> bool {
         self.feature_flags.consensus_zstd_compression
     }
@@ -497,6 +505,7 @@ impl ProtocolConfig {
         cfg.feature_flags.consensus_zstd_compression = true;
         cfg.feature_flags.consensus_median_based_commit_timestamp = true;
         cfg.feature_flags.consensus_batched_block_sync = true;
+        cfg.feature_flags.enforce_checkpoint_timestamp_monotonicity = true;
 
         #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
@@ -559,6 +568,10 @@ impl ProtocolConfig {
 
     pub fn set_consensus_batched_block_sync_for_testing(&mut self, val: bool) {
         self.feature_flags.consensus_batched_block_sync = val;
+    }
+
+    pub fn set_enforce_checkpoint_timestamp_monotonicity_for_testing(&mut self, val: bool) {
+        self.feature_flags.enforce_checkpoint_timestamp_monotonicity = val;
     }
 }
 

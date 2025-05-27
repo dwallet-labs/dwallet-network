@@ -196,6 +196,10 @@ impl ConsensusManagerTrait for MysticetiManager {
             ika_protocol_config.consensus_batched_block_sync(),
         );
 
+        // protocol_config.set_enforce_checkpoint_timestamp_monotonicity_for_testing(
+        //     ika_protocol_config.enforce_checkpoint_timestamp_monotonicity(),
+        // );
+
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
             epoch_store.epoch_start_config().epoch_start_timestamp_ms(),
