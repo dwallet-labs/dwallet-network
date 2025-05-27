@@ -24,12 +24,8 @@ use sui_types::event::EventID;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
+use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
-use typed_store::{
-    rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf},
-    traits::{TableSummary, TypedStoreDebug},
-    TypedStoreError,
-};
 
 use super::epoch_start_configuration::EpochStartConfigTrait;
 
@@ -96,9 +92,7 @@ use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
-use sui_types::executable_transaction::{
-    TrustedExecutableTransaction, VerifiedExecutableTransaction,
-};
+use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
@@ -132,8 +126,8 @@ impl CertTxGuard {
 
 impl CertLockGuard {
     pub fn dummy_for_tests() -> Self {
-        let lock = Arc::new(tokio::sync::Mutex::new(()));
-        Self(lock.try_lock_owned().unwrap())
+        let lock = Arc::new(parking_lot::Mutex::new(()));
+        Self(lock.try_lock_arc().unwrap())
     }
 }
 
@@ -405,15 +399,9 @@ pub struct AuthorityEpochTables {
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_dwallet_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Maps non-digest TransactionKeys to the corresponding digest after execution, for use
-    /// by checkpoint builder.
-    transaction_key_to_digest: DBMap<TransactionKey, MessageDigest>,
-
     /// Stores pending signatures
     /// The key in this table is checkpoint sequence number and an arbitrary integer
-    pending_dwallet_checkpoint_signatures:
+    pub(crate) pending_dwallet_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
@@ -425,7 +413,7 @@ pub struct AuthorityEpochTables {
 
     /// Stores pending signatures
     /// The key in this table is ika system checkpoint sequence number and an arbitrary integer
-    pending_system_checkpoint_signatures:
+    pub(crate) pending_system_checkpoint_signatures:
         DBMap<(DWalletCheckpointSequenceNumber, u64), SystemCheckpointSignatureMessage>,
 
     /// Maps sequence number to ika system checkpoint summary, used by SystemCheckpointBuilder to build checkpoint within epoch
@@ -489,7 +477,7 @@ fn pending_checkpoints_table_default_config() -> DBOptions {
 
 impl AuthorityEpochTables {
     pub fn open(epoch: EpochId, parent_path: &Path, db_options: Option<Options>) -> Self {
-        Self::open_tables_transactional(
+        Self::open_tables_read_write(
             Self::path(epoch, parent_path),
             MetricConf::new("epoch"),
             db_options,
@@ -510,17 +498,12 @@ impl AuthorityEpochTables {
         parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
     }
 
-    pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
-        self.pending_consensus_transactions
-            .unbounded_iter()
-            .map(|(_k, v)| v)
-            .collect()
-    }
-
-    pub fn reset_db_for_execution_since_genesis(&self) -> IkaResult {
-        // TODO: Add new tables that get added to the db automatically
-        self.executed_transactions_to_checkpoint.unsafe_clear()?;
-        Ok(())
+    pub fn get_all_pending_consensus_transactions(&self) -> IkaResult<Vec<ConsensusTransaction>> {
+        Ok(self
+            .pending_consensus_transactions
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     /// WARNING: This method is very subtle and can corrupt the database if used incorrectly.
@@ -541,49 +524,37 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_pending_checkpoint_signatures_iter(
-        &self,
-        checkpoint_seq: DWalletCheckpointSequenceNumber,
-        starting_index: u64,
-    ) -> IkaResult<
-        impl Iterator<
-                Item = (
-                    (DWalletCheckpointSequenceNumber, u64),
-                    DWalletCheckpointSignatureMessage,
-                ),
-            > + '_,
-    > {
-        let key = (checkpoint_seq, starting_index);
-        debug!("Scanning pending checkpoint signatures from {:?}", key);
-        let iter = self
-            .pending_dwallet_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to(&key)?;
-        Ok::<_, IkaError>(iter)
+    pub fn get_all_dwallet_mpc_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .dwallet_mpc_events
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
     }
 
-    pub fn get_pending_system_checkpoint_signatures_iter(
-        &self,
-        system_checkpoint_seq: SystemCheckpointSequenceNumber,
-        starting_index: u64,
-    ) -> IkaResult<
-        impl Iterator<
-                Item = (
-                    (SystemCheckpointSequenceNumber, u64),
-                    SystemCheckpointSignatureMessage,
-                ),
-            > + '_,
-    > {
-        let key = (system_checkpoint_seq, starting_index);
-        debug!(
-            "Scanning pending system_checkpoint signatures from {:?}",
-            key
-        );
-        let iter = self
-            .pending_system_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to(&key)?;
-        Ok::<_, IkaError>(iter)
+    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
+        Ok(self
+            .dwallet_mpc_messages
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
+    }
+
+    pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
+        Ok(self
+            .dwallet_mpc_outputs
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect())
     }
 }
 
@@ -687,7 +658,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .dwallet_mpc_events
-            .iter_with_bounds(Some(round), None)
+            .safe_iter_with_bounds(Some(round), None)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
             .flat_map(|(_, events)| events)
             .collect())
     }
@@ -700,7 +673,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .dwallet_mpc_completed_sessions
-            .iter_with_bounds(Some(round), None)
+            .safe_iter_with_bounds(Some(round), None)
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
             .flat_map(|(_, events)| events)
             .collect())
     }
@@ -868,18 +843,6 @@ impl AuthorityPerEpochStore {
         }
     }
 
-    /// `pending_certificates` table related methods. Should only be used from TransactionManager.
-
-    /// Gets all pending certificates. Used during recovery.
-    pub fn all_pending_execution(&self) -> IkaResult<Vec<VerifiedExecutableTransaction>> {
-        Ok(self
-            .tables()?
-            .pending_execution
-            .unbounded_iter()
-            .map(|(_, cert)| cert.into())
-            .collect())
-    }
-
     /// Called when transaction outputs are committed to disk
     #[instrument(level = "trace", skip_all)]
     pub fn handle_committed_transactions(&self, digests: &[MessageDigest]) -> IkaResult<()> {
@@ -906,6 +869,7 @@ impl AuthorityPerEpochStore {
         self.tables()
             .expect("recovery should not cross epoch boundary")
             .get_all_pending_consensus_transactions()
+            .expect("failed to get pending consensus transactions")
     }
 
     /// Returns true if all messages with the given keys were processed by consensus.
@@ -1026,13 +990,12 @@ impl AuthorityPerEpochStore {
     }
 
     pub fn get_capabilities_v1(&self) -> IkaResult<Vec<AuthorityCapabilitiesV1>> {
-        let result: Result<Vec<AuthorityCapabilitiesV1>, TypedStoreError> = self
+        Ok(self
             .tables()?
             .authority_capabilities_v1
-            .values()
-            .map_into()
-            .collect();
-        Ok(result?)
+            .safe_iter()
+            .map(|item| item.map(|(_, v)| v))
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn record_protocol_config_version_sent(
@@ -1049,9 +1012,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .protocol_config_version_sent
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(s, _)| s))
     }
 
@@ -1492,7 +1455,7 @@ impl AuthorityPerEpochStore {
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
     async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
-        let pending_events = self.perpetual_tables.get_all_pending_events();
+        let pending_events = self.perpetual_tables.get_all_pending_events()?;
         self.perpetual_tables
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         let events: Vec<DWalletMPCEvent> = pending_events
@@ -2022,16 +1985,15 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    pub fn get_pending_checkpoints(
+    pub fn get_pending_dwallet_checkpoints(
         &self,
         last: Option<DWalletCheckpointHeight>,
     ) -> IkaResult<Vec<(DWalletCheckpointHeight, PendingDWalletCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_dwallet_checkpoints.unbounded_iter();
-        if let Some(last_processed_height) = last {
-            iter = iter.skip_to(&(last_processed_height + 1))?;
-        }
-        Ok(iter.collect())
+        let db_iter = tables
+            .pending_dwallet_checkpoints
+            .safe_iter_with_bounds(last.map(|height| height + 1), None);
+        Ok(db_iter.collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_pending_checkpoint(
@@ -2083,21 +2045,21 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_dwallet_checkpoint_message_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(_, s)| s))
     }
 
-    pub fn last_built_checkpoint_message(
+    pub fn last_built_dwallet_checkpoint_message(
         &self,
     ) -> IkaResult<Option<(DWalletCheckpointSequenceNumber, DWalletCheckpointMessage)>> {
         Ok(self
             .tables()?
             .builder_dwallet_checkpoint_message_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
     }
 
@@ -2112,13 +2074,13 @@ impl AuthorityPerEpochStore {
             .map(|s| s.dwallet_checkpoint_message))
     }
 
-    pub fn get_last_checkpoint_signature_index(&self) -> IkaResult<u64> {
+    pub fn get_last_dwallet_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
             .pending_dwallet_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|((_, index), _)| index)
             .unwrap_or_default())
     }
@@ -2168,11 +2130,10 @@ impl AuthorityPerEpochStore {
         last: Option<SystemCheckpointHeight>,
     ) -> IkaResult<Vec<(SystemCheckpointHeight, PendingSystemCheckpoint)>> {
         let tables = self.tables()?;
-        let mut iter = tables.pending_system_checkpoints.unbounded_iter();
-        if let Some(last_processed_height) = last {
-            iter = iter.skip_to(&(last_processed_height + 1))?;
-        }
-        Ok(iter.collect())
+        let db_iter = tables
+            .pending_system_checkpoints
+            .safe_iter_with_bounds(last.map(|height| height + 1), None);
+        Ok(db_iter.collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_pending_system_checkpoint(
@@ -2195,7 +2156,7 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
-                system_checkpoint: summary,
+                system_checkpoint_message: summary,
                 system_checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
@@ -2224,9 +2185,9 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|(_, s)| s))
     }
 
@@ -2236,10 +2197,10 @@ impl AuthorityPerEpochStore {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
-            .map(|(seq, s)| (seq, s.system_checkpoint)))
+            .transpose()?
+            .map(|(seq, s)| (seq, s.system_checkpoint_message)))
     }
 
     pub fn get_built_system_checkpoint_message(
@@ -2250,16 +2211,16 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.system_checkpoint))
+            .map(|s| s.system_checkpoint_message))
     }
 
     pub fn get_last_system_checkpoint_signature_index(&self) -> IkaResult<u64> {
         Ok(self
             .tables()?
             .pending_system_checkpoint_signatures
-            .unbounded_iter()
-            .skip_to_last()
+            .reversed_safe_iter_with_bounds(None, None)?
             .next()
+            .transpose()?
             .map(|((_, index), _)| index)
             .unwrap_or_default())
     }
