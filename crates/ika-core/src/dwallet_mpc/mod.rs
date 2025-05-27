@@ -616,7 +616,7 @@ pub(super) async fn session_input_from_event(
                     dwallet_mpc_manager
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
-                    DWalletMPCNetworkKeyScheme::Secp256k1
+                    DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?,
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
