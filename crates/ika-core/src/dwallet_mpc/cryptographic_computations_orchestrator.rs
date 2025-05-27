@@ -143,7 +143,7 @@ impl CryptographicComputationsOrchestrator {
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
 
         dwallet_mpc_metrics.add_advance_call(
-            &mpc_event_data.get_event_name(),
+            &mpc_event_data.to_string(),
             &mpc_event_data.get_curve(),
             &session.current_round.to_string(),
             &mpc_event_data.get_hash_scheme(),
@@ -166,14 +166,14 @@ impl CryptographicComputationsOrchestrator {
             };
             let elapsed = start_advance.elapsed();
             dwallet_mpc_metrics.add_advance_completion(
-                &mpc_event_data.get_event_name(),
+                &mpc_event_data.to_string(),
                 &mpc_event_data.get_curve(),
                 &session.current_round.to_string(),
                 &mpc_event_data.get_hash_scheme(),
                 &mpc_event_data.get_signature_algorithm(),
             );
             dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data.get_event_name(),
+                &mpc_event_data.to_string(),
                 &mpc_event_data.get_curve(),
                 &session.current_round.to_string(),
                 &mpc_event_data.get_hash_scheme(),
