@@ -284,7 +284,7 @@ where
                 info!(epoch, "Finished epoch");
                 let epoch_start_system_state = self
                     .sui_client
-                    .get_epoch_start_system_until_success(&ika_system_state_inner)
+                    .must_get_epoch_start_system(&ika_system_state_inner)
                     .await;
                 return StopReason::EpochComplete(
                     Box::new(ika_system_state_inner),

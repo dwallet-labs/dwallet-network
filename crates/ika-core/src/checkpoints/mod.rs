@@ -1213,7 +1213,7 @@ impl DWalletCheckpointAggregator {
                 // the rest of the network, and we've already received the
                 // certified checkpoint via StateSync. In this case, we reset
                 // the current signature aggregator to the next checkpoint to
-                // be certified
+                // be certified.
                 if current.dwallet_checkpoint_message.sequence_number < next_to_certify {
                     self.current = None;
                     continue;
@@ -1743,7 +1743,8 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
             .with_label_values(&[&signer.to_string()])
             .set(sequence as i64);
         // While it can be tempting to make last_signature_index into AtomicU64, this won't work
-        // We need to make sure we write to `pending_signatures` and trigger `notify_aggregator` without race conditions
+        // We need to make sure we write to `pending_signatures`
+        // and trigger `notify_aggregator` without race conditions.
         let mut index = self.last_signature_index.lock();
         *index += 1;
         epoch_store.insert_checkpoint_signature(sequence, *index, info)?;
