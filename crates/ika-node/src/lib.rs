@@ -218,7 +218,7 @@ pub struct IkaNode {
 impl fmt::Debug for IkaNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("IkaNode")
-            .field("name", &self.state.name.concise())
+            .field("name", &self.state.name.to_string())
             .finish()
     }
 }

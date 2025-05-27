@@ -967,13 +967,13 @@ impl SystemCheckpointAggregator {
                     system_checkpoint_seq = current.system_checkpoint.sequence_number,
                     "Processing signature for system_checkpoint (digest: {:?}) from {:?}",
                     current.system_checkpoint.digest(),
-                    data.system_checkpoint.auth_sig().authority.concise()
+                    data.system_checkpoint.auth_sig().authority.to_string()
                 );
                 self.metrics
                     .system_checkpoint_participation
                     .with_label_values(&[&format!(
                         "{:?}",
-                        data.system_checkpoint.auth_sig().authority.concise()
+                        data.system_checkpoint.auth_sig().authority.to_string()
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
@@ -1041,7 +1041,7 @@ impl SystemCheckpointSignatureAggregator {
                 warn!(
                     system_checkpoint_seq = self.system_checkpoint.sequence_number,
                     "Failed to aggregate new signature from validator {:?}: {:?}",
-                    author.concise(),
+                    author.to_string(),
                     error
                 );
                 //self.check_for_split_brain();
@@ -1055,7 +1055,7 @@ impl SystemCheckpointSignatureAggregator {
                     warn!(
                         system_checkpoint_seq = self.system_checkpoint.sequence_number,
                         "Validator {:?} has mismatching system_checkpoint digest {}, we have digest {}",
-                        author.concise(),
+                        author.to_string(),
                         their_digest,
                         self.digest
                     );
@@ -1178,7 +1178,7 @@ impl SystemCheckpointServiceNotify for SystemCheckpointService {
         info: &SystemCheckpointSignatureMessage,
     ) -> IkaResult {
         let sequence = info.system_checkpoint.sequence_number;
-        let signer = info.system_checkpoint.auth_sig().authority.concise();
+        let signer = info.system_checkpoint.auth_sig().authority.to_string();
 
         if let Some(highest_verified_system_checkpoint) = self
             .tables

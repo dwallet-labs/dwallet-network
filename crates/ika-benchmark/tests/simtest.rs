@@ -160,10 +160,10 @@ mod test {
         let restarter_task = tokio::task::spawn(async move {
             for _ in 0..4 {
                 for validator in validators.iter() {
-                    info!("Killing validator {:?}", validator.concise());
+                    info!("Killing validator {:?}", validator.to_string());
                     test_cluster_clone.stop_node(validator);
                     tokio::time::sleep(Duration::from_secs(20)).await;
-                    info!("Starting validator {:?}", validator.concise());
+                    info!("Starting validator {:?}", validator.to_string());
                     test_cluster_clone.start_node(validator).await;
                 }
             }

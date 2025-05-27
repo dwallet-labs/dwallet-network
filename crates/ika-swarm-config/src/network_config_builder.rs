@@ -368,9 +368,14 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                             SupportedProtocolVersions::SYSTEM_DEFAULT
                         }
                         ProtocolVersionsConfig::Global(v) => *v,
-                        ProtocolVersionsConfig::PerValidator(func) => {
-                            func(idx, Some(validator.key_pair.public().into()))
-                        }
+                        ProtocolVersionsConfig::PerValidator(func) => func(
+                            idx,
+                            Some(
+                                validator.account_key_pair.public().as_ref()[..32]
+                                    .try_into()
+                                    .unwrap(),
+                            ),
+                        ),
                     };
                     builder = builder.with_supported_protocol_versions(supported_versions);
                 }

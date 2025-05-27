@@ -46,7 +46,7 @@ impl Container {
         let (startup_sender, startup_receiver) = tokio::sync::oneshot::channel();
         let (cancel_sender, cancel_receiver) = tokio::sync::oneshot::channel();
         let name = AuthorityPublicKeyBytes::from(config.protocol_key_pair().public())
-            .concise()
+            .to_string()
             .to_string();
 
         let thread = thread::Builder::new().name(name).spawn(move || {
@@ -60,7 +60,7 @@ impl Container {
                 Some(tracing::span!(
                     tracing::Level::INFO,
                     "node",
-                    name =% AuthorityPublicKeyBytes::from(config.protocol_key_pair().public()).concise(),
+                    name =% AuthorityPublicKeyBytes::from(config.protocol_key_pair().public()).to_string(),
                 ))
             };
 

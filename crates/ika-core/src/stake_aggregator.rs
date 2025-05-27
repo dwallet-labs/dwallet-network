@@ -174,7 +174,7 @@ impl<const STRENGTH: bool> StakeAggregator<AuthoritySignInfo, STRENGTH> {
                                         // TODO(joyqvq): Currently, the aggregator cannot do much with an authority that
                                         // always returns an invalid signature other than saving to errors in state. It
                                         // is possible to add the authority to a denylist or  punish the byzantine authority.
-                                        warn!(name=?name.concise(), "Bad stake from validator: {:?}", err);
+                                        warn!(name=?name.to_string(), "Bad stake from validator: {:?}", err);
                                         self.data.remove(name);
                                         let votes = self.committee.weight(name);
                                         self.total_votes -= votes;

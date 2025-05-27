@@ -933,7 +933,7 @@ impl AuthorityState {
 
                 info!(
                     "validator {:?} supports {:?} with move packages: {:?}",
-                    cap.authority.concise(),
+                    cap.authority.to_string(),
                     cap.supported_protocol_versions,
                     cap.available_move_packages,
                 );

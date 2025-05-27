@@ -169,8 +169,8 @@ impl<'a> ConciseableName<'a> for AuthorityPublicKeyBytes {
 
     /// Get a ConciseAuthorityPublicKeyBytesRef. Usage:
     ///
-    ///   debug!(name = ?authority.concise());
-    ///   format!("{:?}", authority.concise());
+    ///   debug!(name = ?authority.to_string());
+    ///   format!("{:?}", authority.to_string());
     fn concise(&'a self) -> ConciseAuthorityPublicKeyBytesRef<'a> {
         ConciseAuthorityPublicKeyBytesRef(self)
     }
@@ -333,7 +333,7 @@ impl IkaAuthoritySignature for AuthoritySignature {
                     "Fail to verify auth sig {} epoch: {} author: {}",
                     e,
                     epoch,
-                    author.concise()
+                    author.to_string()
                 ),
             })
     }

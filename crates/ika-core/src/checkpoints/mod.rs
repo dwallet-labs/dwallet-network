@@ -1274,7 +1274,7 @@ impl DWalletCheckpointAggregator {
                     data.dwallet_checkpoint_message
                         .auth_sig()
                         .authority
-                        .concise()
+                        .to_string()
                 );
                 self.metrics
                     .dwallet_checkpoint_participation
@@ -1283,7 +1283,7 @@ impl DWalletCheckpointAggregator {
                         data.dwallet_checkpoint_message
                             .auth_sig()
                             .authority
-                            .concise()
+                            .to_string()
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
@@ -1353,7 +1353,7 @@ impl DWalletCheckpointSignatureAggregator {
                 warn!(
                     checkpoint_seq = self.dwallet_checkpoint_message.sequence_number,
                     "Failed to aggregate new signature from validator {:?}: {:?}",
-                    author.concise(),
+                    author.to_string(),
                     error
                 );
                 //self.check_for_split_brain();
@@ -1367,7 +1367,7 @@ impl DWalletCheckpointSignatureAggregator {
                     warn!(
                         checkpoint_seq = self.dwallet_checkpoint_message.sequence_number,
                         "Validator {:?} has mismatching checkpoint digest {}, we have digest {}",
-                        author.concise(),
+                        author.to_string(),
                         their_digest,
                         self.digest
                     );
@@ -1554,7 +1554,7 @@ impl DWalletCheckpointSignatureAggregator {
 //     let local_contents_text = format!("{local_checkpoint_contents:?}");
 //
 //     let local_summary_text = format!("{local_summary:?}");
-//     let local_validator = state.name.concise();
+//     let local_validator = state.name.to_string();
 //     let diff_patches = response_data
 //         .iter()
 //         .map(|(name, other_digest, other_summary, contents)| {
@@ -1579,7 +1579,7 @@ impl DWalletCheckpointSignatureAggregator {
 //             let effects_patch = create_patch(&local_effects_text, &other_effects_text);
 //             let seq_number = local_summary.sequence_number;
 //             let local_digest = local_summary.digest();
-//             let other_validator = name.concise();
+//             let other_validator = name.to_string();
 //             format!(
 //                 "Checkpoint: {seq_number:?}\n\
 //                 Local validator (original): {local_validator:?}, digest: {local_digest:?}\n\
@@ -1717,7 +1717,7 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
             .dwallet_checkpoint_message
             .auth_sig()
             .authority
-            .concise();
+            .to_string();
 
         if let Some(highest_verified_checkpoint) = self
             .tables
