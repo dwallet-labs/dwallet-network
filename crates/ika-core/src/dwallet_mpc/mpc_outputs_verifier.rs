@@ -198,7 +198,6 @@ impl DWalletMPCOutputsVerifier {
             self.dwallet_mpc_metrics.add_completion(
                 &mpc_event_data.get_event_name(),
                 &mpc_event_data.get_curve(),
-                &"",
                 &mpc_event_data.get_hash_scheme(),
                 &mpc_event_data.get_signature_algorithm(),
             );

@@ -14,7 +14,13 @@ pub struct DWalletMPCMetrics {
 
 impl DWalletMPCMetrics {
     pub fn new(registry: &Registry) -> Arc<Self> {
-        let metric_labels = [
+        let protocol_metric_labels = [
+            "protocol_name",
+            "curve",
+            "hash_scheme",
+            "signature_algorithm",
+        ];
+        let round_metric_labels = [
             "protocol_name",
             "curve",
             "mpc_round",
@@ -25,35 +31,35 @@ impl DWalletMPCMetrics {
             received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
                 "Number of received events start",
-                &metric_labels,
+                &protocol_metric_labels,
                 registry
             )
             .unwrap(),
             advance_calls: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_calls",
                 "Number of advance calls",
-                &metric_labels,
+                &round_metric_labels,
                 registry
             )
             .unwrap(),
             advance_completions: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_completions",
                 "Number of advance completions",
-                &metric_labels,
+                &round_metric_labels,
                 registry
             )
             .unwrap(),
             completions_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_completions_count",
                 "Number of completions",
-                &metric_labels,
+                &protocol_metric_labels,
                 registry
             )
             .unwrap(),
             last_completion_duration: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_last_completion_duration",
                 "Duration of the last completion in milliseconds",
-                &metric_labels,
+                &round_metric_labels,
                 registry
             )
             .unwrap(),
@@ -66,18 +72,11 @@ impl DWalletMPCMetrics {
         &self,
         protocol_name: &str,
         curve: &str,
-        mpc_round: &str,
         hash_scheme: &str,
         signature_algorithm: &str,
     ) {
         self.completions_count
-            .with_label_values(&[
-                protocol_name,
-                curve,
-                mpc_round,
-                hash_scheme,
-                signature_algorithm,
-            ])
+            .with_label_values(&[protocol_name, curve, hash_scheme, signature_algorithm])
             .inc();
     }
 
@@ -85,18 +84,11 @@ impl DWalletMPCMetrics {
         &self,
         protocol_name: &str,
         curve: &str,
-        mpc_round: &str,
         hash_scheme: &str,
         signature_algorithm: &str,
     ) {
         self.received_events_start_count
-            .with_label_values(&[
-                protocol_name,
-                curve,
-                mpc_round,
-                hash_scheme,
-                signature_algorithm,
-            ])
+            .with_label_values(&[protocol_name, curve, hash_scheme, signature_algorithm])
             .inc();
     }
 

@@ -403,7 +403,6 @@ impl DWalletMPCManager {
         self.dwallet_mpc_metrics.add_received_event_start(
             &mpc_event_data.init_protocol_data.get_event_name(),
             &mpc_event_data.init_protocol_data.get_curve(),
-            &"",
             &mpc_event_data.init_protocol_data.get_hash_scheme(),
             &mpc_event_data.init_protocol_data.get_signature_algorithm(),
         );
