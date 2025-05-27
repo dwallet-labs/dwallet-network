@@ -141,25 +141,13 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let session = session.clone();
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
-        let curve_str = match &mpc_event_data.get_curve() {
-            None => "".to_string(),
-            Some(curve) => curve.to_string(),
-        };
-        let hash_scheme_str = match &mpc_event_data.get_hash_scheme() {
-            None => "".to_string(),
-            Some(hash_scheme) => hash_scheme.to_string(),
-        };
-        let signature_algorithm_str = match &mpc_event_data.get_signature_algorithm() {
-            None => "".to_string(),
-            Some(signature_algorithm) => signature_algorithm.to_string(),
-        };
 
         dwallet_mpc_metrics.add_advance_call(
             &mpc_event_data.get_event_name(),
-            &curve_str,
+            &mpc_event_data.get_curve(),
             &session.current_round.to_string(),
-            &hash_scheme_str,
-            &signature_algorithm_str,
+            &mpc_event_data.get_hash_scheme(),
+            &mpc_event_data.get_signature_algorithm(),
         );
         if let Err(err) = self
             .computation_channel_sender
@@ -179,17 +167,17 @@ impl CryptographicComputationsOrchestrator {
             let elapsed = start_advance.elapsed();
             dwallet_mpc_metrics.add_advance_completion(
                 &mpc_event_data.get_event_name(),
-                &curve_str,
+                &mpc_event_data.get_curve(),
                 &session.current_round.to_string(),
-                &hash_scheme_str,
-                &signature_algorithm_str,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
             );
             dwallet_mpc_metrics.set_last_completion_duration(
                 &mpc_event_data.get_event_name(),
-                &curve_str,
+                &mpc_event_data.get_curve(),
                 &session.current_round.to_string(),
-                &hash_scheme_str,
-                &signature_algorithm_str,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
                 elapsed.as_millis() as i64,
             );
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {

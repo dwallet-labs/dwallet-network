@@ -101,8 +101,8 @@ impl Display for MPCProtocolInitData {
 }
 
 impl MPCProtocolInitData {
-    pub fn get_curve(&self) -> Option<u32> {
-        match self {
+    pub fn get_curve(&self) -> String {
+        let curve = match self {
             MPCProtocolInitData::DKGFirst(event) => Some(event.event_data.curve),
             MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
             MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
@@ -120,11 +120,16 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
                 Some(event.event_data.curve)
             }
-        }
+        };
+        let curve_str = match &curve {
+            None => "".to_string(),
+            Some(curve) => curve.to_string(),
+        };
+        curve_str
     }
 
-    pub fn get_hash_scheme(&self) -> Option<u32> {
-        match self {
+    pub fn get_hash_scheme(&self) -> String {
+        let hash_scheme = match self {
             MPCProtocolInitData::DKGFirst(_) => None,
             MPCProtocolInitData::DKGSecond(_) => None,
             MPCProtocolInitData::Presign(_) => None,
@@ -141,11 +146,16 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 None
             }
-        }
+        };
+        let hash_scheme = match &hash_scheme {
+            None => "".to_string(),
+            Some(curve) => curve.to_string(),
+        };
+        hash_scheme
     }
 
-    pub fn get_signature_algorithm(&self) -> Option<u32> {
-        match self {
+    pub fn get_signature_algorithm(&self) -> String {
+        let signature_alg = match self {
             MPCProtocolInitData::DKGFirst(event) => None,
             MPCProtocolInitData::DKGSecond(event) => None,
             MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
@@ -162,7 +172,12 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
                 None
             }
-        }
+        };
+        let signature_alg = match &signature_alg {
+            None => "".to_string(),
+            Some(curve) => curve.to_string(),
+        };
+        signature_alg
     }
 
     pub fn get_event_name(&self) -> String {
