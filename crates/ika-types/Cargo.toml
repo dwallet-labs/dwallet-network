@@ -37,8 +37,6 @@ enum_dispatch.workspace = true
 eyre.workspace = true
 jsonrpsee.workspace = true
 move-core-types.workspace = true
-move-vm-test-utils.workspace = true
-move-vm-profiler.workspace = true
 
 ika-protocol-config.workspace = true
 shared-crypto.workspace = true
@@ -56,14 +54,10 @@ sui-config.workspace = true
 sui-types.workspace = true
 serde_repr.workspace = true
 rand_chacha = "0.3.1"
+base64.workspace = true
 
 [dev-dependencies]
 
 [features]
 default = []
 test-utils = []
-tracing = [
-    "move-vm-profiler/tracing",
-    "move-vm-test-utils/tracing",
-]
-fuzzing = ["move-core-types/fuzzing"]

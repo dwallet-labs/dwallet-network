@@ -1,6 +1,6 @@
 import path from 'path';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, it } from 'vitest';
 
@@ -75,7 +75,7 @@ async function generateConfig(dWalletSeed: Uint8Array, suiSeed: string): Promise
 	);
 	const source = sourceKeypair.getPublicKey().toSuiAddress();
 	const sourceSuiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-	await requestSuiFromFaucetV1({
+	await requestSuiFromFaucetV2({
 		host: getFaucetHost('localnet'),
 		recipient: source,
 	});

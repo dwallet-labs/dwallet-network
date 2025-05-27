@@ -42,4 +42,3 @@ ika-test-transaction-builder.workspace = true
 telemetry-subscribers.workspace = true
 
 test-cluster.workspace = true
-move-core-types.workspace = true

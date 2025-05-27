@@ -105,7 +105,7 @@ pub async fn init_ika_on_sui(
     .persisted(&config_path)
     .save()?;
 
-    let mut context = WalletContext::new(&config_path, None, None)?;
+    let mut context = WalletContext::new(&config_path)?;
 
     let client = context.get_client().await?;
 
