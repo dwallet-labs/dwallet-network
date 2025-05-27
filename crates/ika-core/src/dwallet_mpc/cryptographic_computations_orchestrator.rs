@@ -189,7 +189,7 @@ impl CryptographicComputationsOrchestrator {
                 {
                     error!(
                         ?err,
-                        "failed to send a finished computation message with error: {:?}"
+                        "failed to send a finished computation message with error"
                     );
                 }
             });
