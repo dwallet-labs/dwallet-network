@@ -1,7 +1,6 @@
 use crate::crypto::AuthorityName;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCPublicInput, NetworkDecryptionKeyPublicData,
-    DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
+    DWalletMPCNetworkKeyScheme, DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
     DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
     DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
@@ -10,11 +9,8 @@ use dwallet_mpc_types::dwallet_mpc::{
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME, DWALLET_MODULE_NAME,
 };
-use group::PartyID;
-use ika_protocol_config::ProtocolConfig;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -27,9 +23,12 @@ use sui_types::collection_types::{Table, TableVec};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
+    /// Make the dWallet user secret key shares public, so the network can control it.
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletMPCSuiEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
     ),
+
+    /// Import a secret key to a dWallet.
     DWalletImportedKeyVerificationRequest(
         DWalletMPCSuiEvent<DWalletImportedKeyVerificationRequestEvent>,
     ),
@@ -64,6 +63,33 @@ pub enum MPCProtocolInitData {
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>),
 }
 
+impl Display for MPCProtocolInitData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
+            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
+            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                write!(f, "EncryptedShareVerification")
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                write!(f, "PartialSignatureVerification")
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                write!(f, "DecryptionKeyReshare")
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                write!(f, "DWalletImportedKeyVerificationRequestEvent")
+            }
+        }
+    }
+}
+
 impl MPCProtocolInitData {
     pub fn get_event_name(&self) -> String {
         match self {
@@ -92,33 +118,6 @@ impl MPCProtocolInitData {
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
                 DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
-            }
-        }
-    }
-}
-
-impl Display for MPCProtocolInitData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
-            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
-            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
-            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
-                write!(f, "EncryptedShareVerification")
-            }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
-                write!(f, "PartialSignatureVerification")
-            }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                write!(f, "DecryptionKeyReshare")
-            }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
-                write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
     }
@@ -293,7 +292,7 @@ impl DWalletMPCEventTrait for EncryptedShareVerificationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_owned(),
+            name: ident_str!("EncryptedShareVerificationRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -319,7 +318,7 @@ impl DWalletMPCEventTrait for FutureSignRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: FUTURE_SIGN_REQUEST_EVENT_NAME.to_owned(),
+            name: ident_str!("FutureSignRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -469,8 +468,12 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// The unique session identifier for the DWallet.
     pub dwallet_id: ObjectID,
 
+    /// The Encrypted user secret key share object ID.
     pub encrypted_user_secret_key_share_id: ObjectID,
 
+    /// The message delivered to the decentralized party from a centralized party.
+    /// Includes the encrypted decentralized secret key share and
+    /// the associated cryptographic proof of encryption.
     pub centralized_party_message: Vec<u8>,
 
     /// The unique identifier of the dWallet capability associated with this session.
@@ -479,7 +482,7 @@ pub struct DWalletImportedKeyVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
 
-    /// The `EncryptionKey` object used for encrypting the secret key share.
+    /// The user `EncryptionKey` object used for encrypting the user secret key share.
     pub encryption_key: Vec<u8>,
 
     /// The unique identifier of the `EncryptionKey` object.
@@ -649,7 +652,7 @@ impl DWalletMPCEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
             address: *packages_config.ika_system_package_id,
-            name: DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_owned(),
+            name: ident_str!("DWalletEncryptionKeyReconfigurationRequestEvent").to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }

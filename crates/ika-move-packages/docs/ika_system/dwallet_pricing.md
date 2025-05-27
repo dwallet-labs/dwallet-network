@@ -542,7 +542,7 @@ Getter for the gas_fee_reimbursement_sui_for_system_calls field of a DWalletPric
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_calculate_pricing_quorum_below">calculate_pricing_quorum_below</a>(calculation: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingCalculationVotes">dwallet_pricing::DWalletPricingCalculationVotes</a>, pricings: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>&gt;, curve: u32, signature_algorithm: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;, protocol: u32)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_calculate_pricing_quorum_below">calculate_pricing_quorum_below</a>(calculation: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingCalculationVotes">dwallet_pricing::DWalletPricingCalculationVotes</a>, pricing: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>&gt;, curve: u32, signature_algorithm: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;, protocol: u32)
 </code></pre>
 
 
@@ -551,9 +551,9 @@ Getter for the gas_fee_reimbursement_sui_for_system_calls field of a DWalletPric
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_calculate_pricing_quorum_below">calculate_pricing_quorum_below</a>(calculation: &<b>mut</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingCalculationVotes">DWalletPricingCalculationVotes</a>, pricings: vector&lt;<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">DWalletPricing</a>&gt;, curve: u32, signature_algorithm: Option&lt;u32&gt;, protocol: u32) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_calculate_pricing_quorum_below">calculate_pricing_quorum_below</a>(calculation: &<b>mut</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingCalculationVotes">DWalletPricingCalculationVotes</a>, pricing: vector&lt;<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">DWalletPricing</a>&gt;, curve: u32, signature_algorithm: Option&lt;u32&gt;, protocol: u32) {
     <b>let</b> <b>mut</b> values = vector[];
-    pricings.do_ref!(|pricing| {
+    pricing.do_ref!(|pricing| {
         <b>let</b> value = pricing.<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_try_get_dwallet_pricing_value">try_get_dwallet_pricing_value</a>(curve, signature_algorithm, protocol);
         values.push_back(value.get_with_default(calculation.default_pricing.<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_try_get_dwallet_pricing_value">try_get_dwallet_pricing_value</a>(curve, signature_algorithm, protocol).extract()));
     });

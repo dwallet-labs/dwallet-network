@@ -24,7 +24,6 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
-use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
@@ -34,9 +33,8 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
-#[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
-    EpochComplete(SystemInner, EpochStartSystem),
+    EpochComplete(Box<SystemInner>, EpochStartSystem),
     RunWithRangeCondition,
 }
 
@@ -116,7 +114,7 @@ where
             if let Err(e) = Self::process_mid_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_coordinator_id,
-                &sui_notifier,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -149,7 +147,7 @@ where
             if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_coordinator_id,
-                &sui_notifier,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -181,7 +179,7 @@ where
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_coordinator_id,
-                &sui_notifier,
+                sui_notifier,
                 &self.sui_client,
             )
             .await
@@ -254,7 +252,10 @@ where
                     .sui_client
                     .get_epoch_start_system_until_success(&ika_system_state_inner)
                     .await;
-                return StopReason::EpochComplete(ika_system_state_inner, epoch_start_system_state);
+                return StopReason::EpochComplete(
+                    Box::new(ika_system_state_inner),
+                    epoch_start_system_state,
+                );
             }
             if epoch_on_sui < epoch {
                 error!("epoch_on_sui cannot be less than epoch");
@@ -323,7 +324,7 @@ where
                                 signature,
                                 signers_bitmap,
                                 message,
-                                &sui_notifier,
+                                sui_notifier,
                                 &self.sui_client,
                                 &self.metrics,
                             )
@@ -379,7 +380,7 @@ where
                                 signature,
                                 signers_bitmap,
                                 message,
-                                &sui_notifier,
+                                sui_notifier,
                                 &self.sui_client,
                                 &self.metrics,
                             )

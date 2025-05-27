@@ -99,7 +99,7 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
             let transaction =
                 ConsensusTransaction::new_system_checkpoint_signature_message(message);
             self.sender
-                .submit_to_consensus(&vec![transaction], epoch_store)
+                .submit_to_consensus(&[transaction], epoch_store)
                 .await?;
             self.metrics
                 .last_sent_system_checkpoint_signature

@@ -49,12 +49,12 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 ///
 /// For the user side, the secret key share is stored encrypted to the user encryption key (in `encryption_keys`) inside the dWallet,
 /// together with a signature on the public key (shares).
-/// Together, these constitute the necessairy information to create a signature with the user.
+/// Together, these constitute the necessary information to create a signature with the user.
 ///
 /// Next, `presign_sessions` holds the outputs of the Presign protocol which are later used for the signing protocol,
 /// and `partial_centralized_signed_messages` holds the partial signatures of users awaiting for a future sign once a `MessageApproval` is presented.
 ///
-/// Additionally, this structure holds management infromation, like the `previous_committee` and `active_committee` comittees,
+/// Additionally, this structure holds management information, like the `previous_committee` and `active_committee` committees,
 /// information regarding `pricing`, all the `sessions` and the `next_session_sequence_number` that will be used for the next session,
 /// and various other fields, like the supported and paused curves, signing algorithms and hashes.
 public struct DWalletCoordinatorInner has store {
@@ -70,7 +70,7 @@ public struct DWalletCoordinatorInner has store {
     next_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
     /// The validators of the Ika network must always begin sessions,
-    /// when they become available to them, so long their sequence numebr is lesser or equal to this value.
+    /// when they become available to them, so long their sequence number is lesser or equal to this value.
     /// Initialized to `0`, as when the system is initialized no user-requested session exists so none should be started
     /// and we shouldn't wait for any to complete before advancing epoch (until the first session is created),
     /// and updated at every new session creation or completion, and when advancing epochs,
@@ -356,8 +356,8 @@ public struct DWallet has key, store {
 
     /// If not set, the user secret key shares is not public, and the user will need to
     /// keep it encrypted using encrypted user secret key shares. It is
-    /// the case where we have zero trust for the dWallet becuase the
-    /// user particiation is required.
+    /// the case where we have zero trust for the dWallet because the
+    /// user participation is required.
     /// If set, the user secret key shares is public, the network can sign
     /// without the user participation. In this case, it is trust minimalized
     /// security for the user.
@@ -573,7 +573,7 @@ public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
 /// the completion of the first round.
 /// The user should catch this event to generate inputs for
 /// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDWalletDKGFirstdRoundEvent has copy, drop, store {
+public struct CompletedDWalletDKGFirstRoundEvent has copy, drop, store {
     /// The unique session identifier for the DKG process.
     dwallet_id: ID,
 
@@ -1128,7 +1128,7 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     }
 }
 
-/// Complete the Recondiguration session
+/// Complete the Reconfiguration session
 /// and store the public output corresponding to the reconfigured network (threshold) encryption key.
 ///
 /// Note: assumes the public output is divided into chunks and each `network_public_output_chunk` is delivered in order,
@@ -1188,7 +1188,7 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
 }
 
 /// Advance the `current_epoch` and `state` of the network encryption key corresponding to `cap`,
-/// finalizing the reonconfiguration of that key, and readying it for use in the next epoch.
+/// finalizing the reconfiguration of that key, and readying it for use in the next epoch.
 fun advance_epoch_dwallet_network_encryption_key(
     self: &mut DWalletCoordinatorInner,
     cap: &DWalletNetworkEncryptionKeyCap,
@@ -1289,9 +1289,9 @@ fun get_active_dwallet_network_encryption_key(
 /// Advance the epoch.
 ///
 /// Checks that all the current epoch sessions are completed,
-/// and updates the required metadata for the next epoch's sessions manageement.
+/// and updates the required metadata for the next epoch's sessions management.
 ///
-/// Sets the current and previous comittees.
+/// Sets the current and previous committees.
 ///
 /// Unlocks and updates `last_user_initiated_session_to_complete_in_current_epoch`.
 ///
@@ -1560,7 +1560,7 @@ public(package) fun register_encryption_key(
 /// - **`dwallet_id`**: The identifier of the dWallet
 ///   associated with this approval.
 /// - **`hash_scheme`**: The message hash scheme to use for signing.
-/// - **`signature_algorithm`**: The signature algoirthm with which the message can be signed.
+/// - **`signature_algorithm`**: The signature algorithm with which the message can be signed.
 /// - **`message`**: The message that has been approved.
 public struct MessageApproval has store, drop {
     dwallet_id: ID,
@@ -1575,7 +1575,7 @@ public struct MessageApproval has store, drop {
 /// - **`dwallet_id`**: The identifier of the dWallet
 ///   associated with this approval.
 /// - **`hash_scheme`**: The message hash scheme to use for signing.
-/// - **`signature_algorithm`**: The signature algoirthm with which the message can be signed.
+/// - **`signature_algorithm`**: The signature algorithm with which the message can be signed.
 /// - **`message`**: The message that has been approved.
 public struct ImportedKeyMessageApproval has store, drop {
     dwallet_id: ID,
@@ -1755,7 +1755,7 @@ public(package) fun all_current_epoch_user_initiated_sessions_completed(self: &D
 }
 
 /// Removes a user-initiated session and its corresponding event, charging the pre-paid gas amounts in both Sui and Ika
-/// to be later distributed as part of the consensus validation and gas reimburesement fees.
+/// to be later distributed as part of the consensus validation and gas reimbursement fees.
 ///
 /// Increments `number_of_completed_user_initiated_sessions`.
 ///
@@ -1809,7 +1809,7 @@ public(package) fun respond_dwallet_dkg_first_round(
                 });
                 DWalletState::NetworkRejectedDKGRequest
             } else {
-                event::emit(CompletedDWalletDKGFirstdRoundEvent {
+                event::emit(CompletedDWalletDKGFirstRoundEvent {
                     dwallet_id,
                     first_round_output,
                 });
@@ -1964,7 +1964,7 @@ public(package) fun respond_dwallet_dkg_second_round(
 /// Requests a re-encryption of the user share of the dWallet by having the Ika network
 /// verify a zk-proof that the encryption matches the public share of the dWallet.
 ///
-/// This can be used as part of granting access or transfering the dWallet.
+/// This can be used as part of granting access or transferring the dWallet.
 ///
 /// Creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification.
 /// Emits an event to request the verification by the network.
@@ -2635,7 +2635,7 @@ fun validate_and_initiate_sign(
     // Check that the presign is global, or that it belongs to this dWallet.
     assert!(presign_dwallet_id.is_none() || presign_dwallet_id.is_some_and!(|id| id == dwallet_id), EMessageApprovalMismatch);
 
-    // Santicy checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
+    // Sanity checks: check that the IDs of the capability and presign match, and that they point to this dWallet.
     assert!(presign_cap_id == cap_id, EPresignNotExist);
     assert!(presign_id == presign_cap_presign_id, EPresignNotExist);
     assert!(presign_cap_dwallet_id == presign_dwallet_id, EPresignNotExist);
@@ -2908,7 +2908,7 @@ public(package) fun respond_future_sign(
     gas_fee_reimbursement_sui
 }
 
-/// Checks that the partial user signature coresponding to `cap` is valid, by assuring it is in the `NetworkVerificationCompleted`.
+/// Checks that the partial user signature corresponding to `cap` is valid, by assuring it is in the `NetworkVerificationCompleted`.
 public(package) fun is_partial_user_signature_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPartialUserSignatureCap,
@@ -2917,7 +2917,7 @@ public(package) fun is_partial_user_signature_valid(
     partial_centralized_signed_message.cap_id == cap.id.to_inner() && partial_centralized_signed_message.state == PartialUserSignatureState::NetworkVerificationCompleted
 }
 
-/// Verifies that the partial user signature coresponding to `cap` is valid,
+/// Verifies that the partial user signature corresponding to `cap` is valid,
 /// deleting the `UnverifiedPartialUserSignatureCap` object and returning a new `VerifiedPartialUserSignatureCap` in its place.
 public(package) fun verify_partial_user_signature_cap(
     self: &mut DWalletCoordinatorInner,

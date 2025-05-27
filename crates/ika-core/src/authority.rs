@@ -726,7 +726,8 @@ impl AuthorityState {
         let metrics = Arc::new(AuthorityMetrics::new(prometheus_registry));
 
         let epoch = epoch_store.epoch();
-        let state = Arc::new(AuthorityState {
+
+        Arc::new(AuthorityState {
             name,
             secret,
             perpetual_tables,
@@ -736,9 +737,7 @@ impl AuthorityState {
             committee_store,
             metrics,
             config,
-        });
-
-        state
+        })
     }
 
     /// Attempts to acquire execution lock for an executable transaction.

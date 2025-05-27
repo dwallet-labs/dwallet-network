@@ -99,7 +99,7 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
             let transaction =
                 ConsensusTransaction::new_dwallet_checkpoint_signature_message(message);
             self.sender
-                .submit_to_consensus(&vec![transaction], epoch_store)
+                .submit_to_consensus(&[transaction], epoch_store)
                 .await?;
             self.metrics
                 .last_sent_dwallet_checkpoint_signature
