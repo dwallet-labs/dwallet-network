@@ -11,7 +11,7 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 #[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(proptest_derive::Arbitrary))]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(arbitrary::Arbitrary))]
-pub struct AuthorityName([u8; AuthorityName::LENGTH]);
+pub struct AuthorityName(pub(crate) [u8; AuthorityName::LENGTH]);
 
 impl AuthorityName {
     pub const fn new(address: [u8; Self::LENGTH]) -> Self {

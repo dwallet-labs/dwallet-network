@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::multiaddr::Multiaddr;
 use tracing::{error, warn};
+use crate::authority_name::AuthorityName;
 
 #[enum_dispatch]
 pub trait EpochStartSystemTrait {
@@ -190,7 +191,7 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         let mut authorities = vec![];
         for (i, (name, stake)) in ika_committee.members().enumerate() {
             let active_validator = &self.active_validators[i];
-            if name.0 != active_validator.protocol_pubkey.as_bytes() {
+            if name.0 != active_validator.validator_id.into_bytes() {
                 error!(
                     "Mismatched authority order between Ika and Mysticeti! Index {}, Mysticeti authority {:?}\nIka authority name {:?}",
                     i, name, active_validator.protocol_pubkey.as_bytes()
@@ -286,7 +287,7 @@ pub struct EpochStartValidatorInfoV1 {
 
 impl EpochStartValidatorInfoV1 {
     pub fn authority_name(&self) -> AuthorityName {
-        (&self.protocol_pubkey).into()
+        AuthorityName::new(self.validator_id.into_bytes())
     }
 }
 
