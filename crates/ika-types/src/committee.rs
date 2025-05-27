@@ -119,14 +119,7 @@ impl Committee {
     ) {
         let expanded_keys: HashMap<AuthorityName, AuthorityPublicKey> = voting_rights
             .iter()
-            .map(|(addr, _)| {
-                (
-                    *addr,
-                    (*addr)
-                        .try_into()
-                        .expect("Validator pubkey is always verified on-chain"),
-                )
-            })
+            .map(|(addr, _)| (*addr, *addr))
             .collect();
 
         let index_map: HashMap<AuthorityName, usize> = voting_rights
@@ -280,7 +273,15 @@ impl Committee {
             key_pairs
                 .iter()
                 .map(|key| {
-                    (AuthorityName::from(key.public()), /* voting right */ 1)
+                    (
+                        AuthorityName::new(
+                            key.public().pubkey.to_bytes()[..32]
+                                .iter()
+                                .try_into()
+                                .unwrap(),
+                        ),
+                        /* voting right */ 1,
+                    )
                 })
                 .collect(),
         );
@@ -355,7 +356,7 @@ impl Display for Committee {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut voting_rights = String::new();
         for (name, vote) in &self.voting_rights {
-            write!(voting_rights, "{}: {}, ", name.concise(), vote)?;
+            write!(voting_rights, "{}: {}, ", name.to_string(), vote)?;
         }
         write!(
             f,

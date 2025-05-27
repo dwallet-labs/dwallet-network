@@ -61,7 +61,7 @@ pub type DefaultHash = Blake2b256;
 
 pub const DEFAULT_EPOCH_ID: EpochId = 0;
 
-pub type AuthorityName = AuthorityPublicKeyBytes;
+pub type AuthorityName = crate::authority_name::AuthorityName;
 
 /// Creates a proof of that the authority account address is owned by the
 /// holder of authority protocol key, and also ensures that the authority
@@ -447,7 +447,7 @@ impl AuthoritySignInfoTrait for AuthoritySignInfo {
         fp_ensure!(
             weight > 0,
             IkaError::UnknownSigner {
-                signer: Some(self.authority.concise().to_string()),
+                signer: Some(self.authority.to_string().to_string()),
                 index: None,
                 committee: Box::new(committee.clone())
             }
@@ -645,7 +645,7 @@ impl<const STRONG_THRESHOLD: bool> AuthoritySignInfoTrait
             fp_ensure!(
                 voting_rights > 0,
                 IkaError::UnknownSigner {
-                    signer: Some(authority.concise().to_string()),
+                    signer: Some(authority.to_string().to_string()),
                     index: Some(authority_index),
                     committee: Box::new(committee.clone()),
                 }
@@ -696,7 +696,7 @@ impl<const STRONG_THRESHOLD: bool> AuthorityQuorumSignInfo<STRONG_THRESHOLD> {
                 committee
                     .authority_index(pk)
                     .ok_or_else(|| IkaError::UnknownSigner {
-                        signer: Some(pk.concise().to_string()),
+                        signer: Some(pk.to_string().to_string()),
                         index: None,
                         committee: Box::new(committee.clone()),
                     })?,

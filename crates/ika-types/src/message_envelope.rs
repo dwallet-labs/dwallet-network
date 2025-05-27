@@ -200,7 +200,11 @@ where
                     committee.epoch(),
                     &data,
                     Intent::ika_app(T::SCOPE),
-                    keypair.public().into(),
+                    AuthorityName::new(
+                        keypair.public().bytes.get().unwrap()[..32]
+                            .try_into()
+                            .unwrap(),
+                    ),
                     keypair,
                 )
             })
