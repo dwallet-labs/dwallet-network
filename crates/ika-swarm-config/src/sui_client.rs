@@ -7,7 +7,13 @@ use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
 use ika_types::ika_coin::IKACoin;
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{
+    IkaPackagesConfig, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
+    RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
+    SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+};
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
@@ -55,16 +61,6 @@ use sui_types::{
     MOVE_STDLIB_PACKAGE_ID, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION,
     SUI_FRAMEWORK_PACKAGE_ID,
 };
-
-const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
-const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
-const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
-const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
-const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
-const PRESIGN_PROTOCOL_FLAG: u32 = 5;
-const SIGN_PROTOCOL_FLAG: u32 = 6;
-const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
-const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
