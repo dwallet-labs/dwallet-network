@@ -118,7 +118,7 @@ impl ValidatorConfigBuilder {
             // Set a shorter timeout for checkpoint content download in tests, since
             // checkpoint pruning also happens much faster, and the network is local.
             state_sync: Some(StateSyncConfig {
-                checkpoint_content_timeout_ms: Some(10_000),
+                dwallet_checkpoint_content_timeout_ms: Some(10_000),
                 ..Default::default()
             }),
             ..Default::default()
@@ -268,7 +268,7 @@ impl FullnodeConfigBuilder {
     pub fn build<R: rand::RngCore + rand::CryptoRng>(
         self,
         rng: &mut R,
-        validators: &Vec<ValidatorInitializationConfig>,
+        validators: &[ValidatorInitializationConfig],
         sui_rpc_url: String,
         ika_package_id: ObjectID,
         ika_system_package_id: ObjectID,
@@ -320,7 +320,7 @@ impl FullnodeConfigBuilder {
                 // checkpoint pruning also happens much faster,
                 // and the network is local.
                 state_sync: Some(StateSyncConfig {
-                    checkpoint_content_timeout_ms: Some(10_000),
+                    dwallet_checkpoint_content_timeout_ms: Some(10_000),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -329,7 +329,7 @@ impl FullnodeConfigBuilder {
 
         let localhost = local_ip_utils::localhost_for_testing();
 
-        let notifier_client_key_pair = notifier_client_key_pair.map(|k| KeyPairWithPath::new(k));
+        let notifier_client_key_pair = notifier_client_key_pair.map(KeyPairWithPath::new);
 
         NodeConfig {
             class_groups_key_pair_and_proof: None,

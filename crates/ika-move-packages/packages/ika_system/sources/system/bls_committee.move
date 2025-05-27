@@ -21,7 +21,7 @@ public struct BlsCommittee has store, copy, drop {
     validity_threshold: u64,
 }
 
-/// Event emitted after verifing quorum of signature.
+/// Event emitted after verifying quorum of signature.
 public struct CommitteeQuorumVerifiedEvent has copy, drop {
     epoch: u64,
     signer_count: u64,
@@ -70,7 +70,7 @@ public(package) fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsC
 
     let quorum_threshold = (2 * (members.length() / 3)) + 1;
     let validity_threshold = (members.length() / 3) + 1;
-    
+
     BlsCommittee {
         members,
         aggregated_protocol_pubkey,

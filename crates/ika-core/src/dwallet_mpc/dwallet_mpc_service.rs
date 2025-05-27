@@ -4,36 +4,23 @@
 //! and forward them to the [`DWalletMPCManager`].
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
+use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::network_dkg::ValidatorPrivateDecryptionKeyData;
 use crate::dwallet_mpc::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
-};
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
 use ika_config::NodeConfig;
-use ika_sui_client::{SuiClient, SuiConnectorClient};
+use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::error::IkaResult;
-use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
-use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime};
-use sui_json_rpc_types::SuiEvent;
+use std::time::Duration;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
-use tokio::sync::watch::error::RecvError;
 use tokio::sync::watch::Receiver;
-use tokio::sync::{watch, Notify};
-use tokio::task::yield_now;
-use tokio::time;
+use tokio::sync::Notify;
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
@@ -41,9 +28,11 @@ const READ_INTERVAL_MS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Round,
+    #[allow(dead_code)]
     read_messages: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
     epoch_id: EpochId,
+    #[allow(dead_code)]
     notify: Arc<Notify>,
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
@@ -85,22 +74,17 @@ impl DWalletMPCService {
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
         let system_inner = self.sui_client.must_get_system_inner_object().await;
-        let system_inner = match system_inner {
-            SystemInner::V1(system_inner) => system_inner,
-        };
-        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_secp256k1_id {
+        let SystemInner::V1(system_inner) = system_inner;
+        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
-            match coordinator_state {
-                DWalletCoordinatorInner::V1(inner_state) => {
-                    self.dwallet_mpc_manager
-                        .update_last_session_to_complete_in_current_epoch(
-                            inner_state.last_session_to_complete_in_current_epoch,
-                        );
-                }
-            }
+            let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
+            self.dwallet_mpc_manager
+                .update_last_session_to_complete_in_current_epoch(
+                    inner_state.last_session_to_complete_in_current_epoch,
+                );
         }
     }
 
@@ -165,7 +149,7 @@ impl DWalletMPCService {
                             .network_keys
                             .update_network_key(
                                 *key_id,
-                                &key_data,
+                                key_data,
                                 &self.dwallet_mpc_manager.weighted_threshold_access_structure,
                             )
                             .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
@@ -231,13 +215,10 @@ impl DWalletMPCService {
                 continue;
             };
             for session_id in completed_sessions {
-                self.dwallet_mpc_manager
-                    .mpc_sessions
-                    .get_mut(&session_id)
-                    .map(|session| {
-                        session.clear_data();
-                        session.status = MPCSessionStatus::Finished;
-                    });
+                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    session.clear_data();
+                    session.status = MPCSessionStatus::Finished;
+                }
             }
             let Ok(events_from_sui) = self
                 .epoch_store

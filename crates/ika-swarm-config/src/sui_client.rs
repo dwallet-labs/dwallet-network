@@ -2,7 +2,7 @@ use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
-use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_NIKA};
+use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
 use ika_config::validator_info::ValidatorInfo;
 use ika_config::Config;
 use ika_move_packages::IkaMovePackage;
@@ -22,7 +22,8 @@ use ika_types::sui::{
     REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
     VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
-use move_core_types::language_storage::StructTag;
+use move_core_types::ident_str;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
 use std::fs::File;
@@ -33,9 +34,7 @@ use sui::client_commands::{
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
-use sui_sdk::rpc_types::{
-    ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
-};
+use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse};
 use sui_sdk::rpc_types::{
     SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
@@ -52,7 +51,20 @@ use sui_types::transaction::{
     Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
     TransactionKind,
 };
-use sui_types::{SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION};
+use sui_types::{
+    MOVE_STDLIB_PACKAGE_ID, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION,
+    SUI_FRAMEWORK_PACKAGE_ID,
+};
+
+const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
+const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
+const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
+const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
+const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
+const PRESIGN_PROTOCOL_FLAG: u32 = 5;
+const SIGN_PROTOCOL_FLAG: u32 = 6;
+const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
+const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 pub async fn init_ika_on_sui(
     validator_initialization_configs: &Vec<ValidatorInitializationConfig>,
@@ -241,7 +253,7 @@ pub async fn init_ika_on_sui(
         println!("Running `system::request_add_validator` done for validator {validator_address}");
     }
 
-    let (dwallet_2pc_mpc_secp256k1_id, dwallet_2pc_mpc_secp256k1_initial_shared_version) =
+    let (dwallet_2pc_mpc_coordinator_id, dwallet_2pc_mpc_coordinator_initial_shared_version) =
         ika_system_initialize(
             publisher_address,
             &mut context,
@@ -249,24 +261,25 @@ pub async fn init_ika_on_sui(
             ika_system_package_id,
             ika_system_object_id,
             init_system_shared_version,
+            protocol_cap_id,
         )
         .await?;
     println!("Running `system::initialize` done.");
 
-    ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+    ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
         publisher_address,
         &mut context,
         client.clone(),
         ika_system_package_id,
         ika_system_object_id,
         init_system_shared_version,
-        dwallet_2pc_mpc_secp256k1_id,
-        dwallet_2pc_mpc_secp256k1_initial_shared_version,
+        dwallet_2pc_mpc_coordinator_id,
+        dwallet_2pc_mpc_coordinator_initial_shared_version,
         protocol_cap_id,
     )
     .await?;
 
-    println!("Running `system::request_dwallet_network_decryption_key_dkg_by_cap` done.");
+    println!("Running `system::request_dwallet_network_encryption_key_dkg_by_cap` done.");
 
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -278,15 +291,15 @@ pub async fn init_ika_on_sui(
     ))
 }
 
-async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
-    dwallet_2pc_mpc_secp256k1_id: ObjectID,
-    dwallet_2pc_mpc_secp256k1_initial_shared_version: SequenceNumber,
+    dwallet_2pc_mpc_coordinator_id: ObjectID,
+    dwallet_2pc_mpc_coordinator_initial_shared_version: SequenceNumber,
     protocol_cap_id: ObjectID,
 ) -> Result<(), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -308,8 +321,8 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::SharedObject {
-                id: dwallet_2pc_mpc_secp256k1_id,
-                initial_shared_version: dwallet_2pc_mpc_secp256k1_initial_shared_version,
+                id: dwallet_2pc_mpc_coordinator_id,
+                initial_shared_version: dwallet_2pc_mpc_coordinator_initial_shared_version,
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(protocol_cap_ref)),
@@ -323,34 +336,280 @@ async fn ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
     Ok(())
 }
 
-async fn ika_system_initialize(
+pub async fn ika_system_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
+    protocol_cap_id: ObjectID,
 ) -> Result<(ObjectID, SequenceNumber), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    ptb.move_call(
+    let protocol_cap_ref = client
+        .transaction_builder()
+        .get_object_ref(protocol_cap_id)
+        .await?;
+
+    let zero_key = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![0u32])?))?;
+    let zero_and_one_value = ptb.input(CallArg::Pure(bcs::to_bytes(&vec![vec![0u32, 1u32]])?))?;
+    let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
+    let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
+    let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
+
+    let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    )?))?;
+    let dkg_second_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    )?))?;
+    let re_encrypt_user_share_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+        &RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG,
+    )?))?;
+    let make_dwallet_user_secret_key_share_public_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG)?,
+    ))?;
+    let imported_key_dwallet_verification_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG)?,
+    ))?;
+    let presign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&PRESIGN_PROTOCOL_FLAG)?))?;
+    let sign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&SIGN_PROTOCOL_FLAG)?))?;
+    let future_sign_protocol_flag =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&FUTURE_SIGN_PROTOCOL_FLAG)?))?;
+    let sign_with_partial_user_signature_protocol_flag = ptb.input(CallArg::Pure(
+        bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
+    ))?;
+
+    let zero_price = ptb.input(CallArg::Pure(bcs::to_bytes(&0u64)?))?;
+
+    let ika_system_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: ika_system_object_id,
+        initial_shared_version: init_system_shared_version,
+        mutable: true,
+    }))?;
+
+    let dwallet_pricing = ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("empty").into(),
+        vec![],
+        vec![],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            none_option,
+            dkg_first_round_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            none_option,
+            dkg_second_round_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            none_option,
+            re_encrypt_user_share_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            none_option,
+            make_dwallet_user_secret_key_share_public_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            none_option,
+            imported_key_dwallet_verification_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            zero_option,
+            presign_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            zero_option,
+            sign_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            zero_option,
+            future_sign_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    ptb.programmable_move_call(
+        ika_system_package_id,
+        ident_str!("dwallet_pricing").into(),
+        ident_str!("insert_or_update_dwallet_pricing").into(),
+        vec![],
+        vec![
+            dwallet_pricing,
+            zero,
+            zero_option,
+            sign_with_partial_user_signature_protocol_flag,
+            zero_price,
+            zero_price,
+            zero_price,
+            zero_price,
+        ],
+    );
+
+    let supported_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
+        SUI_FRAMEWORK_PACKAGE_ID,
+        ident_str!("vec_map").into(),
+        ident_str!("from_keys_values").into(),
+        vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+        vec![zero_key, zero_and_one_value],
+    );
+
+    let supported_signature_algorithms_to_hash_schemes_vec = ptb.programmable_move_call(
+        MOVE_STDLIB_PACKAGE_ID,
+        ident_str!("vector").into(),
+        ident_str!("singleton").into(),
+        vec![TypeTag::Struct(Box::new(StructTag {
+            address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+            module: ident_str!("vec_map").into(),
+            name: ident_str!("VecMap").into(),
+            type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+        }))],
+        vec![supported_signature_algorithms_to_hash_schemes],
+    );
+
+    let supported_curves_to_signature_algorithms_to_hash_schemes = ptb.programmable_move_call(
+        SUI_FRAMEWORK_PACKAGE_ID,
+        ident_str!("vec_map").into(),
+        ident_str!("from_keys_values").into(),
+        vec![
+            TypeTag::U32,
+            TypeTag::Struct(Box::new(StructTag {
+                address: SUI_FRAMEWORK_PACKAGE_ID.into(),
+                module: ident_str!("vec_map").into(),
+                name: ident_str!("VecMap").into(),
+                type_params: vec![TypeTag::U32, TypeTag::Vector(Box::new(TypeTag::U32))],
+            })),
+        ],
+        vec![zero_key, supported_signature_algorithms_to_hash_schemes_vec],
+    );
+
+    let protocol_cap_arg = ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(
+        protocol_cap_ref,
+    )))?;
+
+    let clock_arg = ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: SUI_CLOCK_OBJECT_ID,
+        initial_shared_version: SUI_CLOCK_OBJECT_SHARED_VERSION,
+        mutable: false,
+    }))?;
+
+    ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
         INITIALIZE_FUNCTION_NAME.into(),
         vec![],
         vec![
-            CallArg::Object(ObjectArg::SharedObject {
-                id: ika_system_object_id,
-                initial_shared_version: init_system_shared_version,
-                mutable: true,
-            }),
-            CallArg::Object(ObjectArg::SharedObject {
-                id: SUI_CLOCK_OBJECT_ID,
-                initial_shared_version: SUI_CLOCK_OBJECT_SHARED_VERSION,
-                mutable: false,
-            }),
+            ika_system_arg,
+            dwallet_pricing,
+            supported_curves_to_signature_algorithms_to_hash_schemes,
+            protocol_cap_arg,
+            clock_arg,
         ],
-    )?;
+    );
 
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
@@ -358,34 +617,33 @@ async fn ika_system_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
-    let dwallet_2pc_mpc_secp256k1_type = StructTag {
+    let dwallet_2pc_mpc_coordinator_type = StructTag {
         address: ika_system_package_id.into(),
         module: DWALLET_2PC_MPC_SECP256K1_MODULE_NAME.into(),
         name: DWALLET_COORDINATOR_STRUCT_NAME.into(),
         type_params: vec![],
     };
 
-    let dwallet_2pc_mpc_secp256k1_id = object_changes
+    let dwallet_2pc_mpc_coordinator_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
                 object_id,
                 object_type,
                 ..
-            } if dwallet_2pc_mpc_secp256k1_type == *object_type => Some(*object_id),
+            } if dwallet_2pc_mpc_coordinator_type == *object_type => Some(*object_id),
             _ => None,
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     let response = client
         .read_api()
         .get_object_with_options(
-            dwallet_2pc_mpc_secp256k1_id,
+            dwallet_2pc_mpc_coordinator_id,
             SuiObjectDataOptions::new().with_owner(),
         )
         .await?;
@@ -397,10 +655,10 @@ async fn ika_system_initialize(
         return Err(anyhow::Error::msg("Owner does not exist"));
     };
 
-    Ok((dwallet_2pc_mpc_secp256k1_id, initial_shared_version))
+    Ok((dwallet_2pc_mpc_coordinator_id, initial_shared_version))
 }
 
-async fn init_initialize(
+pub async fn init_initialize(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -472,7 +730,7 @@ async fn init_initialize(
 
     let object_changes = response.object_changes.unwrap();
 
-    let ika_system_object_id = object_changes
+    let ika_system_object_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -484,8 +742,7 @@ async fn init_initialize(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let protocol_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -494,7 +751,7 @@ async fn init_initialize(
         type_params: vec![],
     };
 
-    let protocol_cap_id = object_changes
+    let protocol_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -506,8 +763,7 @@ async fn init_initialize(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
@@ -619,7 +875,7 @@ async fn stake_ika(
         mutable: true,
     }))?;
 
-    let mut client = context.get_client().await?;
+    let client = context.get_client().await?;
 
     let ika_supply_ref = client
         .transaction_builder()
@@ -629,7 +885,7 @@ async fn stake_ika(
     let ika_supply_id_arg =
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(ika_supply_ref)))?;
     let stake_amount = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &MIN_VALIDATOR_JOINING_STAKE_NIKA,
+        &MIN_VALIDATOR_JOINING_STAKE_INKU,
     )?))?;
 
     for validator_id in validator_ids {
@@ -657,7 +913,7 @@ async fn stake_ika(
     Ok(())
 }
 
-async fn minted_ika(
+pub async fn minted_ika(
     publisher_address: SuiAddress,
     client: SuiClient,
     ika_package_id: ObjectID,
@@ -814,7 +1070,7 @@ async fn request_add_validator_candidate(
         type_params: vec![],
     };
 
-    let validator_cap_id = object_changes
+    let validator_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -826,8 +1082,7 @@ async fn request_add_validator_candidate(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let validator_cap = context
         .get_client()
@@ -840,7 +1095,7 @@ async fn request_add_validator_candidate(
     Ok((validator_cap.validator_id, validator_cap_id))
 }
 
-async fn publish_ika_system_package_to_sui(
+pub async fn publish_ika_system_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -861,7 +1116,7 @@ async fn publish_ika_system_package_to_sui(
         ika_system_package_dependencies,
     )
     .await?;
-    let ika_system_package_id = object_changes
+    let ika_system_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
@@ -869,8 +1124,7 @@ async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let init_cap_type = StructTag {
         address: ika_system_package_id.into(),
@@ -879,7 +1133,7 @@ async fn publish_ika_system_package_to_sui(
         type_params: vec![],
     };
 
-    let init_cap_id = object_changes
+    let init_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -891,10 +1145,9 @@ async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let ika_system_package_upgrade_cap_id = object_changes
+    let ika_system_package_upgrade_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -906,8 +1159,7 @@ async fn publish_ika_system_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     Ok((
         ika_system_package_id,
@@ -937,7 +1189,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 
     let object_changes = response.object_changes.unwrap();
 
-    let builder_id = object_changes
+    let builder_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -953,8 +1205,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let builder_ref = client
         .transaction_builder()
@@ -971,7 +1222,7 @@ async fn create_class_groups_public_key_and_proof_object(
     ika_system_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: Vec<u8>,
 ) -> anyhow::Result<ObjectRef> {
-    let mut builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
+    let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
         publisher_address,
         context,
         client,
@@ -1015,7 +1266,7 @@ async fn create_class_groups_public_key_and_proof_object(
         .object_changes
         .ok_or(anyhow::Error::msg("Failed to get object changes"))?;
 
-    let obj_id = object_changes
+    let obj_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1031,8 +1282,7 @@ async fn create_class_groups_public_key_and_proof_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     let pubkey_and_proof_obj_ref = client.transaction_builder().get_object_ref(obj_id).await?;
 
@@ -1046,7 +1296,7 @@ async fn add_public_keys_and_proofs_with_rng(
     ika_system_package_id: ObjectID,
     range: (u8, u8),
     cg_builder_object_id: ObjectID,
-    class_groups_public_key_and_proof: &Box<ClassGroupsEncryptionKeyAndProof>,
+    class_groups_public_key_and_proof: &ClassGroupsEncryptionKeyAndProof,
 ) -> anyhow::Result<()> {
     let mut first_ptb = ProgrammableTransactionBuilder::new();
     let builder_object_ref = client
@@ -1065,9 +1315,9 @@ async fn add_public_keys_and_proofs_with_rng(
             vec![],
             vec![
                 proof_builder,
-                /// Sui limits the size of a single call argument to 16KB.
+                // Sui limits the size of a single call argument to 16KB.
                 first_proof_bytes_half,
-                second_proof_bytes_half
+                second_proof_bytes_half,
             ],
         );
     }
@@ -1076,7 +1326,7 @@ async fn add_public_keys_and_proofs_with_rng(
     Ok(())
 }
 
-async fn publish_ika_package_to_sui(
+pub async fn publish_ika_package_to_sui(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: SuiClient,
@@ -1090,7 +1340,7 @@ async fn publish_ika_package_to_sui(
         ika_package.dependencies.clone(),
     )
     .await?;
-    let ika_package_id = object_changes
+    let ika_package_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Published { package_id, .. } => Some(*package_id),
@@ -1098,10 +1348,9 @@ async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let treasury_cap_id = object_changes
+    let treasury_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1113,10 +1362,9 @@ async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
-    let ika_package_upgrade_cap_id = object_changes
+    let ika_package_upgrade_cap_id = *object_changes
         .iter()
         .filter_map(|o| match o {
             ObjectChange::Created {
@@ -1128,8 +1376,7 @@ async fn publish_ika_package_to_sui(
         })
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     Ok((ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id))
 }

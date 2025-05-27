@@ -226,7 +226,7 @@ impl IkaValidatorCommand {
                 let class_groups_keypair_and_proof_obj_ref = ika_sui_client::ika_validator_transactions::create_class_groups_public_key_and_proof_object(
                     context.active_address()?,
                     context,
-                    config.ika_system_package_id.clone(),
+                    config.ika_system_package_id,
                     validator_info.class_groups_public_key_and_proof.clone(),
                     gas_budget,
                 ).await?;
@@ -234,8 +234,8 @@ impl IkaValidatorCommand {
                 let (res, validator_id, validator_cap_id) = request_add_validator_candidate(
                     context,
                     &validator_info,
-                    config.ika_system_package_id.clone(),
-                    config.ika_system_object_id.clone(),
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
                     class_groups_keypair_and_proof_obj_ref,
                     gas_budget,
                 )
@@ -265,8 +265,8 @@ impl IkaValidatorCommand {
 
                 let response = request_add_validator(
                     context,
-                    config.ika_system_package_id.clone(),
-                    config.ika_system_object_id.clone(),
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )
@@ -292,8 +292,8 @@ impl IkaValidatorCommand {
 
                 let res = stake_ika(
                     context,
-                    config.ika_system_package_id.clone(),
-                    config.ika_system_object_id.clone(),
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
                     ika_supply_id,
                     validator_id,
                     stake_amount,
@@ -319,8 +319,8 @@ impl IkaValidatorCommand {
                     })?;
                 let response = request_remove_validator(
                     context,
-                    config.ika_system_package_id.clone(),
-                    config.ika_system_object_id.clone(),
+                    config.ika_system_package_id,
+                    config.ika_system_object_id,
                     validator_cap_id,
                     gas_budget,
                 )

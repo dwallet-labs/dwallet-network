@@ -12,13 +12,16 @@ use sui_types::balance::Balance;
 use sui_types::base_types::ObjectID;
 use sui_types::collection_types::{Bag, Table, TableVec, VecMap};
 
+#[allow(dead_code)]
 const E_METADATA_INVALID_POP: u64 = 0;
 const E_METADATA_INVALID_PUBKEY: u64 = 1;
 const E_METADATA_INVALID_NET_PUBKEY: u64 = 2;
 const E_METADATA_INVALID_WORKER_PUBKEY: u64 = 3;
 const E_METADATA_INVALID_NET_ADDR: u64 = 4;
 const E_METADATA_INVALID_P2P_ADDR: u64 = 5;
+#[allow(dead_code)]
 const E_METADATA_INVALID_PRIMARY_ADDR: u64 = 6;
+#[allow(dead_code)]
 const E_METADATA_INVALID_WORKER_ADDR: u64 = 7;
 
 #[derive(derive_more::Debug, Clone, Eq, PartialEq)]

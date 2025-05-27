@@ -98,7 +98,7 @@ impl TestCaseImpl for CoinIndexTest {
 
         // 2. Test Staking
         let validator_addr = ctx
-            .get_latest_ika_system_state()
+            .get_latest_system_state()
             .await
             .active_validators
             .first()

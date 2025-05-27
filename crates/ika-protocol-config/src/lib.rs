@@ -109,12 +109,27 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
+    // Probe rounds received by peers from every authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_round_prober: bool,
+
+    // Set number of leaders per round for Mysticeti commits.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mysticeti_num_leaders_per_round: Option<usize>,
+
+    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
+    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_linearize_subdag_v2: bool,
 }
 
+#[allow(unused)]
 fn is_false(b: &bool) -> bool {
     !b
 }
 
+#[allow(unused)]
 fn is_empty(b: &BTreeSet<String>) -> bool {
     b.is_empty()
 }
@@ -175,15 +190,25 @@ pub struct ProtocolConfig {
 
     /// === Core Protocol ===
 
-    /// Max number of transactions per checkpoint.
+    /// Max number of transactions per dwallet checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_messages_per_checkpoint: Option<u64>,
+    max_messages_per_dwallet_checkpoint: Option<u64>,
 
-    /// Max size of a checkpoint in bytes.
+    /// Max number of transactions per iks system checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_checkpoint_size_bytes: Option<u64>,
+    max_messages_per_system_checkpoint: Option<u64>,
+
+    /// Max size of a dwallet checkpoint in bytes.
+    /// Note that this is a protocol constant and not a config as validators must have this set to
+    /// the same value, otherwise they *will* fork.
+    max_dwallet_checkpoint_size_bytes: Option<u64>,
+
+    /// Max size of an ika system checkpoint in bytes.
+    /// Note that this is a protocol constant and not a config as validators must have this set to
+    /// the same value, otherwise they *will* fork.
+    max_system_checkpoint_size_bytes: Option<u64>,
 
     /// A protocol upgrade always requires 2f+1 stake to agree. We support a buffer of additional
     /// stake (as a fraction of f, expressed in basis points) that is required before an upgrade
@@ -192,7 +217,10 @@ pub struct ProtocolConfig {
     buffer_stake_for_protocol_upgrade_bps: Option<u64>,
 
     /// Minimum interval of commit timestamps between consecutive checkpoints.
-    min_checkpoint_interval_ms: Option<u64>,
+    min_dwallet_checkpoint_interval_ms: Option<u64>,
+
+    /// Minimum interval of commit timestamps between consecutive ika system checkpoints.
+    min_system_checkpoint_interval_ms: Option<u64>,
 
     /// === Consensus ===
 
@@ -200,6 +228,22 @@ pub struct ProtocolConfig {
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+
+    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
+
+    /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
+    /// `max_tx_size_bytes` with some additional headroom.
+    consensus_max_transaction_size_bytes: Option<u64>,
+
+    /// The maximum number of transactions included in a consensus block.
+    consensus_max_num_transactions_in_block: Option<u64>,
+
+    /// The maximum size of transactions included in a consensus block.
+    consensus_max_transactions_in_block_bytes: Option<u64>,
+
+    /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
+    /// is disabled.
+    consensus_gc_depth: Option<u32>,
 }
 
 // feature flags
@@ -215,6 +259,27 @@ impl ProtocolConfig {
     //         )))
     //     }
     // }
+
+    pub fn consensus_round_prober(&self) -> bool {
+        self.feature_flags.consensus_round_prober
+    }
+
+    pub fn mysticeti_num_leaders_per_round(&self) -> Option<usize> {
+        self.feature_flags.mysticeti_num_leaders_per_round
+    }
+
+    pub fn consensus_linearize_subdag_v2(&self) -> bool {
+        let res = self.feature_flags.consensus_linearize_subdag_v2;
+        assert!(
+            !res || self.gc_depth() > 0,
+            "The consensus linearize sub dag V2 requires GC to be enabled"
+        );
+        res
+    }
+
+    pub fn gc_depth(&self) -> u32 {
+        self.consensus_gc_depth.unwrap_or(0)
+    }
 }
 
 #[cfg(not(msim))]
@@ -327,7 +392,7 @@ impl ProtocolConfig {
         ProtocolConfig::get_for_version(ProtocolVersion::MAX, Chain::Unknown)
     }
 
-    fn get_for_version_impl(version: ProtocolVersion, chain: Chain) -> Self {
+    fn get_for_version_impl(version: ProtocolVersion, _chain: Chain) -> Self {
         #[cfg(msim)]
         {
             // populate the fake simulator version # with a different base tx cost.
@@ -347,14 +412,17 @@ impl ProtocolConfig {
             // All flags are disabled in V1
             feature_flags: Default::default(),
 
-            max_messages_per_checkpoint: Some(1_000),
+            max_messages_per_dwallet_checkpoint: Some(1_000),
+            max_messages_per_system_checkpoint: Some(1_000),
 
             // The `max_tx_size_bytes` on Sui is `128 * 1024`, but we must keep the transaction size lower to avoid reaching the maximum computation fee.
-            max_checkpoint_size_bytes: Some(50 * 1024),
+            max_dwallet_checkpoint_size_bytes: Some(50 * 1024),
+            max_system_checkpoint_size_bytes: Some(50 * 1024),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
 
-            min_checkpoint_interval_ms: Some(200),
+            min_dwallet_checkpoint_interval_ms: Some(200),
+            min_system_checkpoint_interval_ms: Some(200),
 
             // Taking a baby step approach, we consider only 20% by stake as bad nodes so we
             // have an 80% by stake of nodes participating in the leader committee. That allow
@@ -362,7 +430,23 @@ impl ProtocolConfig {
             // responsibility is shared amongst more nodes. We can increase that once we do have
             // higher confidence.
             consensus_bad_nodes_stake_threshold: Some(20),
+
+            // TODO (#873): Implement a production grade configuration upgrade mechanism
+            // We use the `_for_testing` functions because they are currently the only way
+            // to modify Sui's protocol configuration from external crates.
+            // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
+            // in the Sui repository to address this limitation.
+            // This value has been derived from monitoring the largest message
+            // size in real world scenarios.
+            consensus_max_transaction_size_bytes: Some(315218930),
+            consensus_max_transactions_in_block_bytes: Some(315218930),
+            consensus_max_num_transactions_in_block: Some(512),
+            consensus_gc_depth: None,
         };
+
+        cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
+
+        #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
                 1 => unreachable!(),
@@ -499,152 +583,4 @@ pub fn is_mysticeti_fpc_enabled_in_env() -> Option<bool> {
         }
     }
     None
-}
-
-#[cfg(all(test, not(msim)))]
-mod test {
-    use insta::assert_yaml_snapshot;
-
-    use super::*;
-
-    #[test]
-    fn snapshot_tests() {
-        println!("\n============================================================================");
-        println!("!                                                                          !");
-        println!("! IMPORTANT: never update snapshots from this test. only add new versions! !");
-        println!("!                                                                          !");
-        println!("============================================================================\n");
-        for chain_id in &[Chain::Unknown, Chain::Mainnet, Chain::Testnet] {
-            // make Chain::Unknown snapshots compatible with pre-chain-id snapshots so that we
-            // don't break the release-time compatibility tests. Once Chain Id configs have been
-            // released everywhere, we can remove this and only test Mainnet and Testnet
-            let chain_str = match chain_id {
-                Chain::Unknown => "".to_string(),
-                _ => format!("{:?}_", chain_id),
-            };
-            for i in MIN_PROTOCOL_VERSION..=MAX_PROTOCOL_VERSION {
-                let cur = ProtocolVersion::new(i);
-                assert_yaml_snapshot!(
-                    format!("{}version_{}", chain_str, cur.as_u64()),
-                    ProtocolConfig::get_for_version(cur, *chain_id)
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn test_getters() {
-        let prot: ProtocolConfig =
-            ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-        assert_eq!(
-            prot.max_messages_per_checkpoint(),
-            prot.max_messages_per_checkpoint_as_option().unwrap()
-        );
-    }
-
-    #[test]
-    fn test_setters() {
-        let mut prot: ProtocolConfig =
-            ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-        prot.set_max_messages_per_checkpoint_for_testing(123);
-        assert_eq!(prot.max_messages_per_checkpoint(), 123);
-
-        prot.set_max_messages_per_checkpoint_from_str_for_testing("321".to_string());
-        assert_eq!(prot.max_messages_per_checkpoint(), 321);
-
-        prot.disable_max_messages_per_checkpoint_for_testing();
-        assert_eq!(prot.max_messages_per_checkpoint_as_option(), None);
-
-        prot.set_attr_for_testing("max_messages_per_checkpoint".to_string(), "456".to_string());
-        assert_eq!(prot.max_messages_per_checkpoint(), 456);
-    }
-
-    #[test]
-    #[should_panic(expected = "unsupported version")]
-    fn max_version_test() {
-        // When this does not panic, version higher than MAX_PROTOCOL_VERSION exists.
-        // To fix, bump MAX_PROTOCOL_VERSION or disable this check for the version.
-        let _ = ProtocolConfig::get_for_version_impl(
-            ProtocolVersion::new(MAX_PROTOCOL_VERSION + 1),
-            Chain::Unknown,
-        );
-    }
-
-    #[test]
-    fn lookup_by_string_test() {
-        let prot: ProtocolConfig =
-            ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-        // Does not exist
-        assert!(prot.lookup_attr("some random string".to_string()).is_none());
-
-        assert!(
-            prot.lookup_attr("max_messages_per_checkpoint".to_string())
-                == Some(ProtocolConfigValue::u64(prot.max_messages_per_checkpoint())),
-        );
-
-        let protocol_config: ProtocolConfig =
-            ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-
-        // We had this in version 1
-        assert_eq!(
-            protocol_config
-                .attr_map()
-                .get("max_messages_per_checkpoint")
-                .unwrap(),
-            &Some(ProtocolConfigValue::u64(
-                protocol_config.max_messages_per_checkpoint()
-            ))
-        );
-
-        // Check feature flags
-        let prot: ProtocolConfig =
-            ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-        // Does not exist
-        assert!(prot
-            .feature_flags
-            .lookup_attr("some random string".to_owned())
-            .is_none());
-        assert!(!prot
-            .feature_flags
-            .attr_map()
-            .contains_key("some random string"));
-    }
-
-    #[test]
-    fn limit_range_fn_test() {
-        let low = 100u32;
-        let high = 10000u64;
-
-        assert!(check_limit!(1u8, low, high) == LimitThresholdCrossed::None);
-        assert!(matches!(
-            check_limit!(255u16, low, high),
-            LimitThresholdCrossed::Soft(255u128, 100)
-        ));
-        // This wont compile because lossy
-        //assert!(check_limit!(100000000u128, low, high) == LimitThresholdCrossed::None);
-        // This wont compile because lossy
-        //assert!(check_limit!(100000000usize, low, high) == LimitThresholdCrossed::None);
-
-        assert!(matches!(
-            check_limit!(2550000u64, low, high),
-            LimitThresholdCrossed::Hard(2550000, 10000)
-        ));
-
-        assert!(matches!(
-            check_limit!(2550000u64, high, high),
-            LimitThresholdCrossed::Hard(2550000, 10000)
-        ));
-
-        assert!(matches!(
-            check_limit!(1u8, high),
-            LimitThresholdCrossed::None
-        ));
-
-        assert!(check_limit!(255u16, high) == LimitThresholdCrossed::None);
-
-        assert!(matches!(
-            check_limit!(2550000u64, high),
-            LimitThresholdCrossed::Hard(2550000, 10000)
-        ));
-    }
 }

@@ -4,7 +4,8 @@
 
 use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, MPCPublicOutput, MPCPublicOutputClassGroups, SerializedWrappedMPCPublicOutput,
+    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -13,16 +14,6 @@ use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
-
-/// The index of the last sign cryptographic round.
-/// Needed to be known in advance as this cryptographic step should ideally get computed only once
-/// by the `sign aggregation` protocol.
-pub(crate) const LAST_SIGN_ROUND_INDEX: usize = 1;
-/// The time a validator waits for each other validator to produce the result of the last sign
-/// computation round.
-/// Used to determine how long a validator should wait before running the final step of the sign
-/// MPC flow.
-pub(crate) const SIGN_LAST_ROUND_COMPUTATION_CONSTANT_SECONDS: usize = 15;
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
@@ -59,13 +50,10 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
-            MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => {
-                let presign = match presign {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                };
-                let centralized_signed_message = match centralized_signed_message {
-                    MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-                };
+            VersionedDwalletDKGSecondRoundPublicOutput::V1(output) => {
+                let VersionedPresignOutput::V1(presign) = presign;
+                let VersionedUserSignedMessage::V1(centralized_signed_message) =
+                    centralized_signed_message;
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
                     bcs::from_bytes(&protocol_public_parameters)?,
@@ -100,17 +88,15 @@ pub(crate) fn verify_partial_signature(
     partially_signed_message: &SerializedWrappedMPCPublicOutput,
     protocol_public_parameters: &ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
-    let dkg_output: MPCPublicOutput = bcs::from_bytes(&dwallet_decentralized_output)?;
-    let presign: MPCPublicOutput = bcs::from_bytes(&presign)?;
-    let partially_signed_message: MPCPublicOutput = bcs::from_bytes(&partially_signed_message)?;
+    let dkg_output: VersionedDwalletDKGSecondRoundPublicOutput =
+        bcs::from_bytes(dwallet_decentralized_output)?;
+    let presign: VersionedPresignOutput = bcs::from_bytes(presign)?;
+    let partially_signed_message: VersionedUserSignedMessage =
+        bcs::from_bytes(partially_signed_message)?;
     match dkg_output {
-        MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(dkg_output)) => {
-            let presign = match presign {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-            };
-            let partially_signed_message = match partially_signed_message {
-                MPCPublicOutput::ClassGroups(MPCPublicOutputClassGroups::V1(output)) => output,
-            };
+        VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {
+            let VersionedPresignOutput::V1(presign) = presign;
+            let VersionedUserSignedMessage::V1(partially_signed_message) = partially_signed_message;
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<
                 <AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput,
