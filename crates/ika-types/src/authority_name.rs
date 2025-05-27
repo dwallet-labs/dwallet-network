@@ -144,11 +144,6 @@ impl AuthorityName {
             .map_err(|_| AccountAddressParseError)
             .map(Self)
     }
-
-    /// TODO (ade): use macro to enfornce determinism
-    pub fn abstract_size_for_gas_metering(&self) -> AbstractMemorySize {
-        AbstractMemorySize::new(Self::LENGTH as u64)
-    }
 }
 
 impl AsRef<[u8]> for AuthorityName {
