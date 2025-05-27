@@ -819,6 +819,7 @@ impl AuthorityPerEpochStore {
         let next_committee = Committee::new(
             next_epoch,
             self.committee.voting_rights.to_vec(),
+            vec![],
             self.committee.class_groups_public_keys_and_proofs.clone(),
             self.committee.quorum_threshold,
             self.committee.validity_threshold,

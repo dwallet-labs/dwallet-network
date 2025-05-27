@@ -169,13 +169,22 @@ where
                 Ok((*name, validator_class_groups_public_key_and_proof))
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
-
+        let public_keys = validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name(),
+                    validator.validator_info.protocol_pubkey.bytes.clone(),
+                )
+            })
+            .collect();
         Ok(Committee::new(
             epoch,
             committee
                 .iter()
                 .map(|(_, (name, stake))| (*name, *stake))
                 .collect(),
+            public_keys,
             class_group_encryption_keys_and_proofs,
             quorum_threshold,
             validity_threshold,

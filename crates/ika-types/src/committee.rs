@@ -50,6 +50,7 @@ impl Committee {
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
+        public_keys: Vec<(AuthorityName, AuthorityPublicKey)>,
         class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
         quorum_threshold: u64,
         validity_threshold: u64,
@@ -105,6 +106,7 @@ impl Committee {
         Self::new(
             epoch,
             voting_weights.into_iter().collect(),
+            vec![],
             HashMap::new(),
             quorum_threshold,
             validity_threshold,

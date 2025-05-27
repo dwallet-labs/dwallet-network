@@ -176,9 +176,20 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                 )
             })
             .collect();
+        let public_keys = self
+            .active_validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name(),
+                    validator.protocol_pubkey.clone(),
+                )
+            })
+            .collect();
         Committee::new(
             self.epoch,
             voting_rights,
+            public_keys,
             class_groups_public_keys_and_proofs,
             self.quorum_threshold,
             self.validity_threshold,
