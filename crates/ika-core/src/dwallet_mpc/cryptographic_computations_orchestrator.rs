@@ -143,19 +143,23 @@ impl CryptographicComputationsOrchestrator {
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
         let curve_str = match &mpc_event_data.get_curve() {
             None => "".to_string(),
-            Some(curve) => curve.to_string() 
+            Some(curve) => curve.to_string(),
         };
         let hash_scheme_str = match &mpc_event_data.get_hash_scheme() {
             None => "".to_string(),
-            Some(hash_scheme) => hash_scheme.to_string()
+            Some(hash_scheme) => hash_scheme.to_string(),
         };
-        
+        let signature_algorithm_str = match &mpc_event_data.get_signature_algorithm() {
+            None => "".to_string(),
+            Some(signature_algorithm) => signature_algorithm.to_string(),
+        };
+
         dwallet_mpc_metrics.add_advance_call(
             &mpc_event_data.get_event_name(),
             &curve_str,
             &session.current_round.to_string(),
             &hash_scheme_str,
-            
+            &signature_algorithm_str,
         );
         Self::update_started_computation_metric(
             // Safe to unwrap here (event must exist before this).
