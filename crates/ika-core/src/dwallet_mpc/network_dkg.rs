@@ -21,7 +21,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState,
@@ -256,12 +255,15 @@ pub(crate) fn advance_network_dkg(
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
     encoded_public_input: &MPCPublicInput,
-    mpc_protocol_name: String,
-    party_to_authority_map: HashMap<PartyID, AuthorityName>,
+    logger: &crate::dwallet_mpc::MPCSessionLogger,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    // Add the Class Groups key pair and proof to the logger.
     let encoded_private_input: MPCPrivateInput = Some(bcs::to_bytes(&class_groups_decryption_key)?);
+    let logger = logger
+        .clone()
+        .with_class_groups_key_pair_and_proof(encoded_private_input.clone());
 
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
@@ -272,11 +274,8 @@ pub(crate) fn advance_network_dkg(
                 messages,
                 bcs::from_bytes(public_input)?,
                 class_groups_decryption_key,
-                encoded_private_input,
                 encoded_public_input,
-                mpc_protocol_name,
-                party_to_authority_map,
-                None,
+                &logger,
             );
             match result.clone() {
                 Ok(AsynchronousRoundResult::Finalize {
@@ -302,11 +301,8 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
-            encoded_private_input,
             encoded_public_input,
-            mpc_protocol_name,
-            party_to_authority_map,
-            None,
+            &logger,
         ),
     }?;
     Ok(res)

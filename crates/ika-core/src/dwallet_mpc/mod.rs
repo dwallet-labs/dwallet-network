@@ -458,13 +458,8 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-    // The ClassGroupsKeyPairAndProof, not needed for all protocols.
-    encoded_class_groups_key_pair_and_proof: MPCPrivateInput,
     encoded_public_input: &MPCPublicInput,
-    mpc_protocol_name: String,
-    party_to_authority_map: HashMap<PartyID, AuthorityName>,
-    // These are the virtual key shares (virtual party->secret key share).
-    decryption_key_shares: Option<&HashMap<PartyID, SecretKeyShareSizedInteger>>,
+    logger: &MPCSessionLogger,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -473,20 +468,16 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         malicious_parties,
     } = deserialize_mpc_messages(&serialized_messages);
 
-    if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() == "1" {
-        write_mpc_session_logs_to_disk(
-            session_id,
-            party_id,
-            access_threshold,
-            &serialized_messages,
-            encoded_public_input,
-            mpc_protocol_name,
-            &party_to_authority_map,
-            encoded_class_groups_key_pair_and_proof,
-            decryption_key_shares,
-            &malicious_parties,
-        );
-    }
+    // Update logger with malicious parties detected during deserialization.
+    let logger = logger.clone().with_malicious_parties(malicious_parties);
+
+    logger.write_logs_to_disk(
+        session_id,
+        party_id,
+        access_threshold,
+        &serialized_messages,
+        encoded_public_input,
+    );
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.
@@ -844,57 +835,114 @@ fn get_log_dir() -> Result<&'static PathBuf, DwalletMPCError> {
     Ok(LOG_DIR.get().unwrap())
 }
 
-fn write_mpc_session_logs_to_disk(
-    session_id: CommitmentSizedNumber,
-    party_id: PartyID,
-    access_threshold: &WeightedThresholdAccessStructure,
-    messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
-    encoded_public_input: &MPCPublicInput,
-    mpc_protocol_name: String,
-    party_to_authority_map: &HashMap<PartyID, AuthorityName>,
-    encoded_class_groups_key_pair_and_proof: MPCPrivateInput,
-    decryption_key_shares: Option<&HashMap<PartyID, SecretKeyShareSizedInteger>>,
-    malicious_parties: &[PartyID],
-) {
-    warn!("Writing MPC session logs to disk");
+/// A struct to encapsulate MPC session logging parameters and functionality.
+/// This separates logging-specific concerns from the core MPC advancement logic.
+#[derive(Default, Clone)]
+pub(crate) struct MPCSessionLogger {
+    /// The MPC protocol name for logging purposes
+    pub mpc_protocol_name: Option<String>,
+    /// Mapping from party IDs to authority names for logging
+    pub party_to_authority_map: Option<HashMap<PartyID, AuthorityName>>,
+    /// Encoded class groups key pair and proof for logging
+    pub encoded_class_groups_key_pair_and_proof: Option<MPCPrivateInput>,
+    /// Decryption key shares for logging
+    pub decryption_key_shares: Option<HashMap<PartyID, SecretKeyShareSizedInteger>>,
+    /// Malicious parties detected during message processing
+    pub malicious_parties: Option<Vec<PartyID>>,
+}
 
-    // Determine round number
-    let round = messages.len();
+impl MPCSessionLogger {
+    /// Creates a new MPCSessionLogger with the provided parameters
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-    // Get (and initialize once) the log directory
-    let log_dir = match get_log_dir() {
-        Ok(dir) => dir,
-        Err(err) => {
-            warn!(?err, "Failed to get the logs directory");
+    /// Sets the MPC protocol name
+    pub fn with_protocol_name(mut self, name: String) -> Self {
+        self.mpc_protocol_name = Some(name);
+        self
+    }
+
+    /// Sets the party to authority mapping
+    pub fn with_party_to_authority_map(mut self, map: HashMap<PartyID, AuthorityName>) -> Self {
+        self.party_to_authority_map = Some(map);
+        self
+    }
+
+    /// Sets the encoded class groups key pair and proof
+    pub fn with_class_groups_key_pair_and_proof(mut self, proof: MPCPrivateInput) -> Self {
+        self.encoded_class_groups_key_pair_and_proof = Some(proof);
+        self
+    }
+
+    /// Sets the decryption key shares
+    pub fn with_decryption_key_shares(
+        mut self,
+        shares: HashMap<PartyID, SecretKeyShareSizedInteger>,
+    ) -> Self {
+        self.decryption_key_shares = Some(shares);
+        self
+    }
+
+    /// Sets the malicious parties
+    pub fn with_malicious_parties(mut self, parties: Vec<PartyID>) -> Self {
+        self.malicious_parties = Some(parties);
+        self
+    }
+
+    /// Writes MPC session logs to disk if logging is enabled
+    pub fn write_logs_to_disk(
+        &self,
+        session_id: CommitmentSizedNumber,
+        party_id: PartyID,
+        access_threshold: &WeightedThresholdAccessStructure,
+        messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
+        encoded_public_input: &MPCPublicInput,
+    ) {
+        if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;
         }
-    };
-    let filename = format!("session_{}_round_{}.json", session_id, round);
-    let path = log_dir.join(&filename);
 
-    // Serialize to JSON.
-    let log = json!({
-        "session_id": session_id,
-        "round": round,
-        "party_id": party_id,
-        "access_threshold": access_threshold,
-        "messages": messages,
-        "public_input": encoded_public_input,
-        "mpc_protocol": mpc_protocol_name,
-        "party_to_authority_map": party_to_authority_map,
-        "class_groups_key_pair_and_proof": encoded_class_groups_key_pair_and_proof,
-        "decryption_key_shares": decryption_key_shares,
-        "malicious_parties": malicious_parties,
-    });
+        warn!("Writing MPC session logs to disk");
 
-    let mut file = match File::create(&path) {
-        Ok(f) => f,
-        Err(e) => {
-            warn!("Failed to create log file {}: {}", path.display(), e);
-            return;
+        // Determine round number
+        let round = messages.len();
+
+        // Get (and initialize once) the log directory
+        let log_dir = match get_log_dir() {
+            Ok(dir) => dir,
+            Err(err) => {
+                warn!(?err, "Failed to get the logs directory");
+                return;
+            }
+        };
+        let filename = format!("session_{}_round_{}.json", session_id, round);
+        let path = log_dir.join(&filename);
+
+        // Serialize to JSON.
+        let log = json!({
+            "session_id": session_id,
+            "round": round,
+            "party_id": party_id,
+            "access_threshold": access_threshold,
+            "messages": messages,
+            "public_input": encoded_public_input,
+            "mpc_protocol": self.mpc_protocol_name,
+            "party_to_authority_map": self.party_to_authority_map,
+            "class_groups_key_pair_and_proof": self.encoded_class_groups_key_pair_and_proof,
+            "decryption_key_shares": self.decryption_key_shares,
+            "malicious_parties": self.malicious_parties,
+        });
+
+        let mut file = match File::create(&path) {
+            Ok(f) => f,
+            Err(e) => {
+                warn!("Failed to create log file {}: {}", path.display(), e);
+                return;
+            }
+        };
+        if let Err(e) = file.write_all(log.to_string().as_bytes()) {
+            warn!("Failed to write to the log file {}: {}", path.display(), e);
         }
-    };
-    if let Err(e) = file.write_all(log.to_string().as_bytes()) {
-        warn!("Failed to write to the log file {}: {}", path.display(), e);
     }
 }

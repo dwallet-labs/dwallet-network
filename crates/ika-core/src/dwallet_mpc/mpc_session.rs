@@ -24,7 +24,7 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
@@ -211,7 +211,8 @@ impl DWalletMPCSession {
                             mpc_protocol=?mpc_protocol,
                             session_id=?session_id_clone,
                             validator=?validator_name,
-                            "failed to submit an MPC message to consensus: {:?}", err
+                            err=?err,
+                            "failed to submit an MPC output message to consensus",
                         );
                     }
                 });
@@ -260,7 +261,7 @@ impl DWalletMPCSession {
                             validator=?validator_name,
                             epoch=?epoch_id_clone,
                             error=?err,
-                            "failed to submit an MPC message to consensus: {:?}", err);
+                            "failed to submit an MPC SessionFailed message to consensus");
                     }
                 });
                 Err(err)
@@ -367,6 +368,11 @@ impl DWalletMPCSession {
         let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
         let mpc_protocol_name = mpc_event_data.init_protocol_data.to_string();
 
+        // Create a base logger with common parameters.
+        let base_logger = MPCSessionLogger::new()
+            .with_protocol_name(mpc_protocol_name.clone())
+            .with_party_to_authority_map(party_to_authority_map.clone());
+
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
@@ -378,6 +384,7 @@ impl DWalletMPCSession {
                     bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
                 )
                     .into();
+
                 let result = crate::dwallet_mpc::advance_and_serialize::<
                     DWalletImportedKeyVerificationParty,
                 >(
@@ -390,11 +397,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    None,
+                    &base_logger,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -431,11 +435,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    None,
+                    &base_logger,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -458,6 +459,7 @@ impl DWalletMPCSession {
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
                     bcs::from_bytes(encoded_public_input)?;
+
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
                     self.party_id,
@@ -465,11 +467,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input.clone(),
                     (),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    None,
+                    &base_logger,
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
@@ -518,6 +517,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Presign(..) => {
                 let public_input = bcs::from_bytes(encoded_public_input)?;
+
                 let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
                     self.party_id,
@@ -525,11 +525,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    None,
+                    &base_logger,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -557,6 +554,9 @@ impl DWalletMPCSession {
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
 
+                // Extend base logger with decryption key shares for Sign protocol
+                let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
+
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
@@ -564,11 +564,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     mpc_event_data.decryption_shares.clone(),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    Some(&decryption_key_shares),
+                    &logger,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -600,8 +597,7 @@ impl DWalletMPCSession {
                         .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                 )?,
                 encoded_public_input,
-                mpc_protocol_name,
-                party_to_authority_map,
+                &base_logger,
             ),
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 let protocol_public_parameters = mpc_event_data.public_input.clone();
@@ -646,6 +642,10 @@ impl DWalletMPCSession {
                     .iter()
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
+
+                // Extend base logger with decryption key shares for Reshare protocol
+                let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
+
                 let result = crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
                     session_id,
                     self.party_id,
@@ -653,11 +653,8 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     decryption_key_shares.clone(),
-                    None,
                     encoded_public_input,
-                    mpc_protocol_name,
-                    party_to_authority_map,
-                    Some(&decryption_key_shares),
+                    &logger,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
