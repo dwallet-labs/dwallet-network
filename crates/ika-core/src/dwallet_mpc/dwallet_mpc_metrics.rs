@@ -9,7 +9,6 @@ use dwallet_mpc_types::dwallet_mpc::{
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
     VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME,
 };
-use im::HashMap;
 use prometheus::{
     register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
     Registry,
