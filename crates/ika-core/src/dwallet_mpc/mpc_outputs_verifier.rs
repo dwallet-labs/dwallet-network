@@ -195,7 +195,7 @@ impl DWalletMPCOutputsVerifier {
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
             let mpc_event_data = session_info.mpc_round.clone();
-            self.dwallet_mpc_metrics.add_received_event_start(
+            self.dwallet_mpc_metrics.add_completion(
                 &mpc_event_data.get_event_name(),
                 &mpc_event_data.get_curve(),
                 &"",
