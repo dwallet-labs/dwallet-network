@@ -19,6 +19,16 @@ use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
 
+pub const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
+pub const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
+pub const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
+pub const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
+pub const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
+pub const PRESIGN_PROTOCOL_FLAG: u32 = 5;
+pub const SIGN_PROTOCOL_FLAG: u32 = 6;
+pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
+pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// Make the dWallet user secret key shares public, so the network can control it.

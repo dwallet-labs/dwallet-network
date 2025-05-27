@@ -14,7 +14,14 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
-use ika_types::messages_dwallet_mpc::DWalletNetworkEncryptionKeyState;
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
+    RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
+    SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+};
 use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
@@ -24,25 +31,15 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
+use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
-use move_core_types::ident_str;
 use sui_macros::fail_point_async;
 use sui_types::base_types::ObjectID;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
-
-const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
-const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
-const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
-const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
-const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
-const PRESIGN_PROTOCOL_FLAG: u32 = 5;
-const SIGN_PROTOCOL_FLAG: u32 = 6;
-const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
-const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
