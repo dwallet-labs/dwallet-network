@@ -140,12 +140,8 @@ impl MPCProtocolInitData {
                 Some(event.event_data.hash_scheme)
             }
             MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                None
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
-                None
-            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
         };
         let hash_scheme = match &hash_scheme {
             None => "".to_string(),
@@ -166,12 +162,8 @@ impl MPCProtocolInitData {
                 Some(event.event_data.hash_scheme)
             }
             MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                None
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
-                None
-            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => None,
         };
         let signature_alg = match &signature_alg {
             None => "".to_string(),

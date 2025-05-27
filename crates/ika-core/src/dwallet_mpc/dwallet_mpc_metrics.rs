@@ -80,7 +80,7 @@ impl DWalletMPCMetrics {
             ])
             .inc();
     }
-    
+
     pub fn add_received_event_start(
         &self,
         protocol_name: &str,
@@ -99,7 +99,7 @@ impl DWalletMPCMetrics {
             ])
             .inc();
     }
-    
+
     pub fn add_advance_call(
         &self,
         protocol_name: &str,
@@ -118,7 +118,7 @@ impl DWalletMPCMetrics {
             ])
             .inc();
     }
-    
+
     pub fn add_advance_completion(
         &self,
         protocol_name: &str,
@@ -137,7 +137,7 @@ impl DWalletMPCMetrics {
             ])
             .inc();
     }
-    
+
     pub fn set_last_completion_duration(
         &self,
         protocol_name: &str,
