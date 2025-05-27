@@ -141,9 +141,16 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let session = session.clone();
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let curve_str = match &mpc_event_data.get_curve() {
+            None => "".to_string(),
+            Some(curve) => curve.to_string() 
+        };
         dwallet_mpc_metrics.add_advance_call(
             &mpc_event_data.get_event_name(),
-        )
+            &curve_str,
+            &session.current_round.to_string(),
+            ,
+        );
         Self::update_started_computation_metric(
             // Safe to unwrap here (event must exist before this).
             &session.mpc_event_data.clone().unwrap().init_protocol_data,
