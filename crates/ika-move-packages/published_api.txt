@@ -604,6 +604,9 @@ request_dwallet_dkg_second_round
 new_imported_key_dwallet
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
+calculate_pricing_votes
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
 request_imported_key_dwallet_verification
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
