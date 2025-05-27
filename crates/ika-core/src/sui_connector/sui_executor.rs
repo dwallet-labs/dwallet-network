@@ -14,7 +14,14 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
-use ika_types::messages_dwallet_mpc::DWalletNetworkEncryptionKeyState;
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
+    RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
+    SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+};
 use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
@@ -24,6 +31,7 @@ use ika_types::sui::{
     REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, REQUEST_MID_EPOCH_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
+use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
@@ -33,6 +41,7 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
+#[derive(PartialEq, Eq, Debug)]
 pub enum StopReason {
     EpochComplete(Box<SystemInner>, EpochStartSystem),
     RunWithRangeCondition,
@@ -51,6 +60,7 @@ struct EpochSwitchState {
     ran_mid_epoch: bool,
     ran_lock_last_session: bool,
     ran_request_advance_epoch: bool,
+    calculated_protocol_pricing: bool,
 }
 
 impl<C> SuiExecutor<C>
@@ -125,7 +135,6 @@ where
                 epoch_switch_state.ran_mid_epoch = true;
             }
         }
-
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
             .get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
@@ -134,6 +143,29 @@ where
             error!("failed to get dwallet coordinator inner when running epoch switch");
             return;
         };
+
+        if clock.timestamp_ms > mid_epoch_time
+            && coordinator.pricing_calculation_votes.is_some()
+            && !epoch_switch_state.calculated_protocol_pricing
+        {
+            info!("Calculating protocols pricing");
+            match Self::calculate_protocols_pricing(
+                &self.sui_client,
+                self.ika_system_package_id,
+                sui_notifier,
+                dwallet_2pc_mpc_coordinator_id,
+            )
+            .await
+            {
+                Ok(..) => {
+                    info!("Successfully calculated protocols pricing");
+                    epoch_switch_state.calculated_protocol_pricing = true;
+                }
+                Err(err) => {
+                    error!(?err, "failed to calculate protocols pricing");
+                }
+            }
+        }
 
         // The Epoch was finished.
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
@@ -174,6 +206,7 @@ where
             && all_immediate_sessions_completed
             && next_epoch_committee_exists
             && !epoch_switch_state.ran_request_advance_epoch
+            && coordinator.pricing_calculation_votes.is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
@@ -222,7 +255,7 @@ where
         // check if we want to run this epoch based on RunWithRange condition value
         // we want to be inclusive of the defined RunWithRangeEpoch::Epoch
         // i.e Epoch(N) means we will execute the epoch N and stop when reaching N+1.
-        if run_with_range.map_or(false, |rwr| rwr.is_epoch_gt(epoch)) {
+        if run_with_range.is_some_and(|rwr| rwr.is_epoch_gt(epoch)) {
             info!(
                 "RunWithRange condition satisfied at {:?}, run_epoch={:?}",
                 run_with_range, epoch
@@ -239,6 +272,7 @@ where
             ran_mid_epoch: false,
             ran_lock_last_session: false,
             ran_request_advance_epoch: false,
+            calculated_protocol_pricing: false,
         };
 
         loop {
@@ -431,6 +465,190 @@ where
             slices.push(CallArg::Pure(bcs::to_bytes(message).unwrap()));
         }
         slices
+    }
+
+    async fn calculate_protocols_pricing(
+        sui_client: &Arc<SuiClient<C>>,
+        ika_system_package_id: ObjectID,
+        sui_notifier: &SuiNotifier,
+        dwallet_coordinator_id: ObjectID,
+    ) -> anyhow::Result<()> {
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
+            .first()
+            .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
+        let mut ptb = ProgrammableTransactionBuilder::new();
+        let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
+        let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
+        let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
+        let dwallet_coordinator_arg = sui_client
+            .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_coordinator_id)
+            .await;
+
+        let dkg_first_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &DKG_FIRST_ROUND_PROTOCOL_FLAG,
+        )?))?;
+        let dkg_second_round_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &DKG_SECOND_ROUND_PROTOCOL_FLAG,
+        )?))?;
+        let re_encrypt_user_share_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(
+            &RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG,
+        )?))?;
+        let make_dwallet_user_secret_key_share_public_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG)?,
+        ))?;
+        let imported_key_dwallet_verification_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG)?,
+        ))?;
+        let presign_protocol_flag =
+            ptb.input(CallArg::Pure(bcs::to_bytes(&PRESIGN_PROTOCOL_FLAG)?))?;
+        let sign_protocol_flag = ptb.input(CallArg::Pure(bcs::to_bytes(&SIGN_PROTOCOL_FLAG)?))?;
+        let future_sign_protocol_flag =
+            ptb.input(CallArg::Pure(bcs::to_bytes(&FUTURE_SIGN_PROTOCOL_FLAG)?))?;
+        let sign_with_partial_user_signature_protocol_flag = ptb.input(CallArg::Pure(
+            bcs::to_bytes(&SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG)?,
+        ))?;
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                none_option,
+                dkg_first_round_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                none_option,
+                dkg_second_round_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                none_option,
+                re_encrypt_user_share_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                none_option,
+                make_dwallet_user_secret_key_share_public_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                none_option,
+                imported_key_dwallet_verification_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                zero_option,
+                presign_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                zero_option,
+                sign_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                zero_option,
+                future_sign_protocol_flag,
+            ],
+        );
+        let dwallet_coordinator_ptb_arg = ptb.input(CallArg::Object(dwallet_coordinator_arg))?;
+        ptb.programmable_move_call(
+            ika_system_package_id,
+            DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+            ident_str!("calculate_pricing_votes").into(),
+            vec![],
+            vec![
+                dwallet_coordinator_ptb_arg,
+                zero,
+                zero_option,
+                sign_with_partial_user_signature_protocol_flag,
+            ],
+        );
+        let transaction = super::build_sui_transaction(
+            sui_notifier.sui_address,
+            ptb.finish(),
+            sui_client,
+            vec![*gas_coin],
+            &sui_notifier.sui_key,
+        )
+        .await;
+
+        let result = sui_client
+            .execute_transaction_block_with_effects(transaction)
+            .await?;
+        if !result.errors.is_empty() {
+            for error in result.errors.clone() {
+                error!(?error, "error executing transaction block");
+            }
+            return Err(anyhow::anyhow!(
+                "calculate_protocols_pricing failed with errors: {:?}",
+                result.errors
+            ));
+        }
+        info!(?result.digest, "Successfully executed transaction block for protocol pricing calculation");
+
+        Ok(())
     }
 
     async fn process_mid_epoch(

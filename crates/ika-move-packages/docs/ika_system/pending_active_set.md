@@ -136,12 +136,12 @@ the calculation of the rewards and voting power distribution easier.
 ## Constants
 
 
-<a name="(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount"></a>
+<a name="(ika_system=0x0)_pending_active_set_EZeroMaxSize"></a>
 
-The minimum active set size must be maintained.
+The maximum size of an ActiveSet must be strictly larger than zero.
 
 
-<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EZeroMaxSize">EZeroMaxSize</a>: u64 = 0;
 </code></pre>
 
 
@@ -156,12 +156,12 @@ The validator is already part of the active set.
 
 
 
-<a name="(ika_system=0x0)_pending_active_set_EZeroMaxSize"></a>
+<a name="(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount"></a>
 
-The maximum size of an ActiveSet must be strictly larger than zero.
+The minimum active set size must be maintained.
 
 
-<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EZeroMaxSize">EZeroMaxSize</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a>: u64 = 3;
 </code></pre>
 
 

@@ -3,6 +3,7 @@
 use crate::committee::CommitteeTrait;
 use crate::committee::{Committee, EpochId, StakeUnit};
 use crate::error::{IkaError, IkaResult};
+use crate::ika_serde::IkaBitmap;
 use crate::intent::{Intent, IntentMessage, IntentScope};
 use anyhow::{anyhow, Error};
 use derive_more::{AsRef, From};
@@ -37,7 +38,7 @@ use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 use sui_types::base_types::{ConciseableName, SuiAddress};
 use sui_types::crypto::SignatureScheme;
-use sui_types::sui_serde::{Readable, SuiBitmap};
+use sui_types::sui_serde::Readable;
 use tracing::{instrument, warn};
 
 // Authority Objects
@@ -531,7 +532,7 @@ pub struct AuthorityQuorumSignInfo<const STRONG_THRESHOLD: bool> {
     #[schemars(with = "Base64")]
     pub signature: AggregateAuthoritySignature,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "SuiBitmap")]
+    #[serde_as(as = "IkaBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -545,7 +546,7 @@ pub struct IkaAuthorityStrongQuorumSignInfo {
     pub epoch: EpochId,
     pub signature: AggregateAuthoritySignatureAsBytes,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "SuiBitmap")]
+    #[serde_as(as = "IkaBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -712,17 +713,6 @@ impl<const STRONG_THRESHOLD: bool> AuthorityQuorumSignInfo<STRONG_THRESHOLD> {
                 }
             })?,
             signers_map: map,
-        })
-    }
-
-    pub fn authorities<'a>(
-        &'a self,
-        committee: &'a Committee,
-    ) -> impl Iterator<Item = IkaResult<&AuthorityName>> {
-        self.signers_map.iter().map(|i| {
-            committee
-                .authority_by_index(i)
-                .ok_or(IkaError::InvalidAuthenticator)
         })
     }
 

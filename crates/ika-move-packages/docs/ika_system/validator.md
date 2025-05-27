@@ -293,12 +293,12 @@ Represents the state of the validator.
 
 <dl>
 <dt>
-Variant <code>Active</code>
+Variant <code>PreActive</code>
 </dt>
 <dd>
 </dd>
 <dt>
-Variant <code>PreActive</code>
+Variant <code>Active</code>
 </dt>
 <dd>
 </dd>
@@ -335,22 +335,12 @@ Variant <code>Withdrawing</code>
 
 
 
-<a name="(ika_system=0x0)_validator_EActivationEpochNotReached"></a>
+<a name="(ika_system=0x0)_validator_EValidatorAlreadyUpdated"></a>
 
-Attempt to withdraw before <code><a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a></code>.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EActivationEpochNotReached">EActivationEpochNotReached</a>: u64 = 12;
-</code></pre>
+The epoch of the validator has already been advanced.
 
 
-
-<a name="(ika_system=0x0)_validator_EAuthorizationFailure"></a>
-
-Trying to collect commission or change receiver without authorization.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>: u64 = 15;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>: u64 = 0;
 </code></pre>
 
 
@@ -365,16 +355,6 @@ Error in a calculation. Indicates that a sanity check failed.
 
 
 
-<a name="(ika_system=0x0)_validator_EIncorrectCommissionRate"></a>
-
-Incorrect commission rate.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectCommissionRate">EIncorrectCommissionRate</a>: u64 = 14;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_validator_EIncorrectEpochAdvance"></a>
 
 The state of the validator and the parameters to advance the epoch are not consistent.
@@ -385,42 +365,22 @@ The state of the validator and the parameters to advance the epoch are not consi
 
 
 
-<a name="(ika_system=0x0)_validator_EIncorrectValidatorId"></a>
+<a name="(ika_system=0x0)_validator_EValidatorNotEmpty"></a>
 
-Trying to withdraw stake from the incorrect validator.
+Trying to destroy a non-empty validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_ENotStaked"></a>
+<a name="(ika_system=0x0)_validator_EValidatorIsNotPreActive"></a>
 
-StakedIka is already in <code>Withdrawing</code> state.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>: u64 = 8;
-</code></pre>
+Validator is not in <code>PreActive</code> state.
 
 
-
-<a name="(ika_system=0x0)_validator_ENotWithdrawing"></a>
-
-Trying to withdraw active stake.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotWithdrawing">ENotWithdrawing</a>: u64 = 10;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_EValidatorAlreadyUpdated"></a>
-
-The epoch of the validator has already been advanced.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorAlreadyUpdated">EValidatorAlreadyUpdated</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>: u64 = 4;
 </code></pre>
 
 
@@ -445,32 +405,42 @@ Validator is not in <code>Active</code> state.
 
 
 
-<a name="(ika_system=0x0)_validator_EValidatorIsNotPreActive"></a>
+<a name="(ika_system=0x0)_validator_EZeroStake"></a>
 
-Validator is not in <code>PreActive</code> state.
+Trying to stake zero amount.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorIsNotPreActive">EValidatorIsNotPreActive</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EValidatorNotEmpty"></a>
+<a name="(ika_system=0x0)_validator_ENotStaked"></a>
 
-Trying to destroy a non-empty validator.
+StakedIka is already in <code>Withdrawing</code> state.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EValidatorNotEmpty">EValidatorNotEmpty</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotStaked">ENotStaked</a>: u64 = 8;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_EWithdrawDirectly"></a>
+<a name="(ika_system=0x0)_validator_EIncorrectValidatorId"></a>
 
-Requesting withdrawal for the stake that can be withdrawn directly.
+Trying to withdraw stake from the incorrect validator.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>: u64 = 13;
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectValidatorId">EIncorrectValidatorId</a>: u64 = 9;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_ENotWithdrawing"></a>
+
+Trying to withdraw active stake.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_ENotWithdrawing">ENotWithdrawing</a>: u64 = 10;
 </code></pre>
 
 
@@ -485,22 +455,52 @@ Attempt to withdraw before <code>withdraw_epoch</code>.
 
 
 
+<a name="(ika_system=0x0)_validator_EActivationEpochNotReached"></a>
+
+Attempt to withdraw before <code><a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a></code>.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EActivationEpochNotReached">EActivationEpochNotReached</a>: u64 = 12;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EWithdrawDirectly"></a>
+
+Requesting withdrawal for the stake that can be withdrawn directly.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EWithdrawDirectly">EWithdrawDirectly</a>: u64 = 13;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EIncorrectCommissionRate"></a>
+
+Incorrect commission rate.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EIncorrectCommissionRate">EIncorrectCommissionRate</a>: u64 = 14;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_EAuthorizationFailure"></a>
+
+Trying to collect commission or change receiver without authorization.
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EAuthorizationFailure">EAuthorizationFailure</a>: u64 = 15;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_EZeroShares"></a>
 
 The number of shares for the staked IKA are zero.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroShares">EZeroShares</a>: u64 = 16;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_EZeroStake"></a>
-
-Trying to stake zero amount.
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_EZeroStake">EZeroStake</a>: u64 = 7;
 </code></pre>
 
 

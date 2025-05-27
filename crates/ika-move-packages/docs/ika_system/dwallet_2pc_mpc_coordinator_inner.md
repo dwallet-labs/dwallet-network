@@ -1242,7 +1242,7 @@ A Sign session. When <code>state</code> is <code>SignState::Completed</code>, ho
 
 
 
-<pre><code><b>public</b> <b>struct</b> DWalletEventE <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">DWalletEvent</a>&lt;E: <b>copy</b>, drop, store&gt; <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -2904,6 +2904,11 @@ Variant <code>AwaitingNetworkDKG</code>
 <dd>
 </dd>
 <dt>
+Variant <code>NetworkDKGCompleted</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>AwaitingNetworkReconfiguration</code>
 </dt>
 <dd>
@@ -2925,11 +2930,6 @@ Variant <code>AwaitingNextEpochToUpdateReconfiguration</code>
 <dd>
  Reconfiguration request finished, but we didn't switch an epoch yet.
  We need to wait for the next epoch to update the reconfiguration public outputs.
-</dd>
-<dt>
-Variant <code>NetworkDKGCompleted</code>
-</dt>
-<dd>
 </dd>
 <dt>
 Variant <code>NetworkReconfigurationCompleted</code>
@@ -2963,6 +2963,16 @@ Variant <code>AwaitingNetworkVerification</code>
 <dd>
 </dd>
 <dt>
+Variant <code>NetworkVerificationCompleted</code>
+</dt>
+<dd>
+</dd>
+<dt>
+Variant <code>NetworkVerificationRejected</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>KeyHolderSigned</code>
 </dt>
 <dd>
@@ -2978,16 +2988,6 @@ Variant <code>KeyHolderSigned</code>
 </dd>
 </dl>
 
-<dt>
-Variant <code>NetworkVerificationCompleted</code>
-</dt>
-<dd>
-</dd>
-<dt>
-Variant <code>NetworkVerificationRejected</code>
-</dt>
-<dd>
-</dd>
 </dl>
 
 
@@ -3046,41 +3046,12 @@ Variant <code>NetworkVerificationRejected</code>
 
 <dl>
 <dt>
-Variant <code>Active</code>
-</dt>
-<dd>
-</dd>
-
-<dl>
-<dt>
-<code>public_output: vector&lt;u8&gt;</code>
-</dt>
-<dd>
- The output of the DKG process.
-</dd>
-</dl>
-
-<dt>
-Variant <code>AwaitingKeyHolderSignature</code>
-</dt>
-<dd>
-</dd>
-
-<dl>
-<dt>
-<code>public_output: vector&lt;u8&gt;</code>
-</dt>
-<dd>
-</dd>
-</dl>
-
-<dt>
-Variant <code>AwaitingNetworkDKGVerification</code>
+Variant <code>DKGRequested</code>
 </dt>
 <dd>
 </dd>
 <dt>
-Variant <code>AwaitingNetworkImportedKeyVerification</code>
+Variant <code>NetworkRejectedDKGRequest</code>
 </dt>
 <dd>
 </dd>
@@ -3099,17 +3070,7 @@ Variant <code>AwaitingUserDKGVerificationInitiation</code>
 </dl>
 
 <dt>
-Variant <code>AwaitingUserImportedKeyInitiation</code>
-</dt>
-<dd>
-</dd>
-<dt>
-Variant <code>DKGRequested</code>
-</dt>
-<dd>
-</dd>
-<dt>
-Variant <code>NetworkRejectedDKGRequest</code>
+Variant <code>AwaitingNetworkDKGVerification</code>
 </dt>
 <dd>
 </dd>
@@ -3119,10 +3080,49 @@ Variant <code>NetworkRejectedDKGVerification</code>
 <dd>
 </dd>
 <dt>
+Variant <code>AwaitingUserImportedKeyInitiation</code>
+</dt>
+<dd>
+</dd>
+<dt>
+Variant <code>AwaitingNetworkImportedKeyVerification</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>NetworkRejectedImportedKeyVerification</code>
 </dt>
 <dd>
 </dd>
+<dt>
+Variant <code>AwaitingKeyHolderSignature</code>
+</dt>
+<dd>
+</dd>
+
+<dl>
+<dt>
+<code>public_output: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+<dt>
+Variant <code>Active</code>
+</dt>
+<dd>
+</dd>
+
+<dl>
+<dt>
+<code>public_output: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+ The output of the DKG process.
+</dd>
+</dl>
+
 </dl>
 
 
@@ -3145,6 +3145,16 @@ Variant <code>NetworkRejectedImportedKeyVerification</code>
 
 <dl>
 <dt>
+Variant <code>Requested</code>
+</dt>
+<dd>
+</dd>
+<dt>
+Variant <code>NetworkRejected</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>Completed</code>
 </dt>
 <dd>
@@ -3158,16 +3168,6 @@ Variant <code>Completed</code>
 </dd>
 </dl>
 
-<dt>
-Variant <code>NetworkRejected</code>
-</dt>
-<dd>
-</dd>
-<dt>
-Variant <code>Requested</code>
-</dt>
-<dd>
-</dd>
 </dl>
 
 
@@ -3190,6 +3190,16 @@ Variant <code>Requested</code>
 
 <dl>
 <dt>
+Variant <code>Requested</code>
+</dt>
+<dd>
+</dd>
+<dt>
+Variant <code>NetworkRejected</code>
+</dt>
+<dd>
+</dd>
+<dt>
 Variant <code>Completed</code>
 </dt>
 <dd>
@@ -3203,16 +3213,6 @@ Variant <code>Completed</code>
 </dd>
 </dl>
 
-<dt>
-Variant <code>NetworkRejected</code>
-</dt>
-<dd>
-</dd>
-<dt>
-Variant <code>Requested</code>
-</dt>
-<dd>
-</dd>
 </dl>
 
 
@@ -3239,11 +3239,6 @@ System sessions are guaranteed to always get completed in the epoch they were cr
 
 <dl>
 <dt>
-Variant <code>System</code>
-</dt>
-<dd>
-</dd>
-<dt>
 Variant <code>User</code>
 </dt>
 <dd>
@@ -3257,6 +3252,11 @@ Variant <code>User</code>
 </dd>
 </dl>
 
+<dt>
+Variant <code>System</code>
+</dt>
+<dd>
+</dd>
 </dl>
 
 
@@ -3294,39 +3294,65 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EActiveBlsCommitteeMustInitialize"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"First active committee must initialize.";
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG">RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG</a>: u32 = 2;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>: u64 = 16;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG">MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG</a>: u32 = 3;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECurvePaused"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECurvePaused">ECurvePaused</a>: u64 = 19;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG">IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG</a>: u32 = 4;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletInactive"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PRESIGN_PROTOCOL_FLAG"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletInactive">EDWalletInactive</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PRESIGN_PROTOCOL_FLAG">PRESIGN_PROTOCOL_FLAG</a>: u32 = 5;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_PROTOCOL_FLAG"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_PROTOCOL_FLAG">SIGN_PROTOCOL_FLAG</a>: u32 = 6;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_FUTURE_SIGN_PROTOCOL_FLAG"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_FUTURE_SIGN_PROTOCOL_FLAG">FUTURE_SIGN_PROTOCOL_FLAG</a>: u32 = 7;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG">SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG</a>: u32 = 8;
 </code></pre>
 
 
@@ -3340,20 +3366,11 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotActive"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletInactive"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotActive">EDWalletNetworkEncryptionKeyNotActive</a>: u64 = 14;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist">EDWalletNetworkEncryptionKeyNotExist</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletInactive">EDWalletInactive</a>: u64 = 2;
 </code></pre>
 
 
@@ -3367,66 +3384,20 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic">EDWalletUserSecretKeySharesAlreadyPublic</a>: u64 = 21;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist">EEncryptionKeyNotExist</a>: u64 = 26;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EHashSchemePaused"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EHashSchemePaused">EHashSchemePaused</a>: u64 = 25;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EImportedKeyDWallet"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EImportedKeyDWallet">EImportedKeyDWallet</a>: u64 = 23;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap">EIncorrectCap</a>: u64 = 11;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>: vector&lt;u8&gt; = b"The checkpoint epoch is incorrect.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidCurve"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidCurve">EInvalidCurve</a>: u64 = 17;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist">EDWalletNetworkEncryptionKeyNotExist</a>: u64 = 5;
 </code></pre>
 
 
@@ -3440,6 +3411,15 @@ Variant <code>User</code>
 
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMessageApprovalMismatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMessageApprovalMismatch">EMessageApprovalMismatch</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidHashScheme"></a>
 
 
@@ -3449,20 +3429,38 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidPresign"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignWrongState"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidPresign">EInvalidPresign</a>: u64 = 15;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignWrongState">ESignWrongState</a>: u64 = 9;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidSignatureAlgorithm"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidSignatureAlgorithm">EInvalidSignatureAlgorithm</a>: u64 = 18;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist">EPresignNotExist</a>: u64 = 10;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap">EIncorrectCap</a>: u64 = 11;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EUnverifiedCap"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EUnverifiedCap">EUnverifiedCap</a>: u64 = 12;
 </code></pre>
 
 
@@ -3476,11 +3474,74 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMessageApprovalMismatch"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotActive"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMessageApprovalMismatch">EMessageApprovalMismatch</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletNetworkEncryptionKeyNotActive">EDWalletNetworkEncryptionKeyNotActive</a>: u64 = 14;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidPresign"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidPresign">EInvalidPresign</a>: u64 = 15;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>: u64 = 16;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidCurve"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidCurve">EInvalidCurve</a>: u64 = 17;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidSignatureAlgorithm"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EInvalidSignatureAlgorithm">EInvalidSignatureAlgorithm</a>: u64 = 18;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECurvePaused"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECurvePaused">ECurvePaused</a>: u64 = 19;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignatureAlgorithmPaused"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignatureAlgorithmPaused">ESignatureAlgorithmPaused</a>: u64 = 20;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletUserSecretKeySharesAlreadyPublic">EDWalletUserSecretKeySharesAlreadyPublic</a>: u64 = 21;
 </code></pre>
 
 
@@ -3494,11 +3555,11 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMissingProtocolPricing"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EImportedKeyDWallet"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMissingProtocolPricing">EMissingProtocolPricing</a>: u64 = 27;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EImportedKeyDWallet">EImportedKeyDWallet</a>: u64 = 23;
 </code></pre>
 
 
@@ -3512,11 +3573,29 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EHashSchemePaused"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPresignNotExist">EPresignNotExist</a>: u64 = 10;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EHashSchemePaused">EHashSchemePaused</a>: u64 = 25;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EEncryptionKeyNotExist">EEncryptionKeyNotExist</a>: u64 = 26;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMissingProtocolPricing"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EMissingProtocolPricing">EMissingProtocolPricing</a>: u64 = 27;
 </code></pre>
 
 
@@ -3539,29 +3618,12 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignWrongState"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignWrongState">ESignWrongState</a>: u64 = 9;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignatureAlgorithmPaused"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESignatureAlgorithmPaused">ESignatureAlgorithmPaused</a>: u64 = 20;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EUnverifiedCap"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EUnverifiedCap">EUnverifiedCap</a>: u64 = 12;
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>: vector&lt;u8&gt; = b"The checkpoint epoch is incorrect.";
 </code></pre>
 
 
@@ -3576,74 +3638,12 @@ Variant <code>User</code>
 
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EActiveBlsCommitteeMustInitialize"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>: u64 = 4;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_FUTURE_SIGN_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_FUTURE_SIGN_PROTOCOL_FLAG">FUTURE_SIGN_PROTOCOL_FLAG</a>: u32 = 7;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG">IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG</a>: u32 = 4;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG">MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG</a>: u32 = 3;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PRESIGN_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_PRESIGN_PROTOCOL_FLAG">PRESIGN_PROTOCOL_FLAG</a>: u32 = 5;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG">RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG</a>: u32 = 2;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_PROTOCOL_FLAG">SIGN_PROTOCOL_FLAG</a>: u32 = 6;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG">SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG</a>: u32 = 8;
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: vector&lt;u8&gt; = b"First active committee must initialize.";
 </code></pre>
 
 
@@ -4291,7 +4291,7 @@ The newly created session has its sequence number set to <code>next_session_sequ
 Finally, the last session to complete in current epoch is updated, if needed.
 
 
-<pre><code><b>fun</b> charge_and_create_current_epoch_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, pricing_value: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">dwallet_pricing::DWalletPricingValue</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_charge_and_create_current_epoch_dwallet_event">charge_and_create_current_epoch_dwallet_event</a>&lt;E: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, pricing_value: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">dwallet_pricing::DWalletPricingValue</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
 </code></pre>
 
 
@@ -4359,7 +4359,7 @@ both of which are related to a particular <code>dwallet_network_encryption_key_i
 No funds are charged, since there is no user to charge.
 
 
-<pre><code><b>fun</b> create_system_dwallet_eventE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_create_system_dwallet_event">create_system_dwallet_event</a>&lt;E: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, event_data: E, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletEvent">dwallet_2pc_mpc_coordinator_inner::DWalletEvent</a>&lt;E&gt;
 </code></pre>
 
 
@@ -4930,7 +4930,7 @@ Increments <code>number_of_completed_user_initiated_sessions</code>.
 Notice: never called for a system session.
 
 
-<pre><code><b>fun</b> remove_user_initiated_session_and_chargeE(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, session_sequence_number: u64): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_user_initiated_session_and_charge">remove_user_initiated_session_and_charge</a>&lt;E: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, session_sequence_number: u64): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;
 </code></pre>
 
 
