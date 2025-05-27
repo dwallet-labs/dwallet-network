@@ -59,14 +59,14 @@ impl Debug for ConsensusTransactionKey {
                 write!(
                     f,
                     "DWalletCheckpointSignature({:?}, {:?})",
-                    name.concise(),
+                    name.to_string(),
                     seq
                 )
             }
             Self::CapabilityNotification(name, generation) => write!(
                 f,
                 "CapabilityNotification({:?}, {:?})",
-                name.concise(),
+                name.to_string(),
                 generation
             ),
             Self::DWalletMPCMessage(message) => {
@@ -83,7 +83,7 @@ impl Debug for ConsensusTransactionKey {
                 write!(
                     f,
                     "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
-                    authority.concise(),
+                    authority.to_string(),
                     report,
                 )
             }
@@ -91,7 +91,7 @@ impl Debug for ConsensusTransactionKey {
                 write!(
                     f,
                     "DWalletMPCThresholdNotReached({:?}, {:?})",
-                    authority.concise(),
+                    authority.to_string(),
                     report,
                 )
             }
@@ -99,7 +99,7 @@ impl Debug for ConsensusTransactionKey {
                 write!(
                     f,
                     "SystemCheckpointSignature({:?}, {:?})",
-                    name.concise(),
+                    name.to_string(),
                     seq
                 )
             }
@@ -156,7 +156,7 @@ impl AuthorityCapabilitiesV1 {
 impl Debug for AuthorityCapabilitiesV1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AuthorityCapabilities")
-            .field("authority", &self.authority.concise())
+            .field("authority", &self.authority.to_string())
             .field("generation", &self.generation)
             .field(
                 "supported_protocol_versions",

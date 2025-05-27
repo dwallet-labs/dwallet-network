@@ -238,9 +238,7 @@ impl SystemInnerTrait for SystemInnerV1 {
                     (
                         // AuthorityName is derived from the protocol public key;
                         // therefore, it is safe to unwrap.
-                        (&AuthorityPublicKey::from_bytes(v.protocol_pubkey.clone().bytes.as_ref())
-                            .unwrap())
-                            .into(),
+                        AuthorityName::new(v.validator_id.into_bytes()),
                         1,
                     ),
                 )
