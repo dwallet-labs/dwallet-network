@@ -119,7 +119,7 @@ Represents the current committee in the system.
 
 ## Struct `CommitteeQuorumVerifiedEvent`
 
-Event emitted after verifing quorum of signature.
+Event emitted after verifying quorum of signature.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_CommitteeQuorumVerifiedEvent">CommitteeQuorumVerifiedEvent</a> <b>has</b> <b>copy</b>, drop

@@ -172,7 +172,7 @@ pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
@@ -214,7 +214,11 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+            kind: ConsensusTransactionKind::DWalletMPCOutput(
+                authority,
+                Box::new(session_info),
+                output,
+            ),
         }
     }
 
@@ -302,8 +306,8 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
-                    authority: message.authority.clone(),
-                    session_id: message.session_id.clone(),
+                    authority: message.authority,
+                    session_id: message.session_id,
                     round_number: message.round_number,
                 })
             }

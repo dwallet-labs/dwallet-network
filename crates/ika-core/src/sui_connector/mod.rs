@@ -37,7 +37,7 @@ pub mod sui_executor;
 pub mod sui_syncer;
 
 pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
-pub const DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME: &IdentStr =
+pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
     ident_str!("dwallet_2pc_mpc_coordinator_inner");
 
 pub struct SuiNotifier {
@@ -172,7 +172,7 @@ impl SuiConnectorService {
     ) -> HashMap<Identifier, Option<EventID>> {
         let sui_connector_modules = vec![
             TEST_MODULE_NAME.to_owned(),
-            DWALLET_2PC_MPC_SECP256K1_INNER_MODULE_NAME.to_owned(),
+            DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
         ];
         if let Some(cursor) = sui_ika_system_module_last_processed_event_id_override {
             info!(
@@ -258,9 +258,8 @@ pub(crate) async fn build_sui_transaction<C: SuiClientInner>(
         &IntentMessage::new(Intent::sui_transaction(), &tx_data),
         sui_key,
     );
-    let transaction = Transaction::from_data(tx_data, vec![signature]);
 
-    transaction
+    Transaction::from_data(tx_data, vec![signature])
 }
 
 pub async fn pick_highest_balance_coin(

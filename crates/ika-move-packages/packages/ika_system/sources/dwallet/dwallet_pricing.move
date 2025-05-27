@@ -7,7 +7,7 @@
 ///   - **consensus_validation_ika**: The consensus validation IKA price.
 ///   - **computation_ika**: The computation_ika IKA price.
 ///   - **gas_fee_reimbursement_sui**: The SUI reimbursement.
-/// 
+///
 /// The main struct, `DWalletPricing`, now holds one `PricingPerOperation` per operation.
 /// The DKG operation is split into two separate rounds:
 ///   - `dkg_first_round`
@@ -22,7 +22,7 @@ use sui::vec_map::{Self, VecMap};
 /// Holds pricing information for a dWallet.
 /// The vector is indexed by the curve and signature algorithm and protocol.
 public struct DWalletPricing has copy, drop, store {
-    /// The pricing for each curve and signature algorithm and protocol. 
+    /// The pricing for each curve and signature algorithm and protocol.
     /// The first key is the curve, the second is the signature algorithm, the third is the protocol.
     pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
 }
@@ -53,7 +53,7 @@ public struct DWalletPricingCalculationVotes has copy, drop, store {
 /// Initializes the table with the given pricing values for each operation.
 ///
 /// # Parameters
-/// 
+///
 /// - `ctx`: The transaction context.
 ///
 /// # Returns
@@ -72,9 +72,9 @@ public fun empty(): DWalletPricing {
 /// - `self`: The [`DWalletPricing`] object.
 /// - `key`: The key for the operation.
 /// - `value`: The pricing information for the operation.
-/// 
+///
 /// # Returns
-/// 
+///
 /// The [`DWalletPricing`] object.
 public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, consensus_validation_ika: u64, computation_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
     self.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, DWalletPricingValue {
@@ -105,9 +105,9 @@ fun insert_or_update_dwallet_pricing_value(self: &mut DWalletPricing, curve: u32
 ///
 /// - `self`: The [`DWalletPricing`] object.
 /// - `key`: The key for the operation.
-/// 
+///
 /// # Returns
-/// 
+///
 /// The pricing information for the operation.
 public(package) fun try_get_dwallet_pricing_value(self: &DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32): Option<DWalletPricingValue> {
     let key = DWalletPricingKey {
@@ -152,9 +152,9 @@ public(package) fun committee_members_for_pricing_calculation_votes(calculation:
     })
 }
 
-public(package) fun calculate_pricing_quorum_below(calculation: &mut DWalletPricingCalculationVotes, pricings: vector<DWalletPricing>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
+public(package) fun calculate_pricing_quorum_below(calculation: &mut DWalletPricingCalculationVotes, pricing: vector<DWalletPricing>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
     let mut values = vector[];
-    pricings.do_ref!(|pricing| {
+    pricing.do_ref!(|pricing| {
         let value = pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol);
         values.push_back(value.get_with_default(calculation.default_pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol).extract()));
     });

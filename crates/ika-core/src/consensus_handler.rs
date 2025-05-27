@@ -406,8 +406,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .tables()?
             .dwallet_mpc_messages
             .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
+            .flat_map(|(_, messages)| messages)
             .collect())
     }
 
@@ -422,8 +421,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .tables()?
             .dwallet_mpc_outputs
             .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
+            .flat_map(|(_, messages)| messages)
             .collect())
     }
 
@@ -436,8 +434,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .tables()?
             .dwallet_mpc_events
             .unbounded_iter()
-            .map(|(_, messages)| messages)
-            .flatten()
+            .flat_map(|(_, messages)| messages)
             .collect())
     }
 

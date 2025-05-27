@@ -30,12 +30,10 @@ async fn main() {
     colored::control::set_virtual_terminal(true).unwrap();
 
     let args = Args::parse();
-    let _guard = match args.command {
-        _ => telemetry_subscribers::TelemetryConfig::new()
-            .with_log_level("error")
-            .with_env()
-            .init(),
-    };
+    let _guard = telemetry_subscribers::TelemetryConfig::new()
+        .with_log_level("error")
+        .with_env()
+        .init();
     debug!("Ika CLI version: {VERSION}");
     exit_main!(args.command.execute().await);
 }

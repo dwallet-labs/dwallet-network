@@ -88,14 +88,14 @@ public struct SystemEpochInfoEvent has copy, drop {
     total_stake_rewards_distributed: u64,
 }
 
-/// Event emitted during verifing quorum checkpoint submmision signature.
+/// Event emitted during verifying quorum checkpoint submission signature.
 public struct SystemProtocolCapVerifiedEvent has copy, drop {
     epoch: u64,
     protocol_cap_id: ID,
 }
 
 /// Event containing system-level checkpoint information, emitted during
-/// the system checkpoint submmision message.
+/// the system checkpoint submission message.
 public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
@@ -211,7 +211,7 @@ public(package) fun initialize(
     dwallet_2pc_mpc_coordinator.share_dwallet_coordinator();
 }
 
-/// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
+/// Can be called by anyone who wishes to become a validator candidate and starts accusing delegated
 /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they
 /// can call `request_add_validator` to officially become an active validator at the next epoch.
 /// Aborts if the caller is already a pending or active validator, or a validator candidate.
@@ -511,12 +511,12 @@ public(package) fun advance_epoch(
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let dwallet_computatio_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
+    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
 
-    let total_computation_fees = dwallet_computatio_and_consensus_validation_rewards.value();
+    let total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
 
     let mut total_reward = sui::balance::zero<IKA>();
-    total_reward.join(dwallet_computatio_and_consensus_validation_rewards);
+    total_reward.join(dwallet_computation_and_consensus_validation_rewards);
     total_reward.join(stake_subsidy);
     total_reward.join(self.remaining_rewards.withdraw_all());
 

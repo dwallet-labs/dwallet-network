@@ -16,7 +16,7 @@ public struct ProtocolTreasury has store {
     /// The rate at which the amount per distribution is calculated based on
     /// period nad total supply. Expressed in basis points.
     stake_subsidy_rate: u16,
-    /// The amount of stake subsidy to be distrabtured per distribution.
+    /// The amount of stake subsidy to be destructured per distribution.
     /// This amount changes based on `stake_subsidy_rate`.
     stake_subsidy_amount_per_distribution: u64,
     /// Number of distributions to occur before the amount per distribution will be recalculated.
@@ -90,7 +90,7 @@ fun calculate_stake_subsidy_amount_per_distribution(
     stake_subsidy_amount_per_distribution as u64
 }
 
-// TODO: enable voting to chagnes rate
+// TODO: enable voting to changes rate
 public(package) fun set_stake_subsidy_rate(self: &mut ProtocolTreasury, stake_subsidy_rate: u16) {
     // When stake subsidy rate decreases
     if (self.stake_subsidy_rate > stake_subsidy_rate) {
