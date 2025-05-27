@@ -8,9 +8,10 @@ use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
+use fastcrypto::traits::ToFromBytes;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, StakeUnit};
-use ika_types::crypto::AuthorityName;
+use ika_types::crypto::{AuthorityName, AuthorityPublicKey};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
@@ -180,14 +181,9 @@ where
                         .into_bytes()
                         .try_into()
                         .unwrap(),
-                    validator
-                        .validator_info
-                        .name
-                        .clone()
-                        .into_bytes()
-                        .try_into()
-                        .unwrap()
-                        .clone(),
+                    AuthorityPublicKey::from_bytes(
+                        &validator.validator_info.name.clone().into_bytes(),
+                    ),
                 )
             })
             .collect();
