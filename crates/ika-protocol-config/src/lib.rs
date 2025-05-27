@@ -109,7 +109,7 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
-    /// === Used at Sui consensus for current ProtocolConfig version (MAX 72) ===
+    // === Used at Sui consensus for current ProtocolConfig version (MAX 84) ===
 
     // Probe rounds received by peers from every authority.
     #[serde(skip_serializing_if = "is_false")]
@@ -210,8 +210,7 @@ pub struct ProtocolConfig {
 
     feature_flags: FeatureFlags,
 
-    /// === Core Protocol ===
-
+    // === Core Protocol ===
     /// Max number of transactions per dwallet checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
@@ -244,15 +243,13 @@ pub struct ProtocolConfig {
     /// Minimum interval of commit timestamps between consecutive ika system checkpoints.
     min_system_checkpoint_interval_ms: Option<u64>,
 
-    /// === Consensus ===
-
+    // === Consensus ===
     /// Dictates the threshold (percentage of stake) that is used to calculate the "bad" nodes to be
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
 
-    /// === Used at Sui consensus for current PRotocolConfig version (MAX 72) ===
-
+    // === Used at Sui consensus for current ProtocolConfig version (MAX 84) ===
     /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
     /// `max_tx_size_bytes` with some additional headroom.
     consensus_max_transaction_size_bytes: Option<u64>,

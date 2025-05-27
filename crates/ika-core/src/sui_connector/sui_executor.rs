@@ -152,7 +152,7 @@ where
             match Self::calculate_protocols_pricing(
                 &self.sui_client,
                 self.ika_system_package_id,
-                &sui_notifier,
+                sui_notifier,
                 dwallet_2pc_mpc_coordinator_id,
             )
             .await
@@ -255,7 +255,7 @@ where
         // check if we want to run this epoch based on RunWithRange condition value
         // we want to be inclusive of the defined RunWithRangeEpoch::Epoch
         // i.e Epoch(N) means we will execute the epoch N and stop when reaching N+1.
-        if run_with_range.map_or(false, |rwr| rwr.is_epoch_gt(epoch)) {
+        if run_with_range.is_some_and(|rwr| rwr.is_epoch_gt(epoch)) {
             info!(
                 "RunWithRange condition satisfied at {:?}, run_epoch={:?}",
                 run_with_range, epoch

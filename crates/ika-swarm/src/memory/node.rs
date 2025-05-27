@@ -78,7 +78,7 @@ impl Node {
             .lock()
             .unwrap()
             .as_ref()
-            .map_or(false, |c| c.is_alive())
+            .is_some_and(|c| c.is_alive())
     }
 
     pub fn get_node_handle(&self) -> Option<IkaNodeHandle> {

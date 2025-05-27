@@ -153,6 +153,7 @@ impl ConsensusManagerTrait for MysticetiManager {
         // MAKE SURE TO CHECK WE MANUALLY SET EVERY CONSENSUS CONFIG FROM OUR PROTOCOL CONFIG
         // AND THAT WE OVERRIDE THE SUI PROTOCOL CONFIG VALUES
         let mut protocol_config = sui_protocol_config::ProtocolConfig::get_for_version(
+            // Version 84 was taken from Sui, DO NOT CHANGE IT.
             sui_protocol_config::ProtocolVersion::new(84),
             sui_protocol_config::Chain::Mainnet,
         );
@@ -184,6 +185,7 @@ impl ConsensusManagerTrait for MysticetiManager {
             ika_protocol_config.consensus_linearize_subdag_v2(),
         );
 
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
         // protocol_config.set_consensus_zstd_compression_for_testing(
         //     ika_protocol_config.consensus_zstd_compression(),
         // );
@@ -196,6 +198,7 @@ impl ConsensusManagerTrait for MysticetiManager {
             ika_protocol_config.consensus_batched_block_sync(),
         );
 
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
         // protocol_config.set_enforce_checkpoint_timestamp_monotonicity_for_testing(
         //     ika_protocol_config.enforce_checkpoint_timestamp_monotonicity(),
         // );

@@ -68,7 +68,7 @@ pub(crate) fn authority_name_to_party_id_from_committee(
         // Need to add 1 because the authority index is 0-based,
         // and the twopc_mpc library uses 1-based party IDs.
         .map(|index| (index + 1) as PartyID)
-        .ok_or_else(|| DwalletMPCError::AuthorityNameNotFound(*authority_name))
+        .ok_or(DwalletMPCError::AuthorityNameNotFound(*authority_name))
 }
 
 pub(crate) fn generate_access_structure_from_committee(

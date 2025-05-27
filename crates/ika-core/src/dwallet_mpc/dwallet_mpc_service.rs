@@ -234,9 +234,12 @@ impl DWalletMPCService {
                 .dwallet_mpc_messages
                 .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
                 .collect::<Result<Vec<_>, _>>();
-            let Ok(mpc_msgs_iter) = mpc_msgs_iter else {
-                error!("failed to load DWallet MPC messages from the local DB");
-                continue;
+            let mpc_msgs_iter = match mpc_msgs_iter {
+                Ok(iter) => iter,
+                Err(e) => {
+                    error!(err=?e, "failed to load DWallet MPC messages from the local DB");
+                    continue;
+                }
             };
 
             let mut new_messages = vec![];
