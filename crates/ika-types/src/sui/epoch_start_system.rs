@@ -20,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::multiaddr::Multiaddr;
 use tracing::{error, warn};
-use crate::authority_name::AuthorityName;
 
 #[enum_dispatch]
 pub trait EpochStartSystemTrait {

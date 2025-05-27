@@ -46,6 +46,7 @@ pub struct Committee {
 }
 
 impl Committee {
+    // itay authority name - a bit complicated, will do later.
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
