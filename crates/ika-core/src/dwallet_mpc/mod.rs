@@ -891,7 +891,7 @@ fn write_mpc_session_logs_to_disk(
         Ok(f) => f,
         Err(e) => {
             warn!("Failed to create log file {}: {}", path.display(), e);
-            return ();
+            return;
         }
     };
     if let Err(e) = file.write_all(log.to_string().as_bytes()) {

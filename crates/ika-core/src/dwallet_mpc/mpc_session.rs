@@ -390,6 +390,11 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     public_input,
                     (),
+                    None,
+                    encoded_public_input,
+                    mpc_protocol_name,
+                    party_to_authority_map,
+                    None,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -647,16 +652,8 @@ impl DWalletMPCSession {
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
                     public_input,
-                    (
-                        bcs::from_bytes(
-                            &mpc_event_data
-                                .private_input
-                                .clone()
-                                .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
-                        )?,
-                        decryption_key_shares.clone(),
-                    ),
-                    mpc_event_data.private_input.clone(),
+                    decryption_key_shares.clone(),
+                    None,
                     encoded_public_input,
                     mpc_protocol_name,
                     party_to_authority_map,

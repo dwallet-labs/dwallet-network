@@ -590,7 +590,7 @@ where
 
     pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
         loop {
-            let system_inner = self.must_get_system_inner_object().await;
+            let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
             let Some(dwallet_2pc_mpc_coordinator_id) =
                 system_inner.dwallet_2pc_mpc_coordinator_id()
             else {
@@ -608,7 +608,7 @@ where
     pub async fn get_dwallet_mpc_network_keys(
         &self,
     ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
-        let system_inner = self.must_get_system_inner_object().await;
+        let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
         self.inner
             .get_network_encryption_keys(
                 system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys(),
@@ -654,7 +654,7 @@ where
         }
     }
 
-    pub async fn get_epoch_start_system_until_success(
+    pub async fn must_get_epoch_start_system(
         &self,
         system_inner: &SystemInner,
     ) -> EpochStartSystem {
@@ -667,20 +667,19 @@ where
                 Ok(Err(err)) => {
                     self.sui_client_metrics
                         .sui_rpc_errors
-                        // todo(zeev): rename this
-                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .with_label_values(&["must_get_epoch_start_system"])
                         .inc();
-                    error!(
+                    warn!(
                         ?err,
-                        "Received error from `get_epoch_start_system`. Retrying...",
+                        "Received error from `get_epoch_start_system()`. Retrying...",
                     );
                 }
                 Err(err) => {
                     self.sui_client_metrics
                         .sui_rpc_errors
-                        .with_label_values(&["get_epoch_start_system_until_success"])
+                        .with_label_values(&["must_get_epoch_start_system"])
                         .inc();
-                    error!(
+                    warn!(
                         ?err,
                         "Received error from `get_epoch_start_system` retry wrapper. Retrying...",
                     );

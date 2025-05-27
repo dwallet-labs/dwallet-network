@@ -192,6 +192,8 @@ where
         'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let SystemInner::V1(system_inner) = system_inner;
             let network_encryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
@@ -199,23 +201,20 @@ where
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
-            let system_inner = sui_client.must_get_system_inner_object().await;
-            let SystemInner::V1(system_inner) = system_inner;
             if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
-                // todo(zeev): this was a bugfix
                 // Gather all the (ObjectID, current epoch) pairs that are out of date.
                 let mismatches: Vec<(ObjectID, u64)> = network_encryption_keys
                     .iter()
                     .filter(|(_, key)| key.current_epoch != system_inner.epoch())
-                    .map(|(id, key)| (id.clone(), key.current_epoch))
+                    .map(|(id, key)| (*id, key.current_epoch))
                     .collect();
                 warn!(
                     keys_current_epoch=?mismatches,
                     system_inner_epoch=?system_inner.epoch(),
-                    "Network decryption key is out-of-date for this authority"
+                    "Network encryption keys are out-of-date for this authority"
                 );
                 continue;
             }

@@ -27,7 +27,7 @@ use ika_types::sui::SystemInner;
 use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, watch, Mutex, MutexGuard};
+use tokio::sync::{broadcast, watch, Mutex};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
@@ -279,7 +279,7 @@ impl IkaNode {
         let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
-            .get_epoch_start_system_until_success(&latest_system_state)
+            .must_get_epoch_start_system(&latest_system_state)
             .await;
         let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
         let previous_epoch_last_checkpoint_sequence_number =
