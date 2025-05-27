@@ -73,4 +73,100 @@ impl DWalletMPCMetrics {
     }
 }
 
-impl DWalletMPCMetrics {}
+impl DWalletMPCMetrics {
+    pub fn add_completion(
+        &self,
+        protocol_name: &str,
+        curve: &str,
+        mpc_round: &str,
+        hash_scheme: &str,
+        signature_algorithm: &str,
+    ) {
+        self.completions_count
+            .with_label_values(&[
+                protocol_name,
+                curve,
+                mpc_round,
+                hash_scheme,
+                signature_algorithm,
+            ])
+            .inc();
+    }
+    
+    pub fn add_received_event_start(
+        &self,
+        protocol_name: &str,
+        curve: &str,
+        mpc_round: &str,
+        hash_scheme: &str,
+        signature_algorithm: &str,
+    ) {
+        self.received_events_start_count
+            .with_label_values(&[
+                protocol_name,
+                curve,
+                mpc_round,
+                hash_scheme,
+                signature_algorithm,
+            ])
+            .inc();
+    }
+    
+    pub fn add_advance_call(
+        &self,
+        protocol_name: &str,
+        curve: &str,
+        mpc_round: &str,
+        hash_scheme: &str,
+        signature_algorithm: &str,
+    ) {
+        self.advance_calls
+            .with_label_values(&[
+                protocol_name,
+                curve,
+                mpc_round,
+                hash_scheme,
+                signature_algorithm,
+            ])
+            .inc();
+    }
+    
+    pub fn add_advance_completion(
+        &self,
+        protocol_name: &str,
+        curve: &str,
+        mpc_round: &str,
+        hash_scheme: &str,
+        signature_algorithm: &str,
+    ) {
+        self.advance_completions
+            .with_label_values(&[
+                protocol_name,
+                curve,
+                mpc_round,
+                hash_scheme,
+                signature_algorithm,
+            ])
+            .inc();
+    }
+    
+    pub fn set_last_completion_duration(
+        &self,
+        protocol_name: &str,
+        curve: &str,
+        mpc_round: &str,
+        hash_scheme: &str,
+        signature_algorithm: &str,
+        duration_ms: i64,
+    ) {
+        self.last_completion_duration
+            .with_label_values(&[
+                protocol_name,
+                curve,
+                mpc_round,
+                hash_scheme,
+                signature_algorithm,
+            ])
+            .set(duration_ms);
+    }
+}
