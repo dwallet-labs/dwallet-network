@@ -180,7 +180,14 @@ where
                         .into_bytes()
                         .try_into()
                         .unwrap(),
-                    validator.validator_info.protocol_pubkey.bytes.clone(),
+                    validator
+                        .validator_info
+                        .name
+                        .clone()
+                        .into_bytes()
+                        .try_into()
+                        .unwrap()
+                        .clone(),
                 )
             })
             .collect();
