@@ -10,7 +10,10 @@ use dwallet_mpc_types::dwallet_mpc::{
     VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME,
 };
 use im::HashMap;
-use prometheus::{register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec, Registry};
+use prometheus::{
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
+    Registry,
+};
 use std::sync::Arc;
 
 pub struct DWalletMPCMetrics {
@@ -23,42 +26,51 @@ pub struct DWalletMPCMetrics {
 
 impl DWalletMPCMetrics {
     pub fn new(registry: &Registry) -> Arc<Self> {
+        let metric_labels = [
+            "protocol_name",
+            "curve",
+            "mpc_round",
+            "hash_scheme",
+            "signature_algorithm",
+        ];
         Arc::new(Self {
             received_events_start_count: register_int_gauge_vec_with_registry!(,
                 "dwallet_mpc_received_events_start_count",
                 "Number of received events start",
-                &["event_name"],
+                &metric_labels,
                 registry
             )
             .unwrap(),
             advance_calls: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_calls",
                 "Number of advance calls",
-                &["event_name"],
+                &metric_labels,
                 registry
             )
             .unwrap(),
             advance_completions: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_advance_completions",
                 "Number of advance completions",
-                &["event_name"],
+                &metric_labels,
                 registry
             )
             .unwrap(),
             completions_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_completions_count",
                 "Number of completions",
-                &["event_name"],
+                &metric_labels,
                 registry
             )
             .unwrap(),
             last_completion_duration: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_last_completion_duration",
                 "Duration of the last completion in milliseconds",
-                &["event_name"],
+                &metric_labels,
                 registry
             )
             .unwrap(),
         })
     }
 }
+
+impl DWalletMPCMetrics {}
