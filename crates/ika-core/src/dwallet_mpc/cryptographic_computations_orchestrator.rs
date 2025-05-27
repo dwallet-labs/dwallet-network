@@ -24,7 +24,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{error, info};
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
@@ -59,8 +59,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
-    computation_channel_sender: UnboundedSender<ComputationUpdate>,
-    computation_channel_receiver: UnboundedReceiver<ComputationUpdate>,
+    computation_channel_sender: Sender<ComputationUpdate>,
+    computation_channel_receiver: Receiver<ComputationUpdate>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -72,7 +72,7 @@ impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
         let (completed_computation_channel_sender, completed_computation_channel_receiver) =
-            tokio::sync::mpsc::unbounded_channel();
+            tokio::sync::mpsc::channel(10_000);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
