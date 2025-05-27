@@ -377,91 +377,13 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn increment_metrics_for_event(&self, event: &DBSuiEvent) -> DwalletMPCResult<()> {
-        let packages_config = &self.epoch_store()?.packages_config;
-
-        match &event.type_ {
-            t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_network_dkg_count
-                    .inc();
-            }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_decryption_key_reshare_count
-                        .inc();
-                }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_dwallet_dkg_first_round_count
-                        .inc();
-                }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_dwallet_dkg_second_round_count
-                        .inc();
-                }
-            t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_presign_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_sign_count
-                    .inc();
-            }
-            t if t
-                == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_encrypted_share_verification_count
-                        .inc();
-                }
-            t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_partial_signature_verification_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_make_dwallet_user_secret_key_shares_public_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_import_dwallet_verification_count
-                    .inc();
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        if let Err(err) = self.increment_metrics_for_event(&event) {
-            warn!(?err, "Failed to increment metrics for event...");
-        }
         let (public_input, private_input) = session_input_from_event(event, self).await?;
-        let inner_mpc_event_data = MPCEventData {
+        let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
@@ -477,13 +399,13 @@ impl DWalletMPCManager {
                 _ => HashMap::new(),
             },
         };
-        let mpc_event_data = Some(inner_mpc_event_data.clone());
-        self.dwallet_mpc_metrics.add_advance_completion(
-            &inner_mpc_event_data.init_protocol_data.get_event_name(),
-            &inner_mpc_event_data.init_protocol_data.get_curve(),
+        let wrapped_mpc_event_data = Some(mpc_event_data.clone());
+        self.dwallet_mpc_metrics.add_received_event_start(
+            &mpc_event_data.init_protocol_data.get_event_name(),
+            &mpc_event_data.init_protocol_data.get_curve(),
             &"",
-            &inner_mpc_event_data.init_protocol_data.get_hash_scheme(),
-            &inner_mpc_event_data.init_protocol_data.get_signature_algorithm(),
+            &mpc_event_data.init_protocol_data.get_hash_scheme(),
+            &mpc_event_data.init_protocol_data.get_signature_algorithm(),
         );
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
@@ -491,10 +413,10 @@ impl DWalletMPCManager {
                 session_info.session_id
             );
             if session.mpc_event_data.is_none() {
-                session.mpc_event_data = mpc_event_data;
+                session.mpc_event_data = wrapped_mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
+            self.push_new_mpc_session(&session_info.session_id, wrapped_mpc_event_data);
         }
         Ok(())
     }
