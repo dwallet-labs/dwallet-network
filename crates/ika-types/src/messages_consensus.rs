@@ -31,8 +31,8 @@ pub type Round = u64;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusTransaction {
-    /// Encodes an u64 unique tracking id to allow us trace a message between Ika and consensus.
-    /// Use an byte array instead of u64 to ensure stable serialization.
+    /// Encodes an u64 unique tracking ID to allow us to trace a message between Ika and consensus.
+    /// Use a byte array instead of u64 to ensure stable serialization.
     pub tracking_id: [u8; 8],
     pub kind: ConsensusTransactionKind,
 }
@@ -109,14 +109,15 @@ impl Debug for ConsensusTransactionKey {
 
 pub type MovePackageDigest = [u8; 32];
 
-/// Used to advertise capabilities of each authority via consensus. This allows validators to
-/// negotiate the creation of the AdvanceEpoch transaction.
+/// Used to advertise the capabilities of each authority via consensus.
+/// This allows validators to negotiate the creation of the AdvanceEpoch transaction.
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct AuthorityCapabilitiesV1 {
-    /// Originating authority - must match transaction source authority from consensus.
+    /// Originating authority — must match transaction source authority from consensus.
     pub authority: AuthorityName,
-    /// Generation number set by sending authority. Used to determine which of multiple
-    /// AuthorityCapabilities messages from the same authority is the most recent.
+    /// Generation number set by sending authority.
+    /// Used to determine which of multiple
+    /// `AuthorityCapabilities` messages from the same authority is the most recent.
     pub generation: u64,
 
     /// ProtocolVersions that the authority supports.
@@ -170,13 +171,13 @@ impl Debug for AuthorityCapabilitiesV1 {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
+    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -186,7 +187,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
-        mpc_protocol: Option<String>,
+        mpc_protocol: String,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);

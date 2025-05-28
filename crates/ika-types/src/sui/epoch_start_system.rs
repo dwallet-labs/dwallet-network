@@ -6,7 +6,6 @@ use std::collections::HashMap;
 
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
-use crate::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};

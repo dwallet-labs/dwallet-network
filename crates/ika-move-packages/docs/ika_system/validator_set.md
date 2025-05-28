@@ -350,48 +350,11 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch"></a>
+<a name="(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EDuplicateValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
 </code></pre>
 
 
@@ -405,6 +368,15 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
+<a name="(ika_system=0x0)_validator_set_EDuplicateValidator"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_set_ENotAValidator"></a>
 
 
@@ -414,21 +386,11 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
+<a name="(ika_system=0x0)_validator_set_EValidatorNotCandidate"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EReportRecordNotFound"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
 </code></pre>
 
 
@@ -451,20 +413,58 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EValidatorNotCandidate"></a>
+<a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD"></a>
+<a name="(ika_system=0x0)_validator_set_EReportRecordNotFound"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
 </code></pre>
 
 
@@ -475,7 +475,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">new</a>(min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">new</a>(min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
 </code></pre>
 
 
@@ -488,6 +488,7 @@ The epoch value corresponds to the first epoch this change takes place.
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
+    max_validator_change_count: u64,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a> {
     <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a> {
@@ -496,7 +497,7 @@ The epoch value corresponds to the first epoch this change takes place.
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: option::none(),
         previous_committee: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
-        <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>: <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_new">extended_field::new</a>(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">pending_active_set::new</a>(min_validator_count, max_validator_count, min_validator_joining_stake), ctx),
+        <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>: <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_new">extended_field::new</a>(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">pending_active_set::new</a>(min_validator_count, max_validator_count, min_validator_joining_stake, max_validator_change_count), ctx),
         validator_report_records: vec_map::empty(),
         extra_fields: bag::new(ctx),
     }
@@ -1410,6 +1411,7 @@ It does the following things:
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.extract();
     // Activate validators that were added during `<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>`
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_activate_added_validators">activate_added_validators</a>(new_epoch);
+    self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().reset_validator_changes();
     // Emit events after we have processed all the rewards distribution and pending stakes.
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(
         new_epoch,

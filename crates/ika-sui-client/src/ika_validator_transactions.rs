@@ -337,6 +337,11 @@ pub async fn request_add_validator_candidate(
         .clone()
         .ok_or(anyhow::Error::msg("failed to get object changes"))?;
 
+    if !response.errors.is_empty() {
+        println!("{:?}", response.errors);
+        panic!("Become-candidate failed")
+    }
+
     let validator_cap_type = StructTag {
         address: ika_system_package_id.into(),
         module: VALIDATOR_CAP_MODULE_NAME.into(),

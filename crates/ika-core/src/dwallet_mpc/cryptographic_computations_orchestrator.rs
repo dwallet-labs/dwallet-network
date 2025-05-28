@@ -19,13 +19,18 @@
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{error, info};
+
+/// Channel size for cryptographic computations state updates.
+/// This channel should not reach a size even close to this.
+/// But since this is critical to keep the computations running,
+/// we are using a big buffer (this size of the data is small).
+const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
 ///
@@ -59,8 +64,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
-    computation_channel_sender: Sender<ComputationUpdate>,
-    computation_channel_receiver: Receiver<ComputationUpdate>,
+    computation_update_channel_sender: Sender<ComputationUpdate>,
+    computation_update_channel_receiver: Receiver<ComputationUpdate>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -71,8 +76,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
-        let (completed_computation_channel_sender, completed_computation_channel_receiver) =
-            tokio::sync::mpsc::channel(10_000);
+        let (computation_update_channel_sender, computation_update_channel_receiver) =
+            tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
@@ -84,20 +89,20 @@ impl CryptographicComputationsOrchestrator {
         }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
-            "available CPU cores for Rayon cryptographic computations"
+            "Available CPU cores for Rayon cryptographic computations"
         );
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
-            computation_channel_sender: completed_computation_channel_sender,
-            computation_channel_receiver: completed_computation_channel_receiver,
+            computation_update_channel_sender,
+            computation_update_channel_receiver,
             currently_running_sessions_count: 0,
         })
     }
 
     pub(crate) fn check_for_completed_computations(&mut self) {
         loop {
-            match self.computation_channel_receiver.try_recv() {
+            match self.computation_update_channel_receiver.try_recv() {
                 Ok(computation_update) => match computation_update {
                     ComputationUpdate::Started => {
                         info!(
@@ -107,6 +112,7 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
+                        // todo(#1081): metadata.
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
@@ -140,49 +146,56 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let session = session.clone();
+        // Safe to unwrap here (event must exist before this).
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
 
-        dwallet_mpc_metrics.add_advance_call(
-            &mpc_event_data.to_string(),
-            &mpc_event_data.get_curve(),
-            &session.current_round.to_string(),
-            &mpc_event_data.get_hash_scheme(),
-            &mpc_event_data.get_signature_algorithm(),
-        );
+        dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
+        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
         if let Err(err) = self
-            .computation_channel_sender
+            .computation_update_channel_sender
             .send(ComputationUpdate::Started)
             .await
         {
+            // This should not happen, but error just in case.
             error!(
-                "failed to send a started computation message with error: {:?}",
-                err
+                session_id=?session.session_id,
+                mpc_protocol=?mpc_protocol,
+                error=?err,
+                "failed to send a `started` computation message",
             );
         }
-        let computation_channel_sender = self.computation_channel_sender.clone();
+        let computation_channel_sender = self.computation_update_channel_sender.clone();
         rayon::spawn_fifo(move || {
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
-                error!("failed to advance session with error: {:?}", err);
-            };
+                error!(
+                    error=?err,
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    "failed to advance an MPC session"
+                );
+            } else {
+                let elapsed_ms = start_advance.elapsed().as_millis();
+                info!(
+                    mpc_protocol=%mpc_protocol,
+                    session_id=?session.session_id,
+                    duration_ms = elapsed_ms,
+                    duration_seconds = elapsed_ms / 1000,
+                    current_round = session.current_round,
+                    "MPC session advanced successfully"
+                );
+            }
             let elapsed = start_advance.elapsed();
-            dwallet_mpc_metrics.add_advance_completion(
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
-                &session.current_round.to_string(),
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
-            );
+            dwallet_mpc_metrics
+                .add_advance_completion(&mpc_event_data, &session.current_round.to_string());
             dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
+                &mpc_event_data,
                 &session.current_round.to_string(),
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
                 elapsed.as_millis() as i64,
             );
 
             handle.spawn(async move {
+                let start_send = Instant::now();
                 if let Err(err) = computation_channel_sender
                     .send(ComputationUpdate::Completed)
                     .await
@@ -190,6 +203,14 @@ impl CryptographicComputationsOrchestrator {
                     error!(
                         ?err,
                         "failed to send a finished computation message with error"
+                    );
+                } else {
+                    let elapsed_ms = start_send.elapsed().as_millis();
+                    info!(
+                        duration_ms = elapsed_ms,
+                        mpc_protocol=?mpc_protocol,
+                        duration_seconds = elapsed_ms / 1000,
+                        "Computation update message sent"
                     );
                 }
             });
