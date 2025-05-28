@@ -340,15 +340,7 @@ impl Swarm {
     pub fn all_nodes(&self) -> impl Iterator<Item = &Node> {
         self.nodes.values()
     }
-
-    pub fn node(&self, name: &AuthorityName) -> Option<&Node> {
-        self.nodes.get(name)
-    }
-
-    pub fn node_mut(&mut self, name: &AuthorityName) -> Option<&mut Node> {
-        self.nodes.get_mut(name)
-    }
-
+    
     /// Return an iterator over shared references of all nodes that are set up as validators.
     /// This means that they have a consensus config. This however doesn't mean this validator is
     /// currently active (i.e. it's not necessarily in the validator set at the moment).
