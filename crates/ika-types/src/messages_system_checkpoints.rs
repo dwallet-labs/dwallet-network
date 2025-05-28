@@ -29,6 +29,15 @@ pub type SystemCheckpointTimestamp = u64;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SystemCheckpointKind {
     NextConfigVersion(ProtocolVersion),
+    EpochDurationMs,
+    StakeSubsidyStartEpoch,
+    StakeSubsidyRate,
+    StakeSubsidyPeriodLength,
+    MinValidatorCount,
+    MaxValidatorCount,
+    MinValidatorJoiningStake,
+    MaxValidatorChangeCount,
+    RewardSlashingRate,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

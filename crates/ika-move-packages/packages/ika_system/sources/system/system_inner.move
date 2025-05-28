@@ -30,6 +30,20 @@ use sui::vec_map::VecMap;
 
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 
+// System checkpoint message data type constants corresponding to system parameters
+// Note: the order of these fields, and the number must correspond to the Rust code in
+// `crates/ika-types/src/messages_system_checkpoints.rs`.
+const NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u64 = 0;
+const EPOCH_DURATION_MS_MESSAGE_TYPE: u64 = 1;
+const STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u64 = 2;
+const STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u64 = 3;
+const STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u64 = 4;
+const MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 5;
+const MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 6;
+const MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
+const MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
+const REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
+
 /// Uses SystemParametersV1 as the parameters.
 public struct SystemInnerV1 has store {
     /// The current epoch ID, starting from 0.
@@ -731,34 +745,34 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        if (message_data_type == 0) {
+        if (message_data_type == NEXT_PROTOCOL_VERSION_MESSAGE_TYPE) {
             let next_protocol_version = bcs_body.peel_u64();
             self.next_protocol_version.fill(next_protocol_version);
-        } else if (message_data_type == 1) {
+        } else if (message_data_type == EPOCH_DURATION_MS_MESSAGE_TYPE) {
             let epoch_duration_ms = bcs_body.peel_u64();
             self.epoch_duration_ms = epoch_duration_ms;
-        } else if (message_data_type == 2) {
+        } else if (message_data_type == STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE) {
             let stake_subsidy_start_epoch = bcs_body.peel_u64();
             self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } else if (message_data_type == 3) {
+        } else if (message_data_type == STAKE_SUBSIDY_RATE_MESSAGE_TYPE) {
             let stake_subsidy_rate = bcs_body.peel_u16();
             self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
-        } else if (message_data_type == 4) {
+        } else if (message_data_type == STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE) {
             let stake_subsidy_period_length = bcs_body.peel_u64();
             self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } else if (message_data_type == 5) {
+        } else if (message_data_type == MIN_VALIDATOR_COUNT_MESSAGE_TYPE) {
             let min_validator_count = bcs_body.peel_u64();
             self.validator_set.set_min_validator_count(min_validator_count);
-        } else if (message_data_type == 6) {
+        } else if (message_data_type == MAX_VALIDATOR_COUNT_MESSAGE_TYPE) {
             let max_validator_count = bcs_body.peel_u64();
             self.validator_set.set_max_validator_count(max_validator_count);
-        } else if (message_data_type == 7) {
+        } else if (message_data_type == MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE) {
             let min_validator_joining_stake = bcs_body.peel_u64();
             self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
-        } else if (message_data_type == 8) {
+        } else if (message_data_type == MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE) {
             let max_validator_change_count = bcs_body.peel_u64();
             self.validator_set.set_max_validator_change_count(max_validator_change_count);
-        } else if (message_data_type == 9) {
+        } else if (message_data_type == REWARD_SLASHING_RATE_MESSAGE_TYPE) {
             let reward_slashing_rate = bcs_body.peel_u16();
             self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
         };
