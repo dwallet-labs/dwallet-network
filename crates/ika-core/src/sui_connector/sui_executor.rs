@@ -348,7 +348,6 @@ where
                                     let message = bcs::to_bytes::<DWalletCheckpointMessage>(
                                         &dwallet_checkpoint_message.into_message(),
                                     )
-                                    // todo(zeev): remove the except.
                                     .expect("Serializing checkpoint message cannot fail");
 
                                     info!(
