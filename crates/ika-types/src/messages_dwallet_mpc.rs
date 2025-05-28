@@ -1,9 +1,11 @@
 use crate::crypto::AuthorityName;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
+    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
     DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME,
+    FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
@@ -98,6 +100,129 @@ impl Display for MPCProtocolInitData {
     }
 }
 
+impl MPCProtocolInitData {
+    pub fn get_curve(&self) -> String {
+        let curve = match self {
+            MPCProtocolInitData::DKGFirst(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.curve)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
+                Some(event.event_data.curve)
+            }
+
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
+                Some(event.event_data.curve)
+            }
+        };
+        let curve_str = match &curve {
+            None => "".to_string(),
+            Some(curve) => {
+                if curve == &0 {
+                    "Secp256k1".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        };
+        curve_str
+    }
+
+    pub fn get_hash_scheme(&self) -> String {
+        let hash_scheme = match self {
+            MPCProtocolInitData::DKGFirst(_) => None,
+            MPCProtocolInitData::DKGSecond(_) => None,
+            MPCProtocolInitData::Presign(_) => None,
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.hash_scheme),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.hash_scheme)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
+        };
+        match &hash_scheme {
+            None => "".to_string(),
+            Some(hash_scheme) => {
+                if hash_scheme == &0 {
+                    "KECCAK256".to_string()
+                } else if hash_scheme == &1 {
+                    "SHA256".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
+    }
+
+    pub fn get_signature_algorithm(&self) -> String {
+        let signature_alg = match self {
+            MPCProtocolInitData::DKGFirst(event) => None,
+            MPCProtocolInitData::DKGSecond(event) => None,
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::NetworkDkg(_, event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.signature_algorithm)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => None,
+        };
+        let signature_alg = match &signature_alg {
+            None => "".to_string(),
+            Some(curve) => {
+                return if curve == &0 {
+                    "ECDSA".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        };
+        signature_alg
+    }
+
+    pub fn get_event_name(&self) -> String {
+        match self {
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DKGFirst(_) => {
+                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::Presign(_) => PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::Sign(_) => SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
+            }
+        }
+    }
+}
+
 impl Debug for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -170,7 +295,6 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number starts from 0.
     pub round_number: usize,
-    /// The MPC protocol that this message belongs to.
     pub mpc_protocol: String,
 }
 
