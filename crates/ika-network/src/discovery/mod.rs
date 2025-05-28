@@ -120,7 +120,7 @@ struct DiscoveryEventLoop {
     keypair: NetworkKeyPair,
     tasks: JoinSet<()>,
     pending_dials: HashMap<PeerId, AbortHandle>,
-    dial_seed_peers_task: Option<AbortHandle>,
+    dial_seed_or_fixed_peers_task: Option<AbortHandle>,
     shutdown_handle: oneshot::Receiver<()>,
     state: Arc<RwLock<State>>,
     trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
@@ -327,11 +327,11 @@ impl DiscoveryEventLoop {
                 .retain(|_k, v| now_unix.saturating_sub(v.timestamp_ms) < ONE_DAY_MILLISECONDS);
         }
 
-        // Clean out the pending_dials.
+        // Clean out the pending_dials that were finished.
         self.pending_dials.retain(|_k, v| !v.is_finished());
-        if let Some(abort_handle) = &self.dial_seed_peers_task {
+        if let Some(abort_handle) = &self.dial_seed_or_fixed_peers_task {
             if abort_handle.is_finished() {
-                self.dial_seed_peers_task = None;
+                self.dial_seed_or_fixed_peers_task = None;
             }
         }
 
@@ -373,7 +373,7 @@ impl DiscoveryEventLoop {
 
         // If we aren't connected to anything, and we aren't presently trying to connect to anyone,
         // we need to try the seed peers or the fixed peers again.
-        if self.dial_seed_peers_task.is_none()
+        if self.dial_seed_or_fixed_peers_task.is_none()
             && state.connected_peers.is_empty()
             && self.pending_dials.is_empty()
         {
@@ -384,7 +384,7 @@ impl DiscoveryEventLoop {
                         self.discovery_config.clone(),
                         fixed_peers.clone(),
                     ));
-                    self.dial_seed_peers_task = Some(abort_handle);
+                    self.dial_seed_or_fixed_peers_task = Some(abort_handle);
                 }
                 None => {
                     if !self.config.seed_peers.is_empty() {
@@ -394,7 +394,7 @@ impl DiscoveryEventLoop {
                             self.config.seed_peers.clone(),
                         ));
 
-                        self.dial_seed_peers_task = Some(abort_handle);
+                        self.dial_seed_or_fixed_peers_task = Some(abort_handle);
                     }
                 }
             }
