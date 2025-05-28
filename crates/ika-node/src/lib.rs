@@ -425,7 +425,12 @@ impl IkaNode {
             Self::start_state_archival(&config, &prometheus_registry, state_sync_store.clone())
                 .await?;
 
-        let authority_name = config.protocol_public_key();
+        let authority_name = AuthorityName::new(
+            config
+                .validator_id
+                .unwrap_or(ObjectID::random())
+                .into_bytes(),
+        );
 
         info!("create authority state");
         let state = AuthorityState::new(
@@ -966,7 +971,12 @@ impl IkaNode {
         let checkpoint_output = Box::new(SubmitDWalletCheckpointToConsensus {
             sender: consensus_adapter,
             signer: state.secret.clone(),
-            authority: config.protocol_public_key(),
+            authority: AuthorityName::new(
+                config
+                    .validator_id
+                    .unwrap_or(ObjectID::random())
+                    .into_bytes(),
+            ),
             metrics: checkpoint_metrics.clone(),
         });
 
@@ -1012,7 +1022,12 @@ impl IkaNode {
         let system_checkpoint_output = Box::new(SubmitSystemCheckpointToConsensus {
             sender: consensus_adapter,
             signer: state.secret.clone(),
-            authority: config.protocol_public_key(),
+            authority: AuthorityName::new(
+                config
+                    .validator_id
+                    .unwrap_or(ObjectID::random())
+                    .into_bytes(),
+            ),
             metrics: system_checkpoint_metrics.clone(),
         });
 
@@ -1431,7 +1446,12 @@ fn send_trusted_peer_change(
 ) -> Result<(), watch::error::SendError<TrustedPeerChangeEvent>> {
     sender
         .send(TrustedPeerChangeEvent {
-            new_peers: epoch_state_state.get_validator_as_p2p_peers(config.protocol_public_key()),
+            new_peers: epoch_state_state.get_validator_as_p2p_peers(AuthorityName::new(
+                config
+                    .validator_id
+                    .unwrap_or(ObjectID::random())
+                    .into_bytes(),
+            )),
         })
         .tap_err(|err| {
             warn!(
