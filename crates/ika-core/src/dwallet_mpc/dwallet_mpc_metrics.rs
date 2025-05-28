@@ -1,3 +1,4 @@
+use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use prometheus::{
     register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
     Registry,
@@ -68,84 +69,65 @@ impl DWalletMPCMetrics {
 }
 
 impl DWalletMPCMetrics {
-    pub fn add_completion(
-        &self,
-        protocol_name: &str,
-        curve: &str,
-        hash_scheme: &str,
-        signature_algorithm: &str,
-    ) {
+    pub fn add_completion(&self, mpc_event_data: &MPCProtocolInitData) {
         self.completions_count
-            .with_label_values(&[protocol_name, curve, hash_scheme, signature_algorithm])
-            .inc();
-    }
-
-    pub fn add_received_event_start(
-        &self,
-        protocol_name: &str,
-        curve: &str,
-        hash_scheme: &str,
-        signature_algorithm: &str,
-    ) {
-        self.received_events_start_count
-            .with_label_values(&[protocol_name, curve, hash_scheme, signature_algorithm])
-            .inc();
-    }
-
-    pub fn add_advance_call(
-        &self,
-        protocol_name: &str,
-        curve: &str,
-        mpc_round: &str,
-        hash_scheme: &str,
-        signature_algorithm: &str,
-    ) {
-        self.advance_calls
             .with_label_values(&[
-                protocol_name,
-                curve,
-                mpc_round,
-                hash_scheme,
-                signature_algorithm,
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
             ])
             .inc();
     }
 
-    pub fn add_advance_completion(
-        &self,
-        protocol_name: &str,
-        curve: &str,
-        mpc_round: &str,
-        hash_scheme: &str,
-        signature_algorithm: &str,
-    ) {
+    pub fn add_received_event_start(&self, mpc_event_data: &MPCProtocolInitData) {
+        self.received_events_start_count
+            .with_label_values(&[
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            ])
+            .inc();
+    }
+
+    pub fn add_advance_call(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
+        self.advance_calls
+            .with_label_values(&[
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
+                mpc_round,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
+            ])
+            .inc();
+    }
+
+    pub fn add_advance_completion(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
         self.advance_completions
             .with_label_values(&[
-                protocol_name,
-                curve,
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
                 mpc_round,
-                hash_scheme,
-                signature_algorithm,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
             ])
             .inc();
     }
 
     pub fn set_last_completion_duration(
         &self,
-        protocol_name: &str,
-        curve: &str,
+        mpc_event_data: &MPCProtocolInitData,
         mpc_round: &str,
-        hash_scheme: &str,
-        signature_algorithm: &str,
         duration_ms: i64,
     ) {
         self.last_completion_duration
             .with_label_values(&[
-                protocol_name,
-                curve,
+                &mpc_event_data.to_string(),
+                &mpc_event_data.get_curve(),
                 mpc_round,
-                hash_scheme,
-                signature_algorithm,
+                &mpc_event_data.get_hash_scheme(),
+                &mpc_event_data.get_signature_algorithm(),
             ])
             .set(duration_ms);
     }

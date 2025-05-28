@@ -400,12 +400,8 @@ impl DWalletMPCManager {
             },
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
-        self.dwallet_mpc_metrics.add_received_event_start(
-            &mpc_event_data.init_protocol_data.to_string(),
-            &mpc_event_data.init_protocol_data.get_curve(),
-            &mpc_event_data.init_protocol_data.get_hash_scheme(),
-            &mpc_event_data.init_protocol_data.get_signature_algorithm(),
-        );
+        self.dwallet_mpc_metrics
+            .add_received_event_start(&mpc_event_data.init_protocol_data);
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
                 "received an event for an existing session with `session_id`: {:?}",

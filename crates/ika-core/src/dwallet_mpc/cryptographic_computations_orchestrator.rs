@@ -19,7 +19,6 @@
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
@@ -140,15 +139,10 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let session = session.clone();
+        // Safe to unwrap here (event must exist before this).
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
 
-        dwallet_mpc_metrics.add_advance_call(
-            &mpc_event_data.to_string(),
-            &mpc_event_data.get_curve(),
-            &session.current_round.to_string(),
-            &mpc_event_data.get_hash_scheme(),
-            &mpc_event_data.get_signature_algorithm(),
-        );
+        dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
         if let Err(err) = self
             .computation_channel_sender
             .send(ComputationUpdate::Started)
@@ -165,19 +159,11 @@ impl CryptographicComputationsOrchestrator {
                 error!("failed to advance session with error: {:?}", err);
             };
             let elapsed = start_advance.elapsed();
-            dwallet_mpc_metrics.add_advance_completion(
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
-                &session.current_round.to_string(),
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
-            );
+            dwallet_mpc_metrics
+                .add_advance_completion(&mpc_event_data, &session.current_round.to_string());
             dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
+                &mpc_event_data,
                 &session.current_round.to_string(),
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
                 elapsed.as_millis() as i64,
             );
             if let Err(err) = computation_channel_sender.send(ComputationUpdate::Completed) {
