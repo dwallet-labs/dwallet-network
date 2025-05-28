@@ -8,10 +8,7 @@ use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
-use class_groups::{
-    SecretKeyShareSizedInteger,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-};
+use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
