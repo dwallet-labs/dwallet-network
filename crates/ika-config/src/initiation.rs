@@ -17,6 +17,9 @@ pub const MAX_VALIDATOR_COUNT: u64 = 115;
 /// 30 million IKA.
 pub const MIN_VALIDATOR_JOINING_STAKE_INKU: u64 = 30_000_000 * INKU_PER_IKA;
 
+/// Maximum number of validator changes allowed in an epoch (be added or removed).
+pub const MAX_VALIDATOR_CHANGE_COUNT: u64 = 10;
+
 /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
 pub const REWARD_SLASHING_RATE: u16 = 10_000;
 
@@ -65,6 +68,10 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_min_validator_joining_stake")]
     pub min_validator_joining_stake: u64,
 
+    /// Maximum number of validator changes allowed in an epoch (be added or removed).
+    #[serde(default = "InitiationParameters::default_max_validator_change_count")]
+    pub max_validator_change_count: u64,
+
     /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
     #[serde(default = "InitiationParameters::default_reward_slashing_rate")]
     pub reward_slashing_rate: u16,
@@ -86,6 +93,7 @@ impl InitiationParameters {
             min_validator_count: Self::default_min_validator_count(),
             max_validator_count: Self::default_max_validator_count(),
             min_validator_joining_stake: Self::default_min_validator_joining_stake(),
+            max_validator_change_count: Self::default_max_validator_change_count(),
             reward_slashing_rate: Self::default_reward_slashing_rate(),
             lock_active_committee: Self::default_lock_active_committee(),
         }
@@ -131,6 +139,10 @@ impl InitiationParameters {
 
     fn default_min_validator_joining_stake() -> u64 {
         MIN_VALIDATOR_JOINING_STAKE_INKU
+    }
+
+    fn default_max_validator_change_count() -> u64 {
+        MAX_VALIDATOR_CHANGE_COUNT
     }
 
     fn default_reward_slashing_rate() -> u16 {

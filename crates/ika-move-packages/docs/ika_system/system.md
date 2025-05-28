@@ -193,20 +193,20 @@ the SystemInnerVX version, or vice versa.
 ## Constants
 
 
-<a name="(ika_system=0x0)_system_EInvalidMigration"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_EInvalidMigration">EInvalidMigration</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_system_EWrongInnerVersion"></a>
 
 
 
 <pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_EWrongInnerVersion">EWrongInnerVersion</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_system_EInvalidMigration"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_EInvalidMigration">EInvalidMigration</a>: u64 = 1;
 </code></pre>
 
 

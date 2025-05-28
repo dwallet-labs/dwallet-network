@@ -212,6 +212,7 @@ impl DWalletMPCManager {
         {
             match err {
                 DwalletMPCError::WaitingForNetworkKey(key_id) => {
+                    // This is not an error, we are waiting for the network key to be updated.
                     info!(
                         ?err,
                         session_info=?event.session_info,
@@ -223,7 +224,7 @@ impl DWalletMPCManager {
                         .push((event.event, event.session_info));
                 }
                 _ => {
-                    error!(?err, "failed to handle event with error");
+                    error!(?err, "failed to handle dWallet MPC event with error");
                 }
             }
         }
@@ -368,11 +369,16 @@ impl DWalletMPCManager {
         }
         self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority)?;
-        if self
-            .malicious_handler
-            .is_malicious_actor(&self.epoch_store()?.name)
-        {
+        let epoch_store = self.epoch_store()?;
+        if self.malicious_handler.is_malicious_actor(&epoch_store.name) {
             self.recognized_self_as_malicious = true;
+            error!(
+                authority=?epoch_store.name,
+                reporting_authority=?reporting_authority,
+                malicious_actors=?report.malicious_actors,
+                session_id=?report.session_id,
+                "node recognized itself as malicious"
+            );
         }
         Ok(())
     }
@@ -388,7 +394,7 @@ impl DWalletMPCManager {
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
             private_input,
-            decryption_share: match session_info.mpc_round {
+            decryption_shares: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                 )?,
@@ -404,8 +410,8 @@ impl DWalletMPCManager {
             .add_received_event_start(&mpc_event_data.init_protocol_data);
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
-                "received an event for an existing session with `session_id`: {:?}",
-                session_info.session_id
+                session_id=?session_info.session_id,
+                "received an event for an existing session (previously received messages)",
             );
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = wrapped_mpc_event_data;
@@ -530,9 +536,15 @@ impl DWalletMPCManager {
                 continue;
             };
             if live_session.mpc_event_data.is_some() {
+                let mpc_protocol = live_session
+                    .mpc_event_data
+                    .clone()
+                    .unwrap()
+                    .init_protocol_data;
                 info!(
                     session_id=?pending_for_event_session.session_id,
-                    "Received event data for session"
+                    mpc_protocol=?mpc_protocol,
+                    "Received event data for a known session"
                 );
                 let mut ready_to_advance_session = pending_for_event_session.clone();
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
@@ -547,7 +559,7 @@ impl DWalletMPCManager {
                 .cryptographic_computations_orchestrator
                 .can_spawn_session()
             {
-                info!("No available CPUs for cryptographic computations, waiting for a free CPU");
+                warn!("No available CPUs for cryptographic computations, waiting for a free CPU");
                 return;
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
@@ -565,7 +577,7 @@ impl DWalletMPCManager {
                 continue;
             }
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
-                // This should never happen
+                // This should never happen.
                 error!(
                     session_id=?oldest_pending_session.session_id,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
@@ -621,19 +633,21 @@ impl DWalletMPCManager {
             from_authority=?message.authority,
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
-            "Received a message for session",
+            mpc_protocol=message.mpc_protocol,
+            "Received an MPC message for session",
         );
         if self
             .malicious_handler
             .get_malicious_actors_names()
             .contains(&message.authority)
         {
-            info!(
+            warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
-                "Received a message for from malicious authority",
+                mpc_protocol=?message.mpc_protocol,
+                "Received a message for from malicious authority — ignoring",
             );
             // Ignore a malicious actor's messages.
             return Ok(());
@@ -647,6 +661,7 @@ impl DWalletMPCManager {
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
+                    mpc_protocol=?message.mpc_protocol,
                     "received a message for an MPC session, which an event has not yet received for"
                 );
                 // This can happen if the session is not in the active sessions,
@@ -664,6 +679,7 @@ impl DWalletMPCManager {
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
                     malicious_parties=?malicious_parties,
+                    mpc_protocol=?message.mpc_protocol,
                     "Error storing message, malicious parties detected"
                 );
                 self.flag_parties_as_malicious(&malicious_parties)?;
@@ -713,6 +729,7 @@ impl DWalletMPCManager {
             mpc_event_data,
         );
         info!(
+            // todo(zeev): add metadata.
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );

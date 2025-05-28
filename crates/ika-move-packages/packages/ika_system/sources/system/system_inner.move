@@ -197,8 +197,6 @@ public(package) fun initialize(
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     let pending_active_set = self.validator_set.pending_active_set();
     assert!(pending_active_set.size() >= pending_active_set.min_validator_count(), ECannotInitialize);
-    // self.epoch = self.epoch + 1;
-    // self.validators.initialize();
 
     self.validator_set.process_mid_epoch(
         self.parameters.lock_active_committee,

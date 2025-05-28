@@ -36,7 +36,7 @@ not bloat the original object's storage, storing only <code>UID</code> of the ex
 field.
 
 
-<pre><code><b>public</b> <b>struct</b> ExtendedFieldT <b>has</b> key, store
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">ExtendedField</a>&lt;<b>phantom</b> T: store&gt; <b>has</b> key, store
 </code></pre>
 
 
@@ -85,7 +85,7 @@ Key to store the value in the extended field. Never changes.
 Creates a new extended field with the given value.
 
 
-<pre><code><b>public</b> <b>fun</b> newT(value: T, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_new">new</a>&lt;T: store&gt;(value: T, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;
 </code></pre>
 
 
@@ -112,7 +112,7 @@ Creates a new extended field with the given value.
 Borrows the value stored in the extended field.
 
 
-<pre><code><b>public</b> <b>fun</b> borrowT(field: &(ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): &T
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_borrow">borrow</a>&lt;T: store&gt;(field: &(ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): &T
 </code></pre>
 
 
@@ -137,7 +137,7 @@ Borrows the value stored in the extended field.
 Borrows the value stored in the extended field mutably.
 
 
-<pre><code><b>public</b> <b>fun</b> borrow_mutT(field: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): &<b>mut</b> T
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_borrow_mut">borrow_mut</a>&lt;T: store&gt;(field: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): &<b>mut</b> T
 </code></pre>
 
 
@@ -162,7 +162,7 @@ Borrows the value stored in the extended field mutably.
 Swaps the value stored in the extended field with the given value.
 
 
-<pre><code><b>public</b> <b>fun</b> swapT(field: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;, value: T): T
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_swap">swap</a>&lt;T: store&gt;(field: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;, value: T): T
 </code></pre>
 
 
@@ -189,7 +189,7 @@ Swaps the value stored in the extended field with the given value.
 Destroys the extended field and returns the value stored in it.
 
 
-<pre><code><b>public</b> <b>fun</b> destroyT(field: (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_destroy">destroy</a>&lt;T: store&gt;(field: (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;T&gt;): T
 </code></pre>
 
 
