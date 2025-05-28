@@ -160,6 +160,7 @@ impl IkaValidatorCommand {
 
                 let validator_info = ValidatorInfo {
                     name,
+                    validator_id: ObjectID::random(),
                     class_groups_public_key_and_proof: class_groups_public_key_and_proof
                         .public_bytes(),
                     account_address: sender_sui_address,

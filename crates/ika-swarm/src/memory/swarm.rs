@@ -340,7 +340,7 @@ impl Swarm {
     pub fn all_nodes(&self) -> impl Iterator<Item = &Node> {
         self.nodes.values()
     }
-    
+
     /// Return an iterator over shared references of all nodes that are set up as validators.
     /// This means that they have a consensus config. This however doesn't mean this validator is
     /// currently active (i.e. it's not necessarily in the validator set at the moment).
