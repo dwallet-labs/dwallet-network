@@ -9,7 +9,7 @@ use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
 use class_groups::{
-    Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
+    SecretKeyShareSizedInteger,
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use commitment::CommitmentSizedNumber;
