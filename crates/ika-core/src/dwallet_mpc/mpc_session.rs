@@ -734,18 +734,6 @@ impl DWalletMPCSession {
         message: MPCMessage,
         mpc_protocol: &str,
     ) -> DwalletMPCResult<ConsensusTransaction> {
-        let mpc_protocol = if self.current_round == 1 {
-            Some(
-                self.mpc_event_data
-                    .clone()
-                    // Safe to unwrap as the event data must be set before advancing the session.
-                    .unwrap()
-                    .init_protocol_data
-                    .get_event_name(),
-            )
-        } else {
-            None
-        };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
