@@ -21,7 +21,7 @@ use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
-use std::time::Instant;
+// use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};

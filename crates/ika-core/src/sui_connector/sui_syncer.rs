@@ -275,10 +275,6 @@ where
                         // We can skip this key and continue to the next one.
                         info!(key=?key_id, "Waiting for network decryption key data");
                         continue 'sync_network_keys;
-                        info!(
-                            key_id=?key_id,
-                            "Successfully synced the network decryption key for `key_id`",
-                        );
                     }
                     Err(err) => {
                         warn!(

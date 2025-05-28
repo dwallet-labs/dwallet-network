@@ -251,8 +251,6 @@ impl DWalletMPCSession {
                     self.new_dwallet_mpc_output_message(MPCSessionPublicOutput::SessionFailed)?;
                 let session_id_clone = self.session_id;
                 let epoch_id_clone = self.epoch_id;
-                let session_id_clone = self.session_id;
-                let epoch_id_clone = self.epoch_id;
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&[consensus_message], &epoch_store)

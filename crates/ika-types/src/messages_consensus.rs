@@ -17,7 +17,6 @@ use crate::supported_protocol_versions::{
 };
 use byteorder::{BigEndian, ReadBytesExt};
 use ika_protocol_config::Chain;
-use serde::de::Expected;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::{Debug, Formatter};

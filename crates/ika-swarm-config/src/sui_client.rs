@@ -132,14 +132,10 @@ pub async fn init_ika_on_sui(
         validator_addresses.push(validator_address);
     }
 
-    for future in request_tokens_from_faucet_futures {
-        future.await?;
-    }
-
-    // futures::future::join_all(request_tokens_from_faucet_futures)
-    //     .await
-    //     .into_iter()
-    //     .collect::<Result<Vec<_>, _>>()
+    futures::future::join_all(request_tokens_from_faucet_futures)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
         // Temporary workaround for the faucet returning 200 OK, but it seems as an error
         // since the new faucet api changed
         // TODO: Remove this workaround when we move to the new sui version and new faucet api
@@ -1243,7 +1239,6 @@ async fn create_class_groups_public_key_and_proof_object(
         &class_groups_public_key_and_proof,
     )
     .await?;
-
     let builder_object_ref = client
         .transaction_builder()
         .get_object_ref(builder_object_ref.0)

@@ -216,8 +216,8 @@ impl DWalletMPCService {
             };
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
-                        session.status = MPCSessionStatus::Finished;
-                    }
+                    session.status = MPCSessionStatus::Finished;
+                }
             }
             let Ok(events_from_sui) = self
                 .epoch_store
