@@ -175,10 +175,8 @@ where
             .map(|validator| {
                 (
                     AuthorityName::new(validator.validator_info.validator_id.clone().into_bytes()),
-                    AuthorityPublicKey::from_bytes(
-                        &validator.validator_info.protocol_pubkey.bytes,
-                    )
-                    .unwrap(),
+                    AuthorityPublicKey::from_bytes(&validator.validator_info.protocol_pubkey.bytes)
+                        .unwrap(),
                 )
             })
             .collect();
