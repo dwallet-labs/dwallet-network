@@ -60,7 +60,7 @@ impl ValidatorInitializationConfig {
         let network_address = self.network_address.clone();
         let current_epoch_consensus_address = self.current_epoch_consensus_address.clone();
         let _next_epoch_consensus_address = self.next_epoch_consensus_address.clone();
-        
+
         ValidatorInfo {
             name,
             validator_id: (),

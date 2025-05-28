@@ -105,7 +105,7 @@ pub struct NodeConfig {
     pub network_key_pair: KeyPairWithPath,
 
     pub validator_id: Option<ObjectID>,
-    
+
     pub db_path: PathBuf,
 
     #[serde(default = "default_grpc_address")]
