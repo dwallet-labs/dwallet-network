@@ -27,7 +27,7 @@ use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{error, info};
 
-/// Channel size for completed cryptographic computations.
+/// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.
 /// But since this is critical to keep the computations running,
 /// we are using a big buffer (this size of the data is small).
