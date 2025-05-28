@@ -10,18 +10,18 @@ use crate::system_checkpoints::SystemCheckpointStore;
 use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_protocol_config::{
-    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+use ika_sui_client::{SuiClient, SuiClientInner};
+use ika_types::committee::EpochId;
+use ika_types::error::{IkaError, IkaResult};
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
     IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
-use ika_sui_client::{SuiClient, SuiClientInner};
-use ika_types::committee::EpochId;
-use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
-use ika_types::messages_dwallet_mpc::DWalletNetworkEncryptionKeyState;
 use ika_types::messages_system_checkpoints::SystemCheckpoint;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
