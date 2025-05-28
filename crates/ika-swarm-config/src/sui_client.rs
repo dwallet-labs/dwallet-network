@@ -721,6 +721,9 @@ pub async fn init_initialize(
             CallArg::Pure(bcs::to_bytes(
                 &initiation_parameters.min_validator_joining_stake,
             )?),
+            CallArg::Pure(bcs::to_bytes(
+                &initiation_parameters.max_validator_change_count,
+            )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.lock_active_committee)?),
             CallArg::Pure(bcs::to_bytes(STAKED_IKA_ICON_URL)?),
