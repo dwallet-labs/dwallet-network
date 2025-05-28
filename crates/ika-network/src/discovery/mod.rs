@@ -614,7 +614,7 @@ fn update_known_peers(
                         .clone()
                         .unwrap()
                         .iter()
-                        .filter_map(|peer| peer.peer_id.clone())
+                        .filter_map(|peer| peer.peer_id)
                         .collect::<Vec<PeerId>>()
                         .contains(&peer.peer_id)
                 {
