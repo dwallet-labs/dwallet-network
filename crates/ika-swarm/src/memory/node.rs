@@ -7,7 +7,7 @@ use ika_node::IkaNodeHandle;
 use ika_types::crypto::AuthorityName;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
-use sui_types::base_types::ConciseableName;
+use sui_types::base_types::{ConciseableName, ObjectID};
 use tracing::info;
 
 use super::container::Container;
@@ -45,7 +45,12 @@ impl Node {
 
     /// Return the `name` of this Node
     pub fn name(&self) -> AuthorityName {
-        self.config().protocol_public_key()
+        AuthorityName::new(
+            self.config()
+                .validator_id
+                .unwrap_or(ObjectID::random())
+                .into_bytes(),
+        )
     }
 
     pub fn config(&self) -> MutexGuard<'_, NodeConfig> {

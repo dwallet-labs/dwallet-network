@@ -24,7 +24,7 @@ use ika_swarm_config::network_config_builder::{
     CommitteeConfig, ConfigBuilder, ProtocolVersionsConfig, SupportedProtocolVersionsCallback,
 };
 use ika_swarm_config::validator_initialization_config::ValidatorInitializationConfig;
-use ika_types::crypto::AuthorityName;
+use ika_types::crypto::{AuthorityName, AuthorityPublicKey, AuthorityPublicKeyBytes};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_macros::nondeterministic;
 use tempfile::TempDir;
@@ -295,7 +295,7 @@ impl<R: rand::RngCore + rand::CryptoRng> SwarmBuilder<R> {
 pub struct Swarm {
     dir: SwarmDirectory,
     pub network_config: NetworkConfig,
-    nodes: HashMap<AuthorityName, Node>,
+    nodes: HashMap<AuthorityPublicKeyBytes, Node>,
 }
 
 impl Drop for Swarm {
