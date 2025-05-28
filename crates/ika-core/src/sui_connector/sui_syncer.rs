@@ -176,7 +176,7 @@ where
                 (
                     AuthorityName::new(validator.validator_info.validator_id.clone().into_bytes()),
                     AuthorityPublicKey::from_bytes(
-                        &validator.validator_info.name.clone().into_bytes(),
+                        &validator.validator_info.protocol_pubkey.bytes,
                     )
                     .unwrap(),
                 )
