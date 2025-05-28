@@ -4,8 +4,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
     VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
     VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedImportedDWalletPublicOutput, VersionedImportedDwalletOutgoingMessage,
-    VersionedImportedSecretShare, VersionedPresignOutput, VersionedSignOutput,
+    VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
@@ -155,13 +154,13 @@ impl DWalletMPCSession {
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        // Safe to unwrap as advance can only be called after the event is received.
+        let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
             }) => {
-                // Safe to unwrap as advance can only be called after the event is received.
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 let session_id = self.session_id;
                 let validator_name = self.epoch_store()?.name;
                 let round_number = self.serialized_full_messages.len();
@@ -201,8 +200,6 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 let validator_name = self.epoch_store()?.name;
-                // Safe to unwrap as advance can only be called after the event is received.
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 info!(
                     mpc_protocol=?&mpc_protocol,
                     session_id=?self.session_id,
@@ -248,13 +245,12 @@ impl DWalletMPCSession {
                     validator=?self.epoch_store()?.name,
                     crypto_round=?self.current_round,
                     party_id=?self.party_id,
-                    mpc_protocol=?self.mpc_event_data.clone().unwrap().init_protocol_data,
+                    mpc_protocol=?&mpc_protocol,
                     "MPC session failed"
                 );
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 let validator_name = self.epoch_store()?.name;
 
                 error!(
