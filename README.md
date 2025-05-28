@@ -37,7 +37,7 @@ as a composable modular signature network, adding powerful access control capabi
 
 ## Cryptography of dWallets - 2PC-MPC
 
-dWallets utilize the [2PC-MPC protocol](https://github.com/dwallet-labs/2pc-mpc), a two-party ECDSA protocol we designed
+dWallets utilize the [2PC-MPC protocol](https://github.com/dwallet-labs/crypto/tree/main?tab=readme-ov-file#2pc-mpc), a two-party ECDSA protocol we designed
 specifically for dWallets, where the second party is fully emulated by a network of n parties.
 
 Besides its novel structure, enabling the noncollusivity of dWallets, and the autonomy and flexibility of a
@@ -165,3 +165,4 @@ sui-tool download-db-snapshot --latest \
 --snapshot-bucket-type <TYPE> --path <PATH-TO-NODE-DB> \
 --num-parallel-downloads 25 \
 --skip-indexes
+

@@ -12,23 +12,21 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::{Display, Formatter};
 
 use sui_types::{
-    balance::Balance,
     base_types::{ObjectID, SequenceNumber},
     coin::Coin,
     error::{ExecutionError, ExecutionErrorKind},
-    id::UID,
     object::{Data, MoveObject, Object},
 };
 
 /// The number of NIka per Ika token
-pub const NIKA_PER_IKA: u64 = 1_000_000_000;
+pub const INKU_PER_IKA: u64 = 1_000_000_000;
 
 /// Total supply denominated in Ika
 pub const TOTAL_SUPPLY_IKA: u64 = 10_000_000_000;
 
 // Note: cannot use checked arithmetic here since `const unwrap` is still unstable.
 /// Total supply denominated in NIka
-pub const TOTAL_SUPPLY_NIKA: u64 = TOTAL_SUPPLY_IKA * NIKA_PER_IKA;
+pub const TOTAL_SUPPLY_INKU: u64 = TOTAL_SUPPLY_IKA * INKU_PER_IKA;
 
 pub const IKA_MODULE_NAME: &IdentStr = ident_str!("ika");
 pub const IKA_STRUCT_NAME: &IdentStr = ident_str!("IKA");
@@ -62,7 +60,7 @@ mod checked {
 
     impl IKACoin {
         pub fn new(id: ObjectID, value: u64) -> Self {
-            Self(Coin::new(UID::new(id), value))
+            Self(Coin::new(id, value))
         }
 
         pub fn value(&self) -> u64 {

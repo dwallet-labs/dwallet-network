@@ -109,12 +109,49 @@ struct FeatureFlags {
     // Add feature flags here, e.g.:
     // #[serde(skip_serializing_if = "is_false")]
     // new_protocol_feature: bool,
+    // === Used at Sui consensus for current ProtocolConfig version (MAX 84) ===
+
+    // Probe rounds received by peers from every authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_round_prober: bool,
+
+    // Enables Mysticeti fastpath.
+    #[serde(skip_serializing_if = "is_false")]
+    mysticeti_fastpath: bool,
+
+    // Set number of leaders per round for Mysticeti commits.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mysticeti_num_leaders_per_round: Option<usize>,
+
+    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
+    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_linearize_subdag_v2: bool,
+
+    // If true, enable zstd compression for consensus tonic network.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_zstd_compression: bool,
+
+    // If true, then it (1) will not enforce monotonicity checks for a block's ancestors and (2) calculates the commit's timestamp based on the
+    // weighted by stake median timestamp of the leader's ancestors.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_median_based_commit_timestamp: bool,
+
+    // If true, enabled batched block sync in consensus.
+    #[serde(skip_serializing_if = "is_false")]
+    consensus_batched_block_sync: bool,
+
+    // If true, enforces checkpoint timestamps are non-decreasing.
+    #[serde(skip_serializing_if = "is_false")]
+    enforce_checkpoint_timestamp_monotonicity: bool,
 }
 
+#[allow(unused)]
 fn is_false(b: &bool) -> bool {
     !b
 }
 
+#[allow(unused)]
 fn is_empty(b: &BTreeSet<String>) -> bool {
     b.is_empty()
 }
@@ -173,17 +210,26 @@ pub struct ProtocolConfig {
 
     feature_flags: FeatureFlags,
 
-    /// === Core Protocol ===
-
-    /// Max number of transactions per checkpoint.
+    // === Core Protocol ===
+    /// Max number of transactions per dwallet checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_messages_per_checkpoint: Option<u64>,
+    max_messages_per_dwallet_checkpoint: Option<u64>,
 
-    /// Max size of a checkpoint in bytes.
+    /// Max number of transactions per iks system checkpoint.
     /// Note that this is a protocol constant and not a config as validators must have this set to
     /// the same value, otherwise they *will* fork.
-    max_checkpoint_size_bytes: Option<u64>,
+    max_messages_per_system_checkpoint: Option<u64>,
+
+    /// Max size of a dwallet checkpoint in bytes.
+    /// Note that this is a protocol constant and not a config as validators must have this set to
+    /// the same value, otherwise they *will* fork.
+    max_dwallet_checkpoint_size_bytes: Option<u64>,
+
+    /// Max size of an ika system checkpoint in bytes.
+    /// Note that this is a protocol constant and not a config as validators must have this set to
+    /// the same value, otherwise they *will* fork.
+    max_system_checkpoint_size_bytes: Option<u64>,
 
     /// A protocol upgrade always requires 2f+1 stake to agree. We support a buffer of additional
     /// stake (as a fraction of f, expressed in basis points) that is required before an upgrade
@@ -192,14 +238,31 @@ pub struct ProtocolConfig {
     buffer_stake_for_protocol_upgrade_bps: Option<u64>,
 
     /// Minimum interval of commit timestamps between consecutive checkpoints.
-    min_checkpoint_interval_ms: Option<u64>,
+    min_dwallet_checkpoint_interval_ms: Option<u64>,
 
-    /// === Consensus ===
+    /// Minimum interval of commit timestamps between consecutive ika system checkpoints.
+    min_system_checkpoint_interval_ms: Option<u64>,
 
+    // === Consensus ===
     /// Dictates the threshold (percentage of stake) that is used to calculate the "bad" nodes to be
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
     /// above 33 (f) will not be allowed.
     consensus_bad_nodes_stake_threshold: Option<u64>,
+
+    // === Used at Sui consensus for current ProtocolConfig version (MAX 84) ===
+    /// The maximum serialised transaction size (in bytes) accepted by consensus. That should be bigger than the
+    /// `max_tx_size_bytes` with some additional headroom.
+    consensus_max_transaction_size_bytes: Option<u64>,
+
+    /// The maximum number of transactions included in a consensus block.
+    consensus_max_num_transactions_in_block: Option<u64>,
+
+    /// The maximum size of transactions included in a consensus block.
+    consensus_max_transactions_in_block_bytes: Option<u64>,
+
+    /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
+    /// is disabled.
+    consensus_gc_depth: Option<u32>,
 }
 
 // feature flags
@@ -215,6 +278,60 @@ impl ProtocolConfig {
     //         )))
     //     }
     // }
+
+    pub fn consensus_round_prober(&self) -> bool {
+        self.feature_flags.consensus_round_prober
+    }
+
+    pub fn mysticeti_num_leaders_per_round(&self) -> Option<usize> {
+        self.feature_flags.mysticeti_num_leaders_per_round
+    }
+
+    pub fn gc_depth(&self) -> u32 {
+        if cfg!(msim) {
+            // exercise a very low gc_depth
+            5
+        } else {
+            self.consensus_gc_depth.unwrap_or(0)
+        }
+    }
+
+    pub fn mysticeti_fastpath(&self) -> bool {
+        if let Some(enabled) = is_mysticeti_fpc_enabled_in_env() {
+            return enabled;
+        }
+        self.feature_flags.mysticeti_fastpath
+    }
+
+    pub fn consensus_linearize_subdag_v2(&self) -> bool {
+        let res = self.feature_flags.consensus_linearize_subdag_v2;
+        assert!(
+            !res || self.gc_depth() > 0,
+            "The consensus linearize sub dag V2 requires GC to be enabled"
+        );
+        res
+    }
+
+    pub fn consensus_median_based_commit_timestamp(&self) -> bool {
+        let res = self.feature_flags.consensus_median_based_commit_timestamp;
+        assert!(
+            !res || self.gc_depth() > 0,
+            "The consensus median based commit timestamp requires GC to be enabled"
+        );
+        res
+    }
+
+    pub fn consensus_batched_block_sync(&self) -> bool {
+        self.feature_flags.consensus_batched_block_sync
+    }
+
+    pub fn enforce_checkpoint_timestamp_monotonicity(&self) -> bool {
+        self.feature_flags.enforce_checkpoint_timestamp_monotonicity
+    }
+
+    pub fn consensus_zstd_compression(&self) -> bool {
+        self.feature_flags.consensus_zstd_compression
+    }
 }
 
 #[cfg(not(msim))]
@@ -327,7 +444,7 @@ impl ProtocolConfig {
         ProtocolConfig::get_for_version(ProtocolVersion::MAX, Chain::Unknown)
     }
 
-    fn get_for_version_impl(version: ProtocolVersion, chain: Chain) -> Self {
+    fn get_for_version_impl(version: ProtocolVersion, _chain: Chain) -> Self {
         #[cfg(msim)]
         {
             // populate the fake simulator version # with a different base tx cost.
@@ -347,22 +464,47 @@ impl ProtocolConfig {
             // All flags are disabled in V1
             feature_flags: Default::default(),
 
-            max_messages_per_checkpoint: Some(1_000),
+            max_messages_per_dwallet_checkpoint: Some(500),
+            max_messages_per_system_checkpoint: Some(500),
 
             // The `max_tx_size_bytes` on Sui is `128 * 1024`, but we must keep the transaction size lower to avoid reaching the maximum computation fee.
-            max_checkpoint_size_bytes: Some(50 * 1024),
+            max_dwallet_checkpoint_size_bytes: Some(50 * 1024),
+            max_system_checkpoint_size_bytes: Some(50 * 1024),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
 
-            min_checkpoint_interval_ms: Some(200),
+            min_dwallet_checkpoint_interval_ms: Some(200),
+            min_system_checkpoint_interval_ms: Some(200),
 
             // Taking a baby step approach, we consider only 20% by stake as bad nodes so we
             // have an 80% by stake of nodes participating in the leader committee. That allow
             // us for more redundancy in case we have validators under performing - since the
             // responsibility is shared amongst more nodes. We can increase that once we do have
             // higher confidence.
-            consensus_bad_nodes_stake_threshold: Some(20),
+            consensus_bad_nodes_stake_threshold: Some(30),
+
+            // TODO (#873): Implement a production grade configuration upgrade mechanism
+            // We use the `_for_testing` functions because they are currently the only way
+            // to modify Sui's protocol configuration from external crates.
+            // I have opened an [issue](https://github.com/MystenLabs/sui/issues/21891)
+            // in the Sui repository to address this limitation.
+            // This value has been derived from monitoring the largest message
+            // size in real world scenarios.
+            consensus_max_transaction_size_bytes: Some(315218930),
+            consensus_max_transactions_in_block_bytes: Some(315218930),
+            consensus_max_num_transactions_in_block: Some(512),
+            consensus_gc_depth: Some(60),
         };
+
+        cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
+        cfg.feature_flags.consensus_round_prober = true;
+        cfg.feature_flags.consensus_linearize_subdag_v2 = true;
+        cfg.feature_flags.consensus_zstd_compression = true;
+        cfg.feature_flags.consensus_median_based_commit_timestamp = true;
+        cfg.feature_flags.consensus_batched_block_sync = true;
+        cfg.feature_flags.enforce_checkpoint_timestamp_monotonicity = true;
+
+        #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
                 1 => unreachable!(),
@@ -400,7 +542,35 @@ impl ProtocolConfig {
 // Setters for tests.
 // This is only needed for feature_flags. Please suffix each setter with `_for_testing`.
 // Non-feature_flags should already have test setters defined through macros.
-impl ProtocolConfig {}
+impl ProtocolConfig {
+    pub fn set_mysticeti_num_leaders_per_round_for_testing(&mut self, val: Option<usize>) {
+        self.feature_flags.mysticeti_num_leaders_per_round = val;
+    }
+
+    pub fn set_consensus_round_prober_for_testing(&mut self, val: bool) {
+        self.feature_flags.consensus_round_prober = val;
+    }
+
+    pub fn set_consensus_linearize_subdag_v2_for_testing(&mut self, val: bool) {
+        self.feature_flags.consensus_linearize_subdag_v2 = val;
+    }
+
+    pub fn set_mysticeti_fastpath_for_testing(&mut self, val: bool) {
+        self.feature_flags.mysticeti_fastpath = val;
+    }
+
+    pub fn set_consensus_median_based_commit_timestamp_for_testing(&mut self, val: bool) {
+        self.feature_flags.consensus_median_based_commit_timestamp = val;
+    }
+
+    pub fn set_consensus_batched_block_sync_for_testing(&mut self, val: bool) {
+        self.feature_flags.consensus_batched_block_sync = val;
+    }
+
+    pub fn set_enforce_checkpoint_timestamp_monotonicity_for_testing(&mut self, val: bool) {
+        self.feature_flags.enforce_checkpoint_timestamp_monotonicity = val;
+    }
+}
 
 type OverrideFn = dyn Fn(ProtocolVersion, ProtocolConfig) -> ProtocolConfig + Send;
 
@@ -537,8 +707,9 @@ mod test {
         let prot: ProtocolConfig =
             ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
         assert_eq!(
-            prot.max_messages_per_checkpoint(),
-            prot.max_messages_per_checkpoint_as_option().unwrap()
+            prot.max_messages_per_dwallet_checkpoint(),
+            prot.max_messages_per_dwallet_checkpoint_as_option()
+                .unwrap()
         );
     }
 
@@ -546,17 +717,20 @@ mod test {
     fn test_setters() {
         let mut prot: ProtocolConfig =
             ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
-        prot.set_max_messages_per_checkpoint_for_testing(123);
-        assert_eq!(prot.max_messages_per_checkpoint(), 123);
+        prot.set_max_messages_per_dwallet_checkpoint_for_testing(123);
+        assert_eq!(prot.max_messages_per_dwallet_checkpoint(), 123);
 
-        prot.set_max_messages_per_checkpoint_from_str_for_testing("321".to_string());
-        assert_eq!(prot.max_messages_per_checkpoint(), 321);
+        prot.set_max_messages_per_dwallet_checkpoint_from_str_for_testing("321".to_string());
+        assert_eq!(prot.max_messages_per_dwallet_checkpoint(), 321);
 
-        prot.disable_max_messages_per_checkpoint_for_testing();
-        assert_eq!(prot.max_messages_per_checkpoint_as_option(), None);
+        prot.disable_max_messages_per_dwallet_checkpoint_for_testing();
+        assert_eq!(prot.max_messages_per_dwallet_checkpoint_as_option(), None);
 
-        prot.set_attr_for_testing("max_messages_per_checkpoint".to_string(), "456".to_string());
-        assert_eq!(prot.max_messages_per_checkpoint(), 456);
+        prot.set_attr_for_testing(
+            "max_messages_per_dwallet_checkpoint".to_string(),
+            "456".to_string(),
+        );
+        assert_eq!(prot.max_messages_per_dwallet_checkpoint(), 456);
     }
 
     #[test]
@@ -578,8 +752,10 @@ mod test {
         assert!(prot.lookup_attr("some random string".to_string()).is_none());
 
         assert!(
-            prot.lookup_attr("max_messages_per_checkpoint".to_string())
-                == Some(ProtocolConfigValue::u64(prot.max_messages_per_checkpoint())),
+            prot.lookup_attr("max_messages_per_dwallet_checkpoint".to_string())
+                == Some(ProtocolConfigValue::u64(
+                    prot.max_messages_per_dwallet_checkpoint()
+                )),
         );
 
         let protocol_config: ProtocolConfig =
@@ -589,10 +765,10 @@ mod test {
         assert_eq!(
             protocol_config
                 .attr_map()
-                .get("max_messages_per_checkpoint")
+                .get("max_messages_per_dwallet_checkpoint")
                 .unwrap(),
             &Some(ProtocolConfigValue::u64(
-                protocol_config.max_messages_per_checkpoint()
+                protocol_config.max_messages_per_dwallet_checkpoint()
             ))
         );
 

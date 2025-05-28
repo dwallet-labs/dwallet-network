@@ -18,6 +18,7 @@ pub mod mysticeti_adapter;
 mod scoring_decision;
 mod stake_aggregator;
 pub mod storage;
+pub mod system_checkpoints;
 
 pub mod dwallet_mpc;
 pub mod sui_connector;

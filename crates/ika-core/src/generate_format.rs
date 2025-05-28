@@ -16,7 +16,7 @@ use ika_types::execution_status::{
 };
 use ika_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
 use ika_types::message::{MessageKind, SenderSignedData};
-use ika_types::messages_checkpoint::CertifiedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::CertifiedDWalletCheckpointMessage;
 use ika_types::messages_grpc::ObjectInfoRequestKind;
 use ika_types::move_package::TypeOrigin;
 use ika_types::object::Object;
@@ -25,9 +25,9 @@ use ika_types::{
     base_types::MoveObjectType_,
     crypto::Signer,
     message::TransactionExpiration,
-    messages_checkpoint::{
-        CheckpointContents, CheckpointContentsDigest, CheckpointMessage, CheckpointMessageDigest,
-        FullCheckpointContents,
+    messages_dwallet_checkpoint::{
+        CheckpointContents, CheckpointContentsDigest, DWalletCheckpointMessage,
+        DWalletCheckpointMessageDigest, FullCheckpointContents,
     },
 };
 use ika_types::{
@@ -167,7 +167,7 @@ fn get_registry() -> Result<Registry> {
     let struct_tag = StructTag::from_str("0x2::coin::Coin<0x2::ika::IKA>").unwrap();
     tracer.trace_value(&mut samples, &struct_tag).unwrap();
 
-    let ccd = CheckpointMessageDigest::random();
+    let ccd = DWalletCheckpointMessageDigest::random();
     tracer.trace_value(&mut samples, &ccd).unwrap();
 
     let tot = TypeOrigin {
@@ -231,7 +231,9 @@ fn get_registry() -> Result<Registry> {
         .trace_type::<FullCheckpointContents>(&samples)
         .unwrap();
     tracer.trace_type::<CheckpointContents>(&samples).unwrap();
-    tracer.trace_type::<CheckpointMessage>(&samples).unwrap();
+    tracer
+        .trace_type::<DWalletCheckpointMessage>(&samples)
+        .unwrap();
 
     let sender_data = SenderSignedData::new(
         MessageKind::new_with_gas_coins(
@@ -253,7 +255,7 @@ fn get_registry() -> Result<Registry> {
     tracer.trace_value(&mut samples, &quorum_sig).unwrap();
 
     tracer
-        .trace_type::<CertifiedCheckpointMessage>(&samples)
+        .trace_type::<CertifiedDWalletCheckpointMessage>(&samples)
         .unwrap();
 
     let event = Event {

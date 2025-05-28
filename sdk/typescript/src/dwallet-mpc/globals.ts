@@ -3,8 +3,8 @@
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-export const DWALLET_ECDSA_K1_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1';
-export const DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_secp256k1_inner';
+export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
+export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
 export const DWALLET_NETWORK_VERSION = 0;
 
 export const SUI_PACKAGE_ID = '0x2';
@@ -25,9 +25,10 @@ export interface Config {
 	dWalletSeed: Uint8Array;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum MPCKeyScheme {
-	Secp256k1 = 1,
-	Ristretto = 2,
+	Secp256k1 = 0,
+	Ristretto = 1,
 }
 
 /**
@@ -61,18 +62,31 @@ export async function getObjectWithType<TObject>(
 	objectID: string,
 	isObject: (obj: any) => obj is TObject,
 ): Promise<TObject> {
-	const obj = await conf.client.getObject({
-		id: objectID,
-		options: { showContent: true },
-	});
-	if (!isMoveObject(obj.data?.content)) {
-		throw new Error('Invalid object');
+	const startTime = Date.now();
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		const interval = 500;
+		await delay(interval);
+		const res = await conf.client.getObject({
+			id: objectID,
+			options: { showContent: true },
+		});
+
+		const objectData =
+			res.data?.content?.dataType === 'moveObject' && isObject(res.data.content.fields)
+				? (res.data.content.fields as TObject)
+				: null;
+
+		if (objectData) {
+			return objectData;
+		}
 	}
-	const objContent = obj.data?.content.fields;
-	if (!isObject(objContent)) {
-		throw new Error('Invalid object fields');
-	}
-	return objContent;
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an object within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 }
 
 /**
@@ -82,8 +96,8 @@ interface IKASystemStateInner {
 	fields: {
 		value: {
 			fields: {
-				dwallet_2pc_mpc_secp256k1_id: string;
-				dwallet_2pc_mpc_secp256k1_network_decryption_keys: Array<any>;
+				dwallet_2pc_mpc_coordinator_id: string;
+				dwallet_2pc_mpc_coordinator_network_encryption_keys: Array<any>;
 			};
 		};
 	};
@@ -106,13 +120,6 @@ interface SharedObjectOwner {
 	};
 }
 
-/**
- * Represents a Move Address object owner.
- */
-interface AddressObjectOwner {
-	AddressOwner: string;
-}
-
 interface MoveObject {
 	fields: any;
 }
@@ -124,13 +131,10 @@ interface MoveDynamicField {
 	};
 }
 
+// todo(zeev): fix this
 export interface SharedObjectData {
 	object_id: string;
 	initial_shared_version: number;
-}
-
-export function isAddressObjectOwner(obj: any): obj is AddressObjectOwner {
-	return obj?.AddressOwner !== undefined;
 }
 
 export function isMoveObject(obj: any): obj is MoveObject {
@@ -141,14 +145,10 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 	return obj?.fields.name !== undefined || obj?.fields.value !== undefined;
 }
 
-export function getEncryptionKeyMoveType(ikaSystemPackageID: string): string {
-	return `${ikaSystemPackageID}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::EncryptionKey`;
-}
-
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_network_decryption_keys !== undefined &&
-		obj?.fields?.value?.fields?.dwallet_2pc_mpc_secp256k1_id !== undefined
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_encryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
 
@@ -170,7 +170,7 @@ export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
 	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
 		throw new Error('Invalid inner system state');
 	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_secp256k1_id;
+	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
@@ -191,6 +191,7 @@ export async function getInitialSharedVersion(c: Config, objectID: string): Prom
 	return owner.Shared?.initial_shared_version;
 }
 
+// todo(zeev): fix naming and fix the types.
 export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> {
 	const dwalletSecp256k1ObjID = await getDwalletSecp256k1ObjID(c);
 	const initialSharedVersion = await getInitialSharedVersion(c, dwalletSecp256k1ObjID);
@@ -198,82 +199,6 @@ export async function getDWalletSecpState(c: Config): Promise<SharedObjectData> 
 		object_id: dwalletSecp256k1ObjID,
 		initial_shared_version: initialSharedVersion,
 	};
-}
-
-export async function fetchObjectWithType<TObject>(
-	conf: Config,
-	objectType: string,
-	isObject: (obj: any) => obj is TObject,
-	objectId: string,
-) {
-	const res = await conf.client.getObject({
-		id: objectId,
-		options: { showContent: true },
-	});
-
-	const objectData =
-		res.data?.content?.dataType === 'moveObject' &&
-		res.data?.content.type === objectType &&
-		isObject(res.data.content.fields)
-			? (res.data.content.fields as TObject)
-			: null;
-
-	if (!objectData) {
-		throw new Error(
-			`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
-		);
-	}
-
-	return objectData;
-}
-
-interface StartSessionEvent {
-	session_id: string;
-}
-
-export function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
-}
-
-export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
-	c: Config,
-	sessionID: string,
-	isEventFn: (parsedJson: any) => parsedJson is TEvent,
-	eventType: string = '',
-): Promise<TEvent> {
-	const startTime = Date.now();
-
-	while (Date.now() - startTime <= c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		const interval = 500;
-		await delay(interval);
-
-		const { data } = await c.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - interval * 4).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-			limit: 1000,
-		});
-
-		const match = data.find(
-			(event) =>
-				(event.type === eventType || !eventType) &&
-				isEventFn(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
-		);
-
-		if (match) return match.parsedJson as TEvent;
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${eventType} within ${
-			c.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
 }
 
 export interface DWalletCap {
@@ -284,12 +209,13 @@ export function isDWalletCap(obj: any): obj is DWalletCap {
 	return !!obj?.dwallet_id;
 }
 
-interface ActiveDWallet {
+export interface ActiveDWallet {
 	state: {
 		fields: {
 			public_output: Uint8Array;
 		};
 	};
+	id: { id: string };
 }
 
 export function isActiveDWallet(obj: any): obj is ActiveDWallet {
@@ -383,12 +309,12 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('Invalid inner system state');
 	}
 
-	const network_decryption_keys =
+	const network_encryption_keys =
 		innerSystemState.data.content.fields.value.fields
-			.dwallet_2pc_mpc_secp256k1_network_decryption_keys;
+			.dwallet_2pc_mpc_coordinator_network_encryption_keys;
 	const decryptionKeyID =
-		network_decryption_keys[network_decryption_keys.length - 1]?.fields
-			?.dwallet_network_decryption_key_id;
+		network_encryption_keys[network_encryption_keys.length - 1]?.fields
+			?.dwallet_network_encryption_key_id;
 	if (!decryptionKeyID) {
 		throw new Error('No network decryption key found');
 	}

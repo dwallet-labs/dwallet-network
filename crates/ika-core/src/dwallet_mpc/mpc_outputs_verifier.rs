@@ -5,16 +5,16 @@
 //! Any validator that voted for a different output is considered malicious.
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
-use group::{GroupElement, PartyID};
+use group::PartyID;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionInfo};
+use ika_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
 use std::sync::{Arc, Weak};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::messages_consensus::Round;
@@ -27,13 +27,14 @@ use tracing::info;
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
-    pub mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
+    mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
+    #[allow(dead_code)]
     voted_to_lock_committee: HashSet<PartyID>,
     /// The latest consensus round that was processed.
     /// Used to check if there's a need to perform a state sync —
@@ -44,6 +45,7 @@ pub struct DWalletMPCOutputsVerifier {
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     pub(crate) consensus_round_completed_sessions: HashSet<ObjectID>,
+    pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -78,9 +80,12 @@ pub struct OutputVerificationResult {
 }
 
 impl DWalletMPCOutputsVerifier {
-    pub fn new(epoch_store: &Arc<AuthorityPerEpochStore>) -> Self {
+    pub fn new(
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    ) -> Self {
         DWalletMPCOutputsVerifier {
-            epoch_store: Arc::downgrade(&epoch_store),
+            epoch_store: Arc::downgrade(epoch_store),
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_sessions_outputs: HashMap::new(),
             weighted_parties: epoch_store
@@ -94,6 +99,7 @@ impl DWalletMPCOutputsVerifier {
             last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
+            dwallet_mpc_metrics,
         }
     }
 
@@ -104,6 +110,7 @@ impl DWalletMPCOutputsVerifier {
     /// If the total weighted stake of the authorities
     /// that have voted exceeds or equals the quorum threshold, it returns `true`.
     /// Otherwise, it returns `false`.
+    #[allow(dead_code)]
     pub(crate) fn append_vote_and_check_committee_lock(
         &mut self,
         authority_name: AuthorityName,
@@ -125,7 +132,7 @@ impl DWalletMPCOutputsVerifier {
     // TODO (#311): or take any active action while syncing
     pub async fn try_verify_output(
         &mut self,
-        output: &Vec<u8>,
+        output: &[u8],
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<OutputVerificationResult> {
@@ -141,7 +148,7 @@ impl DWalletMPCOutputsVerifier {
         let epoch_store = self.epoch_store()?;
         let committee = epoch_store.committee().clone();
 
-        let ref mut session_output_data = self
+        let session_output_data = self
             .mpc_sessions_outputs
             .entry(session_info.session_id)
             .or_insert(SessionOutputsData {
@@ -168,11 +175,11 @@ impl DWalletMPCOutputsVerifier {
         }
         session_output_data
             .authorities_that_sent_output
-            .insert(origin_authority.clone());
+            .insert(origin_authority);
 
         if session_output_data
             .session_output_to_voting_authorities
-            .entry((output.clone(), session_info.clone()))
+            .entry((output.to_owned(), session_info.clone()))
             .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
@@ -180,8 +187,9 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
+            self.update_completed_sessions_metric(session_info);
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output.clone()),
+                result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
                 malicious_actors: vec![],
             });
         }
@@ -210,5 +218,58 @@ impl DWalletMPCOutputsVerifier {
                 current_result: OutputVerificationStatus::NotEnoughVotes,
             },
         );
+    }
+
+    fn update_completed_sessions_metric(&self, session_info: &SessionInfo) {
+        match session_info.mpc_round {
+            MPCProtocolInitData::DKGFirst(_) => {
+                self.dwallet_mpc_metrics
+                    .dwallet_dkg_first_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                self.dwallet_mpc_metrics
+                    .dwallet_dkg_second_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::Presign(_) => {
+                self.dwallet_mpc_metrics
+                    .presign_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::Sign(_) => {
+                self.dwallet_mpc_metrics.sign_round_completions_count.inc();
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                self.dwallet_mpc_metrics
+                    .network_dkg_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                self.dwallet_mpc_metrics
+                    .encrypted_share_verification_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                self.dwallet_mpc_metrics
+                    .partial_signature_verification_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                self.dwallet_mpc_metrics
+                    .decryption_key_reshare_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                self.dwallet_mpc_metrics
+                    .make_dwallet_user_secret_key_shares_public_round_completions_count
+                    .inc();
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                self.dwallet_mpc_metrics
+                    .import_dwallet_verification_round_completions_count
+                    .inc();
+            }
+        }
     }
 }

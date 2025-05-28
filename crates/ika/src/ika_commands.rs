@@ -1,63 +1,28 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::{anyhow, bail, ensure};
+use anyhow::{bail, ensure};
 use clap::*;
 use colored::Colorize;
 use fastcrypto::traits::KeyPair;
-use ika_config::p2p::SeedPeer;
 use ika_config::{
-    ika_config_dir, network_config_exists, Config, PersistedConfig, FULL_NODE_DB_PATH,
-    IKA_CLIENT_CONFIG, IKA_FULLNODE_CONFIG, IKA_NETWORK_CONFIG,
+    ika_config_dir, network_config_exists, Config, PersistedConfig, IKA_NETWORK_CONFIG,
 };
-use ika_config::{
-    IKA_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME, IKA_GENESIS_FILENAME, IKA_KEYSTORE_FILENAME,
-};
-use move_analyzer::analyzer;
-use move_binary_format::file_format::AddressIdentifierIndex;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::ident_str;
-use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::StructTag;
-use move_package::BuildConfig;
-use rand::rngs::OsRng;
-use shared_crypto::intent::Intent;
-use std::io::{stderr, stdout, Write};
-use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{AddrParseError, SocketAddr};
 use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::{fs, io, thread};
-use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet,
-    SuiClientCommandResult,
-};
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME};
-use sui_keys::keystore::{FileBasedKeystore, InMemKeystore, Keystore};
-use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
-use sui_sdk::SuiClient;
+use std::path::PathBuf;
+use std::thread;
+use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
 
 use crate::validator_commands::IkaValidatorCommand;
-use ika_move_packages::IkaMovePackage;
 use ika_swarm::memory::Swarm;
 use ika_swarm_config::network_config::NetworkConfig;
-use ika_swarm_config::network_config_builder::ConfigBuilder;
 use ika_swarm_config::validator_initialization_config::DEFAULT_NUMBER_OF_AUTHORITIES;
-use ika_types::ika_coin::{IKACoin, IKA, TOTAL_SUPPLY_NIKA};
-use ika_types::sui::System;
-use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
-use sui_types::coin::{TreasuryCap, COIN_MODULE_NAME};
-use sui_types::crypto::{SignatureScheme, SuiKeyPair, ToFromBytes};
-use sui_types::move_package::PACKAGE_MODULE_NAME;
-use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionData, TransactionKind};
-use sui_types::SUI_FRAMEWORK_PACKAGE_ID;
-use tempfile::tempdir;
 use tokio::runtime::Runtime;
 use tracing::info;
 
-const DEFAULT_EPOCH_DURATION_MS: u64 = 1000000000000;
+const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 10;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Parser)]
@@ -230,7 +195,7 @@ impl IkaCommand {
                 config, cmd, json, ..
             } => {
                 let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
-                let mut context = WalletContext::new(&config_path, None, None)?;
+                let mut context = WalletContext::new(&config_path)?;
                 if let Some(cmd) = cmd {
                     if let Ok(client) = context.get_client().await {
                         if let Err(e) = client.check_api_version() {

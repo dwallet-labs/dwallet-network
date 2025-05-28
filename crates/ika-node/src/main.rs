@@ -12,10 +12,10 @@ use tracing::{error, info};
 use ika_config::node::RunWithRange;
 use ika_config::{Config, NodeConfig};
 use ika_core::runtime::IkaRuntimes;
-use ika_node::metrics;
 use ika_telemetry::send_telemetry_event;
+use ika_types::crypto::KeypairTraits;
 use ika_types::digests::ChainIdentifier;
-use ika_types::messages_checkpoint::CheckpointSequenceNumber;
+use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use mysten_common::sync::async_once_cell::AsyncOnceCell;
 use sui_types::committee::EpochId;
@@ -40,17 +40,13 @@ struct Args {
     run_with_range_epoch: Option<EpochId>,
 
     #[clap(long, group = "exclusive")]
-    run_with_range_checkpoint: Option<CheckpointSequenceNumber>,
+    run_with_range_checkpoint: Option<DWalletCheckpointSequenceNumber>,
 }
 
 fn main() {
     // Ensure that a validator never calls get_for_min_version/get_for_max_version_UNSAFE.
     // TODO: re-enable after we figure out how to eliminate crashes in prod because of this.
     // ProtocolConfig::poison_get_for_min_version();
-
-    move_vm_profiler::tracing_feature_enabled! {
-        panic!("Cannot run the ika-node binary with tracing feature enabled");
-    }
 
     let args = Args::parse();
     let mut config = NodeConfig::load(&args.config_path).unwrap();
@@ -100,7 +96,16 @@ fn main() {
 
     {
         let _enter = runtimes.metrics.enter();
-        metrics::start_metrics_push_task(&config, registry_service.clone());
+        if let Some(metrics_config) = &config.metrics {
+            if let Some(push_url) = &metrics_config.push_url {
+                sui_metrics_push_client::start_metrics_push_task(
+                    metrics_config.push_interval_seconds,
+                    push_url.clone(),
+                    config.network_key_pair().copy(),
+                    registry_service.clone(),
+                );
+            }
+        }
     }
 
     if let Some(listen_address) = args.listen_address {

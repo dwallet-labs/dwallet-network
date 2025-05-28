@@ -82,7 +82,7 @@ title: Module `(ika_system=0x0)::protocol_treasury`
 <code><a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution">stake_subsidy_amount_per_distribution</a>: u64</code>
 </dt>
 <dd>
- The amount of stake subsidy to be distrabtured per distribution.
+ The amount of stake subsidy to be destructured per distribution.
  This amount changes based on <code>stake_subsidy_rate</code>.
 </dd>
 <dt>

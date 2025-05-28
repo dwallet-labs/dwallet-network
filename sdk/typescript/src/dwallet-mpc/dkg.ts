@@ -9,11 +9,10 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { DWallet, EncryptedDWalletData } from './globals.js';
+import type { ActiveDWallet, DWallet, EncryptedDWalletData } from './globals.js';
 import {
 	delay,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
@@ -21,7 +20,6 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	isStartSessionEvent,
 	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -31,16 +29,30 @@ interface StartDKGFirstRoundEvent {
 	event_data: {
 		dwallet_id: string;
 		dwallet_cap_id: string;
-		dwallet_network_decryption_key_id: string;
+		dwallet_network_encryption_key_id: string;
 	};
 	session_id: string;
 }
 
-interface CompletedDKGSecondRoundEvent {
-	dwallet_id: string;
-	public_output: Uint8Array;
-	encrypted_user_secret_key_share_id: string;
+interface StartDKGSecondRoundEvent {
+	event_data: {
+		encrypted_user_secret_key_share_id: string;
+	};
 	session_id: string;
+}
+
+function isStartDKGSecondRoundEvent(obj: any): obj is StartDKGSecondRoundEvent {
+	return !!obj?.event_data?.encrypted_user_secret_key_share_id && !!obj?.session_id;
+}
+
+interface DKGSecondRoundMoveResponse {
+	dwallet: ActiveDWallet;
+	encrypted_user_secret_key_share_id: string;
+}
+
+interface DKGSecondRoundResponse {
+	moveResponse: DKGSecondRoundMoveResponse;
+	secretShare: Uint8Array;
 }
 
 interface WaitingForUserDWallet {
@@ -56,7 +68,7 @@ function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 		!!obj?.event_data?.dwallet_id &&
 		!!obj?.session_id &&
 		!!obj?.event_data?.dwallet_cap_id &&
-		!!obj?.event_data?.dwallet_network_decryption_key_id
+		!!obj?.event_data?.dwallet_network_encryption_key_id
 	);
 }
 
@@ -66,25 +78,24 @@ export async function createDWallet(
 ): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
-	const dwalletOutput = await launchDKGSecondRound(
+	const secondRoundResponse = await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
 		networkDecryptionKeyPublicOutput,
 		classGroupsSecpKeyPair,
 	);
-	await acceptEncryptedUserShare(conf, dwalletOutput.completionEvent);
+	await acceptEncryptedUserShare(conf, {
+		dwallet_id: secondRoundResponse.moveResponse.dwallet.id.id,
+		encrypted_user_secret_key_share_id:
+			secondRoundResponse.moveResponse.encrypted_user_secret_key_share_id,
+	});
 	return {
 		dwalletID: firstRoundOutputResult.dwalletID,
 		dwallet_cap_id: firstRoundOutputResult.dwalletCapID,
-		secret_share: dwalletOutput.secretShare,
-		output: dwalletOutput.completionEvent.public_output,
-		encrypted_secret_share_id: dwalletOutput.completionEvent.encrypted_user_secret_key_share_id,
+		secret_share: secondRoundResponse.secretShare,
+		output: secondRoundResponse.moveResponse.dwallet.state.fields.public_output,
+		encrypted_secret_share_id: secondRoundResponse.moveResponse.encrypted_user_secret_key_share_id,
 	};
-}
-
-interface SecondResult {
-	completionEvent: CompletedDKGSecondRoundEvent;
-	secretShare: Uint8Array;
 }
 
 export async function launchDKGSecondRound(
@@ -92,7 +103,7 @@ export async function launchDKGSecondRound(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
-): Promise<SecondResult> {
+): Promise<DKGSecondRoundResponse> {
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
@@ -110,7 +121,7 @@ export async function launchDKGSecondRound(
 		networkDecryptionKeyPublicOutput,
 	);
 
-	const completionEvent = await dkgSecondRoundMoveCall(
+	const secondRoundMoveResponse = await dkgSecondRoundMoveCall(
 		conf,
 		dWalletStateData,
 		firstRoundOutputResult,
@@ -119,7 +130,7 @@ export async function launchDKGSecondRound(
 		centralizedPublicOutput,
 	);
 	return {
-		completionEvent,
+		moveResponse: secondRoundMoveResponse,
 		secretShare: centralizedSecretKeyShare,
 	};
 }
@@ -131,7 +142,7 @@ export async function dkgSecondRoundMoveCall(
 	centralizedPublicKeyShareAndProof: Uint8Array,
 	encryptedUserShareAndProof: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
-): Promise<CompletedDKGSecondRoundEvent> {
+): Promise<DKGSecondRoundMoveResponse> {
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
@@ -159,7 +170,7 @@ export async function dkgSecondRoundMoveCall(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_second_round`,
 		arguments: [
 			dwalletStateArg,
 			dwalletCapArg,
@@ -189,24 +200,15 @@ export async function dkgSecondRoundMoveCall(
 		throw new Error(`DKG second round failed with errors ${result.errors}`);
 	}
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	if (!isStartDKGSecondRoundEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
-	const completionEvent = await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedDKGSecondRoundEvent,
-	);
-	return completionEvent;
-}
-
-function isCompletedDKGSecondRoundEvent(obj: any): obj is CompletedDKGSecondRoundEvent {
-	return (
-		obj.dwallet_id !== undefined &&
-		obj.public_output !== undefined &&
-		obj.encrypted_user_secret_key_share_id !== undefined &&
-		obj.session_id !== undefined
-	);
+	const dwallet = await getObjectWithType(conf, firstRoundOutputResult.dwalletID, isActiveDWallet);
+	return {
+		dwallet,
+		encrypted_user_secret_key_share_id:
+			startSessionEvent.event_data.encrypted_user_secret_key_share_id,
+	};
 }
 
 interface DKGFirstRoundOutputResult {
@@ -231,7 +233,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	const dwalletCap = tx.moveCall({
-		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
+		target: `${c.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_dwallet_dkg_first_round`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dwalletSecp256k1ID,
@@ -239,6 +241,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 				mutable: true,
 			}),
 			tx.pure.id(networkDecryptionKeyID),
+			tx.pure.u32(0),
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -324,7 +327,7 @@ export async function acceptEncryptedUserShare(
 	);
 	const userOutputSignatureArg = tx.pure(bcs.vector(bcs.u8()).serialize(signedPublicOutput));
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::accept_encrypted_user_share`,
 		arguments: [
 			dwalletStateArg,
 			dwalletIDArg,
