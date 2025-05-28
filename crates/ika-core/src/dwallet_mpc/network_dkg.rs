@@ -29,6 +29,7 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
+use tap::Pipe;
 use tracing::warn;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
@@ -197,11 +198,7 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
-    pub fn get_protocol_public_parameters(
-        &self,
-        key_id: &ObjectID,
-        key_scheme: DWalletMPCNetworkKeyScheme,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    pub fn get_protocol_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
             warn!(
                 ?key_id,
@@ -209,27 +206,7 @@ impl DwalletMPCNetworkKeys {
             );
             return Err(DwalletMPCError::WaitingForNetworkKey(*key_id));
         };
-        let decryption_key_share_public_parameters =
-            bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
-                &result.decryption_key_share_public_parameters,
-            )?;
-
-        match key_scheme {
-            DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                bcs::to_bytes(&ProtocolPublicParameters::new::<
-                    { secp256k1::SCALAR_LIMBS },
-                    { FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                    { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
-                    secp256k1::GroupElement,
-                >(
-                    decryption_key_share_public_parameters.encryption_scheme_public_parameters,
-                ))
-                .map_err(DwalletMPCError::BcsError)
-            }
-            DWalletMPCNetworkKeyScheme::Ristretto => {
-                todo!()
-            }
-        }
+        Ok(result.protocol_public_parameters.clone())
     }
 
     pub async fn get_network_dkg_public_output(
@@ -438,7 +415,16 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
                     weighted_threshold_access_structure,
                 )
                 .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
-
+            let protocol_public_parameters = bcs::to_bytes(&ProtocolPublicParameters::new::<
+                { secp256k1::SCALAR_LIMBS },
+                { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                secp256k1::GroupElement,
+            >(
+                decryption_key_share_public_parameters
+                    .encryption_scheme_public_parameters
+                    .clone(),
+            ))?;
             Ok(NetworkDecryptionKeyPublicData {
                 epoch,
                 state: NetworkDecryptionKeyPublicOutputType::Reshare,
@@ -446,6 +432,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
                 decryption_key_share_public_parameters: bcs::to_bytes(
                     &decryption_key_share_public_parameters,
                 )?,
+                protocol_public_parameters,
                 network_dkg_output: bcs::from_bytes(network_dkg_public_output)?,
             })
         }
@@ -470,6 +457,16 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
                         weighted_threshold_access_structure,
                     )
                     .map_err(|e| DwalletMPCError::ClassGroupsError(e.to_string()))?;
+                let protocol_public_parameters = bcs::to_bytes(&ProtocolPublicParameters::new::<
+                    { secp256k1::SCALAR_LIMBS },
+                    { FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                    { NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
+                    secp256k1::GroupElement,
+                >(
+                    decryption_key_share_public_parameters
+                        .encryption_scheme_public_parameters
+                        .clone(),
+                ))?;
                 Ok(NetworkDecryptionKeyPublicData {
                     epoch,
                     state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
@@ -478,6 +475,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
                         &decryption_key_share_public_parameters,
                     )?,
                     network_dkg_output: mpc_public_output,
+                    protocol_public_parameters,
                 })
             }
         },

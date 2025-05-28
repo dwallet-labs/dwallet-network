@@ -1898,7 +1898,10 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::MakeDWalletUserSecretKeySharesPublic(
                     MakeDWalletUserSecretKeySharesPublicOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec(),
-                        public_user_secret_key_shares: output,
+                        public_user_secret_key_shares: init_event
+                            .event_data
+                            .public_user_secret_key_shares
+                            .clone(),
                         rejected: is_rejected,
                         session_sequence_number: sequence_number,
                     },
