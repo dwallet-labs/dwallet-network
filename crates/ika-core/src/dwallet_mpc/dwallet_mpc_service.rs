@@ -216,6 +216,7 @@ impl DWalletMPCService {
             };
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    session.clear_data();
                     session.status = MPCSessionStatus::Finished;
                 }
             }

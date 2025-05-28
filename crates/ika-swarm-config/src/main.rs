@@ -215,7 +215,7 @@ async fn main() -> Result<()> {
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
 
             // Create a WalletContext using the persisted SuiClientConfig.
-            let mut context = WalletContext::new(&sui_config_path)?;
+            let context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
             // Call `mint_ika` with the publisher address, context,
@@ -317,8 +317,8 @@ async fn main() -> Result<()> {
             );
 
             // Load the published config.
-            let config_content = std::fs::read_to_string(&ika_config_path)?;
-            let mut publish_config: PublishIkaConfig =
+            let config_content = fs::read_to_string(&ika_config_path)?;
+            let publish_config: PublishIkaConfig =
                 serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
 
             // Check that the required fields are present.

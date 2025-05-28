@@ -21,11 +21,10 @@ use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use std::sync::Arc;
-// use std::time::Instant;
+use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::time::Instant;
 use tracing::{error, info};
 
 /// Represents the state transitions of cryptographic computations in the orchestrator.
@@ -109,7 +108,6 @@ impl CryptographicComputationsOrchestrator {
                     }
                     ComputationUpdate::Completed => {
                         // todo(#1081): metadata.
-                        // todo(zeev): protocol, session, etc..
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
@@ -163,7 +161,6 @@ impl CryptographicComputationsOrchestrator {
         }
         let computation_channel_sender = self.computation_channel_sender.clone();
         rayon::spawn_fifo(move || {
-            // Measure session.advance()
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!(
