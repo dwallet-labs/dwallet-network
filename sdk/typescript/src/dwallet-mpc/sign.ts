@@ -23,6 +23,7 @@ export enum Hash {
 }
 
 interface ReadySignObject {
+	sign_id: string;
 	state: {
 		fields: {
 			signature: Uint8Array;
