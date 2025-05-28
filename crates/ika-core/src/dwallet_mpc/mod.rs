@@ -796,43 +796,10 @@ pub(super) async fn session_input_from_event(
     }
 }
 
-// todo(zeev): why?
 // TODO (#683): Parse the network key version from the network key object ID
 #[allow(unused)]
 pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
     0
-}
-
-fn get_log_dir() -> Result<&'static PathBuf, DwalletMPCError> {
-    if let Some(dir) = LOG_DIR.get() {
-        return Ok(dir);
-    }
-
-    // Otherwise, attempt creation
-    const PRIMARY: &str = "/opt/ika/db/mpclogs/logs";
-    const FALLBACK: &str = "/tmp/mpclogs/logs";
-
-    let chosen = if fs::create_dir_all(PRIMARY).is_ok() {
-        PRIMARY
-    } else {
-        // Primary failed → try fallback (propagate error if that fails).
-        fs::create_dir_all(FALLBACK).map_err(|e| {
-            DwalletMPCError::TwoPCMPCError(format!(
-                "Failed to create a fallback log directory {}: {}",
-                FALLBACK, e
-            ))
-        })?;
-        FALLBACK
-    };
-
-    // Insert into our OnceLock (this only ever succeeds once).
-    let pathbuf = PathBuf::from(chosen);
-    LOG_DIR.set(pathbuf).map_err(|_| {
-        DwalletMPCError::TwoPCMPCError("failed to set a global log directory".into())
-    })?;
-
-    // Safe to unwrap — we just set it
-    Ok(LOG_DIR.get().unwrap())
 }
 
 /// A struct to encapsulate MPC session logging parameters and functionality.
@@ -909,7 +876,7 @@ impl MPCSessionLogger {
         let round = messages.len();
 
         // Get (and initialize once) the log directory
-        let log_dir = match get_log_dir() {
+        let log_dir = match self.get_log_dir() {
             Ok(dir) => dir,
             Err(err) => {
                 warn!(?err, "Failed to get the logs directory");
@@ -944,5 +911,37 @@ impl MPCSessionLogger {
         if let Err(e) = file.write_all(log.to_string().as_bytes()) {
             warn!("Failed to write to the log file {}: {}", path.display(), e);
         }
+    }
+
+    fn get_log_dir(&self) -> Result<&'static PathBuf, DwalletMPCError> {
+        if let Some(dir) = LOG_DIR.get() {
+            return Ok(dir);
+        }
+
+        // Otherwise, attempt creation
+        const PRIMARY: &str = "/opt/ika/db/mpclogs/logs";
+        const FALLBACK: &str = "/tmp/mpclogs/logs";
+
+        let chosen = if fs::create_dir_all(PRIMARY).is_ok() {
+            PRIMARY
+        } else {
+            // Primary failed → try fallback (propagate error if that fails).
+            fs::create_dir_all(FALLBACK).map_err(|e| {
+                DwalletMPCError::TwoPCMPCError(format!(
+                    "Failed to create a fallback log directory {}: {}",
+                    FALLBACK, e
+                ))
+            })?;
+            FALLBACK
+        };
+
+        // Insert into our OnceLock (this only ever succeeds once).
+        let pathbuf = PathBuf::from(chosen);
+        LOG_DIR.set(pathbuf).map_err(|_| {
+            DwalletMPCError::TwoPCMPCError("failed to set a global log directory".into())
+        })?;
+
+        // Safe to unwrap — we just set it
+        Ok(LOG_DIR.get().unwrap())
     }
 }

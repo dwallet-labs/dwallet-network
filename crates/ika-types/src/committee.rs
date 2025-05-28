@@ -169,7 +169,7 @@ impl Committee {
             .iter()
             .map(|(auth, &idx)| {
                 // idx is 0-based in index_map, so we add 1 to match the crypto lib.
-                ((idx + 1) as PartyID, auth.clone())
+                ((idx + 1) as PartyID, *auth)
             })
             .collect()
     }
