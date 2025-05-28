@@ -43,7 +43,6 @@ module ika_system::system;
 use ika::ika::IKA;
 use ika_system::system_inner::{
     Self,
-    SystemParametersV1,
     SystemInnerV1
 };
 use ika_system::protocol_treasury::ProtocolTreasury;
@@ -88,7 +87,8 @@ public(package) fun create(
     validators: ValidatorSet,
     protocol_version: u64,
     epoch_start_timestamp_ms: u64,
-    parameters: SystemParametersV1,
+    epoch_duration_ms: u64,
+    stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
     authorized_protocol_cap_ids: vector<ID>,
     ctx: &mut TxContext,
@@ -98,7 +98,8 @@ public(package) fun create(
         validators,
         protocol_version,
         epoch_start_timestamp_ms,
-        parameters,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
         protocol_treasury,
         authorized_protocol_cap_ids,
         ctx,

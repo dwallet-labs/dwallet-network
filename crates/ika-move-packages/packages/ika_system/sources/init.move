@@ -6,7 +6,6 @@ module ika_system::init;
 use std::type_name;
 use ika::ika::IKA;
 use ika_system::system;
-use ika_system::system_inner;
 use ika_system::protocol_treasury;
 use ika_system::display;
 use ika_system::validator_set::{Self};
@@ -58,7 +57,6 @@ public fun initialize(
     min_validator_joining_stake: u64,
     max_validator_change_count: u64,
     reward_slashing_rate: u16,
-    lock_active_committee: bool,
     // Display parameters
     staked_ika_image_url: String,
     dwallet_cap_image_url: String,
@@ -92,19 +90,11 @@ public fun initialize(
         max_validator_count,
         min_validator_joining_stake,
         max_validator_change_count,
-        ctx,
-    );
-
-    let system_parameters = system_inner::create_system_parameters(
-        epoch_duration_ms,
-        stake_subsidy_start_epoch,
-        // Validator committee parameters
         reward_slashing_rate,
-        lock_active_committee,
         ctx,
     );
 
-    let stake_subsidy = protocol_treasury::create(
+    let protocol_treasury = protocol_treasury::create(
         protocol_treasury_cap,
         stake_subsidy_rate,
         stake_subsidy_period_length,
@@ -121,8 +111,9 @@ public fun initialize(
         validators,
         protocol_version,
         chain_start_timestamp_ms,
-        system_parameters,
-        stake_subsidy,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
+        protocol_treasury,
         authorized_protocol_cap_ids,
         ctx,
     );

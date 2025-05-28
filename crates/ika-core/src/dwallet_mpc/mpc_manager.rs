@@ -11,21 +11,15 @@ use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDec
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, VersionedNetworkDkgOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
-    DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent,
-    EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, MaliciousReport, PresignRequestEvent,
-    SessionInfo, SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport,
+    SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};

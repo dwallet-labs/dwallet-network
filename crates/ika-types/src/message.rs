@@ -106,6 +106,7 @@ pub enum MessageKind {
     DwalletMPCNetworkReshareOutput(Secp256K1NetworkKeyPublicOutputSlice),
     MakeDWalletUserSecretKeySharesPublic(MakeDWalletUserSecretKeySharesPublicOutput),
     DWalletImportedKeyVerificationOutput(DWalletImportedKeyVerificationOutput),
+    SetMaxActiveSessionsBuffer(u64),
 }
 
 impl MessageKind {
@@ -127,6 +128,7 @@ impl MessageKind {
             MessageKind::DWalletImportedKeyVerificationOutput(_) => {
                 "DWalletImportedKeyVerificationOutput"
             }
+            MessageKind::SetMaxActiveSessionsBuffer(_) => "SetMaxActiveSessionsBuffer",
         }
     }
 
@@ -175,6 +177,13 @@ impl Display for MessageKind {
             }
             MessageKind::DWalletImportedKeyVerificationOutput(_) => {
                 writeln!(writer, "MessageKind : DWalletImportedKeyVerificationOutput")?;
+            }
+            MessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetMaxActiveSessionsBuffer({})",
+                    buffer_size
+                )?;
             }
         }
         write!(f, "{}", writer)

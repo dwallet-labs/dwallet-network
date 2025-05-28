@@ -443,8 +443,7 @@ impl DWalletMPCSession {
                                 encryption_key_id: event_data.event_data.encryption_key_id,
                                 dwallet_network_decryption_key_id: event_data
                                     .event_data
-                                    .dwallet_network_encryption_key_id
-                                    .clone(),
+                                    .dwallet_network_encryption_key_id,
                                 curve: event_data.event_data.curve,
 
                                 // Fields not relevant for verification; passing empty values.
