@@ -24,7 +24,8 @@ pub type SystemCheckpointSequenceNumber = u64;
 pub type SystemCheckpointTimestamp = u64;
 
 // The constituent parts of system checkpoints, signed and certified.
-
+// Note: the order of these fields, and the number must correspond to the Move code in
+// `system_inner.move`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SystemCheckpointKind {
     NextConfigVersion(ProtocolVersion),

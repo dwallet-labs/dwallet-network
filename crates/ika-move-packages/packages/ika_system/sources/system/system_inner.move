@@ -726,6 +726,8 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
 
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
+    // Note: the order of these fields, and the number must correspond to the Rust code in
+    // `crates/ika-types/src/messages_system_checkpoints.rs`.
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
