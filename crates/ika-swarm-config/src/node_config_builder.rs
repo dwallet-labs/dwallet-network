@@ -131,7 +131,7 @@ impl ValidatorConfigBuilder {
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
             )),
-            validator_id: validator.to_validator_info().validator_id.into_bytes(),
+            validator_id: Some(validator.to_validator_info().validator_id),
             account_key_pair: KeyPairWithPath::new(validator.account_key_pair.copy()),
             consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.consensus_key_pair.copy(),

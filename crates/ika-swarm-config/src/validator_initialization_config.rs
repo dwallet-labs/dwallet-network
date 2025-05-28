@@ -63,7 +63,7 @@ impl ValidatorInitializationConfig {
 
         ValidatorInfo {
             name,
-            validator_id: (),
+            validator_id: self.validator_id,
             class_groups_public_key_and_proof,
             protocol_public_key,
             consensus_public_key: worker_public_key,
