@@ -13,6 +13,7 @@ use ika_system::validator_set::{Self};
 use ika_system::protocol_cap::{Self, ProtocolCap};
 use sui::coin::{TreasuryCap};
 use sui::package::{Self, Publisher, UpgradeCap};
+use std::string::String;
 
 /// The provided upgrade cap does not belong to this package.
 const EInvalidUpgradeCap: u64 = 1;
@@ -58,6 +59,14 @@ public fun initialize(
     max_validator_change_count: u64,
     reward_slashing_rate: u16,
     lock_active_committee: bool,
+    // Display parameters
+    staked_ika_image_url: String,
+    dwallet_cap_image_url: String,
+    imported_key_dwallet_cap_image_url: String,
+    unverified_presign_cap_image_url: String,
+    verified_presign_cap_image_url: String,
+    unverified_partial_user_signature_cap_image_url: String,
+    verified_partial_user_signature_cap_image_url: String,
     ctx: &mut TxContext,
 ): ProtocolCap {
     let InitCap { id, publisher } = init_cap;
@@ -118,8 +127,18 @@ public fun initialize(
         ctx,
     );
 
-    display::create(publisher, ctx);
-    
+    display::create(
+        publisher,
+        staked_ika_image_url,
+        dwallet_cap_image_url,
+        imported_key_dwallet_cap_image_url,
+        unverified_presign_cap_image_url,
+        verified_presign_cap_image_url,
+        unverified_partial_user_signature_cap_image_url,
+        verified_partial_user_signature_cap_image_url,
+        ctx,
+    );
+
     protocol_cap
 }
 

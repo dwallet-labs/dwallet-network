@@ -192,6 +192,8 @@ where
         'sync_network_keys: loop {
             time::sleep(Duration::from_secs(5)).await;
 
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let SystemInner::V1(system_inner) = system_inner;
             let network_encryption_keys = sui_client
                 .get_dwallet_mpc_network_keys()
                 .await
@@ -199,13 +201,21 @@ where
                     warn!("failed to fetch dwallet MPC network keys: {e}");
                     HashMap::new()
                 });
-            let system_inner = sui_client.must_get_system_inner_object().await;
-            let SystemInner::V1(system_inner) = system_inner;
             if network_encryption_keys
                 .iter()
                 .any(|(_, key)| key.current_epoch != system_inner.epoch())
             {
-                warn!("The network decryption keys are not in the current epoch");
+                // Gather all the (ObjectID, current epoch) pairs that are out of date.
+                let mismatches: Vec<(ObjectID, u64)> = network_encryption_keys
+                    .iter()
+                    .filter(|(_, key)| key.current_epoch != system_inner.epoch())
+                    .map(|(id, key)| (*id, key.current_epoch))
+                    .collect();
+                warn!(
+                    keys_current_epoch=?mismatches,
+                    system_inner_epoch=?system_inner.epoch(),
+                    "Network encryption keys are out-of-date for this authority"
+                );
                 continue;
             }
             let active_bls_committee = system_inner.get_ika_active_committee();
@@ -255,6 +265,10 @@ where
                     Ok(key) => {
                         all_network_keys_data.insert(key_id, key.clone());
                         network_keys_cache.insert((key_id, key.epoch));
+                        info!(
+                            key_id=?key_id,
+                            "Successfully synced the network decryption key for `key_id`",
+                        );
                     }
                     Err(DwalletMPCError::WaitingForNetworkKey(key_id)) => {
                         // This is expected if the key is not yet available.
@@ -263,7 +277,7 @@ where
                         continue 'sync_network_keys;
                     }
                     Err(err) => {
-                        error!(
+                        warn!(
                             key=?key_id,
                             err=?err,
                             "failed to get network decryption key data, retrying...",
