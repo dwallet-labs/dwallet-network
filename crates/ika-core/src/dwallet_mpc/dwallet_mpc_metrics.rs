@@ -17,10 +17,7 @@
 //! - **mpc_round**: The specific round number within a protocol session
 
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
-use prometheus::{
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
-    Registry,
-};
+use prometheus::{register_int_gauge_vec_with_registry, IntGaugeVec, Registry};
 use std::sync::Arc;
 
 /// Prometheus metrics for DWallet MPC operations.

@@ -29,7 +29,6 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tap::Pipe;
 use tracing::warn;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
