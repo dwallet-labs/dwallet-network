@@ -163,18 +163,18 @@ impl MPCProtocolInitData {
 
     pub fn get_signature_algorithm(&self) -> String {
         let signature_alg = match self {
-            MPCProtocolInitData::DKGFirst(event) => None,
-            MPCProtocolInitData::DKGSecond(event) => None,
+            MPCProtocolInitData::DKGFirst(_event) => None,
+            MPCProtocolInitData::DKGSecond(_event) => None,
             MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
             MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
-            MPCProtocolInitData::NetworkDkg(_, event) => None,
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
             MPCProtocolInitData::EncryptedShareVerification(_) => None,
             MPCProtocolInitData::PartialSignatureVerification(event) => {
                 Some(event.event_data.signature_algorithm)
             }
             MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
         };
         let signature_alg = match &signature_alg {
             None => "".to_string(),

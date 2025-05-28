@@ -63,3 +63,23 @@ jobs:
       - name: Fmt Check - Wasm
         run: cargo fmt -- --check
         working-directory: sdk/dwallet-mpc-wasm
+  clippy:
+    name: ClippΩy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Configure git with personal access token
+        run: |
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Fmt Check
+        run: cargo fmt -- --check
+      - name: Fmt Check - Wasm
+        run: cargo fmt -- --check
+        working-directory: sdk/dwallet-mpc-wasm
