@@ -207,11 +207,11 @@ impl CryptographicComputationsOrchestrator {
                 } else {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
-                    duration_ms = elapsed_ms,
-                    mpc_protocol=?mpc_protocol,
-                    duration_seconds = elapsed_ms / 1000,
-                    "Computation update message sent"
-                );
+                        duration_ms = elapsed_ms,
+                        mpc_protocol=?mpc_protocol,
+                        duration_seconds = elapsed_ms / 1000,
+                        "Computation update message sent"
+                    );
                 }
             });
         });
