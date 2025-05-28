@@ -174,13 +174,7 @@ where
             .iter()
             .map(|validator| {
                 (
-                    validator
-                        .validator_info
-                        .name
-                        .clone()
-                        .into_bytes()
-                        .try_into()
-                        .unwrap(),
+                    AuthorityName::new(validator.validator_info.validator_id.clone().into_bytes()),
                     AuthorityPublicKey::from_bytes(
                         &validator.validator_info.name.clone().into_bytes(),
                     )
