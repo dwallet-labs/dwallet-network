@@ -398,12 +398,8 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
-                let centralized_party_message =
-                    match bcs::from_bytes(&event_data.event_data.centralized_party_message)? {
-                        VersionedImportedDWalletPublicOutput::V1(centralized_party_message) => {
-                            centralized_party_message
-                        }
-                    };
+                let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
+                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?;
                 let public_input = (
                     bcs::from_bytes(encoded_public_input)?,
                     dwallet_id,

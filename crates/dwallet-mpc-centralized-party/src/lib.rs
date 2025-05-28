@@ -254,9 +254,7 @@ pub fn verify_secp_signature_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     hash_type: u32,
 ) -> anyhow::Result<bool> {
-    let signature = match bcs::from_bytes(&signature)? {
-        VersionedSignOutput::V1(signature) => signature,
-    };
+    let VersionedSignOutput::V1(signature) = bcs::from_bytes(&signature)?;
     let protocol_public_parameters: ProtocolPublicParameters =
         bcs::from_bytes(&protocol_public_parameters_by_key_scheme(
             network_dkg_public_output,
