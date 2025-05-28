@@ -175,17 +175,16 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
         };
-        let signature_alg = match &signature_alg {
+        match &signature_alg {
             None => "".to_string(),
             Some(curve) => {
-                return if curve == &0 {
+                if curve == &0 {
                     "ECDSA".to_string()
                 } else {
                     "Unknown".to_string()
                 }
             }
-        };
-        signature_alg
+        }
     }
 }
 
