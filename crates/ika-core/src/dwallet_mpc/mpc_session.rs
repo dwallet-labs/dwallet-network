@@ -756,6 +756,7 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+        self.received_more_messages_since_last_advance = true;
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -769,7 +770,6 @@ impl DWalletMPCSession {
             );
             return Ok(());
         }
-        self.received_more_messages_since_last_advance = true;
         let committee = self.epoch_store()?.committee().clone();
         if self.agreed_mpc_protocol.is_none() {
             let mpc_protocol = message.mpc_protocol.clone();
@@ -825,9 +825,8 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    pub(crate) fn wait_consensus_rounds_delay(
-        &mut self,
-    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
+    fn wait_consensus_rounds_delay(&mut self) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
+        // Safe to unwrap as this function is only called after the MPC event is received.
         match &self.mpc_event_data.clone().unwrap().init_protocol_data {
             MPCProtocolInitData::Sign(_) => {
                 if self.current_round == 2 {
@@ -843,7 +842,7 @@ impl DWalletMPCSession {
                             ?self.agreed_mpc_protocol,
                             ?self.session_id,
                             messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
-                            "Quorum reached for MPC session and delay passed, advancing to next round",
+                            "Quorum reached for MPC session and delay passed, advancing to the next round",
                         );
                         self.consensus_rounds_since_quorum_reached = 0;
                         Ok(ReadyToAdvanceCheckResult {
@@ -856,7 +855,7 @@ impl DWalletMPCSession {
                             ?self.current_round,
                             ?self.agreed_mpc_protocol,
                             messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
-                            "Quorum reached for MPC session but delay not passed yet, waiting another round",
+                            "Quorum reached for MPC session but delay not passed yet, waiting for another round",
                         );
                         self.consensus_rounds_since_quorum_reached += 1;
                         Ok(ReadyToAdvanceCheckResult {
