@@ -433,6 +433,32 @@ impl DWalletMPCSession {
                         malicious_parties,
                         private_output,
                     }) => {
+                        verify_encrypted_share(
+                            &EncryptedShareVerificationRequestEvent {
+                                decentralized_public_output: bcs::to_bytes(
+                                    &VersionedDwalletDKGSecondRoundPublicOutput::V1(
+                                        public_output.clone(),
+                                    ),
+                                )?,
+                                encrypted_centralized_secret_share_and_proof: event_data
+                                    .event_data
+                                    .encrypted_centralized_secret_share_and_proof
+                                    .clone(),
+                                encryption_key: event_data.event_data.encryption_key.clone(),
+                                encryption_key_id: event_data.event_data.encryption_key_id,
+                                dwallet_network_decryption_key_id: event_data
+                                    .event_data
+                                    .dwallet_network_encryption_key_id
+                                    .clone(),
+                                curve: event_data.event_data.curve,
+
+                                // Fields not relevant for verification; passing empty values.
+                                dwallet_id: ObjectID::new([0; 32]),
+                                source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                                encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                            },
+                            encoded_public_input,
+                        )?;
                         let public_output = bcs::to_bytes(
                             &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
                         )?;
