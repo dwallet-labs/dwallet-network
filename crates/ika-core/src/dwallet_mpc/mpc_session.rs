@@ -24,14 +24,24 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
+use crate::dwallet_mpc::{
+    message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
+    MPCSessionLogger,
+};
+use crate::stake_aggregator::StakeAggregator;
+use ika_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
+use ika_types::committee::StakeUnit;
+use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::message::MessageKind::DWalletImportedKeyVerificationOutput;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
+    AdvanceResult, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::id::ID;
+use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -83,6 +93,12 @@ pub(crate) struct DWalletMPCSession {
     // The *total* number of attempts to advance that failed in the session.
     // Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
+    /// A mapping between the MPC protocol of this session to the authorities that voted for it.
+    mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
+    /// The MPC protocol that was agreed upon by a quorum of the authorities.
+    agreed_mpc_protocol: Option<String>,
+    /// The number of consensus rounds since the last time a quorum was reached for the session.
+    consensus_rounds_since_quorum_reached: usize,
 }
 
 impl DWalletMPCSession {
@@ -109,6 +125,9 @@ impl DWalletMPCSession {
             mpc_event_data,
             received_more_messages_since_last_advance: false,
             attempts_count: 0,
+            mpc_protocol_to_voting_authorities: HashMap::new(),
+            agreed_mpc_protocol: None,
+            consensus_rounds_since_quorum_reached: 0,
         }
     }
 
@@ -486,7 +505,8 @@ impl DWalletMPCSession {
                             encryption_key_id: event_data.event_data.encryption_key_id,
                             dwallet_network_decryption_key_id: event_data
                                 .event_data
-                                .dwallet_network_decryption_key_id,
+                                .dwallet_network_decryption_key_id
+                                .clone(),
                             curve: event_data.event_data.curve,
 
                             // Fields not relevant for verification; passing empty values.
@@ -711,7 +731,7 @@ impl DWalletMPCSession {
             message,
             self.session_id,
             self.current_round,
-            mpc_protocol,
+            mpc_protocol.to_string(),
         ))
     }
 
@@ -746,7 +766,6 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.received_more_messages_since_last_advance = true;
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -760,7 +779,20 @@ impl DWalletMPCSession {
             );
             return Ok(());
         }
-        // TODO (#876): Set the maximum message size to the smallest size possible.
+        self.received_more_messages_since_last_advance = true;
+        let committee = self.epoch_store()?.committee().clone();
+        if self.agreed_mpc_protocol.is_none() {
+            let mpc_protocol = message.mpc_protocol.clone();
+            if self
+                .mpc_protocol_to_voting_authorities
+                .entry(mpc_protocol.clone())
+                .or_insert(StakeAggregator::new(committee))
+                .insert_generic(message.authority, ())
+                .is_quorum_reached()
+            {
+                self.agreed_mpc_protocol = Some(mpc_protocol);
+            }
+        }
         info!(
             session_id=?message.session_id,
             from_authority=?message.authority,
@@ -768,6 +800,7 @@ impl DWalletMPCSession {
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
             mpc_protocol=message.mpc_protocol,
+            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
             "Received a dWallet MPC message",
         );
         if message.round_number == 0 {
@@ -802,43 +835,185 @@ impl DWalletMPCSession {
         Ok(())
     }
 
-    pub(crate) fn check_quorum_for_next_crypto_round(&self) -> ReadyToAdvanceCheckResult {
+    pub(crate) fn wait_consensus_rounds_delay(
+        &mut self,
+    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
+        match &self.mpc_event_data.clone().unwrap().init_protocol_data {
+            MPCProtocolInitData::Sign(_) => {
+                if self.current_round == 2 {
+                    if self.consensus_rounds_since_quorum_reached
+                        >= self
+                            .epoch_store()?
+                            .protocol_config()
+                            .sign_second_round_delay() as usize
+                    {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            ?self.session_id,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session and delay passed, advancing to next round",
+                        );
+                        self.consensus_rounds_since_quorum_reached = 0;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: true,
+                            malicious_parties: vec![],
+                        })
+                    } else {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session but delay not passed yet, waiting another round",
+                        );
+                        self.consensus_rounds_since_quorum_reached += 1;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: false,
+                            malicious_parties: vec![],
+                        })
+                    }
+                } else {
+                    Ok(ReadyToAdvanceCheckResult {
+                        is_ready: true,
+                        malicious_parties: vec![],
+                    })
+                }
+            }
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                if self.current_round == 3 {
+                    if self.consensus_rounds_since_quorum_reached
+                        >= self
+                            .epoch_store()?
+                            .protocol_config()
+                            .network_dkg_third_round_delay() as usize
+                    {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            ?self.session_id,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session and delay passed, advancing to next round",
+                        );
+                        self.consensus_rounds_since_quorum_reached = 0;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: true,
+                            malicious_parties: vec![],
+                        })
+                    } else {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session but delay not passed yet, waiting another round",
+                        );
+                        self.consensus_rounds_since_quorum_reached += 1;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: false,
+                            malicious_parties: vec![],
+                        })
+                    }
+                } else {
+                    Ok(ReadyToAdvanceCheckResult {
+                        is_ready: true,
+                        malicious_parties: vec![],
+                    })
+                }
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                if self.current_round == 3 {
+                    if self.consensus_rounds_since_quorum_reached
+                        >= self
+                            .epoch_store()?
+                            .protocol_config()
+                            .decryption_key_reshare_third_round_delay()
+                            as usize
+                    {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            ?self.session_id,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session and delay passed, advancing to next round",
+                        );
+                        self.consensus_rounds_since_quorum_reached = 0;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: true,
+                            malicious_parties: vec![],
+                        })
+                    } else {
+                        info!(
+                            ?self.consensus_rounds_since_quorum_reached,
+                            ?self.current_round,
+                            ?self.agreed_mpc_protocol,
+                            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                            "Quorum reached for MPC session but delay not passed yet, waiting another round",
+                        );
+                        self.consensus_rounds_since_quorum_reached += 1;
+                        Ok(ReadyToAdvanceCheckResult {
+                            is_ready: false,
+                            malicious_parties: vec![],
+                        })
+                    }
+                } else {
+                    Ok(ReadyToAdvanceCheckResult {
+                        is_ready: true,
+                        malicious_parties: vec![],
+                    })
+                }
+            }
+            _ => Ok(ReadyToAdvanceCheckResult {
+                is_ready: true,
+                malicious_parties: vec![],
+            }),
+        }
+    }
+
+    pub(crate) fn check_quorum_for_next_crypto_round(
+        &mut self,
+    ) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
         match self.status {
             MPCSessionStatus::Active => {
                 // MPC First round doesn't require a threshold of messages to advance.
                 // This is the round after the MPC event.
-                if self.current_round == 1
-                    || (self
-                        .weighted_threshold_access_structure
-                        .is_authorized_subset(
-                            &self
-                                .serialized_full_messages
-                                // Check if we have the threshold of messages for the previous round
-                                // to advance to the next round.
-                                .get(&(self.current_round - 1))
-                                .unwrap_or(&HashMap::new())
-                                .keys()
-                                .cloned()
-                                .collect::<HashSet<PartyID>>(),
-                        )
-                        .is_ok()
-                        && self.received_more_messages_since_last_advance)
-                {
-                    ReadyToAdvanceCheckResult {
+                if self.current_round == 1 {
+                    Ok(ReadyToAdvanceCheckResult {
                         is_ready: true,
                         malicious_parties: vec![],
-                    }
+                    })
+                } else if (self
+                    .weighted_threshold_access_structure
+                    .is_authorized_subset(
+                        &self
+                            .serialized_full_messages
+                            // Check if we have the threshold of messages for the previous round
+                            // to advance to the next round.
+                            .get(&(self.current_round - 1))
+                            .unwrap_or(&HashMap::new())
+                            .keys()
+                            .cloned()
+                            .collect::<HashSet<PartyID>>(),
+                    )
+                    .is_ok()
+                    && self.received_more_messages_since_last_advance
+                    && self.agreed_mpc_protocol.is_some())
+                {
+                    self.wait_consensus_rounds_delay()
                 } else {
-                    ReadyToAdvanceCheckResult {
+                    Ok(ReadyToAdvanceCheckResult {
                         is_ready: false,
                         malicious_parties: vec![],
-                    }
+                    })
                 }
             }
-            _ => ReadyToAdvanceCheckResult {
+            _ => Ok(ReadyToAdvanceCheckResult {
                 is_ready: false,
                 malicious_parties: vec![],
-            },
+            }),
         }
     }
 }

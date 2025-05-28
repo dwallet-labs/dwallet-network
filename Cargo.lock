@@ -5911,6 +5911,7 @@ name = "ika-protocol-config"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "dwallet-mpc-types",
  "insta",
  "schemars",
  "serde",

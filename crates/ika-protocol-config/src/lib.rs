@@ -1,15 +1,25 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use clap::*;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
+    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
+    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
+    ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME,
+    PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME,
+    START_NETWORK_DKG_EVENT_STRUCT_NAME,
+};
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
+use std::collections::HashMap;
 use std::{
     cell::RefCell,
     collections::BTreeSet,
     sync::atomic::{AtomicBool, Ordering},
 };
-
-use clap::*;
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use sui_protocol_config_macros::{
     ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters, ProtocolConfigOverride,
 };
@@ -263,6 +273,9 @@ pub struct ProtocolConfig {
     /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
     /// is disabled.
     consensus_gc_depth: Option<u32>,
+    decryption_key_reshare_third_round_delay: Option<u32>,
+    network_dkg_third_round_delay: Option<u32>,
+    sign_second_round_delay: Option<u32>,
 }
 
 // feature flags
@@ -278,6 +291,10 @@ impl ProtocolConfig {
     //         )))
     //     }
     // }
+
+    pub fn get_consensus_rounds_delay_per_mpc_protocol(protocol_flag: u64, mpc_round: u64) -> u64 {
+        4u64
+    }
 
     pub fn consensus_round_prober(&self) -> bool {
         self.feature_flags.consensus_round_prober
@@ -494,6 +511,9 @@ impl ProtocolConfig {
             consensus_max_transactions_in_block_bytes: Some(315218930),
             consensus_max_num_transactions_in_block: Some(512),
             consensus_gc_depth: Some(60),
+            decryption_key_reshare_third_round_delay: Some(20),
+            network_dkg_third_round_delay: Some(20),
+            sign_second_round_delay: Some(2),
         };
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
@@ -824,3 +844,15 @@ mod test {
         ));
     }
 }
+
+pub const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
+pub const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
+pub const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
+pub const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
+pub const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
+pub const PRESIGN_PROTOCOL_FLAG: u32 = 5;
+pub const SIGN_PROTOCOL_FLAG: u32 = 6;
+pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
+pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
+pub const DECRYPTION_KEY_RESHARE_PROTOCOL_FLAG: u32 = 9;
+pub const NETWORK_DKG_PROTOCOL_FLAG: u32 = 10;

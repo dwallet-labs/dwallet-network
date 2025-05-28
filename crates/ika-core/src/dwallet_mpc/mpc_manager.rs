@@ -552,7 +552,7 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                let quorum_check_result = session.check_quorum_for_next_crypto_round();
+                let quorum_check_result = session.check_quorum_for_next_crypto_round().ok()?;
                 if quorum_check_result.is_ready {
                     session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session

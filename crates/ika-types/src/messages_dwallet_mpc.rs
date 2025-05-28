@@ -1,9 +1,11 @@
 use crate::crypto::AuthorityName;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
+    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
     DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME,
+    FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
@@ -18,16 +20,6 @@ use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-
-pub const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
-pub const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
-pub const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
-pub const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
-pub const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
-pub const PRESIGN_PROTOCOL_FLAG: u32 = 5;
-pub const SIGN_PROTOCOL_FLAG: u32 = 6;
-pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
-pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
@@ -93,6 +85,39 @@ impl Display for MPCProtocolInitData {
             }
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
+            }
+        }
+    }
+}
+
+impl MPCProtocolInitData {
+    pub fn get_event_name(&self) -> String {
+        match self {
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
+            }
+            MPCProtocolInitData::DKGFirst(_) => {
+                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::DKGSecond(_) => {
+                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::Presign(_) => PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::Sign(_) => SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
+            MPCProtocolInitData::NetworkDkg(_, _) => {
+                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
+            }
+            MPCProtocolInitData::EncryptedShareVerification(_) => {
+                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::PartialSignatureVerification(_) => {
+                FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
             }
         }
     }
@@ -170,7 +195,6 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number starts from 0.
     pub round_number: usize,
-    /// The MPC protocol that this message belongs to.
     pub mpc_protocol: String,
 }
 
