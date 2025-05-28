@@ -172,7 +172,7 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::NetworkDkg(_, event) => None,
             MPCProtocolInitData::EncryptedShareVerification(_) => None,
             MPCProtocolInitData::PartialSignatureVerification(event) => {
-                Some(event.event_data.hash_scheme)
+                Some(event.event_data.signature_algorithm)
             }
             MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
