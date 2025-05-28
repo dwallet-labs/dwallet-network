@@ -50,11 +50,17 @@ public struct PendingActiveSet has copy, drop, store {
     validator_changes: VecSet<ID>,
 }
 
-/// Creates a new active set with the given `min_validator_count`, `max_validator_count`, `min_validator_joining_stake`, and `max_validator_change_count`. The
-/// `min_validator_joining_stake` is used to filter out validators that do not have enough staked
+/// Creates a new active set with the given `min_validator_count`, `max_validator_count`, `min_validator_joining_stake`,
+/// and `max_validator_change_count`.
+/// The `min_validator_joining_stake` is used to filter out validators that do not have enough staked
 /// IKA to be included in the active set initially. The `max_validator_change_count` limits the number
 /// of validator additions/removals per epoch.
-public(package) fun new(min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64): PendingActiveSet {
+public(package) fun new(
+    min_validator_count: u64,
+    max_validator_count: u64,
+    min_validator_joining_stake: u64,
+    max_validator_change_count: u64
+): PendingActiveSet {
     assert!(max_validator_count > 0, EZeroMaxSize);
     assert!(min_validator_count <= max_validator_count, EBelowMinValidatorCount);
     PendingActiveSet {
@@ -170,10 +176,10 @@ public(package) fun remove(set: &mut PendingActiveSet, validator_id: ID): bool {
         let entry = set.validators.remove(idx);
         set.total_stake = set.total_stake - entry.staked_amount;
     });
-    
+
     // Abort if removal would violate the minimum validator count
     assert!(is_under_min_validator_count || set.validators.length() >= set.min_validator_count, EBelowMinValidatorCount);
-    
+
     // Only track the change if the validator was actually removed
     if (removed) {
         if (!set.validator_changes.contains(&validator_id)) {
@@ -520,7 +526,7 @@ fun test_min_validator_count() {
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // Add three validators
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
@@ -529,19 +535,19 @@ fun test_min_validator_count() {
     let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
     assert!(set.size() == 3);
-    
+
     // Should be able to remove one (leaving 2)
     set.remove(v1);
     assert!(set.size() == 2);
-    
+
     // Should not be able to remove more (would go below min of 2)
     // Attempting to remove should abort, so we don't test it here
-    
+
     // Re-add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 15);
     assert!(inserted);
     assert!(set.size() == 3);
-    
+
     // Now should be able to remove v2
     set.remove(v2);
     assert!(set.size() == 2);
@@ -554,14 +560,14 @@ fun test_remove_below_min_aborts() {
     let mut set = new(2, 5, 0, 10); // min_validator_count = 2, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 10
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
-    
+
     // Add two validators (exactly at min)
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
     assert!(set.size() == 2);
-    
+
     // This should abort since we're at the minimum
     set.remove(v1);
 }
@@ -600,7 +606,7 @@ fun test_min_validator_count_aborts() {
     assert!(set.total_stake() == 150);
     assert!(set.stake_for_validator(v2) == 0);
     assert!(!set.active_ids().contains(&v2));
-    
+
     // Now we're at min_validator_count=1, trying to update below threshold
     // should keep the validator since we can't remove it
     let (updated, _) = set.insert_or_update_or_remove(v3, 90);
@@ -674,36 +680,36 @@ fun test_removal_reporting() {
     let mut set = new(0, 5, 100, 10); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 100, max_validator_change_count = 10
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
-    
+
     // Try to remove validator not in set using update_or_remove
     let (in_set, removed_id) = set.update_or_remove(v1, 50);
     assert!(!in_set); // Should not be in set
     assert!(option::is_none(&removed_id)); // Should not report removal since validator wasn't in set
-    
+
     // Try to remove validator not in set using insert_or_update_or_remove
     let (in_set, removed_id) = set.insert_or_update_or_remove(v2, 50);
     assert!(!in_set); // Should not be in set
     assert!(option::is_none(&removed_id)); // Should not report removal since validator wasn't in set
-    
+
     // Add a validator to the set
     let (inserted, _) = set.insert_or_update_or_remove(v1, 150);
     assert!(inserted);
     assert!(set.size() == 1);
-    
+
     // Now remove validator that is in set using update_or_remove with stake below threshold
     let (in_set, removed_id) = set.update_or_remove(v1, 50);
     assert!(!in_set); // Should not be in set after removal
     assert!(option::is_some(&removed_id)); // Should report removal
     assert!(*option::borrow(&removed_id) == v1); // Should remove the correct validator
     assert!(set.size() == 0);
-    
+
     // Add validators back to set
     let (inserted, _) = set.insert_or_update_or_remove(v1, 150);
     assert!(inserted);
     let (inserted, _) = set.insert_or_update_or_remove(v2, 200);
     assert!(inserted);
     assert!(set.size() == 2);
-    
+
     // Remove validator that is in set using insert_or_update_or_remove with stake below threshold
     let (in_set, removed_id) = set.insert_or_update_or_remove(v1, 50);
     assert!(!in_set); // Should not be in set after removal
@@ -715,20 +721,20 @@ fun test_removal_reporting() {
 #[test]
 fun test_max_validator_change_count_basic() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
     assert!(set.size() == 1);
-    
+
     // Second change: add v2
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
     assert!(set.size() == 2);
-    
+
     // Third change should fail - exceeds max_validator_change_count
     // This will be tested in the abort test below
 }
@@ -737,19 +743,19 @@ fun test_max_validator_change_count_basic() {
 #[expected_failure(abort_code = EMaxValidatorChangeReached)]
 fun test_max_validator_change_count_insert_exceeds_limit() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Second change: add v2
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    
+
     // Third change should abort - exceeds max_validator_change_count
     set.insert_or_update_or_remove(v3, 30);
 }
@@ -758,11 +764,11 @@ fun test_max_validator_change_count_insert_exceeds_limit() {
 #[expected_failure(abort_code = EMaxValidatorChangeReached)]
 fun test_max_validator_change_count_remove_exceeds_limit() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // Add validators first (without change count limit)
     set.set_max_validator_change_count(10); // Temporarily increase limit
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
@@ -771,19 +777,19 @@ fun test_max_validator_change_count_remove_exceeds_limit() {
     assert!(inserted);
     let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
-    
+
     // Reset changes and set limit back to 2
     set.reset_validator_changes();
     set.set_max_validator_change_count(2);
-    
+
     // First change: remove v1
     set.remove(v1);
     assert!(set.size() == 2);
-    
+
     // Second change: remove v2
     set.remove(v2);
     assert!(set.size() == 1);
-    
+
     // Third change should abort - exceeds max_validator_change_count
     set.remove(v3);
 }
@@ -793,23 +799,23 @@ fun test_max_validator_change_count_remove_exceeds_limit() {
 fun test_max_validator_change_count_mixed_operations_exceeds_limit() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
     set.set_max_validator_change_count(3); // Allow only 3 changes per epoch
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Second change: add v2
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    
+
     // Third change: add v3
     let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
-    
+
     // Fourth change should abort - exceeds max_validator_change_count
     set.insert_or_update_or_remove(object::id_from_address(@0x4), 40);
 }
@@ -817,27 +823,27 @@ fun test_max_validator_change_count_mixed_operations_exceeds_limit() {
 #[test]
 fun test_max_validator_change_count_updates_dont_count() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Second change: add v2
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    
+
     // Updates should not count towards the change limit
     let (updated, _) = set.insert_or_update_or_remove(v1, 15);
     assert!(updated);
     assert!(set.stake_for_validator(v1) == 15);
-    
+
     let (updated, _) = set.insert_or_update_or_remove(v2, 25);
     assert!(updated);
     assert!(set.stake_for_validator(v2) == 25);
-    
+
     // Multiple updates should still work
     let (updated, _) = set.insert_or_update_or_remove(v1, 12);
     assert!(updated);
@@ -847,54 +853,54 @@ fun test_max_validator_change_count_updates_dont_count() {
 #[test]
 fun test_max_validator_change_count_reset() {
     let mut set = new(0, 5, 0, 2); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 2
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
     let v4 = object::id_from_address(@0x4);
-    
+
     // Use up the change limit
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    
+
     // Reset changes (simulating new epoch)
     set.reset_validator_changes();
-    
+
     // Should be able to make changes again
     let (inserted, _) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
     let (inserted, _) = set.insert_or_update_or_remove(v4, 40);
     assert!(inserted);
-    
+
     assert!(set.size() == 4);
 }
 
 #[test]
 fun test_max_validator_change_count_eviction_counts() {
     let mut set = new(0, 2, 0, 3); // min_validator_count = 0, max_validator_count = 2, min_validator_joining_stake = 0, max_validator_change_count = 3
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Second change: add v2 (fills the set)
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
     assert!(set.size() == 2);
-    
+
     // Third change: add v3 with higher stake (should evict v1 and count as one change for v3)
     let (inserted, removed_id) = set.insert_or_update_or_remove(v3, 30);
     assert!(inserted);
     assert!(option::is_some(&removed_id));
     assert!(*option::borrow(&removed_id) == v1);
     assert!(set.size() == 2);
-    
+
     // We should have used 3 changes now (v1 add, v2 add, v3 add)
     // The eviction of v1 doesn't count as a separate change
 }
@@ -904,19 +910,19 @@ fun test_max_validator_change_count_eviction_counts() {
 fun test_max_validator_change_count_eviction_exceeds_limit() {
     let mut set = new(0, 2, 0, 3); // min_validator_count = 0, max_validator_count = 2, min_validator_joining_stake = 0, max_validator_change_count = 3
     set.set_max_validator_change_count(2); // Allow only 2 changes per epoch
-    
+
     let v1 = object::id_from_address(@0x1);
     let v2 = object::id_from_address(@0x2);
     let v3 = object::id_from_address(@0x3);
-    
+
     // First change: add v1
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Second change: add v2 (fills the set)
     let (inserted, _) = set.insert_or_update_or_remove(v2, 20);
     assert!(inserted);
-    
+
     // Third change should abort - adding v3 would exceed the limit
     set.insert_or_update_or_remove(v3, 30);
 }
@@ -926,19 +932,19 @@ fun test_max_validator_change_count_zero_allows_no_changes() {
     let mut set = new(0, 5, 0, 0); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 0
     // max_validator_change_count is 0 by default
     assert!(set.max_validator_change_count() == 0);
-    
+
     let v1 = object::id_from_address(@0x1);
-    
+
     // Updates should work even with zero change limit (since they don't count as changes)
     // But first we need to add a validator when the limit is higher
     set.set_max_validator_change_count(1);
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Reset and set limit back to 0
     set.reset_validator_changes();
     set.set_max_validator_change_count(0);
-    
+
     // Updates should still work
     let (updated, _) = set.insert_or_update_or_remove(v1, 15);
     assert!(updated);
@@ -951,9 +957,9 @@ fun test_max_validator_change_count_zero_blocks_additions() {
     let mut set = new(0, 5, 0, 0); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 0
     // max_validator_change_count is 0 by default
     assert!(set.max_validator_change_count() == 0);
-    
+
     let v1 = object::id_from_address(@0x1);
-    
+
     // Should abort when trying to add a validator with zero change limit
     set.insert_or_update_or_remove(v1, 10);
 }
@@ -963,16 +969,16 @@ fun test_max_validator_change_count_zero_blocks_additions() {
 fun test_max_validator_change_count_zero_blocks_removals() {
     let mut set = new(0, 5, 0, 0); // min_validator_count = 0, max_validator_count = 5, min_validator_joining_stake = 0, max_validator_change_count = 0
     let v1 = object::id_from_address(@0x1);
-    
+
     // Add a validator first (with higher limit)
     set.set_max_validator_change_count(1);
     let (inserted, _) = set.insert_or_update_or_remove(v1, 10);
     assert!(inserted);
-    
+
     // Reset and set limit to 0
     set.reset_validator_changes();
     set.set_max_validator_change_count(0);
-    
+
     // Should abort when trying to remove with zero change limit
     set.remove(v1);
 }

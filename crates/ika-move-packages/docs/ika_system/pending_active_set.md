@@ -196,8 +196,9 @@ The maximum number of validator changes has been reached.
 
 ## Function `new`
 
-Creates a new active set with the given <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code>, and <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code>. The
-<code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code> is used to filter out validators that do not have enough staked
+Creates a new active set with the given <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code>,
+and <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code>.
+The <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code> is used to filter out validators that do not have enough staked
 IKA to be included in the active set initially. The <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code> limits the number
 of validator additions/removals per epoch.
 
@@ -211,7 +212,12 @@ of validator additions/removals per epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a>(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>: u64): <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a> {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a>(
+    <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>: u64,
+    <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>: u64,
+    <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64,
+    <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>: u64
+): <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a> {
     <b>assert</b>!(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a> &gt; 0, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EZeroMaxSize">EZeroMaxSize</a>);
     <b>assert</b>!(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a> &lt;= <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a>);
     <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a> {
