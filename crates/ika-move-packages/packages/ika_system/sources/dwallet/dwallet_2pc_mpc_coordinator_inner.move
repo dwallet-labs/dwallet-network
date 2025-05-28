@@ -36,6 +36,19 @@ const SIGN_PROTOCOL_FLAG: u32 = 6;
 const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
+// Message data type constants corresponding to MessageKind enum variants (in ika-types/src/message.rs)
+const DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE: u64 = 0;
+const DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE: u64 = 1;
+const DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE: u64 = 2;
+const DWALLET_SIGN_MESSAGE_TYPE: u64 = 3;
+const DWALLET_PRESIGN_MESSAGE_TYPE: u64 = 4;
+const DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE: u64 = 5;
+const DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE: u64 = 6;
+const DWALLET_MPC_NETWORK_RESHARE_OUTPUT_MESSAGE_TYPE: u64 = 7;
+const MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE: u64 = 8;
+const DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE: u64 = 9;
+const SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE: u64 = 10;
+
 public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
     self.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
 }
@@ -3211,14 +3224,14 @@ fun process_checkpoint_message(
             // Messages with `message_data_type` 1 & 2 are handled by the system module,
             // but their bytes must be extracted here to allow correct parsing of types 3 and above.
             // This step only extracts the bytes without further processing.
-            if (message_data_type == 0) {
+            if (message_data_type == DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 let gas_fee_reimbursement_sui = self.respond_dwallet_dkg_first_round(dwallet_id, first_round_output, rejected, session_sequence_number);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 1) {
+            } else if (message_data_type == DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -3234,7 +3247,7 @@ fun process_checkpoint_message(
                     session_sequence_number,
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 2) {
+            } else if (message_data_type == DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let rejected = bcs_body.peel_bool();
@@ -3246,7 +3259,7 @@ fun process_checkpoint_message(
                     session_sequence_number,
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 3) {
+            } else if (message_data_type == DWALLET_SIGN_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -3264,7 +3277,7 @@ fun process_checkpoint_message(
                     session_sequence_number
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 5) {
+            } else if (message_data_type == DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE) {
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -3278,7 +3291,7 @@ fun process_checkpoint_message(
                     session_sequence_number
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 4) {
+            } else if (message_data_type == DWALLET_PRESIGN_MESSAGE_TYPE) {
                 let dwallet_id = bcs_body.peel_option!(|bcs_option| object::id_from_bytes(bcs_option.peel_vec_u8()));
                 let presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -3293,26 +3306,26 @@ fun process_checkpoint_message(
                     rejected,
                     session_sequence_number);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 6) {
+            } else if (message_data_type == DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE) {
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
                 self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
-            } else if (message_data_type == 7) {
+            } else if (message_data_type == DWALLET_MPC_NETWORK_RESHARE_OUTPUT_MESSAGE_TYPE) {
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
                 self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
-            } else if (message_data_type == 8) {
+            } else if (message_data_type == MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_user_secret_key_shares = bcs_body.peel_vec_u8();
                 let rejected = bcs_body.peel_bool();
                 let session_sequence_number = bcs_body.peel_u64();
                 let gas_fee_reimbursement_sui = self.respond_make_dwallet_user_secret_key_share_public(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 9) {
+            } else if (message_data_type == DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE) {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
@@ -3328,7 +3341,7 @@ fun process_checkpoint_message(
                     session_sequence_number
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-            } else if (message_data_type == 10) {
+            } else if (message_data_type == SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE) {
                 self.max_active_sessions_buffer = bcs_body.peel_u64();
             };
         i = i + 1;
