@@ -27,6 +27,12 @@ use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{error, info};
 
+/// Channel size for completed cryptographic computations.
+/// This channel should not reach a size even close to this.
+/// But since this is critical to keep the computations running,
+/// we are using a big buffer (this size of the data is small).
+const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
+
 /// Represents the state transitions of cryptographic computations in the orchestrator.
 ///
 /// This enum is used for communication between Tokio and Rayon tasks via a channel.
@@ -59,8 +65,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
-    computation_channel_sender: Sender<ComputationUpdate>,
-    computation_channel_receiver: Receiver<ComputationUpdate>,
+    computation_update_channel_sender: Sender<ComputationUpdate>,
+    computation_update_channel_receiver: Receiver<ComputationUpdate>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -71,11 +77,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
-        let (completed_computation_channel_sender, completed_computation_channel_receiver) =
-	    // This channel should not reach a size even close to this.
-	    // But, since this is critical to keep the computations running 
-            // we are using a big buffer (this size of the data is small)	
-            tokio::sync::mpsc::channel(10_000);
+        let (computation_update_channel_sender, computation_update_channel_receiver) =
+            tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
             .into();
@@ -92,15 +95,15 @@ impl CryptographicComputationsOrchestrator {
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
-            computation_channel_sender: completed_computation_channel_sender,
-            computation_channel_receiver: completed_computation_channel_receiver,
+            computation_update_channel_sender,
+            computation_update_channel_receiver,
             currently_running_sessions_count: 0,
         })
     }
 
     pub(crate) fn check_for_completed_computations(&mut self) {
         loop {
-            match self.computation_channel_receiver.try_recv() {
+            match self.computation_update_channel_receiver.try_recv() {
                 Ok(computation_update) => match computation_update {
                     ComputationUpdate::Started => {
                         info!(
@@ -153,7 +156,7 @@ impl CryptographicComputationsOrchestrator {
             &mpc_event_data.get_signature_algorithm(),
         );
         if let Err(err) = self
-            .computation_channel_sender
+            .computation_update_channel_sender
             .send(ComputationUpdate::Started)
             .await
         {
@@ -162,7 +165,7 @@ impl CryptographicComputationsOrchestrator {
                 err
             );
         }
-        let computation_channel_sender = self.computation_channel_sender.clone();
+        let computation_channel_sender = self.computation_update_channel_sender.clone();
         rayon::spawn_fifo(move || {
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
