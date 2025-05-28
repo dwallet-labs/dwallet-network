@@ -292,10 +292,6 @@ impl ProtocolConfig {
     //     }
     // }
 
-    pub fn get_consensus_rounds_delay_per_mpc_protocol(protocol_flag: u64, mpc_round: u64) -> u64 {
-        4u64
-    }
-
     pub fn consensus_round_prober(&self) -> bool {
         self.feature_flags.consensus_round_prober
     }
