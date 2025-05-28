@@ -425,11 +425,11 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize"></a>
+<a name="(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT">PARAMS_MESSAGE_INTENT</a>: vector&lt;u8&gt; = vector[2, 0, 0];
 </code></pre>
 
 
@@ -443,12 +443,11 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_ECannotInitialize"></a>
+<a name="(ika_system=0x0)_system_inner_ENextCommitteeNotSetOnAdvanceEpoch"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or already initialized.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>: u64 = 2;
 </code></pre>
 
 
@@ -462,12 +461,11 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime"></a>
+<a name="(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: vector&lt;u8&gt; = b"The <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>has</b> not reached the mid <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> time.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: u64 = 4;
 </code></pre>
 
 
@@ -481,11 +479,11 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_ENextCommitteeNotSetOnAdvanceEpoch"></a>
+<a name="(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ENextCommitteeNotSetOnAdvanceEpoch">ENextCommitteeNotSetOnAdvanceEpoch</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>: u64 = 6;
 </code></pre>
 
 
@@ -500,6 +498,16 @@ the system checkpoint submission message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_ECannotInitialize"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or already initialized.";
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_EWrongEpochState"></a>
 
 
@@ -510,20 +518,12 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber"></a>
+<a name="(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_PARAMS_MESSAGE_INTENT">PARAMS_MESSAGE_INTENT</a>: vector&lt;u8&gt; = vector[2, 0, 0];
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: vector&lt;u8&gt; = b"The <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>has</b> not reached the mid <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> time.";
 </code></pre>
 
 
@@ -654,8 +654,6 @@ This function will be called only once in init.
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>().members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
     <b>let</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>();
     <b>assert</b>!(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.size() &gt;= <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.min_validator_count(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
-    // self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> + 1;
-    // self.validators.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>();
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_mid_epoch">process_mid_epoch</a>(
         self.parameters.lock_active_committee,
     );

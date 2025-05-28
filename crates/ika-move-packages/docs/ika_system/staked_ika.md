@@ -155,32 +155,12 @@ Variant <code>Withdrawing</code>
 ## Constants
 
 
-<a name="(ika_system=0x0)_staked_ika_EAlreadyWithdrawing"></a>
+<a name="(ika_system=0x0)_staked_ika_MIN_STAKING_THRESHOLD"></a>
 
-Trying to mark stake as withdrawing when it is already marked as withdrawing.
-
-
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EAlreadyWithdrawing">EAlreadyWithdrawing</a>: u64 = 6;
-</code></pre>
+StakedIka objects must have a principal with at least this amount.
 
 
-
-<a name="(ika_system=0x0)_staked_ika_EInvalidAmount"></a>
-
-The amount for the split is invalid.
-
-
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EInvalidAmount">EInvalidAmount</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_staked_ika_EMetadataMismatch"></a>
-
-The metadata of two <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">StakedIka</a></code> objects does not match.
-
-
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EMetadataMismatch">EMetadataMismatch</a>: u64 = 1;
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
 </code></pre>
 
 
@@ -195,22 +175,42 @@ The <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_Stake
 
 
 
+<a name="(ika_system=0x0)_staked_ika_EMetadataMismatch"></a>
+
+The metadata of two <code><a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_StakedIka">StakedIka</a></code> objects does not match.
+
+
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EMetadataMismatch">EMetadataMismatch</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_staked_ika_EInvalidAmount"></a>
+
+The amount for the split is invalid.
+
+
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EInvalidAmount">EInvalidAmount</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_staked_ika_EAlreadyWithdrawing"></a>
+
+Trying to mark stake as withdrawing when it is already marked as withdrawing.
+
+
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EAlreadyWithdrawing">EAlreadyWithdrawing</a>: u64 = 6;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_staked_ika_EStakeBelowThreshold"></a>
 
 Stake is below the minimum staking threshold.
 
 
 <pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EStakeBelowThreshold">EStakeBelowThreshold</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_staked_ika_MIN_STAKING_THRESHOLD"></a>
-
-StakedIka objects must have a principal with at least this amount.
-
-
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
 </code></pre>
 
 

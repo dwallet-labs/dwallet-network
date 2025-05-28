@@ -185,10 +185,7 @@ impl IkaTxValidator {
         obligation.verify_all()
     }
 
-    async fn vote_transactions(
-        &self,
-        _txs: Vec<ConsensusTransactionKind>,
-    ) -> Vec<TransactionIndex> {
+    fn vote_transactions(&self, _txs: Vec<ConsensusTransactionKind>) -> Vec<TransactionIndex> {
         vec![]
         //let epoch_store = self.authority_state.load_epoch_store_one_call_per_task();
         // if !epoch_store.protocol_config().mysticeti_fastpath() {
@@ -260,7 +257,7 @@ impl TransactionVerifier for IkaTxValidator {
             .map_err(|e| ValidationError::InvalidTransaction(e.to_string()))
     }
 
-    async fn verify_and_vote_batch(
+    fn verify_and_vote_batch(
         &self,
         batch: &[&[u8]],
     ) -> Result<Vec<TransactionIndex>, ValidationError> {
@@ -274,7 +271,7 @@ impl TransactionVerifier for IkaTxValidator {
         self.validate_transactions(&txs)
             .map_err(|e| ValidationError::InvalidTransaction(e.to_string()))?;
 
-        Ok(self.vote_transactions(txs).await)
+        Ok(self.vote_transactions(txs))
     }
 }
 

@@ -130,20 +130,20 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 ## Constants
 
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration">EInvalidMigration</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EWrongInnerVersion"></a>
 
 
 
 <pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EWrongInnerVersion">EWrongInnerVersion</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration">EInvalidMigration</a>: u64 = 1;
 </code></pre>
 
 

@@ -12,6 +12,7 @@ use ika_types::intent::IntentScope;
 use ika_types::message_envelope::{Envelope, Message, VerifiedEnvelope};
 use mysten_common::debug_fatal;
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::Entry;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
@@ -119,7 +120,7 @@ struct DiscoveryEventLoop {
     keypair: NetworkKeyPair,
     tasks: JoinSet<()>,
     pending_dials: HashMap<PeerId, AbortHandle>,
-    dial_seed_peers_task: Option<AbortHandle>,
+    dial_seed_or_fixed_peers_task: Option<AbortHandle>,
     shutdown_handle: oneshot::Receiver<()>,
     state: Arc<RwLock<State>>,
     trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
@@ -149,6 +150,11 @@ impl DiscoveryEventLoop {
                     self.handle_peer_event(peer_event);
                 },
                 Ok(()) = self.trusted_peer_change_rx.changed() => {
+                    if self.config.fixed_peers.is_some() {
+                        // If we have fixed peers, we don't need to handle trusted peer changes.
+                        // This is because the fixed peers are already configured at the startup.
+                        continue;
+                    }
                     let event: TrustedPeerChangeEvent = self.trusted_peer_change_rx.borrow_and_update().clone();
                     self.handle_trusted_peer_change_event(event);
                 }
@@ -167,7 +173,7 @@ impl DiscoveryEventLoop {
                         },
                     };
                 },
-                // Once the shutdown notification resolves we can terminate the event loop
+                // Once the shutdown notification resolves, we can terminate the event loop.
                 _ = &mut self.shutdown_handle => {
                     break;
                 }
@@ -201,16 +207,14 @@ impl DiscoveryEventLoop {
     }
 
     fn configure_preferred_peers(&mut self) {
+        let mut is_fixed = false;
         let initial_peers: Vec<_> = match &self.config.fixed_peers {
             Some(fixed_peers) => {
-                warn!(?fixed_peers, "connecting to fixed peers");
+                warn!(?fixed_peers, "Connecting to a fixed peers list");
+                is_fixed = true;
                 fixed_peers
                     .iter()
-                    .filter_map(|fixed_peer| {
-                        fixed_peer
-                            .peer_id
-                            .map(|peer_id| (peer_id, Some(fixed_peer.address.clone())))
-                    })
+                    .filter_map(|peer| peer.peer_id.map(|id| (id, Some(peer.address.clone()))))
                     .collect()
             }
             None => self
@@ -227,7 +231,7 @@ impl DiscoveryEventLoop {
         for (peer_id, address) in initial_peers.into_iter() {
             let anemo_address = if let Some(address) = address {
                 let Ok(address) = address.to_anemo_address() else {
-                    debug!(p2p_address=?address, "Can't convert p2p address to anemo address");
+                    warn!(p2p_address=?address, "Can't convert a p2p address to anemo address");
                     continue;
                 };
                 Some(address)
@@ -237,12 +241,16 @@ impl DiscoveryEventLoop {
 
             // TODO: once we have `PeerAffinity::Allowlisted` we should update allowlisted peers'
             // affinity.
-            let peer_info = anemo::types::PeerInfo {
+            let peer_info = PeerInfo {
                 peer_id,
                 affinity: anemo::types::PeerAffinity::High,
                 address: anemo_address.into_iter().collect(),
             };
-            debug!(?peer_info, "Add configured preferred peer");
+            info!(
+                ?peer_info,
+                is_fixed = is_fixed,
+                "Add configured preferred peer"
+            );
             self.network.known_peers().insert(peer_info);
         }
     }
@@ -263,7 +271,7 @@ impl DiscoveryEventLoop {
         trusted_peer_change_event: TrustedPeerChangeEvent,
     ) {
         for peer_info in trusted_peer_change_event.new_peers {
-            debug!(?peer_info, "Add committee member as preferred peer.");
+            info!(?peer_info, "Add committee member as preferred peer.");
             self.network.known_peers().insert(peer_info);
         }
     }
@@ -278,13 +286,18 @@ impl DiscoveryEventLoop {
                         .connected_peers
                         .insert(peer_id, ());
 
-                    // Query the new node for any peers
+                    // We don't want to query the peer for their known peers
+                    // if we have a fixed list of peers.
+                    if self.config.fixed_peers.is_some() {
+                        return;
+                    }
+
+                    // Query the new node for any peers.
                     self.tasks.spawn(query_peer_for_their_known_peers(
                         peer,
                         self.state.clone(),
                         self.metrics.clone(),
                         self.allowlisted_peers.clone(),
-                        self.config.fixed_peers.clone(),
                     ));
                 }
             }
@@ -304,32 +317,37 @@ impl DiscoveryEventLoop {
 
     fn handle_tick(&mut self, _now: std::time::Instant, now_unix: u64) {
         self.update_our_info_timestamp(now_unix);
-        self.tasks
-            .spawn(query_connected_peers_for_their_known_peers(
-                self.network.clone(),
-                self.discovery_config.clone(),
-                self.state.clone(),
-                self.metrics.clone(),
-                self.allowlisted_peers.clone(),
-                self.config.fixed_peers.clone(),
-            ));
 
-        // Cull old peers older than a day
-        self.state
-            .write()
-            .unwrap()
-            .known_peers
-            .retain(|_k, v| now_unix.saturating_sub(v.timestamp_ms) < ONE_DAY_MILLISECONDS);
+        // When we have a fixed list of peers,
+        // we don't need to query connected peers or clean old peers.
+        if self.config.fixed_peers.is_none() {
+            self.tasks
+                .spawn(query_connected_peers_for_their_known_peers(
+                    self.network.clone(),
+                    self.discovery_config.clone(),
+                    self.state.clone(),
+                    self.metrics.clone(),
+                    self.allowlisted_peers.clone(),
+                ));
 
-        // Clean out the pending_dials
+            // Cull old peers older than a day.
+            self.state
+                .write()
+                .unwrap()
+                .known_peers
+                .retain(|_k, v| now_unix.saturating_sub(v.timestamp_ms) < ONE_DAY_MILLISECONDS);
+        }
+
+        // Clean out the pending_dials that were finished.
         self.pending_dials.retain(|_k, v| !v.is_finished());
-        if let Some(abort_handle) = &self.dial_seed_peers_task {
+        if let Some(abort_handle) = &self.dial_seed_or_fixed_peers_task {
             if abort_handle.is_finished() {
-                self.dial_seed_peers_task = None;
+                self.dial_seed_or_fixed_peers_task = None;
             }
         }
 
-        // Spawn some dials
+        // Spawn some dials, we dile to known peers even if it's only fixed peers,
+        // this is the only place where dials are initiated.
         let state = self.state.read().unwrap();
         let eligible = state
             .known_peers
@@ -352,7 +370,7 @@ impl DiscoveryEventLoop {
                 .saturating_sub(number_of_connections),
         );
 
-        // randomize the order
+        // Randomize the order.
         for (peer_id, info) in rand::seq::SliceRandom::choose_multiple(
             eligible.as_slice(),
             &mut rand::thread_rng(),
@@ -365,9 +383,9 @@ impl DiscoveryEventLoop {
             self.pending_dials.insert(*peer_id, abort_handle);
         }
 
-        // If we aren't connected to anything and we aren't presently trying to connect to anyone
-        // we need to try the seed peers or the fixed peers again
-        if self.dial_seed_peers_task.is_none()
+        // If we aren't connected to anything, and we aren't presently trying to connect to anyone,
+        // we need to try the seed peers or the fixed peers again.
+        if self.dial_seed_or_fixed_peers_task.is_none()
             && state.connected_peers.is_empty()
             && self.pending_dials.is_empty()
         {
@@ -378,8 +396,7 @@ impl DiscoveryEventLoop {
                         self.discovery_config.clone(),
                         fixed_peers.clone(),
                     ));
-
-                    self.dial_seed_peers_task = Some(abort_handle);
+                    self.dial_seed_or_fixed_peers_task = Some(abort_handle);
                 }
                 None => {
                     if !self.config.seed_peers.is_empty() {
@@ -389,7 +406,7 @@ impl DiscoveryEventLoop {
                             self.config.seed_peers.clone(),
                         ));
 
-                        self.dial_seed_peers_task = Some(abort_handle);
+                        self.dial_seed_or_fixed_peers_task = Some(abort_handle);
                     }
                 }
             }
@@ -398,15 +415,15 @@ impl DiscoveryEventLoop {
 }
 
 async fn try_to_connect_to_peer(network: Network, info: NodeInfo) {
-    debug!("Connecting to peer {info:?}");
+    info!("Connecting to peer {info:?}");
     for multiaddr in &info.addresses {
         if let Ok(address) = multiaddr.to_anemo_address() {
-            // Ignore the result and just log the error if there is one
+            // Ignore the result and log the error if there is one.
             if network
                 .connect_with_peer_id(address, info.peer_id)
                 .await
                 .tap_err(|e| {
-                    debug!(
+                    warn!(
                         "error dialing {} at address '{}': {e}",
                         info.peer_id.short_display(4),
                         multiaddr
@@ -454,7 +471,6 @@ async fn query_peer_for_their_known_peers(
     state: Arc<RwLock<State>>,
     metrics: Metrics,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    fixed_peers: Option<Vec<SeedPeer>>,
 ) {
     let mut client = DiscoveryClient::new(peer);
 
@@ -476,7 +492,7 @@ async fn query_peer_for_their_known_peers(
             },
         );
     if let Some(found_peers) = found_peers {
-        update_known_peers(state, metrics, found_peers, allowlisted_peers, &fixed_peers);
+        update_known_peers(state, metrics, found_peers, allowlisted_peers);
     }
 }
 
@@ -486,7 +502,6 @@ async fn query_connected_peers_for_their_known_peers(
     state: Arc<RwLock<State>>,
     metrics: Metrics,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    fixed_peers: Option<Vec<SeedPeer>>,
 ) {
     use rand::seq::IteratorRandom;
 
@@ -525,7 +540,7 @@ async fn query_connected_peers_for_their_known_peers(
         .collect::<Vec<_>>()
         .await;
 
-    update_known_peers(state, metrics, found_peers, allowlisted_peers, &fixed_peers);
+    update_known_peers(state, metrics, found_peers, allowlisted_peers);
 }
 
 fn update_known_peers(
@@ -533,10 +548,7 @@ fn update_known_peers(
     metrics: Metrics,
     found_peers: Vec<SignedNodeInfo>,
     allowlisted_peers: Arc<HashMap<PeerId, Option<Multiaddr>>>,
-    fixed_peers: &Option<Vec<SeedPeer>>,
 ) {
-    use std::collections::hash_map::Entry;
-
     let now_unix = now_unix();
     let our_peer_id = state.read().unwrap().our_info.clone().unwrap().peer_id;
     let known_peers = &mut state.write().unwrap().known_peers;
@@ -609,17 +621,7 @@ fn update_known_peers(
                 if !peer.addresses.is_empty() {
                     metrics.inc_num_peers_with_external_address();
                 }
-                if fixed_peers.is_none()
-                    || fixed_peers
-                        .clone()
-                        .unwrap()
-                        .iter()
-                        .filter_map(|peer| peer.peer_id.clone())
-                        .collect::<Vec<PeerId>>()
-                        .contains(&peer.peer_id)
-                {
-                    v.insert(peer);
-                }
+                v.insert(peer);
             }
         }
     }

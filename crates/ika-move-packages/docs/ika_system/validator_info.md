@@ -198,11 +198,29 @@ Represents a validator info in the system.
 ## Constants
 
 
-<a name="(ika_system=0x0)_validator_info_BLS_KEY_LEN"></a>
+<a name="(ika_system=0x0)_validator_info_MAX_NODE_NAME_LENGTH"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_BLS_KEY_LEN">BLS_KEY_LEN</a>: u64 = 48;
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_NODE_NAME_LENGTH">MAX_NODE_NAME_LENGTH</a>: u64 = 100;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>: u64 = 259;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_info_PROOF_OF_POSSESSION_INTENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_PROOF_OF_POSSESSION_INTENT">PROOF_OF_POSSESSION_INTENT</a>: vector&lt;u8&gt; = vector[0, 0, 0];
 </code></pre>
 
 
@@ -216,21 +234,20 @@ Represents a validator info in the system.
 
 
 
+<a name="(ika_system=0x0)_validator_info_BLS_KEY_LEN"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_BLS_KEY_LEN">BLS_KEY_LEN</a>: u64 = 48;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_info_ED25519_KEY_LEN"></a>
 
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ED25519_KEY_LEN">ED25519_KEY_LEN</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_info_EInvalidNameLength"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidNameLength">EInvalidNameLength</a>: vector&lt;u8&gt; = b"Validator name length exceeds maximum allowed length.";
 </code></pre>
 
 
@@ -246,12 +263,32 @@ The network public key length is invalid.
 
 
 
-<a name="(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress"></a>
+<a name="(ika_system=0x0)_validator_info_EInvalidNameLength"></a>
 
 
 
 <pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a> field in ValidatorMetadata.";
+<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidNameLength">EInvalidNameLength</a>: vector&lt;u8&gt; = b"Validator name length exceeds maximum allowed length.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey">EMetadataInvalidProtocolPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_protocol_pubkey_bytes">protocol_pubkey_bytes</a> field in ValidatorMetadata.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey">EMetadataInvalidNetworkPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a> field in ValidatorMetadata.";
 </code></pre>
 
 
@@ -276,16 +313,6 @@ The network public key length is invalid.
 
 
 
-<a name="(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey"></a>
-
-
-
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey">EMetadataInvalidNetworkPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a> field in ValidatorMetadata.";
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress"></a>
 
 
@@ -296,12 +323,12 @@ The network public key length is invalid.
 
 
 
-<a name="(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey"></a>
+<a name="(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress"></a>
 
 
 
 <pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey">EMetadataInvalidProtocolPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_protocol_pubkey_bytes">protocol_pubkey_bytes</a> field in ValidatorMetadata.";
+<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a> field in ValidatorMetadata.";
 </code></pre>
 
 
@@ -312,33 +339,6 @@ The network public key length is invalid.
 
 <pre><code>#[error]
 <b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>: vector&lt;u8&gt; = b"Validator Metadata is too long.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_info_MAX_NODE_NAME_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_NODE_NAME_LENGTH">MAX_NODE_NAME_LENGTH</a>: u64 = 100;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>: u64 = 259;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_info_PROOF_OF_POSSESSION_INTENT"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_PROOF_OF_POSSESSION_INTENT">PROOF_OF_POSSESSION_INTENT</a>: vector&lt;u8&gt; = vector[0, 0, 0];
 </code></pre>
 
 
@@ -1398,7 +1398,7 @@ Destroy the validator info.
 
 
 
-<pre><code><b>fun</b> is_equal_some_and_valueT(a: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;, b: &T): bool
+<pre><code><b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_is_equal_some_and_value">is_equal_some_and_value</a>&lt;T&gt;(a: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;, b: &T): bool
 </code></pre>
 
 
@@ -1426,7 +1426,7 @@ Destroy the validator info.
 
 
 
-<pre><code><b>fun</b> is_equal_someT(a: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;, b: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;): bool
+<pre><code><b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_is_equal_some">is_equal_some</a>&lt;T&gt;(a: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;, b: &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;T&gt;): bool
 </code></pre>
 
 
