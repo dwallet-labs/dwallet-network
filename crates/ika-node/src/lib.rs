@@ -320,7 +320,12 @@ impl IkaNode {
         let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
 
         let epoch_store = AuthorityPerEpochStore::new(
-            AuthorityName::new(config),
+            AuthorityName::new(
+                config
+                    .validator_id
+                    .unwrap_or(ObjectID::random())
+                    .into_bytes(),
+            ),
             committee_arc.clone(),
             &config.db_path().join("store"),
             Some(epoch_options.options),
