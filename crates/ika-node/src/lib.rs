@@ -279,7 +279,7 @@ impl IkaNode {
         let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
-            .get_epoch_start_system_until_success(&latest_system_state)
+            .must_get_epoch_start_system(&latest_system_state)
             .await;
         let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
         let previous_epoch_last_checkpoint_sequence_number =
@@ -862,7 +862,7 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
-        let dwallet_mpc_service_exit = Self::start_dwallet_mpc_service(
+        let dwallet_mpc_service_exit_sender = Self::start_dwallet_mpc_service(
             epoch_store.clone(),
             sui_client,
             Arc::new(consensus_adapter.clone()),
@@ -935,7 +935,7 @@ impl IkaNode {
             system_checkpoint_metrics,
             ika_tx_validator_metrics,
             dwallet_mpc_metrics,
-            dwallet_mpc_service_exit,
+            dwallet_mpc_service_exit: dwallet_mpc_service_exit_sender,
         })
     }
 
@@ -1148,7 +1148,7 @@ impl IkaNode {
             if let Err(err) = self.end_of_epoch_channel.send(*latest_system_state) {
                 if self.state.is_fullnode(&cur_epoch_store) {
                     warn!(
-                        "Failed to send end of epoch notification to subscriber: {:?}",
+                        "Failed to send the end-of-epoch notification to subscriber: {:?}",
                         err
                     );
                 }
@@ -1168,7 +1168,7 @@ impl IkaNode {
 
             info!(
                 next_epoch,
-                "Finished executing all checkpoints in epoch. About to reconfigure the system."
+                "Finished executing all checkpoints in the epoch. About to reconfigure the system."
             );
 
             fail_point_async!("reconfig_delay");
@@ -1191,9 +1191,9 @@ impl IkaNode {
             );
 
             // The following code handles 4 different cases, depending on whether the node
-            // was a validator in the previous epoch, and whether the node is a validator
+            // was a validator in the previous epoch
+            // and whether the node is a validator
             // in the new epoch.
-
             let new_validator_components = if let Some(ValidatorComponents {
                 consensus_manager,
                 consensus_store_pruner,
@@ -1212,13 +1212,16 @@ impl IkaNode {
                 // Waiting for checkpoint builder to finish gracefully is not possible, because it
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
+                if let Err(err) = dwallet_mpc_service_exit.send(()) {
+                    warn!(?err, "failed to send exit signal to dwallet mpc service");
+                }
                 drop(dwallet_mpc_service_exit);
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
                             std::panic::resume_unwind(err.into_panic());
                         }
-                        warn!("Error in checkpoint service task: {:?}", err);
+                        warn!(?err, "error in checkpoint service task");
                     }
                 }
                 info!("DWallet checkpoint service has shut down.");
@@ -1232,10 +1235,10 @@ impl IkaNode {
                         warn!("Error in system_checkpoint service task: {:?}", err);
                     }
                 }
-                info!("System checkpoint service has shut down.");
+                info!("System checkpoint service was shut down");
 
                 consensus_manager.shutdown().await;
-                info!("Consensus has shut down.");
+                info!("Consensus was shut down");
 
                 let new_epoch_store = self
                     .reconfigure_state(
@@ -1320,12 +1323,11 @@ impl IkaNode {
                 }
             };
             *self.validator_components.lock().await = new_validator_components;
-
-            // Force releasing current epoch store DB handle, because the
+            // Force releasing the current epoch store DB handle, because the
             // Arc<AuthorityPerEpochStore> may linger.
             cur_epoch_store.release_db_handles();
 
-            info!("Reconfiguration finished");
+            info!("Reconfiguration finished, sending exit signal");
         }
     }
 

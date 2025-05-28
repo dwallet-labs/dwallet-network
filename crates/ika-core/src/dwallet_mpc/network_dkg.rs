@@ -15,9 +15,9 @@ use class_groups::{
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, NetworkDecryptionKeyPublicData,
-    NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
-    VersionedNetworkDkgOutput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
+    SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -204,8 +204,8 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<Vec<u8>> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
             warn!(
-                "failed to fetch the network decryption key shares for key ID: {:?}",
-                key_id
+                ?key_id,
+                "failed to fetch the network decryption key shares for key ID"
             );
             return Err(DwalletMPCError::WaitingForNetworkKey(*key_id));
         };
@@ -254,9 +254,17 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
+    encoded_public_input: &MPCPublicInput,
+    logger: &crate::dwallet_mpc::MPCSessionLogger,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    // Add the Class Groups key pair and proof to the logger.
+    let encoded_private_input: MPCPrivateInput = Some(bcs::to_bytes(&class_groups_decryption_key)?);
+    let logger = logger
+        .clone()
+        .with_class_groups_key_pair_and_proof(encoded_private_input.clone());
+
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
             let result = advance_and_serialize::<Secp256k1Party>(
@@ -266,6 +274,8 @@ pub(crate) fn advance_network_dkg(
                 messages,
                 bcs::from_bytes(public_input)?,
                 class_groups_decryption_key,
+                encoded_public_input,
+                &logger,
             );
             match result.clone() {
                 Ok(AsynchronousRoundResult::Finalize {
@@ -291,6 +301,8 @@ pub(crate) fn advance_network_dkg(
             messages,
             bcs::from_bytes(public_input)?,
             class_groups_decryption_key,
+            encoded_public_input,
+            &logger,
         ),
     }?;
     Ok(res)

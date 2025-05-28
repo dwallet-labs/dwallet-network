@@ -1,11 +1,9 @@
 use crate::crypto::AuthorityName;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
-    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
+    DWalletMPCNetworkKeyScheme, DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
     DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
     DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    DWALLET_MPC_EVENT_STRUCT_NAME, ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME,
-    FUTURE_SIGN_REQUEST_EVENT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
+    DWALLET_MPC_EVENT_STRUCT_NAME, PRESIGN_REQUEST_EVENT_STRUCT_NAME,
     SIGN_REQUEST_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
 };
 use dwallet_mpc_types::dwallet_mpc::{
@@ -100,39 +98,6 @@ impl Display for MPCProtocolInitData {
     }
 }
 
-impl MPCProtocolInitData {
-    pub fn get_event_name(&self) -> String {
-        match self {
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
-                DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_string()
-            }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
-                DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_string()
-            }
-            MPCProtocolInitData::DKGFirst(_) => {
-                DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::DKGSecond(_) => {
-                DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::Presign(_) => PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-            MPCProtocolInitData::Sign(_) => SIGN_REQUEST_EVENT_STRUCT_NAME.to_string(),
-            MPCProtocolInitData::NetworkDkg(_, _) => {
-                START_NETWORK_DKG_EVENT_STRUCT_NAME.to_string()
-            }
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
-                ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME.to_string()
-            }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
-                FUTURE_SIGN_REQUEST_EVENT_NAME.to_string()
-            }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME.to_string()
-            }
-        }
-    }
-}
-
 impl Debug for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -203,9 +168,10 @@ pub struct DWalletMPCMessage {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    /// The MPC round number, starts from 0.
+    /// The MPC round number starts from 0.
     pub round_number: usize,
-    pub mpc_protocol: Option<String>,
+    /// The MPC protocol that this message belongs to.
+    pub mpc_protocol: String,
 }
 
 /// The message unique key in the consensus network.
@@ -215,7 +181,7 @@ pub struct DWalletMPCMessageKey {
     /// The authority (Validator) that sent the message.
     pub authority: AuthorityName,
     pub session_id: ObjectID,
-    /// The MPC round number, starts from 0.
+    /// The MPC round number starts from 0.
     pub round_number: usize,
 }
 
@@ -283,8 +249,8 @@ pub struct EncryptedShareVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated
     /// cryptographic proof of encryption.
     pub encrypted_centralized_secret_share_and_proof: Vec<u8>,
-    /// The public output of the decentralized party,
-    /// belongs to the dWallet that its centralized secret share is being encrypted.
+    /// The public output of the decentralized party.
+    /// Belongs to the dWallet that its centralized secret share is being encrypted.
     pub decentralized_public_output: Vec<u8>,
     /// The ID of the dWallet that this encrypted secret key share belongs to.
     pub dwallet_id: ObjectID,

@@ -18,7 +18,7 @@ use tracing::warn;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
 /// STRENGTH indicates whether we want a strong quorum (2f+1) or a weak quorum (f+1).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StakeAggregator<S, const STRENGTH: bool> {
     data: HashMap<AuthorityName, S>,
     total_votes: StakeUnit,

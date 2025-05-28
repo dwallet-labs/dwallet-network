@@ -1032,7 +1032,7 @@ impl<'a> InflightDropGuard<'a> {
     }
 }
 
-impl<'a> Drop for InflightDropGuard<'a> {
+impl Drop for InflightDropGuard<'_> {
     fn drop(&mut self) {
         self.adapter
             .num_inflight_transactions

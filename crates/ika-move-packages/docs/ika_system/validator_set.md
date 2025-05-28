@@ -350,48 +350,11 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch"></a>
+<a name="(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EDuplicateValidator"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
 </code></pre>
 
 
@@ -405,6 +368,15 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
+<a name="(ika_system=0x0)_validator_set_EDuplicateValidator"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_set_ENotAValidator"></a>
 
 
@@ -414,21 +386,11 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
+<a name="(ika_system=0x0)_validator_set_EValidatorNotCandidate"></a>
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
-</code></pre>
-
-
-
-<a name="(ika_system=0x0)_validator_set_EReportRecordNotFound"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
 </code></pre>
 
 
@@ -451,20 +413,58 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<a name="(ika_system=0x0)_validator_set_EValidatorNotCandidate"></a>
+<a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD"></a>
+<a name="(ika_system=0x0)_validator_set_EReportRecordNotFound"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: u64 = 1000000000;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch"></a>
+
+
+
+<pre><code>#[error]
+<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
 </code></pre>
 
 
