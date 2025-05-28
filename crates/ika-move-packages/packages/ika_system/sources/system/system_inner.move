@@ -28,22 +28,7 @@ use sui::bcs;
 use std::string::String;
 use sui::vec_map::VecMap;
 
-const BASIS_POINT_DENOMINATOR: u16 = 10_000;
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
-
-/// The params of the system.
-public struct SystemParametersV1 has store {
-    /// The duration of an epoch, in milliseconds.
-    epoch_duration_ms: u64,
-    /// The starting epoch in which stake subsidies start being paid out
-    stake_subsidy_start_epoch: u64,
-    /// How many reward are slashed to punish a validator, in bps.
-    reward_slashing_rate: u16,
-    /// Lock active committee between epochs.
-    lock_active_committee: bool,
-    /// Any extra fields that's not defined statically.
-    extra_fields: Bag,
-}
 
 /// Uses SystemParametersV1 as the parameters.
 public struct SystemInnerV1 has store {
@@ -56,8 +41,10 @@ public struct SystemInnerV1 has store {
     upgrade_caps: vector<UpgradeCap>,
     /// Contains all information about the validators.
     validator_set: ValidatorSet,
-    /// A list of system config parameters.
-    parameters: SystemParametersV1,
+    /// The duration of an epoch, in milliseconds.
+    epoch_duration_ms: u64,
+    /// The starting epoch in which stake subsidies start being paid out
+    stake_subsidy_start_epoch: u64,
     /// Schedule of stake subsidies given out each epoch.
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
@@ -103,12 +90,11 @@ public struct SystemCheckpointInfoEvent has copy, drop {
 }
 
 // Errors
-const EBpsTooLarge: u64 = 1;
-const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 2;
-const EHaveNotReachedEndEpochTime: u64 = 3;
-const EActiveBlsCommitteeMustInitialize: u64 = 4;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 5;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 6;
+const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 0;
+const EHaveNotReachedEndEpochTime: u64 = 1;
+const EActiveBlsCommitteeMustInitialize: u64 = 2;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -131,7 +117,8 @@ public(package) fun create(
     validator_set: ValidatorSet,
     protocol_version: u64,
     epoch_start_timestamp_ms: u64,
-    parameters: SystemParametersV1,
+    epoch_duration_ms: u64,
+    stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
     authorized_protocol_cap_ids: vector<ID>,
     ctx: &mut TxContext,
@@ -143,7 +130,8 @@ public(package) fun create(
         next_protocol_version: option::none(),
         upgrade_caps,
         validator_set,
-        parameters,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
         protocol_treasury,
         epoch_start_timestamp_ms,
         total_messages_processed: 0,
@@ -156,28 +144,6 @@ public(package) fun create(
         extra_fields: bag::new(ctx),
     };
     system_state
-}
-
-public(package) fun create_system_parameters(
-    epoch_duration_ms: u64,
-    stake_subsidy_start_epoch: u64,
-    // Validator committee parameters
-    reward_slashing_rate: u16,
-    lock_active_committee: bool,
-    ctx: &mut TxContext,
-): SystemParametersV1 {
-    // Rates can't be higher than 100%.
-    assert!(
-        reward_slashing_rate <= BASIS_POINT_DENOMINATOR,
-        EBpsTooLarge,
-    );
-    SystemParametersV1 {
-        epoch_duration_ms,
-        stake_subsidy_start_epoch,
-        reward_slashing_rate,
-        lock_active_committee,
-        extra_fields: bag::new(ctx),
-    }
 }
 
 // ==== public(package) functions ====
@@ -198,9 +164,7 @@ public(package) fun initialize(
     let pending_active_set = self.validator_set.pending_active_set();
     assert!(pending_active_set.size() >= pending_active_set.min_validator_count(), ECannotInitialize);
 
-    self.validator_set.process_mid_epoch(
-        self.parameters.lock_active_committee,
-    );
+    self.validator_set.process_mid_epoch();
     let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
     let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     self.advance_epoch(dwallet_2pc_mpc_coordinator_inner, clock, ctx);
@@ -491,7 +455,7 @@ public(package) fun advance_epoch(
     let last_epoch_change = self.epoch_start_timestamp_ms;
 
     if (self.epoch == 0) assert!(now >= last_epoch_change, EWrongEpochState)
-    else assert!(now >= last_epoch_change + self.parameters.epoch_duration_ms, EWrongEpochState);
+    else assert!(now >= last_epoch_change + self.epoch_duration_ms, EWrongEpochState);
     self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();
@@ -502,7 +466,7 @@ public(package) fun advance_epoch(
     // Delay distributing any stake subsidies until after `stake_subsidy_start_epoch`.
     // And if this epoch is shorter than the regular epoch duration, don't distribute any stake subsidy.
     if (
-        current_epoch >= self.parameters.stake_subsidy_start_epoch
+        current_epoch >= self.stake_subsidy_start_epoch
     ) {
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
@@ -531,7 +495,6 @@ public(package) fun advance_epoch(
         .advance_epoch(
             new_epoch,
             &mut total_reward,
-            self.parameters.reward_slashing_rate,
         );
 
     let new_total_stake = self.validator_set.total_stake();
@@ -543,10 +506,6 @@ public(package) fun advance_epoch(
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `remaining_rewards`.
     self.remaining_rewards.join(total_reward);
-
-    //let active_committee = self.active_committee();
-    // // Derive the computation price per unit size for the new epoch
-    //self.computation_price_per_unit_size = self.validators.derive_computation_price_per_unit_size(&active_committee);
 
     event::emit(SystemEpochInfoEvent {
         epoch: self.epoch,
@@ -564,11 +523,9 @@ public(package) fun process_mid_epoch(
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext,
 ) {
-    assert!(self.validator_set.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.parameters.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
+    assert!(self.validator_set.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
 
-    self.validator_set.process_mid_epoch(
-        self.parameters.lock_active_committee,
-    );
+    self.validator_set.process_mid_epoch();
     let next_epoch_active_committee = self.validator_set.next_epoch_active_committee().extract();
     dwallet_coordinator_inner.mid_epoch_reconfiguration(next_epoch_active_committee, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
@@ -770,17 +727,45 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
     let len = bcs_body.peel_vec_length();
     let mut i = 0;
     while (i < len) {
-
         let message_data_type = bcs_body.peel_vec_length();
-            // Parses params message BCS bytes directly.
-            if (message_data_type == 0) {
-                let next_protocol_version = bcs_body.peel_u64();
-                self.next_protocol_version.fill(next_protocol_version);
-            };
+        // Parses params message BCS bytes directly.
+        if (message_data_type == 0) {
+            let next_protocol_version = bcs_body.peel_u64();
+            self.next_protocol_version.fill(next_protocol_version);
+        } else if (message_data_type == 1) {
+            let epoch_duration_ms = bcs_body.peel_u64();
+            self.epoch_duration_ms = epoch_duration_ms;
+        } else if (message_data_type == 2) {
+            let stake_subsidy_start_epoch = bcs_body.peel_u64();
+            self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
+        } else if (message_data_type == 3) {
+            let stake_subsidy_rate = bcs_body.peel_u16();
+            self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
+        } else if (message_data_type == 4) {
+            let stake_subsidy_period_length = bcs_body.peel_u64();
+            self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
+        } else if (message_data_type == 5) {
+            let min_validator_count = bcs_body.peel_u64();
+            self.validator_set.set_min_validator_count(min_validator_count);
+        } else if (message_data_type == 6) {
+            let max_validator_count = bcs_body.peel_u64();
+            self.validator_set.set_max_validator_count(max_validator_count);
+        } else if (message_data_type == 7) {
+            let min_validator_joining_stake = bcs_body.peel_u64();
+            self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
+        } else if (message_data_type == 8) {
+            let max_validator_change_count = bcs_body.peel_u64();
+            self.validator_set.set_max_validator_change_count(max_validator_change_count);
+        } else if (message_data_type == 9) {
+            let reward_slashing_rate = bcs_body.peel_u16();
+            self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
+        };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
 }
+
+
 
 // === Utility functions ===
 
@@ -835,7 +820,7 @@ public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
 }
 
 public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
-    self.parameters.epoch_duration_ms
+    self.epoch_duration_ms
 }
 
 // // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a

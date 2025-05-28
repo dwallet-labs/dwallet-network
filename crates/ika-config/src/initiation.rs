@@ -23,9 +23,6 @@ pub const MAX_VALIDATOR_CHANGE_COUNT: u64 = 10;
 /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
 pub const REWARD_SLASHING_RATE: u16 = 10_000;
 
-/// Lock active committee between epochs.
-pub const LOCK_ACTIVE_COMMITTEE: bool = false;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct InitiationParameters {
@@ -75,10 +72,6 @@ pub struct InitiationParameters {
     /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
     #[serde(default = "InitiationParameters::default_reward_slashing_rate")]
     pub reward_slashing_rate: u16,
-
-    /// Lock active committee between epochs.
-    #[serde(default = "InitiationParameters::default_lock_active_committee")]
-    pub lock_active_committee: bool,
 }
 
 impl InitiationParameters {
@@ -95,7 +88,6 @@ impl InitiationParameters {
             min_validator_joining_stake: Self::default_min_validator_joining_stake(),
             max_validator_change_count: Self::default_max_validator_change_count(),
             reward_slashing_rate: Self::default_reward_slashing_rate(),
-            lock_active_committee: Self::default_lock_active_committee(),
         }
     }
 
@@ -147,10 +139,6 @@ impl InitiationParameters {
 
     fn default_reward_slashing_rate() -> u16 {
         REWARD_SLASHING_RATE
-    }
-
-    fn default_lock_active_committee() -> bool {
-        LOCK_ACTIVE_COMMITTEE
     }
 }
 

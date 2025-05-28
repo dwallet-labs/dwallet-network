@@ -725,7 +725,6 @@ pub async fn init_initialize(
                 &initiation_parameters.max_validator_change_count,
             )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
-            CallArg::Pure(bcs::to_bytes(&initiation_parameters.lock_active_committee)?),
             CallArg::Pure(bcs::to_bytes(STAKED_IKA_ICON_URL)?),
             CallArg::Pure(bcs::to_bytes(DWALLET_CAP_IMAGE_URL)?),
             CallArg::Pure(bcs::to_bytes(IMPORTED_KEY_DWALLET_CAP_IMAGE_URL)?),

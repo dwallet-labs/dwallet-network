@@ -35,6 +35,11 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `process_mid_epoch`](#(ika_system=0x0)_validator_set_process_mid_epoch)
 -  [Function `advance_epoch`](#(ika_system=0x0)_validator_set_advance_epoch)
 -  [Function `activate_added_validators`](#(ika_system=0x0)_validator_set_activate_added_validators)
+-  [Function `set_min_validator_count`](#(ika_system=0x0)_validator_set_set_min_validator_count)
+-  [Function `set_max_validator_count`](#(ika_system=0x0)_validator_set_set_max_validator_count)
+-  [Function `set_min_validator_joining_stake`](#(ika_system=0x0)_validator_set_set_min_validator_joining_stake)
+-  [Function `set_max_validator_change_count`](#(ika_system=0x0)_validator_set_set_max_validator_change_count)
+-  [Function `set_reward_slashing_rate`](#(ika_system=0x0)_validator_set_set_reward_slashing_rate)
 -  [Function `total_stake`](#(ika_system=0x0)_validator_set_total_stake)
 -  [Function `validator_total_stake_amount`](#(ika_system=0x0)_validator_set_validator_total_stake_amount)
 -  [Function `token_exchange_rates`](#(ika_system=0x0)_validator_set_token_exchange_rates)
@@ -143,6 +148,12 @@ title: Module `(ika_system=0x0)::validator_set`
 </dt>
 <dd>
  Total amount of stake from all active validators at the beginning of the epoch.
+</dd>
+<dt>
+<code>reward_slashing_rate: u16</code>
+</dt>
+<dd>
+ How many reward are slashed to punish a validator, in bps.
 </dd>
 <dt>
 <code>validators: <a href="../sui/object_table.md#sui_object_table_ObjectTable">sui::object_table::ObjectTable</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>&gt;</code>
@@ -345,7 +356,16 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u128 = 10000;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u16 = 10000;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR_U128"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR_U128">BASIS_POINT_DENOMINATOR_U128</a>: u128 = 10000;
 </code></pre>
 
 
@@ -440,6 +460,15 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
+<a name="(ika_system=0x0)_validator_set_EBpsTooLarge"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EBpsTooLarge">EBpsTooLarge</a>: u64 = 9;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
 
 
@@ -475,7 +504,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">new</a>(min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_new">new</a>(min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64, reward_slashing_rate: u16, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
 </code></pre>
 
 
@@ -489,10 +518,17 @@ The epoch value corresponds to the first epoch this change takes place.
     max_validator_count: u64,
     min_validator_joining_stake: u64,
     max_validator_change_count: u64,
+    reward_slashing_rate: u16,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a> {
+    // Rates can't be higher than 100%.
+    <b>assert</b>!(
+        reward_slashing_rate &lt;= <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>,
+        <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EBpsTooLarge">EBpsTooLarge</a>,
+    );
     <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a> {
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_total_stake">total_stake</a>: 0,
+        reward_slashing_rate,
         validators: object_table::new(ctx),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>: option::none(),
@@ -1305,7 +1341,7 @@ Request to set commission rate for the validator.
 Process the pending validator changes at mid epoch
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, lock_active_committee: bool)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
 </code></pre>
 
 
@@ -1316,16 +1352,9 @@ Process the pending validator changes at mid epoch
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_mid_epoch">process_mid_epoch</a>(
     self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
-    lock_active_committee: bool,
 ) {
     <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_none(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>);
-    <b>if</b> (lock_active_committee) {
-        // <b>if</b> we lock the committee just keep it the same <b>as</b> last time
-        self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.fill(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>)
-    } <b>else</b> {
-        // Process pending validators
-        self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_validators">process_pending_validators</a>();
-    };
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_process_pending_validators">process_pending_validators</a>();
 }
 </code></pre>
 
@@ -1346,7 +1375,7 @@ It does the following things:
 5. At the end, we calculate the total stake for the new epoch.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_epoch: u64, total_reward: &<b>mut</b> <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;, reward_slashing_rate: u16)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_epoch: u64, total_reward: &<b>mut</b> <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;)
 </code></pre>
 
 
@@ -1359,7 +1388,6 @@ It does the following things:
     self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
     new_epoch: u64,
     total_reward: &<b>mut</b> Balance&lt;IKA&gt;,
-    reward_slashing_rate: u16,
 ) {
     <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_some(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>);
     <b>let</b> total_voting_power = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_active_committee">active_committee</a>.total_voting_power();
@@ -1383,7 +1411,7 @@ It does the following things:
         individual_staking_reward_adjustments,
     ) = <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_compute_reward_adjustments">compute_reward_adjustments</a>(
         slashed_validator_indices,
-        reward_slashing_rate,
+        self.reward_slashing_rate,
         &unadjusted_staking_reward_amounts,
     );
     // Compute the adjusted amounts of stake each <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> should get given the tallying rule
@@ -1456,6 +1484,126 @@ It does the following things:
             });
         };
     });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_min_validator_count"></a>
+
+## Function `set_min_validator_count`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_count">set_min_validator_count</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, min_validator_count: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_count">set_min_validator_count</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, min_validator_count: u64) {
+    self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_count">set_min_validator_count</a>(min_validator_count);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_max_validator_count"></a>
+
+## Function `set_max_validator_count`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_count">set_max_validator_count</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, max_validator_count: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_count">set_max_validator_count</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, max_validator_count: u64) {
+    self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_count">set_max_validator_count</a>(max_validator_count);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_min_validator_joining_stake"></a>
+
+## Function `set_min_validator_joining_stake`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, min_validator_joining_stake: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, min_validator_joining_stake: u64) {
+    self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(min_validator_joining_stake);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_max_validator_change_count"></a>
+
+## Function `set_max_validator_change_count`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_change_count">set_max_validator_change_count</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, max_validator_change_count: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_change_count">set_max_validator_change_count</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, max_validator_change_count: u64) {
+    self.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.borrow_mut().<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_max_validator_change_count">set_max_validator_change_count</a>(max_validator_change_count);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_set_reward_slashing_rate"></a>
+
+## Function `set_reward_slashing_rate`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_reward_slashing_rate">set_reward_slashing_rate</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, reward_slashing_rate: u16)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_set_reward_slashing_rate">set_reward_slashing_rate</a>(self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>, reward_slashing_rate: u16) {
+    self.reward_slashing_rate = reward_slashing_rate;
 }
 </code></pre>
 
@@ -1881,7 +2029,7 @@ as well as storage fund rewards.
         <b>let</b> unadjusted_staking_reward = unadjusted_staking_reward_amounts[validator_index];
         <b>let</b> staking_reward_adjustment_u128 =
             unadjusted_staking_reward <b>as</b> u128 * (reward_slashing_rate <b>as</b> u128)
-                / <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>;
+                / <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_BASIS_POINT_DENOMINATOR_U128">BASIS_POINT_DENOMINATOR_U128</a>;
         // Insert into individual mapping and record into the total adjustment sum.
         individual_staking_reward_adjustments.insert(
             validator_index,

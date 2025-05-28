@@ -6992,6 +6992,8 @@ Also emits an event with the <code>signature</code>.
                     session_sequence_number
                 );
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            } <b>else</b> <b>if</b> (message_data_type == 10) {
+                self.max_active_sessions_buffer = bcs_body.peel_u64();
             };
         i = i + 1;
     };

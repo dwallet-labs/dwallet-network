@@ -1246,6 +1246,21 @@ advance_epoch
 activate_added_validators
 	fun
 	0x0::validator_set
+set_min_validator_count
+	public(package) fun
+	0x0::validator_set
+set_max_validator_count
+	public(package) fun
+	0x0::validator_set
+set_min_validator_joining_stake
+	public(package) fun
+	0x0::validator_set
+set_max_validator_change_count
+	public(package) fun
+	0x0::validator_set
+set_reward_slashing_rate
+	public(package) fun
+	0x0::validator_set
 total_stake
 	public fun
 	0x0::validator_set
@@ -1351,6 +1366,9 @@ calculate_stake_subsidy_amount_per_distribution
 set_stake_subsidy_rate
 	public(package) fun
 	0x0::protocol_treasury
+set_stake_subsidy_period_length
+	public(package) fun
+	0x0::protocol_treasury
 stake_subsidy_amount_per_distribution
 	public fun
 	0x0::protocol_treasury
@@ -1363,9 +1381,6 @@ ProtocolCap
 new_protocol_cap
 	public(package) fun
 	0x0::protocol_cap
-SystemParametersV1
-	public struct
-	0x0::system_inner
 SystemInnerV1
 	public struct
 	0x0::system_inner
@@ -1379,9 +1394,6 @@ SystemCheckpointInfoEvent
 	public struct
 	0x0::system_inner
 create
-	public(package) fun
-	0x0::system_inner
-create_system_parameters
 	public(package) fun
 	0x0::system_inner
 initialize
