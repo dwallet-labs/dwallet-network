@@ -122,7 +122,7 @@ describe('Test dWallet MPC', () => {
 		);
 	});
 
-	it('should create a dwallet, publish its secret share & sign with the published share', async () => {
+	it('should create a dwallet, publish its secret share and sign with the published share', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		console.log('Creating dWallet...');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
