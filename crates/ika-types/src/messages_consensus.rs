@@ -171,13 +171,13 @@ impl Debug for AuthorityCapabilitiesV1 {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
+    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {

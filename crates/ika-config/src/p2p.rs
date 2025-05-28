@@ -25,6 +25,10 @@ pub struct P2pConfig {
     /// connection is established with these nodes.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub seed_peers: Vec<SeedPeer>,
+    /// A list of fixed peers that the node will always try to connect to.
+    /// If this field is set, the node will not find new peers through discovery.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fixed_peers: Option<Vec<SeedPeer>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub anemo_config: Option<anemo::Config>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -49,6 +53,7 @@ impl Default for P2pConfig {
             listen_address: default_listen_address(),
             external_address: Default::default(),
             seed_peers: Default::default(),
+            fixed_peers: None,
             anemo_config: Default::default(),
             state_sync: None,
             discovery: None,
