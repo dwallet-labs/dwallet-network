@@ -72,6 +72,9 @@ impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
         let (completed_computation_channel_sender, completed_computation_channel_receiver) =
+	    // This channel should not reach a size even close to this.
+	    // But, since this is critical to keep the computations running 
+            // we are using a big buffer (this size of the data is small)	
             tokio::sync::mpsc::channel(10_000);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
