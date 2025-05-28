@@ -23,6 +23,7 @@ export enum Hash {
 }
 
 interface ReadySignObject {
+	sign_id: string;
 	state: {
 		fields: {
 			signature: Uint8Array;
@@ -103,6 +104,31 @@ async function approveMessageTX(
 	return { dWalletStateData, tx, messageApproval };
 }
 
+async function approveImportedDWalletMessageTX(
+	conf: Config,
+	dwalletCapID: string,
+	hash: Hash,
+	message: Uint8Array,
+	tx: Transaction = new Transaction(),
+) {
+	const dWalletStateData = await getDWalletSecpState(conf);
+	const messageApproval = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::approve_imported_key_message`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dWalletStateData.object_id,
+				initialSharedVersion: dWalletStateData.initial_shared_version,
+				mutable: true,
+			}),
+			tx.object(dwalletCapID),
+			tx.pure.u32(0),
+			tx.pure(bcs.u32().serialize(hash.valueOf())),
+			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
+		],
+	});
+	return { dWalletStateData, tx, messageApproval };
+}
+
 export async function sign(
 	conf: Config,
 	presignID: string,
@@ -148,6 +174,67 @@ export async function sign(
 
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dWalletStateData.object_id,
+				initialSharedVersion: dWalletStateData.initial_shared_version,
+				mutable: true,
+			}),
+			verifiedPresignCap,
+			messageApproval,
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			emptyIKACoin,
+			tx.gas,
+		],
+	});
+	return await call_mpc_sign_tx(tx, emptyIKACoin, conf);
+}
+
+export async function signWithImportedDWallet(
+	conf: Config,
+	presignID: string,
+	dwalletCapID: string,
+	message: Uint8Array,
+	secretKey: Uint8Array,
+	networkDecryptionKeyPublicOutput: Uint8Array,
+	hash = Hash.KECCAK256,
+): Promise<ReadySignObject> {
+	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
+	const dwalletID = dwalletCap.dwallet_id;
+	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
+	const presign = await getObjectWithType(conf, presignID, isPresign);
+
+	const centralizedSignedMessage = create_sign_centralized_output(
+		networkDecryptionKeyPublicOutput,
+		MPCKeyScheme.Secp256k1,
+		activeDWallet.state.fields.public_output,
+		secretKey,
+		presign.state.fields.presign,
+		message,
+		hash,
+	);
+	const { dWalletStateData, tx, messageApproval } = await approveImportedDWalletMessageTX(
+		conf,
+		dwalletCapID,
+		hash,
+		message,
+	);
+	const emptyIKACoin = createEmptyIKACoin(tx, conf);
+
+	const [verifiedPresignCap] = tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
+		arguments: [
+			tx.sharedObjectRef({
+				objectId: dWalletStateData.object_id,
+				initialSharedVersion: dWalletStateData.initial_shared_version,
+				mutable: true,
+			}),
+			tx.object(presign.cap_id),
+		],
+	});
+
+	tx.moveCall({
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_sign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,

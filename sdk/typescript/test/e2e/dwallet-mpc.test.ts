@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { sample_dwallet_secret_key } from '@dwallet-network/dwallet-mpc-wasm';
+import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { beforeEach, describe, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
@@ -27,6 +27,7 @@ import {
 	createUnverifiedPartialUserSignatureCap,
 	Hash,
 	sign,
+	signWithImportedDWallet,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
@@ -126,12 +127,40 @@ describe('Test dWallet MPC', () => {
 			dwallet.dwalletID,
 			dwallet.secret_share,
 		);
-		const secretShare = await getObjectWithType(
+	});
+
+	it('should create a dwallet, publish its secret share and sign with the published share', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		console.log('Creating dWallet...');
+		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		await delay(checkpointCreationTime);
+		console.log('Running publish secret share...');
+		await makeDWalletUserSecretKeySharesPublicRequestEvent(
+			conf,
+			dwallet.dwalletID,
+			dwallet.secret_share,
+		);
+		const dwalletWithSecretShare = await getObjectWithType(
 			conf,
 			dwallet.dwalletID,
 			isDWalletWithPublicUserSecretKeyShares,
 		);
-		console.log(`secretShare: ${secretShare}`);
+		console.log(`secretShare: ${dwalletWithSecretShare}`);
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwalletWithSecretShare.id.id);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		await sign(
+			conf,
+			completedPresign.id.id,
+			dwalletWithSecretShare.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletWithSecretShare.public_user_secret_key_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
 	});
 
 	it('should complete future sign', async () => {
@@ -176,8 +205,71 @@ describe('Test dWallet MPC', () => {
 
 	it('should create an imported dWallet', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		const secretKey = sample_dwallet_secret_key(networkDecryptionKeyPublicOutput);
+		const [secretKey, _publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
 		const dwallet = await createImportedDWallet(conf, secretKey);
 		console.log({ ...dwallet });
+	});
+
+	it('should create an imported dWallet, publish its secret share and sign with it', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const [secretKey, _publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
+		console.log('Running publish secret share...');
+		await makeDWalletUserSecretKeySharesPublicRequestEvent(
+			conf,
+			dwallet.dwalletID,
+			dwallet.secret_share,
+		);
+		const dwalletWithSecretShare = await getObjectWithType(
+			conf,
+			dwallet.dwalletID,
+			isDWalletWithPublicUserSecretKeyShares,
+		);
+		console.log(`secretShare: ${dwalletWithSecretShare}`);
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwalletWithSecretShare.id.id);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		await sign(
+			conf,
+			completedPresign.id.id,
+			dwalletWithSecretShare.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwalletWithSecretShare.public_user_secret_key_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
+	});
+
+	it('should create an imported dWallet, sign with it & verify the signature against the original public key', async () => {
+		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+		const [secretKey, publicKey] = sample_dwallet_keypair(networkDecryptionKeyPublicOutput);
+		const dwallet = await createImportedDWallet(conf, secretKey);
+		console.log({ ...dwallet });
+		await delay(checkpointCreationTime);
+		console.log('Running Presign...');
+		const completedPresign = await presign(conf, dwallet.dwalletID);
+		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
+		await delay(checkpointCreationTime);
+		console.log('Running Sign...');
+		const signature = await signWithImportedDWallet(
+			conf,
+			completedPresign.id.id,
+			dwallet.dwallet_cap_id,
+			Buffer.from('hello world'),
+			dwallet.secret_share,
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
+		const isValid = verify_secp_signature(
+			publicKey,
+			signature.state.fields.signature,
+			Buffer.from('hello world'),
+			networkDecryptionKeyPublicOutput,
+			Hash.KECCAK256,
+		);
+		expect(isValid).toBeTruthy();
 	});
 });

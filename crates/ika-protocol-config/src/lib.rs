@@ -1,15 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use clap::*;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use std::{
     cell::RefCell,
     collections::BTreeSet,
     sync::atomic::{AtomicBool, Ordering},
 };
-
-use clap::*;
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
 use sui_protocol_config_macros::{
     ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters, ProtocolConfigOverride,
 };
@@ -263,6 +262,9 @@ pub struct ProtocolConfig {
     /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
     /// is disabled.
     consensus_gc_depth: Option<u32>,
+    decryption_key_reshare_third_round_delay: Option<u32>,
+    network_dkg_third_round_delay: Option<u32>,
+    sign_second_round_delay: Option<u32>,
 }
 
 // feature flags
@@ -494,6 +496,10 @@ impl ProtocolConfig {
             consensus_max_transactions_in_block_bytes: Some(315218930),
             consensus_max_num_transactions_in_block: Some(512),
             consensus_gc_depth: Some(60),
+            // The delay is measured in consensus rounds.
+            decryption_key_reshare_third_round_delay: Some(20),
+            network_dkg_third_round_delay: Some(20),
+            sign_second_round_delay: Some(2),
         };
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
