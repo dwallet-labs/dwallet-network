@@ -9,7 +9,6 @@ use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use strum::IntoStaticStr;
-use sui_types::base_types::ObjectID;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGFirstRoundOutput {

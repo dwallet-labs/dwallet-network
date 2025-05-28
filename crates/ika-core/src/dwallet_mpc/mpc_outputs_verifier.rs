@@ -12,7 +12,7 @@ use group::PartyID;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{MPCProtocolInitData, SessionInfo};
+use ika_types::messages_dwallet_mpc::SessionInfo;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -145,6 +145,7 @@ impl DWalletMPCOutputsVerifier {
     ) -> DwalletMPCResult<OutputVerificationResult> {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
+            mpc_protocol=?session_info.mpc_round,
             session_id=?session_info.session_id,
             from_authority=?origin_authority,
             receiving_authority=?self.epoch_store()?.name,
@@ -195,12 +196,7 @@ impl DWalletMPCOutputsVerifier {
             self.consensus_round_completed_sessions
                 .insert(session_info.session_id);
             let mpc_event_data = session_info.mpc_round.clone();
-            self.dwallet_mpc_metrics.add_completion(
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
-            );
+            self.dwallet_mpc_metrics.add_completion(&mpc_event_data);
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
                 malicious_actors: vec![],

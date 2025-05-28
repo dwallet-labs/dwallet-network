@@ -7,9 +7,6 @@ init
 inku_per_ika
 	public fun
 	0x0::ika
-get_staked_ika_icon_url
-	public fun
-	0x0::ika
 ed25519_address
 	public fun
 	0x0::address
@@ -124,18 +121,6 @@ join
 split
 	public fun
 	0x0::staked_ika
-ObjectDisplay
-	public struct
-	0x0::display
-PublisherKey
-	public struct
-	0x0::display
-create
-	public(package) fun
-	0x0::display
-init_staked_ika_display
-	fun
-	0x0::display
 DWalletPricing
 	public struct
 	0x0::dwallet_pricing
@@ -568,6 +553,36 @@ set_paused_curves_and_signature_algorithms
 set_pricing_vote
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+ObjectDisplay
+	public struct
+	0x0::display
+PublisherKey
+	public struct
+	0x0::display
+create
+	public(package) fun
+	0x0::display
+init_staked_ika_display
+	fun
+	0x0::display
+init_dwallet_cap_display
+	fun
+	0x0::display
+init_imported_key_dwallet_cap_display
+	fun
+	0x0::display
+init_unverified_presign_cap_display
+	fun
+	0x0::display
+init_verified_presign_cap_display
+	fun
+	0x0::display
+init_unverified_partial_user_signature_cap_display
+	fun
+	0x0::display
+init_verified_partial_user_signature_cap_display
+	fun
+	0x0::display
 DWalletCoordinator
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator
@@ -1108,10 +1123,19 @@ set_max_validator_count
 set_min_validator_count
 	public(package) fun
 	0x0::pending_active_set
+set_max_validator_change_count
+	public(package) fun
+	0x0::pending_active_set
+reset_validator_changes
+	public(package) fun
+	0x0::pending_active_set
 max_validator_count
 	public(package) fun
 	0x0::pending_active_set
 min_validator_count
+	public(package) fun
+	0x0::pending_active_set
+max_validator_change_count
 	public(package) fun
 	0x0::pending_active_set
 size

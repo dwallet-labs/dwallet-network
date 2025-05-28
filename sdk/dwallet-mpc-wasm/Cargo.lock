@@ -540,7 +540,7 @@ dependencies = [
 [[package]]
 name = "enum-compat-util"
 version = "0.1.0"
-source = "git+https://github.com/MystenLabs/sui?rev=5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc#5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc"
+source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
 dependencies = [
  "serde_yaml",
 ]
@@ -912,7 +912,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/MystenLabs/sui?rev=5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc#5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc"
+source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
 dependencies = [
  "anyhow",
  "bcs",
@@ -936,7 +936,7 @@ dependencies = [
 [[package]]
 name = "move-proc-macros"
 version = "0.1.0"
-source = "git+https://github.com/MystenLabs/sui?rev=5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc#5612ba3005e94b1eaf2dc0dcdbddb0e45668a6fc"
+source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
 dependencies = [
  "enum-compat-util",
  "quote",

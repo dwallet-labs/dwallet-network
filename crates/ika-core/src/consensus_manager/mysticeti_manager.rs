@@ -5,7 +5,9 @@ use std::{path::PathBuf, sync::Arc};
 use arc_swap::ArcSwapOption;
 use async_trait::async_trait;
 use consensus_config::{Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
-use consensus_core::{CommitConsumer, CommitConsumerMonitor, CommitIndex, ConsensusAuthority};
+use consensus_core::{
+    Clock, CommitConsumer, CommitConsumerMonitor, CommitIndex, ConsensusAuthority,
+};
 use fastcrypto::ed25519;
 use ika_config::NodeConfig;
 use ika_types::{committee::EpochId, sui::epoch_start_system::EpochStartSystemTrait};
@@ -151,7 +153,8 @@ impl ConsensusManagerTrait for MysticetiManager {
         // MAKE SURE TO CHECK WE MANUALLY SET EVERY CONSENSUS CONFIG FROM OUR PROTOCOL CONFIG
         // AND THAT WE OVERRIDE THE SUI PROTOCOL CONFIG VALUES
         let mut protocol_config = sui_protocol_config::ProtocolConfig::get_for_version(
-            sui_protocol_config::ProtocolVersion::new(70),
+            // Version 84 was taken from Sui, DO NOT CHANGE IT.
+            sui_protocol_config::ProtocolVersion::new(84),
             sui_protocol_config::Chain::Mainnet,
         );
 
@@ -171,6 +174,9 @@ impl ConsensusManagerTrait for MysticetiManager {
         protocol_config
             .set_consensus_round_prober_for_testing(ika_protocol_config.consensus_round_prober());
 
+        protocol_config
+            .set_mysticeti_fastpath_for_testing(ika_protocol_config.mysticeti_fastpath());
+
         protocol_config.set_mysticeti_num_leaders_per_round_for_testing(
             ika_protocol_config.mysticeti_num_leaders_per_round(),
         );
@@ -179,14 +185,34 @@ impl ConsensusManagerTrait for MysticetiManager {
             ika_protocol_config.consensus_linearize_subdag_v2(),
         );
 
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
+        // protocol_config.set_consensus_zstd_compression_for_testing(
+        //     ika_protocol_config.consensus_zstd_compression(),
+        // );
+
+        protocol_config.set_consensus_median_based_commit_timestamp_for_testing(
+            ika_protocol_config.consensus_median_based_commit_timestamp(),
+        );
+
+        protocol_config.set_consensus_batched_block_sync_for_testing(
+            ika_protocol_config.consensus_batched_block_sync(),
+        );
+
+        // TODO: Do not remove this, this will be set once there is a "set" function for it.
+        // protocol_config.set_enforce_checkpoint_timestamp_monotonicity_for_testing(
+        //     ika_protocol_config.enforce_checkpoint_timestamp_monotonicity(),
+        // );
+
         let authority = ConsensusAuthority::start(
             protocol_config.consensus_network(),
+            epoch_store.epoch_start_config().epoch_start_timestamp_ms(),
             own_index,
             committee.clone(),
             parameters.clone(),
             protocol_config.clone(),
             self.protocol_keypair.clone(),
             self.network_keypair.clone(),
+            Arc::new(Clock::default()),
             Arc::new(tx_validator.clone()),
             commit_consumer,
             registry.clone(),
