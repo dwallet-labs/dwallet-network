@@ -18,7 +18,7 @@
 
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
 use prometheus::{
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
+    register_int_gauge_vec_with_registry, IntGaugeVec,
     Registry,
 };
 use std::sync::Arc;

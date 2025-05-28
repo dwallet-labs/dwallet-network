@@ -119,7 +119,7 @@ impl MPCProtocolInitData {
                 Some(event.event_data.curve)
             }
         };
-        let curve_str = match &curve {
+        match &curve {
             None => "".to_string(),
             Some(curve) => {
                 if curve == &0 {
@@ -128,8 +128,7 @@ impl MPCProtocolInitData {
                     "Unknown".to_string()
                 }
             }
-        };
-        curve_str
+        }
     }
 
     pub fn get_hash_scheme(&self) -> String {
@@ -163,30 +162,29 @@ impl MPCProtocolInitData {
 
     pub fn get_signature_algorithm(&self) -> String {
         let signature_alg = match self {
-            MPCProtocolInitData::DKGFirst(event) => None,
-            MPCProtocolInitData::DKGSecond(event) => None,
+            MPCProtocolInitData::DKGFirst(_event) => None,
+            MPCProtocolInitData::DKGSecond(_event) => None,
             MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
             MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
-            MPCProtocolInitData::NetworkDkg(_, event) => None,
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
             MPCProtocolInitData::EncryptedShareVerification(_) => None,
             MPCProtocolInitData::PartialSignatureVerification(event) => {
                 Some(event.event_data.signature_algorithm)
             }
             MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
         };
-        let signature_alg = match &signature_alg {
+        match &signature_alg {
             None => "".to_string(),
             Some(curve) => {
-                return if curve == &0 {
+                if curve == &0 {
                     "ECDSA".to_string()
                 } else {
                     "Unknown".to_string()
                 }
             }
-        };
-        signature_alg
+        }
     }
 }
 
