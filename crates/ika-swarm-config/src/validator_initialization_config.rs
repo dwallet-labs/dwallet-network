@@ -16,7 +16,7 @@ use ika_types::crypto::{
 };
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
 use serde::{Deserialize, Serialize};
-use sui_types::base_types::SuiAddress;
+use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::crypto::{PublicKey, SuiKeyPair};
 use sui_types::multiaddr::Multiaddr;
 
@@ -26,6 +26,7 @@ pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationConfig {
     pub name: Option<String>,
+    pub validator_id: ObjectID,
     pub class_groups_key_pair_and_proof: Box<ClassGroupsKeyPairAndProof>,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
@@ -59,9 +60,10 @@ impl ValidatorInitializationConfig {
         let network_address = self.network_address.clone();
         let current_epoch_consensus_address = self.current_epoch_consensus_address.clone();
         let _next_epoch_consensus_address = self.next_epoch_consensus_address.clone();
-
+        
         ValidatorInfo {
             name,
+            validator_id: (),
             class_groups_public_key_and_proof,
             protocol_public_key,
             consensus_public_key: worker_public_key,
@@ -212,6 +214,7 @@ impl ValidatorInitializationConfigBuilder {
             next_epoch_consensus_address,
             stake: MIN_VALIDATOR_JOINING_STAKE_INKU,
             name: None,
+            validator_id: ObjectID::random_from_rng(rng),
         }
     }
 }

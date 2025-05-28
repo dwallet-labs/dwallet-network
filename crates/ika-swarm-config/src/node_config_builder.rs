@@ -131,6 +131,7 @@ impl ValidatorConfigBuilder {
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
             )),
+            validator_id: validator.to_validator_info().validator_id.into_bytes(),
             account_key_pair: KeyPairWithPath::new(validator.account_key_pair.copy()),
             consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.consensus_key_pair.copy(),
@@ -341,6 +342,7 @@ impl FullnodeConfigBuilder {
             network_key_pair: self.network_key_pair.unwrap_or(KeyPairWithPath::new(
                 SuiKeyPair::Ed25519(validator_config.network_key_pair),
             )),
+            validator_id: None,
             db_path: self
                 .db_path
                 .unwrap_or(config_directory.join(FULL_NODE_DB_PATH).join(key_path)),

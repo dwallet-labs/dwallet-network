@@ -2,12 +2,13 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use ika_types::crypto::{AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use serde::{Deserialize, Serialize};
-use sui_types::base_types::SuiAddress;
+use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::multiaddr::Multiaddr;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInfo {
     pub name: String,
+    pub validator_id: ObjectID,
     #[serde(serialize_with = "as_base64", deserialize_with = "from_base64")]
     pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
     pub account_address: SuiAddress,
