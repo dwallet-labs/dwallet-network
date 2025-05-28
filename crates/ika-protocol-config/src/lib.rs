@@ -1,20 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use clap::*;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWALLET_DECRYPTION_KEY_RESHARE_REQUEST_EVENT_NAME,
-    DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME,
-    DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME,
-    DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT,
-    DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT,
-    ENCRYPTED_SHARE_VERIFICATION_REQUEST_EVENT_NAME, FUTURE_SIGN_REQUEST_EVENT_NAME,
-    PRESIGN_REQUEST_EVENT_STRUCT_NAME, SIGN_REQUEST_EVENT_STRUCT_NAME,
-    START_NETWORK_DKG_EVENT_STRUCT_NAME,
-};
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
-use std::collections::HashMap;
 use std::{
     cell::RefCell,
     collections::BTreeSet,
