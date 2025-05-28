@@ -119,7 +119,7 @@ impl MPCProtocolInitData {
                 Some(event.event_data.curve)
             }
         };
-        let curve_str = match &curve {
+        match &curve {
             None => "".to_string(),
             Some(curve) => {
                 if curve == &0 {
@@ -128,8 +128,7 @@ impl MPCProtocolInitData {
                     "Unknown".to_string()
                 }
             }
-        };
-        curve_str
+        }
     }
 
     pub fn get_hash_scheme(&self) -> String {
