@@ -15,6 +15,7 @@ use ika_types::crypto::{
     AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
 };
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::crypto::{PublicKey, SuiKeyPair};
@@ -214,7 +215,7 @@ impl ValidatorInitializationConfigBuilder {
             next_epoch_consensus_address,
             stake: MIN_VALIDATOR_JOINING_STAKE_INKU,
             name: None,
-            validator_id: ObjectID::random_from_rng(rng),
+            validator_id: ObjectID::random(),
         }
     }
 }
