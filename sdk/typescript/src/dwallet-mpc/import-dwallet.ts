@@ -5,6 +5,7 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
+import { acceptEncryptedUserShare } from './dkg.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { Config, DWallet, SharedObjectData } from './globals.js';
 import {
@@ -66,6 +67,10 @@ export async function createImportedDWallet(conf: Config, secretKey: Uint8Array)
 		importedDWalletData.dwallet_id,
 	);
 	const dwallet = await getObjectWithType(conf, importedDWalletData.dwallet_id, isActiveDWallet);
+	await acceptEncryptedUserShare(conf, {
+		dwallet_id: dwallet.id.id,
+		encrypted_user_secret_key_share_id: encryptedSecretShareID,
+	});
 	return {
 		dwalletID: importedDWalletData.dwallet_id,
 		dwallet_cap_id: importedDWalletData.dwallet_cap_id,
