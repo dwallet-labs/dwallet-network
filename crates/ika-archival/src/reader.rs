@@ -212,6 +212,23 @@ impl ArchiveReader {
 
         assert_eq!(files.first().unwrap().checkpoint_seq_range.start, 0);
 
+        let mut system_checkpoint_files: Vec<_> = files
+            .clone()
+            .into_iter()
+            .filter(|f| f.file_type == FileType::SystemCheckpointMessage)
+            .collect();
+
+        system_checkpoint_files.sort_by_key(|f| f.checkpoint_seq_range.start);
+
+        assert!(system_checkpoint_files
+            .windows(2)
+            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
+        assert!(system_checkpoint_files
+            .windows(2)
+            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
+
+        assert_eq!(files.first().unwrap().checkpoint_seq_range.start, 0);
+
         Ok(files)
     }
 

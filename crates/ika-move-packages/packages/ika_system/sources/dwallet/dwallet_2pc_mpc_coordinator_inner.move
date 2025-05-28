@@ -987,6 +987,7 @@ const EEncryptionKeyNotExist: u64 = 26;
 const EMissingProtocolPricing: u64 = 27;
 const EPricingCalculationVotesHasNotBeenStarted: u64 = 28;
 const EPricingCalculationVotesMustBeCompleted: u64 = 29;
+const ECannotSetDuringVotesCalculation: u64 = 30;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -996,6 +997,7 @@ const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence num
 
 #[error]
 const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
+
 // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
 public(package) fun create_dwallet_coordinator_inner(
@@ -3395,6 +3397,7 @@ public(package) fun set_pricing_vote(
     validator_id: ID,
     pricing_vote: DWalletPricing,
 ) {
+    assert!(self.pricing_calculation_votes.is_none(), ECannotSetDuringVotesCalculation);
     if(self.pricing_votes.contains(validator_id)) {
         let vote = self.pricing_votes.borrow_mut(validator_id);
         *vote = pricing_vote;
