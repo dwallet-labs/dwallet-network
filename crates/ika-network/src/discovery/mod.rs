@@ -150,6 +150,11 @@ impl DiscoveryEventLoop {
                     self.handle_peer_event(peer_event);
                 },
                 Ok(()) = self.trusted_peer_change_rx.changed() => {
+                    if self.config.fixed_peers.is_some() {
+                        // If we have fixed peers, we don't need to handle trusted peer changes.
+                        // This is because the fixed peers are already configured at the startup.
+                        continue;
+                    }
                     let event: TrustedPeerChangeEvent = self.trusted_peer_change_rx.borrow_and_update().clone();
                     self.handle_trusted_peer_change_event(event);
                 }
@@ -266,7 +271,7 @@ impl DiscoveryEventLoop {
         trusted_peer_change_event: TrustedPeerChangeEvent,
     ) {
         for peer_info in trusted_peer_change_event.new_peers {
-            debug!(?peer_info, "Add committee member as preferred peer.");
+            info!(?peer_info, "Add committee member as preferred peer.");
             self.network.known_peers().insert(peer_info);
         }
     }
