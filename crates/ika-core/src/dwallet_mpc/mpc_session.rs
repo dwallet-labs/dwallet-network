@@ -24,24 +24,15 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{
-    message_digest, party_id_to_authority_name, party_ids_to_authority_names, presign,
-    MPCSessionLogger,
-};
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
 use crate::stake_aggregator::StakeAggregator;
-use ika_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
-use ika_types::committee::StakeUnit;
-use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::message::MessageKind::DWalletImportedKeyVerificationOutput;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AdvanceResult, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, ThresholdNotReachedReport,
+    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::id::ID;
-use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -505,8 +496,7 @@ impl DWalletMPCSession {
                             encryption_key_id: event_data.event_data.encryption_key_id,
                             dwallet_network_decryption_key_id: event_data
                                 .event_data
-                                .dwallet_network_decryption_key_id
-                                .clone(),
+                                .dwallet_network_decryption_key_id,
                             curve: event_data.event_data.curve,
 
                             // Fields not relevant for verification; passing empty values.
@@ -985,7 +975,7 @@ impl DWalletMPCSession {
                         is_ready: true,
                         malicious_parties: vec![],
                     })
-                } else if (self
+                } else if self
                     .weighted_threshold_access_structure
                     .is_authorized_subset(
                         &self
@@ -1000,7 +990,7 @@ impl DWalletMPCSession {
                     )
                     .is_ok()
                     && self.received_more_messages_since_last_advance
-                    && self.agreed_mpc_protocol.is_some())
+                    && self.agreed_mpc_protocol.is_some()
                 {
                     self.wait_consensus_rounds_delay()
                 } else {
