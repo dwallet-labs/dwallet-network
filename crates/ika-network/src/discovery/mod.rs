@@ -168,7 +168,7 @@ impl DiscoveryEventLoop {
                         },
                     };
                 },
-                // Once the shutdown notification resolves we can terminate the event loop
+                // Once the shutdown notification resolves, we can terminate the event loop.
                 _ = &mut self.shutdown_handle => {
                     break;
                 }
@@ -202,9 +202,11 @@ impl DiscoveryEventLoop {
     }
 
     fn configure_preferred_peers(&mut self) {
+        let mut is_fixed = false;
         let initial_peers: Vec<_> = match &self.config.fixed_peers {
             Some(fixed_peers) => {
                 warn!(?fixed_peers, "Connecting to a fixed peers list");
+                is_fixed = true;
                 fixed_peers
                     .iter()
                     .filter_map(|peer| peer.peer_id.map(|id| (id, Some(peer.address.clone()))))
@@ -239,7 +241,11 @@ impl DiscoveryEventLoop {
                 affinity: anemo::types::PeerAffinity::High,
                 address: anemo_address.into_iter().collect(),
             };
-            debug!(?peer_info, "Add configured preferred peer");
+            info!(
+                ?peer_info,
+                is_fixed = is_fixed,
+                "Add configured preferred peer"
+            );
             self.network.known_peers().insert(peer_info);
         }
     }
@@ -335,7 +341,8 @@ impl DiscoveryEventLoop {
             }
         }
 
-        // Spawn some dials.
+        // Spawn some dials, we dile to known peers even if it's only fixed peers,
+        // this is the only place where dials are initiated.
         let state = self.state.read().unwrap();
         let eligible = state
             .known_peers
@@ -358,7 +365,7 @@ impl DiscoveryEventLoop {
                 .saturating_sub(number_of_connections),
         );
 
-        // randomize the order.
+        // Randomize the order.
         for (peer_id, info) in rand::seq::SliceRandom::choose_multiple(
             eligible.as_slice(),
             &mut rand::thread_rng(),
@@ -403,15 +410,15 @@ impl DiscoveryEventLoop {
 }
 
 async fn try_to_connect_to_peer(network: Network, info: NodeInfo) {
-    debug!("Connecting to peer {info:?}");
+    info!("Connecting to peer {info:?}");
     for multiaddr in &info.addresses {
         if let Ok(address) = multiaddr.to_anemo_address() {
-            // Ignore the result and just log the error if there is one
+            // Ignore the result and log the error if there is one.
             if network
                 .connect_with_peer_id(address, info.peer_id)
                 .await
                 .tap_err(|e| {
-                    debug!(
+                    warn!(
                         "error dialing {} at address '{}': {e}",
                         info.peer_id.short_display(4),
                         multiaddr
