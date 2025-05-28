@@ -425,10 +425,8 @@ impl DWalletMPCManager {
     pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
-        key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        self.network_keys
-            .get_protocol_public_parameters(key_id, key_scheme)
+        self.network_keys.get_protocol_public_parameters(key_id)
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
@@ -605,6 +603,7 @@ impl DWalletMPCManager {
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
+                .await
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,
