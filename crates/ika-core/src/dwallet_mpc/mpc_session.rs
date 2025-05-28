@@ -4,7 +4,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     MPCSessionStatus, SerializedWrappedMPCPublicOutput,
     VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
     VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedPresignOutput, VersionedSignOutput,
+    VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
@@ -154,13 +154,13 @@ impl DWalletMPCSession {
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
     pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        // Safe to unwrap as advance can only be called after the event is received.
+        let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
             }) => {
-                // Safe to unwrap as advance can only be called after the event is received.
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 let session_id = self.session_id;
                 let validator_name = self.epoch_store()?.name;
                 let round_number = self.serialized_full_messages.len();
@@ -200,8 +200,6 @@ impl DWalletMPCSession {
                 public_output,
             }) => {
                 let validator_name = self.epoch_store()?.name;
-                // Safe to unwrap as advance can only be called after the event is received.
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 info!(
                     mpc_protocol=?&mpc_protocol,
                     session_id=?self.session_id,
@@ -247,12 +245,12 @@ impl DWalletMPCSession {
                     validator=?self.epoch_store()?.name,
                     crypto_round=?self.current_round,
                     party_id=?self.party_id,
+                    mpc_protocol=?&mpc_protocol,
                     "MPC session failed"
                 );
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
-                let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
                 let validator_name = self.epoch_store()?.name;
 
                 error!(
@@ -400,10 +398,12 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
+                let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
+                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?;
                 let public_input = (
                     bcs::from_bytes(encoded_public_input)?,
                     dwallet_id,
-                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?,
+                    bcs::from_bytes(&centralized_party_message)?,
                 )
                     .into();
 
@@ -428,6 +428,32 @@ impl DWalletMPCSession {
                         malicious_parties,
                         private_output,
                     }) => {
+                        verify_encrypted_share(
+                            &EncryptedShareVerificationRequestEvent {
+                                decentralized_public_output: bcs::to_bytes(
+                                    &VersionedDwalletDKGSecondRoundPublicOutput::V1(
+                                        public_output.clone(),
+                                    ),
+                                )?,
+                                encrypted_centralized_secret_share_and_proof: event_data
+                                    .event_data
+                                    .encrypted_centralized_secret_share_and_proof
+                                    .clone(),
+                                encryption_key: event_data.event_data.encryption_key.clone(),
+                                encryption_key_id: event_data.event_data.encryption_key_id,
+                                dwallet_network_decryption_key_id: event_data
+                                    .event_data
+                                    .dwallet_network_encryption_key_id
+                                    .clone(),
+                                curve: event_data.event_data.curve,
+
+                                // Fields not relevant for verification; passing empty values.
+                                dwallet_id: ObjectID::new([0; 32]),
+                                source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                                encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
+                            },
+                            encoded_public_input,
+                        )?;
                         let public_output = bcs::to_bytes(
                             &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
                         )?;
