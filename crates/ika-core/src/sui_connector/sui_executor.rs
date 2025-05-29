@@ -63,6 +63,60 @@ struct EpochSwitchState {
     calculated_protocol_pricing: bool,
 }
 
+struct DWalletPricingKey {
+    curve: u32,
+    signature_algorithm: Option<u32>,
+    protocol: u32,
+}
+
+const DWALLET_MPC_PROTOCOLS: [DWalletPricingKey; 9] = [
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: None,
+        protocol: DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: None,
+        protocol: DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: None,
+        protocol: RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: None,
+        protocol: MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: None,
+        protocol: IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: Some(0),
+        protocol: PRESIGN_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: Some(0),
+        protocol: SIGN_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: Some(0),
+        protocol: FUTURE_SIGN_PROTOCOL_FLAG,
+    },
+    DWalletPricingKey {
+        curve: 0,
+        signature_algorithm: Some(0),
+        protocol: SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+    },
+];
+
 impl<C> SuiExecutor<C>
 where
     C: SuiClientInner + 'static,
@@ -517,7 +571,7 @@ where
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
         let mut ptb = ProgrammableTransactionBuilder::new();
         let zero = ptb.input(CallArg::Pure(bcs::to_bytes(&0u32)?))?;
-        let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some(0u32))?))?;
+        let zero_option = ptb.input(CallArg::Pure(bcs::to_bytes(&Some::<u32>(0u32))?))?;
         let none_option = ptb.input(CallArg::Pure(bcs::to_bytes(&None::<u32>)?))?;
         let dwallet_coordinator_arg = sui_client
             .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(dwallet_coordinator_id)
