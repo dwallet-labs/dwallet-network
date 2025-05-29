@@ -271,6 +271,7 @@ async fn main() -> Result<()> {
             if let Some(protocol_version) = protocol_version {
                 initiation_parameters.protocol_version = protocol_version;
             }
+
             let (ika_system_object_id, protocol_cap_id, init_system_shared_version) =
                 init_initialize(
                     publisher_address,
@@ -346,6 +347,8 @@ async fn main() -> Result<()> {
             let mut context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
+            let initiation_parameters = InitiationParameters::new();
+
             // Call ika_system_initialize.
             let (dwallet_id, dwallet_initial_shared_version) = ika_system_initialize(
                 publisher_address,
@@ -355,6 +358,7 @@ async fn main() -> Result<()> {
                 ika_system_object_id,
                 init_system_shared_version.into(),
                 protocol_cap_id,
+                initiation_parameters.max_validator_change_count,
             )
             .await?;
             println!(

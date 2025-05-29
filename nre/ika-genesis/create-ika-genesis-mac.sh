@@ -48,8 +48,8 @@ export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-nod
 export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
-export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-#export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
+export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
 #export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 export SUI_FAUCET_URL="http://localhost:9123/gas"
