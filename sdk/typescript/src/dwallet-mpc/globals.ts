@@ -98,6 +98,7 @@ interface IKASystemStateInner {
 			fields: {
 				dwallet_2pc_mpc_coordinator_id: string;
 				dwallet_2pc_mpc_coordinator_network_encryption_keys: Array<any>;
+				epoch: number;
 			};
 		};
 	};
@@ -148,6 +149,7 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_encryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.epoch !== undefined &&
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
@@ -307,6 +309,20 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('No network decryption key found');
 	}
 	return decryptionKeyID;
+}
+
+export async function getNetworkCurrentEpochNumber(c: Config): Promise<number> {
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: c.ikaConfig.ika_system_object_id,
+	});
+	const innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_system_object_id,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data.content.fields.value.fields.epoch;
 }
 
 export interface DWallet {
