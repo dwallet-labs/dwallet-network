@@ -171,13 +171,13 @@ impl Debug for AuthorityCapabilitiesV1 {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
+    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
-    SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
 }
 
 impl ConsensusTransaction {
@@ -187,7 +187,7 @@ impl ConsensusTransaction {
         message: Vec<u8>,
         session_id: ObjectID,
         round_number: usize,
-        mpc_protocol: &str,
+        mpc_protocol: String,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         session_id.into_bytes().hash(&mut hasher);
@@ -199,7 +199,7 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_id,
-                mpc_protocol: mpc_protocol.to_string(),
+                mpc_protocol,
             }),
         }
     }

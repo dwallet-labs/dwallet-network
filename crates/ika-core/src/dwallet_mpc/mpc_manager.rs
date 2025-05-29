@@ -11,21 +11,15 @@ use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDec
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, VersionedNetworkDkgOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
-    DWalletMPCEvent, DWalletMPCEventTrait, DWalletMPCMessage, DWalletMPCSuiEvent,
-    EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, MaliciousReport, PresignRequestEvent,
-    SessionInfo, SessionType, SignRequestEvent, StartNetworkDKGEvent, ThresholdNotReachedReport,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport,
+    SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -383,91 +377,13 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn increment_metrics_for_event(&self, event: &DBSuiEvent) -> DwalletMPCResult<()> {
-        let packages_config = &self.epoch_store()?.packages_config;
-
-        match &event.type_ {
-            t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_network_dkg_count
-                    .inc();
-            }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletEncryptionKeyReconfigurationRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_decryption_key_reshare_count
-                        .inc();
-                }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletDKGFirstRoundRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_dwallet_dkg_first_round_count
-                        .inc();
-                }
-            t if t
-                == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_dwallet_dkg_second_round_count
-                        .inc();
-                }
-            t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_presign_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_sign_count
-                    .inc();
-            }
-            t if t
-                == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
-                packages_config,
-            ) =>
-                {
-                    self.dwallet_mpc_metrics
-                        .received_events_start_encrypted_share_verification_count
-                        .inc();
-                }
-            t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_partial_signature_verification_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_make_dwallet_user_secret_key_shares_public_count
-                    .inc();
-            }
-            t if t == &DWalletMPCSuiEvent::<DWalletImportedKeyVerificationRequestEvent>::type_(packages_config) => {
-                self.dwallet_mpc_metrics
-                    .received_events_start_import_dwallet_verification_count
-                    .inc();
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        if let Err(err) = self.increment_metrics_for_event(&event) {
-            warn!(?err, "Failed to increment metrics for event...");
-        }
         let (public_input, private_input) = session_input_from_event(event, self).await?;
-        let mpc_event_data = Some(MPCEventData {
+        let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
             public_input,
@@ -482,17 +398,20 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
-        });
+        };
+        let wrapped_mpc_event_data = Some(mpc_event_data.clone());
+        self.dwallet_mpc_metrics
+            .add_received_event_start(&mpc_event_data.init_protocol_data);
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             warn!(
                 session_id=?session_info.session_id,
                 "received an event for an existing session (previously received messages)",
             );
             if session.mpc_event_data.is_none() {
-                session.mpc_event_data = mpc_event_data;
+                session.mpc_event_data = wrapped_mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, mpc_event_data);
+            self.push_new_mpc_session(&session_info.session_id, wrapped_mpc_event_data);
         }
         Ok(())
     }
@@ -500,10 +419,8 @@ impl DWalletMPCManager {
     pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
-        key_scheme: DWalletMPCNetworkKeyScheme,
     ) -> DwalletMPCResult<Vec<u8>> {
-        self.network_keys
-            .get_protocol_public_parameters(key_id, key_scheme)
+        self.network_keys.get_protocol_public_parameters(key_id)
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
@@ -552,7 +469,7 @@ impl DWalletMPCManager {
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                let quorum_check_result = session.check_quorum_for_next_crypto_round();
+                let quorum_check_result = session.check_quorum_for_next_crypto_round().ok()?;
                 if quorum_check_result.is_ready {
                     session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
@@ -680,6 +597,7 @@ impl DWalletMPCManager {
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
+                .await
             {
                 error!(
                     session_id=?oldest_pending_session.session_id,

@@ -98,6 +98,96 @@ impl Display for MPCProtocolInitData {
     }
 }
 
+impl MPCProtocolInitData {
+    pub fn get_curve(&self) -> String {
+        let curve = match self {
+            MPCProtocolInitData::DKGFirst(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(event) => Some(event.event_data.curve),
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.curve)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
+                Some(event.event_data.curve)
+            }
+
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
+                Some(event.event_data.curve)
+            }
+        };
+        match &curve {
+            None => "".to_string(),
+            Some(curve) => {
+                if curve == &0 {
+                    "Secp256k1".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
+    }
+
+    pub fn get_hash_scheme(&self) -> String {
+        let hash_scheme = match self {
+            MPCProtocolInitData::DKGFirst(_) => None,
+            MPCProtocolInitData::DKGSecond(_) => None,
+            MPCProtocolInitData::Presign(_) => None,
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.hash_scheme),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.hash_scheme)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
+        };
+        match &hash_scheme {
+            None => "".to_string(),
+            Some(hash_scheme) => {
+                if hash_scheme == &0 {
+                    "KECCAK256".to_string()
+                } else if hash_scheme == &1 {
+                    "SHA256".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
+    }
+
+    pub fn get_signature_algorithm(&self) -> String {
+        let signature_alg = match self {
+            MPCProtocolInitData::DKGFirst(_event) => None,
+            MPCProtocolInitData::DKGSecond(_event) => None,
+            MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
+            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::EncryptedShareVerification(_) => None,
+            MPCProtocolInitData::PartialSignatureVerification(event) => {
+                Some(event.event_data.signature_algorithm)
+            }
+            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
+        };
+        match &signature_alg {
+            None => "".to_string(),
+            Some(curve) => {
+                if curve == &0 {
+                    "ECDSA".to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            }
+        }
+    }
+}
+
 impl Debug for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -170,7 +260,6 @@ pub struct DWalletMPCMessage {
     pub session_id: ObjectID,
     /// The MPC round number starts from 0.
     pub round_number: usize,
-    /// The MPC protocol that this message belongs to.
     pub mpc_protocol: String,
 }
 
