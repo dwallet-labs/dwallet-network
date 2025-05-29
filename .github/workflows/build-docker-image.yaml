@@ -1,11 +1,6 @@
 name: Build Docker image
 
 on:
-  push:
-    branches:
-      - main
-      - new-main
-  pull_request:
   workflow_dispatch:
 
 concurrency:
