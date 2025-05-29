@@ -30,7 +30,7 @@ COPY class-groups-keys-mock-files class-groups-keys-mock-files
 # --locked ensures you never accidentally change dependencies during a build.
 # Build dependencies first for better layer caching
 RUN cargo fetch --locked
-
+RUN rustup component add rustfmt
 # Conditionally compile with the network DKG feature
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 
