@@ -79,7 +79,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Run Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-features -- -D warnings
   snapshot:
     name: Snapshot
     runs-on: ubuntu-latest
@@ -95,4 +95,4 @@ jobs:
           toolchain: 1.85
       - uses: Swatinem/rust-cache@v2
       - name: Run snapshot
-        run: UPDATE=1 cargo test -p ika-move-packages --test build_ika_move_packages
+        run: cargo test -p ika-move-packages --test build_ika_move_packages
