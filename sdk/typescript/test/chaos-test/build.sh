@@ -51,7 +51,7 @@ echo "Docker tag:      $DOCKER_TAG"
 echo "Build profile:   $PROFILE"
 echo
 
-docker build -f "$DOCKERFILE" "$REPO_ROOT" \
+docker docker buildx build --platform linux/arm64 -f "$DOCKERFILE" "$REPO_ROOT" \
   --build-arg GIT_REVISION="$GIT_REVISION" \
   --build-arg BUILD_DATE="$BUILD_DATE" \
   --build-arg PROFILE="$PROFILE" \
