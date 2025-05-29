@@ -41,7 +41,7 @@ jobs:
         run: rustup target add x86_64-unknown-linux-gnu
       - uses: Swatinem/rust-cache@v2
       - name: Build
-        run: cargo build --bin ika --target-dir . --profile dev --target x86_64-unknown-linux-gnu
+        run: RUSTFLAGS="-D warnings" cargo build --bin ika --target-dir . --profile dev --target x86_64-unknown-linux-gnu
 
   fmt:
     name: Format Check
@@ -63,3 +63,42 @@ jobs:
       - name: Fmt Check - Wasm
         run: cargo fmt -- --check
         working-directory: sdk/dwallet-mpc-wasm
+  clippy:
+    if: github.event_name == 'push'
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Configure git with personal access token
+        run: |
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Run Clippy
+        run: cargo clippy --all-features -- -D warnings
+  snapshot:
+    name: Snapshot
+    runs-on: ubuntu-latest
+    # Only run this job if the latest commit message or any file changes (added, modified, or removed)
+    # in the commit history reference `ika-move-packages`.
+    # This helps optimize CI by only running
+    # the snapshot test when relevant files or commit messages are involved.
+    if: contains(github.event.head_commit.message, 'ika-move-packages') || contains(join(github.event.commits.*.modified, ','), 'ika-move-packages') || contains(join(github.event.commits.*.added, ','), 'ika-move-packages') || contains(join(github.event.commits.*.removed, ','), 'ika-move-packages')
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Configure git with personal access token
+        run: |
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85
+      - uses: Swatinem/rust-cache@v2
+      - name: Run snapshot
+        run: cargo test -p ika-move-packages --test build_ika_move_packages
