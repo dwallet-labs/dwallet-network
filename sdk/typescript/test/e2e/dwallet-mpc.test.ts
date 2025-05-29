@@ -86,7 +86,7 @@ async function runSignFullFlow(conf: Config) {
 		networkDecryptionKeyPublicOutput,
 		Hash.KECCAK256,
 	);
-	console.log(`Sing completed successfully: ${signRes.sign_id}`);
+	console.log(`Sing completed successfully: ${signRes.id.id}`);
 	console.timeEnd('Step 3: Sign Phase');
 }
 
@@ -165,7 +165,7 @@ describe('Test dWallet MPC', () => {
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
-		console.log(`Sing completed successfully: ${signRes.sign_id}`);
+		console.log(`Sing completed successfully: ${signRes.id.id}`);
 		console.timeEnd('Step 3: Sign Phase');
 	});
 
