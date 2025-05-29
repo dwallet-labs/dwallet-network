@@ -25,7 +25,6 @@ if [ -f .env ]; then
   done < .env
 else
   echo ".env file not found!"
-  exit 1
 fi
 
 # Validate required variables
