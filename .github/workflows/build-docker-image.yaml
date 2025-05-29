@@ -19,6 +19,7 @@ env:
   rust_nightly: nightly
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   GITHUB_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
+  DOCKER_TAG: ika:devnet-v0.0.6-arm64
 
 jobs:
   build:
@@ -30,8 +31,9 @@ jobs:
 
       - name: Build Docker image
         run: |
-          chmod +x ./build-image.sh
-          ./build-image.sh my-image:latest
+          cd sdk/typescript/test/chaos-test/
+          chmod +x ./build.sh
+          ./build.sh
 
       - name: Save Docker image as tar
         run: docker save my-image:latest -o image.tar
