@@ -325,6 +325,16 @@ export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8
 	fs.writeFileSync(filePath, networkKey);
 }
 
+export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		return fs.readFileSync(filePath);
+	}
+	return null;
+}
+
 export async function getNetworkCurrentEpochNumber(c: Config): Promise<number> {
 	const dynamicFields = await c.client.getDynamicFields({
 		parentId: c.ikaConfig.ika_system_object_id,
