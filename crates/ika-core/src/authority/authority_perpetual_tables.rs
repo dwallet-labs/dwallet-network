@@ -6,7 +6,7 @@ use std::path::Path;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::Identifier;
 use typed_store::rocks::{DBBatch, DBMap, MetricConf};
-use typed_store::traits::{Map, TableSummary, TypedStoreDebug};
+use typed_store::traits::Map;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_types::messages_dwallet_mpc::DBSuiEvent;
@@ -20,7 +20,7 @@ pub struct AuthorityPerpetualTables {
     pub(crate) epoch_start_configuration: DBMap<(), EpochStartConfiguration>,
 
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
-    pub(crate) pruned_checkpoint: DBMap<(), CheckpointSequenceNumber>,
+    pub(crate) pruned_checkpoint: DBMap<(), DWalletCheckpointSequenceNumber>,
 
     /// pending events from sui received but not yet executed
     pending_events: DBMap<EventID, Vec<u8>>,
@@ -65,14 +65,14 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn get_highest_pruned_checkpoint(&self) -> IkaResult<CheckpointSequenceNumber> {
+    pub fn get_highest_pruned_checkpoint(&self) -> IkaResult<DWalletCheckpointSequenceNumber> {
         Ok(self.pruned_checkpoint.get(&())?.unwrap_or_default())
     }
 
     pub fn set_highest_pruned_checkpoint(
         &self,
         wb: &mut DBBatch,
-        checkpoint_number: CheckpointSequenceNumber,
+        checkpoint_number: DWalletCheckpointSequenceNumber,
     ) -> IkaResult {
         wb.insert_batch(&self.pruned_checkpoint, [((), checkpoint_number)])?;
         Ok(())
@@ -80,7 +80,7 @@ impl AuthorityPerpetualTables {
 
     pub fn set_highest_pruned_checkpoint_without_wb(
         &self,
-        checkpoint_number: CheckpointSequenceNumber,
+        checkpoint_number: DWalletCheckpointSequenceNumber,
     ) -> IkaResult {
         let mut wb = self.pruned_checkpoint.batch();
         self.set_highest_pruned_checkpoint(&mut wb, checkpoint_number)?;
@@ -107,7 +107,6 @@ impl AuthorityPerpetualTables {
             batch.insert_batch(&self.pending_events, serialized_events?)?;
             batch.write()?;
         }
-        self.pending_events.rocksdb.flush()?;
         Ok(())
     }
 
@@ -118,8 +117,11 @@ impl AuthorityPerpetualTables {
         Ok(())
     }
 
-    pub fn get_all_pending_events(&self) -> HashMap<EventID, Vec<u8>> {
-        self.pending_events.unbounded_iter().collect()
+    pub fn get_all_pending_events(&self) -> IkaResult<HashMap<EventID, Vec<u8>>> {
+        Ok(self
+            .pending_events
+            .safe_iter_with_bounds(None, None)
+            .collect::<Result<HashMap<_, _>, _>>()?)
     }
 
     pub fn get_sui_event_cursors(

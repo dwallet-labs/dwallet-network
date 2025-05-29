@@ -13,7 +13,7 @@
 /// To properly upgrade the `SystemInnerVX` type, we need to ship a new framework that does the following:
 /// 1. Define a new `SystemInnerVX`type (e.g. `SystemInnerV1`).
 /// 2. Define a data migration function that migrates the old `SystemInnerVX` to the new one (i.e. SystemInnerV1).
-/// 3. Replace all uses of `SystemInnerVX` with `SystemInnerV1` in both ika_system.move and system_inner_v1.move,
+/// 3. Replace all uses of `SystemInnerVX` with `SystemInnerV1` in both ika_system.move and system_inner.move,
 ///    with the exception of the `system_inner_v1::create` function, which should always return the init type.
 /// 4. Inside `load_inner_maybe_upgrade` function, check the current version in the wrapper, and if it's not the latest version,
 ///   call the data migration function to upgrade the inner object. Make sure to also update the version in the wrapper.
@@ -41,26 +41,28 @@
 module ika_system::system;
 
 use ika::ika::IKA;
-use ika_system::system_inner_v1::{
+use ika_system::system_inner::{
     Self,
-    SystemParametersV1,
     SystemInnerV1
 };
 use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::staking_pool::{PoolTokenExchangeRate};
-use ika_system::staked_ika::{StakedIka, FungibleStakedIka};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap};
+use ika_system::token_exchange_rate::TokenExchangeRate;
+use ika_system::staked_ika::{StakedIka};
+use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
 use ika_system::validator_set::ValidatorSet;
 use ika_system::bls_committee::BlsCommittee;
 use ika_system::protocol_cap::ProtocolCap;
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_secp256k1::{DWalletCoordinator};
-use sui::balance::Balance;
+use ika_system::dwallet_2pc_mpc_coordinator::{DWalletCoordinator};
+use ika_system::validator_metadata::ValidatorMetadata;
+use ika_system::dwallet_pricing::DWalletPricing;
 use sui::coin::Coin;
 use sui::dynamic_field;
 use sui::table::Table;
 use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
+use std::string::String;
+use sui::vec_map::VecMap;
 
 public struct System has key {
     id: UID,
@@ -71,8 +73,6 @@ public struct System has key {
 
 const EWrongInnerVersion: u64 = 0;
 const EInvalidMigration: u64 = 1;
-const EHaveNotReachedMidEpochTime: u64 = 2;
-const EHaveNotReachedEndEpochTime: u64 = 3;
 
 /// Flag to indicate the version of the ika system.
 const VERSION: u64 = 1;
@@ -87,17 +87,19 @@ public(package) fun create(
     validators: ValidatorSet,
     protocol_version: u64,
     epoch_start_timestamp_ms: u64,
-    parameters: SystemParametersV1,
+    epoch_duration_ms: u64,
+    stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
     authorized_protocol_cap_ids: vector<ID>,
     ctx: &mut TxContext,
 ) {
-    let system_state = system_inner_v1::create(
+    let system_state = system_inner::create(
         upgrade_caps,
         validators,
         protocol_version,
         epoch_start_timestamp_ms,
-        parameters,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
         protocol_treasury,
         authorized_protocol_cap_ids,
         ctx,
@@ -112,16 +114,19 @@ public(package) fun create(
     transfer::share_object(self);
 }
 
-// ==== entry functions ====
+// ==== public functions ====
 
 public fun initialize(
     self: &mut System,
+    pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(clock, package_id, ctx);
+    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -130,89 +135,43 @@ public fun initialize(
 /// Aborts if the caller is already a pending or active validator, or a validator candidate.
 /// Note: `proof_of_possession_bytes` MUST be a valid signature using sui_address and protocol_pubkey_bytes.
 /// To produce a valid PoP, run [fn test_proof_of_possession_bytes].
-public entry fun request_add_validator_candidate(
+public fun request_add_validator_candidate(
     self: &mut System,
-    pubkey_bytes: vector<u8>,
-    network_pubkey_bytes: vector<u8>,
-    consensus_pubkey_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
-    proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
-    commission_rate: u16,
-    ctx: &mut TxContext,
-) {
-    let (cap, operation_cap) = self.request_add_validator_candidate_non_entry(
-        ctx.sender(),
-        pubkey_bytes,
-        network_pubkey_bytes,
-        consensus_pubkey_bytes,
-        class_groups_pubkey_and_proof_bytes,
-        proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
-        network_address,
-        p2p_address,
-        consensus_address,
-        computation_price,
-        commission_rate,
-        ctx,
-    );
-    transfer::public_transfer(cap, ctx.sender());
-    transfer::public_transfer(operation_cap, ctx.sender());
-}
-
-public fun request_add_validator_candidate_non_entry(
-    self: &mut System,
-    payment_address: address,
+    name: String,
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
     consensus_pubkey_bytes: vector<u8>,
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
+    network_address: String,
+    p2p_address: String,
+    consensus_address: String,
     commission_rate: u16,
+    metadata: ValidatorMetadata,
     ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap) {
+): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
     let self = self.inner_mut();
-    self.request_add_validator_candidate(
-        payment_address,
+
+    let (cap, operation_cap, commission_cap) = self.request_add_validator_candidate(
+        name,
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         consensus_pubkey_bytes,
         class_groups_pubkey_and_proof_bytes,
         proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
         network_address,
         p2p_address,
         consensus_address,
-        computation_price,
         commission_rate,
+        metadata,
         ctx,
-    )
+    );
+    (cap, operation_cap, commission_cap)
 }
 
 /// Called by a validator candidate to remove themselves from the candidacy. After this call
 /// their staking pool becomes deactivate.
-public entry fun request_remove_validator_candidate(
+public fun request_remove_validator_candidate(
     self: &mut System,
     cap: &ValidatorCap,
 ) {
@@ -224,7 +183,7 @@ public entry fun request_remove_validator_candidate(
 /// Aborts if the validator is a duplicate with one of the pending or active validators, or if the amount of
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
-public entry fun request_add_validator(
+public fun request_add_validator(
     self: &mut System,
     cap: &ValidatorCap,
 ) {
@@ -237,66 +196,25 @@ public entry fun request_add_validator(
 /// (i.e. sender must match the sui_address in the validator).
 /// At the end of the epoch, the `validator` object will be returned to the sui_address
 /// of the validator.
-public entry fun request_remove_validator(self: &mut System, cap: &ValidatorCap) {
+public fun request_remove_validator(self: &mut System, cap: &ValidatorCap) {
     let self = self.inner_mut();
     self.request_remove_validator(cap)
 }
 
-/// A validator can call this entry function to submit a new computation price quote, to be
-/// used for the computation price per unit size calculation at the end of the epoch.
-public entry fun request_set_computation_price(
-    self: &mut System,
-    cap: &ValidatorOperationCap,
-    new_computation_price: u64,
-) {
-    let self = self.inner_mut();
-    self.request_set_computation_price(cap, new_computation_price)
-}
-
-/// This entry function is used to set new computation price for candidate validators
-public entry fun set_candidate_validator_computation_price(
-    self: &mut System,
-    cap: &ValidatorOperationCap,
-    new_computation_price: u64,
-) {
-    let self = self.inner_mut();
-    self.set_candidate_validator_computation_price(cap, new_computation_price)
-}
-
-/// A validator can call this entry function to set a new commission rate, updated at the end of
+/// A validator can call this function to set a new commission rate, updated at the end of
 /// the epoch.
-public entry fun request_set_commission_rate(
+public fun set_next_commission(
     self: &mut System,
     new_commission_rate: u16,
-    cap: &ValidatorCap,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.request_set_commission_rate(new_commission_rate, cap)
-}
-
-/// This entry function is used to set new commission rate for candidate validators
-public entry fun set_candidate_validator_commission_rate(
-    self: &mut System,
-    new_commission_rate: u16,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.set_candidate_validator_commission_rate(new_commission_rate, cap)
+    self.set_next_commission(new_commission_rate, cap)
 }
 
 /// Add stake to a validator's staking pool.
-public entry fun request_add_stake(
-    self: &mut System,
-    stake: Coin<IKA>,
-    validator_id: ID,
-    ctx: &mut TxContext,
-) {
-    let staked_ika = self.request_add_stake_non_entry(stake, validator_id, ctx);
-    transfer::public_transfer(staked_ika, ctx.sender());
-}
 
-/// The non-entry version of `request_add_stake`, which returns the staked IKA instead of transferring it to the sender.
-public fun request_add_stake_non_entry(
+public fun request_add_stake(
     self: &mut System,
     stake: Coin<IKA>,
     validator_id: ID,
@@ -306,56 +224,45 @@ public fun request_add_stake_non_entry(
     self.request_add_stake(stake, validator_id, ctx)
 }
 
-/// Add stake to a validator's staking pool using multiple coins.
-public entry fun request_add_stake_mul_coin(
+/// Marks the amount as a withdrawal to be processed and removes it from the stake weight of the
+/// node. Allows the user to call withdraw_stake after the epoch change to the next epoch and
+/// shard transfer is done.
+public fun request_withdraw_stake(
     self: &mut System,
-    stakes: vector<Coin<IKA>>,
-    stake_amount: option::Option<u64>,
-    validator_id: ID,
-    ctx: &mut TxContext,
+    staked_ika: &mut StakedIka,
 ) {
-    let self = self.inner_mut();
-    let staked_ika = self.request_add_stake_mul_coin(stakes, stake_amount, validator_id, ctx);
-    transfer::public_transfer(staked_ika, ctx.sender());
+    self.inner_mut().request_withdraw_stake(staked_ika);
 }
 
-/// Withdraw stake from a validator's staking pool.
-public entry fun request_withdraw_stake(
+/// Withdraws the staked amount from the staking pool.
+public fun withdraw_stake(
     self: &mut System,
     staked_ika: StakedIka,
     ctx: &mut TxContext,
-) {
-    let withdrawn_stake = self.request_withdraw_stake_non_entry(staked_ika);
-    transfer::public_transfer(withdrawn_stake.into_coin(ctx), ctx.sender());
+): Coin<IKA> {
+    self.inner_mut().withdraw_stake(staked_ika, ctx)
 }
 
-/// Convert StakedIka into a FungibleStakedIka object.
-public fun convert_to_fungible_staked_ika(
-    self: &mut System,
-    staked_ika: StakedIka,
-    ctx: &mut TxContext,
-): FungibleStakedIka {
-    let self = self.inner_mut();
-    self.convert_to_fungible_staked_ika(staked_ika, ctx)
-}
+// /// Convert StakedIka into a FungibleStakedIka object.
+// public fun convert_to_fungible_staked_ika(
+//     self: &mut System,
+//     staked_ika: StakedIka,
+//     ctx: &mut TxContext,
+// ): FungibleStakedIka {
+//     let self = self.inner_mut();
+//     self.convert_to_fungible_staked_ika(staked_ika, ctx)
+// }
 
-/// Convert FungibleStakedIka into a StakedIka object.
-public fun redeem_fungible_staked_ika(
-    self: &mut System,
-    fungible_staked_ika: FungibleStakedIka,
-): Balance<IKA> {
-    let self = self.inner_mut();
-    self.redeem_fungible_staked_ika(fungible_staked_ika)
-}
+// /// Convert FungibleStakedIka into a StakedIka object.
+// public fun redeem_fungible_staked_ika(
+//     self: &mut System,
+//     fungible_staked_ika: FungibleStakedIka,
+// ): Balance<IKA> {
+//     let self = self.inner_mut();
+//     self.redeem_fungible_staked_ika(fungible_staked_ika)
+// }
 
-/// Non-entry version of `request_withdraw_stake` that returns the withdrawn IKA instead of transferring it to the sender.
-public fun request_withdraw_stake_non_entry(
-    self: &mut System,
-    staked_ika: StakedIka,
-): Balance<IKA> {
-    let self = self.inner_mut();
-    self.request_withdraw_stake(staked_ika)
-}
+
 
 /// Report a validator as a bad or non-performant actor in the system.
 /// Succeeds if all the following are satisfied:
@@ -363,7 +270,7 @@ public fun request_withdraw_stake_non_entry(
 /// 2. reporter and reportee not the same address.
 /// 3. the cap object is still valid.
 /// This function is idempotent.
-public entry fun report_validator(
+public fun report_validator(
     self: &mut System,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
@@ -376,7 +283,7 @@ public entry fun report_validator(
 /// 1. the reportee is not a currently active validator or
 /// 2. the sender has not previously reported the `reportee_id`, or
 /// 3. the cap is not valid
-public entry fun undo_report_validator(
+public fun undo_report_validator(
     self: &mut System,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
@@ -387,227 +294,138 @@ public entry fun undo_report_validator(
 
 // ==== validator metadata management functions ====
 
-/// Create a new `ValidatorOperationCap`, transfer it to the
-/// validator and registers it. The original object is thus revoked.
-public entry fun rotate_operation_cap(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext) {
-    let operation_cap = self.rotate_operation_cap_non_entry(cap, ctx);
-    transfer::public_transfer(operation_cap, ctx.sender());
-}
 
 /// Create a new `ValidatorOperationCap` and registers it. The original object is thus revoked.
-public fun rotate_operation_cap_non_entry(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
+public fun rotate_operation_cap(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
     let self = self.inner_mut();
     self.rotate_operation_cap(cap, ctx)
 }
 
-/// Update a validator's payment address.
-public entry fun update_validator_payment_address(
-    self: &mut System,
-    payment_address: address,
-    cap: &ValidatorCap,
-) {
+/// Create a new `ValidatorCommissionCap` and registers it. The original object is thus revoked.
+public fun rotate_commission_cap(self: &mut System, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
     let self = self.inner_mut();
-    self.update_validator_payment_address(payment_address, cap)
+    self.rotate_commission_cap(cap, ctx)
 }
 
-/// Update a validator's name.
-public entry fun update_validator_name(
+/// Set a validator's name.
+public fun set_validator_name(
     self: &mut System,
-    name: vector<u8>,
-    cap: &ValidatorCap,
+    name: String,
+    cap: &ValidatorOperationCap,
 ) {
-    let self = self.inner_mut();
-    self.update_validator_name(name, cap)
+    self.inner_mut().set_validator_name(name, cap);
 }
 
-/// Update a validator's description
-public entry fun update_validator_description(
+public fun set_validator_metadata(
     self: &mut System,
-    description: vector<u8>,
-    cap: &ValidatorCap,
+    metadata: ValidatorMetadata,
+    cap: &ValidatorOperationCap,
 ) {
-    let self = self.inner_mut();
-    self.update_validator_description(description, cap)
+    self.inner_mut().set_validator_metadata(cap, metadata);
 }
 
-/// Update a validator's image url
-public entry fun update_validator_image_url(
-    self: &mut System,
-    image_url: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_validator_image_url(image_url, cap)
-}
-
-/// Update a validator's project url
-public entry fun update_validator_project_url(
-    self: &mut System,
-    project_url: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_validator_project_url(project_url, cap)
-}
-
-/// Update a validator's network address.
+/// Sets a validator's network address.
 /// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_network_address(
+public fun set_next_epoch_network_address(
     self: &mut System,
-    network_address: vector<u8>,
-    cap: &ValidatorCap,
+    network_address: String,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_network_address(network_address, cap)
+    self.set_next_epoch_network_address(network_address, cap)
 }
 
-/// Update candidate validator's network address.
-public entry fun update_candidate_validator_network_address(
-    self: &mut System,
-    network_address: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_network_address(network_address, cap)
-}
 
-/// Update a validator's p2p address.
+/// Sets a validator's p2p address.
 /// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_p2p_address(
+public fun set_next_epoch_p2p_address(
     self: &mut System,
-    p2p_address: vector<u8>,
-    cap: &ValidatorCap,
+    p2p_address: String,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_p2p_address(p2p_address, cap)
+    self.set_next_epoch_p2p_address(p2p_address, cap)
 }
 
-/// Update candidate validator's p2p address.
-public entry fun update_candidate_validator_p2p_address(
-    self: &mut System,
-    p2p_address: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_p2p_address(p2p_address, cap)
-}
 
-/// Update a validator's consensus address.
+/// Sets a validator's consensus address.
 /// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_consensus_address(
+public fun set_next_epoch_consensus_address(
     self: &mut System,
-    consensus_address: vector<u8>,
-    cap: &ValidatorCap,
+    consensus_address: String,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_consensus_address(consensus_address, cap)
+    self.set_next_epoch_consensus_address(consensus_address, cap)
 }
 
-/// Update candidate validator's consensus address.
-public entry fun update_candidate_validator_consensus_address(
-    self: &mut System,
-    consensus_address: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_consensus_address(consensus_address, cap)
-}
 
-/// Update a validator's public key of protocol key and proof of possession.
+/// Sets a validator's public key of protocol key and proof of possession.
 /// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_protocol_pubkey_bytes(
+public fun set_next_epoch_protocol_pubkey_bytes(
     self: &mut System,
     protocol_pubkey: vector<u8>,
     proof_of_possession_bytes: vector<u8>,
-    cap: &ValidatorCap,
-    ctx: &TxContext,
+    cap: &ValidatorOperationCap,
+    ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
+    self.set_next_epoch_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
 }
 
-/// Update candidate validator's public key of protocol key and proof of possession.
-public entry fun update_candidate_validator_protocol_pubkey_bytes(
-    self: &mut System,
-    protocol_pubkey: vector<u8>,
-    proof_of_possession_bytes: vector<u8>,
-    cap: &ValidatorCap,
-    ctx: &TxContext,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_protocol_pubkey_bytes(protocol_pubkey, proof_of_possession_bytes, cap, ctx)
-}
-
-/// Update a validator's public key of worker key.
+/// Sets a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_consensus_pubkey_bytes(
-    self: &mut System,
-    consensus_pubkey_bytes: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_validator_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
-}
-
-/// Update candidate validator's public key of worker key.
-public entry fun update_candidate_validator_consensus_pubkey_bytes(
-    self: &mut System,
-    consensus_pubkey_bytes: vector<u8>,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
-}
-
-/// Update a validator's public key of class groups key and its associated proof.
-/// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(
-    self: &mut System,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_validator_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
-}
-
-/// Update candidate validator's public key of class groups key and its associated proof.
-public entry fun update_candidate_validator_class_groups_pubkey_and_proof_bytes(
-    self: &mut System,
-    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
-    cap: &ValidatorCap,
-) {
-    let self = self.inner_mut();
-    self.update_candidate_validator_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
-}
-
-/// Update a validator's public key of network key.
-/// The change will only take effects starting from the next epoch.
-public entry fun update_validator_next_epoch_network_pubkey_bytes(
+public fun set_next_epoch_network_pubkey_bytes(
     self: &mut System,
     network_pubkey: vector<u8>,
-    cap: &ValidatorCap,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.update_validator_next_epoch_network_pubkey_bytes(network_pubkey, cap)
+    self.set_next_epoch_network_pubkey_bytes(network_pubkey, cap)
 }
 
-/// Update candidate validator's public key of network key.
-public entry fun update_candidate_validator_network_pubkey_bytes(
+/// Sets a validator's public key of worker key.
+/// The change will only take effects starting from the next epoch.
+public fun set_next_epoch_consensus_pubkey_bytes(
     self: &mut System,
-    network_pubkey: vector<u8>,
-    cap: &ValidatorCap,
+    consensus_pubkey_bytes: vector<u8>,
+    cap: &ValidatorOperationCap,
 ) {
     let self = self.inner_mut();
-    self.update_candidate_validator_network_pubkey_bytes(network_pubkey, cap)
+    self.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap)
+}
+
+
+/// Sets a validator's public key of class groups key and its associated proof.
+/// The change will only take effects starting from the next epoch.
+public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
+    self: &mut System,
+    class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof,
+    cap: &ValidatorOperationCap,
+) {
+    let self = self.inner_mut();
+    self.set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
+}
+
+/// Sets a validator's pricing vote.
+/// The change will only take effects starting from the next epoch.
+public fun set_pricing_vote(
+    self: &mut System,
+    dwallet_coordinator: &mut DWalletCoordinator,
+    pricing: DWalletPricing,
+    cap: &ValidatorOperationCap,
+) {
+    let self = self.inner_mut();
+    self.set_pricing_vote(dwallet_coordinator.inner_mut(), pricing, cap)
 }
 
 /// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
-public fun pool_exchange_rates(
-    self: &mut System,
+public fun token_exchange_rates(
+    self: &System,
     validator_id: ID,
-): &Table<u64, PoolTokenExchangeRate> {
-    let self = self.inner_mut();
-    self.pool_exchange_rates(validator_id)
+): &Table<u64, TokenExchangeRate> {
+    let self = self.inner();
+    self.token_exchange_rates(validator_id)
 }
 
 /// Getter returning ids of the currently active validators.
@@ -620,36 +438,54 @@ public fun active_committee(self: &mut System): BlsCommittee {
 public fun request_reconfig_mid_epoch(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext
 ) {
-    let inner = self.inner_mut();
-    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms() / 2), EHaveNotReachedMidEpochTime);
-    inner.emit_start_reshare_events(dwallet_coordinator.inner_mut(), ctx);
-    self.inner_mut().process_mid_epoch();
+    self.inner_mut().process_mid_epoch(clock, dwallet_coordinator.inner_mut(), ctx);
 }
 
 /// Locks the MPC sessions that should get completed as part of the current epoch.
 public fun request_lock_epoch_sessions(
-    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, _ctx: &TxContext
+    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock
 ) {
-    let inner = self.inner_mut();
-    assert!(clock.timestamp_ms() > inner.epoch_start_timestamp_ms() + (inner.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
-    dwallet_coordinator.inner_mut().lock_last_active_session_sequence_number();
+    self.inner_mut().lock_last_active_session_sequence_number(dwallet_coordinator.inner_mut(), clock);
 }
 
 /// Advances the epoch to the next epoch.
 public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
     let inner_system = self.inner_mut();
     let inner_dwallet = dwallet_coordinator.inner_mut();
-    inner_system.advance_epoch(inner_dwallet, clock.timestamp_ms(), ctx);
+    inner_system.advance_epoch(inner_dwallet, clock, ctx);
 }
 
-public fun request_dwallet_network_decryption_key_dkg_by_cap(
+public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut System,
-    dwallet_2pc_mpc_secp256k1: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     let self = self.inner_mut();
-    self.request_dwallet_network_decryption_key_dkg_by_cap(dwallet_2pc_mpc_secp256k1, cap, ctx);
+    self.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, cap, ctx);
+}
+
+public fun set_supported_and_pricing(
+    self: &mut System,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    default_pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    protocol_cap: &ProtocolCap,
+) {
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.inner_mut().set_supported_and_pricing(dwallet_2pc_mpc_coordinator_inner, default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, protocol_cap);
+}
+
+public fun set_paused_curves_and_signature_algorithms(
+    self: &mut System,
+    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
+    protocol_cap: &ProtocolCap,
+) {
+    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
+    self.inner_mut().set_paused_curves_and_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_curves, paused_signature_algorithms, paused_hash_schemes, protocol_cap);
 }
 
 // === Upgrades ===
@@ -675,6 +511,25 @@ public fun commit_upgrade(
     }
 }
 
+public fun process_checkpoint_message_by_cap(
+    self: &mut System,
+    cap: &ProtocolCap,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().process_checkpoint_message_by_cap(cap, message, ctx);
+}
+
+public fun process_checkpoint_message_by_quorum(
+    self: &mut System,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+}
+
 /// Migrate the staking object to the new package id.
 ///
 /// This function sets the new package id and version and can be modified in future versions
@@ -692,6 +547,28 @@ public fun migrate(
     // Set the new package id.
     assert!(self.new_package_id.is_some(), EInvalidMigration);
     self.package_id = self.new_package_id.extract();
+}
+
+// === Utility functions ===
+
+/// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
+/// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
+///
+/// This function can be used with `dev_inspect` to calculate the expected rewards for a `StakedIka`
+/// object or, more generally, the returns provided by a given validator over a given period.
+public fun calculate_rewards(
+    self: &System,
+    validator_id: ID,
+    staked_principal: u64,
+    activation_epoch: u64,
+    withdraw_epoch: u64,
+): u64 {
+    self.inner().calculate_rewards(validator_id, staked_principal, activation_epoch, withdraw_epoch)
+}
+
+/// Call `staked_ika::can_withdraw_early` to allow calling this method in applications.
+public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka): bool {
+    self.inner().can_withdraw_staked_ika_early(staked_ika)
 }
 
 // === Internals ===
@@ -732,6 +609,9 @@ public fun validator_stake_amount(self: &mut System, validator_id: ID): u64 {
 }
 
 #[test_only]
+use sui::vec_set::VecSet;
+
+#[test_only]
 /// Returns all the validators who are currently reporting `validator_id`
 public fun get_reporters_of(self: &mut System, validator_id: ID): VecSet<ID> {
     let self = self.inner();
@@ -740,9 +620,9 @@ public fun get_reporters_of(self: &mut System, validator_id: ID): VecSet<ID> {
 
 #[test_only]
 /// Return the current validator set
-public fun validators(self: &mut System): &ValidatorSet {
+public fun validator_set(self: &mut System): &ValidatorSet {
     let self = self.inner();
-    self.validators()
+    self.validator_set()
 }
 
 #[test_only]
@@ -754,11 +634,10 @@ public fun set_epoch_for_testing(self: &mut System, epoch_num: u64) {
 #[test_only]
 public fun request_add_validator_for_testing(
     self: &mut System,
-    min_joining_stake_for_testing: u64,
     cap: &ValidatorCap,
 ) {
     let self = self.inner_mut();
-    self.request_add_validator_for_testing(min_joining_stake_for_testing, cap)
+    self.request_add_validator_for_testing(cap)
 }
 
 #[test_only]
@@ -778,47 +657,44 @@ public fun inner_mut_for_testing(self: &mut System): &mut SystemInnerV1 {
     self.inner_mut()
 }
 
-// CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
-// candidate validator - bypassing the proof of possession check and other metadata validation
-// in the process.
-#[test_only]
-public fun request_add_validator_candidate_for_testing(
-    self: &mut System,
-    protocol_pubkey_bytes: vector<u8>,
-    network_pubkey_bytes: vector<u8>,
-    consensus_pubkey_bytes_bytes: vector<u8>,
-    class_groups_pubkey_and_proof_bytes: vector<u8>,
-    proof_of_possession_bytes: vector<u8>,
-    name: vector<u8>,
-    description: vector<u8>,
-    image_url: vector<u8>,
-    project_url: vector<u8>,
-    network_address: vector<u8>,
-    p2p_address: vector<u8>,
-    consensus_address: vector<u8>,
-    computation_price: u64,
-    commission_rate: u16,
-    ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap) {
-    let self = self.inner_mut();
-    self.request_add_validator_candidate_for_testing(
-        protocol_pubkey_bytes,
-        network_pubkey_bytes,
-        consensus_pubkey_bytes_bytes,
-        class_groups_pubkey_and_proof_bytes,
-        proof_of_possession_bytes,
-        name,
-        description,
-        image_url,
-        project_url,
-        network_address,
-        p2p_address,
-        consensus_address,
-        computation_price,
-        commission_rate,
-        ctx,
-    )
-}
+// // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
+// // candidate validator - bypassing the proof of possession check and other metadata validation
+// // in the process.
+// #[test_only]
+// public fun request_add_validator_candidate_for_testing(
+//     self: &mut System,
+//     commission_rate: u16,
+//     name: String,
+//     protocol_pubkey_bytes: vector<u8>,
+//     network_pubkey_bytes: vector<u8>,
+//     consensus_pubkey_bytes: vector<u8>,
+//     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
+//     proof_of_possession_bytes: vector<u8>,
+//     network_address: String,
+//     p2p_address: String,
+//     consensus_address: String,
+//     metadata: ValidatorMetadata,
+//     ctx: &mut TxContext,
+// ): (ValidatorCap, ValidatorOperationCap) {
+//     let self = self.inner_mut();
+//     self.request_add_validator_candidate_for_testing(
+//         protocol_pubkey_bytes,
+//         network_pubkey_bytes,
+//         consensus_pubkey_bytes_bytes,
+//         class_groups_pubkey_and_proof_bytes,
+//         proof_of_possession_bytes,
+//         name,
+//         description,
+//         image_url,
+//         project_url,
+//         network_address,
+//         p2p_address,
+//         consensus_address,
+//         computation_price,
+//         commission_rate,
+//         ctx,
+//     )
+// }
 
 // // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.
 // #[test_only]

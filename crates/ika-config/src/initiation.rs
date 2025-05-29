@@ -1,15 +1,32 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use fastcrypto::hash::HashFunction;
-
 use ika_types::committee::ProtocolVersion;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use ika_types::ika_coin::INKU_PER_IKA;
+use serde::{Deserialize, Serialize};
+
+/// Minimum number of active validators at any moment.
+/// We do not allow the number of validators in any epoch to go below this.
+pub const MIN_VALIDATOR_COUNT: u64 = 4;
+
+/// Maximum number of active validators at any moment.
+/// We do not allow the number of validators in any epoch to go above this.
+pub const MAX_VALIDATOR_COUNT: u64 = 115;
+
+/// Lower-bound on the amount of stake required to become a validator.
+/// 30 million IKA.
+pub const MIN_VALIDATOR_JOINING_STAKE_INKU: u64 = 30_000_000 * INKU_PER_IKA;
+
+/// Maximum number of validator changes allowed in an epoch (be added or removed).
+pub const MAX_VALIDATOR_CHANGE_COUNT: u64 = 10;
+
+/// How many rewards are slashed to punish a validator, in BPS (Basis Points).
+pub const REWARD_SLASHING_RATE: u16 = 10_000;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct InitiationParameters {
-    /// protocol version that the chain starts at.
+    /// Protocol version that the chain starts at.
     #[serde(default = "InitiationParameters::default_protocol_version")]
     pub protocol_version: u64,
 
@@ -30,7 +47,7 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_stake_subsidy_rate")]
     pub stake_subsidy_rate: u16,
 
-    /// Number of distributions to occur before the amount per distribution will be recalculated.
+    /// The Number of distributions to occur before the amount per distribution will be recalculated.
     #[serde(default = "InitiationParameters::default_stake_subsidy_period_length")]
     pub stake_subsidy_period_length: u64,
 
@@ -48,29 +65,13 @@ pub struct InitiationParameters {
     #[serde(default = "InitiationParameters::default_min_validator_joining_stake")]
     pub min_validator_joining_stake: u64,
 
-    /// Validators with stake amount below `validator_low_stake_threshold` are considered to
-    /// have low stake and will be escorted out of the validator set after being below this
-    /// threshold for more than `validator_low_stake_grace_period` number of epochs.
-    #[serde(default = "InitiationParameters::default_validator_low_stake_threshold")]
-    pub validator_low_stake_threshold: u64,
+    /// Maximum number of validator changes allowed in an epoch (be added or removed).
+    #[serde(default = "InitiationParameters::default_max_validator_change_count")]
+    pub max_validator_change_count: u64,
 
-    /// Validators with stake below `validator_very_low_stake_threshold` will be removed
-    /// immediately at epoch change, no grace period.
-    #[serde(default = "InitiationParameters::default_validator_very_low_stake_threshold")]
-    pub validator_very_low_stake_threshold: u64,
-
-    /// A validator can have stake below `validator_low_stake_threshold`
-    /// for this many epochs before being kicked out.
-    #[serde(default = "InitiationParameters::default_validator_low_stake_grace_period")]
-    pub validator_low_stake_grace_period: u64,
-
-    /// how many reward are slashed to punish a validator, in bps.
+    /// How many rewards are slashed to punish a validator, in BPS (Basis Points).
     #[serde(default = "InitiationParameters::default_reward_slashing_rate")]
     pub reward_slashing_rate: u16,
-
-    /// Lock active committee between epochs.
-    #[serde(default = "InitiationParameters::default_lock_active_committee")]
-    pub lock_active_committee: bool,
 }
 
 impl InitiationParameters {
@@ -85,11 +86,8 @@ impl InitiationParameters {
             min_validator_count: Self::default_min_validator_count(),
             max_validator_count: Self::default_max_validator_count(),
             min_validator_joining_stake: Self::default_min_validator_joining_stake(),
-            validator_low_stake_threshold: Self::default_validator_low_stake_threshold(),
-            validator_very_low_stake_threshold: Self::default_validator_very_low_stake_threshold(),
-            validator_low_stake_grace_period: Self::default_validator_low_stake_grace_period(),
+            max_validator_change_count: Self::default_max_validator_change_count(),
             reward_slashing_rate: Self::default_reward_slashing_rate(),
-            lock_active_committee: Self::default_lock_active_committee(),
         }
     }
 
@@ -110,7 +108,7 @@ impl InitiationParameters {
     }
 
     fn default_stake_subsidy_start_epoch() -> u64 {
-        0
+        1
     }
 
     fn default_stake_subsidy_rate() -> u16 {
@@ -124,35 +122,23 @@ impl InitiationParameters {
     }
 
     fn default_min_validator_count() -> u64 {
-        ika_types::governance::MIN_VALIDATOR_COUNT
+        MIN_VALIDATOR_COUNT
     }
 
     fn default_max_validator_count() -> u64 {
-        ika_types::governance::MAX_VALIDATOR_COUNT
+        MAX_VALIDATOR_COUNT
     }
 
     fn default_min_validator_joining_stake() -> u64 {
-        ika_types::governance::MIN_VALIDATOR_JOINING_STAKE_NIKA
+        MIN_VALIDATOR_JOINING_STAKE_INKU
     }
 
-    fn default_validator_low_stake_threshold() -> u64 {
-        ika_types::governance::VALIDATOR_LOW_STAKE_THRESHOLD_NIKA
-    }
-
-    fn default_validator_very_low_stake_threshold() -> u64 {
-        ika_types::governance::VALIDATOR_VERY_LOW_STAKE_THRESHOLD_NIKA
-    }
-
-    fn default_validator_low_stake_grace_period() -> u64 {
-        ika_types::governance::VALIDATOR_LOW_STAKE_GRACE_PERIOD
+    fn default_max_validator_change_count() -> u64 {
+        MAX_VALIDATOR_CHANGE_COUNT
     }
 
     fn default_reward_slashing_rate() -> u16 {
-        ika_types::governance::REWARD_SLASHING_RATE
-    }
-
-    fn default_lock_active_committee() -> bool {
-        ika_types::governance::LOCK_ACTIVE_COMMITTEE
+        REWARD_SLASHING_RATE
     }
 }
 

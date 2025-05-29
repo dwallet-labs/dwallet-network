@@ -9,6 +9,7 @@ use crate::crypto::{
 use crate::error::{IkaError, IkaResult};
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::KeyPair;
+use group::PartyID;
 pub use ika_protocol_config::ProtocolVersion;
 use once_cell::sync::OnceCell;
 use rand::rngs::{StdRng, ThreadRng};
@@ -34,24 +35,15 @@ pub type CommitteeDigest = [u8; 32];
 // The voting power, quorum threshold and max voting power are defined in the `voting_power.move` module.
 // We're following the very same convention in the validator binaries.
 
-/// Set total_voting_power as 10_000 by convention. Individual voting powers can be interpreted
-/// as easily understandable basis points (e.g., voting_power: 100 = 1%, voting_power: 1 = 0.01%).
-/// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
-/// than recomputing these.
-pub const TOTAL_VOTING_POWER: StakeUnit = 4;
-/// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
-/// up to BFT assumptions
-pub const QUORUM_THRESHOLD: StakeUnit = 3;
-
-/// Validity threshold defined by f+1
-pub const VALIDITY_THRESHOLD: StakeUnit = 2;
-
 #[derive(Clone, Debug, Serialize, Deserialize, Eq)]
 pub struct Committee {
     pub epoch: EpochId,
     pub voting_rights: Vec<(AuthorityName, StakeUnit)>,
     pub class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+    pub quorum_threshold: u64,
+    pub validity_threshold: u64,
     expanded_keys: HashMap<AuthorityName, AuthorityPublicKey>,
+    /// AuthorityName -> to PartyID (from 0).
     index_map: HashMap<AuthorityName, usize>,
 }
 
@@ -60,6 +52,8 @@ impl Committee {
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
         class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+        quorum_threshold: u64,
+        validity_threshold: u64,
     ) -> Self {
         // let mut voting_rights: Vec<(AuthorityName, StakeUnit)> =
         //     voting_rights.iter().map(|(a, s)| (*a, *s)).collect();
@@ -68,8 +62,8 @@ impl Committee {
         assert!(voting_rights.iter().any(|(_, s)| *s != 0));
 
         //voting_rights.sort_by_key(|(a, _)| *a);
-        let total_votes: StakeUnit = voting_rights.iter().map(|(_, votes)| *votes).sum();
-        assert_eq!(total_votes, TOTAL_VOTING_POWER);
+        //let total_votes: StakeUnit = voting_rights.iter().map(|(_, votes)| *votes).sum();
+        //assert_eq!(total_votes, TOTAL_VOTING_POWER);
 
         let (expanded_keys, index_map) = Self::load_inner(&voting_rights);
 
@@ -79,6 +73,8 @@ impl Committee {
             class_groups_public_keys_and_proofs,
             expanded_keys,
             index_map,
+            quorum_threshold,
+            validity_threshold,
         }
     }
 
@@ -92,7 +88,7 @@ impl Committee {
         let num_nodes = voting_weights.len();
         let total_votes: StakeUnit = voting_weights.values().cloned().sum();
 
-        let normalization_coef = TOTAL_VOTING_POWER as f64 / total_votes as f64;
+        let normalization_coef = num_nodes as f64 / total_votes as f64;
         let mut total_sum = 0;
         for (idx, (_auth, weight)) in voting_weights.iter_mut().enumerate() {
             if idx < num_nodes - 1 {
@@ -100,11 +96,20 @@ impl Committee {
                 total_sum += *weight;
             } else {
                 // the last element is taking all the rest
-                *weight = TOTAL_VOTING_POWER - total_sum;
+                *weight = (num_nodes as u64) - total_sum;
             }
         }
 
-        Self::new(epoch, voting_weights.into_iter().collect(), HashMap::new())
+        let quorum_threshold = (2 * num_nodes as u64).div_ceil(3);
+        let validity_threshold = (num_nodes as u64).div_ceil(3);
+
+        Self::new(
+            epoch,
+            voting_weights.into_iter().collect(),
+            HashMap::new(),
+            quorum_threshold,
+            validity_threshold,
+        )
     }
 
     // We call this if these have not yet been computed
@@ -158,6 +163,17 @@ impl Committee {
         }
     }
 
+    /// Return a `HashMap` from **1-based** `PartyID` to `AuthorityName`.
+    pub fn party_to_authority_map(&self) -> HashMap<PartyID, AuthorityName> {
+        self.index_map
+            .iter()
+            .map(|(auth, &idx)| {
+                // idx is 0-based in index_map, so we add 1 to match the crypto lib.
+                ((idx + 1) as PartyID, *auth)
+            })
+            .collect()
+    }
+
     pub fn class_groups_public_key_and_proof(
         &self,
         authority: &AuthorityName,
@@ -207,22 +223,22 @@ impl Committee {
     }
 
     pub fn total_votes(&self) -> StakeUnit {
-        TOTAL_VOTING_POWER
+        self.voting_rights.len() as u64
     }
 
     pub fn quorum_threshold(&self) -> StakeUnit {
-        QUORUM_THRESHOLD
+        self.quorum_threshold
     }
 
     pub fn validity_threshold(&self) -> StakeUnit {
-        VALIDITY_THRESHOLD
+        self.validity_threshold
     }
 
     pub fn threshold<const STRENGTH: bool>(&self) -> StakeUnit {
         if STRENGTH {
-            QUORUM_THRESHOLD
+            self.quorum_threshold
         } else {
-            VALIDITY_THRESHOLD
+            self.validity_threshold
         }
     }
 
@@ -420,6 +436,8 @@ impl CommitteeWithNetworkMetadata {
     }
 
     pub fn committee(&self) -> &Committee {
+        let quorum_threshold = (2 * self.validators.len() as u64).div_ceil(3);
+        let validity_threshold = (self.validators.len() as u64).div_ceil(3);
         self.committee.get_or_init(|| {
             Committee::new(
                 self.epoch_id,
@@ -433,6 +451,8 @@ impl CommitteeWithNetworkMetadata {
                         (*name, metadata.class_groups_public_key_and_proof.clone())
                     })
                     .collect(),
+                quorum_threshold,
+                validity_threshold,
             )
         })
     }

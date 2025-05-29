@@ -3,25 +3,37 @@
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
-	DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME,
-	DWALLET_ECDSA_K1_MOVE_MODULE_NAME,
-	fetchCompletedEvent,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
+	getObjectWithType,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config } from './globals.ts';
 
-interface CompletedPresignEvent {
-	presign_id: string;
-	session_id: string;
-	presign: Uint8Array;
+interface CompletedPresign {
+	state: {
+		fields: {
+			presign: Uint8Array;
+		};
+	};
+	id: { id: string };
 }
 
-interface StartSessionEvent {
-	session_id: string;
+interface StartPresignEvent {
+	event_data: {
+		presign_id: string;
+	};
 }
 
-export async function presign(conf: Config, dwallet_id: string): Promise<CompletedPresignEvent> {
+function isCompletedPresign(event: any): event is CompletedPresign {
+	return (
+		event.state !== undefined &&
+		event.state.fields !== undefined &&
+		event.state.fields.presign !== undefined
+	);
+}
+
+export async function presign(conf: Config, dwallet_id: string): Promise<CompletedPresign> {
 	const tx = new Transaction();
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -31,7 +43,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 	const dWalletStateData = await getDWalletSecpState(conf);
 
 	const presignCap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_MOVE_MODULE_NAME}::request_ecdsa_presign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
 			tx.sharedObjectRef({
 				objectId: dWalletStateData.object_id,
@@ -39,6 +51,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 				mutable: true,
 			}),
 			tx.pure.id(dwallet_id),
+			tx.pure.u32(0),
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -61,26 +74,13 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 		},
 	});
 	const startSessionEvent = result.events?.at(0)?.parsedJson;
-	if (!isStartSessionEvent(startSessionEvent)) {
+	if (!isStartPresignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
 
-	const completedPresignEventType = `${conf.ikaConfig.ika_system_package_id}::${DWALLET_ECDSA_K1_INNER_MOVE_MODULE_NAME}::CompletedECDSAPresignEvent`;
-
-	return await fetchCompletedEvent(
-		conf,
-		startSessionEvent.session_id,
-		isCompletedPresignEvent,
-		completedPresignEventType,
-	);
+	return await getObjectWithType(conf, startSessionEvent.event_data.presign_id, isCompletedPresign);
 }
 
-function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
-	return (
-		event.presign_id !== undefined && event.presign !== undefined && event.session_id !== undefined
-	);
-}
-
-function isStartSessionEvent(event: any): event is StartSessionEvent {
-	return event.session_id !== undefined;
+function isStartPresignEvent(event: any): event is StartPresignEvent {
+	return event.event_data !== undefined && event.event_data.presign_id !== undefined;
 }

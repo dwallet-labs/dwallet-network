@@ -3,6 +3,7 @@
 use crate::committee::CommitteeTrait;
 use crate::committee::{Committee, EpochId, StakeUnit};
 use crate::error::{IkaError, IkaResult};
+use crate::ika_serde::IkaBitmap;
 use crate::intent::{Intent, IntentMessage, IntentScope};
 use anyhow::{anyhow, Error};
 use derive_more::{AsRef, From};
@@ -11,46 +12,33 @@ use fastcrypto::bls12381::min_pk::{
     BLS12381AggregateSignature, BLS12381AggregateSignatureAsBytes, BLS12381KeyPair,
     BLS12381PrivateKey, BLS12381PublicKey, BLS12381Signature,
 };
-use fastcrypto::ed25519::{
-    Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey, Ed25519PublicKeyAsBytes, Ed25519Signature,
-    Ed25519SignatureAsBytes,
-};
-use fastcrypto::encoding::{Base64, Bech32, Encoding, Hex};
-use fastcrypto::error::{FastCryptoError, FastCryptoResult};
+use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey};
+use fastcrypto::encoding::{Base64, Encoding, Hex};
+use fastcrypto::error::FastCryptoError;
 use fastcrypto::hash::{Blake2b256, HashFunction};
-use fastcrypto::secp256k1::{
-    Secp256k1KeyPair, Secp256k1PublicKey, Secp256k1PublicKeyAsBytes, Secp256k1Signature,
-    Secp256k1SignatureAsBytes,
-};
-use fastcrypto::secp256r1::{
-    Secp256r1KeyPair, Secp256r1PublicKey, Secp256r1PublicKeyAsBytes, Secp256r1Signature,
-    Secp256r1SignatureAsBytes,
-};
+use fastcrypto::secp256k1::Secp256k1PublicKey;
+use fastcrypto::secp256r1::Secp256r1PublicKey;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
 pub use fastcrypto::traits::Signer;
 pub use fastcrypto::traits::{
     AggregateAuthenticator, Authenticator, EncodeDecodeBase64, SigningKey, ToFromBytes,
     VerifyingKey,
 };
-use fastcrypto_zkp::bn254::zk_login::ZkLoginInputs;
-use fastcrypto_zkp::zk_login_utils::Bn254FrElement;
 use move_core_types::account_address::AccountAddress;
-use rand::rngs::{OsRng, StdRng};
+use rand::rngs::StdRng;
 use rand::SeedableRng;
 use roaring::RoaringBitmap;
 use schemars::JsonSchema;
-use serde::ser::Serializer;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
-use strum::EnumString;
 use sui_types::base_types::{ConciseableName, SuiAddress};
 use sui_types::crypto::SignatureScheme;
-use sui_types::sui_serde::{Readable, SuiBitmap};
+use sui_types::sui_serde::Readable;
 use tracing::{instrument, warn};
 
 // Authority Objects
@@ -544,7 +532,7 @@ pub struct AuthorityQuorumSignInfo<const STRONG_THRESHOLD: bool> {
     #[schemars(with = "Base64")]
     pub signature: AggregateAuthoritySignature,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "SuiBitmap")]
+    #[serde_as(as = "IkaBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -558,7 +546,7 @@ pub struct IkaAuthorityStrongQuorumSignInfo {
     pub epoch: EpochId,
     pub signature: AggregateAuthoritySignatureAsBytes,
     #[schemars(with = "Base64")]
-    #[serde_as(as = "SuiBitmap")]
+    #[serde_as(as = "IkaBitmap")]
     pub signers_map: RoaringBitmap,
 }
 
@@ -728,17 +716,6 @@ impl<const STRONG_THRESHOLD: bool> AuthorityQuorumSignInfo<STRONG_THRESHOLD> {
         })
     }
 
-    pub fn authorities<'a>(
-        &'a self,
-        committee: &'a Committee,
-    ) -> impl Iterator<Item = IkaResult<&AuthorityName>> {
-        self.signers_map.iter().map(|i| {
-            committee
-                .authority_by_index(i)
-                .ok_or(IkaError::InvalidAuthenticator)
-        })
-    }
-
     pub fn quorum_threshold(committee: &Committee) -> StakeUnit {
         committee.threshold::<STRONG_THRESHOLD>()
     }
@@ -802,7 +779,8 @@ mod bcs_signable {
 
     pub trait BcsSignable: serde::Serialize + serde::de::DeserializeOwned {}
     impl BcsSignable for crate::committee::Committee {}
-    impl BcsSignable for crate::messages_checkpoint::CheckpointMessage {}
+    impl BcsSignable for crate::messages_dwallet_checkpoint::DWalletCheckpointMessage {}
+    impl BcsSignable for crate::messages_system_checkpoints::SystemCheckpoint {}
 
     impl BcsSignable for crate::message::MessageKind {}
 

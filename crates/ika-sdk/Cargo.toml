@@ -32,7 +32,6 @@ sui-keys.workspace = true
 ika-config.workspace = true
 shared-crypto.workspace = true
 tracing.workspace = true
-move-core-types.workspace = true
 fastcrypto.workspace = true
 
 # NOTE: It's important to keep the above dependency list short.

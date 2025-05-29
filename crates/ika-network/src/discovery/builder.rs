@@ -155,7 +155,7 @@ impl UnstartedDiscovery {
                 keypair,
                 tasks: JoinSet::new(),
                 pending_dials: Default::default(),
-                dial_seed_peers_task: None,
+                dial_seed_or_fixed_peers_task: None,
                 shutdown_handle,
                 state,
                 trusted_peer_change_rx,

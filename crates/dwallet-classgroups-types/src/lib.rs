@@ -9,9 +9,7 @@ use crypto_bigint::rand_core::{OsRng, RngCore};
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
-use fastcrypto::traits::{FromUniformBytes, ToFromBytes};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use rand::Rng;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
@@ -68,7 +66,7 @@ impl ClassGroupsKeyPairAndProof {
     }
 
     pub fn decryption_key(&self) -> ClassGroupsDecryptionKey {
-        self.decryption_key_per_crt_prime.clone()
+        self.decryption_key_per_crt_prime
     }
 }
 
@@ -167,9 +165,9 @@ pub fn read_class_groups_seed_from_file<P: AsRef<std::path::Path>>(
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
         .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
-    Ok(decoded.try_into().map_err(|e| {
+    decoded.try_into().map_err(|e| {
         DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
-    })?)
+    })
 }
 
 pub mod class_groups_as_base64 {

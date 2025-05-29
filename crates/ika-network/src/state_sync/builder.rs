@@ -6,12 +6,14 @@ use super::{
     server::{CheckpointMessageDownloadLimitLayer, Server},
     Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
 };
+use crate::state_sync::server::SystemCheckpointDownloadLimitLayer;
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::{inflight_limit, rate_limit};
 use ika_archival::reader::ArchiveReaderBalancer;
 use ika_config::p2p::StateSyncConfig;
 use ika_types::digests::ChainIdentifier;
-use ika_types::messages_checkpoint::VerifiedCheckpointMessage;
+use ika_types::messages_dwallet_checkpoint::VerifiedDWalletCheckpointMessage;
+use ika_types::messages_system_checkpoints::VerifiedSystemCheckpoint;
 use ika_types::storage::WriteStore;
 use std::{
     collections::HashMap,
@@ -81,35 +83,35 @@ where
         let mut state_sync_server = StateSyncServer::new(server);
 
         // Apply rate limits from configuration as needed.
-        if let Some(limit) = state_sync_config.push_checkpoint_message_rate_limit {
-            state_sync_server = state_sync_server.add_layer_for_push_checkpoint_message(
+        if let Some(limit) = state_sync_config.push_dwallet_checkpoint_message_rate_limit {
+            state_sync_server = state_sync_server.add_layer_for_push_dwallet_checkpoint_message(
                 InboundRequestLayer::new(rate_limit::RateLimitLayer::new(
                     governor::Quota::per_second(limit),
                     rate_limit::WaitMode::Block,
                 )),
             );
         }
-        if let Some(limit) = state_sync_config.get_checkpoint_message_rate_limit {
-            state_sync_server = state_sync_server.add_layer_for_get_checkpoint_message(
+        if let Some(limit) = state_sync_config.get_dwallet_checkpoint_message_rate_limit {
+            state_sync_server = state_sync_server.add_layer_for_get_dwallet_checkpoint_message(
                 InboundRequestLayer::new(rate_limit::RateLimitLayer::new(
                     governor::Quota::per_second(limit),
                     rate_limit::WaitMode::Block,
                 )),
             );
         }
-        if let Some(limit) = state_sync_config.get_checkpoint_message_inflight_limit {
-            state_sync_server = state_sync_server.add_layer_for_get_checkpoint_message(
+        if let Some(limit) = state_sync_config.get_dwallet_checkpoint_message_inflight_limit {
+            state_sync_server = state_sync_server.add_layer_for_get_dwallet_checkpoint_message(
                 InboundRequestLayer::new(inflight_limit::InflightLimitLayer::new(
                     limit,
                     inflight_limit::WaitMode::ReturnError,
                 )),
             );
         }
-        if let Some(limit) = state_sync_config.get_checkpoint_message_per_checkpoint_limit {
+        if let Some(limit) = state_sync_config.get_dwallet_checkpoint_message_per_checkpoint_limit {
             let layer = CheckpointMessageDownloadLimitLayer::new(limit);
             builder.download_limit_layer = Some(layer.clone());
             state_sync_server = state_sync_server
-                .add_layer_for_get_checkpoint_message(InboundRequestLayer::new(layer));
+                .add_layer_for_get_dwallet_checkpoint_message(InboundRequestLayer::new(layer));
         }
 
         (builder, state_sync_server)
@@ -130,17 +132,22 @@ where
         let chain_identifier = chain_identifier.unwrap_or_default();
 
         let (sender, mailbox) = mpsc::channel(config.mailbox_capacity());
-        let (checkpoint_event_sender, _receiver) =
-            broadcast::channel(config.synced_checkpoint_broadcast_channel_capacity());
+        let (dwallet_checkpoint_event_sender, _receiver) =
+            broadcast::channel(config.synced_dwallet_checkpoint_broadcast_channel_capacity());
+        let (system_checkpoint_event_sender, _receiver) =
+            broadcast::channel(config.synced_system_checkpoint_broadcast_channel_capacity());
         let weak_sender = sender.downgrade();
         let handle = Handle {
             sender,
-            checkpoint_event_sender: checkpoint_event_sender.clone(),
+            dwallet_checkpoint_event_sender: dwallet_checkpoint_event_sender.clone(),
+            system_checkpoint_event_sender: system_checkpoint_event_sender.clone(),
         };
         let peer_heights = PeerHeights {
             peers: HashMap::new(),
             unprocessed_checkpoints: HashMap::new(),
             sequence_number_to_digest: HashMap::new(),
+            unprocessed_system_checkpoint: HashMap::new(),
+            sequence_number_to_digest_system_checkpoint: HashMap::new(),
             wait_interval_when_no_peer_to_sync_content: config
                 .wait_interval_when_no_peer_to_sync_content(),
         }
@@ -162,10 +169,12 @@ where
                 store,
                 download_limit_layer: None,
                 peer_heights,
-                checkpoint_event_sender,
+                checkpoint_event_sender: dwallet_checkpoint_event_sender,
+                system_checkpoint_event_sender,
                 metrics,
                 archive_readers,
                 chain_identifier,
+                system_checkpoint_download_limit_layer: None,
             },
             server,
         )
@@ -177,9 +186,11 @@ pub struct UnstartedStateSync<S> {
     pub(super) handle: Handle,
     pub(super) mailbox: mpsc::Receiver<StateSyncMessage>,
     pub(super) download_limit_layer: Option<CheckpointMessageDownloadLimitLayer>,
+    pub(super) system_checkpoint_download_limit_layer: Option<SystemCheckpointDownloadLimitLayer>,
     pub(super) store: S,
     pub(super) peer_heights: Arc<RwLock<PeerHeights>>,
-    pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedCheckpointMessage>,
+    pub(super) checkpoint_event_sender: broadcast::Sender<VerifiedDWalletCheckpointMessage>,
+    pub(super) system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
     pub(super) metrics: Metrics,
     pub(super) archive_readers: ArchiveReaderBalancer,
     pub(crate) chain_identifier: ChainIdentifier,
@@ -195,9 +206,11 @@ where
             handle,
             mailbox,
             download_limit_layer,
+            system_checkpoint_download_limit_layer,
             store,
             peer_heights,
             checkpoint_event_sender,
+            system_checkpoint_event_sender,
             metrics,
             archive_readers,
             chain_identifier,
@@ -211,6 +224,9 @@ where
                 tasks: JoinSet::new(),
                 sync_checkpoint_messages_task: None,
                 download_limit_layer,
+                system_checkpoint_event_sender,
+                sync_system_checkpoints_task: None,
+                system_checkpoint_download_limit_layer,
                 store,
                 peer_heights,
                 checkpoint_event_sender,
@@ -219,6 +235,7 @@ where
                 archive_readers,
                 sync_checkpoint_from_archive_task: None,
                 chain_identifier,
+                sync_system_checkpoint_from_archive_task: None,
             },
             handle,
         )

@@ -50,11 +50,11 @@ mysten-network.workspace = true
 telemetry-subscribers.workspace = true
 fastcrypto.workspace = true
 fastcrypto-zkp.workspace = true
-move-vm-profiler.workspace = true
 sui-types.workspace = true
 sui-storage.workspace = true
 ika-sui-client.workspace = true
-rayon = "1.10.0"
+rayon.workspace = true
+sui-metrics-push-client.workspace = true
 
 [target.'cfg(msim)'.dependencies]
 sui-simulator.workspace = true

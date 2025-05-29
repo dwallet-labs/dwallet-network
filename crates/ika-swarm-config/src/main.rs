@@ -3,10 +3,9 @@ use clap::{Parser, Subcommand};
 use fastcrypto::traits::EncodeDecodeBase64;
 use ika_config::initiation::InitiationParameters;
 use ika_move_packages::BuiltInIkaMovePackages;
-use ika_protocol_config::ProtocolVersion;
 use ika_swarm_config::sui_client::{
-    ika_system_initialize, ika_system_request_dwallet_network_decryption_key_dkg_by_cap,
-    init_initialize, mint_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
+    ika_system_initialize, ika_system_request_dwallet_network_encryption_key_dkg_by_cap,
+    init_initialize, minted_ika, publish_ika_package_to_sui, publish_ika_system_package_to_sui,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -14,16 +13,14 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::request_tokens_from_faucet;
-use sui_config::{sui_config_dir, Config, SUI_NETWORK_CONFIG};
-use sui_config::{SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME};
+use sui_config::SUI_KEYSTORE_FILENAME;
+use sui_config::{sui_config_dir, Config, SUI_CLIENT_CONFIG};
+use sui_keys::keystore::Keystore;
 use sui_keys::keystore::{AccountKeystore, FileBasedKeystore};
-use sui_keys::keystore::{InMemKeystore, Keystore};
-use sui_rpc_api::client::reqwest::Url;
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::crypto::SignatureScheme;
-use tempfile;
 use tokio::time::{sleep, Duration};
 
 /// CLI for IKA operations on Sui.
@@ -134,7 +131,7 @@ async fn main() -> Result<()> {
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
-            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let mut context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
             // Load the IKA Move packages.
@@ -218,17 +215,15 @@ async fn main() -> Result<()> {
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
 
             // Create a WalletContext using the persisted SuiClientConfig.
-            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.
-            let ika_supply_id = mint_ika(
+            let ika_supply_id = minted_ika(
                 publisher_address,
-                &mut context,
                 client.clone(),
                 publish_config.ika_package_id,
-                publish_config.treasury_cap_id,
             )
             .await?;
             println!("Minting done: ika_supply_id: {}", ika_supply_id);
@@ -266,7 +261,7 @@ async fn main() -> Result<()> {
             println!("Using SUI configuration from: {:?}", sui_config_path);
 
             // Create a WalletContext and obtain a Sui client.
-            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let mut context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
             let mut initiation_parameters = InitiationParameters::new();
@@ -322,8 +317,8 @@ async fn main() -> Result<()> {
             );
 
             // Load the published config.
-            let config_content = std::fs::read_to_string(&ika_config_path)?;
-            let mut publish_config: PublishIkaConfig =
+            let config_content = fs::read_to_string(&ika_config_path)?;
+            let publish_config: PublishIkaConfig =
                 serde_json::from_str(&config_content).expect("Failed to parse IKA configuration");
 
             // Check that the required fields are present.
@@ -348,7 +343,7 @@ async fn main() -> Result<()> {
             println!("Using SUI configuration from: {:?}", sui_config_path);
 
             // Create a WalletContext and Sui client.
-            let mut context = WalletContext::new(&sui_config_path, None, None)?;
+            let mut context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
             // Call ika_system_initialize.
@@ -359,6 +354,7 @@ async fn main() -> Result<()> {
                 ika_system_package_id,
                 ika_system_object_id,
                 init_system_shared_version.into(),
+                protocol_cap_id,
             )
             .await?;
             println!(
@@ -370,7 +366,7 @@ async fn main() -> Result<()> {
             // 1
 
             // Call ika_system_request_dwallet_network_decryption_key_dkg_by_cap
-            ika_system_request_dwallet_network_decryption_key_dkg_by_cap(
+            ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
                 publisher_address,
                 &mut context,
                 client.clone(),
@@ -401,7 +397,7 @@ fn inti_sui_client_conf(
     sui_config_path: &PathBuf,
 ) -> Result<()> {
     // // Parse the RPC URL to extract the host for naming the environment.
-    let parsed_url = Url::parse(&sui_rpc_addr)?;
+    let parsed_url = url::Url::parse(&sui_rpc_addr)?;
     let rpc_host = parsed_url.host_str().unwrap_or_default();
     let mut config =
         SuiClientConfig::load(sui_config_path).unwrap_or_else(|_| SuiClientConfig::new(keystore));
