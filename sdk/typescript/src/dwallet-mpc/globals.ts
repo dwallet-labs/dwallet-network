@@ -1,8 +1,13 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import * as fs from 'node:fs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import * as fs from 'node:fs';
+
+
+
+
 
 export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
 export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
@@ -285,7 +290,14 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 
 export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
-	return await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	const currentEpoch = await getNetworkCurrentEpochNumber(c);
+	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedKey) {
+		return cachedKey;
+	}
+	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	cacheNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch, key);
+	return key;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
