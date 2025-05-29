@@ -76,7 +76,24 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85
-#          components: clippy
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Run Clippy
         run: cargo clippy -- -D warnings
+  snapshot:
+    name: Snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Configure git with personal access token
+        run: |
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Install Rust 1.85
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85
+          components: test
+      - uses: Swatinem/rust-cache@v2
+      - name: Run snapshot
+        run: UPDATE=1 cargo test -p ika-move-packages --test build-system-packages
