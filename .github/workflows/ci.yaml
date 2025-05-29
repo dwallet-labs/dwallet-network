@@ -79,7 +79,7 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: Run Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-features -- -D warnings
   snapshot:
     name: Snapshot
     runs-on: ubuntu-latest
