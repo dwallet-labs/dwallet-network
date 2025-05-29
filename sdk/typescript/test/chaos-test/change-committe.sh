@@ -22,7 +22,7 @@ fi
 pushd ../../../..
 
 # File paths.
-MOVE_FILE="crates/ika-move-packages/packages/ika_system/sources/system_v1/bls_committee.move"
+MOVE_FILE="crates/ika-move-packages/packages/ika_system/sources/system/bls_committee.move"
 RUST_FILE="crates/ika-types/src/committee.rs"
 
 # Check if files exist.
