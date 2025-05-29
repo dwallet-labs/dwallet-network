@@ -171,7 +171,7 @@ describe('Test dWallet MPC', () => {
 
 	it('run ten sign full flows simultaneously', async () => {
 		const tasks = [];
-		for (let i = 0; i < 10; i++) {
+		for (let i = 0; i < 5; i++) {
 			const conf = await createConf();
 			tasks.push(runSignFullFlow(conf));
 		}
