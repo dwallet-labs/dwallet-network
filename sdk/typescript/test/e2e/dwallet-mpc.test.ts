@@ -3,8 +3,8 @@
 
 import path from 'path';
 import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
-import { SuiClient } from '@mysten/sui/client';
-import { requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -31,10 +31,10 @@ import {
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
-const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
-const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
-// const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
-// const SUI_FAUCET_HOST = getFaucetHost('localnet');
+// const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
+// const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
+const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
+const SUI_FAUCET_HOST = getFaucetHost('localnet');
 
 async function createConf(): Promise<Config> {
 	const keypair = Ed25519Keypair.generate();
