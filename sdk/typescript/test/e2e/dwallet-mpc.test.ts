@@ -38,7 +38,7 @@ const SUI_FAUCET_HOST = getFaucetHost('localnet');
 
 async function createConf(): Promise<Config> {
 	const keypair = Ed25519Keypair.generate();
-	const dWalletSeed = new Uint8Array(32).fill(8);
+	const dWalletSeed = crypto.getRandomValues(new Uint8Array(32));
 	const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
 		Buffer.from(dWalletSeed).toString('hex'),
 	);
