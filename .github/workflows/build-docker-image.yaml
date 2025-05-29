@@ -1,4 +1,4 @@
-name: CI
+name: Build Docker Image
 
 on:
   push:
@@ -22,7 +22,7 @@ env:
   DOCKER_TAG: ika:devnet-v0.0.6-arm64
 
 jobs:
-  build:
+  build-docker-image:
     name: Build Docker Image
     runs-on: ubuntu-latest
     steps:
