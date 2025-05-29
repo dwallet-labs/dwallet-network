@@ -84,21 +84,26 @@ jobs:
   snapshot:
     name: Snapshot
     runs-on: ubuntu-latest
-    # Only run this job if the latest commit message or any file changes (added, modified, or removed)
-    # in the commit history reference `ika-move-packages`.
-    # This helps optimize CI by only running
-    # the snapshot test when relevant files or commit messages are involved.
-    if: contains(github.event.head_commit.message, 'ika-move-packages') || contains(join(github.event.commits.*.modified, ','), 'ika-move-packages') || contains(join(github.event.commits.*.added, ','), 'ika-move-packages') || contains(join(github.event.commits.*.removed, ','), 'ika-move-packages')
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            ika-move-packages:
+              - 'crates/ika-move-packages/**'
       - name: Configure git with personal access token
+        if: steps.changes.outputs.ika-move-packages == 'true'
         run: |
           git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - name: Install Rust 1.85
+        if: steps.changes.outputs.ika-move-packages == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85
       - uses: Swatinem/rust-cache@v2
+        if: steps.changes.outputs.ika-move-packages == 'true'
       - name: Run snapshot
+        if: steps.changes.outputs.ika-move-packages == 'true'
         run: cargo test -p ika-move-packages --test build_ika_move_packages
