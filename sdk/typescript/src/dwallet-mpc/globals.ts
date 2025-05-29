@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import * as fs from 'node:fs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
@@ -98,6 +99,7 @@ interface IKASystemStateInner {
 			fields: {
 				dwallet_2pc_mpc_coordinator_id: string;
 				dwallet_2pc_mpc_coordinator_network_encryption_keys: Array<any>;
+				epoch: number;
 			};
 		};
 	};
@@ -148,6 +150,7 @@ export function isMoveDynamicField(obj: any): obj is MoveDynamicField {
 export function isIKASystemStateInner(obj: any): obj is IKASystemStateInner {
 	return (
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_network_encryption_keys !== undefined &&
+		obj?.fields?.value?.fields?.epoch !== undefined &&
 		obj?.fields?.value?.fields?.dwallet_2pc_mpc_coordinator_id !== undefined
 	);
 }
@@ -282,7 +285,14 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 
 export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
-	return await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	const currentEpoch = await getNetworkCurrentEpochNumber(c);
+	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedKey) {
+		return cachedKey;
+	}
+	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
+	cacheNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch, key);
+	return key;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -307,6 +317,43 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 		throw new Error('No network decryption key found');
 	}
 	return decryptionKeyID;
+}
+
+export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	if (!fs.existsSync(keyDirPath)) {
+		fs.mkdirSync(keyDirPath, { recursive: true });
+	}
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		fs.unlinkSync(filePath);
+	}
+	fs.writeFileSync(filePath, networkKey);
+}
+
+export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		return fs.readFileSync(filePath);
+	}
+	return null;
+}
+
+export async function getNetworkCurrentEpochNumber(c: Config): Promise<number> {
+	const dynamicFields = await c.client.getDynamicFields({
+		parentId: c.ikaConfig.ika_system_object_id,
+	});
+	const innerSystemState = await c.client.getDynamicFieldObject({
+		parentId: c.ikaConfig.ika_system_object_id,
+		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+	});
+	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
+		throw new Error('Invalid inner system state');
+	}
+	return innerSystemState.data.content.fields.value.fields.epoch;
 }
 
 export interface DWallet {
