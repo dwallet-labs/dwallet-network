@@ -194,7 +194,7 @@ pub async fn init_ika_on_sui(
         ika_package_upgrade_cap_id,
         ika_system_package_upgrade_cap_id,
         treasury_cap_id,
-        initiation_parameters,
+        initiation_parameters.clone(),
     )
     .await?;
 
@@ -266,6 +266,7 @@ pub async fn init_ika_on_sui(
             ika_system_object_id,
             init_system_shared_version,
             protocol_cap_id,
+            initiation_parameters.max_validator_change_count,
         )
         .await?;
     println!("Running `system::initialize` done.");
@@ -348,6 +349,7 @@ pub async fn ika_system_initialize(
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     protocol_cap_id: ObjectID,
+    max_validator_change_count: u64,
 ) -> Result<(ObjectID, SequenceNumber), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -601,6 +603,9 @@ pub async fn ika_system_initialize(
         mutable: false,
     }))?;
 
+    let max_validator_change_count =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&max_validator_change_count)?))?;
+
     ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
@@ -610,6 +615,7 @@ pub async fn ika_system_initialize(
             ika_system_arg,
             dwallet_pricing,
             supported_curves_to_signature_algorithms_to_hash_schemes,
+            max_validator_change_count,
             protocol_cap_arg,
             clock_arg,
         ],
@@ -720,9 +726,6 @@ pub async fn init_initialize(
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.max_validator_count)?),
             CallArg::Pure(bcs::to_bytes(
                 &initiation_parameters.min_validator_joining_stake,
-            )?),
-            CallArg::Pure(bcs::to_bytes(
-                &initiation_parameters.max_validator_change_count,
             )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
             CallArg::Pure(bcs::to_bytes(STAKED_IKA_ICON_URL)?),

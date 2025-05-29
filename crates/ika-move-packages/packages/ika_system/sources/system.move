@@ -120,13 +120,14 @@ public fun initialize(
     self: &mut System,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    max_validator_count: u64,
     cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
+    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, max_validator_count, package_id, cap, clock, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
