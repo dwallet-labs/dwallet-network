@@ -866,7 +866,7 @@ async fn merge_coins(
         })
         .collect::<Vec<_>>();
 
-    ptb.command(sui_types::transaction::Command::MergeCoins(
+    ptb.command(Command::MergeCoins(
         // Safe to unwrap as this function is only being called at the swarm config.
         Argument::GasCoin,
         // Keep the gas object out

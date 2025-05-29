@@ -578,9 +578,9 @@ where
                     .sui_rpc_errors
                     .with_label_values(&["must_get_system_inner_object"])
                     .inc();
-                error!(
+                warn!(
                     system_object_id=%self.ika_system_object_id,
-                    "failed to get system inner object",
+                    "failed to get ika system inner object",
                 );
                 continue;
             };
@@ -1006,6 +1006,7 @@ impl SuiClientInner for SuiSdkClient {
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
 
+        // todo(zeev): clean this up.
         let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted

@@ -443,7 +443,7 @@ where
                             let message = bcs::to_bytes::<SystemCheckpoint>(
                                 &system_checkpoint.into_message(),
                             )
-                            .expect("Serializing system_checkpoint message cannot fail");
+                            .expect("Serializing a `system_checkpoint` message cannot fail");
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
 
@@ -461,10 +461,14 @@ where
                                 Ok(_) => {
                                     last_submitted_system_checkpoint =
                                         Some(next_system_checkpoint_sequence_number);
-                                    info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
+                                    info!(next_system_checkpoint_sequence_number=next_system_checkpoint_sequence_number, "Sui transaction successfully executed for system_checkpoint sequence number");
                                 }
                                 Err(err) => {
-                                    error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
+                                    error!(
+                                        next_system_checkpoint_sequence_number=next_system_checkpoint_sequence_number,
+                                        error=?err,
+                                        "Sui transaction execution failed for system_checkpoint sequence number"
+                                    );
                                 }
                             };
                         }
@@ -977,30 +981,9 @@ where
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
-        let gas_coin = gas_coins
+        let gas_coin = sui_client
+            .get_gas_objects(sui_notifier.sui_address)
+            .await
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 

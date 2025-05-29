@@ -1,4 +1,4 @@
-export RUST_LOG=warn,ika_node=info,ika_core=info
+export RUST_LOG=info,ika_node=info,ika_core=warn,consensus_core=warn
 export RUST_MIN_STACK=16777216
 run-sui:
 	RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 86400000
