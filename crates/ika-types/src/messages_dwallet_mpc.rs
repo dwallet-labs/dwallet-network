@@ -215,7 +215,7 @@ impl Debug for MPCProtocolInitData {
     }
 }
 
-/// This is a wrapper type for the [`SuiEvent`] type that is being used to write it to the local RocksDB.
+/// This is a wrapper type for the [`SuiEvent`] type, that is being used to write it to the local RocksDB.
 /// This is needed because the [`SuiEvent`] cannot be directly written to the RocksDB.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DBSuiEvent {
