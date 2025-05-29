@@ -603,9 +603,8 @@ pub async fn ika_system_initialize(
         mutable: false,
     }))?;
 
-    let max_validator_change_count = ptb.input(CallArg::Pure(bcs::to_bytes(
-        &max_validator_change_count,
-    )?))?;
+    let max_validator_change_count =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&max_validator_change_count)?))?;
 
     ptb.programmable_move_call(
         ika_system_package_id,
