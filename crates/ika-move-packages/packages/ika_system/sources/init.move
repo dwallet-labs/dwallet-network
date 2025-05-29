@@ -36,7 +36,6 @@ fun init(otw: INIT, ctx: &mut TxContext) {
     transfer::transfer(init_cap, ctx.sender());
 }
 
-
 /// Function to initialize ika and share the system object.
 /// This can only be called once, after which the `InitCap` is destroyed.
 public fun initialize(
@@ -55,7 +54,6 @@ public fun initialize(
     min_validator_count: u64,
     max_validator_count: u64,
     min_validator_joining_stake: u64,
-    max_validator_change_count: u64,
     reward_slashing_rate: u16,
     // Display parameters
     staked_ika_image_url: String,
@@ -89,7 +87,7 @@ public fun initialize(
         min_validator_count,
         max_validator_count,
         min_validator_joining_stake,
-        max_validator_change_count,
+        max_validator_count,
         reward_slashing_rate,
         ctx,
     );

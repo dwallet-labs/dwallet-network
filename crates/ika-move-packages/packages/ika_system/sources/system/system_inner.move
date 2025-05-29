@@ -166,6 +166,7 @@ public(package) fun initialize(
     self: &mut SystemInnerV1,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    max_validator_change_count: u64,
     package_id: ID,
     cap: &ProtocolCap,
     clock: &Clock,
@@ -177,6 +178,7 @@ public(package) fun initialize(
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     let pending_active_set = self.validator_set.pending_active_set();
     assert!(pending_active_set.size() >= pending_active_set.min_validator_count(), ECannotInitialize);
+    self.validator_set.set_max_validator_change_count(max_validator_change_count);
 
     self.validator_set.process_mid_epoch();
     let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
@@ -515,7 +517,7 @@ public(package) fun advance_epoch(
 
     let total_reward_amount_after_distribution = total_reward.value();
     let total_reward_distributed =
-         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
+        total_reward_amount_before_distribution - total_reward_amount_after_distribution;
 
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `remaining_rewards`.
