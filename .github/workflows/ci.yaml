@@ -64,6 +64,7 @@ jobs:
         run: cargo fmt -- --check
         working-directory: sdk/dwallet-mpc-wasm
   clippy:
+    if: github.event_name == 'push'
     name: Clippy
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +84,11 @@ jobs:
   snapshot:
     name: Snapshot
     runs-on: ubuntu-latest
+    # Only run this job if the latest commit message or any file changes (added, modified, or removed)
+    # in the commit history reference `ika-move-packages`.
+    # This helps optimize CI by only running
+    # the snapshot test when relevant files or commit messages are involved.
+    if: contains(github.event.head_commit.message, 'ika-move-packages') || contains(join(github.event.commits.*.modified, ','), 'ika-move-packages') || contains(join(github.event.commits.*.added, ','), 'ika-move-packages') || contains(join(github.event.commits.*.removed, ','), 'ika-move-packages')
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
