@@ -1290,16 +1290,32 @@ impl AuthorityPerEpochStore {
         self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
 
         system_checkpoint_verified_messages.iter().for_each(
-            |SystemCheckpointKind::NextConfigVersion(version)| {
-                if let Ok(tables) = self.tables() {
-                    if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
-                        warn!(
-                            ?e,
-                            "Failed to insert the next protocol config version into the table"
-                        );
+            |system_checkpoint_kind| match system_checkpoint_kind {
+                SystemCheckpointKind::NextConfigVersion(version) => {
+                    if let Ok(tables) = self.tables() {
+                        if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
+                            warn!(
+                                ?e,
+                                "Failed to insert the next protocol config version into the table"
+                            );
+                        }
+                    } else {
+                        warn!("Failed to insert params message digest into the table");
                     }
-                } else {
-                    warn!("Failed to insert params message digest into the table");
+                }
+                // For now, we only handle NextConfigVersion. Other variants are ignored.
+                SystemCheckpointKind::EpochDurationMs
+                | SystemCheckpointKind::StakeSubsidyStartEpoch
+                | SystemCheckpointKind::StakeSubsidyRate
+                | SystemCheckpointKind::StakeSubsidyPeriodLength
+                | SystemCheckpointKind::MinValidatorCount
+                | SystemCheckpointKind::MaxValidatorCount
+                | SystemCheckpointKind::MinValidatorJoiningStake
+                | SystemCheckpointKind::MaxValidatorChangeCount
+                | SystemCheckpointKind::RewardSlashingRate => {
+                    todo!(
+                        "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
+                    );
                 }
             },
         );

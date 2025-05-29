@@ -184,7 +184,7 @@ Function to initialize ika and share the system object.
 This can only be called once, after which the <code><a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">InitCap</a></code> is destroyed.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(init_cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64, reward_slashing_rate: u16, lock_active_committee: bool, staked_ika_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, imported_key_dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/init.md#(ika_system=0x0)_init_initialize">initialize</a>(init_cap: (ika_system=0x0)::<a href="../ika_system/init.md#(ika_system=0x0)_init_InitCap">init::InitCap</a>, ika_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, ika_system_upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>, protocol_treasury_cap: <a href="../sui/coin.md#sui_coin_TreasuryCap">sui::coin::TreasuryCap</a>&lt;(ika=0x0)::ika::IKA&gt;, protocol_version: u64, chain_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64, min_validator_count: u64, max_validator_count: u64, min_validator_joining_stake: u64, max_validator_change_count: u64, reward_slashing_rate: u16, staked_ika_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, imported_key_dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>
 </code></pre>
 
 
@@ -211,7 +211,6 @@ This can only be called once, after which the <code><a href="../ika_system/init.
     min_validator_joining_stake: u64,
     max_validator_change_count: u64,
     reward_slashing_rate: u16,
-    lock_active_committee: bool,
     // Display parameters
     staked_ika_image_url: String,
     dwallet_cap_image_url: String,
@@ -240,17 +239,10 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         max_validator_count,
         min_validator_joining_stake,
         max_validator_change_count,
-        ctx,
-    );
-    <b>let</b> system_parameters = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_create_system_parameters">system_inner::create_system_parameters</a>(
-        epoch_duration_ms,
-        stake_subsidy_start_epoch,
-        // Validator committee parameters
         reward_slashing_rate,
-        lock_active_committee,
         ctx,
     );
-    <b>let</b> stake_subsidy = <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_create">protocol_treasury::create</a>(
+    <b>let</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a> = <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_create">protocol_treasury::create</a>(
         protocol_treasury_cap,
         stake_subsidy_rate,
         stake_subsidy_period_length,
@@ -264,8 +256,9 @@ This can only be called once, after which the <code><a href="../ika_system/init.
         validators,
         protocol_version,
         chain_start_timestamp_ms,
-        system_parameters,
-        stake_subsidy,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
+        <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         authorized_protocol_cap_ids,
         ctx,
     );

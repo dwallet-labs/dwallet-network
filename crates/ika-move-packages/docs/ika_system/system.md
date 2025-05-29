@@ -229,7 +229,7 @@ Create a new System object and make it shared.
 This function will be called only once in init.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_create">create</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, upgrade_caps: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;, validators: (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, protocol_version: u64, epoch_start_timestamp_ms: u64, parameters: (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemParametersV1">system_inner::SystemParametersV1</a>, <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">protocol_treasury::ProtocolTreasury</a>, authorized_protocol_cap_ids: vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_create">create</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, upgrade_caps: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;, validators: (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, protocol_version: u64, epoch_start_timestamp_ms: u64, epoch_duration_ms: u64, stake_subsidy_start_epoch: u64, <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">protocol_treasury::ProtocolTreasury</a>, authorized_protocol_cap_ids: vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -244,7 +244,8 @@ This function will be called only once in init.
     validators: ValidatorSet,
     protocol_version: u64,
     epoch_start_timestamp_ms: u64,
-    parameters: SystemParametersV1,
+    epoch_duration_ms: u64,
+    stake_subsidy_start_epoch: u64,
     <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: ProtocolTreasury,
     authorized_protocol_cap_ids: vector&lt;ID&gt;,
     ctx: &<b>mut</b> TxContext,
@@ -254,7 +255,8 @@ This function will be called only once in init.
         validators,
         protocol_version,
         epoch_start_timestamp_ms,
-        parameters,
+        epoch_duration_ms,
+        stake_subsidy_start_epoch,
         <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         authorized_protocol_cap_ids,
         ctx,

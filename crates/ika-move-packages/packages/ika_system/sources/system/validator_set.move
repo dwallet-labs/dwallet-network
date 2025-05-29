@@ -30,6 +30,8 @@ use std::string::String;
 public struct ValidatorSet has store {
     /// Total amount of stake from all active validators at the beginning of the epoch.
     total_stake: u64,
+    /// How many reward are slashed to punish a validator, in bps.
+    reward_slashing_rate: u16,
     /// A table that contains all validators
     validators: ObjectTable<ID, Validator>,
     /// The current list of active committee of validators.
@@ -62,7 +64,6 @@ public struct ValidatorSet has store {
 public struct ValidatorEpochInfoEventV1 has copy, drop {
     epoch: u64,
     validator_id: ID,
-    //reference_gas_survey_quote: u64,
     stake: u64,
     commission_rate: u16,
     staking_rewards: u64,
@@ -86,7 +87,8 @@ public struct ValidatorLeaveEvent has copy, drop {
     is_voluntary: bool,
 }
 
-const BASIS_POINT_DENOMINATOR: u128 = 10000;
+const BASIS_POINT_DENOMINATOR: u16 = 10_000;
+const BASIS_POINT_DENOMINATOR_U128: u128 = 10_000;
 const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
 
 
@@ -100,6 +102,7 @@ const EValidatorAlreadyRemoved: u64 = 5;
 const ECannotReportOneself: u64 = 6;
 const EReportRecordNotFound: u64 = 7;
 const ECannotJoinActiveSet: u64 = 8;
+const EBpsTooLarge: u64 = 9;
 
 const EInvalidCap: u64 = 101;
 
@@ -117,10 +120,17 @@ public(package) fun new(
     max_validator_count: u64,
     min_validator_joining_stake: u64,
     max_validator_change_count: u64,
+    reward_slashing_rate: u16,
     ctx: &mut TxContext,
 ): ValidatorSet {
+    // Rates can't be higher than 100%.
+    assert!(
+        reward_slashing_rate <= BASIS_POINT_DENOMINATOR,
+        EBpsTooLarge,
+    );
     ValidatorSet {
         total_stake: 0,
+        reward_slashing_rate,
         validators: object_table::new(ctx),
         active_committee: bls_committee::empty(),
         next_epoch_active_committee: option::none(),
@@ -365,30 +375,6 @@ public(package) fun withdraw_stake(
     ika_balance.into_coin(ctx)
 }
 
-
-// public(package) fun convert_to_fungible_staked_ika(
-//     self: &mut ValidatorSet,
-//     epoch: u64,
-//     staked_ika: StakedIka,
-//     ctx: &mut TxContext,
-// ): FungibleStakedIka {
-//     let validator_id = staked_ika.validator_id();
-//     let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
-
-//     validator.convert_to_fungible_staked_ika(epoch, staked_ika, ctx)
-// }
-
-// public(package) fun redeem_fungible_staked_ika(
-//     self: &mut ValidatorSet,
-//     epoch: u64,
-//     fungible_staked_ika: FungibleStakedIka,
-// ): Balance<IKA> {
-//     let validator_id = fungible_staked_ika.validator_id();
-//     let validator = self.get_candidate_or_active_or_inactive_validator_mut(validator_id);
-
-//     validator.redeem_fungible_staked_ika(epoch, fungible_staked_ika)
-// }
-
 // ==== validator config setting functions ====
 
 /// Create a new `ValidatorOperationCap` and registers it.
@@ -533,17 +519,10 @@ public(package) fun set_pricing_vote(
 /// Process the pending validator changes at mid epoch
 public(package) fun process_mid_epoch(
     self: &mut ValidatorSet,
-    lock_active_committee: bool,
 ) {
     assert!(self.next_epoch_active_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
 
-    if (lock_active_committee) {
-        // if we lock the committee just keep it the same as last time
-        self.next_epoch_active_committee.fill(self.active_committee)
-    } else {
-        // Process pending validators
-        self.process_pending_validators();
-    };
+    self.process_pending_validators();
 }
 
 /// Update the validator set at the end of epoch.
@@ -557,7 +536,6 @@ public(package) fun advance_epoch(
     self: &mut ValidatorSet,
     new_epoch: u64,
     total_reward: &mut Balance<IKA>,
-    reward_slashing_rate: u16,
 ) {
     assert!(self.next_epoch_active_committee.is_some(), EAdvanceEpochOnlyAfterProcessMidEpoch);
 
@@ -588,7 +566,7 @@ public(package) fun advance_epoch(
         individual_staking_reward_adjustments,
     ) = compute_reward_adjustments(
         slashed_validator_indices,
-        reward_slashing_rate,
+        self.reward_slashing_rate,
         &unadjusted_staking_reward_amounts,
     );
 
@@ -652,36 +630,25 @@ fun activate_added_validators(
     });
 }
 
-// /// Called by `ika_system` to derive computation price per unit size for the new epoch.
-// /// Derive the computation price per unit size based on the computation price quote submitted by each validator.
-// /// The returned computation price should be greater than or equal to 2/3 of the validators submitted
-// /// computation price, weighted by stake.
-// public(package) fun derive_computation_price_per_unit_size(self: &mut ValidatorSet, committee: &BlsCommittee): u64 {
-//     let vs = committee.members();
-//     let num_validators = vs.length();
-//     let mut entries = vector[];
-//     let mut i = 0;
-//     while (i < num_validators) {
-//         let vid = vs[i].validator_id();
+public(package) fun set_min_validator_count(self: &mut ValidatorSet, min_validator_count: u64) {
+    self.pending_active_set.borrow_mut().set_min_validator_count(min_validator_count);
+}
 
-//         let v = self.get_validator(vid);
-//         entries.push_back(
-//             pq::new_entry(v.computation_price(), vs[i].voting_power()),
-//         );
-//         i = i + 1;
-//     };
-//     // Build a priority queue that will pop entries with computation price from the highest to the lowest.
-//     let mut pq = pq::new(entries);
-//     let mut sum = 0;
-//     let threshold = total_voting_power() - quorum_threshold();
-//     let mut result = 0;
-//     while (sum < threshold) {
-//         let (computation_price, voting_power) = pq.pop_max();
-//         result = computation_price;
-//         sum = sum + voting_power;
-//     };
-//     result
-// }
+public(package) fun set_max_validator_count(self: &mut ValidatorSet, max_validator_count: u64) {
+    self.pending_active_set.borrow_mut().set_max_validator_count(max_validator_count);
+}
+
+public(package) fun set_min_validator_joining_stake(self: &mut ValidatorSet, min_validator_joining_stake: u64) {
+    self.pending_active_set.borrow_mut().set_min_validator_joining_stake(min_validator_joining_stake);
+}
+
+public(package) fun set_max_validator_change_count(self: &mut ValidatorSet, max_validator_change_count: u64) {
+    self.pending_active_set.borrow_mut().set_max_validator_change_count(max_validator_change_count);
+}
+
+public(package) fun set_reward_slashing_rate(self: &mut ValidatorSet, reward_slashing_rate: u16) {
+    self.reward_slashing_rate = reward_slashing_rate;
+}
 
 // ==== getter functions ====
 
@@ -833,7 +800,7 @@ fun compute_reward_adjustments(
         let unadjusted_staking_reward = unadjusted_staking_reward_amounts[validator_index];
         let staking_reward_adjustment_u128 =
             unadjusted_staking_reward as u128 * (reward_slashing_rate as u128)
-                / BASIS_POINT_DENOMINATOR;
+                / BASIS_POINT_DENOMINATOR_U128;
 
         // Insert into individual mapping and record into the total adjustment sum.
         individual_staking_reward_adjustments.insert(

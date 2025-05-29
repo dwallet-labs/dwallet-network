@@ -11,25 +11,6 @@ use sui_types::base_types::ObjectID;
 use sui_types::coin::TreasuryCap;
 use sui_types::collection_types::{Bag, Table, VecMap, VecSet};
 
-/// Rust version of the Move ika::ika_system::SystemParameters type.
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct SystemParametersV1 {
-    /// The duration of an epoch, in milliseconds.
-    pub epoch_duration_ms: u64,
-
-    /// The starting epoch in which stake subsidies start being paid out
-    pub stake_subsidy_start_epoch: u64,
-
-    /// how many reward are slashed to punish a validator, in bps.
-    pub reward_slashing_rate: u16,
-
-    /// Lock active committee between epochs.
-    pub lock_active_committee: bool,
-
-    /// Any extra fields that's not defined statically.
-    pub extra_fields: Bag,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct BlsCommitteeMember {
     pub validator_id: ObjectID,
@@ -51,6 +32,7 @@ pub type ObjectTable = Table;
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ValidatorSetV1 {
     pub total_stake: u64,
+    pub reward_slashing_rate: u16,
     pub validators: ObjectTable, // This now holds StakingPool objects
     pub active_committee: BlsCommittee,
     pub next_epoch_committee: Option<BlsCommittee>,
@@ -77,8 +59,9 @@ pub struct SystemInnerV1 {
     pub next_protocol_version: Option<u64>,
     pub upgrade_caps: Vec<UpgradeCap>,
     pub validator_set: ValidatorSetV1,
-    pub parameters: SystemParametersV1,
-    pub ika_treasury: IkaTreasuryV1,
+    pub epoch_duration_ms: u64,
+    pub stake_subsidy_start_epoch: u64,
+    pub ika_treasury: ProtocolTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
     pub total_messages_processed: u64,
     pub computation_reward: Balance,
@@ -157,7 +140,7 @@ pub struct DWalletCoordinatorInnerV1 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct IkaTreasuryV1 {
+pub struct ProtocolTreasuryV1 {
     /// TreasuryCap of IKA tokens.
     pub treasury_cap: TreasuryCap,
 
@@ -168,13 +151,17 @@ pub struct IkaTreasuryV1 {
     /// period nad total supply. Expressed in basis points.
     pub stake_subsidy_rate: u16,
 
-    /// The amount of stake subsidy to be distrabtured per distribution.
+    /// The amount of stake subsidy to be destructured per distribution.
     /// This amount changes based on `stake_subsidy_rate`.
     pub stake_subsidy_amount_per_distribution: u64,
 
     /// Number of distributions to occur before the amount per distribution will be recalculated.
     pub stake_subsidy_period_length: u64,
 
+    /// The total supply of IKA tokens at the start of the current period.
+    pub total_supply_at_period_start: u64,
+
+    /// Any extra fields that's not defined statically.
     pub extra_fields: Bag,
 }
 
@@ -208,7 +195,7 @@ impl SystemInnerTrait for SystemInnerV1 {
     }
 
     fn epoch_duration_ms(&self) -> u64 {
-        self.parameters.epoch_duration_ms
+        self.epoch_duration_ms
     }
 
     fn dwallet_2pc_mpc_coordinator_id(&self) -> Option<ObjectID> {
@@ -221,8 +208,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         &self.dwallet_2pc_mpc_coordinator_network_encryption_keys
     }
 
-    fn validator_set(&self) -> &ValidatorSetV1 {
-        &self.validator_set
+    fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee> {
+        self.validator_set.next_epoch_committee.clone()
+    }
+
+    fn get_ika_active_committee(&self) -> BlsCommittee {
+        self.validator_set.active_committee.clone()
     }
 
     fn read_bls_committee(
@@ -248,12 +239,8 @@ impl SystemInnerTrait for SystemInnerV1 {
             .collect()
     }
 
-    fn get_ika_active_committee(&self) -> BlsCommittee {
-        self.validator_set.active_committee.clone()
-    }
-
-    fn get_ika_next_epoch_committee(&self) -> Option<BlsCommittee> {
-        self.validator_set.next_epoch_committee.clone()
+    fn validator_set(&self) -> &ValidatorSetV1 {
+        &self.validator_set
     }
 }
 
