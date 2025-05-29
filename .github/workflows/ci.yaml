@@ -64,7 +64,7 @@ jobs:
         run: cargo fmt -- --check
         working-directory: sdk/dwallet-mpc-wasm
   clippy:
-    name: ClippΩy
+    name: Clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -76,10 +76,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.85
-          components: rustfmt
+          components: clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Fmt Check
-        run: cargo fmt -- --check
-      - name: Fmt Check - Wasm
-        run: cargo fmt -- --check
-        working-directory: sdk/dwallet-mpc-wasm
+      - name: Run Clippy
+        run: cargo clippy -- -D warnings
