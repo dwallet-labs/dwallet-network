@@ -185,8 +185,8 @@ where
             .await
             {
                 error!(
-                    "failed to lock last active session sequence number: {:?}",
-                    e
+                    err=?e,
+                    "failed to lock last active session sequence number",
                 );
             } else {
                 info!("Successfully locked last active session sequence number");
@@ -981,9 +981,8 @@ where
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
-        let gas_coin = sui_client
-            .get_gas_objects(sui_notifier.sui_address)
-            .await
+        let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
+        let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
 
