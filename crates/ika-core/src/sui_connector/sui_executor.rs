@@ -714,7 +714,7 @@ where
                             "Last submitted transaction has not been processed yet, retrying..."
                         );
                         continue;
-                    },
+                    }
                     Ok(_events) => {
                         info!(
                             transaction_digest = ?digest,
