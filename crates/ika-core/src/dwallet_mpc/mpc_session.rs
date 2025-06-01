@@ -888,12 +888,10 @@ impl DWalletMPCSession {
     /// - If no delay is required for the current protocol/round: returns `is_ready: true`
     fn wait_consensus_rounds_delay(&mut self) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
         if self.mpc_event_data.clone().is_none() {
-            return Ok(
-                ReadyToAdvanceCheckResult {
-                    is_ready: false,
-                    malicious_parties: vec![],
-                },
-            )
+            return Ok(ReadyToAdvanceCheckResult {
+                is_ready: false,
+                malicious_parties: vec![],
+            });
         }
         match &self.mpc_event_data.clone().unwrap().init_protocol_data {
             MPCProtocolInitData::Sign(_) => {
