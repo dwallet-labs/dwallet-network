@@ -129,7 +129,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
-                self.notifier_coin_lock.clone()
+                self.notifier_coin_lock.clone(),
             )
             .await
             {
@@ -158,7 +158,7 @@ where
                 self.ika_system_package_id,
                 sui_notifier,
                 dwallet_2pc_mpc_coordinator_id,
-                self.notifier_coin_lock.clone()
+                self.notifier_coin_lock.clone(),
             )
             .await
             {
@@ -186,7 +186,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
-                self.notifier_coin_lock.clone()
+                self.notifier_coin_lock.clone(),
             )
             .await
             {
@@ -220,7 +220,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
-                self.notifier_coin_lock.clone()
+                self.notifier_coin_lock.clone(),
             )
             .await
             {
@@ -372,7 +372,7 @@ where
                                         sui_notifier,
                                         &self.sui_client,
                                         &self.metrics,
-                                        self.notifier_coin_lock.clone()
+                                        self.notifier_coin_lock.clone(),
                                     )
                                     .await;
                                     match task {
@@ -463,7 +463,7 @@ where
                                 sui_notifier,
                                 &self.sui_client,
                                 &self.metrics,
-                                self.notifier_coin_lock.clone()
+                                self.notifier_coin_lock.clone(),
                             )
                             .await;
                             match task {
