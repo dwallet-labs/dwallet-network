@@ -896,7 +896,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
-        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
+        notifier_coin_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
