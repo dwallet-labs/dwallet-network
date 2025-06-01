@@ -328,7 +328,7 @@ request_and_generate_yaml() {
             }
           }')
 
-    if [[ "$response" == "201" ]]; then
+    if [[ "$response" == 2* ]]; then
       echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
       jq . "$VALIDATOR_DIR/faucet_response.json"
       break
