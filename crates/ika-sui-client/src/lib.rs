@@ -139,9 +139,10 @@ where
         &self,
         tx_digest: TransactionDigest,
     ) -> anyhow::Result<Vec<SuiEvent>> {
-        self.inner.get_events_by_tx_digest(tx_digest).await
+        let events = self.inner.get_events_by_tx_digest(tx_digest).await?;
+        Ok(events)
     }
-    
+
     /// Remaining sessions not processed during previous Epochs.
     pub async fn get_dwallet_mpc_missed_events(
         &self,
