@@ -513,6 +513,7 @@ where
         ika_system_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
         dwallet_coordinator_id: ObjectID,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> anyhow::Result<()> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -675,19 +676,7 @@ where
         )
         .await;
 
-        let result = sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-        if !result.errors.is_empty() {
-            for error in result.errors.clone() {
-                error!(?error, "error executing transaction block");
-            }
-            return Err(anyhow::anyhow!(
-                "calculate_protocols_pricing failed with errors: {:?}",
-                result.errors
-            ));
-        }
-        info!(?result.digest, "Successfully executed transaction block for protocol pricing calculation");
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
@@ -727,6 +716,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -772,9 +762,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
@@ -784,6 +772,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> IkaResult<()> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -830,9 +819,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
@@ -842,6 +829,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> IkaResult<()> {
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -888,9 +876,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
@@ -904,6 +890,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -992,9 +979,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
@@ -1007,6 +992,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -1084,9 +1070,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
+        Self::submit_tx_to_sui(notifier_coin_lock, transaction, sui_client).await?;
 
         Ok(())
     }
