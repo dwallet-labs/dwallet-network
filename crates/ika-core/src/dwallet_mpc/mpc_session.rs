@@ -28,7 +28,11 @@ use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessio
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport, DECRYPTION_KEY_RESHARE_STR_KEY, NETWORK_DKG_STR_KEY, SIGN_STR_KEY};
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
+    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
+    DECRYPTION_KEY_RESHARE_STR_KEY, NETWORK_DKG_STR_KEY, SIGN_STR_KEY,
+};
 use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
