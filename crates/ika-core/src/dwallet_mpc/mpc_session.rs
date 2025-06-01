@@ -28,10 +28,7 @@ use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessio
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport, DECRYPTION_KEY_RESHARE_STR_KEY, NETWORK_DKG_STR_KEY, SIGN_STR_KEY};
 use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -894,21 +891,21 @@ impl DWalletMPCSession {
             });
         }
         match &self.agreed_mpc_protocol.clone().unwrap() {
-            MPCProtocolInitData::Sign(_) => {
+            protocol if protocol == SIGN_STR_KEY => {
                 let delay = self
                     .epoch_store()?
                     .protocol_config()
                     .sign_second_round_delay() as usize;
                 self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
             }
-            MPCProtocolInitData::NetworkDkg(_, _) => {
+            protocol if protocol == NETWORK_DKG_STR_KEY => {
                 let delay = self
                     .epoch_store()?
                     .protocol_config()
                     .network_dkg_third_round_delay() as usize;
                 self.check_round_delay(Self::NETWORK_DKG_DELAY_ROUND, delay)
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+            protocol if protocol == DECRYPTION_KEY_RESHARE_STR_KEY => {
                 let delay =
                     self.epoch_store()?
                         .protocol_config()

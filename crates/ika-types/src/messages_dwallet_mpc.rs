@@ -71,14 +71,18 @@ pub enum MPCProtocolInitData {
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>),
 }
 
+pub const DECRYPTION_KEY_RESHARE_STR_KEY: &'static str = "DecryptionKeyReshare";
+pub const NETWORK_DKG_STR_KEY: &'static str = "NetworkDkg";
+pub const SIGN_STR_KEY: &'static str = "Sign";
+
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
             MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
-            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
-            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "{}", NETWORK_DKG_STR_KEY),
             MPCProtocolInitData::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
@@ -86,7 +90,7 @@ impl Display for MPCProtocolInitData {
                 write!(f, "PartialSignatureVerification")
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                write!(f, "DecryptionKeyReshare")
+                write!(f, "{}", DECRYPTION_KEY_RESHARE_STR_KEY)
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
