@@ -29,6 +29,10 @@ pub const SIGN_PROTOCOL_FLAG: u32 = 6;
 pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
+pub const DECRYPTION_KEY_RESHARE_STR_KEY: &'static str = "DecryptionKeyReshare";
+pub const NETWORK_DKG_STR_KEY: &'static str = "NetworkDkg";
+pub const SIGN_STR_KEY: &'static str = "Sign";
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// Make the dWallet user secret key shares public, so the network can control it.
@@ -70,10 +74,6 @@ pub enum MPCProtocolInitData {
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
     DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>),
 }
-
-pub const DECRYPTION_KEY_RESHARE_STR_KEY: &'static str = "DecryptionKeyReshare";
-pub const NETWORK_DKG_STR_KEY: &'static str = "NetworkDkg";
-pub const SIGN_STR_KEY: &'static str = "Sign";
 
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
