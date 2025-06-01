@@ -84,7 +84,7 @@ where
             sui_notifier,
             sui_client,
             metrics,
-            notifier_coin_lock: tokio::sync::Mutex::new(None),
+            notifier_coin_lock: Arc::new(tokio::sync::Mutex::new(None)),
         }
     }
 
