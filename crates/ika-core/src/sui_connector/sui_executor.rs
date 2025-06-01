@@ -712,7 +712,7 @@ where
                     Err(_) => continue,
                     Ok(_events) => {
                         let result = sui_client
-                            .execute_transaction_block_with_effects(transaction)
+                            .execute_transaction_block_with_effects(transaction.clone())
                             .await?;
                         *digest = Some(result.digest);
                     }
