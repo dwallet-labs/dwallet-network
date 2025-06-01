@@ -697,6 +697,10 @@ where
             let mut digest = notifier_coin_lock.lock().await;
 
             if digest.is_none() {
+                info!(
+                    transaction_digest = ?transaction.digest(),
+                    "Submitting transaction to Sui"
+                );
                 let result = sui_client
                     .execute_transaction_block_with_effects(transaction)
                     .await?;
@@ -704,8 +708,18 @@ where
                 return Ok(());
             } else {
                 match sui_client.get_events_by_tx_digest(digest.unwrap()).await {
-                    Err(_) => continue,
+                    Err(_) => {
+                        info!(
+                            transaction_digest = ?digest,
+                            "Last submitted transaction has not been processed yet, retrying..."
+                        );
+                        continue;
+                    },
                     Ok(_events) => {
+                        info!(
+                            transaction_digest = ?digest,
+                            "Last submitted transaction has been processed, submitting next one"
+                        );
                         let result = sui_client
                             .execute_transaction_block_with_effects(transaction)
                             .await?;
