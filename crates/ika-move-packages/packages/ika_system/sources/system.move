@@ -491,14 +491,22 @@ public fun set_paused_curves_and_signature_algorithms(
 
 // === Upgrades ===
 
-public fun authorize_update_message_by_cap(
+public fun authorize_upgrade_by_cap(
     self: &mut System,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector<u8>,
 ): UpgradeTicket {
     let self = self.inner_mut();
-    self.authorize_update_message_by_cap(cap, package_id, digest)
+    self.authorize_upgrade_by_cap(cap, package_id, digest)
+}
+
+public fun authorize_upgrade_by_approval(
+    self: &mut System,
+    package_id: ID,
+): UpgradeTicket {
+    let self = self.inner_mut();
+    self.authorize_upgrade_by_approval(package_id)
 }
 
 public fun commit_upgrade(
