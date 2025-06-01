@@ -12,6 +12,7 @@ use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
@@ -35,9 +36,9 @@ use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
-use sui_types::base_types::ObjectID;
+use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, ObjectArg};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
@@ -54,6 +55,7 @@ pub struct SuiExecutor<C> {
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
+    notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
 }
 
 struct EpochSwitchState {
@@ -82,6 +84,7 @@ where
             sui_notifier,
             sui_client,
             metrics,
+            notifier_coin_lock: tokio::sync::Mutex::new(None),
         }
     }
 
@@ -127,7 +130,7 @@ where
                 sui_notifier,
                 &self.sui_client,
             )
-            .await
+                .await
             {
                 error!("`process_mid_epoch()` failed: {:?}", e);
             } else {
@@ -155,7 +158,7 @@ where
                 sui_notifier,
                 dwallet_2pc_mpc_coordinator_id,
             )
-            .await
+                .await
             {
                 Ok(..) => {
                     info!("Successfully calculated protocols pricing");
@@ -182,7 +185,7 @@ where
                 sui_notifier,
                 &self.sui_client,
             )
-            .await
+                .await
             {
                 error!(
                     "failed to lock last active session sequence number: {:?}",
@@ -215,7 +218,7 @@ where
                 sui_notifier,
                 &self.sui_client,
             )
-            .await
+                .await
             {
                 error!("failed to process request advance epoch: {:?}", e);
             } else {
@@ -315,7 +318,7 @@ where
                     &ika_system_state_inner,
                     &mut epoch_switch_state,
                 )
-                .await;
+                    .await;
                 if Some(next_dwallet_checkpoint_sequence_number) > last_submitted_dwallet_checkpoint
                 {
                     match self
@@ -348,7 +351,7 @@ where
                                     let message = bcs::to_bytes::<DWalletCheckpointMessage>(
                                         &dwallet_checkpoint_message.into_message(),
                                     )
-                                    .expect("Serializing checkpoint message cannot fail");
+                                        .expect("Serializing checkpoint message cannot fail");
 
                                     info!(
                                         signers_len=?signers_len,
@@ -366,7 +369,7 @@ where
                                         &self.sui_client,
                                         &self.metrics,
                                     )
-                                    .await;
+                                        .await;
                                     match task {
                                         Ok(_) => {
                                             self.metrics
@@ -443,7 +446,7 @@ where
                             let message = bcs::to_bytes::<SystemCheckpoint>(
                                 &system_checkpoint.into_message(),
                             )
-                            .expect("Serializing system_checkpoint message cannot fail");
+                                .expect("Serializing system_checkpoint message cannot fail");
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
 
@@ -456,7 +459,7 @@ where
                                 &self.sui_client,
                                 &self.metrics,
                             )
-                            .await;
+                                .await;
                             match task {
                                 Ok(_) => {
                                     last_submitted_system_checkpoint =
@@ -670,7 +673,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         let result = sui_client
             .execute_transaction_block_with_effects(transaction)
@@ -687,6 +690,35 @@ where
         info!(?result.digest, "Successfully executed transaction block for protocol pricing calculation");
 
         Ok(())
+    }
+
+    async fn submit_tx_to_sui(
+        notifier_coin_lock: tokio::sync::Mutex<Option<TransactionDigest>>,
+        transaction: Transaction,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> DwalletMPCResult<()> {
+        loop {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let mut digest = notifier_coin_lock.lock().await;
+
+            if digest.is_none() {
+                let result = sui_client
+                    .execute_transaction_block_with_effects(transaction)
+                    .await?;
+                *digest = Some(result.digest);
+                return Ok(())
+            } else {
+                match sui_client.get_events_by_tx_digest(digest.unwrap()).await {
+                    Err(_) => continue,
+                    Ok(_events) => {
+                        let result = sui_client
+                            .execute_transaction_block_with_effects(transaction)
+                            .await?;
+                        *digest = Some(result.digest);
+                    }
+                }
+            }
+        }
     }
 
     async fn process_mid_epoch(
@@ -724,11 +756,11 @@ where
             vec![],
             args,
         )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!(
+                    "failed on ProgrammableTransactionBuilder::move_call: {e}"
+                ))
+            })?;
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -737,7 +769,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         sui_client
             .execute_transaction_block_with_effects(transaction)
@@ -782,11 +814,11 @@ where
             vec![],
             args,
         )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!(
+                    "failed on ProgrammableTransactionBuilder::move_call: {e}"
+                ))
+            })?;
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -795,7 +827,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         sui_client
             .execute_transaction_block_with_effects(transaction)
@@ -840,11 +872,11 @@ where
             vec![],
             args,
         )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on ProgrammableTransactionBuilder::move_call {e}"
-            ))
-        })?;
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!(
+                    "failed on ProgrammableTransactionBuilder::move_call {e}"
+                ))
+            })?;
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -853,7 +885,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         sui_client
             .execute_transaction_block_with_effects(transaction)
@@ -957,7 +989,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         sui_client
             .execute_transaction_block_with_effects(transaction)
@@ -1036,11 +1068,11 @@ where
             vec![],
             args,
         )
-        .map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "Can't ProgrammableTransactionBuilder::move_call: {e}"
-            ))
-        })?;
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!(
+                    "Can't ProgrammableTransactionBuilder::move_call: {e}"
+                ))
+            })?;
 
         let transaction = super::build_sui_transaction(
             sui_notifier.sui_address,
@@ -1049,7 +1081,7 @@ where
             vec![*gas_coin],
             &sui_notifier.sui_key,
         )
-        .await;
+            .await;
 
         sui_client
             .execute_transaction_block_with_effects(transaction)

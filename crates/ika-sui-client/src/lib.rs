@@ -135,6 +135,13 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    pub async fn get_events_by_tx_digest(
+        &self,
+        tx_digest: TransactionDigest,
+    ) -> anyhow::Result<Vec<SuiEvent>> {
+        self.inner.get_events_by_tx_digest(tx_digest).await
+    }
+    
     /// Remaining sessions not processed during previous Epochs.
     pub async fn get_dwallet_mpc_missed_events(
         &self,
