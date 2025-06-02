@@ -6,7 +6,7 @@
 
 dWallet Network, a composable modular signature network is the home of dWallets. A dWallet is a noncollusive and massively decentralized signing mechanism, used as a building block by builders on other networks to add native multi-chain interoperability to any smart contract.
 
-A live alpha version environment of the testnet released in this repo will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://www.dwallet.io/apply-incentivized-testnets).
+A live alpha version environment of the testnet released in this repo will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://ika.xyz/apply-incentivized-testnets).
 
 > _***Disclaimer***: This project is under development, and there are known bugs and issues that are being addressed. Additionally, in the testnet, the network secret shares of dWallets ARE NOT SECURE, and cannot be trusted to use with any real applications or assets. Please read the [full section below](#alpha-testnet-release) before exploring the code._
 
