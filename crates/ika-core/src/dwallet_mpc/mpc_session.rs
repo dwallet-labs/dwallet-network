@@ -846,7 +846,7 @@ impl DWalletMPCSession {
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
         // We should only receive outputs of previous rounds.
-        if message.round_number >= self.current_round {
+        if message.round_number > self.current_round {
             warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
