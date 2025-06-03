@@ -435,6 +435,9 @@ where
                             next_system_checkpoint_sequence_number,
                         )
                     {
+                        self.metrics
+                            .system_checkpoint_sequence
+                            .set(next_dwallet_checkpoint_sequence_number as i64);
                         if let Some(_dwallet_2pc_mpc_coordinator_id) =
                             ika_system_state_inner.dwallet_2pc_mpc_coordinator_id()
                         {
@@ -468,6 +471,14 @@ where
                             .await;
                             match task {
                                 Ok(_) => {
+                                    self.metrics
+                                        .system_checkpoint_writes_success_total
+                                        .inc();
+                                    self.metrics
+                                        .last_written_system_checkpoint_sequence
+                                        .set(
+                                            next_dwallet_checkpoint_sequence_number as i64,
+                                        );
                                     last_submitted_system_checkpoint =
                                         Some(next_system_checkpoint_sequence_number);
                                     info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
