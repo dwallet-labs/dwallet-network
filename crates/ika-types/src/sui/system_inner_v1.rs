@@ -58,6 +58,7 @@ pub struct SystemInnerV1 {
     pub protocol_version: u64,
     pub next_protocol_version: Option<u64>,
     pub upgrade_caps: Vec<UpgradeCap>,
+    pub approved_upgrades: VecMap<ObjectID, Vec<u8>>,
     pub validator_set: ValidatorSetV1,
     pub epoch_duration_ms: u64,
     pub stake_subsidy_start_epoch: u64,

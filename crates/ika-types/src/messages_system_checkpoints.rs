@@ -28,16 +28,36 @@ pub type SystemCheckpointTimestamp = u64;
 // `system_inner.move`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SystemCheckpointKind {
-    NextConfigVersion(ProtocolVersion),
-    EpochDurationMs,
-    StakeSubsidyStartEpoch,
-    StakeSubsidyRate,
-    StakeSubsidyPeriodLength,
-    MinValidatorCount,
-    MaxValidatorCount,
-    MinValidatorJoiningStake,
-    MaxValidatorChangeCount,
-    RewardSlashingRate,
+    /// Set the next protocol version for the next epoch.
+    SetNextConfigVersion(ProtocolVersion),
+    /// Set a new epoch duration in milliseconds.
+    SetEpochDurationMs(u64),
+    /// Set a new stake subsidy start epoch.
+    SetStakeSubsidyStartEpoch(EpochId),
+    /// Set a new stake subsidy rate in basis points (1/100th of a percent).
+    /// The distribution per period will be recalculated.
+    SetStakeSubsidyRate(u16),
+    /// Set a new length of the stake subsidy period.
+    /// The distribution per period will be recalculated.
+    SetStakeSubsidyPeriodLength(u64),
+    /// Set a new minimum number of validators required to be active in the system.
+    SetMinValidatorCount(u64),
+    /// Set a new maximum number of validators allowed in the system.
+    SetMaxValidatorCount(u64),
+    /// Set a new minimum stake required for a validator to join the system.
+    SetMinValidatorJoiningStake(u64),
+    /// Set a new maximum number of validators that can change in a single epoch.
+    SetMaxValidatorChangeCount(u64),
+    /// Set a new rate at which rewards are slashed in basis points (1/100th of a percent).
+    SetRewardSlashingRate(u64),
+    /// Set an approved upgrade for a package.
+    SetApprovedUpgrade {
+        /// The ID of the package that is approved for upgrade.
+        package_id: Vec<u8>,
+        /// The version of the package that is approved for upgrade.
+        /// if None, the upgrade approval will be deleted.
+        digest: Option<Vec<u8>>,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

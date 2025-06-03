@@ -74,7 +74,8 @@ the SystemInnerVX version, or vice versa.
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_request_dwallet_network_encryption_key_dkg_by_cap)
 -  [Function `set_supported_and_pricing`](#(ika_system=0x0)_system_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_set_paused_curves_and_signature_algorithms)
--  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_authorize_update_message_by_cap)
+-  [Function `authorize_upgrade_by_cap`](#(ika_system=0x0)_system_authorize_upgrade_by_cap)
+-  [Function `authorize_upgrade_by_approval`](#(ika_system=0x0)_system_authorize_upgrade_by_approval)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_process_checkpoint_message_by_cap)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_process_checkpoint_message_by_quorum)
@@ -1239,13 +1240,13 @@ Advances the epoch to the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_authorize_update_message_by_cap"></a>
+<a name="(ika_system=0x0)_system_authorize_upgrade_by_cap"></a>
 
-## Function `authorize_update_message_by_cap`
+## Function `authorize_upgrade_by_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
 </code></pre>
 
 
@@ -1254,14 +1255,42 @@ Advances the epoch to the next epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector&lt;u8&gt;,
 ): UpgradeTicket {
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(cap, package_id, digest)
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(cap, package_id, digest)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_authorize_upgrade_by_approval"></a>
+
+## Function `authorize_upgrade_by_approval`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    package_id: ID,
+): UpgradeTicket {
+    <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(package_id)
 }
 </code></pre>
 
