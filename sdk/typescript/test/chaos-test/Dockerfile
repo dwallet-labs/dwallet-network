@@ -29,8 +29,11 @@ COPY class-groups-keys-mock-files class-groups-keys-mock-files
 # Build dependencies first for better layer caching
 # --locked ensures you never accidentally change dependencies during a build.
 # Build dependencies first for better layer caching
-RUN cargo fetch --locked
+# RUN cargo fetch --locked
 
+RUN cargo install cargo-chef
+RUN cargo chef prepare --recipe-path recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 # Conditionally compile with the network DKG feature
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 
