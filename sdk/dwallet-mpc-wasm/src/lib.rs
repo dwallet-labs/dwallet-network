@@ -5,8 +5,7 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, create_dkg_output,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    sample_dwallet_keypair_inner, verify_secp_signature_inner,
-    verify_secret_share,
+    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
