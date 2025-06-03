@@ -851,7 +851,7 @@ impl DWalletMPCSession {
                 session_id=?message.session_id,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
-                crypto_round_number=?message.round_number,
+                recieved_message_round_number=?message.round_number,
                 "Received a message for a future round",
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
