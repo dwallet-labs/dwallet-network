@@ -16,6 +16,8 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	await k8sApi.createNamespace({ body: namespaceBody });
 };
 
+async function shutOneNodeDown()
+
 describe('chaos tests', () => {
 	it('deploy the ika network from the current directory to the local kubernetes cluster', async () => {
 		require('dotenv').config({ path: `${TEST_ROOT_DIR}/.env` });
@@ -25,5 +27,9 @@ describe('chaos tests', () => {
 		await createConfigMap(kc, NAMESPACE_NAME, Number(process.env.VALIDATOR_NUM));
 		await createPods(kc, NAMESPACE_NAME, Number(process.env.VALIDATOR_NUM));
 		await createNetworkServices(kc, NAMESPACE_NAME);
+	});
+
+	it("should kill", () => {
+		
 	});
 });
