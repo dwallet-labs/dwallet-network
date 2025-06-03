@@ -457,7 +457,7 @@ where
                             .expect("Serializing system_checkpoint message cannot fail");
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
-
+                            self.metrics.system_checkpoint_write_requests_total.inc();
                             let task = Self::handle_system_checkpoint_execution_task(
                                 self.ika_system_package_id,
                                 signature,
@@ -471,19 +471,16 @@ where
                             .await;
                             match task {
                                 Ok(_) => {
-                                    self.metrics
-                                        .system_checkpoint_writes_success_total
-                                        .inc();
+                                    self.metrics.system_checkpoint_writes_success_total.inc();
                                     self.metrics
                                         .last_written_system_checkpoint_sequence
-                                        .set(
-                                            next_dwallet_checkpoint_sequence_number as i64,
-                                        );
+                                        .set(next_dwallet_checkpoint_sequence_number as i64);
                                     last_submitted_system_checkpoint =
                                         Some(next_system_checkpoint_sequence_number);
                                     info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
                                 }
                                 Err(err) => {
+                                    self.metrics.system_checkpoint_writes_failure_total.inc();
                                     error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
                                 }
                             };
