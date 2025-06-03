@@ -395,20 +395,20 @@ async fn main() -> Result<()> {
 }
 
 fn inti_sui_client_conf(
-    sui_rpc_addr: &String,
+    sui_rpc_addr: &str,
     keystore: Keystore,
     active_addr: SuiAddress,
     sui_config_path: &PathBuf,
 ) -> Result<()> {
-    // // Parse the RPC URL to extract the host for naming the environment.
-    let parsed_url = url::Url::parse(&sui_rpc_addr)?;
+    // Parse the RPC URL to extract the host for naming the environment.
+    let parsed_url = url::Url::parse(sui_rpc_addr)?;
     let rpc_host = parsed_url.host_str().unwrap_or_default();
     let mut config =
         SuiClientConfig::load(sui_config_path).unwrap_or_else(|_| SuiClientConfig::new(keystore));
     if config.get_env(&Some(rpc_host.to_string())).is_none() {
         config.add_env(SuiEnv {
             alias: rpc_host.to_string(),
-            rpc: sui_rpc_addr.clone(),
+            rpc: sui_rpc_addr.to_string(),
             ws: None,
             basic_auth: None,
         });
