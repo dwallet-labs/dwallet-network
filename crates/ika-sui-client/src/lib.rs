@@ -1006,7 +1006,7 @@ impl SuiClientInner for SuiSdkClient {
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
 
-        // todo(zeev): clean this up.
+        // todo(zeev): clean this up and shut it down in the fullnode.
         let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
@@ -1017,7 +1017,7 @@ impl SuiClientInner for SuiSdkClient {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
-                "Reconfiguration public output for key not is not ready for epoch",
+                "Reconfiguration public output for key is not ready for epoch",
             );
             vec![]
         } else {
