@@ -846,12 +846,12 @@ impl DWalletMPCSession {
             .epoch_store()?
             .authority_name_to_party_id(&message.authority)?;
         // We should only receive outputs of previous rounds.
-        if message.round_number >= self.current_round {
+        if message.round_number > self.current_round {
             warn!(
                 session_id=?message.session_id,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
-                crypto_round_number=?message.round_number,
+                recieved_message_round_number=?message.round_number,
                 "Received a message for a future round",
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));

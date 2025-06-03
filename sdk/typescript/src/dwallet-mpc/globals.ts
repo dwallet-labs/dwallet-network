@@ -288,6 +288,7 @@ export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Ui
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
 	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
 	if (cachedKey) {
+		console.log(`Using a cached network decryption key public output for epoch ${currentEpoch}`);
 		return cachedKey;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
