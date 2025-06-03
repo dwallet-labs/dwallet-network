@@ -188,9 +188,13 @@ impl ConsensusTransaction {
         session_id: ObjectID,
         round_number: usize,
         mpc_protocol: String,
+        session_info: SessionInfo,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        session_id.into_bytes().hash(&mut hasher);
+        authority.hash(&mut hasher);
+        session_info.hash(&mut hasher);
+        authority.hash(&mut hasher);
+        round_number.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -212,6 +216,8 @@ impl ConsensusTransaction {
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
+        session_info.hash(&mut hasher);
+        authority.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,

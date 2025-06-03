@@ -754,12 +754,23 @@ impl DWalletMPCSession {
         message: MPCMessage,
         mpc_protocol: &str,
     ) -> DwalletMPCResult<ConsensusTransaction> {
+        // MPC event data can not be none, when sending a message.
+        let Some(mpc_event_data) = &self.mpc_event_data else {
+            return Err(DwalletMPCError::MissingEventDrivenData);
+        };
+        let session_info = SessionInfo {
+            session_type: mpc_event_data.session_type.clone(),
+            session_id: self.session_id,
+            mpc_round: mpc_event_data.init_protocol_data.clone(),
+            epoch: self.epoch_id,
+        };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
             self.session_id,
             self.current_round,
             mpc_protocol.to_string(),
+            session_info,
         ))
     }
 
