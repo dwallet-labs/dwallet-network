@@ -72,11 +72,15 @@ pub fn encrypt_secret_share(
 #[wasm_bindgen]
 pub fn decrypt_user_share(
     decryption_key: Vec<u8>,
+    encryption_key: Vec<u8>,
+    dwallet_dkg_output: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
     network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let decrypted_secret_share = decrypt_user_share_inner(
         decryption_key,
+        encryption_key,
+        dwallet_dkg_output,
         encrypted_user_share_and_proof,
         network_dkg_public_output,
     )
