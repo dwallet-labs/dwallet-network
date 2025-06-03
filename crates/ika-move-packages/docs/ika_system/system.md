@@ -74,7 +74,8 @@ the SystemInnerVX version, or vice versa.
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_request_dwallet_network_encryption_key_dkg_by_cap)
 -  [Function `set_supported_and_pricing`](#(ika_system=0x0)_system_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_set_paused_curves_and_signature_algorithms)
--  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_authorize_update_message_by_cap)
+-  [Function `authorize_upgrade_by_cap`](#(ika_system=0x0)_system_authorize_upgrade_by_cap)
+-  [Function `authorize_upgrade_by_approval`](#(ika_system=0x0)_system_authorize_upgrade_by_approval)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_process_checkpoint_message_by_cap)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_process_checkpoint_message_by_quorum)
@@ -282,7 +283,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, max_validator_count: u64, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -295,13 +296,14 @@ This function will be called only once in init.
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
+    max_validator_count: u64,
     cap: &ProtocolCap,
     clock: &Clock,
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> package_id = self.package_id;
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_initialize">initialize</a>(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, max_validator_count, package_id, cap, clock, ctx);
 }
 </code></pre>
 
@@ -1238,13 +1240,13 @@ Advances the epoch to the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_authorize_update_message_by_cap"></a>
+<a name="(ika_system=0x0)_system_authorize_upgrade_by_cap"></a>
 
-## Function `authorize_update_message_by_cap`
+## Function `authorize_upgrade_by_cap`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
 </code></pre>
 
 
@@ -1253,14 +1255,42 @@ Advances the epoch to the next epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector&lt;u8&gt;,
 ): UpgradeTicket {
     <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(cap, package_id, digest)
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(cap, package_id, digest)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_authorize_upgrade_by_approval"></a>
+
+## Function `authorize_upgrade_by_approval`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    package_id: ID,
+): UpgradeTicket {
+    <b>let</b> self = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(package_id)
 }
 </code></pre>
 

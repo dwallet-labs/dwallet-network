@@ -48,18 +48,6 @@ pub struct DWalletPublicKeys {
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
 
-/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations.
-// Must use `anyhow::Result`, because this function is being used also
-// in the centralized party crate.
-fn public_keys_from_dkg_output(value: DKGDecentralizedOutput) -> anyhow::Result<DWalletPublicKeys> {
-    Ok(DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
-        public_key: bcs::to_bytes(&value.public_key)?,
-    })
-}
-
 type SignedMessage = Vec<u8>;
 
 type Secp256k1EncryptionKey = EncryptionKey<
@@ -423,6 +411,8 @@ pub fn verify_secret_share(
 /// Decrypts the given encrypted user share using the given decryption key.
 pub fn decrypt_user_share_inner(
     decryption_key: Vec<u8>,
+    encryption_key: Vec<u8>,
+    dwallet_dkg_output: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
     network_dkg_public_output: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
@@ -433,7 +423,17 @@ pub fn decrypt_user_share_inner(
         )?)?;
     let VersionedEncryptedUserShare::V1(encrypted_user_share_and_proof) =
         bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let VersionedDwalletDKGSecondRoundPublicOutput::V1(dwallet_dkg_output) =
+        bcs::from_bytes(&dwallet_dkg_output)?;
     let (_, encryption_of_discrete_log): <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptedSecretKeyShareMessage = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    <twopc_mpc::secp256k1::class_groups::AsyncProtocol as Protocol>::verify_encryption_of_centralized_party_share_proof(
+        &protocol_public_params,
+        bcs::from_bytes(&dwallet_dkg_output)?,
+        bcs::from_bytes(&encryption_key)?,
+        bcs::from_bytes(&encrypted_user_share_and_proof)?,
+        &mut OsRng,
+    )
+        .map_err(Into::<anyhow::Error>::into)?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let public_parameters = homomorphic_encryption::PublicParameters::<
         SCALAR_LIMBS,
@@ -462,9 +462,4 @@ pub fn decrypt_user_share_inner(
     };
     let secret_share_bytes = bcs::to_bytes(&plaintext.value())?;
     Ok(secret_share_bytes)
-}
-
-/// Derives [`DWalletPublicKeys`] from the given dwallet DKG output.
-pub fn public_keys_from_dwallet_output(output: Vec<u8>) -> anyhow::Result<Vec<u8>> {
-    bcs::to_bytes(&public_keys_from_dkg_output(bcs::from_bytes(&output)?)?).map_err(Into::into)
 }

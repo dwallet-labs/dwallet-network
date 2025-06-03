@@ -1513,10 +1513,13 @@ set_supported_and_pricing
 set_paused_curves_and_signature_algorithms
 	public(package) fun
 	0x0::system_inner
-authorize_update_message_by_cap
+authorize_upgrade_by_cap
 	public(package) fun
 	0x0::system_inner
-authorize_update_message
+authorize_upgrade_by_approval
+	public(package) fun
+	0x0::system_inner
+authorize_upgrade
 	fun
 	0x0::system_inner
 commit_upgrade
@@ -1530,6 +1533,9 @@ process_checkpoint_message_by_quorum
 	0x0::system_inner
 process_checkpoint_message
 	public(package) fun
+	0x0::system_inner
+set_approved_upgrade
+	fun
 	0x0::system_inner
 calculate_rewards
 	public(package) fun
@@ -1639,7 +1645,10 @@ set_supported_and_pricing
 set_paused_curves_and_signature_algorithms
 	public fun
 	0x0::system
-authorize_update_message_by_cap
+authorize_upgrade_by_cap
+	public fun
+	0x0::system
+authorize_upgrade_by_approval
 	public fun
 	0x0::system
 commit_upgrade

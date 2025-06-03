@@ -461,6 +461,8 @@ export async function decryptAndVerifyReceivedUserShare(
 	const cgKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const decryptedSecretShare = decrypt_user_share(
 		cgKeyPair.decryptionKey,
+		cgKeyPair.encryptionKey,
+		dwalletOutput,
 		encryptedSecretShareAndProof,
 		networkDecryptionKeyPublicOutput,
 	);

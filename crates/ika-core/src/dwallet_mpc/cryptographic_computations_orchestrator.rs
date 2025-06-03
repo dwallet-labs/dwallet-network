@@ -24,7 +24,7 @@ use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 /// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.

@@ -26,23 +26,25 @@ use sui::clock::Clock;
 use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
 use sui::bcs;
 use std::string::String;
-use sui::vec_map::VecMap;
+use sui::vec_map::{Self, VecMap};
+
 
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 
 // System checkpoint message data type constants corresponding to system parameters
 // Note: the order of these fields, and the number must correspond to the Rust code in
 // `crates/ika-types/src/messages_system_checkpoints.rs`.
-const NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u64 = 0;
-const EPOCH_DURATION_MS_MESSAGE_TYPE: u64 = 1;
-const STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u64 = 2;
-const STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u64 = 3;
-const STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u64 = 4;
-const MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 5;
-const MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 6;
-const MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
-const MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
-const REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
+const SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u64 = 0;
+const SET_EPOCH_DURATION_MS_MESSAGE_TYPE: u64 = 1;
+const SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u64 = 2;
+const SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u64 = 3;
+const SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u64 = 4;
+const SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 5;
+const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 6;
+const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
+const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
+const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
+const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
 
 /// Uses SystemParametersV1 as the parameters.
 public struct SystemInnerV1 has store {
@@ -53,6 +55,8 @@ public struct SystemInnerV1 has store {
     next_protocol_version: Option<u64>,
     /// Upgrade caps for this package and others like ika coin of the ika protocol.
     upgrade_caps: vector<UpgradeCap>,
+    /// Approved upgrade for package id to its approved digest.
+    approved_upgrades: VecMap<ID, vector<u8>>,
     /// Contains all information about the validators.
     validator_set: ValidatorSet,
     /// The duration of an epoch, in milliseconds.
@@ -109,6 +113,7 @@ const EHaveNotReachedEndEpochTime: u64 = 1;
 const EActiveBlsCommitteeMustInitialize: u64 = 2;
 const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
 const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
+const EApprovedUpgradeNotFound: u64 = 5;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
@@ -143,6 +148,7 @@ public(package) fun create(
         protocol_version,
         next_protocol_version: option::none(),
         upgrade_caps,
+        approved_upgrades: vec_map::empty(),
         validator_set,
         epoch_duration_ms,
         stake_subsidy_start_epoch,
@@ -166,6 +172,7 @@ public(package) fun initialize(
     self: &mut SystemInnerV1,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    max_validator_change_count: u64,
     package_id: ID,
     cap: &ProtocolCap,
     clock: &Clock,
@@ -177,6 +184,7 @@ public(package) fun initialize(
     assert!(self.active_committee().members().is_empty(), ECannotInitialize);
     let pending_active_set = self.validator_set.pending_active_set();
     assert!(pending_active_set.size() >= pending_active_set.min_validator_count(), ECannotInitialize);
+    self.validator_set.set_max_validator_change_count(max_validator_change_count);
 
     self.validator_set.process_mid_epoch();
     let mut dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.epoch, self.active_committee(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
@@ -515,7 +523,7 @@ public(package) fun advance_epoch(
 
     let total_reward_amount_after_distribution = total_reward.value();
     let total_reward_distributed =
-         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
+        total_reward_amount_before_distribution - total_reward_amount_after_distribution;
 
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `remaining_rewards`.
@@ -653,7 +661,7 @@ public(package) fun set_paused_curves_and_signature_algorithms(
     dwallet_2pc_mpc_coordinator_inner.set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms, paused_hash_schemes);
 }
 
-public(package) fun authorize_update_message_by_cap(
+public(package) fun authorize_upgrade_by_cap(
     self: &mut SystemInnerV1,
     cap: &ProtocolCap,
     package_id: ID,
@@ -661,10 +669,19 @@ public(package) fun authorize_update_message_by_cap(
 ): UpgradeTicket {
     self.verify_cap(cap);
 
-    self.authorize_update_message(package_id, digest)
+    self.authorize_upgrade(package_id, digest)
 }
 
-fun authorize_update_message(
+public(package) fun authorize_upgrade_by_approval(
+    self: &mut SystemInnerV1,
+    package_id: ID,
+): UpgradeTicket {
+    assert!(self.approved_upgrades.contains(&package_id), EApprovedUpgradeNotFound);
+    let (_, digest) = self.approved_upgrades.remove(&package_id);
+    self.authorize_upgrade(package_id, digest)
+}
+
+fun authorize_upgrade(
     self: &mut SystemInnerV1,
     package_id: ID,
     digest: vector<u8>,
@@ -745,43 +762,66 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        if (message_data_type == NEXT_PROTOCOL_VERSION_MESSAGE_TYPE) {
+        if (message_data_type == SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE) {
             let next_protocol_version = bcs_body.peel_u64();
             self.next_protocol_version.fill(next_protocol_version);
-        } else if (message_data_type == EPOCH_DURATION_MS_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_EPOCH_DURATION_MS_MESSAGE_TYPE) {
             let epoch_duration_ms = bcs_body.peel_u64();
             self.epoch_duration_ms = epoch_duration_ms;
-        } else if (message_data_type == STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE) {
             let stake_subsidy_start_epoch = bcs_body.peel_u64();
             self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } else if (message_data_type == STAKE_SUBSIDY_RATE_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE) {
             let stake_subsidy_rate = bcs_body.peel_u16();
             self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
-        } else if (message_data_type == STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE) {
             let stake_subsidy_period_length = bcs_body.peel_u64();
             self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } else if (message_data_type == MIN_VALIDATOR_COUNT_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE) {
             let min_validator_count = bcs_body.peel_u64();
             self.validator_set.set_min_validator_count(min_validator_count);
-        } else if (message_data_type == MAX_VALIDATOR_COUNT_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE) {
             let max_validator_count = bcs_body.peel_u64();
             self.validator_set.set_max_validator_count(max_validator_count);
-        } else if (message_data_type == MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE) {
             let min_validator_joining_stake = bcs_body.peel_u64();
             self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
-        } else if (message_data_type == MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE) {
             let max_validator_change_count = bcs_body.peel_u64();
             self.validator_set.set_max_validator_change_count(max_validator_change_count);
-        } else if (message_data_type == REWARD_SLASHING_RATE_MESSAGE_TYPE) {
+        } else if (message_data_type == SET_REWARD_SLASHING_RATE_MESSAGE_TYPE) {
             let reward_slashing_rate = bcs_body.peel_u16();
             self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
+        } else if (message_data_type == SET_APPROVED_UPGRADE_MESSAGE_TYPE) {
+            let package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+            let digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
+            self.set_approved_upgrade(package_id, digest);
         };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
 }
 
-
+/// Set approved upgrade for a package id.
+/// If `digest` is `some`, it will be inserted into the `approved_upgrades` map.
+/// If `digest` is `none`, it will be removed from the `approved_upgrades` map.
+fun set_approved_upgrade(
+    self: &mut SystemInnerV1,
+    package_id: ID,
+    mut digest: Option<vector<u8>>,
+) {
+    if(digest.is_some()) {
+        if(self.approved_upgrades.contains(&package_id)) {
+            *self.approved_upgrades.get_mut(&package_id) = digest.extract();
+        } else {
+            self.approved_upgrades.insert(package_id, digest.extract());
+        }
+    } else {
+        if(self.approved_upgrades.contains(&package_id)) {
+            self.approved_upgrades.remove(&package_id);
+        }
+    }
+}
 
 // === Utility functions ===
 
