@@ -191,7 +191,6 @@ impl ConsensusTransaction {
         session_info: SessionInfo,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        authority.hash(&mut hasher);
         session_info.hash(&mut hasher);
         authority.hash(&mut hasher);
         round_number.hash(&mut hasher);
