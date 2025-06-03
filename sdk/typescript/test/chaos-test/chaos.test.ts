@@ -4,7 +4,7 @@ import { describe, it } from 'vitest';
 import { createConfigMap } from './config-map';
 import { NAMESPACE_NAME, TEST_ROOT_DIR } from './globals';
 import { createNetworkServices } from './network-service';
-import { createPods } from './pods';
+import { createPods, createValidatorPod, killValidatorPod } from './pods';
 
 const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
@@ -15,8 +15,6 @@ const createNamespace = async (kc: KubeConfig, namespaceName: string) => {
 	};
 	await k8sApi.createNamespace({ body: namespaceBody });
 };
-
-async function shutOneNodeDown()
 
 describe('chaos tests', () => {
 	it('deploy the ika network from the current directory to the local kubernetes cluster', async () => {
@@ -29,7 +27,17 @@ describe('chaos tests', () => {
 		await createNetworkServices(kc, NAMESPACE_NAME);
 	});
 
-	it("should kill", () => {
-		
+	it('should kill a validator pod', async () => {
+		require('dotenv').config({ path: `${TEST_ROOT_DIR}/.env` });
+		const kc = new KubeConfig();
+		kc.loadFromDefault();
+		await killValidatorPod(kc, NAMESPACE_NAME, Number(2));
+	});
+
+	it('should start a validator pod', async () => {
+		require('dotenv').config({ path: `${TEST_ROOT_DIR}/.env` });
+		const kc = new KubeConfig();
+		kc.loadFromDefault();
+		await createValidatorPod(kc, NAMESPACE_NAME, Number(2));
 	});
 });

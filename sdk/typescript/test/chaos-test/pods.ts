@@ -7,7 +7,7 @@ export function getPodNameForValidatorID(validatorID: number): string {
 	return `ika-val-${validatorID}`;
 }
 
-export async function killPod(kc: KubeConfig, namespaceName: string, validatorID: number) {
+export async function killValidatorPod(kc: KubeConfig, namespaceName: string, validatorID: number) {
 	const k8sApi = kc.makeApiClient(CoreV1Api);
 	await k8sApi.deleteNamespacedPod({
 		namespace: namespaceName,
