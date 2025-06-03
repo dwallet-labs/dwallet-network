@@ -865,11 +865,15 @@ impl DWalletMPCSession {
 
     /// Checks if the session should wait for additional consensus rounds before advancing.
     ///
-    /// This method implements protocol-specific delays for certain MPC rounds (Sign, NetworkDkg, DecryptionKeyReshare).
+    /// This method implements protocol-specific delays for certain MPC rounds
+    /// (Sign, NetworkDkg, DecryptionKeyReshare).
     ///
-    /// - **Sign protocol**: Applies delay in round 2 (SIGN_DELAY_ROUND) using `sign_second_round_delay` config
-    /// - **NetworkDkg protocol**: Applies delay in round 3 (NETWORK_DKG_DELAY_ROUND) using `network_dkg_third_round_delay` config
-    /// - **DecryptionKeyReshare protocol**: Applies delay in round 3 (DECRYPTION_KEY_RESHARE_DELAY_ROUND) using `decryption_key_reshare_third_round_delay` config
+    /// - **Sign protocol**: Applies delay in round 2 (SIGN_DELAY_ROUND)
+    ///   using `sign_second_round_delay` config
+    /// - **NetworkDkg protocol**: Applies delay in round 3 (NETWORK_DKG_DELAY_ROUND)
+    ///   using `network_dkg_third_round_delay` config
+    /// - **DecryptionKeyReshare protocol**: Applies delay in round 3
+    ///   (DECRYPTION_KEY_RESHARE_DELAY_ROUND) using `decryption_key_reshare_third_round_delay` config
     /// - **Other protocols**: No delay applied, always ready to advance
     ///
     /// When a delay is required, the method tracks `consensus_rounds_since_quorum_reached`
@@ -888,38 +892,39 @@ impl DWalletMPCSession {
     /// - If delay is satisfied: resets the consensus round counter and returns `is_ready: true`
     /// - If no delay is required for the current protocol/round: returns `is_ready: true`
     fn wait_consensus_rounds_delay(&mut self) -> DwalletMPCResult<ReadyToAdvanceCheckResult> {
-        if self.agreed_mpc_protocol.is_none() {
-            return Ok(ReadyToAdvanceCheckResult {
+        match self.agreed_mpc_protocol.as_deref() {
+            None => Ok(ReadyToAdvanceCheckResult {
                 is_ready: false,
                 malicious_parties: vec![],
-            });
-        }
-        match &self.agreed_mpc_protocol.clone().unwrap() {
-            protocol if protocol == SIGN_STR_KEY => {
-                let delay = self
-                    .epoch_store()?
-                    .protocol_config()
-                    .sign_second_round_delay() as usize;
-                self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
-            }
-            protocol if protocol == NETWORK_DKG_STR_KEY => {
-                let delay = self
-                    .epoch_store()?
-                    .protocol_config()
-                    .network_dkg_third_round_delay() as usize;
-                self.check_round_delay(Self::NETWORK_DKG_DELAY_ROUND, delay)
-            }
-            protocol if protocol == DECRYPTION_KEY_RESHARE_STR_KEY => {
-                let delay =
-                    self.epoch_store()?
-                        .protocol_config()
-                        .decryption_key_reshare_third_round_delay() as usize;
-                self.check_round_delay(Self::DECRYPTION_KEY_RESHARE_DELAY_ROUND, delay)
-            }
-            _ => Ok(ReadyToAdvanceCheckResult {
-                is_ready: true,
-                malicious_parties: vec![],
             }),
+            Some(protocol) => match protocol {
+                SIGN_STR_KEY => {
+                    let delay = self
+                        .epoch_store()?
+                        .protocol_config()
+                        .sign_second_round_delay() as usize;
+                    self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
+                }
+                NETWORK_DKG_STR_KEY => {
+                    let delay = self
+                        .epoch_store()?
+                        .protocol_config()
+                        .network_dkg_third_round_delay() as usize;
+                    self.check_round_delay(Self::NETWORK_DKG_DELAY_ROUND, delay)
+                }
+                DECRYPTION_KEY_RESHARE_STR_KEY => {
+                    let delay = self
+                        .epoch_store()?
+                        .protocol_config()
+                        .decryption_key_reshare_third_round_delay()
+                        as usize;
+                    self.check_round_delay(Self::DECRYPTION_KEY_RESHARE_DELAY_ROUND, delay)
+                }
+                _ => Ok(ReadyToAdvanceCheckResult {
+                    is_ready: true,
+                    malicious_parties: vec![],
+                }),
+            },
         }
     }
 

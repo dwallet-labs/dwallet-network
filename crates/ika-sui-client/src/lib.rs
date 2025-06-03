@@ -139,8 +139,7 @@ where
         &self,
         tx_digest: TransactionDigest,
     ) -> anyhow::Result<Vec<SuiEvent>> {
-        let events = self.inner.get_events_by_tx_digest(tx_digest).await?;
-        Ok(events)
+        Ok(self.inner.get_events_by_tx_digest(tx_digest).await?)
     }
 
     /// Remaining sessions not processed during previous Epochs.
