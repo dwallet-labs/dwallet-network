@@ -5,8 +5,7 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, create_dkg_output,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    public_keys_from_dwallet_output, sample_dwallet_keypair_inner, verify_secp_signature_inner,
-    verify_secret_share,
+    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -72,11 +71,15 @@ pub fn encrypt_secret_share(
 #[wasm_bindgen]
 pub fn decrypt_user_share(
     decryption_key: Vec<u8>,
+    encryption_key: Vec<u8>,
+    dwallet_dkg_output: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
     network_dkg_public_output: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let decrypted_secret_share = decrypt_user_share_inner(
         decryption_key,
+        encryption_key,
+        dwallet_dkg_output,
         encrypted_user_share_and_proof,
         network_dkg_public_output,
     )
@@ -139,14 +142,6 @@ pub fn create_imported_dwallet_centralized_step(
         )
         .map_err(to_js_err)?,
     )?)
-}
-
-/// Derives the DWallet's public keys from the given DKG output.
-#[wasm_bindgen]
-pub fn public_keys_from_dkg_output(dkg_output: Vec<u8>) -> Result<JsValue, JsError> {
-    Ok(JsValue::from(
-        public_keys_from_dwallet_output(dkg_output).map_err(to_js_err)?,
-    ))
 }
 
 #[wasm_bindgen]

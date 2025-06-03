@@ -120,13 +120,14 @@ public fun initialize(
     self: &mut System,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    max_validator_count: u64,
     cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
     let self = self.inner_mut();
-    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, package_id, cap, clock, ctx);
+    self.initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, max_validator_count, package_id, cap, clock, ctx);
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -490,14 +491,22 @@ public fun set_paused_curves_and_signature_algorithms(
 
 // === Upgrades ===
 
-public fun authorize_update_message_by_cap(
+public fun authorize_upgrade_by_cap(
     self: &mut System,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector<u8>,
 ): UpgradeTicket {
     let self = self.inner_mut();
-    self.authorize_update_message_by_cap(cap, package_id, digest)
+    self.authorize_upgrade_by_cap(cap, package_id, digest)
+}
+
+public fun authorize_upgrade_by_approval(
+    self: &mut System,
+    package_id: ID,
+): UpgradeTicket {
+    let self = self.inner_mut();
+    self.authorize_upgrade_by_approval(package_id)
 }
 
 public fun commit_upgrade(

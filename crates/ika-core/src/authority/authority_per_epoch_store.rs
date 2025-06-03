@@ -1291,7 +1291,7 @@ impl AuthorityPerEpochStore {
 
         system_checkpoint_verified_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
-                SystemCheckpointKind::NextConfigVersion(version) => {
+                SystemCheckpointKind::SetNextConfigVersion(version) => {
                     if let Ok(tables) = self.tables() {
                         if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
                             warn!(
@@ -1304,15 +1304,16 @@ impl AuthorityPerEpochStore {
                     }
                 }
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
-                SystemCheckpointKind::EpochDurationMs
-                | SystemCheckpointKind::StakeSubsidyStartEpoch
-                | SystemCheckpointKind::StakeSubsidyRate
-                | SystemCheckpointKind::StakeSubsidyPeriodLength
-                | SystemCheckpointKind::MinValidatorCount
-                | SystemCheckpointKind::MaxValidatorCount
-                | SystemCheckpointKind::MinValidatorJoiningStake
-                | SystemCheckpointKind::MaxValidatorChangeCount
-                | SystemCheckpointKind::RewardSlashingRate => {
+                SystemCheckpointKind::SetEpochDurationMs(_)
+                | SystemCheckpointKind::SetStakeSubsidyStartEpoch(_)
+                | SystemCheckpointKind::SetStakeSubsidyRate(_)
+                | SystemCheckpointKind::SetStakeSubsidyPeriodLength(_)
+                | SystemCheckpointKind::SetMinValidatorCount(_)
+                | SystemCheckpointKind::SetMaxValidatorCount(_)
+                | SystemCheckpointKind::SetMinValidatorJoiningStake(_)
+                | SystemCheckpointKind::SetMaxValidatorChangeCount(_)
+                | SystemCheckpointKind::SetRewardSlashingRate(_)
+                | SystemCheckpointKind::SetApprovedUpgrade { .. } => {
                     todo!(
                         "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
                     );
@@ -1673,7 +1674,7 @@ impl AuthorityPerEpochStore {
                             capabilities.first()
                         );
                         return Ok(ConsensusCertificateResult::SystemTransaction(
-                            SystemCheckpointKind::NextConfigVersion(new_version),
+                            SystemCheckpointKind::SetNextConfigVersion(new_version),
                         ));
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)

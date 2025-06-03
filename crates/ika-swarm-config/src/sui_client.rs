@@ -164,9 +164,6 @@ pub async fn init_ika_on_sui(
             .await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    merge_coins(publisher_address, &mut context).await?;
-    println!("Merge coins done, address {:?}", publisher_address);
-
     println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
 
     let (ika_system_package_id, init_cap_id, ika_system_package_upgrade_cap_id) =
@@ -194,7 +191,7 @@ pub async fn init_ika_on_sui(
         ika_package_upgrade_cap_id,
         ika_system_package_upgrade_cap_id,
         treasury_cap_id,
-        initiation_parameters,
+        initiation_parameters.clone(),
     )
     .await?;
 
@@ -266,6 +263,7 @@ pub async fn init_ika_on_sui(
             ika_system_object_id,
             init_system_shared_version,
             protocol_cap_id,
+            initiation_parameters.max_validator_change_count,
         )
         .await?;
     println!("Running `system::initialize` done.");
@@ -348,6 +346,7 @@ pub async fn ika_system_initialize(
     ika_system_object_id: ObjectID,
     init_system_shared_version: SequenceNumber,
     protocol_cap_id: ObjectID,
+    max_validator_change_count: u64,
 ) -> Result<(ObjectID, SequenceNumber), anyhow::Error> {
     let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -601,6 +600,9 @@ pub async fn ika_system_initialize(
         mutable: false,
     }))?;
 
+    let max_validator_change_count =
+        ptb.input(CallArg::Pure(bcs::to_bytes(&max_validator_change_count)?))?;
+
     ptb.programmable_move_call(
         ika_system_package_id,
         SYSTEM_MODULE_NAME.into(),
@@ -610,6 +612,7 @@ pub async fn ika_system_initialize(
             ika_system_arg,
             dwallet_pricing,
             supported_curves_to_signature_algorithms_to_hash_schemes,
+            max_validator_change_count,
             protocol_cap_arg,
             clock_arg,
         ],
@@ -720,9 +723,6 @@ pub async fn init_initialize(
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.max_validator_count)?),
             CallArg::Pure(bcs::to_bytes(
                 &initiation_parameters.min_validator_joining_stake,
-            )?),
-            CallArg::Pure(bcs::to_bytes(
-                &initiation_parameters.max_validator_change_count,
             )?),
             CallArg::Pure(bcs::to_bytes(&initiation_parameters.reward_slashing_rate)?),
             CallArg::Pure(bcs::to_bytes(STAKED_IKA_ICON_URL)?),
@@ -840,37 +840,6 @@ async fn request_add_validator(
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     let _ = execute_sui_transaction(validator_address, tx_kind, context, vec![]).await?;
-
-    Ok(())
-}
-
-async fn merge_coins(
-    publisher_address: SuiAddress,
-    context: &mut WalletContext,
-) -> Result<(), anyhow::Error> {
-    let coins = context
-        .get_all_gas_objects_owned_by_address(publisher_address)
-        .await?;
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    let gas_coin = coins.first().unwrap();
-    let coins = coins
-        .iter()
-        .skip(1)
-        .map(|c| {
-            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                // Safe to unwrap as this function is only being called at the swarm config.
-                .unwrap()
-        })
-        .collect::<Vec<_>>();
-
-    ptb.command(sui_types::transaction::Command::MergeCoins(
-        // Safe to unwrap as this function is only being called at the swarm config.
-        Argument::GasCoin,
-        // Keep the gas object out
-        coins.to_vec(),
-    ));
-    let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
-    let _ = execute_sui_transaction(publisher_address, tx_kind, context, vec![gas_coin.0]).await?;
 
     Ok(())
 }

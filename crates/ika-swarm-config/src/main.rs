@@ -271,6 +271,7 @@ async fn main() -> Result<()> {
             if let Some(protocol_version) = protocol_version {
                 initiation_parameters.protocol_version = protocol_version;
             }
+
             let (ika_system_object_id, protocol_cap_id, init_system_shared_version) =
                 init_initialize(
                     publisher_address,
@@ -346,6 +347,8 @@ async fn main() -> Result<()> {
             let mut context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
+            let initiation_parameters = InitiationParameters::new();
+
             // Call ika_system_initialize.
             let (dwallet_id, dwallet_initial_shared_version) = ika_system_initialize(
                 publisher_address,
@@ -355,6 +358,7 @@ async fn main() -> Result<()> {
                 ika_system_object_id,
                 init_system_shared_version.into(),
                 protocol_cap_id,
+                initiation_parameters.max_validator_change_count,
             )
             .await?;
             println!(
@@ -391,20 +395,20 @@ async fn main() -> Result<()> {
 }
 
 fn inti_sui_client_conf(
-    sui_rpc_addr: &String,
+    sui_rpc_addr: &str,
     keystore: Keystore,
     active_addr: SuiAddress,
     sui_config_path: &PathBuf,
 ) -> Result<()> {
-    // // Parse the RPC URL to extract the host for naming the environment.
-    let parsed_url = url::Url::parse(&sui_rpc_addr)?;
+    // Parse the RPC URL to extract the host for naming the environment.
+    let parsed_url = url::Url::parse(sui_rpc_addr)?;
     let rpc_host = parsed_url.host_str().unwrap_or_default();
     let mut config =
         SuiClientConfig::load(sui_config_path).unwrap_or_else(|_| SuiClientConfig::new(keystore));
     if config.get_env(&Some(rpc_host.to_string())).is_none() {
         config.add_env(SuiEnv {
             alias: rpc_host.to_string(),
-            rpc: sui_rpc_addr.clone(),
+            rpc: sui_rpc_addr.to_string(),
             ws: None,
             basic_auth: None,
         });

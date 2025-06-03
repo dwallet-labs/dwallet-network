@@ -49,12 +49,14 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_system=0x0)_system_inner_request_dwallet_network_encryption_key_dkg_by_cap)
 -  [Function `set_supported_and_pricing`](#(ika_system=0x0)_system_inner_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_system_inner_set_paused_curves_and_signature_algorithms)
--  [Function `authorize_update_message_by_cap`](#(ika_system=0x0)_system_inner_authorize_update_message_by_cap)
--  [Function `authorize_update_message`](#(ika_system=0x0)_system_inner_authorize_update_message)
+-  [Function `authorize_upgrade_by_cap`](#(ika_system=0x0)_system_inner_authorize_upgrade_by_cap)
+-  [Function `authorize_upgrade_by_approval`](#(ika_system=0x0)_system_inner_authorize_upgrade_by_approval)
+-  [Function `authorize_upgrade`](#(ika_system=0x0)_system_inner_authorize_upgrade)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_inner_commit_upgrade)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_inner_process_checkpoint_message_by_cap)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_inner_process_checkpoint_message_by_quorum)
 -  [Function `process_checkpoint_message`](#(ika_system=0x0)_system_inner_process_checkpoint_message)
+-  [Function `set_approved_upgrade`](#(ika_system=0x0)_system_inner_set_approved_upgrade)
 -  [Function `calculate_rewards`](#(ika_system=0x0)_system_inner_calculate_rewards)
 -  [Function `can_withdraw_staked_ika_early`](#(ika_system=0x0)_system_inner_can_withdraw_staked_ika_early)
 -  [Function `epoch_duration_ms`](#(ika_system=0x0)_system_inner_epoch_duration_ms)
@@ -160,6 +162,12 @@ Uses SystemParametersV1 as the parameters.
 </dt>
 <dd>
  Upgrade caps for this package and others like ika coin of the ika protocol.
+</dd>
+<dt>
+<code>approved_upgrades: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, vector&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ Approved upgrade for package id to its approved digest.
 </dd>
 <dt>
 <code><a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>: (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a></code>
@@ -377,92 +385,101 @@ the system checkpoint submission message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u64 = 0;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_EPOCH_DURATION_MS_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EPOCH_DURATION_MS_MESSAGE_TYPE">EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_STAKE_SUBSIDY_RATE_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u64 = 3;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u64 = 4;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_MIN_VALIDATOR_COUNT_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 5;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_MAX_VALIDATOR_COUNT_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 6;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u64 = 7;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u64 = 8;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u64 = 8;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_REWARD_SLASHING_RATE_MESSAGE_TYPE"></a>
+<a name="(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE"></a>
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_REWARD_SLASHING_RATE_MESSAGE_TYPE">REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u64 = 9;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>: u64 = 10;
 </code></pre>
 
 
@@ -508,6 +525,15 @@ the system checkpoint submission message.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound">EApprovedUpgradeNotFound</a>: u64 = 5;
 </code></pre>
 
 
@@ -586,6 +612,7 @@ This function will be called only once in init.
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
         next_protocol_version: option::none(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
+        approved_upgrades: vec_map::empty(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>,
         stake_subsidy_start_epoch,
@@ -614,7 +641,7 @@ This function will be called only once in init.
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initialize">initialize</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, pricing: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, max_validator_change_count: u64, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -627,6 +654,7 @@ This function will be called only once in init.
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
+    max_validator_change_count: u64,
     package_id: ID,
     cap: &ProtocolCap,
     clock: &Clock,
@@ -638,6 +666,7 @@ This function will be called only once in init.
     <b>assert</b>!(self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>().members().is_empty(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
     <b>let</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>();
     <b>assert</b>!(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.size() &gt;= <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.min_validator_count(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_change_count(max_validator_change_count);
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_mid_epoch">process_mid_epoch</a>();
     <b>let</b> <b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_create_dwallet_coordinator">dwallet_2pc_mpc_coordinator::create_dwallet_coordinator</a>(package_id, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">dwallet_2pc_mpc_coordinator_inner</a> = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.inner_mut();
@@ -1402,7 +1431,7 @@ gas coins.
     <b>let</b> new_total_stake = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.total_stake();
     <b>let</b> total_reward_amount_after_distribution = total_reward.value();
     <b>let</b> total_reward_distributed =
-         total_reward_amount_before_distribution - total_reward_amount_after_distribution;
+        total_reward_amount_before_distribution - total_reward_amount_after_distribution;
     // Because of precision issues with integer divisions, we expect that there will be some
     // remaining balance in `remaining_rewards`.
     self.remaining_rewards.join(total_reward);
@@ -1840,13 +1869,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_authorize_update_message_by_cap"></a>
+<a name="(ika_system=0x0)_system_inner_authorize_upgrade_by_cap"></a>
 
-## Function `authorize_update_message_by_cap`
+## Function `authorize_upgrade_by_cap`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
 </code></pre>
 
 
@@ -1855,14 +1884,14 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message_by_cap">authorize_update_message_by_cap</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade_by_cap">authorize_upgrade_by_cap</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector&lt;u8&gt;,
 ): UpgradeTicket {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_cap">verify_cap</a>(cap);
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message">authorize_update_message</a>(package_id, digest)
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade">authorize_upgrade</a>(package_id, digest)
 }
 </code></pre>
 
@@ -1870,13 +1899,13 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_authorize_update_message"></a>
+<a name="(ika_system=0x0)_system_inner_authorize_upgrade_by_approval"></a>
 
-## Function `authorize_update_message`
+## Function `authorize_upgrade_by_approval`
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message">authorize_update_message</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
 </code></pre>
 
 
@@ -1885,7 +1914,36 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_update_message">authorize_update_message</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade_by_approval">authorize_upgrade_by_approval</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
+    package_id: ID,
+): UpgradeTicket {
+    <b>assert</b>!(self.approved_upgrades.contains(&package_id), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound">EApprovedUpgradeNotFound</a>);
+    <b>let</b> (_, digest) = self.approved_upgrades.remove(&package_id);
+    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade">authorize_upgrade</a>(package_id, digest)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_authorize_upgrade"></a>
+
+## Function `authorize_upgrade`
+
+
+
+<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade">authorize_upgrade</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: vector&lt;u8&gt;): <a href="../sui/package.md#sui_package_UpgradeTicket">sui::package::UpgradeTicket</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_authorize_upgrade">authorize_upgrade</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
     package_id: ID,
     digest: vector&lt;u8&gt;,
@@ -2037,40 +2095,85 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>) {
+        <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>) {
             <b>let</b> next_protocol_version = bcs_body.peel_u64();
             self.next_protocol_version.fill(next_protocol_version);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EPOCH_DURATION_MS_MESSAGE_TYPE">EPOCH_DURATION_MS_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>) {
             <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = bcs_body.peel_u64();
             self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>;
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>) {
             <b>let</b> stake_subsidy_start_epoch = bcs_body.peel_u64();
             self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>) {
             <b>let</b> stake_subsidy_rate = bcs_body.peel_u16();
             self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_rate(stake_subsidy_rate);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>) {
             <b>let</b> stake_subsidy_period_length = bcs_body.peel_u64();
             self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
             <b>let</b> min_validator_count = bcs_body.peel_u64();
             self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_count(min_validator_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
             <b>let</b> max_validator_count = bcs_body.peel_u64();
             self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_count(max_validator_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>) {
             <b>let</b> min_validator_joining_stake = bcs_body.peel_u64();
             self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_joining_stake(min_validator_joining_stake);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>) {
             <b>let</b> max_validator_change_count = bcs_body.peel_u64();
             self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_change_count(max_validator_change_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_REWARD_SLASHING_RATE_MESSAGE_TYPE">REWARD_SLASHING_RATE_MESSAGE_TYPE</a>) {
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>) {
             <b>let</b> reward_slashing_rate = bcs_body.peel_u16();
             self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_reward_slashing_rate(reward_slashing_rate);
+        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>) {
+            <b>let</b> package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+            <b>let</b> digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
+            self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_approved_upgrade">set_approved_upgrade</a>(package_id, digest);
         };
         i = i + 1;
     };
     self.total_messages_processed = self.total_messages_processed + i;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_set_approved_upgrade"></a>
+
+## Function `set_approved_upgrade`
+
+Set approved upgrade for a package id.
+If <code>digest</code> is <code>some</code>, it will be inserted into the <code>approved_upgrades</code> map.
+If <code>digest</code> is <code>none</code>, it will be removed from the <code>approved_upgrades</code> map.
+
+
+<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_approved_upgrade">set_approved_upgrade</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">system_inner::SystemInnerV1</a>, package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, digest: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_approved_upgrade">set_approved_upgrade</a>(
+    self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInnerV1">SystemInnerV1</a>,
+    package_id: ID,
+    <b>mut</b> digest: Option&lt;vector&lt;u8&gt;&gt;,
+) {
+    <b>if</b>(digest.is_some()) {
+        <b>if</b>(self.approved_upgrades.contains(&package_id)) {
+            *self.approved_upgrades.get_mut(&package_id) = digest.extract();
+        } <b>else</b> {
+            self.approved_upgrades.insert(package_id, digest.extract());
+        }
+    } <b>else</b> {
+        <b>if</b>(self.approved_upgrades.contains(&package_id)) {
+            self.approved_upgrades.remove(&package_id);
+        }
+    }
 }
 </code></pre>
 

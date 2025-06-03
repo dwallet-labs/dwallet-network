@@ -135,6 +135,13 @@ impl<P> SuiClient<P>
 where
     P: SuiClientInner,
 {
+    pub async fn get_events_by_tx_digest(
+        &self,
+        tx_digest: TransactionDigest,
+    ) -> anyhow::Result<Vec<SuiEvent>> {
+        Ok(self.inner.get_events_by_tx_digest(tx_digest).await?)
+    }
+
     /// Remaining sessions not processed during previous Epochs.
     pub async fn get_dwallet_mpc_missed_events(
         &self,
@@ -571,20 +578,30 @@ where
 
     pub async fn must_get_system_inner_object(&self) -> SystemInner {
         loop {
-            let Ok(Ok(ika_system_state)) =
-                retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30))
-            else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["must_get_system_inner_object"])
-                    .inc();
-                error!(
-                    system_object_id=%self.ika_system_object_id,
-                    "failed to get system inner object",
-                );
-                continue;
-            };
-            return ika_system_state;
+            match retry_with_max_elapsed_time!(self.get_system_inner(), Duration::from_secs(30)) {
+                Ok(Ok(ika_system_state)) => return ika_system_state,
+                Ok(Err(err)) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_system_inner_object"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        "Received error from `get_system_inner()`. Retrying...",
+                    );
+                }
+                Err(err) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_system_inner_object"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        system_object_id=%self.ika_system_object_id,
+                        "failed to get ika system inner object",
+                    );
+                }
+            }
         }
     }
 
@@ -638,19 +655,33 @@ where
         dwallet_state_id: ObjectID,
     ) -> DWalletCoordinatorInner {
         loop {
-            let res = retry_with_max_elapsed_time!(
+            match retry_with_max_elapsed_time!(
                 self.get_dwallet_coordinator_inner(dwallet_state_id),
                 Duration::from_secs(30)
-            );
-            let Ok(Ok(ika_system_state)) = res else {
-                self.sui_client_metrics
-                    .sui_rpc_errors
-                    .with_label_values(&["must_get_dwallet_coordinator_inner"])
-                    .inc();
-                warn!(?res, "Failed to get dwallet coordinator inner object");
-                continue;
-            };
-            return ika_system_state;
+            ) {
+                Ok(Ok(ika_system_state)) => return ika_system_state,
+                Ok(Err(err)) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_dwallet_coordinator_inner"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        "Received error from `get_dwallet_coordinator_inner()`. Retrying...",
+                    );
+                }
+                Err(err) => {
+                    self.sui_client_metrics
+                        .sui_rpc_errors
+                        .with_label_values(&["must_get_dwallet_coordinator_inner"])
+                        .inc();
+                    warn!(
+                        ?err,
+                        system_object_id=%self.ika_system_object_id,
+                        "Failed to get dwallet coordinator inner object",
+                    );
+                }
+            }
         }
     }
 
@@ -1006,6 +1037,7 @@ impl SuiClientInner for SuiSdkClient {
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
 
+        // todo(zeev): clean this up and shut it down in the fullnode.
         let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
@@ -1016,7 +1048,7 @@ impl SuiClientInner for SuiSdkClient {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
-                "Reconfiguration public output for key not is not ready for epoch",
+                "Reconfiguration public output for key is not ready for epoch",
             );
             vec![]
         } else {
