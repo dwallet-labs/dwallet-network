@@ -1,0 +1,36 @@
+name: Build Docker image
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
+  # Change to specific Rust release to pin or `stable` for the latest stable version.
+  rust_stable: 1.85
+  rust_nightly: nightly
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  GITHUB_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
+  DOCKER_TAG: ika:devnet-v0.0.6-arm64
+
+jobs:
+  build-docker-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ika:latest
+          file: sdk/typescript/test/chaos-test/Dockerfile
+          platforms: linux/arm64
