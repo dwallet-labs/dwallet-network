@@ -709,8 +709,6 @@ impl SystemCheckpointBuilder {
                 "SystemCheckpointBuilder::create_system_checkpoints: {} messages to be included in system_checkpoint",
                 all_messages.len()
             );
-
-            println!("{:?}", all_messages);
         }
         let chunks = self.split_system_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();

@@ -12,6 +12,7 @@ use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
@@ -35,9 +36,9 @@ use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
 use sui_macros::fail_point_async;
-use sui_types::base_types::ObjectID;
+use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, ObjectArg};
+use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
 use tokio::time::{self, Duration};
 use tracing::{error, info};
 
@@ -54,6 +55,7 @@ pub struct SuiExecutor<C> {
     sui_notifier: Option<SuiNotifier>,
     sui_client: Arc<SuiClient<C>>,
     metrics: Arc<SuiConnectorMetrics>,
+    notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
 }
 
 struct EpochSwitchState {
@@ -82,6 +84,7 @@ where
             sui_notifier,
             sui_client,
             metrics,
+            notifier_tx_lock: Arc::new(tokio::sync::Mutex::new(None)),
         }
     }
 
@@ -126,6 +129,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
+                self.notifier_tx_lock.clone(),
             )
             .await
             {
@@ -154,6 +158,7 @@ where
                 self.ika_system_package_id,
                 sui_notifier,
                 dwallet_2pc_mpc_coordinator_id,
+                self.notifier_tx_lock.clone(),
             )
             .await
             {
@@ -181,6 +186,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
+                self.notifier_tx_lock.clone(),
             )
             .await
             {
@@ -214,6 +220,7 @@ where
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
+                self.notifier_tx_lock.clone(),
             )
             .await
             {
@@ -365,6 +372,7 @@ where
                                         sui_notifier,
                                         &self.sui_client,
                                         &self.metrics,
+                                        self.notifier_tx_lock.clone(),
                                     )
                                     .await;
                                     match task {
@@ -455,6 +463,7 @@ where
                                 sui_notifier,
                                 &self.sui_client,
                                 &self.metrics,
+                                self.notifier_tx_lock.clone(),
                             )
                             .await;
                             match task {
@@ -510,6 +519,7 @@ where
         ika_system_package_id: ObjectID,
         sui_notifier: &SuiNotifier,
         dwallet_coordinator_id: ObjectID,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> anyhow::Result<()> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -672,21 +682,63 @@ where
         )
         .await;
 
-        let result = sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-        if !result.errors.is_empty() {
-            for error in result.errors.clone() {
-                error!(?error, "error executing transaction block");
-            }
-            return Err(anyhow::anyhow!(
-                "calculate_protocols_pricing failed with errors: {:?}",
-                result.errors
-            ));
-        }
-        info!(?result.digest, "Successfully executed transaction block for protocol pricing calculation");
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+    }
 
-        Ok(())
+    async fn submit_tx_to_sui(
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
+        transaction: Transaction,
+        sui_client: &Arc<SuiClient<C>>,
+    ) -> DwalletMPCResult<()> {
+        loop {
+            // Small delay to avoid spamming the node.
+            tokio::time::sleep(Duration::from_millis(500)).await;
+
+            // Get exclusive access to the digest of the **last** submitted transaction.
+            let mut digest_guard = notifier_tx_lock.lock().await;
+
+            match *digest_guard {
+                // ──────────────── No previous transaction → sends the given one ────────────────
+                None => {
+                    info!(
+                        transaction_digest = ?transaction.digest(),
+                        "Submitting a transaction to Sui"
+                    );
+                    let result = sui_client
+                        .execute_transaction_block_with_effects(transaction)
+                        .await?;
+                    *digest_guard = Some(result.digest);
+                    return Ok(());
+                }
+
+                // ──────────────── Previous transaction exists → check its status ────────────────
+                Some(prev_digest) => {
+                    match sui_client.get_events_by_tx_digest(prev_digest).await {
+                        // Not yet processed — retry in the next loop iteration.
+                        Err(_) => {
+                            info!(
+                                transaction_digest = ?prev_digest,
+                                "The last submitted transaction has not been processed yet, retrying..."
+                            );
+                            continue;
+                        }
+
+                        // Processed — we can safely submit the next one.
+                        Ok(_events) => {
+                            info!(
+                                transaction_digest = ?prev_digest,
+                                "The last submitted transaction has been processed, submitting the next one"
+                            );
+                            let result = sui_client
+                                .execute_transaction_block_with_effects(transaction)
+                                .await?;
+                            *digest_guard = Some(result.digest);
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     async fn process_mid_epoch(
@@ -694,6 +746,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         info!("Running `process_mid_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -739,11 +792,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-
-        Ok(())
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
     async fn lock_last_session_to_complete_in_current_epoch(
@@ -751,6 +800,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -797,11 +847,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-
-        Ok(())
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
     async fn process_request_advance_epoch(
@@ -809,6 +855,7 @@ where
         dwallet_2pc_mpc_coordinator_id: ObjectID,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -855,11 +902,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-
-        Ok(())
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
     async fn handle_dwallet_checkpoint_execution_task(
@@ -871,6 +914,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -959,11 +1003,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-
-        Ok(())
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
     async fn handle_system_checkpoint_execution_task(
@@ -974,6 +1014,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -1051,11 +1092,7 @@ where
         )
         .await;
 
-        sui_client
-            .execute_transaction_block_with_effects(transaction)
-            .await?;
-
-        Ok(())
+        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 }
 
