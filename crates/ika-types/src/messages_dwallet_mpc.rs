@@ -29,6 +29,10 @@ pub const SIGN_PROTOCOL_FLAG: u32 = 6;
 pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
+pub const DECRYPTION_KEY_RESHARE_STR_KEY: &str = "DecryptionKeyReshare";
+pub const NETWORK_DKG_STR_KEY: &str = "NetworkDkg";
+pub const SIGN_STR_KEY: &str = "Sign";
+
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// Make the dWallet user secret key shares public, so the network can control it.
@@ -77,8 +81,8 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
             MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
-            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
-            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
+            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "{}", NETWORK_DKG_STR_KEY),
             MPCProtocolInitData::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
@@ -86,7 +90,7 @@ impl Display for MPCProtocolInitData {
                 write!(f, "PartialSignatureVerification")
             }
             MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                write!(f, "DecryptionKeyReshare")
+                write!(f, "{}", DECRYPTION_KEY_RESHARE_STR_KEY)
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
