@@ -13,25 +13,15 @@ ARG WORKDIR=/opt
 ENV CARGO_HOME=/usr/local/cargo
 ENV GIT_REVISION=$GIT_REVISION
 
-# Setup GitHub token for private repos
-RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
 # Install build dependencies
 RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-dev
+RUN cargo install cargo-chef
+
+# Setup GitHub token for private repos
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 # Set working directory
 WORKDIR ${WORKDIR}/ika
 
-# Copy Cargo manifests and crate folders for dependency resolution
-COPY Cargo.toml Cargo.lock ./
-COPY crates crates
-COPY class-groups-keys-mock-files class-groups-keys-mock-files
-
-# Build dependencies first for better layer caching
-# --locked ensures you never accidentally change dependencies during a build.
-# Build dependencies first for better layer caching
-# RUN cargo fetch --locked
-
-RUN cargo install cargo-chef
 RUN cargo chef prepare --recipe-path recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Conditionally compile with the network DKG feature
@@ -49,7 +39,6 @@ ARG PROFILE=release
 ARG TARGETARCH
 
 # Install runtime dependencies and jemalloc.
-RUN apt-get update && apt-get install -y libjemalloc-dev ca-certificates curl jq
 
 # Use jemalloc as memory allocator.
 ENV LD_PRELOAD=""
