@@ -17,7 +17,9 @@ ENV GIT_REVISION=$GIT_REVISION
 RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 # Set working directory
 WORKDIR ${WORKDIR}/ika
-
+COPY Cargo.toml Cargo.lock ./
+COPY crates crates
+COPY class-groups-keys-mock-files class-groups-keys-mock-files
 RUN cargo chef prepare --recipe-path recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
