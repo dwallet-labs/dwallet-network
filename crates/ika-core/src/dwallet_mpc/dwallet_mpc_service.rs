@@ -83,7 +83,9 @@ impl DWalletMPCService {
             let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
             self.dwallet_mpc_manager
                 .update_last_session_to_complete_in_current_epoch(
-                    inner_state.last_session_to_complete_in_current_epoch,
+                    inner_state
+                        .session_management
+                        .last_session_to_complete_in_current_epoch,
                 );
         }
     }
