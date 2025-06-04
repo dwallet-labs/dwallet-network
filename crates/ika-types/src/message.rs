@@ -113,16 +113,24 @@ pub enum MessageKind {
 impl MessageKind {
     pub fn name(&self) -> &'static str {
         match self {
-            MessageKind::RespondDWalletDKGFirstRoundOutput(_) => "RespondDWalletDKGFirstRoundOutput",
-            MessageKind::RespondDWalletDKGSecondRoundOutput(_) => "RespondDWalletDKGSecondRoundOutput",
+            MessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                "RespondDWalletDKGFirstRoundOutput"
+            }
+            MessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                "RespondDWalletDKGSecondRoundOutput"
+            }
             MessageKind::RespondDWalletEncryptedUserShare(_) => "RespondDWalletEncryptedUserShare",
             MessageKind::RespondDWalletPresign(_) => "RespondDWalletPresign",
             MessageKind::RespondDWalletSign(_) => "RespondDWalletSign",
             MessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
                 "RespondDWalletPartialSignatureVerificationOutput"
             }
-            MessageKind::RespondDWalletMPCNetworkDKGOutput(_) => "RespondDWalletMPCNetworkDKGOutput",
-            MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => "RespondDWalletMPCNetworkReconfigurationOutput",
+            MessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                "RespondDWalletMPCNetworkDKGOutput"
+            }
+            MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+                "RespondDWalletMPCNetworkReconfigurationOutput"
+            }
             MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
                 "RespondMakeDWalletUserSecretKeySharesPublic"
             }
@@ -130,7 +138,9 @@ impl MessageKind {
                 "RespondDWalletImportedKeyVerificationOutput"
             }
             MessageKind::SetMaxActiveSessionsBuffer(_) => "SetMaxActiveSessionsBuffer",
-            MessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => "SetGasFeeReimbursementSuiSystemCallValue",
+            MessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
+                "SetGasFeeReimbursementSuiSystemCallValue"
+            }
         }
     }
 
@@ -172,13 +182,22 @@ impl Display for MessageKind {
                 )?;
             }
             MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
-                writeln!(writer, "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput")?;
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput"
+                )?;
             }
             MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
-                writeln!(writer, "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic")?;
+                writeln!(
+                    writer,
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic"
+                )?;
             }
             MessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
-                writeln!(writer, "MessageKind : RespondDWalletImportedKeyVerificationOutput")?;
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletImportedKeyVerificationOutput"
+                )?;
             }
             MessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
                 writeln!(

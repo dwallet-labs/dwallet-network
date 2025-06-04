@@ -64,8 +64,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
     EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, NetworkKeyPublicOutputSlice,
-    SignOutput,
+    NetworkKeyPublicOutputSlice, PartialSignatureVerificationOutput, PresignOutput, SignOutput,
 };
 use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
