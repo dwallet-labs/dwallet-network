@@ -434,7 +434,7 @@ mysten-util-mem-derive = { git = "https://github.com/MystenLabs/sui", rev = "3b1
 prometheus-closure-metric = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 shared-crypto = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 simulacrum = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
-sui = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
+sui = { git = "https://github.com/ItayLevyOfficial/sui", rev = "83ae437771840efb14618a2274682f722186df6a" }
 sui-adapter-transactional-tests = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 sui-analytics-indexer = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 sui-analytics-indexer-derive = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
