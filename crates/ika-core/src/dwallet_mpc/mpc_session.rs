@@ -154,7 +154,11 @@ impl DWalletMPCSession {
     /// Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
-    pub(super) fn advance(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+    pub(super) fn advance(&mut self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        // Make sure we transfer only the messages up to the current round
+        // (exclude messages that might be recieved from future rounds)
+        self.serialized_full_messages
+            .retain(|round, _| round < &self.current_round);
         // Safe to unwrap as advance can only be called after the event is received.
         let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
         match self.advance_specific_party() {
@@ -164,7 +168,7 @@ impl DWalletMPCSession {
             }) => {
                 let session_id = self.session_id;
                 let validator_name = self.epoch_store()?.name;
-                let round_number = self.serialized_full_messages.len();
+                let round_number = self.current_round;
                 info!(
                     mpc_protocol=?mpc_protocol,
                     session_id=?session_id,
