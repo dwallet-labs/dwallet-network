@@ -1,7 +1,7 @@
 # ==========================
 # Build stage
 # ==========================
-FROM rust:1.85-bullseye AS builder
+FROM ika-base:latest AS builder
 
 # Arguments
 ARG PROFILE=release
@@ -13,10 +13,6 @@ ARG WORKDIR=/opt
 ENV CARGO_HOME=/usr/local/cargo
 ENV GIT_REVISION=$GIT_REVISION
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-dev
-RUN cargo install cargo-chef
-
 # Setup GitHub token for private repos
 RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 # Set working directory
@@ -24,7 +20,6 @@ WORKDIR ${WORKDIR}/ika
 
 RUN cargo chef prepare --recipe-path recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
-# Conditionally compile with the network DKG feature
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 
 # ==========================
