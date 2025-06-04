@@ -4136,7 +4136,7 @@ with <code>is_last_chunk</code> set for the last call.
     <b>if</b> (rejected) {
         dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
         // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
-        emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent">RejectedDWalletNetworkDKGEncryptionKeyEvent</a> {
+        event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RejectedDWalletNetworkDKGEncryptionKeyEvent">RejectedDWalletNetworkDKGEncryptionKeyEvent</a> {
             dwallet_network_encryption_key_id,
         });
         self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_initiate_system_dwallet_session">initiate_system_dwallet_session</a>(
@@ -7173,131 +7173,145 @@ Also emits an event with the <code>signature</code>.
         // Messages with `message_data_type` 1 & 2 are handled by the <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>module</b>,
         // but their bytes must be extracted here to allow correct parsing of types 3 and above.
         // This step only extracts the bytes without further processing.
-        <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> first_round_output = bcs_body.peel_vec_u8();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output, rejected, session_sequence_number);
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> public_output = bcs_body.peel_vec_u8();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(
-                dwallet_id,
-                public_output,
-                encrypted_user_secret_key_share_id,
-                session_id,
-                rejected,
-                session_sequence_number,
-            );
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE">RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_re_encrypt_user_share_for">respond_re_encrypt_user_share_for</a>(
-                dwallet_id,
-                encrypted_user_secret_key_share_id,
-                rejected,
-                session_sequence_number,
-            );
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE">RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> public_user_secret_key_shares = bcs_body.peel_vec_u8();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_share_public">respond_make_dwallet_user_secret_key_share_public</a>(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> public_output = bcs_body.peel_vec_u8();
-            <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_imported_key_dwallet_verification">respond_imported_key_dwallet_verification</a>(
-                dwallet_id,
-                public_output,
-                encrypted_user_secret_key_share_id,
-                session_id,
-                rejected,
-                session_sequence_number
-            );
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE">RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = bcs_body.peel_option!(|bcs_option| object::id_from_bytes(bcs_option.peel_vec_u8()));
-            <b>let</b> presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> presign = bcs_body.peel_vec_u8();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_presign">respond_presign</a>(
-                dwallet_id,
-                presign_id,
-                session_id,
-                presign,
-                rejected,
-                session_sequence_number);
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_SIGN_MESSAGE_TYPE">RESPOND_DWALLET_SIGN_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> signature = bcs_body.peel_vec_u8();
-            <b>let</b> is_future_sign = bcs_body.peel_bool();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_sign">respond_sign</a>(
-                dwallet_id,
-                sign_id,
-                session_id,
-                signature,
-                is_future_sign,
-                rejected,
-                session_sequence_number
-            );
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> session_sequence_number = bcs_body.peel_u64();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_future_sign">respond_future_sign</a>(
-                session_id,
-                dwallet_id,
-                partial_centralized_signed_message_id,
-                rejected,
-                session_sequence_number
-            );
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> public_output = bcs_body.peel_vec_u8();
-            <b>let</b> is_last = bcs_body.peel_bool();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_network_encryption_key_dkg">respond_dwallet_network_encryption_key_dkg</a>(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE</a>) {
-            <b>let</b> dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> public_output = bcs_body.peel_vec_u8();
-            <b>let</b> is_last = bcs_body.peel_bool();
-            <b>let</b> rejected = bcs_body.peel_bool();
-            <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_network_encryption_key_reconfiguration">respond_dwallet_network_encryption_key_reconfiguration</a>(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
-            total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE">SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE</a>) {
-            <b>let</b> max_active_sessions_buffer = bcs_body.peel_u64();
-            self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_max_active_sessions_buffer">set_max_active_sessions_buffer</a>(max_active_sessions_buffer);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a>) {
-            <b>let</b> gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
-            self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue">SetGasFeeReimbursementSuiSystemCallValue</a>(gas_fee_reimbursement_sui_system_call_value);
+        match (message_data_type) {
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> first_round_output = bcs_body.peel_vec_u8();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_dkg_first_round">respond_dwallet_dkg_first_round</a>(dwallet_id, first_round_output, rejected, session_sequence_number);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_dkg_second_round">respond_dwallet_dkg_second_round</a>(
+                    dwallet_id,
+                    public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
+                    rejected,
+                    session_sequence_number,
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE">RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_re_encrypt_user_share_for">respond_re_encrypt_user_share_for</a>(
+                    dwallet_id,
+                    encrypted_user_secret_key_share_id,
+                    rejected,
+                    session_sequence_number,
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE">RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_user_secret_key_shares = bcs_body.peel_vec_u8();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_make_dwallet_user_secret_key_share_public">respond_make_dwallet_user_secret_key_share_public</a>(dwallet_id, public_user_secret_key_shares, rejected, session_sequence_number);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> encrypted_user_secret_key_share_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_imported_key_dwallet_verification">respond_imported_key_dwallet_verification</a>(
+                    dwallet_id,
+                    public_output,
+                    encrypted_user_secret_key_share_id,
+                    session_id,
+                    rejected,
+                    session_sequence_number
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE">RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = bcs_body.peel_option!(|bcs_option| object::id_from_bytes(bcs_option.peel_vec_u8()));
+                <b>let</b> presign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> presign = bcs_body.peel_vec_u8();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_presign">respond_presign</a>(
+                    dwallet_id,
+                    presign_id,
+                    session_id,
+                    presign,
+                    rejected,
+                    session_sequence_number);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_SIGN_MESSAGE_TYPE">RESPOND_DWALLET_SIGN_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> sign_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> signature = bcs_body.peel_vec_u8();
+                <b>let</b> is_future_sign = bcs_body.peel_bool();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_sign">respond_sign</a>(
+                    dwallet_id,
+                    sign_id,
+                    session_id,
+                    signature,
+                    is_future_sign,
+                    rejected,
+                    session_sequence_number
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> partial_centralized_signed_message_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> session_sequence_number = bcs_body.peel_u64();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_future_sign">respond_future_sign</a>(
+                    session_id,
+                    dwallet_id,
+                    partial_centralized_signed_message_id,
+                    rejected,
+                    session_sequence_number
+                );
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> is_last = bcs_body.peel_bool();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_network_encryption_key_dkg">respond_dwallet_network_encryption_key_dkg</a>(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> public_output = bcs_body.peel_vec_u8();
+                <b>let</b> is_last = bcs_body.peel_bool();
+                <b>let</b> rejected = bcs_body.peel_bool();
+                <b>let</b> gas_fee_reimbursement_sui = self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_respond_dwallet_network_encryption_key_reconfiguration">respond_dwallet_network_encryption_key_reconfiguration</a>(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
+                total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE">SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> max_active_sessions_buffer = bcs_body.peel_u64();
+                self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_max_active_sessions_buffer">set_max_active_sessions_buffer</a>(max_active_sessions_buffer);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
+                self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue">SetGasFeeReimbursementSuiSystemCallValue</a>(gas_fee_reimbursement_sui_system_call_value);
+            },
+            _ =&gt; {},
         };
         i = i + 1;
     };
