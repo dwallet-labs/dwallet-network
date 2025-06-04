@@ -26,12 +26,12 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=55
+export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 #export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta55.devnet.ika-network.net"
+export SUBDOMAIN="beta.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -42,7 +42,7 @@ ROOT_ADDR=""
 # The file containing the validators (separator: newline).
 export VALIDATORS_FILE=""
 # Validator Docker image name.
-export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.5-arm64"
+export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.7-arm64"
 # SUI fullnode URL.
 #export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 export SUI_FULLNODE_RPC_URL="http://localhost:9000"
