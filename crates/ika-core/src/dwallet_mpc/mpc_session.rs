@@ -385,10 +385,7 @@ impl DWalletMPCSession {
             .map(|(round, messages_map)| {
                 (
                     *round,
-                    messages_map
-                        .keys()
-                        .map(|pid| *pid)
-                        .collect::<Vec<_>>(),
+                    messages_map.keys().map(|pid| *pid).collect::<Vec<_>>(),
                 )
             })
             .collect::<HashMap<_, _>>();
