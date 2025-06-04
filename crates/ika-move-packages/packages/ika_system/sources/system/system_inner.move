@@ -67,6 +67,10 @@ public struct SystemInnerV1 has store {
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
+    /// The last processed checkpoint sequence number.
+    last_processed_checkpoint_sequence_number: Option<u64>,
+    /// The last checkpoint sequence number of the previous epoch.
+    previous_epoch_last_checkpoint_sequence_number: u64,
     /// The total messages processed.
     total_messages_processed: u64,
     /// The fees paid for computation.
@@ -76,8 +80,6 @@ public struct SystemInnerV1 has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_coordinator_id: Option<ID>,
     dwallet_2pc_mpc_coordinator_network_encryption_keys: vector<DWalletNetworkEncryptionKeyCap>,
-    last_processed_checkpoint_sequence_number: Option<u64>,
-    previous_epoch_last_checkpoint_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -105,6 +107,73 @@ public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
     timestamp_ms: u64,
+}
+
+/// Event emitted when protocol version is set via checkpoint message.
+public struct SetNextProtocolVersionEvent has copy, drop {
+    epoch: u64,
+    next_protocol_version: u64,
+}
+
+/// Event emitted when epoch duration is set via checkpoint message.
+public struct SetEpochDurationMsEvent has copy, drop {
+    epoch: u64,
+    epoch_duration_ms: u64,
+}
+
+/// Event emitted when stake subsidy start epoch is set via checkpoint message.
+public struct SetStakeSubsidyStartEpochEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_start_epoch: u64,
+}
+
+/// Event emitted when stake subsidy rate is set via checkpoint message.
+public struct SetStakeSubsidyRateEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_rate: u16,
+}
+
+/// Event emitted when stake subsidy period length is set via checkpoint message.
+public struct SetStakeSubsidyPeriodLengthEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_period_length: u64,
+}
+
+/// Event emitted when minimum validator count is set via checkpoint message.
+public struct SetMinValidatorCountEvent has copy, drop {
+    epoch: u64,
+    min_validator_count: u64,
+}
+
+/// Event emitted when maximum validator count is set via checkpoint message.
+public struct SetMaxValidatorCountEvent has copy, drop {
+    epoch: u64,
+    max_validator_count: u64,
+}
+
+/// Event emitted when minimum validator joining stake is set via checkpoint message.
+public struct SetMinValidatorJoiningStakeEvent has copy, drop {
+    epoch: u64,
+    min_validator_joining_stake: u64,
+}
+
+/// Event emitted when maximum validator change count is set via checkpoint message.
+public struct SetMaxValidatorChangeCountEvent has copy, drop {
+    epoch: u64,
+    max_validator_change_count: u64,
+}
+
+/// Event emitted when reward slashing rate is set via checkpoint message.
+public struct SetRewardSlashingRateEvent has copy, drop {
+    epoch: u64,
+    reward_slashing_rate: u16,
+}
+
+/// Event emitted when approved upgrade is set via checkpoint message.
+public struct SetApprovedUpgradeEvent has copy, drop {
+    epoch: u64,
+    package_id: ID,
+    digest: Option<vector<u8>>,
 }
 
 // Errors
@@ -154,13 +223,13 @@ public(package) fun create(
         stake_subsidy_start_epoch,
         protocol_treasury,
         epoch_start_timestamp_ms,
+        last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        last_processed_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -762,40 +831,100 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        if (message_data_type == SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE) {
-            let next_protocol_version = bcs_body.peel_u64();
-            self.next_protocol_version.fill(next_protocol_version);
-        } else if (message_data_type == SET_EPOCH_DURATION_MS_MESSAGE_TYPE) {
-            let epoch_duration_ms = bcs_body.peel_u64();
-            self.epoch_duration_ms = epoch_duration_ms;
-        } else if (message_data_type == SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE) {
-            let stake_subsidy_start_epoch = bcs_body.peel_u64();
-            self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } else if (message_data_type == SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE) {
-            let stake_subsidy_rate = bcs_body.peel_u16();
-            self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
-        } else if (message_data_type == SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE) {
-            let stake_subsidy_period_length = bcs_body.peel_u64();
-            self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } else if (message_data_type == SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE) {
-            let min_validator_count = bcs_body.peel_u64();
-            self.validator_set.set_min_validator_count(min_validator_count);
-        } else if (message_data_type == SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE) {
-            let max_validator_count = bcs_body.peel_u64();
-            self.validator_set.set_max_validator_count(max_validator_count);
-        } else if (message_data_type == SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE) {
-            let min_validator_joining_stake = bcs_body.peel_u64();
-            self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
-        } else if (message_data_type == SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE) {
-            let max_validator_change_count = bcs_body.peel_u64();
-            self.validator_set.set_max_validator_change_count(max_validator_change_count);
-        } else if (message_data_type == SET_REWARD_SLASHING_RATE_MESSAGE_TYPE) {
-            let reward_slashing_rate = bcs_body.peel_u16();
-            self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
-        } else if (message_data_type == SET_APPROVED_UPGRADE_MESSAGE_TYPE) {
-            let package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            let digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
-            self.set_approved_upgrade(package_id, digest);
+        match (message_data_type) {
+            SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE => {
+                let next_protocol_version = bcs_body.peel_u64();
+                self.next_protocol_version.fill(next_protocol_version);
+                event::emit(SetNextProtocolVersionEvent {
+                    epoch: self.epoch,
+                    next_protocol_version,
+                });
+            },
+            SET_EPOCH_DURATION_MS_MESSAGE_TYPE => {
+                let epoch_duration_ms = bcs_body.peel_u64();
+                self.epoch_duration_ms = epoch_duration_ms;
+                event::emit(SetEpochDurationMsEvent {
+                    epoch: self.epoch,
+                    epoch_duration_ms,
+                });
+            },
+            SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE => {
+                let stake_subsidy_start_epoch = bcs_body.peel_u64();
+                self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
+                event::emit(SetStakeSubsidyStartEpochEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_start_epoch,
+                });
+            },
+            SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE => {
+                let stake_subsidy_rate = bcs_body.peel_u16();
+                self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
+                event::emit(SetStakeSubsidyRateEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_rate,
+                });
+            },
+            SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE => {
+                let stake_subsidy_period_length = bcs_body.peel_u64();
+                self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
+                event::emit(SetStakeSubsidyPeriodLengthEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_period_length,
+                });
+            },
+            SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE => {
+                let min_validator_count = bcs_body.peel_u64();
+                self.validator_set.set_min_validator_count(min_validator_count);
+                event::emit(SetMinValidatorCountEvent {
+                    epoch: self.epoch,
+                    min_validator_count,
+                });
+            },
+            SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE => {
+                let max_validator_count = bcs_body.peel_u64();
+                self.validator_set.set_max_validator_count(max_validator_count);
+                event::emit(SetMaxValidatorCountEvent {
+                    epoch: self.epoch,
+                    max_validator_count,
+                });
+            },
+            SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE => {
+                let min_validator_joining_stake = bcs_body.peel_u64();
+                self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
+                event::emit(SetMinValidatorJoiningStakeEvent {
+                    epoch: self.epoch,
+                    min_validator_joining_stake,
+                });
+            },
+            SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE => {
+                let max_validator_change_count = bcs_body.peel_u64();
+                self.validator_set.set_max_validator_change_count(max_validator_change_count);
+                event::emit(SetMaxValidatorChangeCountEvent {
+                    epoch: self.epoch,
+                    max_validator_change_count,
+                });
+            },
+            SET_REWARD_SLASHING_RATE_MESSAGE_TYPE => {
+                let reward_slashing_rate = bcs_body.peel_u16();
+                self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
+                event::emit(SetRewardSlashingRateEvent {
+                    epoch: self.epoch,
+                    reward_slashing_rate,
+                });
+            },
+            SET_APPROVED_UPGRADE_MESSAGE_TYPE => {
+                let package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
+                self.set_approved_upgrade(package_id, digest);
+                event::emit(SetApprovedUpgradeEvent {
+                    epoch: self.epoch,
+                    package_id,
+                    digest,
+                });
+            },
+            _ => {
+                // Unknown message type - skip
+            }
         };
         i = i + 1;
     };

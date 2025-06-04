@@ -331,6 +331,12 @@ CompletedFutureSignEvent
 RejectedFutureSignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
+SetMaxActiveSessionsBufferEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+SetGasFeeReimbursementSuiSystemCallValueEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
 CompletedSignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -418,7 +424,7 @@ validate_active_and_get_public_output
 charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-create_system_dwallet_event
+initiate_system_dwallet_session
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_and_public_output
@@ -551,6 +557,12 @@ process_checkpoint_message_by_quorum
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 process_checkpoint_message
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_max_active_sessions_buffer
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_gas_fee_reimbursement_sui_system_call_value
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 set_supported_and_pricing
@@ -1415,6 +1427,39 @@ SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner
 SystemCheckpointInfoEvent
+	public struct
+	0x0::system_inner
+SetNextProtocolVersionEvent
+	public struct
+	0x0::system_inner
+SetEpochDurationMsEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyStartEpochEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyRateEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyPeriodLengthEvent
+	public struct
+	0x0::system_inner
+SetMinValidatorCountEvent
+	public struct
+	0x0::system_inner
+SetMaxValidatorCountEvent
+	public struct
+	0x0::system_inner
+SetMinValidatorJoiningStakeEvent
+	public struct
+	0x0::system_inner
+SetMaxValidatorChangeCountEvent
+	public struct
+	0x0::system_inner
+SetRewardSlashingRateEvent
+	public struct
+	0x0::system_inner
+SetApprovedUpgradeEvent
 	public struct
 	0x0::system_inner
 create
