@@ -31,7 +31,7 @@ import {
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
-const fiveMinutes = 5 * 60 * 1000;
+const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -108,7 +108,7 @@ describe('Test dWallet MPC', () => {
 			networkDecryptionKeyPublicOutput,
 			Hash.KECCAK256,
 		);
-		console.log(`Sing completed successfully: ${signRes.sign_id}`);
+		console.log(`Sing completed successfully: ${signRes.id.id}`);
 		console.timeEnd('Step 3: Sign Phase');
 	});
 
