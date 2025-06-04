@@ -144,7 +144,7 @@ impl CryptographicComputationsOrchestrator {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
-        let session = session.clone();
+        let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
         let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
 
