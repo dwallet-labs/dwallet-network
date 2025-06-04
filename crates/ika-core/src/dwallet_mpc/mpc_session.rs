@@ -8,6 +8,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
+use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
@@ -385,7 +386,11 @@ impl DWalletMPCSession {
             .map(|(round, messages_map)| {
                 (
                     *round,
-                    messages_map.keys().map(|pid| *pid).collect::<Vec<_>>(),
+                    messages_map
+                        .keys()
+                        .map(|pid| *pid)
+                        .sorted()
+                        .collect::<Vec<_>>(),
                 )
             })
             .collect::<HashMap<_, _>>();
