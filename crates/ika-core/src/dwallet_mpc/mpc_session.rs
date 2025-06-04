@@ -387,7 +387,6 @@ impl DWalletMPCSession {
                     *round,
                     messages_map
                         .keys()
-                        .iter()
                         .map(|pid| *pid)
                         .collect::<Vec<_>>(),
                 )
