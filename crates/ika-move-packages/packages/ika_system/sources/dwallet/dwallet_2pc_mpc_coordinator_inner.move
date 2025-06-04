@@ -3402,8 +3402,8 @@ fun process_checkpoint_message(
                 self.set_max_active_sessions_buffer(max_active_sessions_buffer);
             },
             SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE => {
-                let gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();  
-                self.SetGasFeeReimbursementSuiSystemCallValue(gas_fee_reimbursement_sui_system_call_value);
+                let gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
+                self.set_gas_fee_reimbursement_sui_system_call_value(gas_fee_reimbursement_sui_system_call_value);
             },
             _ => {},
         };
@@ -3423,7 +3423,7 @@ fun set_max_active_sessions_buffer(
     });
 }
 
-fun SetGasFeeReimbursementSuiSystemCallValue(
+fun set_gas_fee_reimbursement_sui_system_call_value(
     self: &mut DWalletCoordinatorInner,
     gas_fee_reimbursement_sui_system_call_value: u64,
 ) {

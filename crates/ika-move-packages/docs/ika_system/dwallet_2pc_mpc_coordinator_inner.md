@@ -136,7 +136,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_process_checkpoint_message_by_quorum)
 -  [Function `process_checkpoint_message`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_process_checkpoint_message)
 -  [Function `set_max_active_sessions_buffer`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_max_active_sessions_buffer)
--  [Function `SetGasFeeReimbursementSuiSystemCallValue`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue)
+-  [Function `set_gas_fee_reimbursement_sui_system_call_value`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value)
 -  [Function `set_supported_and_pricing`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_supported_and_pricing)
 -  [Function `verify_pricing_exists_for_all_protocols`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_verify_pricing_exists_for_all_protocols)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_paused_curves_and_signature_algorithms)
@@ -7309,7 +7309,7 @@ Also emits an event with the <code>signature</code>.
             },
             <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a> =&gt; {
                 <b>let</b> gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
-                self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue">SetGasFeeReimbursementSuiSystemCallValue</a>(gas_fee_reimbursement_sui_system_call_value);
+                self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value">set_gas_fee_reimbursement_sui_system_call_value</a>(gas_fee_reimbursement_sui_system_call_value);
             },
             _ =&gt; {},
         };
@@ -7354,13 +7354,13 @@ Also emits an event with the <code>signature</code>.
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue"></a>
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value"></a>
 
-## Function `SetGasFeeReimbursementSuiSystemCallValue`
+## Function `set_gas_fee_reimbursement_sui_system_call_value`
 
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue">SetGasFeeReimbursementSuiSystemCallValue</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, gas_fee_reimbursement_sui_system_call_value: u64)
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value">set_gas_fee_reimbursement_sui_system_call_value</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, gas_fee_reimbursement_sui_system_call_value: u64)
 </code></pre>
 
 
@@ -7369,7 +7369,7 @@ Also emits an event with the <code>signature</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValue">SetGasFeeReimbursementSuiSystemCallValue</a>(
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value">set_gas_fee_reimbursement_sui_system_call_value</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     gas_fee_reimbursement_sui_system_call_value: u64,
 ) {

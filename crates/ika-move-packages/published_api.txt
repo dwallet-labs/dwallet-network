@@ -562,7 +562,7 @@ process_checkpoint_message
 set_max_active_sessions_buffer
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-SetGasFeeReimbursementSuiSystemCallValue
+set_gas_fee_reimbursement_sui_system_call_value
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 set_supported_and_pricing
