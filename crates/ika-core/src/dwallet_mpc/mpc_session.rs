@@ -379,13 +379,23 @@ impl DWalletMPCSession {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
-
+        let serialized_messages_skeleton = self
+            .serialized_full_messages
+            .iter()
+            .map(|(round, messages_map)| {
+                (
+                    *round,
+                    messages_map.keys().map(|pid| *pid).collect::<Vec<_>>(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
         info!(
             mpc_protocol=?mpc_event_data.init_protocol_data,
             validator=?self.epoch_store()?.name,
             session_id=?self.session_id,
             crypto_round=?self.current_round,
             weighted_parties=?self.weighted_threshold_access_structure,
+            ?serialized_messages_skeleton,
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
