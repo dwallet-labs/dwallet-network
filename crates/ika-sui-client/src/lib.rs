@@ -168,6 +168,7 @@ where
                 .inner
                 .get_missed_events(
                     dwallet_coordinator_inner
+                        .session_management
                         .user_requested_sessions_events
                         .id
                         .id

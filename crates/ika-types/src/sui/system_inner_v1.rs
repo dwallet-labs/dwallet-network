@@ -102,10 +102,8 @@ pub struct DWalletPricingCalculationVotes {
     pub working_pricing: DWalletPricing,
 }
 
-/// Rust version of the Move DWalletCoordinatorInner type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletCoordinatorInnerV1 {
-    pub current_epoch: u64,
+pub struct SessionManagement {
     pub sessions: ObjectTable,
     pub user_requested_sessions_events: Bag,
     pub number_of_completed_sessions: u64,
@@ -115,28 +113,46 @@ pub struct DWalletCoordinatorInnerV1 {
     pub last_session_to_complete_in_current_epoch: u64,
     pub locked_last_session_to_complete_in_current_epoch: bool,
     pub max_active_sessions_buffer: u64,
-    pub dwallets: ObjectTable,
-    pub dwallet_network_encryption_keys: ObjectTable,
-    pub encryption_keys: ObjectTable,
-    pub presigns: ObjectTable,
-    pub partial_centralized_signed_messages: ObjectTable,
-    pub pricing: DWalletPricing,
-    pub default_pricing: DWalletPricing,
-    pub pricing_votes: Table,
-    pub pricing_calculation_votes: Option<DWalletPricingCalculationVotes>,
-    pub gas_fee_reimbursement_sui: Balance,
-    pub consensus_validation_fee_charged_ika: Balance,
-    pub active_committee: BlsCommittee,
-    pub previous_committee: BlsCommittee,
-    pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_checkpoint_sequence_number: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct SupportConfig {
     pub supported_curves_to_signature_algorithms_to_hash_schemes:
         VecMap<u32, VecMap<u32, Vec<u32>>>,
     pub paused_curves: Vec<u32>,
     pub paused_signature_algorithms: Vec<u32>,
     pub paused_hash_schemes: Vec<u32>,
     pub signature_algorithms_allowed_global_presign: Vec<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct PricingAndFeeManagement {
+    pub current: DWalletPricing,
+    pub default: DWalletPricing,
+    pub validator_votes: Table,
+    pub calculation_votes: Option<DWalletPricingCalculationVotes>,
+    pub gas_fee_reimbursement_sui_system_call_value: u64,
+    pub gas_fee_reimbursement_sui: Balance,
+    pub consensus_validation_fee_charged_ika: Balance,
+}
+
+/// Rust version of the Move DWalletCoordinatorInner type
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct DWalletCoordinatorInnerV1 {
+    pub current_epoch: u64,
+    pub session_management: SessionManagement,
+    pub dwallets: ObjectTable,
+    pub dwallet_network_encryption_keys: ObjectTable,
+    pub encryption_keys: ObjectTable,
+    pub presigns: ObjectTable,
+    pub partial_centralized_signed_messages: ObjectTable,
+    pub pricing_and_fee_management: PricingAndFeeManagement,
+    pub active_committee: BlsCommittee,
+    pub previous_committee: BlsCommittee,
+    pub total_messages_processed: u64,
+    pub last_processed_checkpoint_sequence_number: Option<u64>,
+    pub previous_epoch_last_checkpoint_sequence_number: u64,
+    pub support_config: SupportConfig,
     pub extra_fields: Bag,
 }
 
