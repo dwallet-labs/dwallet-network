@@ -3,23 +3,32 @@
 
 module ika_system::validator;
 
+// === Imports ===
+
 use std::string::String;
-use sui::{bag::{Self, Bag}, balance::{Self, Balance}, table::{Self, Table}};
+use sui::{
+    bag::{Self, Bag},
+    balance::{Self, Balance},
+    table::{Self, Table}
+};
 use ika::ika::IKA;
 use ika_system::{
-    validator_metadata::ValidatorMetadata,
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
     pending_values::{Self, PendingValues},
-    token_exchange_rate::{Self, TokenExchangeRate},
     staked_ika::{Self, StakedIka},
-    validator_info::{Self, ValidatorInfo},
+    token_exchange_rate::{Self, TokenExchangeRate},
     validator_cap::{Self, ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof
+    validator_info::{Self, ValidatorInfo},
+    validator_metadata::ValidatorMetadata,
 };
 
-// The number of basis points in 100%.
+// === Constants ===
+
+/// The number of basis points in 100%.
 const BASIS_POINT_DENOMINATOR: u16 = 10_000;
 
-// Error codes
+// === Errors ===
+
 /// The epoch of the validator has already been advanced.
 const EValidatorAlreadyUpdated: u64 = 0;
 /// Error in a calculation. Indicates that a sanity check failed.
@@ -55,14 +64,16 @@ const EAuthorizationFailure: u64 = 15;
 /// The number of shares for the staked IKA are zero.
 const EZeroShares: u64 = 16;
 
+// === Structs ===
+
 /// Represents the state of the validator.
 public enum ValidatorState has copy, drop, store {
-    // The validator is not active yet but can accept stakes.
+    /// The validator is not active yet but can accept stakes.
     PreActive,
-    // The validator is active and can accept stakes.
+    /// The validator is active and can accept stakes.
     Active,
-    // The validator awaits the stake to be withdrawn. The value inside the
-    // variant is the epoch in which the validator will be withdrawn.
+    /// The validator awaits the stake to be withdrawn. The value inside the
+    /// variant is the epoch in which the validator will be withdrawn.
     Withdrawing(u64)
 }
 
@@ -150,6 +161,8 @@ public struct Validator has key, store {
     extra_fields: Bag,
 }
 
+// === Package Functions ===
+
 /// Create a new `Validator` object.
 /// If committee is selected, the validator will be activated in the next epoch.
 /// Otherwise, it will be activated in the current epoch.
@@ -216,6 +229,7 @@ public(package) fun new(
     )
 }
 
+/// Activate the validator for participation in the network.
 public(package) fun activate(
     validator: &mut Validator,
     validator_cap: &ValidatorCap,
@@ -250,7 +264,8 @@ public(package) fun set_withdrawing(
     validator.state = ValidatorState::Withdrawing(current_epoch);
 }
 
-/// Set the state of the validator to `Withdrawing`.
+/// Deactivate the validator from network participation by setting the state to `Withdrawing`.
+/// This is a function to deactivate the validator from the network participation without validator cap.
 public(package) fun deactivate(
     validator: &mut Validator,
     deactivation_epoch: u64,
@@ -428,7 +443,7 @@ public(package) fun advance_epoch(
     validator.rewards_pool.join(rewards);
     validator.ika_balance = validator.ika_balance + rewards_amount;
     validator.latest_epoch = current_epoch;
-    validator.validator_info.roatate_next_epoch_info();
+    validator.validator_info.rotate_next_epoch_info();
 
     // Perform stake deduction / addition for the current epoch.
     validator.process_pending_stake(current_epoch);
@@ -782,12 +797,6 @@ public(package) fun withdrawing_epoch(validator: &Validator): Option<u64> {
     }
 }
 
-/// Returns true if the provided validator is preactive at the provided epoch.
-fun is_preactive_at_epoch(validator: &Validator, epoch: u64): bool {
-    // Either the validator is currently preactive or the validator's starting epoch is later than the provided epoch.
-    validator.is_preactive() || (*validator.activation_epoch.borrow() > epoch)
-}
-
 public(package) fun exchange_rates(validator: &Validator): &Table<u64, TokenExchangeRate> {
     &validator.exchange_rates
 }
@@ -820,6 +829,16 @@ public(package) fun calculate_rewards(
         ika_amount - staked_principal
     } else 0
 }
+
+// === Private Functions ===
+
+/// Returns true if the provided validator is preactive at the provided epoch.
+fun is_preactive_at_epoch(validator: &Validator, epoch: u64): bool {
+    // Either the validator is currently preactive or the validator's starting epoch is later than the provided epoch.
+    validator.is_preactive() || (*validator.activation_epoch.borrow() > epoch)
+}
+
+// === Test Functions ===
 
 #[test_only]
 public(package) fun num_shares(validator: &Validator): u64 { validator.num_shares }

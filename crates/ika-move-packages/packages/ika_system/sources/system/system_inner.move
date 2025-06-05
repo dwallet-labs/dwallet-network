@@ -3,31 +3,37 @@
 
 module ika_system::system_inner;
 
-use ika::ika::IKA;
-use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::staked_ika::{StakedIka};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
-use ika_system::validator_set::{ValidatorSet};
-use ika_system::bls_committee::{BlsCommittee};
-use ika_system::protocol_cap::ProtocolCap;
-use ika_system::validator_metadata::ValidatorMetadata;
-use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner};
-use ika_system::dwallet_pricing::DWalletPricing;
-use sui::bag::{Self, Bag};
-use sui::balance::{Self, Balance};
-use sui::coin::Coin;
-use sui::event;
-use sui::table::Table;
-use sui::vec_set::{VecSet};
-use sui::clock::Clock;
-use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
-use sui::bcs;
-use std::string::String;
-use sui::vec_map::{Self, VecMap};
+// === Imports ===
 
+use ika::ika::IKA;
+use ika_system::{
+    bls_committee::BlsCommittee,
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
+    dwallet_2pc_mpc_coordinator,
+    dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner},
+    dwallet_pricing::DWalletPricing,
+    protocol_treasury::ProtocolTreasury,
+    staked_ika::StakedIka,
+    token_exchange_rate::TokenExchangeRate,
+    validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
+    validator_metadata::ValidatorMetadata,
+    validator_set::ValidatorSet
+};
+use std::string::String;
+use sui::{
+    bag::{Self, Bag},
+    balance::{Self, Balance},
+    bcs,
+    clock::Clock,
+    coin::Coin,
+    event,
+    package::{UpgradeCap, UpgradeTicket, UpgradeReceipt},
+    table::Table,
+    vec_map::{Self, VecMap},
+    vec_set::VecSet
+};
+
+// === Constants ===
 
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 
@@ -45,6 +51,29 @@ const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
 const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
 const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
 const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
+
+// === Errors ===
+
+const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 0;
+const EHaveNotReachedEndEpochTime: u64 = 1;
+const EActiveBlsCommitteeMustInitialize: u64 = 2;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
+const EApprovedUpgradeNotFound: u64 = 5;
+
+#[error]
+const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
+
+#[error]
+const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
+
+#[error]
+const EWrongEpochState: vector<u8> = b"The system is in the wrong epoch state for the operation.";
+
+#[error]
+const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+
+// === Structs ===
 
 /// Uses SystemParametersV1 as the parameters.
 public struct SystemInnerV1 has store {
@@ -83,6 +112,12 @@ public struct SystemInnerV1 has store {
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
+
+public struct ProtocolCap has key, store {
+    id: UID,
+}
+
+// === Events ===
 
 /// Event containing system-level epoch information, emitted during
 /// the epoch advancement message.
@@ -176,26 +211,6 @@ public struct SetApprovedUpgradeEvent has copy, drop {
     digest: Option<vector<u8>>,
 }
 
-// Errors
-const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 0;
-const EHaveNotReachedEndEpochTime: u64 = 1;
-const EActiveBlsCommitteeMustInitialize: u64 = 2;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
-const EApprovedUpgradeNotFound: u64 = 5;
-
-#[error]
-const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
-
-#[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
-
-#[error]
-const EWrongEpochState: vector<u8> = b"The system is in the wrong epoch state for the operation.";
-
-#[error]
-const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
-
 // ==== functions that can only be called by init ====
 
 /// Create a new IkaSystemState object and make it shared.
@@ -208,9 +223,15 @@ public(package) fun create(
     epoch_duration_ms: u64,
     stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
-    authorized_protocol_cap_ids: vector<ID>,
     ctx: &mut TxContext,
-): SystemInnerV1 {
+): (SystemInnerV1, ProtocolCap) {
+    let id = object::new(ctx);
+    let cap_id = id.to_inner();
+    let protocol_cap = ProtocolCap {
+        id,
+    };
+
+    let authorized_protocol_cap_ids = vector[cap_id];
     // This type is fixed as it's created at init. It should not be updated during type upgrade.
     let system_state = SystemInnerV1 {
         epoch: 0,
@@ -232,10 +253,10 @@ public(package) fun create(
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
         extra_fields: bag::new(ctx),
     };
-    system_state
+    (system_state, protocol_cap)
 }
 
-// ==== public(package) functions ====
+// === Package Functions ===
 
 public(package) fun initialize(
     self: &mut SystemInnerV1,
@@ -698,12 +719,12 @@ fun verify_cap(
 
 public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut SystemInnerV1,
-    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_encryption_key_dkg(ctx);
+    let key_cap = dwallet_2pc_mpc_coordinator_inner.request_dwallet_network_encryption_key_dkg(ctx);
     self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 
@@ -971,6 +992,12 @@ public(package) fun can_withdraw_staked_ika_early(self: &SystemInnerV1, staked_i
     self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
 }
 
+/// Returns the duration of an epoch in milliseconds.
+public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
+    self.epoch_duration_ms
+}
+
+// === Test Functions ===
 
 #[test_only]
 /// Return the current validator set
@@ -1003,54 +1030,3 @@ public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
 ) {
     self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
 }
-
-public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
-    self.epoch_duration_ms
-}
-
-// // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
-// // candidate validator - bypassing the proof of possession check and other metadata validation
-// // in the process.
-// #[test_only]
-// public(package) fun request_add_validator_candidate_for_testing(
-//     self: &mut SystemInnerV1,
-//     protocol_pubkey_bytes: vector<u8>,
-//     network_pubkey_bytes: vector<u8>,
-//     consensus_pubkey_bytes_bytes: vector<u8>,
-//     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
-//     proof_of_possession_bytes: vector<u8>,
-//     name: vector<u8>,
-//     description: vector<u8>,
-//     image_url: vector<u8>,
-//     project_url: vector<u8>,
-//     network_address: vector<u8>,
-//     p2p_address: vector<u8>,
-//     consensus_address: vector<u8>,
-//     computation_price: u64,
-//     commission_rate: u16,
-//     ctx: &mut TxContext,
-// ): (ValidatorCap, ValidatorOperationCap) {
-//     let (validator, cap, operation_cap) = validator_inner_v1::new_for_testing(
-//         ctx.sender(),
-//         protocol_pubkey_bytes,
-//         network_pubkey_bytes,
-//         consensus_pubkey_bytes_bytes,
-//         class_groups_pubkey_and_proof_bytes,
-//         proof_of_possession_bytes,
-//         name,
-//         description,
-//         image_url,
-//         project_url,
-//         network_address,
-//         p2p_address,
-//         consensus_address,
-//         option::none(),
-//         computation_price,
-//         commission_rate,
-//         false, // not an initial validator active at init
-//         ctx,
-//     );
-
-//     self.validators.request_add_validator_candidate(validator, ctx);
-//     (cap, operation_cap)
-// }

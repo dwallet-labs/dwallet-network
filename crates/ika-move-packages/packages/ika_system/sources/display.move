@@ -15,20 +15,27 @@
 /// - creator
 module ika_system::display;
 
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{
-    VerifiedPresignCap,
-    UnverifiedPresignCap,
-    UnverifiedPartialUserSignatureCap,
-    VerifiedPartialUserSignatureCap,
-    DWalletCap,
-    ImportedKeyDWalletCap
+// === Imports ===
+
+use std::{string::String, type_name};
+use ika_system::{
+    dwallet_2pc_mpc_coordinator_inner::{
+        DWalletCap,
+        ImportedKeyDWalletCap,
+        UnverifiedPartialUserSignatureCap,
+        UnverifiedPresignCap,
+        VerifiedPartialUserSignatureCap,
+        VerifiedPresignCap
+    },
+    staked_ika::StakedIka
 };
-use ika_system::staked_ika::StakedIka;
-use std::string::String;
-use std::type_name;
-use sui::display::{Self, Display};
-use sui::object_bag::{Self, ObjectBag};
-use sui::package::Publisher;
+use sui::{
+    display::{Self, Display},
+    object_bag::{Self, ObjectBag},
+    package::Publisher
+};
+
+// === Structs ===
 
 /// The wrapper that stores the objects.
 public struct ObjectDisplay has key {
@@ -38,6 +45,8 @@ public struct ObjectDisplay has key {
 
 /// The dynamic field key to use
 public struct PublisherKey() has copy, drop, store;
+
+// === Package Functions ===
 
 /// Creates the `ObjectDisplay` instance with default objects in it.
 public(package) fun create(
@@ -90,6 +99,8 @@ public(package) fun create(
 
     transfer::share_object(ObjectDisplay { id: object::new(ctx), inner })
 }
+
+// === Private Functions ===
 
 /// Creates initial `Display` for the `StakedIka` type.
 fun init_staked_ika_display(

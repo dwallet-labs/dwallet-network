@@ -3,29 +3,61 @@
 
 module ika_system::validator_set;
 
+// === Imports ===
+
 use ika::ika::IKA;
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::staked_ika::{
-    StakedIka,
+use ika_system::{
+    bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member},
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
+    dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner,
+    dwallet_pricing::DWalletPricing,
+    extended_field::{Self, ExtendedField},
+    pending_active_set::{Self, PendingActiveSet},
+    staked_ika::StakedIka,
+    token_exchange_rate::TokenExchangeRate,
+    validator::{Self, Validator},
+    validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
+    validator_metadata::ValidatorMetadata
 };
-use ika_system::validator::{Self, Validator};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
-use ika_system::bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member};
-use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::validator_metadata::{ValidatorMetadata};
-use ika_system::extended_field::{Self, ExtendedField};
-use ika_system::pending_active_set::{Self, PendingActiveSet};
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletCoordinatorInner};
-use ika_system::dwallet_pricing::{DWalletPricing};
-use sui::bag::{Self, Bag};
-use sui::balance::{Self, Balance};
-use sui::coin::Coin;
-use sui::event;
-use sui::table::{Table};
-use sui::object_table::{Self, ObjectTable};
-use sui::vec_map::{Self, VecMap};
-use sui::vec_set::{Self, VecSet};
 use std::string::String;
+use sui::{
+    bag::{Self, Bag},
+    balance::{Self, Balance},
+    coin::Coin,
+    event,
+    object_table::{Self, ObjectTable},
+    table::Table,
+    vec_map::{Self, VecMap},
+    vec_set::{Self, VecSet}
+};
+
+// === Constants ===
+
+const BASIS_POINT_DENOMINATOR: u16 = 10_000;
+const BASIS_POINT_DENOMINATOR_U128: u128 = 10_000;
+const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
+
+// === Errors ===
+
+const ENonValidatorInReportRecords: u64 = 0;
+const EDuplicateValidator: u64 = 1;
+const ENotAValidator: u64 = 2;
+const EValidatorNotCandidate: u64 = 3;
+const EStakingBelowThreshold: u64 = 4;
+const EValidatorAlreadyRemoved: u64 = 5;
+const ECannotReportOneself: u64 = 6;
+const EReportRecordNotFound: u64 = 7;
+const ECannotJoinActiveSet: u64 = 8;
+const EBpsTooLarge: u64 = 9;
+const EInvalidCap: u64 = 101;
+
+#[error]
+const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch can be called only after advance epoch.";
+
+#[error]
+const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
+
+// === Structs ===
 
 public struct ValidatorSet has store {
     /// Total amount of stake from all active validators at the beginning of the epoch.
@@ -87,31 +119,7 @@ public struct ValidatorLeaveEvent has copy, drop {
     is_voluntary: bool,
 }
 
-const BASIS_POINT_DENOMINATOR: u16 = 10_000;
-const BASIS_POINT_DENOMINATOR_U128: u128 = 10_000;
-const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
-
-
-// Errors
-const ENonValidatorInReportRecords: u64 = 0;
-const EDuplicateValidator: u64 = 1;
-const ENotAValidator: u64 = 2;
-const EValidatorNotCandidate: u64 = 3;
-const EStakingBelowThreshold: u64 = 4;
-const EValidatorAlreadyRemoved: u64 = 5;
-const ECannotReportOneself: u64 = 6;
-const EReportRecordNotFound: u64 = 7;
-const ECannotJoinActiveSet: u64 = 8;
-const EBpsTooLarge: u64 = 9;
-
-const EInvalidCap: u64 = 101;
-
-#[error]
-const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch can be called only after advance epoch.";
-
-
-#[error]
-const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
+// === Package Functions ===
 
 // ==== initialization ====
 

@@ -3,26 +3,37 @@
 
 module ika_system::dwallet_2pc_mpc_coordinator;
 
+// === Imports ===
+
 use ika::ika::IKA;
-use sui::sui::SUI;
-use sui::coin::{Coin};
-use sui::dynamic_field;
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{
-    Self,
-    DWalletCoordinatorInner,
-    DWalletNetworkEncryptionKeyCap,
-    DWalletCap,
-    ImportedKeyDWalletCap,
-    UnverifiedPresignCap,
-    VerifiedPresignCap,
-    MessageApproval,
-    ImportedKeyMessageApproval,
-    UnverifiedPartialUserSignatureCap,
-    VerifiedPartialUserSignatureCap
+use sui::{coin::Coin, dynamic_field, sui::SUI, vec_map::VecMap};
+use ika_system::{
+    bls_committee::BlsCommittee,
+    dwallet_2pc_mpc_coordinator_inner::{
+        DWalletCap,
+        DWalletCoordinatorInner,
+        ImportedKeyDWalletCap,
+        ImportedKeyMessageApproval,
+        MessageApproval,
+        Self,
+        UnverifiedPartialUserSignatureCap,
+        UnverifiedPresignCap,
+        VerifiedPartialUserSignatureCap,
+        VerifiedPresignCap
+    },
+    dwallet_pricing::DWalletPricing
 };
-use ika_system::bls_committee::BlsCommittee;
-use ika_system::dwallet_pricing::DWalletPricing;
-use sui::vec_map::VecMap;
+
+// === Errors ===
+
+const EWrongInnerVersion: u64 = 0;
+const EInvalidMigration: u64 = 1;
+
+// === Constants ===
+/// Flag to indicate the version of the ika system.
+const VERSION: u64 = 1;
+
+// === Structs ===
 
 public struct DWalletCoordinator has key {
     id: UID,
@@ -31,13 +42,7 @@ public struct DWalletCoordinator has key {
     new_package_id: Option<ID>,
 }
 
-const EWrongInnerVersion: u64 = 0;
-const EInvalidMigration: u64 = 1;
-
-/// Flag to indicate the version of the ika system.
-const VERSION: u64 = 1;
-
-// ==== functions that can only be called by init ====
+// === Functions that can only be called by init ===
 
 /// Create a new System object and make it shared.
 /// This function will be called only once in init.
@@ -72,6 +77,8 @@ public(package) fun share_dwallet_coordinator(
     transfer::share_object(dwallet_coordinator);
 }
 
+// === Public Functions ===
+
 /// Being called by the Ika network to store outputs of completed MPC sessions to Sui.
 public fun process_checkpoint_message_by_quorum(
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
@@ -88,13 +95,6 @@ public fun process_checkpoint_message_by_quorum(
     message.append(message4);
     let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx)
-}
-
-public(package) fun request_dwallet_network_encryption_key_dkg(
-    self: &mut DWalletCoordinator,
-    ctx: &mut TxContext
-): DWalletNetworkEncryptionKeyCap {
-    self.inner_mut().request_dwallet_network_encryption_key_dkg(ctx)
 }
 
 public fun get_active_encryption_key(
