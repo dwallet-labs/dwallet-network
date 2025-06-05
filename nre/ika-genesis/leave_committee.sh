@@ -25,7 +25,7 @@ fi
 # Default values.
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
-# The number of validators to create.
+# The number of validators to remove from committee.
 export VALIDATOR_NUM=3
 export FIRST_VALIDATOR_IN_SET=5
 # The number of staked tokens for each validator.
@@ -171,8 +171,7 @@ for tuple in "${VALIDATOR_TUPLES[@]}"; do
     IFS=":" read -r VALIDATOR_NAME VALIDATOR_ID VALIDATOR_CAP_ID <<< "$tuple"
 
     # Find the validator's hostname based on its name
-    # Just the first validator for now.
-    for entry in "${VALIDATORS_ARRAY[@]0:1}"; do
+    for entry in "${VALIDATORS_ARRAY[@]}"; do
         IFS=":" read -r NAME HOSTNAME <<< "$entry"
         if [[ "$NAME" == "$VALIDATOR_NAME" ]]; then
             echo "Debug: Processing validator: $VALIDATOR_NAME with ID: $VALIDATOR_ID and Cap ID: $VALIDATOR_CAP_ID"
