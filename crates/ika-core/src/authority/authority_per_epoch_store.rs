@@ -1433,8 +1433,7 @@ impl AuthorityPerEpochStore {
 
         // Save all the dWallet-MPC related DB data to the consensus commit output to
         // write it to the local DB. After saving the data, clear the data from the epoch store.
-        let mut new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
-        new_dwallet_mpc_round_messages.push(DWalletMPCDBMessage::EndOfDelivery);
+        let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
         match self.read_new_sui_events().await {
