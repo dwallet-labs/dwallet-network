@@ -28,6 +28,7 @@ use mpc::Party;
 use rand_core::{OsRng, SeedableRng};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
+use class_groups::encryption_key::public_parameters::Instantiate;
 use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;

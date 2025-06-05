@@ -3,18 +3,11 @@ import { bcs } from '@mysten/bcs';
 import type { TransactionResult } from '@mysten/sui/dist/cjs/transactions/Transaction';
 import { Transaction } from '@mysten/sui/transactions';
 
-import {
-	DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME,
-	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
-	getDWalletSecpState,
-	getObjectWithType,
-	isActiveDWallet,
-	isDWalletCap,
-	isPresign,
-	MPCKeyScheme,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+
+
+import { DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME, DWALLET_COORDINATOR_MOVE_MODULE_NAME, getDWalletSecpState, getObjectWithType, isActiveDWallet, isDWalletCap, isPresign, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
 import type { Config } from './globals.ts';
+
 
 // noinspection JSUnusedGlobalSymbols
 export enum Hash {
@@ -23,7 +16,9 @@ export enum Hash {
 }
 
 interface ReadySignObject {
-	sign_id: string;
+	id: {
+		id: string;
+	};
 	state: {
 		fields: {
 			signature: Uint8Array;

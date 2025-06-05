@@ -24,6 +24,7 @@ use ika_types::messages_dwallet_mpc::{
     MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use rand_core::OsRng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::warn;
@@ -142,6 +143,7 @@ impl ValidatorPrivateDecryptionKeyData {
                     party_id,
                     secret_key_share,
                     &public_params,
+                    &mut OsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
 
@@ -186,9 +188,7 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_encryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(
-                "".to_string(),
-            ))?
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))?
             .decryption_key_share_public_parameters
             .clone())
     }

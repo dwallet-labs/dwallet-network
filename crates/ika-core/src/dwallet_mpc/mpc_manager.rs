@@ -218,7 +218,12 @@ impl DWalletMPCManager {
                         .push((event.event, event.session_info));
                 }
                 _ => {
-                    error!(?err, "failed to handle dWallet MPC event with error");
+                    error!(
+                        ?err,
+                        ?event.event.type_,
+                        session_info=?event.session_info,
+                        "failed to handle dWallet MPC event with error"
+                    );
                 }
             }
         }
@@ -303,7 +308,6 @@ impl DWalletMPCManager {
     fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-            session.received_more_messages_since_last_advance = false;
             session.attempts_count += 1;
             // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
             // So all parties that sent a regular MPC Message for the last executed
