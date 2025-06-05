@@ -106,14 +106,17 @@ impl CryptographicComputationsOrchestrator {
                 Ok(computation_update) => match computation_update {
                     ComputationUpdate::Started => {
                         info!(
+                            thread_count=rayon::current_num_threads(),
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Started cryptographic computation, increasing count"
                         );
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
+
                         // todo(#1081): metadata.
                         info!(
+                            thread_count=rayon::current_num_threads(),
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
                         );
