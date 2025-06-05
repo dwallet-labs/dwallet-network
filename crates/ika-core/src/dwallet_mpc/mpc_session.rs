@@ -813,7 +813,6 @@ impl DWalletMPCSession {
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
     pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        self.received_more_messages_since_last_advance = true;
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -875,10 +874,15 @@ impl DWalletMPCSession {
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         }
-        self.serialized_full_messages
+        let mut round_messages_map = self
+            .serialized_full_messages
             .entry(message.round_number)
-            .or_default()
-            .insert(source_party_id, message.message.clone());
+            .or_default();
+        if round_messages_map.contains_key(&source_party_id) {
+            return Ok(());
+        }
+        round_messages_map.insert(source_party_id, message.message.clone());
+        self.received_more_messages_since_last_advance = true;
         Ok(())
     }
 
