@@ -76,7 +76,7 @@ const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the
 // === Structs ===
 
 /// Uses SystemParametersV1 as the parameters.
-public struct SystemInnerV1 has store {
+public struct SystemInner has store {
     /// The current epoch ID, starting from 0.
     epoch: u64,
     /// The current protocol version, starting from 1.
@@ -224,7 +224,7 @@ public(package) fun create(
     stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
     ctx: &mut TxContext,
-): (SystemInnerV1, ProtocolCap) {
+): (SystemInner, ProtocolCap) {
     let id = object::new(ctx);
     let cap_id = id.to_inner();
     let protocol_cap = ProtocolCap {
@@ -233,7 +233,7 @@ public(package) fun create(
 
     let authorized_protocol_cap_ids = vector[cap_id];
     // This type is fixed as it's created at init. It should not be updated during type upgrade.
-    let system_state = SystemInnerV1 {
+    let system_state = SystemInner {
         epoch: 0,
         protocol_version,
         next_protocol_version: option::none(),
@@ -259,7 +259,7 @@ public(package) fun create(
 // === Package Functions ===
 
 public(package) fun initialize(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     max_validator_change_count: u64,
@@ -292,7 +292,7 @@ public(package) fun initialize(
 /// Note: `proof_of_possession_bytes` MUST be a valid signature using proof_of_possession_sender and protocol_pubkey_bytes.
 /// To produce a valid PoP, run [fn test_proof_of_possession_bytes].
 public(package) fun request_add_validator_candidate(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     name: String,
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
@@ -326,7 +326,7 @@ public(package) fun request_add_validator_candidate(
 /// Called by a validator candidate to remove themselves from the candidacy. After this call
 /// their staking pool becomes deactivate.
 public(package) fun request_remove_validator_candidate(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_remove_validator_candidate(self.epoch, cap);
@@ -337,7 +337,7 @@ public(package) fun request_remove_validator_candidate(
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
 public(package) fun request_add_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -349,7 +349,7 @@ public(package) fun request_add_validator(
 /// At the end of the epoch, the `validator` object will be returned to the sui_address
 /// of the validator.
 public(package) fun request_remove_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_remove_validator(self.epoch, cap);
@@ -357,7 +357,7 @@ public(package) fun request_remove_validator(
 
 
 public(package) fun set_validator_metadata(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     metadata: ValidatorMetadata,
 ) {
@@ -367,7 +367,7 @@ public(package) fun set_validator_metadata(
 /// A validator can call this function to set a new commission rate, updated at the end of
 /// the epoch.
 public(package) fun set_next_commission(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     new_commission_rate: u16,
     cap: &ValidatorOperationCap,
 ) {
@@ -382,7 +382,7 @@ public(package) fun set_next_commission(
 
 /// Add stake to a validator's staking pool.
 public(package) fun request_add_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     stake: Coin<IKA>,
     validator_id: ID,
     ctx: &mut TxContext,
@@ -399,14 +399,14 @@ public(package) fun request_add_stake(
 
 /// Withdraw some portion of a stake from a validator's staking pool.
 public(package) fun request_withdraw_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     staked_ika: &mut StakedIka,
 ) {
     self.validator_set.request_withdraw_stake(staked_ika, self.epoch);
 }
 
 public(package) fun withdraw_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     staked_ika: StakedIka,
     ctx: &mut TxContext,
 ): Coin<IKA> {
@@ -414,7 +414,7 @@ public(package) fun withdraw_stake(
 }
 
 // public(package) fun convert_to_fungible_staked_ika(
-//     self: &mut SystemInnerV1,
+//     self: &mut SystemInner,
 //     staked_ika: StakedIka,
 //     ctx: &mut TxContext,
 // ): FungibleStakedIka {
@@ -422,14 +422,14 @@ public(package) fun withdraw_stake(
 // }
 
 // public(package) fun redeem_fungible_staked_ika(
-//     self: &mut SystemInnerV1,
+//     self: &mut SystemInner,
 //     fungible_staked_ika: FungibleStakedIka,
 // ): Balance<IKA> {
 //     self.validators.redeem_fungible_staked_ika(self.epoch, fungible_staked_ika)
 // }
 
 public(package) fun report_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
 ) {
@@ -437,7 +437,7 @@ public(package) fun report_validator(
 }
 
 public(package) fun undo_report_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
 ) {
@@ -448,17 +448,17 @@ public(package) fun undo_report_validator(
 
 /// Create a new `ValidatorOperationCap` and registers it.
 /// The original object is thus revoked.
-public(package) fun rotate_operation_cap(self: &mut SystemInnerV1, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
+public(package) fun rotate_operation_cap(self: &mut SystemInner, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
     self.validator_set.rotate_operation_cap(cap, ctx)
 }
 
-public(package) fun rotate_commission_cap(self: &mut SystemInnerV1, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
+public(package) fun rotate_commission_cap(self: &mut SystemInner, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
     self.validator_set.rotate_commission_cap(cap, ctx)
 }
 
 /// Sets a validator's name.
 public(package) fun set_validator_name(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     name: String,
     cap: &ValidatorOperationCap
 ) {
@@ -468,7 +468,7 @@ public(package) fun set_validator_name(
 /// Sets a validator's network address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_network_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     network_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -478,7 +478,7 @@ public(package) fun set_next_epoch_network_address(
 /// Sets a validator's p2p address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_p2p_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     p2p_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -488,7 +488,7 @@ public(package) fun set_next_epoch_p2p_address(
 /// Sets a validator's consensus address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     consensus_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -499,7 +499,7 @@ public(package) fun set_next_epoch_consensus_address(
 /// Sets a validator's public key of protocol key and proof of possession.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_protocol_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     protocol_pubkey_bytes: vector<u8>,
     proof_of_possession_bytes: vector<u8>,
     cap: &ValidatorOperationCap,
@@ -511,7 +511,7 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
 /// Sets a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_network_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     network_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap
 ) {
@@ -521,7 +521,7 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     consensus_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap
 ) {
@@ -532,7 +532,7 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 /// Sets a validator's public key and its associated proof of class groups key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     cap: &ValidatorOperationCap
 ) {
@@ -542,7 +542,7 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
 /// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_pricing_vote(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     pricing: DWalletPricing,
     cap: &ValidatorOperationCap,
@@ -558,7 +558,7 @@ public(package) fun set_pricing_vote(
 /// 3. Distribute computation charge to validator stake.
 /// 4. Update all validators.
 public(package) fun advance_epoch(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -630,7 +630,7 @@ public(package) fun advance_epoch(
 }
 
 public(package) fun process_mid_epoch(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     clock: &Clock,
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext,
@@ -643,7 +643,7 @@ public(package) fun process_mid_epoch(
 }
 
 public(package) fun lock_last_active_session_sequence_number(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
 ) {
@@ -653,58 +653,58 @@ public(package) fun lock_last_active_session_sequence_number(
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
 /// since epochs are ever-increasing and epoch changes are intended to happen every 24 hours.
-public(package) fun epoch(self: &SystemInnerV1): u64 {
+public(package) fun epoch(self: &SystemInner): u64 {
     self.epoch
 }
 
-public(package) fun protocol_version(self: &SystemInnerV1): u64 {
+public(package) fun protocol_version(self: &SystemInner): u64 {
     self.protocol_version
 }
 
-public(package) fun upgrade_caps(self: &SystemInnerV1): &vector<UpgradeCap> {
+public(package) fun upgrade_caps(self: &SystemInner): &vector<UpgradeCap> {
     &self.upgrade_caps
 }
 
 /// Returns unix timestamp of the start of current epoch
-public(package) fun epoch_start_timestamp_ms(self: &SystemInnerV1): u64 {
+public(package) fun epoch_start_timestamp_ms(self: &SystemInner): u64 {
     self.epoch_start_timestamp_ms
 }
 
 /// Returns the total amount staked with `validator_id`.
 /// Aborts if `validator_id` is not an active validator.
 public(package) fun validator_stake_amount(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     validator_id: ID,
 ): u64 {
     self.validator_set.validator_total_stake_amount(validator_id)
 }
 
 /// Returns all the validators who are currently reporting `validator_id`
-public(package) fun get_reporters_of(self: &SystemInnerV1, validator_id: ID): VecSet<ID> {
+public(package) fun get_reporters_of(self: &SystemInner, validator_id: ID): VecSet<ID> {
     self.get_reporters_of(validator_id)
 }
 
 public(package) fun token_exchange_rates(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
     let validators = &self.validator_set;
     validators.token_exchange_rates(validator_id)
 }
 
-public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
+public(package) fun active_committee(self: &SystemInner): BlsCommittee {
     let validator_set = &self.validator_set;
     validator_set.active_committee()
 }
 
-public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
+public(package) fun next_epoch_active_committee(self: &SystemInner): BlsCommittee {
     let next_epoch_committee = self.validator_set.next_epoch_active_committee();
     assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
     return *next_epoch_committee.borrow()
 }
 
 fun verify_cap(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     cap: &ProtocolCap,
 ) {
     let protocol_cap_id = object::id(cap);
@@ -718,7 +718,7 @@ fun verify_cap(
 }
 
 public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     cap: &ProtocolCap,
     ctx: &mut TxContext,
@@ -729,7 +729,7 @@ public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
 }
 
 public(package) fun set_supported_and_pricing(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
@@ -740,7 +740,7 @@ public(package) fun set_supported_and_pricing(
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     paused_curves: vector<u32>,
     paused_signature_algorithms: vector<u32>,
@@ -752,7 +752,7 @@ public(package) fun set_paused_curves_and_signature_algorithms(
 }
 
 public(package) fun authorize_upgrade_by_cap(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector<u8>,
@@ -763,7 +763,7 @@ public(package) fun authorize_upgrade_by_cap(
 }
 
 public(package) fun authorize_upgrade_by_approval(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
 ): UpgradeTicket {
     assert!(self.approved_upgrades.contains(&package_id), EApprovedUpgradeNotFound);
@@ -772,7 +772,7 @@ public(package) fun authorize_upgrade_by_approval(
 }
 
 fun authorize_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
     digest: vector<u8>,
 ): UpgradeTicket  {
@@ -782,7 +782,7 @@ fun authorize_upgrade(
 }
 
 public(package) fun commit_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     receipt: UpgradeReceipt,
 ): ID {
     let receipt_cap_id = receipt.cap();
@@ -793,7 +793,7 @@ public(package) fun commit_upgrade(
 }
 
 public(package) fun process_checkpoint_message_by_cap(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
@@ -803,7 +803,7 @@ public(package) fun process_checkpoint_message_by_cap(
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -821,7 +821,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message(message, ctx);
 }
 
-public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
+public(package) fun process_checkpoint_message(self: &mut SystemInner, message: vector<u8>, _ctx: &mut TxContext) {
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -956,7 +956,7 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
 /// If `digest` is `some`, it will be inserted into the `approved_upgrades` map.
 /// If `digest` is `none`, it will be removed from the `approved_upgrades` map.
 fun set_approved_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
     mut digest: Option<vector<u8>>,
 ) {
@@ -978,7 +978,7 @@ fun set_approved_upgrade(
 /// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
 /// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
 public(package) fun calculate_rewards(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     node_id: ID,
     staked_principal: u64,
     activation_epoch: u64,
@@ -988,12 +988,12 @@ public(package) fun calculate_rewards(
 }
 
 /// Check whether StakedIka can be withdrawn directly.
-public(package) fun can_withdraw_staked_ika_early(self: &SystemInnerV1, staked_ika: &StakedIka): bool {
+public(package) fun can_withdraw_staked_ika_early(self: &SystemInner, staked_ika: &StakedIka): bool {
     self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
 }
 
 /// Returns the duration of an epoch in milliseconds.
-public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
+public(package) fun epoch_duration_ms(self: &SystemInner): u64 {
     self.epoch_duration_ms
 }
 
@@ -1001,23 +1001,23 @@ public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
 
 #[test_only]
 /// Return the current validator set
-public(package) fun validator_set(self: &SystemInnerV1): &ValidatorSet {
+public(package) fun validator_set(self: &SystemInner): &ValidatorSet {
     &self.validator_set
 }
 
 #[test_only]
-public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter(self: &SystemInnerV1): u64 {
+public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter(self: &SystemInner): u64 {
     self.protocol_treasury.get_stake_subsidy_distribution_counter()
 }
 
 #[test_only]
-public(package) fun set_epoch_for_testing(self: &mut SystemInnerV1, epoch_num: u64) {
+public(package) fun set_epoch_for_testing(self: &mut SystemInner, epoch_num: u64) {
     self.epoch = epoch_num
 }
 
 #[test_only]
 public(package) fun request_add_validator_for_testing(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -1025,7 +1025,7 @@ public(package) fun request_add_validator_for_testing(
 
 #[test_only]
 public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     counter: u64,
 ) {
     self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)

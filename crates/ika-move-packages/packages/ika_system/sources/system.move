@@ -1,43 +1,112 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-/// Ika System State Type Upgrade Guide
-/// `System` is a thin wrapper around `SystemInnerVX` that provides a versioned interface.
-/// The `System` object has a fixed ID 0x5, and the `SystemInnerVX` object is stored as a dynamic field.
-/// There are a few different ways to upgrade the `SystemInnerVX` type:
+/// # Ika System Module
+/// 
+/// The `ika_system::system` module provides the core system state management for the Ika network.
+/// It acts as the central coordinator for validators, staking, epochs, and network governance.
+/// 
+/// ## Overview
+/// 
+/// The module implements a versioned wrapper pattern around the core system state:
+/// - `System`: A shared object that serves as the public interface and version manager
+/// - `SystemInner`: The actual system state implementation containing all business logic
+/// - `ProtocolCap`: Capability object for privileged system operations
+/// 
+/// ## Architecture
+/// 
+/// The system uses a two-layer architecture:
+/// 
+/// ### System Wrapper Layer
+/// The `System` struct is a thin wrapper that:
+/// - Maintains version information for upgrades
+/// - Stores the package ID for authorization
+/// - Holds the inner system state as a dynamic field
+/// - Provides a stable public interface across versions
+/// 
+/// ### SystemInner Layer
+/// The `SystemInner` struct contains all the core functionality:
+/// - Validator set management and operations
+/// - Epoch progression and timing
+/// - Staking and delegation logic
+/// - Protocol treasury and rewards distribution
+/// - dWallet network coordination
+/// - System parameter management
+/// 
+/// ## Key Responsibilities
+/// 
+/// ### Validator Management
+/// - Adding/removing validator candidates
+/// - Managing validator metadata and configuration
+/// - Handling validator state transitions (PreActive → Active → Withdrawing)
+/// - Processing validator reports and governance actions
+/// 
+/// ### Staking Operations
+/// - Processing stake additions and withdrawals
+/// - Managing staked IKA tokens and rewards
+/// - Calculating token exchange rates across epochs
+/// - Handling delegation to validators
+/// 
+/// ### Epoch Management
+/// - Coordinating epoch transitions
+/// - Processing mid-epoch reconfigurations
+/// - Managing epoch timing and duration
+/// - Distributing stake subsidies and rewards
+/// 
+/// ### dWallet Integration
+/// - Coordinating with dWallet 2PC MPC system
+/// - Managing encryption keys and DKG processes
+/// - Handling pricing and curve configurations
+/// - Processing dWallet network operations
+/// 
+/// ### System Governance
+/// - Managing protocol upgrades via UpgradeCap
+/// - Processing system parameter changes
+/// - Handling protocol version transitions
+/// - Coordinating checkpoint message processing
+/// 
+/// ## State Management
+/// 
+/// The system maintains state across multiple components:
+/// - **ValidatorSet**: Current and pending validator configurations
+/// - **ProtocolTreasury**: Rewards, subsidies, and fee management
+/// - **BLS Committee**: Cryptographic committee for consensus
+/// - **Token Exchange Rates**: Historical staking reward calculations
+/// - **Pending Values**: Future epoch configuration changes
+/// 
+/// ## Ika System Upgrade Guide
+/// `System` is a versioned wrapper around `SystemInner` that provides upgrade capabilities.
+/// The `SystemInner` object is stored as a dynamic field with the version as the key.
+/// There are multiple approaches to upgrade the system state:
 ///
-/// The simplest and one that doesn't involve a real upgrade is to just add dynamic fields to the `extra_fields` field
-/// of `SystemInnerVX` or any of its sub type. This is useful when we are in a rush, or making a small change,
-/// or still experimenting a new field.
+/// The simplest approach is to add dynamic fields to the `extra_fields` field of `SystemInner`
+/// or any of its subtypes. This is useful for rapid changes, small modifications, or experimental features.
 ///
-/// To properly upgrade the `SystemInnerVX` type, we need to ship a new framework that does the following:
-/// 1. Define a new `SystemInnerVX`type (e.g. `SystemInnerV1`).
-/// 2. Define a data migration function that migrates the old `SystemInnerVX` to the new one (i.e. SystemInnerV1).
-/// 3. Replace all uses of `SystemInnerVX` with `SystemInnerV1` in both ika_system.move and system_inner.move,
-///    with the exception of the `system_inner_v1::create` function, which should always return the init type.
-/// 4. Inside `load_inner_maybe_upgrade` function, check the current version in the wrapper, and if it's not the latest version,
-///   call the data migration function to upgrade the inner object. Make sure to also update the version in the wrapper.
-/// A detailed example can be found in ika/tests/framework_upgrades/mock_ika_systems/shallow_upgrade.
-/// Along with the Move change, we also need to update the Rust code to support the new type. This includes:
-/// 1. Define a new `SystemInnerVX` struct type that matches the new Move type, and implement the SystemTrait.
-/// 2. Update the `System` struct to include the new version as a new enum variant.
-/// 3. Update the `get_ika_system_state` function to handle the new version.
-/// To test that the upgrade will be successful, we need to modify `ika_system_state_production_upgrade_test` test in
-/// protocol_version_tests and trigger a real upgrade using the new framework. We will need to keep this directory as old version,
-/// put the new framework in a new directory, and run the test to exercise the upgrade.
+/// To perform a proper type upgrade of `SystemInner`, follow these steps:
+/// 1. Define a new `SystemInnerV2` type in system_inner.move.
+/// 2. Create a data migration function that transforms `SystemInner` to `SystemInnerV2`.
+/// 3. Update the `VERSION` constant to 2 and replace all references to `SystemInner` with `SystemInnerV2`
+///    in both system.move and system_inner.move.
+/// 4. Modify the `migrate` function to handle the version upgrade by:
+///    - Removing the old inner object from the dynamic field
+///    - Applying the data migration transformation
+///    - Adding the new inner object with the updated version
+/// 5. Update the `inner()` and `inner_mut()` functions to work with the new version.
+/// 
+/// Along with the Move changes, update the Rust code:
+/// 1. Define a new `SystemInnerV2` struct that matches the Move type.
+/// 2. Update the `System` enum to include the new version variant.
+/// 3. Update relevant system state getter functions to handle the new version.
 ///
-/// To upgrade Validator type, besides everything above, we also need to:
-/// 1. Define a new Validator type (e.g. ValidatorV2).
-/// 2. Define a data migration function that migrates the old Validator to the new one (i.e. ValidatorV2).
-/// 3. Replace all uses of Validator with ValidatorV2 except the init creation function.
-/// 4. In validator_wrapper::upgrade_to_latest, check the current version in the wrapper, and if it's not the latest version,
-///  call the data migration function to upgrade it.
-/// In Rust, we also need to add a new case in `get_validator_from_table`.
-/// Note that it is possible to upgrade SystemInnerVX without upgrading Validator, but not the other way around.
-/// And when we only upgrade SystemInnerVX, the version of Validator in the wrapper will not be updated, and hence may become
-/// inconsistent with the version of SystemInnerVX. This is fine as long as we don't use the Validator version to determine
-/// the SystemInnerVX version, or vice versa.
-
+/// To upgrade Validator types:
+/// 1. Define a new Validator version (e.g. ValidatorV2) in validator.move.
+/// 2. Create migration functions to convert between validator versions.
+/// 3. Update validator creation and access functions to use the new version.
+/// 4. Update the validator set and related components to handle the new validator type.
+/// 
+/// In Rust, add new cases to handle the upgraded validator types in the appropriate getter functions.
+/// Validator upgrades can be done independently of SystemInner upgrades, but ensure version consistency
+/// across related components.
 module ika_system::system;
 
 // === Imports ===
@@ -51,7 +120,7 @@ use ika_system::{
     dwallet_pricing::DWalletPricing,
     protocol_treasury::ProtocolTreasury,
     staked_ika::StakedIka,
-    system_inner::{Self, SystemInnerV1, ProtocolCap},
+    system_inner::{Self, SystemInner, ProtocolCap},
     token_exchange_rate::TokenExchangeRate,
     validator_cap::{ValidatorCap, ValidatorCommissionCap, ValidatorOperationCap},
     validator_metadata::ValidatorMetadata,
@@ -67,14 +136,45 @@ use sui::{
 };
 
 // === Errors ===
+
+/// Attempted to access system inner with wrong version.
 const EWrongInnerVersion: u64 = 0;
+
+/// Invalid migration - either version not incremented or new_package_id not set.
 const EInvalidMigration: u64 = 1;
 
 // === Constants ===
-/// Flag to indicate the version of the ika system.
+
+/// Current version of the system state structure.
+/// This version corresponds to SystemInner and should be incremented
+/// when the inner system state structure changes requiring migration.
+/// 
+/// Version History:
+/// - V1: Initial SystemInner implementation with core functionality
 const VERSION: u64 = 1;
 
 // === Structs ===
+
+/// The main system state object that coordinates the entire Ika network.
+/// 
+/// This is a shared object that acts as the central point for all system operations.
+/// It maintains versioning information and delegates actual functionality to the
+/// inner system state stored as a dynamic field.
+/// 
+/// # Fields
+/// - `id`: Unique identifier for this system object
+/// - `version`: Current version of the inner system state structure
+/// - `package_id`: ID of the current system package for upgrade authorization
+/// - `new_package_id`: ID of the new package during upgrades (if any)
+/// 
+/// # Design Notes
+/// The system uses dynamic fields to store the actual state, allowing for
+/// type-safe upgrades while maintaining a stable object ID. The version field
+/// ensures that operations are performed against the correct inner state type.
+/// 
+/// # Access Pattern
+/// All public functions delegate to `inner()` or `inner_mut()` which retrieve
+/// the correctly versioned SystemInner from the dynamic field storage.
 public struct System has key {
     id: UID,
     version: u64,
@@ -86,6 +186,9 @@ public struct System has key {
 
 /// Create a new System object and make it shared.
 /// This function will be called only once in init.
+/// 
+/// Creates the initial system state with the provided validators and parameters,
+/// then wraps it in a versioned System object and makes it shared for network access.
 public(package) fun create(
     package_id: ID,
     upgrade_caps: vector<UpgradeCap>,
@@ -500,7 +603,7 @@ public fun migrate(
     assert!(self.version < VERSION, EInvalidMigration);
 
     // Move the old system state inner to the new version.
-    let system_inner: SystemInnerV1 = dynamic_field::remove(&mut self.id, self.version);
+    let system_inner: SystemInner = dynamic_field::remove(&mut self.id, self.version);
     dynamic_field::add(&mut self.id, VERSION, system_inner);
     self.version = VERSION;
 
@@ -534,13 +637,13 @@ public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka):
 // === Internals ===
 
 /// Get a mutable reference to `SystemInnerVX` from the `System`.
-fun inner_mut(self: &mut System): &mut SystemInnerV1 {
+fun inner_mut(self: &mut System): &mut SystemInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow_mut(&mut self.id, VERSION)
 }
 
 /// Get an immutable reference to `SystemInnerVX` from the `System`.
-fun inner(self: &System): &SystemInnerV1 {
+fun inner(self: &System): &SystemInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
 }
@@ -606,6 +709,6 @@ public fun set_stake_subsidy_stake_subsidy_distribution_counter(self: &mut Syste
 }
 
 #[test_only]
-public fun inner_mut_for_testing(self: &mut System): &mut SystemInnerV1 {
+public fun inner_mut_for_testing(self: &mut System): &mut SystemInner {
     self.inner_mut()
 }

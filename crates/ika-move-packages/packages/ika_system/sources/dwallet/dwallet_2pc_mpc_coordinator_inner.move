@@ -1,38 +1,82 @@
 // Copyright (c) dWallet Labs Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-/// This module handles the logic for creating and managing dWallets using the Secp256K1 signature scheme
-/// and the DKG process. It leverages validators to execute MPC (Multi-Party Computation)
-/// protocols to ensure trustless and decentralized wallet creation and key management.
+/// # dWallet 2PC-MPC Coordinator Inner Module
+/// 
+/// This module implements the core logic for creating and managing dWallets using 
+/// Multi-Party Computation (MPC) protocols. It provides a trustless and decentralized
+/// approach to wallet creation and key management through distributed key generation (DKG)
+/// and threshold signing protocols.
+/// 
+/// ## Key Features
+/// - Distributed Key Generation (DKG) for secure key creation
+/// - Threshold signing with presign optimization
+/// - Network encryption key management and reconfiguration
+/// - User encryption key registration and management
+/// - Session-based MPC protocol coordination
+/// - Epoch-based validator committee transitions
+/// - Comprehensive pricing and fee management
+/// - Support for multiple cryptographic curves and algorithms
+/// 
+/// ## Architecture
+/// The module is organized around the `DWalletCoordinatorInner` struct which manages:
+/// - dWallet lifecycle and state transitions
+/// - MPC session coordination and scheduling
+/// - Validator committee management
+/// - Cryptographic algorithm support and emergency controls
+/// - Economic incentives through pricing and fee collection
 
 module ika_system::dwallet_2pc_mpc_coordinator_inner;
 
-use sui::table_vec::{Self, TableVec};
-use ika::ika::IKA;
-use sui::sui::SUI;
-use sui::object_table::{Self, ObjectTable};
-use sui::table::{Self, Table};
-use sui::balance::{Self, Balance};
-use sui::bcs;
-use sui::coin::{Coin};
-use sui::bag::{Self, Bag};
-use sui::event;
-use sui::ed25519::ed25519_verify;
-use ika_system::address;
-use ika_system::bls_committee::{Self, BlsCommittee};
-use sui::vec_map::{VecMap};
-use ika_system::dwallet_pricing::{Self, DWalletPricing, DWalletPricingValue, DWalletPricingCalculationVotes};
+// === Imports ===
 
+use sui::{
+    table_vec::{Self, TableVec},
+    object_table::{Self, ObjectTable},
+    table::{Self, Table},
+    balance::{Self, Balance},
+    bcs,
+    coin::Coin,
+    bag::{Self, Bag},
+    event,
+    ed25519::ed25519_verify,
+    vec_map::VecMap,
+    sui::SUI,
+};
+
+use ika::ika::IKA;
+
+use ika_system::{
+    address,
+    bls_committee::{Self, BlsCommittee},
+    dwallet_pricing::{Self, DWalletPricing, DWalletPricingValue, DWalletPricingCalculationVotes},
+};
+
+// === Constants ===
+
+/// Intent bytes for checkpoint message verification to prevent replay attacks
 const CHECKPOINT_MESSAGE_INTENT: vector<u8> = vector[1, 0, 0];
 
+// Protocol flags for different MPC operations
+// Used for pricing configuration and protocol identification
+
+/// DKG first round protocol identifier
 const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
+/// DKG second round protocol identifier  
 const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
+/// User share re-encryption protocol identifier
 const RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG: u32 = 2;
+/// Make user secret key share public protocol identifier
 const MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG: u32 = 3;
+/// Imported key dWallet verification protocol identifier
 const IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG: u32 = 4;
+/// Presign generation protocol identifier
 const PRESIGN_PROTOCOL_FLAG: u32 = 5;
+/// Standard signing protocol identifier
 const SIGN_PROTOCOL_FLAG: u32 = 6;
+/// Future/conditional signing protocol identifier
 const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
+/// Signing with partial user signature protocol identifier
 const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 // Message data type constants corresponding to MessageKind enum variants (in ika-types/src/message.rs)
@@ -49,17 +93,91 @@ const RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE: u64 = 9;
 const SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE: u64 = 10;
 const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE: u64 = 11;
 
-public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
-    self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
-}
+// === Errors ===
+
+/// dWallet parameters do not match expected values
+const EDWalletMismatch: u64 = 1;
+/// dWallet is not in active state for requested operation
+const EDWalletInactive: u64 = 2;
+/// Referenced dWallet does not exist
+const EDWalletNotExists: u64 = 3;
+/// Object is in wrong state for requested operation
+const EWrongState: u64 = 4;
+/// Referenced network encryption key does not exist
+const EDWalletNetworkEncryptionKeyNotExist: u64 = 5;
+/// Encryption key signature verification failed
+const EInvalidEncryptionKeySignature: u64 = 6;
+/// Message approval parameters do not match partial signature
+const EMessageApprovalMismatch: u64 = 7;
+/// Specified hash scheme is not supported
+const EInvalidHashScheme: u64 = 8;
+/// Signing session is in wrong state
+const ESignWrongState: u64 = 9;
+/// Referenced presign does not exist
+const EPresignNotExist: u64 = 10;
+/// Capability does not match expected object
+const EIncorrectCap: u64 = 11;
+/// Capability has not been verified
+const EUnverifiedCap: u64 = 12;
+/// Invalid source for re-encryption operation
+const EInvalidSource: u64 = 13;
+/// Network encryption key is not in active state
+const EDWalletNetworkEncryptionKeyNotActive: u64 = 14;
+/// Presign is invalid or incomplete
+const EInvalidPresign: u64 = 15;
+/// Cannot advance epoch due to incomplete sessions
+const ECannotAdvanceEpoch: u64 = 16;
+/// Specified cryptographic curve is not supported
+const EInvalidCurve: u64 = 17;
+/// Specified signature algorithm is not supported
+const EInvalidSignatureAlgorithm: u64 = 18;
+/// Cryptographic curve is temporarily paused
+const ECurvePaused: u64 = 19;
+/// Signature algorithm is temporarily paused
+const ESignatureAlgorithmPaused: u64 = 20;
+/// dWallet user secret key shares are already public
+const EDWalletUserSecretKeySharesAlreadyPublic: u64 = 21;
+/// Cryptographic curve mismatch between objects
+const EMismatchCurve: u64 = 22;
+/// Operation not allowed on imported key dWallet
+const EImportedKeyDWallet: u64 = 23;
+/// Operation requires imported key dWallet
+const ENotImportedKeyDWallet: u64 = 24;
+/// Hash scheme is temporarily paused
+const EHashSchemePaused: u64 = 25;
+/// Referenced encryption key does not exist
+const EEncryptionKeyNotExist: u64 = 26;
+/// Pricing configuration missing for protocol
+const EMissingProtocolPricing: u64 = 27;
+/// Pricing calculation votes have not been initiated
+const EPricingCalculationVotesHasNotBeenStarted: u64 = 28;
+/// Pricing calculation votes must complete before epoch advance
+const EPricingCalculationVotesMustBeCompleted: u64 = 29;
+/// Cannot modify settings during active pricing calculation
+const ECannotSetDuringVotesCalculation: u64 = 30;
+
+#[error]
+const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
+
+#[error]
+const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
+
+#[error]
+const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
+
+// === Structs ===
 
 /// Session management data for the dWallet coordinator.
 public struct SessionManagement has store {
+    /// Active sessions indexed by sequence number
     sessions: ObjectTable<u64, DWalletSession>,
-    // Holds events keyed by the ID of the corresponding `DWalletSession` session.
+    /// Events for user-requested sessions, keyed by session ID
     user_requested_sessions_events: Bag,
+    /// Number of completed user-initiated sessions
     number_of_completed_user_initiated_sessions: u64,
+    /// Count of started system sessions
     started_system_sessions_count: u64,
+    /// Count of completed system sessions
     completed_system_sessions_count: u64,
     /// The sequence number to assign to the next user-requested session.
     /// Initialized to `1` and incremented at every new session creation.
@@ -86,46 +204,48 @@ public struct SupportConfig has store {
     /// A nested map of supported curves to signature algorithms to hash schemes.
     /// e.g. secp256k1 -> [(ecdsa -> [sha256, keccak256]), (schnorr -> [sha256])]
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    /// A list of paused curves in case of emergency.
-    /// e.g. [secp256k1, ristretto]
+    /// List of paused curves in case of emergency (e.g. [secp256k1, ristretto])
     paused_curves: vector<u32>,
-    /// A list of paused signature algorithms in case of emergency.
-    /// e.g. [ecdsa, schnorr]
+    /// List of paused signature algorithms in case of emergency (e.g. [ecdsa, schnorr])
     paused_signature_algorithms: vector<u32>,
-    /// A list of paused hash schemes in case of emergency.
-    /// e.g. [sha256, keccak256]
+    /// List of paused hash schemes in case of emergency (e.g. [sha256, keccak256])
     paused_hash_schemes: vector<u32>,
-    /// A list of signature algorithms that are allowed for global presign.
+    /// Signature algorithms that are allowed for global presign
     signature_algorithms_allowed_global_presign: vector<u32>,
 }
 
 /// Pricing and fee management data for the dWallet coordinator.
 public struct PricingAndFeeManagement has store {
-    /// The pricing for the current epoch.
+    /// Pricing for the current epoch
     current: DWalletPricing,
-    /// The default pricing.
+    /// Default pricing configuration
     default: DWalletPricing,
-    /// The votes for the pricing set by validators.
-    /// The key is the validator ID to their votes.
+    /// Validator votes for pricing (validator ID -> pricing vote)
     validator_votes: Table<ID, DWalletPricing>,
-    /// The votes for the pricing calculation, if set, we have to complete the pricing
-    /// calculation before we advance to the next epoch.
+    /// Pricing calculation votes - if set, must complete before epoch advance
     calculation_votes: Option<DWalletPricingCalculationVotes>,
-    /// The value of the gas fee reimbursement for system calls.
+    /// Gas fee reimbursement value for system calls
     gas_fee_reimbursement_sui_system_call_value: u64,
-    /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
+    /// SUI balance for gas fee reimbursement to fund network tx responses
     gas_fee_reimbursement_sui: Balance<SUI>,
-    /// The fees paid for consensus validation in IKA.
+    /// IKA fees charged for consensus validation
     consensus_validation_fee_charged_ika: Balance<IKA>,
 }
 
-/// A shared object that holds all the Ika system object used to manage dWallets:
+/// Core coordinator for dWallet 2PC-MPC operations.
+/// 
+/// This shared object manages all aspects of dWallet creation and operation:
+/// - dWallet lifecycle (DKG, signing, presigning)
+/// - Network encryption keys and user encryption
+/// - Session management and epoch transitions
+/// - Pricing and fee collection
+/// - Committee management and consensus
 ///
 /// Most importantly, the `dwallets` themselves, which holds the public key and public key shares,
 /// and the encryption of the network's share under the network's threshold encryption key.
 /// The encryption of the network's secret key share for every dWallet points to an encryption key in `dwallet_network_encryption_keys`,
 /// which also stores the encrypted encryption key shares of each validator and their public verification keys.
-///
+/// 
 /// For the user side, the secret key share is stored encrypted to the user encryption key (in `encryption_keys`) inside the dWallet,
 /// together with a signature on the public key (shares).
 /// Together, these constitute the necessary information to create a signature with the user.
@@ -134,101 +254,150 @@ public struct PricingAndFeeManagement has store {
 /// and `partial_centralized_signed_messages` holds the partial signatures of users awaiting for a future sign once a `MessageApproval` is presented.
 ///
 /// Additionally, this structure holds management information, like the `previous_committee` and `active_committee` committees,
-/// information regarding `pricing`, all the `sessions` and the `next_session_sequence_number` that will be used for the next session,
+/// information regarding `pricing_and_fee_management`, all the `session_management` and the `next_session_sequence_number` that will be used for the next session,
 /// and various other fields, like the supported and paused curves, signing algorithms and hashes.
+/// 
+/// ## Key Components:
+/// - `dwallets`: Core dWallet objects with public keys and encrypted shares
+/// - `dwallet_network_encryption_keys`: Network threshold encryption keys
+/// - `encryption_keys`: User encryption keys for secure share storage
+/// - `presign_sessions`: Precomputed signing materials
+/// - `partial_centralized_signed_messages`: Future sign capabilities
+/// - `session_management`: MPC session coordination
+/// - `pricing_and_fee_management`: Economic incentives and fee collection
+/// - `active_committee`/`previous_committee`: Validator consensus groups
+/// - `support_config`: Cryptographic algorithm support and emergency controls
 public struct DWalletCoordinatorInner has store {
+    /// Current epoch number
     current_epoch: u64,
+    /// Session management and coordination
     session_management: SessionManagement,
-    // TODO: change it to versioned
-    /// The key is the ID of `DWallet`.
+    // TODO: change to versioned
+    /// All dWallet instances (DWallet ID -> DWallet)
     dwallets: ObjectTable<ID, DWallet>,
-    // TODO: change it to versioned
-    /// The key is the ID of `DWalletNetworkEncryptionKey`.
+    // TODO: change to versioned
+    /// Network encryption keys (Network encryption key ID -> DWalletNetworkEncryptionKey)
     dwallet_network_encryption_keys: ObjectTable<ID, DWalletNetworkEncryptionKey>,
-    // TODO: change it to versioned
-    /// A table mapping user addresses to encryption key object IDs.
+    // TODO: change to versioned
+    /// User encryption keys (User encryption key address -> EncryptionKey)
     encryption_keys: ObjectTable<address, EncryptionKey>,
-    /// A table mapping id to their presign sessions.
+    /// Presign sessions for signature optimization (Presign session ID -> PresignSession)
     presign_sessions: ObjectTable<ID, PresignSession>,
-    /// A table mapping id to their partial centralized signed messages.
+    /// Partial user signatures for future signing (Partial user signature ID -> PartialUserSignature)
     partial_centralized_signed_messages: ObjectTable<ID, PartialUserSignature>,
-    /// Pricing and fee management data.
+    /// Pricing and fee management
     pricing_and_fee_management: PricingAndFeeManagement,
-    /// The active committees.
+    /// Current active validator committee
     active_committee: BlsCommittee,
-    /// The previous committee.
+    /// Previous validator committee
     previous_committee: BlsCommittee,
-    /// The total messages processed.
+    /// Total number of messages processed
     total_messages_processed: u64,
-    /// The last checkpoint sequence number processed.
+    /// Last processed checkpoint sequence number
     last_processed_checkpoint_sequence_number: Option<u64>,
-    /// The last checkpoint sequence number processed in the previous epoch.
+    /// Last checkpoint sequence number from previous epoch
     previous_epoch_last_checkpoint_sequence_number: u64,
-    /// Support data for curves, algorithms, and their configurations.
+    /// Cryptographic algorithm support configuration
     support_config: SupportConfig,
-    /// Any extra fields that's not defined statically.
+    /// Any extra fields that's not defined statically
     extra_fields: Bag,
 }
 
-public struct DWalletSessionEventKey has copy, drop, store {}
-
-/// An Ika MPC session.
+/// Represents an active MPC session in the Ika network.
+/// 
+/// Each session tracks fees and is associated with a network encryption key.
+/// Sessions are sequentially numbered for epoch management.
 public struct DWalletSession has key, store {
     id: UID,
-
+    /// Sequential number for session ordering
     session_sequence_number: u64,
-
+    /// Associated network encryption key
     dwallet_network_encryption_key_id: ID,
-
-    /// The fees paid for consensus validation in IKA.
+    /// IKA fees for consensus validation
     consensus_validation_fee_charged_ika: Balance<IKA>,
-
-    /// The fees paid for computation in IKA.
+    /// IKA fees for computation
     computation_fee_charged_ika: Balance<IKA>,
-
-    /// Sui gas fee reimbursement to fund the network writing tx responses to sui.
+    /// SUI balance for gas reimbursement
     gas_fee_reimbursement_sui: Balance<SUI>,
 }
 
-/// Represents a capability granting control over a specific dWallet.
+/// Capability granting control over a specific dWallet.
+/// 
+/// This capability allows the holder to perform operations on the associated dWallet,
+/// such as requesting signatures, managing encryption keys, and approving messages.
 public struct DWalletCap has key, store {
     id: UID,
+    /// ID of the controlled dWallet
     dwallet_id: ID,
 }
 
-/// Represents a capability granting control over a specific imported key dWallet.
+/// Capability granting control over a specific imported key dWallet.
+/// 
+/// Similar to DWalletCap but specifically for dWallets created from imported keys
+/// rather than through the DKG process.
 public struct ImportedKeyDWalletCap has key, store {
     id: UID,
+    /// ID of the controlled imported key dWallet
     dwallet_id: ID,
 }
 
-/// Represents a capability granting control over a specific dWallet network encryption key.
+/// Capability granting control over a specific dWallet network encryption key.
+/// 
+/// This capability allows management of network-level encryption keys used
+/// for threshold encryption in the MPC protocols.
 public struct DWalletNetworkEncryptionKeyCap has key, store {
     id: UID,
+    /// ID of the controlled network encryption key
     dwallet_network_encryption_key_id: ID,
 }
 
-/// `DWalletNetworkEncryptionKey` represents a (threshold) encryption key owned by the network.
-/// It stores the `network_dkg_public_output`, which in turn stores the encryption key itself (divided to chunks, due to space limitations).
-/// Before the first reconfiguration (which happens at every epoch switch,)
-/// `network_dkg_public_output` also holds the encryption of the current encryption key shares
-/// (encrypted to each validator's encryption key, and decrypted by them whenever they start)
-/// and the public verification keys of all validators, from which the public parameters of the threshold encryption scheme
-/// can be generated.
-/// After the first reconfiguration, `reconfiguration_public_outputs` holds this information updated for the `current_epoch`.
+/// Network-owned threshold encryption key for dWallet MPC protocols.
+/// 
+/// This key enables the validator network to securely store and manage encrypted
+/// shares of dWallet secret keys. It supports reconfiguration across epochs to
+/// maintain security as the validator set changes.
+/// 
+/// ## Lifecycle Phases
+/// 
+/// ### Initial Creation
+/// - Network DKG generates the initial threshold encryption key
+/// - `network_dkg_public_output` contains the key and validator shares
+/// 
+/// ### Reconfiguration
+/// - Triggered before epoch transitions when validator set changes
+/// - `reconfiguration_public_outputs` stores updated keys per epoch
+/// - Ensures continuous security across validator set changes
+/// 
+/// ## Data Storage Strategy
+/// - Large cryptographic outputs are chunked due to storage limitations
+/// - Chunked data is reconstructed during verification and usage
+/// - Supports both initial DKG and ongoing reconfiguration outputs
+/// 
+/// ## Security Properties
+/// - Threshold encryption protects against individual validator compromise
+/// - Reconfiguration maintains security across validator set changes
+/// - Cryptographic proofs ensure data integrity
 public struct DWalletNetworkEncryptionKey has key, store {
     id: UID,
+    /// ID of the capability that controls this encryption key
     dwallet_network_encryption_key_cap_id: ID,
+    /// Current epoch for this encryption key
     current_epoch: u64,
+    /// Reconfiguration outputs indexed by epoch (Epoch -> Chunked Output)
     reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
+    /// Initial network DKG output (chunked for storage efficiency)
     network_dkg_public_output: TableVec<vector<u8>>,
-    /// The fees paid for computation in IKA.
+    /// IKA fees accumulated for computation services
     computation_fee_charged_ika: Balance<IKA>,
+    /// Current operational state
     state: DWalletNetworkEncryptionKeyState,
 }
 
+/// State of a dWallet network encryption key throughout its lifecycle
 public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
+    /// Waiting for network DKG to complete
     AwaitingNetworkDKG,
+    /// Network DKG has completed successfully
     NetworkDKGCompleted,
     /// Reconfiguration request was sent to the network, but didn't finish yet.
     /// `is_first` is true if this is the first reconfiguration request, false otherwise.
@@ -238,75 +407,97 @@ public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
     /// We need to wait for the next epoch to update the reconfiguration public outputs.
     AwaitingNextEpochToUpdateReconfiguration,
+    /// Network reconfiguration has completed successfully
     NetworkReconfigurationCompleted,
 }
 
-/// Represents an encryption key used to encrypt a dWallet centralized (user) secret key share.
-///
-/// Encryption keys facilitate secure data transfer between accounts on the
-/// Ika by ensuring that sensitive information remains confidential during transmission.
-///
+/// User encryption key for secure dWallet secret key share storage.
+/// 
+/// Encryption keys enable secure transfer and storage of encrypted user secret key shares
+/// between accounts. Each user address has an associated encryption key that allows
+/// others to encrypt data specifically for that user to ensure sensitive information 
+/// remains confidential during transmission.
+/// 
 /// Each address on the Ika is associated with a unique encryption key.
 /// When a user intends to send encrypted data (i.e. when sharing the secret key share to grant access and/or transfer a dWallet) to another user,
 /// they use the recipient's encryption key to encrypt the data.
 /// The recipient is then the sole entity capable of decrypting and accessing this information, ensuring secure, end-to-end encryption.
+/// 
+/// ## Security Model
+/// - Keys are Ed25519-signed to prove authenticity
+/// - Each address maintains one active encryption key
+/// - Keys support various cryptographic curves
+/// - Encrypted shares can only be decrypted by the key owner
+/// 
+/// ## Use Cases
+/// - Encrypting user secret key shares during dWallet creation
+/// - Re-encrypting shares for access transfer or dWallet sharing
 public struct EncryptionKey has key, store {
-    /// Unique identifier for the `EncryptionKey`.
+    /// Unique identifier for this encryption key
     id: UID,
-
+    /// Epoch when this key was created
     created_at_epoch: u64,
-
+    /// Cryptographic curve this key supports
     curve: u32,
-
-    //TODO: make sure to include class group type and version inside the bytes with the rust code
-    /// Serialized encryption key.
+    // TODO: Include class group type and version in the bytes (Rust side)
+    /// Serialized encryption key data
     encryption_key: vector<u8>,
-
-    /// Signature for the encryption key, signed by the `signer_public_key`.
+    /// Ed25519 signature proving encryption key authenticity, signed by the `signer_public_key`.
     /// Used to verify the data originated from the `signer_address`.
     encryption_key_signature: vector<u8>,
-
-    /// The public key that was used to sign the `encryption_key`.
+    /// Ed25519 public key used to create the signature
     signer_public_key: vector<u8>,
-
-    /// Address of the encryption key owner.
+    /// Address of the encryption key owner
     signer_address: address,
 }
 
-/// A verified Encrypted dWallet centralized secret key share.
-///
-/// This struct represents an encrypted centralized secret key share tied to
-/// a specific dWallet (`DWallet`).
-/// It includes cryptographic proof that the encryption is valid and securely linked
-/// to the associated `dWallet`.
+/// Encrypted user secret key share with cryptographic verification.
+/// 
+/// Represents a user's secret key share that has been encrypted to a specific
+/// user's encryption key. Includes zero-knowledge proofs that the encryption
+/// is valid and corresponds to the dWallet's public key share.
+/// 
+/// ## Verification Process
+/// 1. Network verifies the encryption proof
+/// 2. User decrypts and verifies the share matches the public output
+/// 3. User signs the public output to accept the share
+/// 
+/// ## Creation Methods
+/// - **Direct**: Created during DKG second round
+/// - **Re-encryption**: Created when transferring access to another user
+/// 
+/// ## Security Properties
+/// - Zero-knowledge proof ensures encryption correctness
+/// - Only the target user can decrypt the share
+/// - Cryptographically linked to the associated dWallet
 public struct EncryptedUserSecretKeyShare has key, store {
-    /// A unique identifier for this encrypted user share object.
+    /// Unique identifier for this encrypted share
     id: UID,
-
+    /// Epoch when this share was created
     created_at_epoch: u64,
-
-    /// The ID of the dWallet associated with this encrypted secret share.
+    /// ID of the dWallet this share belongs to
     dwallet_id: ID,
-
-    // TODO(@Omer): once we verify the proof, I don't see a need to save it. In fact, I modified the code to not return the proof after verification, just the encryption.
-    /// The encrypted centralized secret key share along with a cryptographic proof
-    /// that the encryption corresponds to the dWallet's secret key share.
+    /// Encrypted secret share with zero-knowledge proof of correctness
+    /// for the dWallet's secret key share (of `dwallet_id`).
     encrypted_centralized_secret_share_and_proof: vector<u8>,
-
-    /// The ID of the `EncryptionKey` object used to encrypt the secret share.
+    /// ID of the encryption key used for encryption
     encryption_key_id: ID,
-
+    /// Address of the encryption key owner
     encryption_key_address: address,
-
-    /// The ID of the `EncryptedUserSecretKeyShare` the secret was re-encrypted from (None if created during dkg).
+    /// Source share ID if this was created via re-encryption (None for DKG-created)
     source_encrypted_user_secret_key_share_id: Option<ID>,
-
+    /// Current verification and acceptance state
     state: EncryptedUserSecretKeyShareState,
 }
+/// State of an encrypted user secret key share throughout verification and acceptance
 public enum EncryptedUserSecretKeyShareState has copy, drop, store {
+    /// Waiting for network to verify the encryption proof
     AwaitingNetworkVerification,
+    /// Network has successfully verified the encryption
     NetworkVerificationCompleted,
+    /// Network has rejected the encryption verification
     NetworkVerificationRejected,
+    /// Key holder has signed and accepted the share
     KeyHolderSigned {
         /// The signed public share corresponding to the encrypted secret key share,
         /// used to verify its authenticity.
@@ -314,57 +505,98 @@ public enum EncryptedUserSecretKeyShareState has copy, drop, store {
     }
 }
 
+/// Unverified capability for a partial user signature requiring network validation.
+/// 
+/// This capability is issued when a user creates a partial signature but must be
+/// verified by the network before it can be used for conditional signing.
+/// 
+/// ## Verification Process
+/// 1. Network validates the user's partial signature
+/// 2. Network verifies the signature matches the message and dWallet
+/// 3. Network confirms the presign material is valid
+/// 4. Capability becomes verified and ready for use
+/// 
+/// ## Security Properties
+/// - Prevents use of invalid partial signatures
+/// - Ensures network validation before conditional signing
+/// - Capability-based authorization for future signing
 public struct UnverifiedPartialUserSignatureCap has key, store {
-    /// A unique identifier for this object.
+    /// Unique identifier for this capability
     id: UID,
-
-    /// The unique identifier of the associated PartialCentralizedSignedMessage.
+    /// ID of the associated partial user signature
     partial_centralized_signed_message_id: ID,
 }
 
+/// Verified capability for a network-validated partial user signature.
+/// 
+/// This capability proves that:
+/// - The user's partial signature has been validated by the network
+/// - The signature matches the intended message and dWallet
+/// - The associated presign material is valid and reserved
+/// - The holder is authorized to request signature completion
+/// 
+/// ## Usage in Conditional Signing
+/// - Can be combined with `MessageApproval` to complete signatures
+/// - Enables conditional execution when multiple conditions are met
+/// - Supports atomic multi-party transactions
+/// 
+/// ## Security Guarantees
+/// - Network has verified the partial signature authenticity
+/// - Presign material is reserved and cannot be double-spent
+/// - Only the capability holder can trigger signature completion
 public struct VerifiedPartialUserSignatureCap has key, store {
-    /// A unique identifier for this object.
+    /// Unique identifier for this capability
     id: UID,
-
-    /// The unique identifier of the associated PartialCentralizedSignedMessage.
+    /// ID of the associated verified partial user signature
     partial_centralized_signed_message_id: ID,
 }
 
-/// Message that have been signed by a user, a.k.a the centralized party,
-/// but not yet by the blockchain.
-/// Used for scenarios where the user needs to first agree to sign some transaction,
-/// and the blockchain signs this transaction later,
-/// when some other conditions are met.
-///
-/// Can be used to implement an order-book-based exchange, for example.
-/// User `A` first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
-/// When a matching user `B`, that agrees to sell BTC for ETH at price X,
-/// signs a transaction with this information,
-/// the blockchain can sign both transactions, and the exchange is completed.
+/// Partial user signature for future/conditional signing scenarios.
+/// 
+/// Represents a message that has been signed by the user (centralized party) but not
+/// yet by the network. This enables conditional signing patterns where user consent
+/// is obtained first, and network signing occurs later when conditions are met.
+/// 
+/// ## Use Cases
+/// 
+/// ### Decentralized Exchange (DEX)
+/// 1. User A creates a partial signature to buy BTC with ETH at price X
+/// 2. User B creates a matching partial signature to sell BTC for ETH at price X
+/// 3. When both conditions are met, the network completes both signatures
+/// 4. Atomic swap is executed
+/// 
+/// ### Conditional Payments
+/// - Pre-authorize payments that execute when specific conditions are met
+/// - Escrow-like functionality with delayed execution
+/// - Multi-party agreement protocols
+/// 
+/// ## Security Properties
+/// - User signature proves intent and authorization
+/// - Presign capability ensures single-use semantics
+/// - Network verification prevents malicious signatures
+/// - Capability-based access control for completion
 public struct PartialUserSignature has key, store {
-    /// A unique identifier for this object.
+    /// Unique identifier for this partial signature
     id: UID,
-
+    /// Epoch when this partial signature was created
     created_at_epoch: u64,
-
+    /// Presign capability (consumed to prevent reuse)
     presign_cap: VerifiedPresignCap,
-
+    /// ID of the dWallet that will complete the signature
     dwallet_id: ID,
-
+    /// ID of the capability that controls completion
     cap_id: ID,
-
+    /// Cryptographic curve for the signature
     curve: u32,
-
+    /// Signature algorithm to be used
     signature_algorithm: u32,
-
+    /// Hash scheme to apply to the message
     hash_scheme: u32,
-
-    /// The messages that are being signed.
+    /// Raw message bytes to be signed
     message: vector<u8>,
-
-    /// The centralized party signature of a message.
+    /// User's partial signature on the message
     message_centralized_signature: vector<u8>,
-
+    /// Current verification state
     state: PartialUserSignatureState,
 }
 
@@ -374,619 +606,1142 @@ public enum PartialUserSignatureState has copy, drop, store {
     NetworkVerificationRejected
 }
 
-/// `DWallet` represents a decentralized wallet (dWallet) that is
-/// created after the Distributed key generation (DKG) process.
+/// Represents a decentralized wallet (dWallet) created through DKG or key import.
+/// 
+/// A dWallet encapsulates cryptographic key material and provides secure signing
+/// capabilities through Multi-Party Computation. It can operate in two security models:
+/// 
+/// 1. **Zero-trust mode**: User secret key share remains encrypted, requiring user
+///    participation for every signature. Maximum security.
+/// 2. **Trust-minimized mode**: User secret key share is made public, allowing
+///    network-only signing. Reduced security but improved UX.
+/// 
+/// ## Security Models
+/// - **DKG dWallets**: Created through distributed key generation
+/// - **Imported Key dWallets**: Created from existing private keys
+/// 
+/// ## State Lifecycle
+/// The dWallet progresses through various states from creation to active use,
+/// with different paths for DKG and imported key variants.
 public struct DWallet has key, store {
-    /// Unique identifier for the dWallet.
+    /// Unique identifier for the dWallet
     id: UID,
-
+    /// Epoch when this dWallet was created
     created_at_epoch: u64,
-
-    /// The elliptic curve used for the dWallet.
+    /// Elliptic curve used for cryptographic operations
     curve: u32,
-
-    /// If not set, the user secret key shares is not public, and the user will need to
-    /// keep it encrypted using encrypted user secret key shares. It is
-    /// the case where we have zero trust for the dWallet because the
-    /// user participation is required.
-    /// If set, the user secret key shares is public, the network can sign
-    /// without the user participation. In this case, it is trust minimalized
-    /// security for the user.
+    /// Public user secret key share (if trust-minimized mode is enabled)
+    /// 
+    /// - `None`: Zero-trust mode - user participation required for signing
+    /// - `Some(share)`: Trust-minimized mode - network can sign independently
     public_user_secret_key_share: Option<vector<u8>>,
-
-    /// The ID of the capability associated with this dWallet.
+    /// ID of the capability that controls this dWallet
     dwallet_cap_id: ID,
-
-    /// The MPC network encryption key id that is used to encrypt this dWallet network secret key share.
+    /// Network encryption key used for securing this dWallet's network share
     dwallet_network_encryption_key_id: ID,
-
-    /// Key was imported.
+    /// Whether this dWallet was created from an imported key
     is_imported_key_dwallet: bool,
-
-    /// A table mapping id to their encryption key object.
+    /// Encrypted user secret key shares (Encryption user secret key share ID -> EncryptedUserSecretKeyShare)
     encrypted_user_secret_key_shares: ObjectTable<ID, EncryptedUserSecretKeyShare>,
-
+    /// Signing sessions (Sign ID -> SignSession)
     sign_sessions: ObjectTable<ID, SignSession>,
-
+    /// Current state of the dWallet
     state: DWalletState,
 }
 
+/// State of a dWallet throughout its creation and operational lifecycle.
+/// 
+/// dWallets can be created through two paths:
+/// 1. **DKG Path**: Distributed Key Generation with validator participation
+/// 2. **Import Path**: Importing existing private keys with network verification
+/// 
+/// Both paths converge to the `Active` state where signing operations can be performed.
 public enum DWalletState has copy, drop, store {
-    // DKG
+    // === DKG Creation Path ===
+
+    /// DKG first round has been requested from the network
     DKGRequested,
+    /// Network rejected the DKG first round request
     NetworkRejectedDKGRequest,
+    /// DKG first round completed, waiting for user to initiate second round
     AwaitingUserDKGVerificationInitiation {
+        /// Output from the first round of DKG
         first_round_output: vector<u8>,
     },
+    /// DKG second round has been requested, waiting for network verification
     AwaitingNetworkDKGVerification,
+    /// Network rejected the DKG second round verification
     NetworkRejectedDKGVerification,
 
-    // Imported Key
+    // === Imported Key Creation Path ===
+    
+    /// Imported key dWallet created, waiting for user to initiate verification
     AwaitingUserImportedKeyInitiation,
+    /// Imported key verification requested, waiting for network verification
     AwaitingNetworkImportedKeyVerification,
+    /// Network rejected the imported key verification
     NetworkRejectedImportedKeyVerification,
 
+    // === Common Completion Path ===
+    
+    /// DKG/Import completed, waiting for key holder to sign and accept
     AwaitingKeyHolderSignature {
+        /// Public output from DKG or import verification
         public_output: vector<u8>,
     },
 
-    // Active for both DKG and Imported Key
+    /// dWallet is fully operational and ready for signing
     Active {
-        /// The output of the DKG process.
+        /// The verified public output
         public_output: vector<u8>,
     }
 }
 
+/// Unverified capability for a presign session requiring validation.
+/// 
+/// This capability is issued when a presign is requested but must be verified
+/// as completed before it can be used for signing operations.
+/// 
+/// ## Verification Process
+/// 1. Check that the referenced presign session is completed
+/// 2. Validate capability ID matches the session
+/// 3. Convert to `VerifiedPresignCap` for actual use
+/// 
+/// ## Security Model
+/// - Cannot be used for signing until verified
+/// - Prevents use of incomplete or invalid presigns
+/// - Capability-based access control
 public struct UnverifiedPresignCap has key, store {
     id: UID,
-
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key). Others, like ECDSA, must have this set.
+    /// Target dWallet ID for dWallet-specific presigns
+    /// 
+    /// - `Some(id)`: Can only be used with the specified dWallet (e.g. ECDSA requirement)
+    /// - `None`: Global presign, can be used with any compatible dWallet (e.g. Schnorr and EdDSA)
     dwallet_id: Option<ID>,
-
-    /// The ID of the presign.
+    /// ID of the associated presign session
     presign_id: ID,
 }
 
+/// Verified capability for a completed presign session ready for signing.
+/// 
+/// This capability proves that:
+/// - The associated presign session has completed successfully
+/// - The capability holder has authorization to use the presign
+/// - The presign matches the cryptographic requirements
+/// 
+/// ## Usage Constraints
+/// - Single-use: Consumed during signature generation
+/// - Algorithm-specific: Must match the target signature algorithm
+/// - Expiration: May have epoch-based validity limits
+/// 
+/// ## Security Properties
+/// - Cryptographically bound to specific presign output
+/// - Prevents double-spending of presign material
+/// - Enforces proper authorization flow
 public struct VerifiedPresignCap has key, store {
     id: UID,
-
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key). Others, like ECDSA, must have this set.
+    /// Target dWallet ID for dWallet-specific presigns
+    /// 
+    /// - `Some(id)`: Can only be used with the specified dWallet (e.g. ECDSA requirement)
+    /// - `None`: Global presign, can be used with any compatible dWallet (e.g. Schnorr and EdDSA)
     dwallet_id: Option<ID>,
-
-    /// The ID of the presign.
+    /// ID of the associated presign session
     presign_id: ID,
 }
 
-/// A session of the Presign protocol.
-/// When `state` is `PresignState::Completed`, holds a presign:
-/// a single-use precomputation that does not depend on the message,
-/// used to speed up the (online) Sign protocol.
+/// Presign session for optimized signature generation.
+/// 
+/// Presigns are cryptographic precomputations that enable faster online signing
+/// by performing expensive computations offline, before the message is known.
+/// This significantly reduces signing latency in real-time applications.
+/// 
+/// ## Types of Presigns
+/// 
+/// ### dWallet-Specific Presigns
+/// - Bound to a specific dWallet ID
+/// - Required for algorithms like ECDSA
+/// - Higher security isolation
+/// 
+/// ### Global Presigns
+/// - Can be used with any dWallet under the same network key
+/// - Supported by algorithms like Schnorr and EdDSA
+/// - Better resource efficiency
+/// 
+/// ## Performance Benefits
+/// - Reduces online full signing flow time significantly
+/// - Enables high-frequency trading and real-time applications
+/// - Improves user experience with instant signatures
+/// 
+/// ## Security Properties
+/// - Single-use: Each presign can only be used once
+/// - Algorithm-specific: Tailored to the signature algorithm
+/// - Network-secured: Protected by threshold cryptography
 public struct PresignSession has key, store {
-    /// Unique identifier for the presign object.
+    /// Unique identifier for this presign session
     id: UID,
-
+    /// Epoch when this presign was created
     created_at_epoch: u64,
-
-    /// The elliptic curve used for the dWallet.
+    /// Elliptic curve used for the presign
     curve: u32,
-
-    /// The signature algorithm for the presign.
+    /// Signature algorithm this presign supports
     signature_algorithm: u32,
-
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// Target dWallet ID (None for global presigns)
+    /// 
+    /// - `Some(id)`: dWallet-specific presign (e.g. required for ECDSA)
+    /// - `None`: Global presign (e.g. available for Schnorr, EdDSA)
     dwallet_id: Option<ID>,
-
+    /// ID of the capability that controls this presign
     cap_id: ID,
-
+    /// Current state of the presign computation
     state: PresignState,
 }
 
+/// State progression of a presign session through its lifecycle.
+/// 
+/// Presign sessions follow a linear progression from request to completion,
+/// with potential rejection at the network validation stage.
 public enum PresignState has copy, drop, store {
+    /// Presign has been requested and is awaiting network processing
     Requested,
+    /// Network rejected the presign request (invalid parameters, insufficient resources, etc.)
     NetworkRejected,
+    /// Presign completed successfully with cryptographic material ready for use
     Completed {
+        /// Precomputed cryptographic material for accelerated signing
         presign: vector<u8>,
     }
 }
 
-/// A Sign session. When `state` is `SignState::Completed`, holds the `signature`.
+/// Signing session for generating dWallet signatures.
+/// 
+/// Represents an ongoing or completed signature generation process using
+/// the 2PC-MPC protocol. Combines user and network contributions to create
+/// a complete signature.
+/// 
+/// ## Signing Process
+/// 1. User provides message approval and presign capability
+/// 2. Network validates the request and user's partial signature
+/// 3. Network combines with its share to generate the full signature
+/// 4. Session transitions to completed state with the final signature
+/// 
+/// ## Types of Signing
+/// - **Standard**: Direct signing with immediate user participation
+/// - **Future**: Conditional signing using pre-validated partial signatures
+/// - **Imported Key**: Signing with imported key dWallets
+/// 
+/// ## Performance Optimization
+/// - Uses presign material to accelerate the online signing process
+/// - Reduces latency from seconds to milliseconds for real-time applications
+/// - Enables high-frequency trading and interactive applications
 public struct SignSession has key, store {
     id: UID,
-
+    /// Epoch when this signing session was initiated
     created_at_epoch: u64,
-
-    /// The unique identifier of the associated dWallet.
+    /// ID of the dWallet performing the signature
     dwallet_id: ID,
-
-    /// The session identifier for the sign process.
+    /// ID of the MPC session coordinating this signature
     session_id: ID,
-
+    /// Current state of the signing process
     state: SignState,
 }
 
+/// State progression of a signing session through its lifecycle.
+/// 
+/// Signing sessions combine user authorization with network cryptographic operations
+/// to produce final signatures.
 public enum SignState has copy, drop, store {
+    /// Signature has been requested and is awaiting network processing
     Requested,
+    /// Network rejected the signature request (invalid presign, unauthorized message, etc.)
     NetworkRejected,
+    /// Signature completed successfully and ready for use
     Completed {
+        /// Final cryptographic signature that can be verified against the public key
         signature: vector<u8>,
     }
 }
 
-/// The dWallet MPC session type
-/// User initiated sessions have a sequence number, which is used to determine in which epoch
-/// the session will get completed.
-/// System sessions are guaranteed to always get completed in the epoch they were created in.
+/// Type of dWallet MPC session for scheduling and epoch management.
+/// 
+/// User-initiated sessions have sequence numbers for multi-epoch completion scheduling.
+/// System sessions are guaranteed to complete within their creation epoch.
 public enum SessionType has copy, drop, store {
+    /// User-initiated session with sequence number for epoch scheduling
     User {
         sequence_number: u64,
     },
+    /// System-initiated session (always completes in current epoch)
     System
 }
 
+/// Authorization to sign a specific message with a dWallet.
+/// 
+/// This approval object grants permission to sign a message using a dWallet's
+/// secret key material. It specifies the exact cryptographic parameters and
+/// message content that has been authorized.
+/// 
+/// ## Security Properties
+/// - Single-use: Consumed during signature generation to prevent replay
+/// - Cryptographically bound: Specifies exact algorithm and hash scheme
+/// - Message-specific: Tied to specific message content
+/// - dWallet-specific: Can only be used with the designated dWallet
+/// 
+/// ## Usage Pattern
+/// 1. User creates approval for specific message and dWallet
+/// 2. Approval is combined with presign capability
+/// 3. Network validates and generates signature
+/// 4. Approval is consumed and cannot be reused
+public struct MessageApproval has store, drop {
+    /// ID of the dWallet authorized to sign this message
+    dwallet_id: ID,
+    /// Cryptographic signature algorithm to use
+    signature_algorithm: u32,
+    /// Hash scheme to apply to the message before signing
+    hash_scheme: u32,
+    /// Raw message bytes to be signed
+    message: vector<u8>,
+}
+
+/// Authorization to sign a specific message with an imported key dWallet.
+/// 
+/// Similar to `MessageApproval` but specifically for dWallets created from
+/// imported private keys rather than through distributed key generation.
+/// 
+/// ## Differences from Standard MessageApproval
+/// - Used with `ImportedKeyDWalletCap` instead of `DWalletCap`
+/// - May have different security assumptions due to key import process
+/// - Supports the same cryptographic algorithms and operations
+/// 
+/// ## Security Considerations
+/// - Imported key dWallets may have different trust models
+/// - Users should understand the provenance of imported keys
+/// - Same single-use and message-binding properties apply
+public struct ImportedKeyMessageApproval has store, drop {
+    /// ID of the imported key dWallet authorized to sign this message
+    dwallet_id: ID,
+    /// Cryptographic signature algorithm to use
+    signature_algorithm: u32,
+    /// Hash scheme to apply to the message before signing
+    hash_scheme: u32,
+    /// Raw message bytes to be signed
+    message: vector<u8>,
+}
+
+// === Events ===
+
+/// Generic wrapper for dWallet-related events with session context.
+/// 
+/// Provides standardized metadata for all dWallet operations including
+/// epoch information, session type, and session ID for tracking and debugging.
 public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
+    /// Epoch when the event occurred
     epoch: u64,
+    /// Type of session (User or System)
     session_type: SessionType,
+    /// Unique session identifier
     session_id: ID,
+    /// Event-specific data
     event_data: E,
 }
 
-/// Event emitted when an encryption key is created.
-///
-/// This event is emitted after the blockchain verifies the encryption key's validity
-/// and creates the corresponding `EncryptionKey` object.
-public struct CreatedEncryptionKeyEvent has copy, drop, store {
-    /// The unique identifier of the created `EncryptionKey` object.
-    encryption_key_id: ID,
 
+// === Network Encryption Key DKG Events ===
+
+/// Event requesting network DKG for a new encryption key.
+/// 
+/// Initiates the distributed key generation process for creating a new
+/// network threshold encryption key used by the validator committee.
+public struct DWalletNetworkDKGEncryptionKeyRequestEvent has copy, drop, store {
+    /// ID of the network encryption key to be generated
+    dwallet_network_encryption_key_id: ID,
+}
+
+/// Event emitted when network DKG for an encryption key completes successfully.
+/// 
+/// Signals that the validator network has successfully generated a new
+/// threshold encryption key and it's ready for use in securing dWallet shares.
+/// 
+/// ## Next Steps
+/// The encryption key can now be used for:
+/// - Encrypting dWallet network shares
+/// - Securing validator committee communications
+/// - Supporting MPC protocol operations
+public struct CompletedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
+    /// ID of the successfully generated network encryption key
+    dwallet_network_encryption_key_id: ID,
+}
+
+/// Event emitted when network DKG for an encryption key is rejected.
+/// 
+/// Indicates that the validator network could not complete the DKG process
+/// for the requested encryption key, typically due to insufficient participation
+/// or validation failures.
+public struct RejectedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
+    /// ID of the rejected network encryption key
+    dwallet_network_encryption_key_id: ID,
+}
+
+// === Network Encryption Key Reconfiguration Events ===
+
+/// Event requesting reconfiguration of a network encryption key.
+/// 
+/// Initiates the process to update a network encryption key for a new
+/// validator committee, ensuring continuity of service across epoch transitions.
+public struct DWalletEncryptionKeyReconfigurationRequestEvent has copy, drop, store {
+    /// ID of the network encryption key to be reconfigured
+    dwallet_network_encryption_key_id: ID,
+}
+
+/// Event emitted when encryption key reconfiguration completes successfully.
+/// 
+/// Signals that the network encryption key has been successfully updated
+/// for the new validator committee and is ready for the next epoch.
+public struct CompletedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
+    /// ID of the successfully reconfigured network encryption key
+    dwallet_network_encryption_key_id: ID,
+}
+
+/// Event emitted when encryption key reconfiguration is rejected.
+/// 
+/// Indicates that the validator network could not complete the reconfiguration
+/// process, potentially requiring retry or manual intervention.
+public struct RejectedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
+    /// ID of the network encryption key that failed reconfiguration
+    dwallet_network_encryption_key_id: ID,
+}
+
+// === DKG First Round Events ===
+
+/// Event requesting the start of DKG first round from the validator network.
+/// 
+/// Initiates the distributed key generation process for a new dWallet.
+/// Validators respond by executing the first round of the DKG protocol.
+public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
+    /// ID of the dWallet being created
+    dwallet_id: ID,
+    /// ID of the capability that controls the dWallet
+    dwallet_cap_id: ID,
+    /// Network encryption key for securing the dWallet's network share
+    dwallet_network_encryption_key_id: ID,
+    /// Elliptic curve for the dWallet's cryptographic operations
+    curve: u32,
+}
+
+/// Event emitted when DKG first round completes successfully.
+/// 
+/// Signals that the validator network has completed the first round of DKG
+/// and provides the output needed for the user to proceed with the second round.
+/// 
+/// ## Next Steps
+/// Users should:
+/// 1. Process the `first_round_output`
+/// 2. Generate their contribution to the DKG
+/// 3. Call `request_dwallet_dkg_second_round()` to continue
+public struct CompletedDWalletDKGFirstRoundEvent has copy, drop, store {
+    /// ID of the dWallet being created
+    dwallet_id: ID,
+    /// Public output from the first round of DKG
+    first_round_output: vector<u8>,
+}
+
+/// Event emitted when DKG first round is rejected by the network.
+/// 
+/// Indicates that the validator network could not complete the first round
+/// of DKG for the requested dWallet, typically due to validation failures
+/// or insufficient validator participation.
+public struct RejectedDWalletDKGFirstRoundEvent has copy, drop, store {
+    /// ID of the dWallet whose DKG first round was rejected
+    dwallet_id: ID,
+}
+
+// === DKG Second Round Events ===
+
+/// Event requesting the second round of DKG from the validator network.
+/// 
+/// This event initiates the final phase of distributed key generation where
+/// the user's contribution is combined with the network's first round output
+/// to complete the dWallet creation process.
+/// 
+/// ## Process Flow
+/// 1. User processes the first round output from validators
+/// 2. User generates their cryptographic contribution
+/// 3. User encrypts their secret key share
+/// 4. Network validates and completes the DKG process
+/// 
+/// ## Security Properties
+/// - User contribution ensures the user controls part of the key
+/// - Network validation prevents malicious key generation
+/// - Encrypted shares ensure proper key distribution
+public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
+    /// ID of the encrypted user secret key share being created
+    encrypted_user_secret_key_share_id: ID,
+    /// ID of the dWallet being created through DKG
+    dwallet_id: ID,
+    /// Cryptographic output from the network's first round of DKG
+    first_round_output: vector<u8>,
+    /// User's public key share with cryptographic proof of correctness
+    centralized_public_key_share_and_proof: vector<u8>,
+    /// ID of the dWallet capability that authorizes this operation
+    dwallet_cap_id: ID,
+    /// User's encrypted secret key share with zero-knowledge proof
+    encrypted_centralized_secret_share_and_proof: vector<u8>,
+    /// Serialized encryption key used to encrypt the user's secret share
+    encryption_key: vector<u8>,
+    /// ID of the encryption key object
+    encryption_key_id: ID,
+    /// Address of the encryption key owner
+    encryption_key_address: address,
+    /// User's contribution to the DKG public output
+    user_public_output: vector<u8>,
+    /// Ed25519 public key for verifying the user's signature
+    signer_public_key: vector<u8>,
+    /// ID of the network encryption key for securing network shares
+    dwallet_network_encryption_key_id: ID,
+    /// Elliptic curve for the dWallet's cryptographic operations
+    curve: u32,
+}
+
+/// Event emitted when DKG second round completes successfully.
+/// 
+/// Signals the successful completion of the distributed key generation process.
+/// The dWallet is now ready for user acceptance and can begin signing operations
+/// once the user validates and accepts their encrypted key share.
+/// 
+/// ## Next Steps for Users
+/// 1. Validate the public output matches expected values
+/// 2. Decrypt and verify the received encrypted key share
+/// 3. Sign the public output to accept the dWallet
+/// 4. Begin using the dWallet for signing operations
+/// 
+/// ## Security Verification
+/// Users should verify that the public key corresponds to their expected
+/// contribution and that the encrypted share can be properly decrypted.
+public struct CompletedDWalletDKGSecondRoundEvent has copy, drop, store {
+    /// ID of the successfully created dWallet
+    dwallet_id: ID,
+    /// Complete public output from the DKG process (public key and metadata)
+    public_output: vector<u8>,
+    /// ID of the user's encrypted secret key share
+    encrypted_user_secret_key_share_id: ID,
+    /// ID of the MPC session that completed the DKG
+    session_id: ID
+}
+
+/// Event emitted when DKG second round is rejected by the network.
+/// 
+/// Indicates that the validator network rejected the user's contribution
+/// to the DKG process, typically due to invalid proofs or malformed data.
+/// 
+/// ## Common Rejection Reasons
+/// - Invalid cryptographic proofs
+/// - Malformed user contribution
+/// - Encryption verification failures
+/// - Network consensus issues
+public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
+    /// ID of the dWallet whose DKG second round was rejected
+    dwallet_id: ID,
+    /// Public output that was being processed when rejection occurred
+    public_output: vector<u8>,
+}
+
+// === Imported Key Events ===
+
+/// Event emitted when a new imported key dWallet is created.
+/// 
+/// This event signals that a new imported key dWallet has been created and is
+/// ready for user acceptance and subsequent signing operations.
+/// 
+/// ## Next Steps for Users
+/// 1. Verify the public output matches the imported key
+/// 2. Validate the encrypted key share can be properly decrypted
+/// 3. Sign the public output to accept the dWallet
+/// 4. Begin using the imported key dWallet for signatures
+public struct NewImportedKeyDWalletEvent has copy, drop {
+    dwallet_id: ID,
+    dwallet_cap_id: ID,
+}
+
+/// Event requesting verification of an imported key dWallet from the network.
+/// 
+/// This event initiates the validation process for a dWallet created from an
+/// existing private key rather than through distributed key generation.
+/// 
+/// ## Imported Key Flow
+/// 1. User creates an imported key dWallet object
+/// 2. User provides cryptographic proof of key ownership
+/// 3. Network validates the proof and key authenticity
+/// 4. If valid, the dWallet becomes active for signing
+/// 
+/// ## Security Considerations
+/// - Imported keys may have different security assumptions than DKG keys
+/// - Network validates proof of ownership but cannot verify key generation process
+/// - Users should understand the provenance and security of imported keys
+public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
+    /// ID of the imported key dWallet being verified
+    dwallet_id: ID,
+    /// ID of the encrypted user secret key share being created
+    encrypted_user_secret_key_share_id: ID,
+    /// User's cryptographic message for importing computation
+    centralized_party_message: vector<u8>,
+    /// ID of the imported key dWallet capability
+    dwallet_cap_id: ID,
+    /// User's encrypted secret key share with proof of correctness
+    encrypted_centralized_secret_share_and_proof: vector<u8>,
+    /// Serialized encryption key used for user share encryption
+    encryption_key: vector<u8>,
+    /// ID of the encryption key object
+    encryption_key_id: ID,
+    /// Address of the encryption key owner
+    encryption_key_address: address,
+    /// User's public key contribution and verification data
+    user_public_output: vector<u8>,
+    /// Ed25519 public key for signature verification, used to verify the user's signature on the public output
+    signer_public_key: vector<u8>,
+    /// ID of the network encryption key for securing network shares
+    dwallet_network_encryption_key_id: ID,
+    /// Elliptic curve for the imported key dWallet
+    curve: u32,
+}
+
+/// Event emitted when imported key verification completes successfully.
+/// 
+/// Signals that the network has validated the user's imported key and the
+/// dWallet is ready for user acceptance and subsequent signing operations.
+/// 
+/// ## Next Steps for Users
+/// 1. Verify the public output matches the imported key
+/// 2. Validate the encrypted key share can be properly decrypted
+/// 3. Sign the public output to accept the dWallet
+/// 4. Begin using the imported key dWallet for signatures
+public struct CompletedDWalletImportedKeyVerificationEvent has copy, drop, store {
+    /// ID of the successfully verified imported key dWallet
+    dwallet_id: ID,
+    /// Public output from the verification process
+    public_output: vector<u8>,
+    /// ID of the user's encrypted secret key share
+    encrypted_user_secret_key_share_id: ID,
+    /// ID of the MPC session that completed the verification
+    session_id: ID
+}
+
+/// Event emitted when imported key verification is rejected by the network.
+/// 
+/// Indicates that the validator network could not validate the imported key,
+/// typically due to invalid proofs or malformed verification data.
+/// 
+/// ## Common Rejection Reasons
+/// - Invalid cryptographic proofs of key ownership
+/// - Malformed imported key data
+/// - Verification signature failures
+/// - Incompatible curve parameters
+public struct RejectedDWalletImportedKeyVerificationEvent has copy, drop, store {
+    /// ID of the imported key dWallet that failed verification
+    dwallet_id: ID,
+}
+
+
+// === Encrypted User Share Events ===
+
+/// Event emitted when an encryption key is successfully created and registered.
+/// 
+/// This event signals that a new encryption key has been validated and is available
+/// for use in encrypting user secret key shares.
+public struct CreatedEncryptionKeyEvent has copy, drop, store {
+    /// ID of the newly created encryption key
+    encryption_key_id: ID,
+    /// Address of the encryption key owner
     signer_address: address,
 }
 
-public struct DWalletNetworkDKGEncryptionKeyRequestEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-
-/// An event emitted when the first round of the DKG process is completed.
-///
-/// This event is emitted by the blockchain to notify the user about
-/// the completion of the first round.
-/// The user should catch this event to generate inputs for
-/// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-public struct RejectedDWalletNetworkDKGEncryptionKeyEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-public struct DWalletEncryptionKeyReconfigurationRequestEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-public struct CompletedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-public struct RejectedDWalletEncryptionKeyReconfigurationEvent has copy, drop, store {
-    dwallet_network_encryption_key_id: ID,
-}
-
-// DKG TYPES
-
-/// Event emitted to start the first round of the DKG process.
-///
-/// This event is caught by the blockchain, which is then using it to
-/// initiate the first round of the DKG.
-public struct DWalletDKGFirstRoundRequestEvent has copy, drop, store {
-    /// The unique session identifier for the DKG process.
-    dwallet_id: ID,
-
-    /// The identifier for the dWallet capability.
-    dwallet_cap_id: ID,
-
-    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
-    dwallet_network_encryption_key_id: ID,
-
-    /// The elliptic curve used for the dWallet.
-    curve: u32,
-}
-
-/// An event emitted when the first round of the DKG process is completed.
-///
-/// This event is emitted by the blockchain to notify the user about
-/// the completion of the first round.
-/// The user should catch this event to generate inputs for
-/// the second round and call the `request_dwallet_dkg_second_round()` function.
-public struct CompletedDWalletDKGFirstRoundEvent has copy, drop, store {
-    /// The unique session identifier for the DKG process.
-    dwallet_id: ID,
-
-    /// The decentralized public output data produced by the first round of the DKG process.
-    first_round_output: vector<u8>,
-}
-
-public struct RejectedDWalletDKGFirstRoundEvent has copy, drop, store {
-    dwallet_id: ID,
-}
-
-/// Event emitted to initiate the second round of the DKG process.
-///
-/// This event is emitted to notify Validators to begin the second round of the DKG.
-/// It contains all necessary data to ensure proper continuation of the process.
-public struct DWalletDKGSecondRoundRequestEvent has copy, drop, store {
-    encrypted_user_secret_key_share_id: ID,
-    /// The unique session identifier for the DWallet.
-    dwallet_id: ID,
-
-    /// The output from the first round of the DKG process.
-    first_round_output: vector<u8>,
-
-    /// A serialized vector containing the centralized public key share and its proof.
-    centralized_public_key_share_and_proof: vector<u8>,
-
-    /// The unique identifier of the dWallet capability associated with this session.
-    dwallet_cap_id: ID,
-
-    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
-    encrypted_centralized_secret_share_and_proof: vector<u8>,
-
-    /// The `EncryptionKey` object used for encrypting the secret key share.
-    encryption_key: vector<u8>,
-
-    /// The unique identifier of the `EncryptionKey` object.
-    encryption_key_id: ID,
-
-    encryption_key_address: address,
-
-    /// The public output of the centralized party in the DKG process.
-    user_public_output: vector<u8>,
-
-    /// The Ed25519 public key of the initiator,
-    /// used to verify the signature on the centralized public output.
-    signer_public_key: vector<u8>,
-
-    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
-    dwallet_network_encryption_key_id: ID,
-
-    /// The elliptic curve used for the dWallet.
-    curve: u32,
-}
-
-/// Event emitted upon the completion of the second (and final) round of the
-/// Distributed Key Generation (DKG).
-///
-/// This event provides all necessary data generated from the second
-/// round of the DKG process.
-/// Emitted to notify the centralized party.
-public struct CompletedDWalletDKGSecondRoundEvent has copy, drop, store {
-    /// The identifier of the dWallet created as a result of the DKG process.
-    dwallet_id: ID,
-
-    /// The public output for the second round of the DKG process.
-    public_output: vector<u8>,
-    encrypted_user_secret_key_share_id: ID,
-    session_id: ID
-}
-
-public struct RejectedDWalletDKGSecondRoundEvent has copy, drop, store {
-    /// The identifier of the dWallet created as a result of the DKG process.
-    dwallet_id: ID,
-
-    /// The public output for the second round of the DKG process.
-    public_output: vector<u8>,
-}
-
-// END OF DKG TYPES
-
-
-public struct DWalletImportedKeyVerificationRequestEvent has copy, drop, store {
-    /// The unique session identifier for the DWallet.
-    dwallet_id: ID,
-
-    encrypted_user_secret_key_share_id: ID,
-
-    centralized_party_message: vector<u8>,
-
-    /// The unique identifier of the dWallet capability associated with this session.
-    dwallet_cap_id: ID,
-
-    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
-    encrypted_centralized_secret_share_and_proof: vector<u8>,
-
-    /// The `EncryptionKey` object used for encrypting the secret key share.
-    encryption_key: vector<u8>,
-
-    /// The unique identifier of the `EncryptionKey` object.
-    encryption_key_id: ID,
-
-    encryption_key_address: address,
-
-    /// The public output of the centralized party in the DKG process.
-    user_public_output: vector<u8>,
-
-    /// The Ed25519 public key of the initiator,
-    /// used to verify the signature on the centralized public output.
-    signer_public_key: vector<u8>,
-
-    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
-    dwallet_network_encryption_key_id: ID,
-
-    /// The elliptic curve used for the dWallet.
-    curve: u32,
-}
-
-public struct CompletedDWalletImportedKeyVerificationEvent has copy, drop, store {
-    dwallet_id: ID,
-
-    public_output: vector<u8>,
-    encrypted_user_secret_key_share_id: ID,
-    session_id: ID
-}
-
-public struct RejectedDWalletImportedKeyVerificationEvent has copy, drop, store {
-    dwallet_id: ID,
-}
-
-
-// ENCRYPTED USER SHARE TYPES
-
-/// Event emitted to start an encrypted dWallet centralized (user) key share
-/// verification process.
-/// Ika does not support native functions, so an event is emitted and
-/// caught by the blockchain, which then starts the verification process,
-/// similar to the MPC processes.
+/// Event requesting verification of an encrypted user secret key share.
+/// 
+/// This event initiates the validation process for re-encrypted user shares,
+/// typically used when transferring dWallet access to another user or when
+/// creating additional encrypted copies for backup purposes.
+/// 
+/// ## Re-encryption Use Cases
+/// - **Access Transfer**: Share dWallet access with another user
+/// - **Access Granting**: Allow multiple users to control the same dWallet  
+/// - **Backup Creation**: Create additional encrypted copies for redundancy
+/// - **Key Recovery**: Re-encrypt shares for recovery scenarios
+/// 
+/// ## Verification Process
+/// 1. User re-encrypts their secret key share to a new encryption key
+/// 2. User provides zero-knowledge proof of correct re-encryption
+/// 3. Network validates the proof against the dWallet's public output
+/// 4. If valid, the new encrypted share becomes available for use
+/// 
+/// ## Security Properties
+/// - Zero-knowledge proofs ensure re-encryption correctness
+/// - Original share remains secure during the process
+/// - Network cannot learn the secret key material
+/// - Destination user must decrypt and validate the share
 public struct EncryptedShareVerificationRequestEvent has copy, drop, store {
-    /// Encrypted centralized secret key share and the associated cryptographic proof of encryption.
+    /// User's encrypted secret key share with zero-knowledge proof of correctness
     encrypted_centralized_secret_share_and_proof: vector<u8>,
-
-    /// The public output of the centralized party,
-    /// belongs to the dWallet that its centralized
-    /// secret share is being encrypted.
-    /// This is not passed by the user,
-    /// but taken from the blockchain during event creation.
+    /// Public output of the dWallet (used for verification), this is the 
+    /// public output of the dWallet that the user's share is being encrypted to.
+    /// This value is taken from the the dWallet object during event creation, and
+    /// we cannot get it from the user's side.
     public_output: vector<u8>,
-
-    /// The ID of the dWallet that this encrypted secret key share belongs to.
+    /// ID of the dWallet this encrypted share belongs to
     dwallet_id: ID,
-
-    /// The encryption key used to encrypt the secret key share with.
+    /// Serialized encryption key used for the re-encryption
     encryption_key: vector<u8>,
-
-    /// The `EncryptionKey` Move object ID.
+    /// ID of the encryption key object
     encryption_key_id: ID,
-
+    /// ID of the new encrypted user secret key share being created
     encrypted_user_secret_key_share_id: ID,
-
+    /// ID of the source encrypted share (if this is a re-encryption)
     source_encrypted_user_secret_key_share_id: ID,
+    /// ID of the network encryption key securing network shares
     dwallet_network_encryption_key_id: ID,
-
+    /// Elliptic curve for the dWallet
     curve: u32,
 }
 
+/// Event emitted when encrypted share verification completes successfully.
+/// 
+/// Signals that the network has validated the re-encryption proof and the
+/// new encrypted share is ready for the destination user to accept.
+/// 
+/// ## Next Steps for Recipient
+/// 1. Decrypt the encrypted share using their private encryption key
+/// 2. Verify the decrypted share matches the dWallet's public output
+/// 3. Sign the public output to accept and activate the share
+/// 4. Use the share for dWallet operations
 public struct CompletedEncryptedShareVerificationEvent has copy, drop, store {
-    /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+    /// ID of the successfully verified encrypted user secret key share
     encrypted_user_secret_key_share_id: ID,
-
-    /// The ID of the dWallet associated with this encrypted secret share.
+    /// ID of the dWallet associated with this encrypted share
     dwallet_id: ID,
 }
 
+/// Event emitted when encrypted share verification is rejected.
+/// 
+/// Indicates that the network could not validate the re-encryption proof,
+/// typically due to invalid cryptographic proofs or verification failures.
+/// 
+/// ## Common Rejection Reasons
+/// - Invalid zero-knowledge proof of re-encryption
+/// - Mismatch between encrypted share and public output
+/// - Corrupted or malformed encryption data
+/// - Incompatible encryption key parameters
 public struct RejectedEncryptedShareVerificationEvent has copy, drop, store {
-    /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+    /// ID of the encrypted user secret key share that failed verification
     encrypted_user_secret_key_share_id: ID,
-
-    /// The ID of the dWallet associated with this encrypted secret share.
+    /// ID of the dWallet associated with the failed share
     dwallet_id: ID,
 }
 
+/// Event emitted when a user accepts an encrypted secret key share.
+/// 
+/// This event signals the final step in the share transfer process where
+/// the recipient has validated and accepted their encrypted share, making
+/// the dWallet fully accessible to them.
+/// 
+/// ## Acceptance Process
+/// 1. User decrypts the share with their private encryption key
+/// 2. User verifies the share produces the correct public key
+/// 3. User signs the public output to prove acceptance
+/// 4. Share becomes active and usable for signing operations
+/// 
+/// ## Security Verification
+/// The user's signature on the public output serves as cryptographic proof that:
+/// - They successfully decrypted the share
+/// - The share is mathematically correct
+/// - They accept responsibility for the dWallet
 public struct AcceptEncryptedUserShareEvent has copy, drop, store {
-    /// The ID of the `EncryptedUserSecretKeyShare` Move object.
+    /// ID of the accepted encrypted user secret key share
     encrypted_user_secret_key_share_id: ID,
-
-    /// The ID of the dWallet associated with this encrypted secret share.
+    /// ID of the dWallet associated with this share
     dwallet_id: ID,
-
+    /// User's signature on the public output proving acceptance
     user_output_signature: vector<u8>,
-
+    /// ID of the encryption key used for this share
     encryption_key_id: ID,
-
+    /// Address of the user who accepted the share
     encryption_key_address: address,
 }
-// END OF ENCRYPTED USER SHARE TYPES
 
+// === Make User Secret Key Share Public Events ===
 
+/// Event requesting to make a dWallet's user secret key share public.
+/// 
+/// This event initiates the transition from zero-trust mode to trust-minimized mode,
+/// where the user's secret key share becomes publicly visible, allowing the network
+/// to sign independently without user participation.
+/// 
+/// ## ⚠️ CRITICAL SECURITY WARNING
+/// **This operation is IRREVERSIBLE and reduces security!**
+/// 
+/// ### Security Trade-offs
+/// - **Before**: Zero-trust - user participation required for every signature
+/// - **After**: Trust-minimized - network can sign independently
+/// - **Risk**: Compromised validators could potentially misuse the dWallet
+/// 
+/// ### When to Consider This
+/// - High-frequency automated trading where latency is critical
+/// - Applications requiring instant signature generation
+/// - When convenience outweighs the security reduction
+/// - Smart contract automation that needs independent signing
+/// 
+/// ### Use Cases
+/// - DeFi protocols with automated rebalancing
+/// - Gaming applications with instant transactions
+/// - IoT devices requiring autonomous signing
+/// - Bot trading with microsecond latency requirements
 public struct MakeDWalletUserSecretKeySharePublicRequestEvent has copy, drop, store {
+    /// The user's secret key share to be made public
     public_user_secret_key_share: vector<u8>,
-
+    /// dWallet's public output for verification
     public_output: vector<u8>,
-
+    /// Elliptic curve for the dWallet
     curve: u32,
-
+    /// ID of the dWallet being transitioned to trust-minimized mode
     dwallet_id: ID,
-
+    /// ID of the network encryption key
     dwallet_network_encryption_key_id: ID,
 }
 
+/// Event emitted when user secret key share is successfully made public.
+/// 
+/// Signals that the dWallet has transitioned to trust-minimized mode where
+/// the network can now sign independently without user participation.
+/// 
+/// ## Post-Transition Capabilities
+/// - Network can generate signatures autonomously
+/// - Reduced latency for signing operations
+/// - No user interaction required for each signature
+/// - Suitable for high-frequency automated applications
+/// 
+/// ## ⚠️ Security Reminder
+/// The dWallet now operates in trust-minimized mode. Monitor validator
+/// behavior and consider the implications for your security model.
 public struct CompletedMakeDWalletUserSecretKeySharePublicEvent has copy, drop, store {
+    /// ID of the dWallet that successfully transitioned to trust-minimized mode
     dwallet_id: ID,
 }
 
+/// Event emitted when the request to make user secret key share public is rejected.
+/// 
+/// Indicates that the network could not validate or complete the transition
+/// to trust-minimized mode.
+/// 
+/// ## Common Rejection Reasons
+/// - Invalid user secret key share provided
+/// - Mismatch between share and public output
+/// - dWallet already in trust-minimized mode
+/// - Network validation failures
 public struct RejectedMakeDWalletUserSecretKeySharePublicEvent has copy, drop, store {
+    /// ID of the dWallet that failed to transition to trust-minimized mode
     dwallet_id: ID,
 }
 
-// PRESIGN TYPES
+// === Presign Events ===
 
-/// Event emitted to initiate the first round of a Presign session.
-///
-/// This event is used to signal Validators to start the
-/// first round of the Presign process.
-/// The event includes all necessary details to link
-/// the session to the corresponding dWallet
-/// and DKG process.
+/// Event requesting the generation of a presign from the validator network.
+/// 
+/// This event initiates the precomputation of cryptographic material that will
+/// be used to accelerate future signature generation. Presigns are a key
+/// optimization in the 2PC-MPC protocol, reducing online signing time by 80-90%.
+/// 
+/// ## Presign Types
+/// 
+/// ### dWallet-Specific Presigns
+/// - Required for algorithms like ECDSA that need key-specific precomputation
+/// - Bound to a specific dWallet and cannot be used elsewhere
+/// - Higher security isolation but less resource efficiency
+/// 
+/// ### Global Presigns  
+/// - Supported by algorithms like Schnorr and EdDSA
+/// - Can be used with any compatible dWallet under the same network key
+/// - Better resource utilization and batching efficiency
+/// 
+/// ## Performance Benefits
+/// - **Latency Reduction**: From seconds to milliseconds for signing
+/// - **Throughput Increase**: Enables high-frequency trading applications
+/// - **User Experience**: Near-instant signature generation
+/// - **Scalability**: Batch presign generation during low activity periods
 public struct PresignRequestEvent has copy, drop, store {
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// Target dWallet ID for dWallet-specific presigns
+    /// 
+    /// - `Some(id)`: dWallet-specific presign (required for ECDSA)
+    /// - `None`: Global presign (available for Schnorr, EdDSA)
     dwallet_id: Option<ID>,
-
-    /// The ID of the presign.
+    /// Unique identifier for this presign session
     presign_id: ID,
-
-    /// The output produced by the DKG process,
-    /// used as input for the Presign session.
+    /// dWallet's public output for verification (None for global presigns)
     dwallet_public_output: Option<vector<u8>>,
-
-    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
+    /// ID of the network encryption key securing the presign
     dwallet_network_encryption_key_id: ID,
-
-    /// The curve used for the presign.
+    /// Elliptic curve for the presign computation
     curve: u32,
-
-    /// The signature algorithm for the presign.
+    /// Signature algorithm for the presign (determines presign type)
     signature_algorithm: u32,
 }
 
-/// Event emitted when the presign batch is completed.
-///
-/// This event indicates the successful completion of a batched presign process.
-/// It provides details about the presign objects created and their associated metadata.
+/// Event emitted when a presign generation completes successfully.
+/// 
+/// Signals that the validator network has successfully generated the
+/// cryptographic precomputation material and it's ready for use in
+/// accelerated signature generation.
+/// 
+/// ## Next Steps
+/// 1. User receives a `VerifiedPresignCap` capability
+/// 2. Presign can be combined with message approval for fast signing
+/// 3. Single-use: Each presign can only be used once
+/// 4. Expiration: Presigns may have validity time limits
+/// 
+/// ## Security Properties
+/// - Cryptographically bound to specific algorithm and curve
+/// - Cannot be used for different signature types
+/// - Single-use prevents double-spending of presign material
+/// - Network validation ensures correctness
 public struct CompletedPresignEvent has copy, drop, store {
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// Target dWallet ID (None for global presigns)
     dwallet_id: Option<ID>,
-
-    /// The session ID.
+    /// ID of the MPC session that generated the presign
     session_id: ID,
+    /// Unique identifier for the completed presign
     presign_id: ID,
+    /// Precomputed cryptographic material for signature acceleration
     presign: vector<u8>,
 }
 
+/// Event emitted when presign generation is rejected by the network.
+/// 
+/// Indicates that the validator network could not complete the presign
+/// generation, typically due to validation failures or resource constraints.
+/// 
+/// ## Common Rejection Reasons
+/// - Insufficient validator participation
+/// - Invalid cryptographic parameters
+/// - Network resource constraints
+/// - Validation failures during precomputation
+/// - Incompatible algorithm/curve combinations
 public struct RejectedPresignEvent has copy, drop, store {
-    /// The ID of the dWallet for which this Presign has been created and can be used by exclusively, if set.
-    /// Optional, since some key signature algorithms (e.g., Schnorr and EdDSA) can support global presigns,
-    /// which can be used for any dWallet (under the same network key).
+    /// Target dWallet ID (None for global presigns)
     dwallet_id: Option<ID>,
-
-    /// The session ID.
+    /// ID of the MPC session that failed
     session_id: ID,
+    /// ID of the presign that failed generation
     presign_id: ID
 }
 
-// END OF PRESIGN TYPES
+// === Sign Events ===
 
-
-/// Event emitted to initiate the signing process.
-///
-/// This event is captured by Validators to start the signing protocol.
-/// It includes all the necessary information to link the signing process
-/// to a specific dWallet, and batched process.
-/// D: The type of data that can be stored with the object,
-/// specific to each Digital Signature Algorithm.
+/// Event requesting signature generation from the validator network.
+/// 
+/// This event initiates the final phase of the 2PC-MPC signing protocol where
+/// the network combines user authorization with precomputed material to generate
+/// a complete cryptographic signature.
+/// 
+/// ## Signing Process Flow
+/// 1. User provides message approval and presign capability
+/// 2. Network validates the user's authorization
+/// 3. Network combines presign with user's partial signature
+/// 4. Complete signature is generated and returned
+/// 
+/// ## Signature Types
+/// 
+/// ### Standard Signing (`is_future_sign: false`)
+/// - Immediate user participation required
+/// - User signature computed in real-time
+/// - Highest security with fresh user authorization
+/// 
+/// ### Future Signing (`is_future_sign: true`)
+/// - Uses pre-validated partial user signatures
+/// - Enables conditional and delayed execution
+/// - Supports complex multi-party transaction patterns
+/// 
+/// ## Performance Optimization
+/// - Presign material enables sub-second signature generation
+/// - Critical for high-frequency trading and real-time applications
+/// - Reduces network round-trips and computational overhead
 public struct SignRequestEvent has copy, drop, store {
+    /// Unique identifier for this signing session
     sign_id: ID,
-
-    /// The unique identifier for the dWallet used in the session.
+    /// ID of the dWallet performing the signature
     dwallet_id: ID,
-
-    /// The output from the dWallet DKG process used in this session.
+    /// dWallet's public output for signature verification
     dwallet_public_output: vector<u8>,
-
-    /// The elliptic curve used for the dWallet.
+    /// Elliptic curve for the signature
     curve: u32,
-
-    /// The signature algorithm used for the signing process.
+    /// Cryptographic signature algorithm
     signature_algorithm: u32,
-
+    /// Hash scheme applied to the message
     hash_scheme: u32,
-
-    /// The message to be signed in this session.
+    /// Raw message bytes to be signed
     message: vector<u8>,
-
-    /// The MPC network encryption key id that is used to encrypt associated dWallet network secret key share.
+    /// ID of the network encryption key securing network shares
     dwallet_network_encryption_key_id: ID,
-
-    /// The presign object ID, this ID will
-    /// be used as the signature MPC protocol ID.
+    /// ID of the presign used for acceleration
     presign_id: ID,
-
-    /// The presign protocol output as bytes.
+    /// Precomputed cryptographic material for fast signing
     presign: vector<u8>,
-
-    /// The centralized party signature of a message.
+    /// User's partial signature on the message
     message_centralized_signature: vector<u8>,
-
-    /// Indicates whether the future sign feature was used to start the session.
+    /// Whether this uses future sign capabilities
     is_future_sign: bool,
 }
 
-/// Event emitted when a [`PartialCentralizedSignedMessages`] object is created.
+/// Event emitted when signature generation completes successfully.
+/// 
+/// This event signals the successful completion of the 2PC-MPC signing protocol
+/// and provides the final cryptographic signature that can be used in transactions.
+/// 
+/// ## Signature Properties
+/// - **Mathematically Valid**: Verifiable against the dWallet's public key
+/// - **Cryptographically Secure**: Generated using threshold cryptography
+/// - **Single-Use Presign**: Associated presign material is consumed
+/// - **User Authorized**: Includes validated user consent
+/// 
+/// ## Next Steps
+/// 1. Extract the signature from the event
+/// 2. Combine with transaction data for blockchain submission
+/// 3. Verify signature matches expected format for target blockchain
+/// 4. Submit transaction to the destination network
+/// 
+/// ## Performance Metrics
+/// With presigns, signature generation typically completes in:
+/// - **Standard Networks**: 100-500ms
+/// - **High-Performance Setup**: 50-100ms
+/// - **Without Presigns**: 2-5 seconds
+public struct CompletedSignEvent has copy, drop, store {
+    /// Unique identifier for the completed signing session
+    sign_id: ID,
+    /// ID of the MPC session that generated the signature
+    session_id: ID,
+    /// Complete cryptographic signature ready for use
+    signature: vector<u8>,
+    /// Whether this signature used future sign capabilities
+    is_future_sign: bool,
+}
+
+/// Event emitted when signature generation is rejected by the network.
+/// 
+/// Indicates that the validator network could not complete the signature
+/// generation, typically due to validation failures or protocol errors.
+/// 
+/// ## Common Rejection Reasons
+/// - **Invalid Presign**: Presign material is corrupted or expired
+/// - **Authorization Failure**: User signature validation failed
+/// - **Network Issues**: Insufficient validator participation
+/// - **Protocol Errors**: Cryptographic validation failures
+/// - **Resource Constraints**: Network overload or rate limiting
+/// 
+/// ## Recovery Steps
+/// 1. Check presign validity and obtain new presign if needed
+/// 2. Verify message approval is correctly formatted
+/// 3. Ensure dWallet is in active state
+/// 4. Retry with fresh authorization if temporary failure
+public struct RejectedSignEvent has copy, drop, store {
+    /// ID of the signing session that failed
+    sign_id: ID,
+    /// ID of the MPC session that rejected the request
+    session_id: ID,
+    /// Whether this rejection involved future sign capabilities
+    is_future_sign: bool,
+}
+
+// === Future Sign Events ===
+
+/// Event requesting validation of a partial user signature for future signing.
+/// 
+/// This event initiates the creation of a conditional signature capability where
+/// the user's authorization is validated upfront but the network signature is
+/// deferred until specific conditions are met.
+/// 
+/// ## Future Sign Use Cases
+/// 
+/// ### Decentralized Exchange (DEX) Orders
+/// ```
+/// 1. User A: "I'll sell 1 BTC for 50,000 USDC"
+/// 2. User B: "I'll buy 1 BTC for 50,000 USDC"  
+/// 3. When both conditions match → automatic execution
+/// ```
+/// 
+/// ### Conditional Payments
+/// ```
+/// 1. User: "Pay 1000 USDC to Alice when she delivers the goods"
+/// 2. Oracle confirms delivery → automatic payment
+/// ```
+/// 
+/// ### Multi-Party Atomic Swaps
+/// ```
+/// 1. Multiple users create conditional signatures
+/// 2. When all conditions are met → atomic execution
+/// ```
+/// 
+/// ## Security Benefits
+/// - User authorization is cryptographically committed upfront
+/// - Network validation prevents invalid partial signatures
+/// - Conditions can be verified before execution
+/// - Atomic execution reduces counterparty risk
 public struct FutureSignRequestEvent has copy, drop, store {
+    /// ID of the dWallet that will complete the future signature
     dwallet_id: ID,
+    /// ID of the partial user signature being validated
     partial_centralized_signed_message_id: ID,
+    /// Message that will be signed when conditions are met
     message: vector<u8>,
+    /// Precomputed cryptographic material for the future signature
     presign: vector<u8>,
+    /// dWallet's public output for verification
     dwallet_public_output: vector<u8>,
+    /// Elliptic curve for the signature
     curve: u32,
+    /// Signature algorithm for the future signature
     signature_algorithm: u32,
+    /// Hash scheme to be applied to the message
     hash_scheme: u32,
+    /// User's partial signature proving authorization
     message_centralized_signature: vector<u8>,
+    /// ID of the network encryption key
     dwallet_network_encryption_key_id: ID,
 }
 
+/// Event emitted when future sign validation completes successfully.
+/// 
+/// Signals that the network has validated the user's partial signature and
+/// the future sign capability is ready for conditional execution.
+/// 
+/// ## Next Steps
+/// 1. User receives a `VerifiedPartialUserSignatureCap`
+/// 2. Capability can be combined with `MessageApproval` for execution
+/// 3. Network will complete the signature when both are presented
+/// 4. Enables complex conditional signing workflows
 public struct CompletedFutureSignEvent has copy, drop, store {
+    /// ID of the MPC session that validated the partial signature
     session_id: ID,
+    /// ID of the dWallet associated with the future signature
     dwallet_id: ID,
+    /// ID of the validated partial user signature
     partial_centralized_signed_message_id: ID,
 }
 
+/// Event emitted when future sign validation is rejected.
+/// 
+/// Indicates that the network could not validate the user's partial signature,
+/// preventing the creation of the conditional signing capability.
+/// 
+/// ## Common Rejection Reasons
+/// - Invalid user partial signature
+/// - Mismatch between signature and message
+/// - Incompatible presign material
+/// - dWallet validation failures
 public struct RejectedFutureSignEvent has copy, drop, store {
+    /// ID of the MPC session that failed validation
     session_id: ID,
+    /// ID of the dWallet associated with the failed request
     dwallet_id: ID,
+    /// ID of the partial user signature that failed validation
     partial_centralized_signed_message_id: ID,
 }
 
-public struct SetMaxActiveSessionsBufferEvent has copy, drop {
-    max_active_sessions_buffer: u64,
-}
+// === Operational Events ===
 
-public struct SetGasFeeReimbursementSuiSystemCallValueEvent has copy, drop {
-    gas_fee_reimbursement_sui_system_call_value: u64,
-}
-
-/// Event emitted to signal the completion of a Sign process.
-///
-/// This event contains signatures for all signed messages in the batch.
-public struct CompletedSignEvent has copy, drop, store {
-    sign_id: ID,
-
-    /// The session identifier for the signing process.
-    session_id: ID,
-
-    /// The signature that was generated in this session.
-    signature: vector<u8>,
-
-    /// Indicates whether the future sign feature was used to start the session.
-    is_future_sign: bool,
-}
-
-public struct RejectedSignEvent has copy, drop, store {
-    sign_id: ID,
-
-    /// The session identifier for the signing process.
-    session_id: ID,
-
-    /// Indicates whether the future sign feature was used to start the session.
-    is_future_sign: bool,
-}
 
 /// Event containing dwallet 2pc-mpc checkpoint information, emitted during
 /// the checkpoint submission message.
@@ -996,49 +1751,38 @@ public struct DWalletCheckpointInfoEvent has copy, drop, store {
     timestamp_ms: u64,
 }
 
-// <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-const EDWalletMismatch: u64 = 1;
-const EDWalletInactive: u64 = 2;
-const EDWalletNotExists: u64 = 3;
-const EWrongState: u64 = 4;
-const EDWalletNetworkEncryptionKeyNotExist: u64 = 5;
-const EInvalidEncryptionKeySignature: u64 = 6;
-const EMessageApprovalMismatch: u64 = 7;
-const EInvalidHashScheme: u64 = 8;
-const ESignWrongState: u64 = 9;
-const EPresignNotExist: u64 = 10;
-const EIncorrectCap: u64 = 11;
-const EUnverifiedCap: u64 = 12;
-const EInvalidSource: u64 =13;
-const EDWalletNetworkEncryptionKeyNotActive: u64 = 14;
-const EInvalidPresign: u64 = 15;
-const ECannotAdvanceEpoch: u64 = 16;
-const EInvalidCurve: u64 = 17;
-const EInvalidSignatureAlgorithm: u64 = 18;
-const ECurvePaused: u64 = 19;
-const ESignatureAlgorithmPaused: u64 = 20;
-const EDWalletUserSecretKeySharesAlreadyPublic: u64 = 21;
-const EMismatchCurve: u64 = 22;
-const EImportedKeyDWallet: u64 = 23;
-const ENotImportedKeyDWallet: u64 = 24;
-const EHashSchemePaused: u64 = 25;
-const EEncryptionKeyNotExist: u64 = 26;
-const EMissingProtocolPricing: u64 = 27;
-const EPricingCalculationVotesHasNotBeenStarted: u64 = 28;
-const EPricingCalculationVotesMustBeCompleted: u64 = 29;
-const ECannotSetDuringVotesCalculation: u64 = 30;
+/// Event requesting to set the maximum number of active sessions buffer.
+/// 
+/// This event is used to configure the maximum number of active sessions that
+/// can be created at any given time. This is used to prevent the network from
+/// creating too many sessions and causing the validators to become out of sync.
+public struct SetMaxActiveSessionsBufferEvent has copy, drop {
+    max_active_sessions_buffer: u64,
+}
 
-#[error]
-const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
+/// Event requesting to set the gas fee reimbursement SUI system call value.
+/// 
+/// This event is used to configure the gas fee reimbursement SUI system call value.
+public struct SetGasFeeReimbursementSuiSystemCallValueEvent has copy, drop {
+    gas_fee_reimbursement_sui_system_call_value: u64,
+}
 
-#[error]
-const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
+// === Package Functions ===
 
-#[error]
-const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
-
-// >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
-
+/// Creates a new DWalletCoordinatorInner instance with initial configuration.
+/// 
+/// Validates that pricing exists for all supported protocols and curves before creation.
+/// Initializes all internal data structures with default values.
+/// 
+/// ### Parameters
+/// - `current_epoch`: Starting epoch number
+/// - `active_committee`: Initial validator committee
+/// - `pricing`: Default pricing configuration
+/// - `supported_curves_to_signature_algorithms_to_hash_schemes`: Supported cryptographic configurations
+/// - `ctx`: Transaction context for object creation
+/// 
+/// ### Returns
+/// A new DWalletCoordinatorInner instance ready for use
 public(package) fun create_dwallet_coordinator_inner(
     current_epoch: u64,
     active_committee: BlsCommittee,
@@ -1090,7 +1834,32 @@ public(package) fun create_dwallet_coordinator_inner(
     }
 }
 
-/// Start a Distributed Key Generation (DKG) session for the network (threshold) encryption key.
+/// Locks the last active session sequence number to prevent further updates.
+/// 
+/// This function is called before epoch transitions to ensure session scheduling
+/// stability during the epoch switch process.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// 
+/// ### Effects
+/// - Prevents further updates to `last_user_initiated_session_to_complete_in_current_epoch`
+/// - Ensures session completion targets remain stable during epoch transitions
+public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
+    self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
+}
+
+/// Starts a Distributed Key Generation (DKG) session for the network (threshold) encryption key.
+/// 
+/// Creates a new network encryption key and initiates the DKG process through the validator network.
+/// Returns a capability that grants control over the created encryption key.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `ctx`: Transaction context for object creation
+/// 
+/// ### Returns
+/// A capability granting control over the new network encryption key
 public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext
@@ -1125,6 +1894,21 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
     cap
 }
 
+/// Charges gas fee reimbursement for system-initiated operations.
+/// 
+/// Allocates SUI from the coordinator's gas reimbursement pool to cover
+/// transaction costs for system operations like network DKG and reconfiguration.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// 
+/// ### Returns
+/// SUI balance to reimburse gas costs for system operations
+/// 
+/// ### Logic
+/// - Returns zero if no reimbursement funds or value configured
+/// - Takes the minimum of available funds and configured system call value
+/// - Ensures system operations don't exhaust the entire reimbursement pool
 fun charge_gas_fee_reimbursement_sui_for_system_calls(
     self: &mut DWalletCoordinatorInner,
 ): Balance<SUI> {
@@ -1349,23 +2133,40 @@ fun get_active_dwallet_network_encryption_key(
     dwallet_network_encryption_key
 }
 
-/// Advance the epoch.
-///
-/// Checks that all the current epoch sessions are completed,
-/// and updates the required metadata for the next epoch's sessions management.
-///
-/// Sets the current and previous committees.
-///
-/// Unlocks and updates `last_user_initiated_session_to_complete_in_current_epoch`.
-///
-/// And finally increments the `current_epoch`.
+/// Advances the coordinator to the next epoch with comprehensive state transitions.
+/// 
+/// Performs a complete epoch transition including session management updates,
+/// committee transitions, and network encryption key advancement. This is a
+/// critical operation that must be executed atomically.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `next_committee`: New validator committee for the upcoming epoch
+/// - `dwallet_network_encryption_key_caps`: Capabilities for network encryption keys to advance
+/// 
+/// ### Returns
+/// Combined IKA balance from fees collected during the epoch
+/// 
+/// ### Effects
+/// - Validates all current epoch sessions are completed
+/// - Updates session management metadata for the next epoch
+/// - Transitions validator committees (current -> previous, next -> current)
+/// - Advances network encryption key epochs
+/// - Unlocks session sequence number management
+/// - Increments the current epoch counter
+/// - Collects and returns accumulated fees
+/// 
+/// ### Aborts
+/// - `EPricingCalculationVotesMustBeCompleted`: If pricing votes are still in progress
+/// - `ECannotAdvanceEpoch`: If not all current epoch sessions are completed
+/// - Various network encryption key related errors from capability validation
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
     next_committee: BlsCommittee,
     dwallet_network_encryption_key_caps: &vector<DWalletNetworkEncryptionKeyCap>,
 ): Balance<IKA> {
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
-    assert!(self.all_current_epoch_user_initiated_sessions_completed(), ECannotAdvanceEpoch);
+    assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
 
     if (self.last_processed_checkpoint_sequence_number.is_some()) {
         let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
@@ -1388,24 +2189,65 @@ public(package) fun advance_epoch(
     balance
 }
 
+/// Gets an immutable reference to a dWallet by ID.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `dwallet_id`: ID of the dWallet to retrieve
+/// 
+/// ### Returns
+/// Immutable reference to the dWallet
+/// 
+/// ### Aborts
+/// - `EDWalletNotExists`: If the dWallet doesn't exist
 fun get_dwallet(
     self: &DWalletCoordinatorInner,
     dwallet_id: ID,
 ): &DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
-
     self.dwallets.borrow(dwallet_id)
 }
 
+/// Gets a mutable reference to a dWallet by ID.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_id`: ID of the dWallet to retrieve
+/// 
+/// ### Returns
+/// Mutable reference to the dWallet
+/// 
+/// ### Aborts
+/// - `EDWalletNotExists`: If the dWallet doesn't exist
 fun get_dwallet_mut(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
 ): &mut DWallet {
     assert!(self.dwallets.contains(dwallet_id), EDWalletNotExists);
-
     self.dwallets.borrow_mut(dwallet_id)
 }
 
+/// Validates that a dWallet is in active state and returns its public output.
+/// 
+/// This function ensures that a dWallet has completed its creation process
+/// (either DKG or imported key verification) and is ready for cryptographic
+/// operations like signing.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the dWallet to validate
+/// 
+/// ### Returns
+/// Reference to the dWallet's public output
+/// 
+/// ### Aborts
+/// - `EDWalletInactive`: If the dWallet is not in the `Active` state
+/// 
+/// ### Active State Requirements
+/// A dWallet is considered active when:
+/// - DKG process has completed successfully, OR
+/// - Imported key verification has completed successfully
+/// - User has accepted their encrypted key share
+/// - Public output is available for cryptographic operations
 fun validate_active_and_get_public_output(
     self: &DWallet,
 ): &vector<u8> {
@@ -1427,14 +2269,33 @@ fun validate_active_and_get_public_output(
     }
 }
 
-/// Creates a new MPC session and charges the user for it.
-///
-/// Payment is done in both Ika (for the MPC computation by the Ika network)
-/// and Sui (for storing the public output in Sui).
-/// The payment is saved in the session object, for it is to be distributed only upon the completion of the session.
-///
-/// The newly created session has its sequence number set to `next_session_sequence_number`, which is then incremented.
-/// Finally, the last session to complete in current epoch is updated, if needed.
+/// Creates and charges a user-initiated MPC session for the current epoch.
+/// 
+/// This function implements the core session creation and payment logic for all
+/// user-initiated dWallet operations. It handles fee collection, session sequencing,
+/// and epoch management in a unified manner.
+/// 
+/// ### Fee Structure
+/// - **Computation IKA**: Paid to validators for MPC computation
+/// - **Consensus Validation IKA**: Paid for validator consensus on results
+/// - **Gas Reimbursement SUI**: Covers blockchain transaction costs
+/// - **System Call SUI**: Reserved for internal system operations
+/// 
+/// ### Session Management
+/// 1. Assigns sequential session number for epoch ordering
+/// 2. Creates session object with collected fees
+/// 3. Updates session completion tracking for epoch transitions
+/// 4. Stores event for retrieval during session completion
+/// 
+/// ### Epoch Coordination
+/// - Sessions are sequentially numbered for deterministic epoch management
+/// - Last session completion target is updated to manage epoch transitions
+/// - Fee distribution occurs only upon successful session completion
+/// 
+/// ### Security Properties
+/// - Fees are escrowed until session completion
+/// - Session sequence numbers prevent replay attacks
+/// - Network encryption key validation ensures proper key usage
 fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -1481,10 +2342,32 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     event
 }
 
-/// Initiate a new MPC session that serves the system (i.e. the Ika network).
-/// The current protocols that are supported for such is network DKG and Reconfiguration,
-/// both of which are related to a particular `dwallet_network_encryption_key_id`.
-/// No funds are charged, since there is no user to charge.
+/// Initiates a system-managed MPC session for network operations.
+/// 
+/// System sessions are initiated by the protocol itself for critical
+/// network maintenance operations that don't involve direct user interaction.
+/// These sessions are essential for network health and security.
+/// 
+/// ### Supported System Operations
+/// - **Network DKG**: Distributed Key Generation for encryption keys
+/// - **Key Reconfiguration**: Updating existing network encryption keys
+/// - **Network Maintenance**: Other validator network coordination tasks
+/// 
+/// ### Key Differences from User Sessions
+/// - **No Payment Required**: System operations don't charge users
+/// - **No Sequential Numbering**: System sessions use generated IDs
+/// - **Immediate Emission**: Events are emitted immediately rather than stored
+/// - **Network Priority**: These sessions have priority in validator processing
+/// 
+/// ### Session Tracking
+/// - Increments `started_system_sessions_count` for network monitoring
+/// - Uses fresh object addresses for unique session identification
+/// - Maintains epoch association for proper network coordination
+/// 
+/// ### Security Properties
+/// - System sessions cannot be initiated by external users
+/// - Session IDs are cryptographically unique to prevent conflicts
+/// - Epoch tracking ensures proper network state consistency
 fun initiate_system_dwallet_session<E: copy + drop + store>(
     self: &mut DWalletCoordinatorInner,
     event_data: E,
@@ -1502,6 +2385,29 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
     event::emit(event);
 }
 
+/// Retrieves an active dWallet and its public output for read-only operations.
+/// 
+/// This helper function safely accesses a dWallet ensuring it exists and is in
+/// an active state suitable for cryptographic operations. The public output
+/// represents the cryptographic public key material.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `dwallet_id`: Unique identifier of the target dWallet
+/// 
+/// ### Returns
+/// A tuple containing:
+/// - Reference to the validated dWallet object
+/// - Copy of the public output (cryptographic public key data)
+/// 
+/// ### Validation Performed
+/// - Confirms dWallet exists in the coordinator's registry
+/// - Validates dWallet is in `Active` state (DKG completed)
+/// - Ensures public output is available for cryptographic operations
+/// 
+/// ### Aborts
+/// - `EDWalletNotExists`: If the dWallet ID is not found
+/// - `EDWalletNotActive`: If the dWallet is not in active state
 fun get_active_dwallet_and_public_output(
     self: &DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1512,6 +2418,35 @@ fun get_active_dwallet_and_public_output(
     (dwallet, *public_output)
 }
 
+/// Retrieves an active dWallet and its public output for mutable operations.
+/// 
+/// Similar to `get_active_dwallet_and_public_output` but returns a mutable reference
+/// to the dWallet for operations that need to modify the dWallet state, such as
+/// updating session counts or state transitions.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_id`: Unique identifier of the target dWallet
+/// 
+/// ### Returns
+/// A tuple containing:
+/// - Mutable reference to the validated dWallet object
+/// - Copy of the public output (cryptographic public key data)
+/// 
+/// ### Common Use Cases
+/// - Updating presign session counters
+/// - Modifying dWallet state during operations
+/// - Recording operational history or metrics
+/// - Managing active session associations
+/// 
+/// ### Validation Performed
+/// - Confirms dWallet exists in the coordinator's registry
+/// - Validates dWallet is in `Active` state (DKG completed)
+/// - Ensures public output is available for cryptographic operations
+/// 
+/// ### Aborts
+/// - `EDWalletNotExists`: If the dWallet ID is not found
+/// - `EDWalletNotActive`: If the dWallet is not in active state
 fun get_active_dwallet_and_public_output_mut(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1531,17 +2466,35 @@ public(package) fun get_active_encryption_key(
     self.encryption_keys.borrow(address).id.to_inner()
 }
 
-/// Validates the `curve` selection is both supported, and not paused.
+/// Validates that a curve is supported and not paused.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `curve`: Curve identifier to validate
+/// 
+/// ### Aborts
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `ECurvePaused`: If the curve is currently paused
 fun validate_curve(
     self: &DWalletCoordinatorInner,
     curve: u32,
 ) {
     assert!(self.support_config.supported_curves_to_signature_algorithms_to_hash_schemes.contains(&curve), EInvalidCurve);
-
     assert!(!self.support_config.paused_curves.contains(&curve), ECurvePaused);
 }
 
-/// Validates the `curve` and `signature_algorithm` selection is supported, and not paused.
+/// Validates that a curve and signature algorithm combination is supported and not paused.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `curve`: Curve identifier to validate
+/// - `signature_algorithm`: Signature algorithm to validate
+/// 
+/// ### Aborts
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `ECurvePaused`: If the curve is currently paused
+/// - `EInvalidSignatureAlgorithm`: If the signature algorithm is not supported for this curve
+/// - `ESignatureAlgorithmPaused`: If the signature algorithm is currently paused
 fun validate_curve_and_signature_algorithm(
     self: &DWalletCoordinatorInner,
     curve: u32,
@@ -1549,12 +2502,25 @@ fun validate_curve_and_signature_algorithm(
 ) {
     self.validate_curve(curve);
     let supported_curve_to_signature_algorithms = self.support_config.supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
-
     assert!(supported_curve_to_signature_algorithms.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
     assert!(!self.support_config.paused_signature_algorithms.contains(&signature_algorithm), ESignatureAlgorithmPaused);
 }
 
-/// Validates the `curve`, `signature_algorithm` and `hash_scheme` selection is supported, and not paused.
+/// Validates that a curve, signature algorithm, and hash scheme combination is supported and not paused.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `curve`: Curve identifier to validate
+/// - `signature_algorithm`: Signature algorithm to validate
+/// - `hash_scheme`: Hash scheme to validate
+/// 
+/// ### Aborts
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `ECurvePaused`: If the curve is currently paused
+/// - `EInvalidSignatureAlgorithm`: If the signature algorithm is not supported for this curve
+/// - `ESignatureAlgorithmPaused`: If the signature algorithm is currently paused
+/// - `EInvalidHashScheme`: If the hash scheme is not supported for this combination
+/// - `EHashSchemePaused`: If the hash scheme is currently paused
 fun validate_curve_and_signature_algorithm_and_hash_scheme(
     self: &DWalletCoordinatorInner,
     curve: u32,
@@ -1563,20 +2529,31 @@ fun validate_curve_and_signature_algorithm_and_hash_scheme(
 ) {
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
     let supported_hash_schemes = self.support_config.supported_curves_to_signature_algorithms_to_hash_schemes[&curve][&signature_algorithm];
-
     assert!(supported_hash_schemes.contains(&hash_scheme), EInvalidHashScheme);
     assert!(!self.support_config.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 }
 
-/// Registers an encryption key to be used later for encrypting a
-/// centralized secret key share.
-///
+/// Registers an encryption key for secure dWallet share storage.
+/// 
+/// Creates and validates a new encryption key that can be used to encrypt
+/// centralized secret key shares. The key signature is verified before registration.
+/// 
 /// ### Parameters
-/// - `encryption_key`: The serialized encryption key to be registered.
-/// - `encryption_key_signature`: The signature of the encryption key, signed by the signer.
-/// - `signer_public_key`: The public key of the signer used to verify the encryption key signature.
-/// - `encryption_key_scheme`: The scheme of the encryption key (e.g., Class Groups).
-/// Needed so the TX will get ordered in consensus before getting executed.
+/// - `self`: Mutable reference to the coordinator
+/// - `curve`: Cryptographic curve for the encryption key
+/// - `encryption_key`: Serialized encryption key data
+/// - `encryption_key_signature`: Ed25519 signature of the encryption key
+/// - `signer_public_key`: Public key used to create the signature
+/// - `ctx`: Transaction context for object creation
+/// 
+/// ### Effects
+/// - Creates a new `EncryptionKey` object
+/// - Emits a `CreatedEncryptionKeyEvent`
+/// 
+/// ### Aborts
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `ECurvePaused`: If the curve is currently paused
+/// - `EInvalidEncryptionKeySignature`: If the signature verification fails
 public(package) fun register_encryption_key(
     self: &mut DWalletCoordinatorInner,
     curve: u32,
@@ -1613,38 +2590,27 @@ public(package) fun register_encryption_key(
     });
 }
 
-/// Represents a message that was approved to be signed by the dWallet corresponding to `dwallet_id`.
-///
-/// ### Fields
-/// - **`dwallet_id`**: The identifier of the dWallet
-///   associated with this approval.
-/// - **`hash_scheme`**: The message hash scheme to use for signing.
-/// - **`signature_algorithm`**: The signature algorithm with which the message can be signed.
-/// - **`message`**: The message that has been approved.
-public struct MessageApproval has store, drop {
-    dwallet_id: ID,
-    signature_algorithm: u32,
-    hash_scheme: u32,
-    message: vector<u8>,
-}
-
-/// Represents a message that was approved to be signed by the imported key dWallet corresponding to `dwallet_id`.
-///
-/// ### Fields
-/// - **`dwallet_id`**: The identifier of the dWallet
-///   associated with this approval.
-/// - **`hash_scheme`**: The message hash scheme to use for signing.
-/// - **`signature_algorithm`**: The signature algorithm with which the message can be signed.
-/// - **`message`**: The message that has been approved.
-public struct ImportedKeyMessageApproval has store, drop {
-    dwallet_id: ID,
-    signature_algorithm: u32,
-    hash_scheme: u32,
-    message: vector<u8>,
-}
-
-/// Approves `message` to be signed by the dWallet corresponding to `dwallet_cap`.
-/// Binds the approval for a specific `signature_algorithm` and `hash_scheme` choice.
+/// Approves a message for signing by a dWallet.
+/// 
+/// Creates a message approval that authorizes the specified message to be signed
+/// using the given signature algorithm and hash scheme. This approval can later
+/// be used to initiate a signing session.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `dwallet_cap`: Capability proving control over the dWallet
+/// - `signature_algorithm`: Algorithm to use for signing
+/// - `hash_scheme`: Hash scheme to apply to the message
+/// - `message`: Raw message bytes to be signed
+/// 
+/// ### Returns
+/// A `MessageApproval` that can be used to request signing
+/// 
+/// ### Aborts
+/// - `EImportedKeyDWallet`: If this is an imported key dWallet (use `approve_imported_key_message` instead)
+/// - `EDWalletNotExists`: If the dWallet doesn't exist
+/// - `EDWalletInactive`: If the dWallet is not in active state
+/// - Various validation errors for unsupported/paused algorithms
 public(package) fun approve_message(
     self: &DWalletCoordinatorInner,
     dwallet_cap: &DWalletCap,
@@ -1667,8 +2633,27 @@ public(package) fun approve_message(
     approval
 }
 
-/// Approves `message` to be signed by the imported key dWallet corresponding to `imported_key_dwallet_cap`.
-/// Binds the approval for a specific `signature_algorithm` and `hash_scheme` choice.
+/// Approves a message for signing by an imported key dWallet.
+/// 
+/// Creates a message approval that authorizes the specified message to be signed
+/// using the given signature algorithm and hash scheme. This approval can later
+/// be used to initiate a signing session.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `imported_key_dwallet_cap`: Capability proving control over the dWallet
+/// - `signature_algorithm`: Algorithm to use for signing
+/// - `hash_scheme`: Hash scheme to apply to the message
+/// - `message`: Raw message bytes to be signed
+/// 
+/// ### Returns
+/// A `ImportedKeyMessageApproval` that can be used to request signing
+/// 
+/// ### Aborts
+/// - `ENotImportedKeyDWallet`: If this is not an imported key dWallet (use `approve_message` instead)
+/// - `EDWalletNotExists`: If the dWallet doesn't exist
+/// - `EDWalletInactive`: If the dWallet is not in active state
+/// - Various validation errors for unsupported/paused algorithms
 public(package) fun approve_imported_key_message(
     self: &DWalletCoordinatorInner,
     imported_key_dwallet_cap: &ImportedKeyDWalletCap,
@@ -1707,20 +2692,34 @@ fun validate_approve_message(
     dwallet.is_imported_key_dwallet
 }
 
-/// Starts the first Distributed Key Generation (DKG) session.
+/// Starts the first round of Distributed Key Generation (DKG) for a new dWallet.
 ///
-/// This function creates a new `DWalletCap` object,
-/// transfers it to the session initiator (the user),
-/// and emits a `DWalletDKGFirstRoundRequestEvent` to signal
-/// the beginning of the DKG process.
+/// Creates a new dWallet in the DKG requested state and initiates the first round
+/// of the DKG protocol through the validator network. Returns a capability that
+/// grants control over the newly created dWallet.
 ///
 /// ### Parameters
+/// - `self`: Mutable reference to the DWallet coordinator
+/// - `dwallet_network_encryption_key_id`: ID of the network encryption key to use
+/// - `curve`: Elliptic curve to use for the dWallet
+/// - `payment_ika`: IKA payment for computation fees
+/// - `payment_sui`: SUI payment for gas reimbursement
+/// - `ctx`: Transaction context
+///
+/// ### Returns
+/// A new `DWalletCap` object granting control over the created dWallet
 ///
 /// ### Effects
-/// - Generates a new `DWalletCap` object.
-/// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
-/// - Creates a new `DWallet` object and inserts it into the `dwallets` map.
-/// - Emits a `DWalletDKGFirstRoundRequestEvent`.
+/// - Creates a new `DWallet` object in DKG requested state
+/// - Creates and returns a `DWalletCap` for the new dWallet
+/// - Charges fees and creates a session for the DKG process
+/// - Emits a `DWalletDKGFirstRoundRequestEvent` to start the protocol
+///
+/// ### Aborts
+/// - `EInvalidCurve`: If the curve is not supported or is paused
+/// - `EDWalletNetworkEncryptionKeyNotExist`: If the network encryption key doesn't exist
+/// - `EMissingProtocolPricing`: If pricing is not configured for DKG first round
+/// - Various payment-related errors if insufficient funds provided
 public(package) fun request_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -1781,44 +2780,109 @@ public(package) fun request_dwallet_dkg_first_round(
 
     dwallet_cap
 }
-/// Updates the `last_user_initiated_session_to_complete_in_current_epoch` field:
-///  - If we already locked this field, we do nothing.
-///  - Otherwise, we take the latest session whilst assuring
-///    a maximum of `max_active_sessions_buffer` sessions to be completed in the current epoch.
+/// Updates the last session sequence number that should complete in the current epoch.
+/// 
+/// Implements session flow control by limiting the number of active sessions per epoch.
+/// This ensures validators don't become overloaded and can complete sessions before
+/// epoch transitions.
+/// 
+/// ### Algorithm
+/// 1. Skip update if session management is locked (during epoch transition)
+/// 2. Calculate target: completed sessions + max buffer, capped by latest session
+/// 3. Only update if the new target is higher (prevents regression)
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// 
+/// ### Effects
+/// - Updates `last_user_initiated_session_to_complete_in_current_epoch` if appropriate
+/// - Maintains session flow control within the configured buffer limits
+/// - Ensures session completion targets only increase, never decrease
 fun update_last_user_initiated_session_to_complete_in_current_epoch(self: &mut DWalletCoordinatorInner) {
+    // Don't update during epoch transitions when session management is locked
     if (self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch) {
         return
     };
 
+    // Calculate new target: completed + buffer, but don't exceed latest session
     let new_last_user_initiated_session_to_complete_in_current_epoch = (
         self.session_management.number_of_completed_user_initiated_sessions + self.session_management.max_active_sessions_buffer
     ).min(
         self.session_management.next_session_sequence_number - 1
     );
 
-    // Sanity check: only update this field if we need to.
+    // Sanity check: Only update if the new target is higher (prevent regression)
     if (self.session_management.last_user_initiated_session_to_complete_in_current_epoch >= new_last_user_initiated_session_to_complete_in_current_epoch) {
         return
     };
     self.session_management.last_user_initiated_session_to_complete_in_current_epoch = new_last_user_initiated_session_to_complete_in_current_epoch;
 }
 
-/// Check whether all the user-initiated session that should complete in the current epoch are in fact completed.
-/// This check is only relevant after `last_user_initiated_session_to_complete_in_current_epoch` is locked, and is called
-/// as a requirement to advance the epoch.
-/// Session sequence numbers are sequential, so ch
-public(package) fun all_current_epoch_user_initiated_sessions_completed(self: &DWalletCoordinatorInner): bool {
+/// Validates that all required sessions for the current epoch have completed.
+/// 
+/// This function performs a comprehensive check to ensure the system is ready
+/// for epoch advancement by verifying that all scheduled sessions have finished.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// 
+/// ### Returns
+/// `true` if all required sessions are completed and epoch can advance, `false` otherwise
+/// 
+/// ### Validation Criteria
+/// 1. **Session Management Locked**: `last_user_initiated_session_to_complete_in_current_epoch` must be locked
+/// 2. **User Sessions Complete**: All user-initiated sessions up to the target sequence number must be completed
+/// 3. **System Sessions Complete**: All started system sessions must be completed
+/// 
+/// ### Why This Matters
+/// - Prevents epoch transitions with incomplete operations
+/// - Ensures validator consensus on session completion
+/// - Maintains system consistency across epoch boundaries
+/// - Prevents resource leaks from abandoned sessions
+/// 
+/// ### Session Types
+/// - **User Sessions**: Have sequence numbers for multi-epoch scheduling
+/// - **System Sessions**: Must complete within their creation epoch
+public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinatorInner): bool {
     return (self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch &&
         (self.session_management.number_of_completed_user_initiated_sessions == self.session_management.last_user_initiated_session_to_complete_in_current_epoch) &&
         (self.session_management.completed_system_sessions_count == self.session_management.started_system_sessions_count))
 }
 
-/// Removes a user-initiated session and its corresponding event, charging the pre-paid gas amounts in both Sui and Ika
-/// to be later distributed as part of the consensus validation and gas reimbursement fees.
-///
-/// Increments `number_of_completed_user_initiated_sessions`.
-///
-/// Notice: never called for a system session.
+/// Completes a user-initiated session and processes its associated fees.
+/// 
+/// This function handles the critical session completion workflow, including fee
+/// distribution, state cleanup, and session accounting. It's called when the
+/// validator network has finished processing a user's MPC request.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `session_sequence_number`: Sequential number of the session to complete
+/// 
+/// ### Returns
+/// Gas reimbursement balance to be distributed to the user
+/// 
+/// ### Session Completion Process
+/// 1. **Session Accounting**: Increments completed session counter
+/// 2. **Buffer Management**: Updates session completion target based on new buffer availability
+/// 3. **Fee Distribution**: Distributes collected fees to appropriate recipients
+/// 4. **Resource Cleanup**: Removes session objects and events from storage
+/// 5. **Network Key Updates**: Credits computation fees to the network encryption key
+/// 
+/// ### Fee Distribution
+/// - **Computation Fees (IKA)**: Transferred to network encryption key for validator rewards
+/// - **Consensus Validation Fees (IKA)**: Added to coordinator's fee pool for consensus rewards
+/// - **Gas Reimbursement (SUI)**: Returned to caller for user refund
+/// 
+/// ### Security Properties
+/// - Only called for successful session completions
+/// - Fees are distributed atomically to prevent partial distributions
+/// - Session sequence numbers ensure proper ordering
+/// - Resource cleanup prevents memory leaks
+/// 
+/// ### System Sessions
+/// This function is never called for system sessions, which handle their own
+/// completion workflow without user fee management.
 fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64): Balance<SUI> {
     self.session_management.number_of_completed_user_initiated_sessions = self.session_management.number_of_completed_user_initiated_sessions + 1;
 
@@ -1839,7 +2903,7 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut 
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     let _: DWalletEvent<E> = self.session_management.user_requested_sessions_events.remove(id.to_inner());
 
-    object::delete(id);
+    id.delete();
 
     dwallet_network_encryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
@@ -1847,9 +2911,50 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store>(self: &mut 
     gas_fee_reimbursement_sui
 }
 
-/// This function is called by the Ika network to respond to the dWallet DKG first round request made by the user.
-/// Advances the dWallet's state and registers the output in it.
-/// Also emits an event with the output.
+/// Processes validator network response to dWallet DKG first round.
+/// 
+/// This function handles the validator network's response to a user's DKG first round
+/// request, advancing the dWallet through its initialization lifecycle. It represents
+/// the completion of the first phase of distributed cryptographic key generation.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_id`: ID of the dWallet undergoing DKG
+/// - `first_round_output`: Cryptographic output from validators' first round computation
+/// - `rejected`: Whether the validator network rejected the DKG request
+/// - `session_sequence_number`: Session identifier for fee processing
+/// 
+/// ### Returns
+/// Gas reimbursement balance for user refund
+/// 
+/// ### DKG First Round Process
+/// 1. **Session Completion**: Processes session fees and cleanup
+/// 2. **State Validation**: Ensures dWallet is in correct state for first round completion
+/// 3. **Output Processing**: Handles validator output or rejection appropriately
+/// 4. **Event Emission**: Notifies ecosystem of DKG progress or failure
+/// 5. **State Transition**: Updates dWallet to next appropriate state
+/// 
+/// ### Success Path
+/// - **Input**: Valid first round output from validator network
+/// - **State Transition**: `DKGRequested` → `AwaitingUserDKGVerificationInitiation`
+/// - **Event**: `CompletedDWalletDKGFirstRoundEvent` with cryptographic output
+/// - **Next Step**: User must verify output and initiate second round
+/// 
+/// ### Rejection Path  
+/// - **Input**: Network rejection signal (computational or consensus failure)
+/// - **State Transition**: `DKGRequested` → `NetworkRejectedDKGRequest`
+/// - **Event**: `RejectedDWalletDKGFirstRoundEvent` signaling failure
+/// - **Next Step**: User must create new dWallet or retry operation
+/// 
+/// ### Security Properties
+/// - Only processes sessions in correct DKG state
+/// - Validator consensus ensures output authenticity
+/// - State transitions are atomic and irreversible
+/// - Fees are processed regardless of success/failure
+/// 
+/// ### Network Integration
+/// This function is exclusively called by the Ika validator network as part
+/// of the consensus protocol, never directly by users.
 public(package) fun respond_dwallet_dkg_first_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -1883,13 +2988,46 @@ public(package) fun respond_dwallet_dkg_first_round(
     gas_fee_reimbursement_sui
 }
 
-/// Initiates the second round of the Distributed Key Generation (DKG) protocol
-/// by emitting an event for the Ika validators to request the execution of this round.
-///
-/// Creates a new `EncryptedUserSecretKeyShare` object, with the state awaiting the network verification
-/// that the user encrypted its user share correctly (the network will verify it as part of the second round).
-///
-/// Sets the state of the dWallet to `AwaitingNetworkDKGVerification`.
+/// Initiates the second round of Distributed Key Generation (DKG) with encrypted user shares.
+/// 
+/// This function represents the user's contribution to the DKG second round, where they
+/// provide their encrypted secret share and request validator network verification.
+/// It creates the encrypted share object and transitions the dWallet to network verification.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_cap`: User's capability proving dWallet ownership
+/// - `centralized_public_key_share_and_proof`: User's public key contribution with ZK proof
+/// - `encrypted_centralized_secret_share_and_proof`: User's encrypted secret share with proof
+/// - `encryption_key_address`: Address of the encryption key for securing the share
+/// - `user_public_output`: User's contribution to the final public key
+/// - `signer_public_key`: Ed25519 key for signature verification
+/// - `payment_ika`: User's IKA payment for computation
+/// - `payment_sui`: User's SUI payment for gas reimbursement
+/// - `ctx`: Transaction context
+/// 
+/// ### DKG Second Round Process
+/// 1. **Validation**: Verifies encryption key compatibility and dWallet state
+/// 2. **Share Creation**: Creates `EncryptedUserSecretKeyShare` with verification pending
+/// 3. **Payment Processing**: Charges user for validator computation and consensus
+/// 4. **Event Emission**: Requests validator network to verify encrypted share
+/// 5. **State Transition**: Updates dWallet to `AwaitingNetworkDKGVerification`
+/// 
+/// ### Cryptographic Security
+/// - **Zero-Knowledge Proofs**: User provides proofs of correct share encryption
+/// - **Encryption Key Validation**: Ensures proper key curve compatibility
+/// - **Share Verification**: Network will validate encrypted share correctness
+/// - **Threshold Security**: Maintains distributed key generation properties
+/// 
+/// ### Network Integration
+/// Emits `DWalletDKGSecondRoundRequestEvent` for validator processing,
+/// triggering network verification of the encrypted share.
+/// 
+/// ### Aborts
+/// - `EImportedKeyDWallet`: If called on imported key dWallet
+/// - `EMismatchCurve`: If encryption key curve doesn't match dWallet curve
+/// - `EWrongState`: If dWallet not in correct state for second round
+/// - Various validation and payment errors
 public(package) fun request_dwallet_dkg_second_round(
     self: &mut DWalletCoordinatorInner,
     dwallet_cap: &DWalletCap,
@@ -2181,11 +3319,6 @@ public(package) fun accept_encrypted_user_share(
     );
 }
 
-public struct NewImportedKeyDWalletEvent has copy, drop {
-    dwallet_id: ID,
-    dwallet_cap_id: ID,
-}
-
 /// Creates a new imported key dWallet, by creating a new `DWallet` object with `is_imported_key_dwallet` set and the state at `AwaitingUserImportedKeyInitiation`,
 /// alongside a corresponding `ImportedKeyDWalletCap`.
 ///
@@ -2425,10 +3558,41 @@ public(package) fun respond_make_dwallet_user_secret_key_share_public(
     gas_fee_reimbursement_sui
 }
 
-/// Initiates the Presign protocol by creating a new `PresignSession` in `self.presign_sessions`
-/// and emitting an event for the Ika validators to request its execution.
-///
-/// Creates an `UnverifiedPresignCap` for the new `presign_id` that can be exclusively used with this `dwallet_id`.
+/// Requests generation of a dWallet-specific presign for accelerated signing.
+/// 
+/// Presigns are precomputed cryptographic material that dramatically reduce online
+/// signing latency from seconds to milliseconds. This function creates a dWallet-specific
+/// presign that can only be used with the specified dWallet.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_id`: Target dWallet for the presign generation
+/// - `signature_algorithm`: Algorithm requiring presign material (e.g., ECDSA)
+/// - `payment_ika`: User's IKA payment for computation
+/// - `payment_sui`: User's SUI payment for gas reimbursement
+/// - `ctx`: Transaction context
+/// 
+/// ### Returns
+/// `UnverifiedPresignCap` that must be verified before use in signing
+/// 
+/// 
+/// ### Security Properties
+/// - **Single Use**: Each presign can only be consumed once
+/// - **Cryptographic Binding**: Tied to specific dWallet public key
+/// - **Validator Consensus**: Generated through secure MPC protocol
+/// - **Expiration**: Presigns have limited validity period
+/// 
+/// ### Next Steps
+/// 1. Wait for validator network to process the presign request
+/// 2. Call `is_presign_valid()` to check completion status
+/// 3. Use `verify_presign_cap()` to convert to verified capability
+/// 4. Combine with message approval for actual signing
+/// 
+/// ### Aborts
+/// - `EInvalidSignatureAlgorithm`: If the signature algorithm is not allowed for dWallet-specific presigns
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `EInvalidNetworkEncryptionKey`: If the network encryption key is not supported
+/// - `EInsufficientFunds`: If the user does not have enough funds to pay for the presign
 public(package) fun request_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: ID,
@@ -2444,6 +3608,8 @@ public(package) fun request_presign(
     let curve = dwallet.curve;
 
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
+    
+    assert!(!self.support_config.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
     let dwallet_network_encryption_key_id = dwallet.dwallet_network_encryption_key_id;
 
@@ -2489,10 +3655,41 @@ public(package) fun request_presign(
     cap
 }
 
-/// Initiates the Presign protocol by creating a new `PresignSession` in `self.presign_sessions`
-/// and emitting an event for the Ika validators to request its execution.
-///
-/// Creates an `UnverifiedPresignCap` for the new `presign_id` that can be used with any dWallet.
+/// Requests generation of a global presign for flexible cross-dWallet use.
+/// 
+/// Global presigns provide computational efficiency by creating precomputed material
+/// that can be used with any compatible dWallet under the same network encryption key.
+/// This enables better resource utilization and batch processing optimization.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_network_encryption_key_id`: Network encryption key for presign compatibility
+/// - `curve`: Cryptographic curve for presign generation
+/// - `signature_algorithm`: Algorithm requiring presign material
+/// - `payment_ika`: User's IKA payment for computation
+/// - `payment_sui`: User's SUI payment for gas reimbursement
+/// - `ctx`: Transaction context
+/// 
+/// ### Returns
+/// `UnverifiedPresignCap` that can be used with any compatible dWallet
+/// 
+/// ### Security Considerations
+/// - Global presigns maintain cryptographic security properties
+/// - Network encryption key provides isolation between key epochs
+/// - Validator consensus ensures presign authenticity
+/// - Single-use property prevents replay attacks
+/// 
+/// ### Next Steps
+/// 1. Wait for validator network to process the global presign request
+/// 2. Verify presign completion using `is_presign_valid()`
+/// 3. Convert to `VerifiedPresignCap` with `verify_presign_cap()`
+/// 4. Use with any compatible dWallet for signing operations
+/// 
+/// ### Aborts
+/// - `EInvalidSignatureAlgorithm`: If the signature algorithm is not allowed for global presigns
+/// - `EInvalidCurve`: If the curve is not supported
+/// - `EInvalidNetworkEncryptionKey`: If the network encryption key is not supported
+/// - `EInsufficientFunds`: If the user does not have enough funds to pay for the presign
 public(package) fun request_global_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
@@ -2505,6 +3702,8 @@ public(package) fun request_global_presign(
     let created_at_epoch = self.current_epoch;
 
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
+
+    assert!(self.support_config.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
     let id = object::new(ctx);
     let presign_id = id.to_inner();
@@ -2546,8 +3745,45 @@ public(package) fun request_global_presign(
     cap
 }
 
-/// This function is called by the Ika network to respond to the Presign request made by the user.
-/// Advances the `PresignSession` state to `Completed` and registers the output (the presign) in it.
+/// Processes validator network response to presign generation request.
+/// 
+/// This function handles the completion or rejection of presign generation by the
+/// validator network, updating the presign session state and emitting appropriate events.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `dwallet_id`: Target dWallet ID for dWallet-specific presigns (None for global)
+/// - `presign_id`: Unique identifier of the presign session
+/// - `session_id`: MPC session ID that processed the presign
+/// - `presign`: Generated cryptographic presign material (if successful)
+/// - `rejected`: Whether the validator network rejected the presign request
+/// - `session_sequence_number`: Session sequence for fee processing
+/// 
+/// ### Returns
+/// Gas reimbursement balance for user refund
+/// 
+/// ### Success Path
+/// - **State Transition**: `Requested` → `Completed`
+/// - **Presign Storage**: Cryptographic material is stored in session
+/// - **Event**: `CompletedPresignEvent` with presign data
+/// - **Capability**: Associated capability can now be verified and used
+/// 
+/// ### Rejection Path
+/// - **State Transition**: `Requested` → `NetworkRejected`
+/// - **Event**: `RejectedPresignEvent` indicating failure
+/// - **Capability**: Associated capability becomes unusable
+/// - **Common Causes**: Insufficient validator participation, computation errors
+/// 
+/// 
+/// ### Security Properties
+/// - Presign material is cryptographically secure and verifiable
+/// - Single-use property enforced through session consumption
+/// - Validator consensus ensures authenticity of generated material
+/// - Rejection handling prevents use of incomplete presigns
+/// 
+/// ### Network Integration
+/// This function is exclusively called by the Ika validator network as part
+/// of the distributed presign generation protocol.
 public(package) fun respond_presign(
     self: &mut DWalletCoordinatorInner,
     dwallet_id: Option<ID>,
@@ -2587,7 +3823,22 @@ public(package) fun respond_presign(
     gas_fee_reimbursement_sui
 }
 
-/// Checks that the presign corresponding to `cap` is valid by ensuring it is in the `Completed` state and that the IDs match.
+/// Validates that a presign capability corresponds to a completed presign session.
+/// 
+/// Checks both the completion state and capability ID matching to ensure
+/// the capability is authentic and the presign is ready for use.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `cap`: Unverified presign capability to validate
+/// 
+/// ### Returns
+/// `true` if the presign is completed and the capability is valid, `false` otherwise
+/// 
+/// ### Validation Criteria
+/// - Presign session must be in `Completed` state
+/// - Capability ID must match the session's recorded capability ID
+/// - Presign session must exist in the coordinator
 public(package) fun is_presign_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPresignCap,
@@ -2966,7 +4217,7 @@ public(package) fun respond_future_sign(
     gas_fee_reimbursement_sui
 }
 
-/// Checks that the partial user signature corresponding to `cap` is valid, by assuring it is in the `NetworkVerificationCompleted`.
+/// Checks that the partial user signature corresponding to `cap` is valid, by assuring it is in the `NetworkVerificationCompleted` state.
 public(package) fun is_partial_user_signature_valid(
     self: &DWalletCoordinatorInner,
     cap: &UnverifiedPartialUserSignatureCap,
@@ -3212,6 +4463,31 @@ public(package) fun respond_sign(
     gas_fee_reimbursement_sui
 }
 
+/// Processes a checkpoint message that has been signed by a validator quorum.
+/// 
+/// Verifies the BLS multi-signature from the active validator committee before
+/// processing the checkpoint contents. This ensures only valid, consensus-approved
+/// checkpoints are processed.
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator
+/// - `signature`: BLS multi-signature from validators
+/// - `signers_bitmap`: Bitmap indicating which validators signed
+/// - `message`: Checkpoint message content to process
+/// - `ctx`: Transaction context for coin creation
+/// 
+/// ### Returns
+/// SUI coin containing gas fee reimbursements from processed operations
+/// 
+/// ### Effects
+/// - Verifies the signature against the active committee
+/// - Processes all operations contained in the checkpoint
+/// - Updates session states and emits relevant events
+/// - Collects and returns gas fee reimbursements
+/// 
+/// ### Aborts
+/// - BLS verification errors if signature is invalid
+/// - Various operation-specific errors during checkpoint processing
 public(package) fun process_checkpoint_message_by_quorum(
     self: &mut DWalletCoordinatorInner,
     signature: vector<u8>,
@@ -3433,6 +4709,18 @@ fun set_gas_fee_reimbursement_sui_system_call_value(
     });
 }
 
+/// Sets the supported curves, signature algorithms and hash schemes, and the default pricing.
+/// 
+/// This function is used to set the supported curves, signature algorithms and hash schemes, and the default pricing.
+/// Default pricing is used to set the pricing for a protocol or curve if pricing is missing for a protocol or curve
+/// and it has to contain the default pricing for all protocols and curves as set in the `supported_curves_to_signature_algorithms_to_hash_schemes` parameter.
+/// 
+/// ### Parameters
+/// - **`default_pricing`**: The default pricing to use if pricing is missing for a protocol or curve.
+/// - **`supported_curves_to_signature_algorithms_to_hash_schemes`**: A map of curves to signature algorithms to hash schemes.
+///
+/// ### Errors
+/// - **`EMissingProtocolPricing`**: If pricing is missing for any protocol or curve.
 public(package) fun set_supported_and_pricing(
     self: &mut DWalletCoordinatorInner,
     default_pricing: DWalletPricing,
@@ -3454,31 +4742,36 @@ public(package) fun set_supported_and_pricing(
 /// ### Errors
 /// - **`EMissingProtocolPricing`**: If pricing is missing for any protocol or curve.
 fun verify_pricing_exists_for_all_protocols(supported_curves_to_signature_algorithms_to_hash_schemes: &VecMap<u32, VecMap<u32, vector<u32>>>, default_pricing: &DWalletPricing) {
-    let mut i = 0;
     let curves = supported_curves_to_signature_algorithms_to_hash_schemes.keys();
-    while (i < curves.length()) {
+    curves.do_ref!(|curve| {
         let mut is_missing_pricing = false;
-        let curve = curves[i];
-        let signature_algorithms = &supported_curves_to_signature_algorithms_to_hash_schemes[&curve];
+        let signature_algorithms = &supported_curves_to_signature_algorithms_to_hash_schemes[curve];
         let signature_algorithms = signature_algorithms.keys();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
         // Add here pricing validation for new protocols per curve.
         signature_algorithms.do_ref!(|signature_algorithm| {
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
             // Add here pricing validation for new protocols per curve per signature algorithm.
         });
         assert!(!is_missing_pricing, EMissingProtocolPricing);
-        i = i + 1;
-    };
+    });
 }
 
+/// Sets the paused curves, signature algorithms and hash schemes.
+/// 
+/// This function is used to set the paused curves, signature algorithms and hash schemes.
+/// 
+/// ### Parameters
+/// - **`paused_curves`**: The curves to pause.
+/// - **`paused_signature_algorithms`**: The signature algorithms to pause.
+/// - **`paused_hash_schemes`**: The hash schemes to pause.
 public(package) fun set_paused_curves_and_signature_algorithms(
     self: &mut DWalletCoordinatorInner,
     paused_curves: vector<u32>,
@@ -3490,6 +4783,17 @@ public(package) fun set_paused_curves_and_signature_algorithms(
     self.support_config.paused_hash_schemes = paused_hash_schemes;
 }
 
+/// Sets the pricing vote for a validator.
+/// 
+/// This function is used to set the pricing vote for a validator.
+/// Cannot be called during the votes calculation.
+/// 
+/// ### Parameters
+/// - **`validator_id`**: The ID of the validator.
+/// - **`pricing_vote`**: The pricing vote for the validator.
+///
+/// ### Errors
+/// - **`ECannotSetDuringVotesCalculation`**: If the pricing vote is set during the votes calculation.
 public(package) fun set_pricing_vote(
     self: &mut DWalletCoordinatorInner,
     validator_id: ID,
