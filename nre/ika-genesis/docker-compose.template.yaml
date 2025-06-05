@@ -118,10 +118,10 @@ services:
   fullnode:
     container_name: fullnode.DOMAIN_NAME_HERE
     image: IMAGE_NAME
-    ports:
-      - "8080:8080"
-      - "9184:9184"
-      - "9000:9000"
+    # ports:
+    #   - "8080:8080"
+    #   - "9184:9184"
+    #   - "9000:9000"
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=warn,ika_node=info,ika_core=info,ika_network::state_sync=error
