@@ -188,9 +188,7 @@ impl DwalletMPCNetworkKeys {
         Ok(self
             .network_encryption_keys
             .get(key_id)
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(
-                "".to_string(),
-            ))?
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))?
             .decryption_key_share_public_parameters
             .clone())
     }
