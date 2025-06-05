@@ -428,12 +428,6 @@ where
                                 }
                             }
                         }
-                        Ok(None) => {
-                            info!(
-                                sequence_number = ?next_dwallet_checkpoint_sequence_number,
-                                "No checkpoint found for sequence number"
-                            );
-                        }
                         Err(e) => {
                             error!(
                                 sequence_number=?next_dwallet_checkpoint_sequence_number,
@@ -441,6 +435,7 @@ where
                                 "failed to get checkpoint"
                             );
                         }
+                        Ok(None) => {}
                     }
                 }
 
