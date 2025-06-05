@@ -308,6 +308,7 @@ async fn start(
     let mut unhealthy_cnt = 0;
     loop {
         for node in swarm.validator_nodes() {
+            // node.stop();
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
                 if unhealthy_cnt > 3 {
