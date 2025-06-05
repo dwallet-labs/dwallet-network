@@ -64,8 +64,7 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
     EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
-    PartialSignatureVerificationOutput, PresignOutput, Secp256K1NetworkKeyPublicOutputSlice,
-    SignOutput,
+    NetworkKeyPublicOutputSlice, PartialSignatureVerificationOutput, PresignOutput, SignOutput,
 };
 use ika_types::messages_consensus::Round;
 use ika_types::messages_consensus::{
@@ -1764,7 +1763,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = event_data.session_type else {
                     unreachable!("DKGFirst round should be a user session");
                 };
-                let tx = MessageKind::DwalletDKGFirstRoundOutput(DKGFirstRoundOutput {
+                let tx = MessageKind::RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput {
                     dwallet_id: event_data.event_data.dwallet_id.to_vec(),
                     output,
                     session_sequence_number: sequence_number,
@@ -1776,7 +1775,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("DKGSecond round should be a user session");
                 };
-                let tx = MessageKind::DwalletDKGSecondRoundOutput(DKGSecondRoundOutput {
+                let tx = MessageKind::RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     session_id: session_info.session_id.to_vec(),
@@ -1793,7 +1792,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("Presign round should be a user session");
                 };
-                let tx = MessageKind::DwalletPresign(PresignOutput {
+                let tx = MessageKind::RespondDWalletPresign(PresignOutput {
                     presign: output,
                     session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
@@ -1807,7 +1806,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event.session_type else {
                     unreachable!("Sign round should be a user session");
                 };
-                let tx = MessageKind::DwalletSign(SignOutput {
+                let tx = MessageKind::RespondDWalletSign(SignOutput {
                     session_id: session_info.session_id.to_vec(),
                     signature: output,
                     dwallet_id: init_event.event_data.dwallet_id.to_vec(),
@@ -1822,7 +1821,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("EncryptedShareVerification round should be a user session");
                 };
-                let tx = MessageKind::DwalletEncryptedUserShare(EncryptedUserShareOutput {
+                let tx = MessageKind::RespondDWalletEncryptedUserShare(EncryptedUserShareOutput {
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                     encrypted_user_secret_key_share_id: init_event_data
                         .event_data
@@ -1837,7 +1836,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("PartialSignatureVerification round should be a user session");
                 };
-                let tx = MessageKind::DwalletPartialSignatureVerificationOutput(
+                let tx = MessageKind::RespondDWalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                         session_id: session_info.session_id.to_vec(),
@@ -1854,7 +1853,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
                 DWalletMPCNetworkKeyScheme::Secp256k1 => {
                     let slices = if is_rejected {
-                        vec![Secp256K1NetworkKeyPublicOutputSlice {
+                        vec![NetworkKeyPublicOutputSlice {
                             dwallet_network_decryption_key_id: init_event
                                 .event_data
                                 .dwallet_network_decryption_key_id
@@ -1873,7 +1872,7 @@ impl AuthorityPerEpochStore {
 
                     let messages: Vec<_> = slices
                         .into_iter()
-                        .map(MessageKind::DwalletMPCNetworkDKGOutput)
+                        .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
                         .collect();
                     Ok(self.process_consensus_system_bulk_transaction(&messages))
                 }
@@ -1883,7 +1882,7 @@ impl AuthorityPerEpochStore {
             },
             MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
                 let slices = if is_rejected {
-                    vec![Secp256K1NetworkKeyPublicOutputSlice {
+                    vec![NetworkKeyPublicOutputSlice {
                         dwallet_network_decryption_key_id: init_event
                             .event_data
                             .dwallet_network_decryption_key_id
@@ -1902,7 +1901,7 @@ impl AuthorityPerEpochStore {
 
                 let messages: Vec<_> = slices
                     .into_iter()
-                    .map(MessageKind::DwalletMPCNetworkReshareOutput)
+                    .map(MessageKind::RespondDWalletMPCNetworkReconfigurationOutput)
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
             }
@@ -1912,7 +1911,7 @@ impl AuthorityPerEpochStore {
                         "MakeDWalletUserSecretKeySharesPublic round should be a user session"
                     );
                 };
-                let tx = MessageKind::MakeDWalletUserSecretKeySharesPublic(
+                let tx = MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(
                     MakeDWalletUserSecretKeySharesPublicOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                         public_user_secret_key_shares: init_event
@@ -1931,7 +1930,7 @@ impl AuthorityPerEpochStore {
                         "MakeDWalletUserSecretKeySharesPublic round should be a user session"
                     );
                 };
-                let tx = MessageKind::DWalletImportedKeyVerificationOutput(
+                let tx = MessageKind::RespondDWalletImportedKeyVerificationOutput(
                     DWalletImportedKeyVerificationOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
                         public_output: output,
@@ -1955,7 +1954,7 @@ impl AuthorityPerEpochStore {
     fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
-    ) -> Vec<Secp256K1NetworkKeyPublicOutputSlice> {
+    ) -> Vec<NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
         let five_kbytes = 5 * 1024;
@@ -1965,7 +1964,7 @@ impl AuthorityPerEpochStore {
         for i in 0..public_chunks.len() {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
-            slices.push(Secp256K1NetworkKeyPublicOutputSlice {
+            slices.push(NetworkKeyPublicOutputSlice {
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
