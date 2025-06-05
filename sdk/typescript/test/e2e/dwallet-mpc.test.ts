@@ -37,8 +37,8 @@ describe('Test dWallet MPC', () => {
 
 	beforeEach(async () => {
 		// todo(zeev): Think key is probably incorrect, check it.
-		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x1');
-		const dWalletSeed = new Uint8Array(32).fill(8);
+		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
+		const dWalletSeed = new Uint8Array(32).fill(9);
 		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
 			Buffer.from(dWalletSeed).toString('hex'),
 		);
