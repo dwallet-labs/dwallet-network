@@ -218,7 +218,12 @@ impl DWalletMPCManager {
                         .push((event.event, event.session_info));
                 }
                 _ => {
-                    error!(?err, "failed to handle dWallet MPC event with error");
+                    error!(
+                        ?err,
+                        ?event.event.type_,
+                        session_info=?event.session_info,
+                        "failed to handle dWallet MPC event with error"
+                    );
                 }
             }
         }
