@@ -106,7 +106,7 @@ export async function createValidatorPod(
 					},
 				},
 			],
-			restartPolicy: 'Always',
+			restartPolicy: 'Never',
 		},
 	};
 	await k8sApi.createNamespacedPod({
