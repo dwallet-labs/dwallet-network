@@ -386,11 +386,7 @@ impl DWalletMPCSession {
             .map(|(round, messages_map)| {
                 (
                     *round,
-                    messages_map
-                        .keys()
-                        .copied()
-                        .sorted()
-                        .collect::<Vec<_>>(),
+                    messages_map.keys().copied().sorted().collect::<Vec<_>>(),
                 )
             })
             .collect::<HashMap<_, _>>();
