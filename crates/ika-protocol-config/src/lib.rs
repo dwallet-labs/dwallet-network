@@ -507,7 +507,7 @@ impl ProtocolConfig {
         cfg.feature_flags.consensus_linearize_subdag_v2 = true;
         cfg.feature_flags.consensus_zstd_compression = true;
         cfg.feature_flags.consensus_median_based_commit_timestamp = true;
-        cfg.feature_flags.consensus_batched_block_sync = true;
+        cfg.feature_flags.consensus_batched_block_sync = false;
         cfg.feature_flags.enforce_checkpoint_timestamp_monotonicity = true;
 
         #[allow(clippy::never_loop)]
