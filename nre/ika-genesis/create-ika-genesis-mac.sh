@@ -26,7 +26,8 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=7
+export VALIDATOR_NUM_TO_CREATE=7
+export VALIDATOR_NUM_TO_JOIN_COMMITTEE=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -67,7 +68,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --validator-prefix <prefix>         Set the prefix for validators. Default: $VALIDATOR_PREFIX"
-    echo "  --validator-num <number>            Set the number of validators. Default: $VALIDATOR_NUM"
+    echo "  --validator-num <number>            Set the number of validators. Default: $VALIDATOR_NUM_TO_CREATE"
     echo "  --validator-staked-tokens-num <num>   Set the number of staked tokens. Default: $VALIDATOR_STAKED_TOKENS_NUM"
     echo "  --subdomain <subdomain>             Set the subdomain for validators. Default: $SUBDOMAIN"
     echo "  --binary-name <path>                Set the binary name path. Default: $PWD/ika"
@@ -86,7 +87,7 @@ show_help() {
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --validator-prefix) VALIDATOR_PREFIX="$2"; shift ;;
-        --validator-num) VALIDATOR_NUM="$2"; shift ;;
+        --validator-num) VALIDATOR_NUM_TO_CREATE="$2"; shift ;;
         --validator-staked-tokens-num) VALIDATOR_STAKED_TOKENS_NUM="$2"; shift ;;
         --subdomain) SUBDOMAIN="$2"; shift ;;
         --binary-name) BINARY_NAME="$2"; shift ;;
@@ -140,11 +141,11 @@ if [[ -n "$VALIDATORS_FILE" ]]; then
         echo "Processed validator: Name = $v_name, Hostname = $v_hostname"
     done
 
-    VALIDATOR_NUM=${#VALIDATORS_ARRAY[@]}
+    VALIDATOR_NUM_TO_CREATE=${#VALIDATORS_ARRAY[@]}
 else
-    echo "Creating validators from prefix '$VALIDATOR_PREFIX' and number '$VALIDATOR_NUM'"
+    echo "Creating validators from prefix '$VALIDATOR_PREFIX' and number '$VALIDATOR_NUM_TO_CREATE'"
 
-    for ((i=1; i<=VALIDATOR_NUM; i++)); do
+    for ((i=1; i<=VALIDATOR_NUM_TO_CREATE; i++)); do
         VALIDATOR_NAME="${VALIDATOR_PREFIX}${i}"
         # For enumerated list, compute the hostname as: name.SUBDOMAIN
         VALIDATOR_HOSTNAME="${VALIDATOR_NAME}.${SUBDOMAIN}"
@@ -490,7 +491,7 @@ done
 ############################
 
 # Only process first 4 validators
-for tuple in "${VALIDATOR_TUPLES[@]:0:4}"; do
+for tuple in "${VALIDATOR_TUPLES[@]:0:VALIDATOR_NUM_TO_JOIN_COMMITTEE}"; do
     IFS=":" read -r VALIDATOR_NAME VALIDATOR_ID VALIDATOR_CAP_ID <<< "$tuple"
 
     # Find the validator's hostname based on its name
