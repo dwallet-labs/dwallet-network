@@ -480,6 +480,24 @@ public fun match_partial_user_signature_with_imported_key_message_approval(
     )
 }
 
+/// Fund the coordinator with SUI - this let you subsidize the protocol.
+/// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+public fun subsidize_coordinator_with_sui(
+    self: &mut DWalletCoordinator,
+    sui: Coin<SUI>,
+) {
+    self.inner_mut().subsidize_coordinator_with_sui(sui);
+}
+
+/// Fund the coordinator with IKA - this let you subsidize the protocol.
+/// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+public fun subsidize_coordinator_with_ika(
+    self: &mut DWalletCoordinator,
+    ika: Coin<IKA>,
+) {
+    self.inner_mut().subsidize_coordinator_with_ika(ika);
+}
+
 /// Migrate the dwallet_2pc_mpc_coordinator object to the new package id.
 ///
 /// This function sets the new package id and version and can be modified in future versions

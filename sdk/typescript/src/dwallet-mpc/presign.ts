@@ -10,7 +10,7 @@ import {
 } from './globals.js';
 import type { Config } from './globals.ts';
 
-interface CompletedPresign {
+export interface CompletedPresign {
 	state: {
 		fields: {
 			presign: Uint8Array;
