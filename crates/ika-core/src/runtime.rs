@@ -24,6 +24,7 @@ impl IkaRuntimes {
         // }
         let ika_node = tokio::runtime::Builder::new_multi_thread()
             .thread_name("ika-node-runtime")
+            .worker_threads(5)
             // .thread_stack_size(SIXTEEN_MEGA_BYTES)
             .enable_all()
             .build()
