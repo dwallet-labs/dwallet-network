@@ -20,7 +20,7 @@ use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::validator_initialization_config::DEFAULT_NUMBER_OF_AUTHORITIES;
 use sui_sdk::wallet_context::WalletContext;
 use tokio::runtime::Runtime;
-use tracing::info;
+use tracing::{info, warn};
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 60 * 24;
 
@@ -311,11 +311,13 @@ async fn start(
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
             if i == 10 {
+            } else if i == 13 {
                 if node_index == 1 || node_index == 2 {
+                    warn!(?node_index, "Stopping node");
                     node.stop();
                 }
-            } else if i == 13 {
                 if node_index == 1 {
+                    warn!(?node_index, "Starting node");
                     node.start().await?;
                 } 
             }
