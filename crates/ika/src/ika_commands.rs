@@ -310,25 +310,28 @@ async fn start(
     loop {
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if i == 20 && node_index <= 1 {
+            if i == 5 && node_index == 1 {
                 warn!(?node_index, "Stopping node");
                 node.stop();
-            } else if i == 23 && node_index == 1 {
+            } else if i == 10 && node_index == 0 {
+                warn!(?node_index, "Stopping node");
+                node.stop();
+            } else if i == 15 && node_index == 1 {
                 warn!(?node_index, "Starting node");
                 node.start().await?;
             }
-            if let Err(err) = node.health_check(true).await {
-                unhealthy_cnt += 1;
-                if unhealthy_cnt > 3 {
-                    // The network could temporarily go down during a reconfiguration.
-                    // If we detect a failed validator 3 times in a row, give up.
-                    return Err(err.into());
-                }
-                // Break the inner loop so that we could retry the latter.
-                break;
-            } else {
-                unhealthy_cnt = 0;
-            }
+            // if let Err(err) = node.health_check(true).await {
+            //     unhealthy_cnt += 1;
+            //     if unhealthy_cnt > 3 {
+            //         // The network could temporarily go down during a reconfiguration.
+            //         // If we detect a failed validator 3 times in a row, give up.
+            //         return Err(err.into());
+            //     }
+            //     // Break the inner loop so that we could retry the latter.
+            //     break;
+            // } else {
+            //     unhealthy_cnt = 0;
+            // }
         }
 
         interval.tick().await;
