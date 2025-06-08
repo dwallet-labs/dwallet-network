@@ -133,7 +133,7 @@ export async function createPods(kc: KubeConfig, namespaceName: string, numOfVal
 					env: [
 						{
 							name: 'RUST_LOG',
-							value: 'off,ika_node=info,ika_core=warn,consensus_core=info',
+							value: 'off,ika_node=info,ika_core=warn',
 						},
 						{
 							name: 'RUST_MIN_STACK',
