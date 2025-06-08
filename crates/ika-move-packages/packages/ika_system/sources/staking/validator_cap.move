@@ -77,3 +77,20 @@ public(package) fun new_validator_commission_cap(
     }
 }
 
+#[test_only]
+public fun destroy_validator_cap_for_testing(cap: ValidatorCap) {
+    let ValidatorCap { id, .. } = cap;
+    id.delete();
+}
+
+#[test_only]
+public fun destroy_validator_operation_cap_for_testing(cap: ValidatorOperationCap) {
+    let ValidatorOperationCap { id, .. } = cap;
+    id.delete();
+}
+
+#[test_only]
+public fun destroy_validator_commission_cap_for_testing(cap: ValidatorCommissionCap) {
+    let ValidatorCommissionCap { id, .. } = cap;
+    id.delete();
+}

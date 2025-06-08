@@ -7,11 +7,11 @@ module ika_system::validator_info;
 
 use std::string::String;
 use sui::{bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify}, group_ops::Element};
-use sui::table_vec::{Self, TableVec};
+use sui::table_vec::{TableVec};
 use sui::bcs;
 use ika_system::{
     extended_field::{Self, ExtendedField},
-    validator_metadata::{Self, ValidatorMetadata}
+    validator_metadata::{ValidatorMetadata}
 };
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::multiaddr;
@@ -296,7 +296,19 @@ public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
     };
 }
 
-
+public(package) fun proof_of_possession_intent_bytes(
+    epoch: u64,
+    sender_address: address,
+    bls_key: vector<u8>,
+): vector<u8> {
+    let mut intent_bytes = PROOF_OF_POSSESSION_INTENT;
+    let mut message = vector<u8>[];
+    message.append(bls_key);
+    message.append(sui::address::to_bytes(sender_address));
+    intent_bytes.append(bcs::to_bytes(&message));
+    intent_bytes.append(bcs::to_bytes(&epoch));
+    intent_bytes
+}
 
 /// Verify the provided proof of possession using the contained public key and the provided
 /// signature.
@@ -306,12 +318,7 @@ public(package) fun verify_proof_of_possession(
     bls_key: vector<u8>,
     pop_signature: vector<u8>,
 ): bool {
-    let mut intent_bytes = PROOF_OF_POSSESSION_INTENT;
-    let mut message = vector<u8>[];
-    message.append(bls_key);
-    message.append(sui::address::to_bytes(sender_address));
-    intent_bytes.append(bcs::to_bytes(&message));
-    intent_bytes.append(bcs::to_bytes(&epoch));
+    let intent_bytes = proof_of_possession_intent_bytes(epoch, sender_address, bls_key);
     bls12381_min_pk_verify(
         &pop_signature,
         &bls_key,
@@ -537,6 +544,12 @@ fun update_class_groups_key_and_proof(
 }
 
 // === Test Functions ===
+
+#[test_only]
+use sui::table_vec;
+
+#[test_only]
+use ika_system::validator_metadata;
 
 #[test_only]
 /// Create a validator info with dummy name & address for testing purposes

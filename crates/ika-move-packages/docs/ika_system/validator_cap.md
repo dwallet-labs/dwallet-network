@@ -143,11 +143,10 @@ A capability for validator commission, can be revoked using <code><a href="../ik
     <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>: ID,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">ValidatorCap</a> {
-    <b>let</b> cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">ValidatorCap</a> {
+    <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">ValidatorCap</a> {
         id: object::new(ctx),
         <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>
-    };
-    cap
+    }
 }
 </code></pre>
 
@@ -226,11 +225,10 @@ or rotating an existing validaotr's <code>operation_cap_id</code>.
     <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>: ID,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">ValidatorOperationCap</a> {
-    <b>let</b> operation_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">ValidatorOperationCap</a> {
+    <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorOperationCap">ValidatorOperationCap</a> {
         id: object::new(ctx),
         <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>,
-    };
-    operation_cap
+    }
 }
 </code></pre>
 
@@ -283,11 +281,10 @@ or rotating an existing validaotr's <code>commission_cap_id</code>.
     <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>: ID,
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">ValidatorCommissionCap</a> {
-    <b>let</b> commission_cap = <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">ValidatorCommissionCap</a> {
+    <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">ValidatorCommissionCap</a> {
         id: object::new(ctx),
         <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_validator_id">validator_id</a>,
-    };
-    commission_cap
+    }
 }
 </code></pre>
 

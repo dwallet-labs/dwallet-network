@@ -4,6 +4,7 @@
 use ika_types::committee::ProtocolVersion;
 use ika_types::ika_coin::INKU_PER_IKA;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 /// Minimum number of active validators at any moment.
 /// We do not allow the number of validators in any epoch to go below this.
@@ -97,6 +98,8 @@ impl InitiationParameters {
 
     fn default_chain_start_timestamp_ms() -> u64 {
         std::time::SystemTime::now()
+            .checked_sub(Duration::from_secs(24 * 60 * 60)) // subtract 24 hours
+            .unwrap()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64

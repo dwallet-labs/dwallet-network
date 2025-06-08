@@ -480,6 +480,10 @@ public fun match_partial_user_signature_with_imported_key_message_approval(
     )
 }
 
+public fun current_pricing(self: &DWalletCoordinator): DWalletPricing {
+    self.inner().current_pricing()
+}
+
 /// Fund the coordinator with SUI - this let you subsidize the protocol.
 /// IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
 public fun subsidize_coordinator_with_sui(
@@ -529,4 +533,18 @@ public(package) fun inner_mut(self: &mut DWalletCoordinator): &mut DWalletCoordi
 public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
     assert!(self.version == VERSION, EWrongInnerVersion);
     dynamic_field::borrow(&self.id, VERSION)
+}
+
+// === Test Functions ===
+
+#[test_only]
+public fun last_processed_checkpoint_sequence_number(
+    self: &DWalletCoordinator,
+): Option<u64> {
+    self.inner().last_processed_checkpoint_sequence_number()
+}
+
+#[test_only]
+public fun last_session_sequence_number(self: &DWalletCoordinator): u64 {
+    self.inner().last_session_sequence_number()
 }

@@ -399,6 +399,15 @@ public(package) fun rotate_commission_cap(self: &mut ValidatorSet, cap: &Validat
     validator.rotate_commission_cap(cap, ctx)
 }
 
+public(package) fun collect_commission(
+    self: &mut ValidatorSet,
+    cap: &ValidatorCommissionCap,
+    amount: Option<u64>,
+): Balance<IKA> {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator_mut(validator_id);
+    validator.collect_commission(cap, amount)
+}
 
 public(package) fun set_validator_name(
     self: &mut ValidatorSet,
@@ -408,6 +417,14 @@ public(package) fun set_validator_name(
     let validator_id = cap.validator_id();
     let validator = self.get_validator_mut(validator_id);
     validator.set_name(name, cap);
+}
+
+public(package) fun validator_metadata(
+    self: &ValidatorSet,
+    validator_id: ID,
+): ValidatorMetadata {
+    let validator = self.get_validator(validator_id);
+    validator.validator_info().metadata()
 }
 
 public(package) fun set_validator_metadata(

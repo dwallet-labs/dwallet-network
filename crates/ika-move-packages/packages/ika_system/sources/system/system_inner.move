@@ -54,21 +54,17 @@ const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
 
 // === Errors ===
 
-const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 0;
-const EHaveNotReachedEndEpochTime: u64 = 1;
-const EActiveBlsCommitteeMustInitialize: u64 = 2;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
-const EApprovedUpgradeNotFound: u64 = 5;
+const EHaveNotReachedEndEpochTime: u64 = 0;
+const EActiveBlsCommitteeMustInitialize: u64 = 1;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 2;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 3;
+const EApprovedUpgradeNotFound: u64 = 4;
 
 #[error]
 const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
 
 #[error]
 const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
-
-#[error]
-const EWrongEpochState: vector<u8> = b"The system is in the wrong epoch state for the operation.";
 
 #[error]
 const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
@@ -355,6 +351,12 @@ public(package) fun request_remove_validator(
     self.validator_set.request_remove_validator(self.epoch, cap);
 }
 
+public(package) fun validator_metadata(
+    self: &SystemInner,
+    validator_id: ID,
+): ValidatorMetadata {
+    self.validator_set.validator_metadata(validator_id)
+}
 
 public(package) fun set_validator_metadata(
     self: &mut SystemInner,
@@ -413,21 +415,6 @@ public(package) fun withdraw_stake(
     self.validator_set.withdraw_stake(staked_ika, self.epoch, ctx)
 }
 
-// public(package) fun convert_to_fungible_staked_ika(
-//     self: &mut SystemInner,
-//     staked_ika: StakedIka,
-//     ctx: &mut TxContext,
-// ): FungibleStakedIka {
-//     self.validators.convert_to_fungible_staked_ika(self.epoch, staked_ika, ctx)
-// }
-
-// public(package) fun redeem_fungible_staked_ika(
-//     self: &mut SystemInner,
-//     fungible_staked_ika: FungibleStakedIka,
-// ): Balance<IKA> {
-//     self.validators.redeem_fungible_staked_ika(self.epoch, fungible_staked_ika)
-// }
-
 public(package) fun report_validator(
     self: &mut SystemInner,
     cap: &ValidatorOperationCap,
@@ -454,6 +441,15 @@ public(package) fun rotate_operation_cap(self: &mut SystemInner, cap: &Validator
 
 public(package) fun rotate_commission_cap(self: &mut SystemInner, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
     self.validator_set.rotate_commission_cap(cap, ctx)
+}
+
+public(package) fun collect_commission(
+    self: &mut SystemInner,
+    cap: &ValidatorCommissionCap,
+    amount: Option<u64>,
+    ctx: &mut TxContext,
+): Coin<IKA> {
+    self.validator_set.collect_commission(cap, amount).into_coin(ctx)
 }
 
 /// Sets a validator's name.
@@ -565,9 +561,9 @@ public(package) fun advance_epoch(
 ) {
     let now = clock.timestamp_ms();
     let last_epoch_change = self.epoch_start_timestamp_ms;
+    let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
+    assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
 
-    if (self.epoch == 0) assert!(now >= last_epoch_change, EWrongEpochState)
-    else assert!(now >= last_epoch_change + self.epoch_duration_ms, EWrongEpochState);
     self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();
@@ -576,16 +572,13 @@ public(package) fun advance_epoch(
     let current_epoch = self.epoch();
     // Include stake subsidy in the rewards given out to validators and stakers.
     // Delay distributing any stake subsidies until after `stake_subsidy_start_epoch`.
-    // And if this epoch is shorter than the regular epoch duration, don't distribute any stake subsidy.
-    if (
-        current_epoch >= self.stake_subsidy_start_epoch
-    ) {
+    if (current_epoch >= self.stake_subsidy_start_epoch) {
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
+    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(next_epoch_active_committee.extract(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
 
     let total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
 
@@ -635,19 +628,24 @@ public(package) fun process_mid_epoch(
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext,
 ) {
-    assert!(self.validator_set.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
+    assert!(self.epoch > 0 && self.validator_set.next_epoch_active_committee().is_none() && now >= last_epoch_change + (self.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
 
     self.validator_set.process_mid_epoch();
     let next_epoch_active_committee = self.validator_set.next_epoch_active_committee().extract();
     dwallet_coordinator_inner.mid_epoch_reconfiguration(next_epoch_active_committee, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
 
-public(package) fun lock_last_active_session_sequence_number(
+public(package) fun request_lock_epoch_sessions(
     self: &SystemInner,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
 ) {
-    assert!(clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
+    assert!(self.epoch > 0 && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
+
     dwallet_coordinator.lock_last_active_session_sequence_number();
 }
 
@@ -688,19 +686,19 @@ public(package) fun token_exchange_rates(
     self: &SystemInner,
     validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
-    let validators = &self.validator_set;
-    validators.token_exchange_rates(validator_id)
+    self.validator_set.token_exchange_rates(validator_id)
 }
 
 public(package) fun active_committee(self: &SystemInner): BlsCommittee {
-    let validator_set = &self.validator_set;
-    validator_set.active_committee()
+    self.validator_set.active_committee()
 }
 
-public(package) fun next_epoch_active_committee(self: &SystemInner): BlsCommittee {
-    let next_epoch_committee = self.validator_set.next_epoch_active_committee();
-    assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
-    return *next_epoch_committee.borrow()
+public(package) fun next_epoch_active_committee(self: &SystemInner): Option<BlsCommittee> {
+    self.validator_set.next_epoch_active_committee()
+}
+
+public(package) fun dwallet_2pc_mpc_coordinator_network_encryption_key_ids(self: &SystemInner): vector<ID> {
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.map_ref!(|cap| cap.dwallet_network_encryption_key_id())
 }
 
 fun verify_cap(

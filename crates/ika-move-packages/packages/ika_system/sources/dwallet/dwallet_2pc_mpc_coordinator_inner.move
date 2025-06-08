@@ -155,6 +155,10 @@ const EPricingCalculationVotesHasNotBeenStarted: u64 = 28;
 const EPricingCalculationVotesMustBeCompleted: u64 = 29;
 /// Cannot modify settings during active pricing calculation
 const ECannotSetDuringVotesCalculation: u64 = 30;
+/// Insufficient IKA payment
+const EInsufficientIKAPayment: u64 = 31;
+/// Insufficient SUI payment
+const EInsufficientSUIPayment: u64 = 32;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -2095,7 +2099,9 @@ public(package) fun calculate_pricing_votes(
 
 /// Emit an event to the Ika network to request a reconfiguration session for the network encryption key corresponding to `cap`.
 fun emit_start_reconfiguration_event(
-    self: &mut DWalletCoordinatorInner, cap: &DWalletNetworkEncryptionKeyCap, ctx: &mut TxContext
+    self: &mut DWalletCoordinatorInner,
+    cap: &DWalletNetworkEncryptionKeyCap,
+    ctx: &mut TxContext
 ) {
     assert!(self.dwallet_network_encryption_keys.contains(cap.dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
 
@@ -2307,8 +2313,11 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
 ): DWalletEvent<E> {
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
 
-    let computation_fee_charged_ika = payment_ika.split(pricing_value.computation_ika(), ctx).into_balance();
 
+    assert!(payment_ika.value() >= pricing_value.computation_ika() + pricing_value.consensus_validation_ika(), EInsufficientIKAPayment);
+    assert!(payment_sui.value() >= pricing_value.gas_fee_reimbursement_sui() + pricing_value.gas_fee_reimbursement_sui_for_system_calls(), EInsufficientSUIPayment);
+
+    let computation_fee_charged_ika = payment_ika.split(pricing_value.computation_ika(), ctx).into_balance();
     let consensus_validation_fee_charged_ika = payment_ika.split(pricing_value.consensus_validation_ika(), ctx).into_balance();
     let gas_fee_reimbursement_sui = payment_sui.split(pricing_value.gas_fee_reimbursement_sui(), ctx).into_balance();
     self.pricing_and_fee_management.gas_fee_reimbursement_sui.join(payment_sui.split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx).into_balance());
@@ -4820,4 +4829,36 @@ public(package) fun subsidize_coordinator_with_ika(
     ika: Coin<IKA>,
 ) {
     self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(ika.into_balance());
+}
+
+public(package) fun dwallet_network_encryption_key_id(self: &DWalletNetworkEncryptionKeyCap): ID {
+    self.dwallet_network_encryption_key_id
+}
+
+public(package) fun current_pricing(self: &DWalletCoordinatorInner): DWalletPricing {
+    self.pricing_and_fee_management.current
+}
+
+/// === Public Functions ===
+
+public fun dwallet_id(self: &DWalletCap): ID {
+    self.dwallet_id
+}
+
+public fun imported_key_dwallet_id(self: &ImportedKeyDWalletCap): ID {
+    self.dwallet_id
+}
+
+// === Test Functions ===
+
+#[test_only]
+public fun last_processed_checkpoint_sequence_number(
+    self: &DWalletCoordinatorInner,
+): Option<u64> {
+    self.last_processed_checkpoint_sequence_number
+}
+
+#[test_only]
+public(package) fun last_session_sequence_number(self: &DWalletCoordinatorInner): u64 {
+    self.session_management.next_session_sequence_number - 1
 }

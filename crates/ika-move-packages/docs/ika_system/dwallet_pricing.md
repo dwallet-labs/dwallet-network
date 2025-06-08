@@ -25,7 +25,6 @@ The DKG operation is split into two separate rounds:
 -  [Function `insert_or_update_dwallet_pricing`](#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing)
     -  [Parameters](#@Parameters_2)
     -  [Returns](#@Returns_3)
--  [Function `insert_or_update_dwallet_pricing_value`](#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value)
 -  [Function `try_get_dwallet_pricing_value`](#(ika_system=0x0)_dwallet_pricing_try_get_dwallet_pricing_value)
     -  [Parameters](#@Parameters_4)
     -  [Returns](#@Returns_5)
@@ -37,9 +36,10 @@ The DKG operation is split into two separate rounds:
 -  [Function `committee_members_for_pricing_calculation_votes`](#(ika_system=0x0)_dwallet_pricing_committee_members_for_pricing_calculation_votes)
 -  [Function `calculate_pricing_quorum_below`](#(ika_system=0x0)_dwallet_pricing_calculate_pricing_quorum_below)
 -  [Function `pricing_value_quorum_below`](#(ika_system=0x0)_dwallet_pricing_pricing_value_quorum_below)
--  [Function `quorum_below`](#(ika_system=0x0)_dwallet_pricing_quorum_below)
 -  [Function `is_calculation_completed`](#(ika_system=0x0)_dwallet_pricing_is_calculation_completed)
 -  [Function `calculated_pricing`](#(ika_system=0x0)_dwallet_pricing_calculated_pricing)
+-  [Function `insert_or_update_dwallet_pricing_value`](#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value)
+-  [Function `quorum_below`](#(ika_system=0x0)_dwallet_pricing_quorum_below)
 
 
 <pre><code><b>use</b> (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>;
@@ -294,40 +294,6 @@ The [<code><a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pr
         <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_gas_fee_reimbursement_sui">gas_fee_reimbursement_sui</a>,
         <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_gas_fee_reimbursement_sui_for_system_calls">gas_fee_reimbursement_sui_for_system_calls</a>,
     })
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value"></a>
-
-## Function `insert_or_update_dwallet_pricing_value`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value">insert_or_update_dwallet_pricing_value</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, curve: u32, signature_algorithm: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;, protocol: u32, value: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">dwallet_pricing::DWalletPricingValue</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value">insert_or_update_dwallet_pricing_value</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">DWalletPricing</a>, curve: u32, signature_algorithm: Option&lt;u32&gt;, protocol: u32, value: <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">DWalletPricingValue</a>) {
-    <b>let</b> key = <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingKey">DWalletPricingKey</a> {
-        curve,
-        signature_algorithm,
-        protocol,
-    };
-    <b>if</b>(self.pricing_map.contains(&key)) {
-        <b>let</b> existing_value = &<b>mut</b> self.pricing_map[&key];
-        *existing_value = value;
-    } <b>else</b> {
-        self.pricing_map.insert(key, value);
-    };
 }
 </code></pre>
 
@@ -609,40 +575,6 @@ Getter for the gas_fee_reimbursement_sui_for_system_calls field of a DWalletPric
 
 </details>
 
-<a name="(ika_system=0x0)_dwallet_pricing_quorum_below"></a>
-
-## Function `quorum_below`
-
-Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal to this.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_quorum_below">quorum_below</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>, vote_queue: &<b>mut</b> <a href="../sui/priority_queue.md#sui_priority_queue_PriorityQueue">sui::priority_queue::PriorityQueue</a>&lt;u64&gt;): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_quorum_below">quorum_below</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>: BlsCommittee, vote_queue: &<b>mut</b> PriorityQueue&lt;u64&gt;): u64 {
-    <b>let</b> <b>mut</b> sum_votes = <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>.total_voting_power();
-    // We have a quorum initially, so we remove nodes until doing so breaks the quorum.
-    // The value at that point is the minimum value with support from a quorum.
-    <b>loop</b> {
-        <b>let</b> (value, votes) = vote_queue.pop_max();
-        sum_votes = sum_votes - votes;
-        <b>if</b> (!<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>.is_quorum_threshold(sum_votes)) {
-            <b>return</b> value
-        };
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_dwallet_pricing_is_calculation_completed"></a>
 
 ## Function `is_calculation_completed`
@@ -693,6 +625,74 @@ Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_calculated_pricing">calculated_pricing</a>(calculation: &<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingCalculationVotes">DWalletPricingCalculationVotes</a>): <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">DWalletPricing</a> {
     calculation.working_pricing
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value"></a>
+
+## Function `insert_or_update_dwallet_pricing_value`
+
+
+
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value">insert_or_update_dwallet_pricing_value</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, curve: u32, signature_algorithm: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u32&gt;, protocol: u32, value: (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">dwallet_pricing::DWalletPricingValue</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_insert_or_update_dwallet_pricing_value">insert_or_update_dwallet_pricing_value</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">DWalletPricing</a>, curve: u32, signature_algorithm: Option&lt;u32&gt;, protocol: u32, value: <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingValue">DWalletPricingValue</a>) {
+    <b>let</b> key = <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricingKey">DWalletPricingKey</a> {
+        curve,
+        signature_algorithm,
+        protocol,
+    };
+    <b>if</b>(self.pricing_map.contains(&key)) {
+        <b>let</b> existing_value = &<b>mut</b> self.pricing_map[&key];
+        *existing_value = value;
+    } <b>else</b> {
+        self.pricing_map.insert(key, value);
+    };
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_pricing_quorum_below"></a>
+
+## Function `quorum_below`
+
+Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal to this.
+
+
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_quorum_below">quorum_below</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>: (ika_system=0x0)::<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_BlsCommittee">bls_committee::BlsCommittee</a>, vote_queue: &<b>mut</b> <a href="../sui/priority_queue.md#sui_priority_queue_PriorityQueue">sui::priority_queue::PriorityQueue</a>&lt;u64&gt;): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_quorum_below">quorum_below</a>(<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>: BlsCommittee, vote_queue: &<b>mut</b> PriorityQueue&lt;u64&gt;): u64 {
+    <b>let</b> <b>mut</b> sum_votes = <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>.total_voting_power();
+    // We have a quorum initially, so we remove nodes until doing so breaks the quorum.
+    // The value at that point is the minimum value with support from a quorum.
+    <b>loop</b> {
+        <b>let</b> (value, votes) = vote_queue.pop_max();
+        sum_votes = sum_votes - votes;
+        <b>if</b> (!<a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee">bls_committee</a>.is_quorum_threshold(sum_votes)) {
+            <b>return</b> value
+        };
+    }
 }
 </code></pre>
 

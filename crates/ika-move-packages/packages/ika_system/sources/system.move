@@ -227,13 +227,21 @@ public fun initialize(
     self: &mut System,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    max_validator_count: u64,
+    max_validator_change_count: u64,
     cap: &ProtocolCap,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let package_id = self.package_id;
-    self.inner_mut().initialize(pricing, supported_curves_to_signature_algorithms_to_hash_schemes, max_validator_count, package_id, cap, clock, ctx);
+    self.inner_mut().initialize(
+        pricing,
+        supported_curves_to_signature_algorithms_to_hash_schemes,
+        max_validator_change_count,
+        package_id,
+        cap,
+        clock,
+        ctx,
+    );
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -379,6 +387,17 @@ public fun rotate_commission_cap(self: &mut System, cap: &ValidatorCap, ctx: &mu
     self.inner_mut().rotate_commission_cap(cap, ctx)
 }
 
+/// Withdraws the commission from the validator. Amount is optional, if not provided,
+/// the full commission is withdrawn.
+public fun collect_commission(
+    self: &mut System,
+    cap: &ValidatorCommissionCap,
+    amount: Option<u64>,
+    ctx: &mut TxContext,
+): Coin<IKA> {
+    self.inner_mut().collect_commission(cap, amount, ctx)
+}
+
 /// Set a validator's name.
 public fun set_validator_name(
     self: &mut System,
@@ -386,6 +405,14 @@ public fun set_validator_name(
     cap: &ValidatorOperationCap,
 ) {
     self.inner_mut().set_validator_name(name, cap);
+}
+
+/// Get a validator's metadata.
+public fun validator_metadata(
+    self: &System,
+    validator_id: ID,
+): ValidatorMetadata {
+    self.inner().validator_metadata(validator_id)
 }
 
 public fun set_validator_metadata(
@@ -479,7 +506,7 @@ public fun set_pricing_vote(
     self.inner_mut().set_pricing_vote(dwallet_coordinator.inner_mut(), pricing, cap)
 }
 
-/// Getter of the pool token exchange rate of a validator. Works for both active and inactive pools.
+/// Get the pool token exchange rate of a validator. Works for both active and inactive pools.
 public fun token_exchange_rates(
     self: &System,
     validator_id: ID,
@@ -487,9 +514,14 @@ public fun token_exchange_rates(
     self.inner().token_exchange_rates(validator_id)
 }
 
-/// Getter returning ids of the currently active validators.
-public fun active_committee(self: &mut System): BlsCommittee {
+/// Get the active committee of the current epoch.
+public fun active_committee(self: &System): BlsCommittee {
     self.inner().active_committee()
+}
+
+/// Get the active committee of the next epoch.
+public fun next_epoch_active_committee(self: &System): Option<BlsCommittee> {
+    self.inner().next_epoch_active_committee()
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
@@ -503,7 +535,7 @@ public fun request_reconfig_mid_epoch(
 public fun request_lock_epoch_sessions(
     self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock
 ) {
-    self.inner_mut().lock_last_active_session_sequence_number(dwallet_coordinator.inner_mut(), clock);
+    self.inner_mut().request_lock_epoch_sessions(dwallet_coordinator.inner_mut(), clock);
 }
 
 /// Advances the epoch to the next epoch.
@@ -634,6 +666,10 @@ public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka):
     self.inner().can_withdraw_staked_ika_early(staked_ika)
 }
 
+public fun dwallet_2pc_mpc_coordinator_network_encryption_key_ids(self: &System): vector<ID> {
+    self.inner().dwallet_2pc_mpc_coordinator_network_encryption_key_ids()
+}
+
 // === Internals ===
 
 /// Get a mutable reference to `SystemInnerVX` from the `System`.
@@ -653,7 +689,7 @@ fun inner(self: &System): &SystemInner {
 #[test_only]
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
 /// since epochs are ever-increasing and epoch changes are intended to happen every 24 hours.
-public fun epoch(self: &mut System): u64 {
+public fun epoch(self: &System): u64 {
     self.inner().epoch()
 }
 
