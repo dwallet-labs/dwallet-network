@@ -113,7 +113,6 @@ impl CryptographicComputationsOrchestrator {
                         self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
-
                         // todo(#1081): metadata.
                         info!(
                             thread_count=rayon::current_num_threads(),
