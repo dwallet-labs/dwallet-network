@@ -177,6 +177,7 @@ pub enum ConsensusTransactionKind {
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
+    /// Advanced was called, but there was no Quroum.
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
 }
 
