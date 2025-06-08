@@ -310,13 +310,13 @@ async fn start(
     loop {
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if i == 5 && node_index == 1 {
+            if i == 20 && node_index == 1 {
                 warn!(?node_index, "Stopping node");
                 node.stop();
-            } else if i == 10 && node_index == 0 {
+            } else if i == 20 && node_index == 0 {
                 warn!(?node_index, "Stopping node");
                 node.stop();
-            } else if i == 15 && node_index == 1 {
+            } else if i == 23 && node_index == 1 {
                 warn!(?node_index, "Starting node");
                 node.start().await?;
             }
