@@ -319,7 +319,7 @@ async fn start(
                 if node_index == 1 {
                     warn!(?node_index, "Starting node");
                     node.start().await?;
-                } 
+                }
             }
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
