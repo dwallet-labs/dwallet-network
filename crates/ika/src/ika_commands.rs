@@ -305,21 +305,22 @@ async fn start(
     info!("Cluster started");
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
-    let mut unhealthy_cnt = 0;
+    // let mut unhealthy_cnt = 0;
     let mut i = 0;
     loop {
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if i == 20 && node_index == 1 {
+            if i == 20 && node_index <= 1 {
                 warn!(?node_index, "Stopping node");
                 node.stop();
-            } else if i == 20 && node_index == 0 {
-                warn!(?node_index, "Stopping node");
-                node.stop();
-            } else if i == 23 && node_index == 1 {
-                warn!(?node_index, "Starting node");
+            } else if i == 23 && node_index == 0 {
+                warn!(?node_index, "starting node");
                 node.start().await?;
             }
+            /*else if i == 23 && node_index == 1 {
+                warn!(?node_index, "Starting node");
+                node.start().await?;
+            }*/
             // if let Err(err) = node.health_check(true).await {
             //     unhealthy_cnt += 1;
             //     if unhealthy_cnt > 3 {
