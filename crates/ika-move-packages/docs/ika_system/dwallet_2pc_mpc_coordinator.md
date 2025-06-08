@@ -35,6 +35,8 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 -  [Function `request_imported_key_sign_with_partial_user_signature`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign_with_partial_user_signature)
 -  [Function `match_partial_user_signature_with_message_approval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_match_partial_user_signature_with_message_approval)
 -  [Function `match_partial_user_signature_with_imported_key_message_approval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_match_partial_user_signature_with_imported_key_message_approval)
+-  [Function `subsidize_coordinator_with_sui`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui)
+-  [Function `subsidize_coordinator_with_ika`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika)
 -  [Function `migrate`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_migrate)
 -  [Function `inner_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut)
 -  [Function `inner`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner)
@@ -1171,6 +1173,64 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         partial_user_signature_cap,
         message_approval,
     )
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui"></a>
+
+## Function `subsidize_coordinator_with_sui`
+
+Fund the coordinator with SUI - this let you subsidize the protocol.
+IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, sui: <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    sui: Coin&lt;SUI&gt;,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(sui);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika"></a>
+
+## Function `subsidize_coordinator_with_ika`
+
+Fund the coordinator with IKA - this let you subsidize the protocol.
+IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, ika: <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    ika: Coin&lt;IKA&gt;,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(ika);
 }
 </code></pre>
 

@@ -8,6 +8,17 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Struct `SystemEpochInfoEvent`](#(ika_system=0x0)_system_inner_SystemEpochInfoEvent)
 -  [Struct `SystemProtocolCapVerifiedEvent`](#(ika_system=0x0)_system_inner_SystemProtocolCapVerifiedEvent)
 -  [Struct `SystemCheckpointInfoEvent`](#(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent)
+-  [Struct `SetNextProtocolVersionEvent`](#(ika_system=0x0)_system_inner_SetNextProtocolVersionEvent)
+-  [Struct `SetEpochDurationMsEvent`](#(ika_system=0x0)_system_inner_SetEpochDurationMsEvent)
+-  [Struct `SetStakeSubsidyStartEpochEvent`](#(ika_system=0x0)_system_inner_SetStakeSubsidyStartEpochEvent)
+-  [Struct `SetStakeSubsidyRateEvent`](#(ika_system=0x0)_system_inner_SetStakeSubsidyRateEvent)
+-  [Struct `SetStakeSubsidyPeriodLengthEvent`](#(ika_system=0x0)_system_inner_SetStakeSubsidyPeriodLengthEvent)
+-  [Struct `SetMinValidatorCountEvent`](#(ika_system=0x0)_system_inner_SetMinValidatorCountEvent)
+-  [Struct `SetMaxValidatorCountEvent`](#(ika_system=0x0)_system_inner_SetMaxValidatorCountEvent)
+-  [Struct `SetMinValidatorJoiningStakeEvent`](#(ika_system=0x0)_system_inner_SetMinValidatorJoiningStakeEvent)
+-  [Struct `SetMaxValidatorChangeCountEvent`](#(ika_system=0x0)_system_inner_SetMaxValidatorChangeCountEvent)
+-  [Struct `SetRewardSlashingRateEvent`](#(ika_system=0x0)_system_inner_SetRewardSlashingRateEvent)
+-  [Struct `SetApprovedUpgradeEvent`](#(ika_system=0x0)_system_inner_SetApprovedUpgradeEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_create)
 -  [Function `initialize`](#(ika_system=0x0)_system_inner_initialize)
@@ -200,6 +211,18 @@ Uses SystemParametersV1 as the parameters.
  Unix timestamp of the current epoch start.
 </dd>
 <dt>
+<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
+</dt>
+<dd>
+ The last processed checkpoint sequence number.
+</dd>
+<dt>
+<code>previous_epoch_last_checkpoint_sequence_number: u64</code>
+</dt>
+<dd>
+ The last checkpoint sequence number of the previous epoch.
+</dd>
+<dt>
 <code>total_messages_processed: u64</code>
 </dt>
 <dd>
@@ -224,16 +247,6 @@ Uses SystemParametersV1 as the parameters.
 </dd>
 <dt>
 <code>dwallet_2pc_mpc_coordinator_network_encryption_keys: vector&lt;(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap</a>&gt;</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
-</dt>
-<dd>
-</dd>
-<dt>
-<code>previous_epoch_last_checkpoint_sequence_number: u64</code>
 </dt>
 <dd>
 </dd>
@@ -363,6 +376,363 @@ the system checkpoint submission message.
 </dd>
 <dt>
 <code>timestamp_ms: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetNextProtocolVersionEvent"></a>
+
+## Struct `SetNextProtocolVersionEvent`
+
+Event emitted when protocol version is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetNextProtocolVersionEvent">SetNextProtocolVersionEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>next_protocol_version: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetEpochDurationMsEvent"></a>
+
+## Struct `SetEpochDurationMsEvent`
+
+Event emitted when epoch duration is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetEpochDurationMsEvent">SetEpochDurationMsEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetStakeSubsidyStartEpochEvent"></a>
+
+## Struct `SetStakeSubsidyStartEpochEvent`
+
+Event emitted when stake subsidy start epoch is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyStartEpochEvent">SetStakeSubsidyStartEpochEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>stake_subsidy_start_epoch: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetStakeSubsidyRateEvent"></a>
+
+## Struct `SetStakeSubsidyRateEvent`
+
+Event emitted when stake subsidy rate is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyRateEvent">SetStakeSubsidyRateEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>stake_subsidy_rate: u16</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetStakeSubsidyPeriodLengthEvent"></a>
+
+## Struct `SetStakeSubsidyPeriodLengthEvent`
+
+Event emitted when stake subsidy period length is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyPeriodLengthEvent">SetStakeSubsidyPeriodLengthEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>stake_subsidy_period_length: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetMinValidatorCountEvent"></a>
+
+## Struct `SetMinValidatorCountEvent`
+
+Event emitted when minimum validator count is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMinValidatorCountEvent">SetMinValidatorCountEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>min_validator_count: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetMaxValidatorCountEvent"></a>
+
+## Struct `SetMaxValidatorCountEvent`
+
+Event emitted when maximum validator count is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMaxValidatorCountEvent">SetMaxValidatorCountEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>max_validator_count: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetMinValidatorJoiningStakeEvent"></a>
+
+## Struct `SetMinValidatorJoiningStakeEvent`
+
+Event emitted when minimum validator joining stake is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMinValidatorJoiningStakeEvent">SetMinValidatorJoiningStakeEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>min_validator_joining_stake: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetMaxValidatorChangeCountEvent"></a>
+
+## Struct `SetMaxValidatorChangeCountEvent`
+
+Event emitted when maximum validator change count is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMaxValidatorChangeCountEvent">SetMaxValidatorChangeCountEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>max_validator_change_count: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetRewardSlashingRateEvent"></a>
+
+## Struct `SetRewardSlashingRateEvent`
+
+Event emitted when reward slashing rate is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetRewardSlashingRateEvent">SetRewardSlashingRateEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>reward_slashing_rate: u16</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_inner_SetApprovedUpgradeEvent"></a>
+
+## Struct `SetApprovedUpgradeEvent`
+
+Event emitted when approved upgrade is set via checkpoint message.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetApprovedUpgradeEvent">SetApprovedUpgradeEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
+</dt>
+<dd>
+</dd>
+<dt>
+<code>digest: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -618,13 +988,13 @@ This function will be called only once in init.
         stake_subsidy_start_epoch,
         <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>,
+        last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        last_processed_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
     system_state
@@ -2095,40 +2465,100 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     <b>while</b> (i &lt; len) {
         <b>let</b> message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>) {
-            <b>let</b> next_protocol_version = bcs_body.peel_u64();
-            self.next_protocol_version.fill(next_protocol_version);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>) {
-            <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = bcs_body.peel_u64();
-            self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>;
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>) {
-            <b>let</b> stake_subsidy_start_epoch = bcs_body.peel_u64();
-            self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>) {
-            <b>let</b> stake_subsidy_rate = bcs_body.peel_u16();
-            self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_rate(stake_subsidy_rate);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>) {
-            <b>let</b> stake_subsidy_period_length = bcs_body.peel_u64();
-            self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
-            <b>let</b> min_validator_count = bcs_body.peel_u64();
-            self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_count(min_validator_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>) {
-            <b>let</b> max_validator_count = bcs_body.peel_u64();
-            self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_count(max_validator_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>) {
-            <b>let</b> min_validator_joining_stake = bcs_body.peel_u64();
-            self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_joining_stake(min_validator_joining_stake);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>) {
-            <b>let</b> max_validator_change_count = bcs_body.peel_u64();
-            self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_change_count(max_validator_change_count);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>) {
-            <b>let</b> reward_slashing_rate = bcs_body.peel_u16();
-            self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_reward_slashing_rate(reward_slashing_rate);
-        } <b>else</b> <b>if</b> (message_data_type == <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>) {
-            <b>let</b> package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            <b>let</b> digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
-            self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_approved_upgrade">set_approved_upgrade</a>(package_id, digest);
+        match (message_data_type) {
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> next_protocol_version = bcs_body.peel_u64();
+                self.next_protocol_version.fill(next_protocol_version);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetNextProtocolVersionEvent">SetNextProtocolVersionEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    next_protocol_version,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = bcs_body.peel_u64();
+                self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a> = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>;
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetEpochDurationMsEvent">SetEpochDurationMsEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> stake_subsidy_start_epoch = bcs_body.peel_u64();
+                self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyStartEpochEvent">SetStakeSubsidyStartEpochEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    stake_subsidy_start_epoch,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> stake_subsidy_rate = bcs_body.peel_u16();
+                self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_rate(stake_subsidy_rate);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyRateEvent">SetStakeSubsidyRateEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    stake_subsidy_rate,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> stake_subsidy_period_length = bcs_body.peel_u64();
+                self.<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>.set_stake_subsidy_period_length(stake_subsidy_period_length);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetStakeSubsidyPeriodLengthEvent">SetStakeSubsidyPeriodLengthEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    stake_subsidy_period_length,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> min_validator_count = bcs_body.peel_u64();
+                self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_count(min_validator_count);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMinValidatorCountEvent">SetMinValidatorCountEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    min_validator_count,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> max_validator_count = bcs_body.peel_u64();
+                self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_count(max_validator_count);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMaxValidatorCountEvent">SetMaxValidatorCountEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    max_validator_count,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> min_validator_joining_stake = bcs_body.peel_u64();
+                self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_min_validator_joining_stake(min_validator_joining_stake);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMinValidatorJoiningStakeEvent">SetMinValidatorJoiningStakeEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    min_validator_joining_stake,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> max_validator_change_count = bcs_body.peel_u64();
+                self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_change_count(max_validator_change_count);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetMaxValidatorChangeCountEvent">SetMaxValidatorChangeCountEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    max_validator_change_count,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> reward_slashing_rate = bcs_body.peel_u16();
+                self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_reward_slashing_rate(reward_slashing_rate);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetRewardSlashingRateEvent">SetRewardSlashingRateEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    reward_slashing_rate,
+                });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a> =&gt; {
+                <b>let</b> package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                <b>let</b> digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
+                self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_set_approved_upgrade">set_approved_upgrade</a>(package_id, digest);
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetApprovedUpgradeEvent">SetApprovedUpgradeEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                    package_id,
+                    digest,
+                });
+            },
+            _ =&gt; {
+                // Unknown message type - skip
+            }
         };
         i = i + 1;
     };

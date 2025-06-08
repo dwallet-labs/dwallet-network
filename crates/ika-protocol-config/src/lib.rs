@@ -497,8 +497,8 @@ impl ProtocolConfig {
             consensus_max_num_transactions_in_block: Some(512),
             consensus_gc_depth: Some(60),
             // The delay is measured in consensus rounds.
-            decryption_key_reshare_third_round_delay: Some(20),
-            network_dkg_third_round_delay: Some(20),
+            decryption_key_reshare_third_round_delay: Some(10),
+            network_dkg_third_round_delay: Some(10),
             sign_second_round_delay: Some(2),
         };
 
