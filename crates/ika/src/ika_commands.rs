@@ -11,7 +11,7 @@ use ika_config::{
 use std::net::{AddrParseError, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
-use std::thread;
+use std::{fs, thread};
 use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
 
 use crate::validator_commands::IkaValidatorCommand;
@@ -310,11 +310,13 @@ async fn start(
     loop {
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if i == 20 && node_index <= 1 {
-                warn!(?node_index, "Stopping node");
+            if i == 20 && (node_index == 0 || node_index == 1) {
+                warn!("Stopping node {}", node_index);
                 node.stop();
-            } else if i == 23 && node_index == 0 {
-                warn!(?node_index, "starting node");
+                fs::remove_dir_all(&node.config().db_path.as_path())?;
+            }
+            if i == 25 && node_index == 0 {
+                warn!("Restarting node {}", node_index);
                 node.start().await?;
             }
             /*else if i == 23 && node_index == 1 {
