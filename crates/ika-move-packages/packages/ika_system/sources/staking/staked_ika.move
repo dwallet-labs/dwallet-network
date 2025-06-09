@@ -7,14 +7,18 @@
 /// is performed via the `withdraw_stake` method in the `staking_pool`.
 module ika_system::staked_ika;
 
-use ika::ika::IKA;
-use sui::balance::{Balance};
+// === Imports ===
 
-// Keep in sync with corresponding value in
+use ika::ika::IKA;
+use sui::balance::Balance;
+
+// === Constants ===
+
 /// StakedIka objects must have a principal with at least this amount.
 const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
 
-// Error codes
+// === Errors ===
+
 /// The `StakedIka` is not in `Withdrawing` state.
 const ENotWithdrawing: u64 = 0;
 /// The metadata of two `StakedIka` objects does not match.
@@ -25,6 +29,8 @@ const EInvalidAmount: u64 = 2;
 const EAlreadyWithdrawing: u64 = 6;
 /// Stake is below the minimum staking threshold.
 const EStakeBelowThreshold: u64 = 7;
+
+// === Structs ===
 
 /// The state of the staked IKA. It can be either `Staked` or `Withdrawing`.
 /// The `Withdrawing` state contains the epoch when the staked IKA can be
@@ -51,6 +57,8 @@ public struct StakedIka has key, store {
     /// The Ikarus epoch when the staked IKA was activated.
     activation_epoch: u64,
 }
+
+// === Package Functions ===
 
 /// Protected method to create a new staked IKA.
 public(package) fun mint(
@@ -188,6 +196,8 @@ public fun split(sw: &mut StakedIka, amount: u64, ctx: &mut TxContext): StakedIk
         activation_epoch: sw.activation_epoch,
     }
 }
+
+// === Test Functions ===
 
 #[test_only]
 public fun destroy_for_testing(sw: StakedIka) {

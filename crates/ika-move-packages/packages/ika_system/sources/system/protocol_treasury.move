@@ -3,10 +3,24 @@
 
 module ika_system::protocol_treasury;
 
+// === Imports ===
+
 use ika::ika::IKA;
-use sui::bag::{Self, Bag};
-use sui::balance::Balance;
-use sui::coin::TreasuryCap;
+use sui::{
+    bag::{Self, Bag},
+    balance::Balance,
+    coin::TreasuryCap
+};
+
+// === Errors ===
+
+const ESubsidyDecreaseRateTooLarge: u64 = 0;
+
+// === Constants ===
+
+const BASIS_POINT_DENOMINATOR: u128 = 10_000;
+
+// === Structs ===
 
 public struct ProtocolTreasury has store {
     /// TreasuryCap of IKA tokens.
@@ -27,9 +41,7 @@ public struct ProtocolTreasury has store {
     extra_fields: Bag,
 }
 
-const BASIS_POINT_DENOMINATOR: u128 = 10_000;
-
-const ESubsidyDecreaseRateTooLarge: u64 = 0;
+// === Public Functions ===
 
 public(package) fun create(
     treasury_cap: TreasuryCap<IKA>,
@@ -85,19 +97,6 @@ public(package) fun stake_subsidy_for_distribution(
     stake_subsidy.into_balance()
 }
 
-fun calculate_stake_subsidy_amount_per_distribution(
-    total_supply_at_period_start: u64,
-    stake_subsidy_rate: u16,
-    stake_subsidy_period_length: u64,
-): u64 {
-    let stake_subsidy_total_period_distribution_amount =
-        total_supply_at_period_start as u128
-                * (stake_subsidy_rate as u128) / BASIS_POINT_DENOMINATOR;
-    let stake_subsidy_amount_per_distribution =
-        stake_subsidy_total_period_distribution_amount / (stake_subsidy_period_length as u128);
-    stake_subsidy_amount_per_distribution as u64
-}
-
 public(package) fun set_stake_subsidy_rate(self: &mut ProtocolTreasury, stake_subsidy_rate: u16) {
     // Rate can't be higher than 100%.
     assert!(stake_subsidy_rate <= BASIS_POINT_DENOMINATOR as u16, ESubsidyDecreaseRateTooLarge);
@@ -137,4 +136,19 @@ public(package) fun get_stake_subsidy_distribution_counter(self: &ProtocolTreasu
 #[test_only]
 public(package) fun set_stake_subsidy_distribution_counter(self: &mut ProtocolTreasury, stake_subsidy_distribution_counter: u64) {
     self.stake_subsidy_distribution_counter = stake_subsidy_distribution_counter;
+}
+
+// === Private Functions ===
+
+fun calculate_stake_subsidy_amount_per_distribution(
+    total_supply_at_period_start: u64,
+    stake_subsidy_rate: u16,
+    stake_subsidy_period_length: u64,
+): u64 {
+    let stake_subsidy_total_period_distribution_amount =
+        total_supply_at_period_start as u128
+                * (stake_subsidy_rate as u128) / BASIS_POINT_DENOMINATOR;
+    let stake_subsidy_amount_per_distribution =
+        stake_subsidy_total_period_distribution_amount / (stake_subsidy_period_length as u128);
+    stake_subsidy_amount_per_distribution as u64
 }

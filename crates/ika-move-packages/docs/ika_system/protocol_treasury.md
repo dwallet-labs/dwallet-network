@@ -8,11 +8,11 @@ title: Module `(ika_system=0x0)::protocol_treasury`
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_protocol_treasury_create)
 -  [Function `stake_subsidy_for_distribution`](#(ika_system=0x0)_protocol_treasury_stake_subsidy_for_distribution)
--  [Function `calculate_stake_subsidy_amount_per_distribution`](#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution)
 -  [Function `set_stake_subsidy_rate`](#(ika_system=0x0)_protocol_treasury_set_stake_subsidy_rate)
 -  [Function `set_stake_subsidy_period_length`](#(ika_system=0x0)_protocol_treasury_set_stake_subsidy_period_length)
 -  [Function `stake_subsidy_amount_per_distribution`](#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution)
 -  [Function `get_stake_subsidy_distribution_counter`](#(ika_system=0x0)_protocol_treasury_get_stake_subsidy_distribution_counter)
+-  [Function `calculate_stake_subsidy_amount_per_distribution`](#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution)
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
@@ -34,11 +34,13 @@ title: Module `(ika_system=0x0)::protocol_treasury`
 <b>use</b> <a href="../sui/event.md#sui_event">sui::event</a>;
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
+<b>use</b> <a href="../sui/party.md#sui_party">sui::party</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/transfer.md#sui_transfer">sui::transfer</a>;
 <b>use</b> <a href="../sui/tx_context.md#sui_tx_context">sui::tx_context</a>;
 <b>use</b> <a href="../sui/types.md#sui_types">sui::types</a>;
 <b>use</b> <a href="../sui/url.md#sui_url">sui::url</a>;
+<b>use</b> <a href="../sui/vec_map.md#sui_vec_map">sui::vec_map</a>;
 <b>use</b> <a href="../sui/vec_set.md#sui_vec_set">sui::vec_set</a>;
 </code></pre>
 
@@ -114,20 +116,20 @@ title: Module `(ika_system=0x0)::protocol_treasury`
 ## Constants
 
 
-<a name="(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR"></a>
-
-
-
-<pre><code><b>const</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u128 = 10000;
-</code></pre>
-
-
-
 <a name="(ika_system=0x0)_protocol_treasury_ESubsidyDecreaseRateTooLarge"></a>
 
 
 
 <pre><code><b>const</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ESubsidyDecreaseRateTooLarge">ESubsidyDecreaseRateTooLarge</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u128 = 10000;
 </code></pre>
 
 
@@ -212,39 +214,6 @@ Advance the distribution counter and return the stake subsidy.
         self.total_supply_at_period_start = total_supply_at_period_start;
     };
     stake_subsidy.into_balance()
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution"></a>
-
-## Function `calculate_stake_subsidy_amount_per_distribution`
-
-
-
-<pre><code><b>fun</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution">calculate_stake_subsidy_amount_per_distribution</a>(total_supply_at_period_start: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution">calculate_stake_subsidy_amount_per_distribution</a>(
-    total_supply_at_period_start: u64,
-    stake_subsidy_rate: u16,
-    stake_subsidy_period_length: u64,
-): u64 {
-    <b>let</b> stake_subsidy_total_period_distribution_amount =
-        total_supply_at_period_start <b>as</b> u128
-                * (stake_subsidy_rate <b>as</b> u128) / <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>;
-    <b>let</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution">stake_subsidy_amount_per_distribution</a> =
-        stake_subsidy_total_period_distribution_amount / (stake_subsidy_period_length <b>as</b> u128);
-    <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution">stake_subsidy_amount_per_distribution</a> <b>as</b> u64
 }
 </code></pre>
 
@@ -358,6 +327,39 @@ Returns the number of distributions that have occurred.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_get_stake_subsidy_distribution_counter">get_stake_subsidy_distribution_counter</a>(self: &<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">ProtocolTreasury</a>): u64 {
     self.stake_subsidy_distribution_counter
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution"></a>
+
+## Function `calculate_stake_subsidy_amount_per_distribution`
+
+
+
+<pre><code><b>fun</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution">calculate_stake_subsidy_amount_per_distribution</a>(total_supply_at_period_start: u64, stake_subsidy_rate: u16, stake_subsidy_period_length: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_calculate_stake_subsidy_amount_per_distribution">calculate_stake_subsidy_amount_per_distribution</a>(
+    total_supply_at_period_start: u64,
+    stake_subsidy_rate: u16,
+    stake_subsidy_period_length: u64,
+): u64 {
+    <b>let</b> stake_subsidy_total_period_distribution_amount =
+        total_supply_at_period_start <b>as</b> u128
+                * (stake_subsidy_rate <b>as</b> u128) / <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>;
+    <b>let</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution">stake_subsidy_amount_per_distribution</a> =
+        stake_subsidy_total_period_distribution_amount / (stake_subsidy_period_length <b>as</b> u128);
+    <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_stake_subsidy_amount_per_distribution">stake_subsidy_amount_per_distribution</a> <b>as</b> u64
 }
 </code></pre>
 

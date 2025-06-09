@@ -37,8 +37,8 @@ title: Module `(ika_system=0x0)::address`
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/address.md#(ika_system=0x0)_address_ed25519_address">ed25519_address</a>(public_key: vector&lt;u8&gt;): <b>address</b> {
     <b>let</b> <b>mut</b> hasher = vector[0u8];
     hasher.append(public_key);
-    <b>let</b> address_bytes = <a href="../sui/hash.md#sui_hash_blake2b256">sui::hash::blake2b256</a>(&hasher);
-    <a href="../sui/address.md#sui_address_from_bytes">sui::address::from_bytes</a>(address_bytes)
+    <b>let</b> address_bytes = hash::blake2b256(&hasher);
+    address::from_bytes(address_bytes)
 }
 </code></pre>
 

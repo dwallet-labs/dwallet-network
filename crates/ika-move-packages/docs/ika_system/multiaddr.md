@@ -72,7 +72,7 @@ assert!(validate_tcp(&valid_addr));
 ```
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -81,7 +81,7 @@ assert!(validate_tcp(&valid_addr));
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &String): bool {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &String): bool {
     <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"tcp"))
 }
 </code></pre>
@@ -121,7 +121,7 @@ assert!(validate_udp(&valid_addr));
 ```
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -130,7 +130,7 @@ assert!(validate_udp(&valid_addr));
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &String): bool {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &String): bool {
     <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"udp"))
 }
 </code></pre>

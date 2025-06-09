@@ -11,27 +11,43 @@ IKA to make the calculation of the rewards and voting power distribution easier.
 -  [Struct `PendingActiveSet`](#(ika_system=0x0)_pending_active_set_PendingActiveSet)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#(ika_system=0x0)_pending_active_set_new)
+    -  [Arguments](#@Arguments_1)
+    -  [Aborts](#@Aborts_2)
 -  [Function `insert_or_update_or_remove`](#(ika_system=0x0)_pending_active_set_insert_or_update_or_remove)
+    -  [Arguments](#@Arguments_3)
+    -  [Returns](#@Returns_4)
 -  [Function `update_or_remove`](#(ika_system=0x0)_pending_active_set_update_or_remove)
+    -  [Arguments](#@Arguments_5)
+    -  [Returns](#@Returns_6)
 -  [Function `update`](#(ika_system=0x0)_pending_active_set_update)
--  [Function `insert`](#(ika_system=0x0)_pending_active_set_insert)
+    -  [Arguments](#@Arguments_7)
+    -  [Returns](#@Returns_8)
 -  [Function `remove`](#(ika_system=0x0)_pending_active_set_remove)
+    -  [Arguments](#@Arguments_9)
+    -  [Returns](#@Returns_10)
+    -  [Aborts](#@Aborts_11)
 -  [Function `find_validator_index`](#(ika_system=0x0)_pending_active_set_find_validator_index)
--  [Function `insert_sorted`](#(ika_system=0x0)_pending_active_set_insert_sorted)
--  [Function `reposition_validator`](#(ika_system=0x0)_pending_active_set_reposition_validator)
+    -  [Arguments](#@Arguments_12)
+    -  [Returns](#@Returns_13)
 -  [Function `set_max_validator_count`](#(ika_system=0x0)_pending_active_set_set_max_validator_count)
 -  [Function `set_min_validator_count`](#(ika_system=0x0)_pending_active_set_set_min_validator_count)
 -  [Function `set_max_validator_change_count`](#(ika_system=0x0)_pending_active_set_set_max_validator_change_count)
 -  [Function `reset_validator_changes`](#(ika_system=0x0)_pending_active_set_reset_validator_changes)
+-  [Function `set_min_validator_joining_stake`](#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake)
 -  [Function `max_validator_count`](#(ika_system=0x0)_pending_active_set_max_validator_count)
 -  [Function `min_validator_count`](#(ika_system=0x0)_pending_active_set_min_validator_count)
 -  [Function `max_validator_change_count`](#(ika_system=0x0)_pending_active_set_max_validator_change_count)
 -  [Function `size`](#(ika_system=0x0)_pending_active_set_size)
--  [Function `active_ids`](#(ika_system=0x0)_pending_active_set_active_ids)
--  [Function `active_ids_and_stake`](#(ika_system=0x0)_pending_active_set_active_ids_and_stake)
--  [Function `set_min_validator_joining_stake`](#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake)
 -  [Function `min_validator_joining_stake`](#(ika_system=0x0)_pending_active_set_min_validator_joining_stake)
 -  [Function `total_stake`](#(ika_system=0x0)_pending_active_set_total_stake)
+-  [Function `active_ids`](#(ika_system=0x0)_pending_active_set_active_ids)
+-  [Function `active_ids_and_stake`](#(ika_system=0x0)_pending_active_set_active_ids_and_stake)
+-  [Function `insert`](#(ika_system=0x0)_pending_active_set_insert)
+    -  [Arguments](#@Arguments_14)
+    -  [Returns](#@Returns_15)
+    -  [Aborts](#@Aborts_16)
+-  [Function `insert_sorted`](#(ika_system=0x0)_pending_active_set_insert_sorted)
+-  [Function `reposition_validator`](#(ika_system=0x0)_pending_active_set_reposition_validator)
 
 
 <pre><code><b>use</b> <a href="../std/ascii.md#std_ascii">std::ascii</a>;
@@ -52,6 +68,7 @@ IKA to make the calculation of the rewards and voting power distribution easier.
 
 ## Struct `PendingActiveSetEntry`
 
+Represents a single validator entry in the active set
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a> <b>has</b> <b>copy</b>, drop, store
@@ -68,11 +85,13 @@ IKA to make the calculation of the rewards and voting power distribution easier.
 <code>validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a></code>
 </dt>
 <dd>
+ The ID of the validator
 </dd>
 <dt>
 <code>staked_amount: u64</code>
 </dt>
 <dd>
+ The amount of IKA staked by this validator
 </dd>
 </dl>
 
@@ -103,44 +122,44 @@ the calculation of the rewards and voting power distribution easier.
 <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>: u64</code>
 </dt>
 <dd>
- The minimum number of validators required in the active set.
+ The minimum number of validators required in the active set
 </dd>
 <dt>
 <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>: u64</code>
 </dt>
 <dd>
- The maximum number of validators in the active set.
+ The maximum number of validators in the active set
 </dd>
 <dt>
 <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64</code>
 </dt>
 <dd>
  The minimum amount of staked IKA needed to enter the active set. This is used to
- determine if a storage validator can be added to the active set.
+ determine if a storage validator can be added to the active set
 </dd>
 <dt>
 <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>: u64</code>
 </dt>
 <dd>
- The maximum number of validators that can be added or removed to the active set in an epoch.
+ The maximum number of validators that can be added or removed to the active set in an epoch
 </dd>
 <dt>
 <code>validators: vector&lt;(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">pending_active_set::PendingActiveSetEntry</a>&gt;</code>
 </dt>
 <dd>
- The list of validators in the active set and their stake.
+ The list of validators in the active set and their stake
 </dd>
 <dt>
 <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>: u64</code>
 </dt>
 <dd>
- The total amount of staked IKA in the active set.
+ The total amount of staked IKA in the active set
 </dd>
 <dt>
 <code>validator_changes: <a href="../sui/vec_set.md#sui_vec_set_VecSet">sui::vec_set::VecSet</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;</code>
 </dt>
 <dd>
- The list of validators that have been added or removed to the active set in the current epoch.
+ The list of validators that have been added or removed to the active set in the current epoch
 </dd>
 </dl>
 
@@ -196,11 +215,29 @@ The maximum number of validator changes has been reached.
 
 ## Function `new`
 
-Creates a new active set with the given <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code>, <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code>,
-and <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code>.
+Creates a new pending active set with the specified configuration parameters.
+
 The <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code> is used to filter out validators that do not have enough staked
 IKA to be included in the active set initially. The <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code> limits the number
 of validator additions/removals per epoch.
+
+
+<a name="@Arguments_1"></a>
+
+### Arguments
+
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a></code> - The minimum number of validators required in the active set
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code> - The maximum number of validators allowed in the active set
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a></code> - The minimum stake required for a validator to join
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a></code> - The maximum number of validator changes allowed per epoch
+
+
+<a name="@Aborts_2"></a>
+
+### Aborts
+
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EZeroMaxSize">EZeroMaxSize</a></code> - If <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code> is zero
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a></code> - If <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a></code> > <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a></code>
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a>(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>: u64): (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>
@@ -240,11 +277,29 @@ of validator additions/removals per epoch.
 
 ## Function `insert_or_update_or_remove`
 
-Inserts the validator if it is not already in the active set, otherwise updates its stake.
-If the validator's stake is below the threshold value, it attempts to remove it from the set
-unless that would violate the minimum validator count.
-Returns true if the validator is in the set after the operation, false otherwise.
-Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
+Inserts, updates, or removes a validator based on their stake amount.
+
+This function handles the complete lifecycle of a validator in the active set:
+- If stake is below threshold: attempts to remove the validator
+- If validator exists: updates their stake
+- If validator doesn't exist and has sufficient stake: inserts them
+
+
+<a name="@Arguments_3"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to modify
+* <code>validator_id</code> - The ID of the validator to process
+* <code>staked_amount</code> - The new stake amount for the validator
+
+
+<a name="@Returns_4"></a>
+
+### Returns
+
+* <code>bool</code> - Whether the validator is in the set after the operation
+* <code>Option&lt;ID&gt;</code> - The ID of any validator that was removed, or None
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_or_update_or_remove">insert_or_update_or_remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
@@ -280,9 +335,24 @@ Also returns the ID of any validator that was removed during the operation, or N
 
 ## Function `update_or_remove`
 
-Updates the staked amount of the storage validator with the given <code>validator_id</code> in
-the active set. Returns true if the validator is in the set.
-Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
+Updates an existing validator's stake or removes them if stake is insufficient.
+
+
+<a name="@Arguments_5"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to modify
+* <code>validator_id</code> - The ID of the validator to update
+* <code>staked_amount</code> - The new stake amount for the validator
+
+
+<a name="@Returns_6"></a>
+
+### Returns
+
+* <code>bool</code> - Whether the validator remains in the set after the operation
+* <code>Option&lt;ID&gt;</code> - The ID of the validator if it was removed, or None
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update_or_remove">update_or_remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
@@ -315,8 +385,23 @@ Also returns the ID of any validator that was removed during the operation, or N
 
 ## Function `update`
 
-Updates the staked amount of the storage validator with the given <code>validator_id</code> in
-the active set. Returns true if the validator is in the set.
+Updates the stake amount of an existing validator in the active set.
+
+
+<a name="@Arguments_7"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to modify
+* <code>validator_id</code> - The ID of the validator to update
+* <code>staked_amount</code> - The new stake amount for the validator
+
+
+<a name="@Returns_8"></a>
+
+### Returns
+
+* <code>bool</code> - Whether the validator was found and updated
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_update">update</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): bool
@@ -347,69 +432,33 @@ the active set. Returns true if the validator is in the set.
 
 </details>
 
-<a name="(ika_system=0x0)_pending_active_set_insert"></a>
-
-## Function `insert`
-
-Inserts a storage validator with the given <code>validator_id</code> and <code>staked_amount</code> into the
-active set. The validator is only added if it has enough staked IKA to be included
-in the active set. If the active set is full, the validator with the smallest
-staked IKA is removed to make space for the new validator.
-Returns true if the validator was inserted, false otherwise.
-Also returns the ID of any validator that was removed during the operation, or None if no validator was removed.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID, staked_amount: u64): (bool, Option&lt;ID&gt;) {
-    <b>assert</b>!(set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_find_validator_index">find_validator_index</a>(validator_id).is_none(), <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EDuplicateInsertion">EDuplicateInsertion</a>);
-    // If the validators are less than the max <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.
-    <b>if</b> (set.validators.length() &lt; set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>) {
-        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> + staked_amount;
-        <b>let</b> new_entry = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a> { validator_id, staked_amount };
-        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(new_entry);
-        <b>if</b> (!set.validator_changes.contains(&validator_id)) {
-            set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id);
-        };
-        <b>assert</b>!(set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>() &lt;= set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>);
-        <b>return</b> (<b>true</b>, option::none())
-    };
-    // If the <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>'s stake is less than the smallest stake in the set, don't <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>
-    <b>if</b> (staked_amount &lt;= set.validators[0].staked_amount) {
-        <b>return</b> (<b>false</b>, option::none())
-    };
-    // Remove the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> with smallest stake and <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> the <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a> one
-    <b>let</b> removed_validator_id = set.validators[0].validator_id;
-    <b>let</b> removed_stake = set.validators[0].staked_amount;
-    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> - removed_stake + staked_amount;
-    set.validators.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(0);
-    <b>let</b> new_entry = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a> { validator_id, staked_amount };
-    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(new_entry);
-    <b>if</b> (!set.validator_changes.contains(&validator_id)) {
-        set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id);
-    };
-    <b>assert</b>!(set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>() &lt;= set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>);
-    (<b>true</b>, option::some(removed_validator_id))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_pending_active_set_remove"></a>
 
 ## Function `remove`
 
-Removes the storage validator with the given <code>validator_id</code> from the active set.
-Will abort with EBelowMinValidatorCount if removing would bring the set below min_validator_count.
+Removes a validator from the active set.
+
+
+<a name="@Arguments_9"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to modify
+* <code>validator_id</code> - The ID of the validator to remove
+
+
+<a name="@Returns_10"></a>
+
+### Returns
+
+* <code>bool</code> - Whether the validator was found and removed
+
+
+<a name="@Aborts_11"></a>
+
+### Aborts
+
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EBelowMinValidatorCount">EBelowMinValidatorCount</a></code> - If removal would violate the minimum validator count
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): bool
@@ -451,7 +500,21 @@ Will abort with EBelowMinValidatorCount if removing would bring the set below mi
 ## Function `find_validator_index`
 
 Finds the index of a validator in the active set using linear search.
-Returns None if the validator is not found.
+
+
+<a name="@Arguments_12"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to search
+* <code>validator_id</code> - The ID of the validator to find
+
+
+<a name="@Returns_13"></a>
+
+### Returns
+
+* <code>Option&lt;u64&gt;</code> - The index of the validator, or None if not found
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_find_validator_index">find_validator_index</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;
@@ -473,77 +536,6 @@ Returns None if the validator is not found.
         i = i + 1;
     };
     option::none()
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_pending_active_set_insert_sorted"></a>
-
-## Function `insert_sorted`
-
-Inserts a validator entry into the sorted vector at the correct position.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, <b>entry</b>: (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">pending_active_set::PendingActiveSetEntry</a>)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, <b>entry</b>: <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a>) {
-    <b>let</b> <b>mut</b> left = 0u64;
-    <b>let</b> <b>mut</b> right = set.validators.length();
-    <b>while</b> (left &lt; right) {
-        <b>let</b> mid = (left + right) / 2;
-        <b>if</b> (set.validators[mid].staked_amount &lt; <b>entry</b>.staked_amount) {
-            left = mid + 1
-        } <b>else</b> {
-            right = mid
-        }
-    };
-    // Manual <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> implementation:
-    // Push to end, then shift elements to make space and place the <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a> element
-    vector::push_back(&<b>mut</b> set.validators, <b>entry</b>); // Temporarily add to end
-    <b>let</b> len = set.validators.length();
-    <b>if</b> (len &gt; 1) {
-        <b>let</b> <b>mut</b> i = len - 1;
-        <b>while</b> (i &gt; left) {
-            vector::swap(&<b>mut</b> set.validators, i, i - 1);
-            i = i - 1;
-        }
-    }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_pending_active_set_reposition_validator"></a>
-
-## Function `reposition_validator`
-
-Repositions a validator in the sorted vector after its stake has been updated.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_reposition_validator">reposition_validator</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, index: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_reposition_validator">reposition_validator</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, index: u64) {
-    <b>let</b> <b>entry</b> = vector::remove(&<b>mut</b> set.validators, index);
-    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(<b>entry</b>)
 }
 </code></pre>
 
@@ -651,11 +643,36 @@ Resets the validator changes count (typically called at the start of a new epoch
 
 </details>
 
+<a name="(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake"></a>
+
+## Function `set_min_validator_joining_stake`
+
+Sets the minimum amount of staked IKA required to join the active set.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64) {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a> = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>;
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_pending_active_set_max_validator_count"></a>
 
 ## Function `max_validator_count`
 
-The maximum size of the active set.
+Returns the maximum size of the active set.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
@@ -667,7 +684,9 @@ The maximum size of the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a> }
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>
+}
 </code></pre>
 
 
@@ -678,7 +697,7 @@ The maximum size of the active set.
 
 ## Function `min_validator_count`
 
-The minimum number of validators required in the active set.
+Returns the minimum number of validators required in the active set.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
@@ -690,7 +709,9 @@ The minimum number of validators required in the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a> }
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_count">min_validator_count</a>
+}
 </code></pre>
 
 
@@ -701,7 +722,7 @@ The minimum number of validators required in the active set.
 
 ## Function `max_validator_change_count`
 
-The maximum number of validator changes allowed per epoch.
+Returns the maximum number of validator changes allowed per epoch.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
@@ -713,7 +734,9 @@ The maximum number of validator changes allowed per epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a> }
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>
+}
 </code></pre>
 
 
@@ -724,7 +747,7 @@ The maximum number of validator changes allowed per epoch.
 
 ## Function `size`
 
-The current size of the active set.
+Returns the current size of the active set.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
@@ -736,7 +759,59 @@ The current size of the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.validators.length() }
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.validators.length()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_pending_active_set_min_validator_joining_stake"></a>
+
+## Function `min_validator_joining_stake`
+
+Returns the minimum amount of staked IKA required to join the active set.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_pending_active_set_total_stake"></a>
+
+## Function `total_stake`
+
+Returns the total amount of staked IKA in the active set.
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 {
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>
+}
 </code></pre>
 
 
@@ -747,7 +822,7 @@ The current size of the active set.
 
 ## Function `active_ids`
 
-The IDs of the validators in the active set.
+Returns the IDs of all validators in the active set.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_active_ids">active_ids</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;
@@ -772,7 +847,7 @@ The IDs of the validators in the active set.
 
 ## Function `active_ids_and_stake`
 
-The IDs and stake of the validators in the active set.
+Returns the IDs and stake amounts of all validators in the active set.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_active_ids_and_stake">active_ids_and_stake</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): (vector&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;, vector&lt;u64&gt;)
@@ -799,14 +874,42 @@ The IDs and stake of the validators in the active set.
 
 </details>
 
-<a name="(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake"></a>
+<a name="(ika_system=0x0)_pending_active_set_insert"></a>
 
-## Function `set_min_validator_joining_stake`
+## Function `insert`
 
-Sets the minimum amount of staked IKA in the active set.
+Inserts a validator into the active set with smart capacity management.
+
+If the set is full, the validator with the smallest stake is removed to make space
+for the new validator (if the new validator has higher stake).
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64)
+<a name="@Arguments_14"></a>
+
+### Arguments
+
+* <code>set</code> - The pending active set to modify
+* <code>validator_id</code> - The ID of the validator to insert
+* <code>staked_amount</code> - The stake amount for the validator
+
+
+<a name="@Returns_15"></a>
+
+### Returns
+
+* <code>bool</code> - Whether the validator was successfully inserted
+* <code>Option&lt;ID&gt;</code> - The ID of any validator that was removed, or None
+
+
+<a name="@Aborts_16"></a>
+
+### Aborts
+
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EDuplicateInsertion">EDuplicateInsertion</a></code> - If the validator is already in the set
+* <code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a></code> - If the change would exceed the epoch limit
+
+
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, staked_amount: u64): (bool, <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;<a href="../sui/object.md#sui_object_ID">sui::object::ID</a>&gt;)
 </code></pre>
 
 
@@ -815,8 +918,35 @@ Sets the minimum amount of staked IKA in the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_set_min_validator_joining_stake">set_min_validator_joining_stake</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>: u64) {
-    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a> = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>;
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, validator_id: ID, staked_amount: u64): (bool, Option&lt;ID&gt;) {
+    <b>assert</b>!(set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_find_validator_index">find_validator_index</a>(validator_id).is_none(), <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EDuplicateInsertion">EDuplicateInsertion</a>);
+    // If the validators are less than the max <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.
+    <b>if</b> (set.validators.length() &lt; set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_count">max_validator_count</a>) {
+        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> + staked_amount;
+        <b>let</b> new_entry = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a> { validator_id, staked_amount };
+        set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(new_entry);
+        <b>if</b> (!set.validator_changes.contains(&validator_id)) {
+            set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id);
+        };
+        <b>assert</b>!(set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>() &lt;= set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>);
+        <b>return</b> (<b>true</b>, option::none())
+    };
+    // If the <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>'s stake is less than the smallest stake in the set, don't <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>
+    <b>if</b> (staked_amount &lt;= set.validators[0].staked_amount) {
+        <b>return</b> (<b>false</b>, option::none())
+    };
+    // Remove the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> with smallest stake and <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> the <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_new">new</a> one
+    <b>let</b> removed_validator_id = set.validators[0].validator_id;
+    <b>let</b> removed_stake = set.validators[0].staked_amount;
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> = set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> - removed_stake + staked_amount;
+    set.validators.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_remove">remove</a>(0);
+    <b>let</b> new_entry = <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a> { validator_id, staked_amount };
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(new_entry);
+    <b>if</b> (!set.validator_changes.contains(&validator_id)) {
+        set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a>(validator_id);
+    };
+    <b>assert</b>!(set.validator_changes.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_size">size</a>() &lt;= set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_max_validator_change_count">max_validator_change_count</a>, <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_EMaxValidatorChangeReached">EMaxValidatorChangeReached</a>);
+    (<b>true</b>, option::some(removed_validator_id))
 }
 </code></pre>
 
@@ -824,14 +954,14 @@ Sets the minimum amount of staked IKA in the active set.
 
 </details>
 
-<a name="(ika_system=0x0)_pending_active_set_min_validator_joining_stake"></a>
+<a name="(ika_system=0x0)_pending_active_set_insert_sorted"></a>
 
-## Function `min_validator_joining_stake`
+## Function `insert_sorted`
 
-The minimum amount of staked IKA in the active set.
+Inserts a validator entry into the sorted vector maintaining ascending order by stake.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, <b>entry</b>: (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">pending_active_set::PendingActiveSetEntry</a>)
 </code></pre>
 
 
@@ -840,21 +970,43 @@ The minimum amount of staked IKA in the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_min_validator_joining_stake">min_validator_joining_stake</a> }
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, <b>entry</b>: <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSetEntry">PendingActiveSetEntry</a>) {
+    <b>let</b> <b>mut</b> left = 0u64;
+    <b>let</b> <b>mut</b> right = set.validators.length();
+    <b>while</b> (left &lt; right) {
+        <b>let</b> mid = (left + right) / 2;
+        <b>if</b> (set.validators[mid].staked_amount &lt; <b>entry</b>.staked_amount) {
+            left = mid + 1
+        } <b>else</b> {
+            right = mid
+        }
+    };
+    // Manual <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert">insert</a> implementation: push to end, then shift elements to the correct position
+    vector::push_back(&<b>mut</b> set.validators, <b>entry</b>); // Temporarily add to end
+    <b>let</b> len = set.validators.length();
+    <b>if</b> (len &gt; 1) {
+        <b>let</b> <b>mut</b> i = len - 1;
+        <b>while</b> (i &gt; left) {
+            vector::swap(&<b>mut</b> set.validators, i, i - 1);
+            i = i - 1;
+        }
+    }
+}
 </code></pre>
 
 
 
 </details>
 
-<a name="(ika_system=0x0)_pending_active_set_total_stake"></a>
+<a name="(ika_system=0x0)_pending_active_set_reposition_validator"></a>
 
-## Function `total_stake`
+## Function `reposition_validator`
 
-The total amount of staked IKA in the active set.
+Repositions a validator in the sorted vector after its stake has been updated.
+This maintains the ascending order by stake amount.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>(set: &(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>): u64
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_reposition_validator">reposition_validator</a>(set: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>, index: u64)
 </code></pre>
 
 
@@ -863,7 +1015,10 @@ The total amount of staked IKA in the active set.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a>(set: &<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>): u64 { set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_total_stake">total_stake</a> }
+<pre><code><b>fun</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_reposition_validator">reposition_validator</a>(set: &<b>mut</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">PendingActiveSet</a>, index: u64) {
+    <b>let</b> <b>entry</b> = vector::remove(&<b>mut</b> set.validators, index);
+    set.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_insert_sorted">insert_sorted</a>(<b>entry</b>)
+}
 </code></pre>
 
 

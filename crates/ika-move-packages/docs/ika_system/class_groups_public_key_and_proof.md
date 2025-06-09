@@ -120,11 +120,10 @@ Creates a new <code><a href="../ika_system/class_groups_public_key_and_proof.md#
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_empty">empty</a>(
     ctx: &<b>mut</b> TxContext,
 ): <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {
-    <b>let</b> builder = <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {
+    <a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProofBuilder">ClassGroupsPublicKeyAndProofBuilder</a> {
         id: object::new(ctx),
         public_keys_and_proofs: table_vec::empty(ctx),
-    };
-    builder
+    }
 }
 </code></pre>
 

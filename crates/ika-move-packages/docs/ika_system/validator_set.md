@@ -21,7 +21,9 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `withdraw_stake`](#(ika_system=0x0)_validator_set_withdraw_stake)
 -  [Function `rotate_operation_cap`](#(ika_system=0x0)_validator_set_rotate_operation_cap)
 -  [Function `rotate_commission_cap`](#(ika_system=0x0)_validator_set_rotate_commission_cap)
+-  [Function `collect_commission`](#(ika_system=0x0)_validator_set_collect_commission)
 -  [Function `set_validator_name`](#(ika_system=0x0)_validator_set_set_validator_name)
+-  [Function `validator_metadata`](#(ika_system=0x0)_validator_set_validator_metadata)
 -  [Function `set_validator_metadata`](#(ika_system=0x0)_validator_set_set_validator_metadata)
 -  [Function `set_next_commission`](#(ika_system=0x0)_validator_set_set_next_commission)
 -  [Function `set_next_epoch_network_address`](#(ika_system=0x0)_validator_set_set_next_epoch_network_address)
@@ -113,6 +115,7 @@ title: Module `(ika_system=0x0)::validator_set`
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
+<b>use</b> <a href="../sui/party.md#sui_party">sui::party</a>;
 <b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
@@ -991,6 +994,36 @@ The original object is thus revoked.
 
 </details>
 
+<a name="(ika_system=0x0)_validator_set_collect_commission"></a>
+
+## Function `collect_commission`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_collect_commission">collect_commission</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, cap: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCommissionCap">validator_cap::ValidatorCommissionCap</a>, amount: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;): <a href="../sui/balance.md#sui_balance_Balance">sui::balance::Balance</a>&lt;(ika=0x0)::ika::IKA&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_collect_commission">collect_commission</a>(
+    self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    cap: &ValidatorCommissionCap,
+    amount: Option&lt;u64&gt;,
+): Balance&lt;IKA&gt; {
+    <b>let</b> validator_id = cap.validator_id();
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_collect_commission">collect_commission</a>(cap, amount)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_validator_set_set_validator_name"></a>
 
 ## Function `set_validator_name`
@@ -1014,6 +1047,34 @@ The original object is thus revoked.
     <b>let</b> validator_id = cap.validator_id();
     <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator_mut">get_validator_mut</a>(validator_id);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.set_name(name, cap);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_set_validator_metadata"></a>
+
+## Function `validator_metadata`
+
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata">validator_metadata</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>): (ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata">validator_metadata</a>(
+    self: &<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
+    validator_id: ID,
+): ValidatorMetadata {
+    <b>let</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_get_validator">get_validator</a>(validator_id);
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>().metadata()
 }
 </code></pre>
 
