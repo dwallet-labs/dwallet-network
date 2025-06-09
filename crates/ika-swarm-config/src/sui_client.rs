@@ -329,6 +329,7 @@ pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(protocol_cap_ref)),
+            CallArg::Pure(bcs::to_bytes::<Vec<u8>>(&vec![])?),
         ],
     )?;
 

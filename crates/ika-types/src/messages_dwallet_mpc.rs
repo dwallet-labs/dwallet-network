@@ -29,8 +29,9 @@ pub const SIGN_PROTOCOL_FLAG: u32 = 6;
 pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
-pub const DECRYPTION_KEY_RESHARE_STR_KEY: &str = "DecryptionKeyReshare";
-pub const NETWORK_DKG_STR_KEY: &str = "NetworkDkg";
+pub const NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY: &str =
+    "NetworkEncryptionKeyReconfiguration";
+pub const NETWORK_ENCRYPTION_KEY_DKG_STR_KEY: &str = "NetworkEncryptionKeyDkg";
 pub const SIGN_STR_KEY: &str = "Sign";
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -53,7 +54,7 @@ pub enum MPCProtocolInitData {
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
     /// the DKG decentralized output, the batch session ID (same for each message in the batch),
-    /// and the dWallets' network key version.
+    /// and the dWallets network key version.
     Presign(DWalletMPCSuiEvent<PresignRequestEvent>),
     /// The first and only round of the Sign protocol.
     /// Contains all the data needed to sign the message.
@@ -61,9 +62,9 @@ pub enum MPCProtocolInitData {
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.
-    NetworkDkg(
+    NetworkEncryptionKeyDkg(
         DWalletMPCNetworkKeyScheme,
-        DWalletMPCSuiEvent<StartNetworkDKGEvent>,
+        DWalletMPCSuiEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
     ),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
@@ -72,7 +73,9 @@ pub enum MPCProtocolInitData {
     /// because the system does not support native functions.
     EncryptedShareVerification(DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent>),
     PartialSignatureVerification(DWalletMPCSuiEvent<FutureSignRequestEvent>),
-    DecryptionKeyReshare(DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>),
+    NetworkEncryptionKeyReconfiguration(
+        DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
+    ),
 }
 
 impl Display for MPCProtocolInitData {
@@ -82,15 +85,17 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
             MPCProtocolInitData::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
-            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "{}", NETWORK_DKG_STR_KEY),
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _) => {
+                write!(f, "{}", NETWORK_ENCRYPTION_KEY_DKG_STR_KEY)
+            }
             MPCProtocolInitData::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
-                write!(f, "{}", DECRYPTION_KEY_RESHARE_STR_KEY)
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
+                write!(f, "{}", NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY)
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
@@ -109,12 +114,12 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
             MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
             MPCProtocolInitData::Sign(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
             MPCProtocolInitData::EncryptedShareVerification(event) => Some(event.event_data.curve),
             MPCProtocolInitData::PartialSignatureVerification(event) => {
                 Some(event.event_data.curve)
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
                 Some(event.event_data.curve)
             }
@@ -141,12 +146,12 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DKGSecond(_) => None,
             MPCProtocolInitData::Presign(_) => None,
             MPCProtocolInitData::Sign(event) => Some(event.event_data.hash_scheme),
-            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
             MPCProtocolInitData::EncryptedShareVerification(_) => None,
             MPCProtocolInitData::PartialSignatureVerification(event) => {
                 Some(event.event_data.hash_scheme)
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
         };
@@ -170,12 +175,12 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DKGSecond(_event) => None,
             MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
             MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
-            MPCProtocolInitData::NetworkDkg(_, _event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
             MPCProtocolInitData::EncryptedShareVerification(_) => None,
             MPCProtocolInitData::PartialSignatureVerification(event) => {
                 Some(event.event_data.signature_algorithm)
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_event) => None,
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
         };
@@ -199,14 +204,14 @@ impl Debug for MPCProtocolInitData {
             MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
             MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
-            MPCProtocolInitData::NetworkDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _) => write!(f, "NetworkDkg"),
             MPCProtocolInitData::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
             MPCProtocolInitData::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
                 write!(f, "DecryptionKeyReshare")
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
@@ -654,13 +659,14 @@ impl DWalletMPCEventTrait for SignRequestEvent {
 /// Rust version of the Move [`ika_system::dwallet_2pc_mpc_coordinator_inner::StartNetworkDKGEvent`] type.
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
-pub struct StartNetworkDKGEvent {
+pub struct DWalletNetworkDKGEncryptionKeyRequestEvent {
     pub dwallet_network_decryption_key_id: ObjectID,
+    pub params_for_network: Vec<u8>,
 }
 
-impl DWalletMPCEventTrait for StartNetworkDKGEvent {
+impl DWalletMPCEventTrait for DWalletNetworkDKGEncryptionKeyRequestEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartNetworkDKGEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`DWalletNetworkDKGEncryptionKeyRequestEvent`] events from the chain and initiate the MPC session.
     /// It is used to trigger the start of the network DKG process.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
@@ -683,6 +689,8 @@ pub struct DWalletNetworkDecryptionKey {
     pub network_dkg_public_output: TableVec,
     /// The fees paid for computation in IKA.
     pub computation_fee_charged_ika: Balance,
+    pub dkg_params_for_network: Vec<u8>,
+    pub supported_curves: Vec<u32>,
     pub state: DWalletNetworkEncryptionKeyState,
 }
 
@@ -707,7 +715,7 @@ pub enum DWalletNetworkEncryptionKeyState {
         is_first: bool,
     },
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    /// We need to wait for the next epoch to update the reconfiguration public outputs.
+    /// We need to wait for the next epoch to update the reconfiguration of public outputs.
     AwaitingNextEpochToUpdateReconfiguration,
     NetworkReconfigurationCompleted,
 }

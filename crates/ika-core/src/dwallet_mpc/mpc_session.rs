@@ -32,7 +32,8 @@ use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
     MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
-    DECRYPTION_KEY_RESHARE_STR_KEY, NETWORK_DKG_STR_KEY, SIGN_STR_KEY,
+    NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
+    SIGN_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 
@@ -646,22 +647,24 @@ impl DWalletMPCSession {
                     _ => result,
                 }
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, _init_event) => advance_network_dkg(
-                session_id,
-                &self.weighted_threshold_access_structure,
-                self.party_id,
-                encoded_public_input,
-                key_scheme,
-                self.serialized_full_messages.clone(),
-                bcs::from_bytes(
-                    &mpc_event_data
-                        .private_input
-                        .clone()
-                        .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
-                )?,
-                encoded_public_input,
-                &base_logger,
-            ),
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(key_scheme, _init_event) => {
+                advance_network_dkg(
+                    session_id,
+                    &self.weighted_threshold_access_structure,
+                    self.party_id,
+                    encoded_public_input,
+                    key_scheme,
+                    self.serialized_full_messages.clone(),
+                    bcs::from_bytes(
+                        &mpc_event_data
+                            .private_input
+                            .clone()
+                            .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
+                    )?,
+                    encoded_public_input,
+                    &base_logger,
+                )
+            }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 let protocol_public_parameters = mpc_event_data.public_input.clone();
                 match verify_encrypted_share(
@@ -698,7 +701,7 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
-            MPCProtocolInitData::DecryptionKeyReshare(_) => {
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
                 let public_input = bcs::from_bytes(encoded_public_input)?;
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
@@ -870,7 +873,7 @@ impl DWalletMPCSession {
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         }
-        let mut round_messages_map = self
+        let round_messages_map = self
             .serialized_full_messages
             .entry(message.round_number)
             .or_default();
@@ -924,14 +927,14 @@ impl DWalletMPCSession {
                         .sign_second_round_delay() as usize;
                     self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
                 }
-                NETWORK_DKG_STR_KEY => {
+                NETWORK_ENCRYPTION_KEY_DKG_STR_KEY => {
                     let delay = self
                         .epoch_store()?
                         .protocol_config()
                         .network_dkg_third_round_delay() as usize;
                     self.check_round_delay(Self::NETWORK_DKG_DELAY_ROUND, delay)
                 }
-                DECRYPTION_KEY_RESHARE_STR_KEY => {
+                NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY => {
                     let delay = self
                         .epoch_store()?
                         .protocol_config()

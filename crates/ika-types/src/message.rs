@@ -70,6 +70,7 @@ pub struct PartialSignatureVerificationOutput {
 pub struct NetworkKeyPublicOutputSlice {
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
+    pub supported_curves: Vec<u32>,
     pub is_last: bool,
     pub rejected: bool,
 }
