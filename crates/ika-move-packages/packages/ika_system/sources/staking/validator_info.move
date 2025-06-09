@@ -1,33 +1,39 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-#[allow(unused_field, unused_function, unused_variable, unused_use)]
 module ika_system::validator_info;
+
+// === Imports ===
 
 use std::string::String;
 use sui::{bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify}, group_ops::Element};
-use sui::table_vec::{Self, TableVec};
+use sui::table_vec::{TableVec};
 use sui::bcs;
 use ika_system::{
     extended_field::{Self, ExtendedField},
-    validator_metadata::{Self, ValidatorMetadata}
+    validator_metadata::{ValidatorMetadata}
 };
 use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 use ika_system::multiaddr;
 
-const MAX_NODE_NAME_LENGTH: u64 = 100;
+// === Constants ===
 
+/// Maximum allowed length for validator names
+const MAX_VALIDATOR_NAME_LENGTH: u64 = 100;
+/// Maximum allowed length for validator text fields (addresses, etc.)
 const MAX_VALIDATOR_TEXT_FIELD_LENGTH: u64 = 259;
-
+/// Intent bytes used for proof of possession verification
 const PROOF_OF_POSSESSION_INTENT: vector<u8> = vector[0, 0, 0];
+/// Default epoch identifier used for initial validation
 const DEFAULT_EPOCH_ID: u64 = 0;
-
+/// Expected length of BLS public keys in bytes
 const BLS_KEY_LEN: u64 = 48;
+/// Expected length of Ed25519 public keys in bytes
 const ED25519_KEY_LEN: u64 = 32;
-//const CLASS_GROUPS_BYTES_LEN: u64 = 241722; // Todo (#): change the way we implement this.
 
-// Error codes
-/// The network public key length is invalid.
+// === Errors ===
+
+/// The proof of possession verification failed
 #[error]
 const EInvalidProofOfPossession: vector<u8> = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
 
@@ -43,9 +49,6 @@ const EMetadataInvalidNetworkPubkey: vector<u8> = b"Invalid network_pubkey_bytes
 #[error]
 const EMetadataInvalidConsensusPubkey: vector<u8> = b"Invalid consensus_pubkey_bytes field in ValidatorMetadata.";
 
-// #[error]
-// const EMetadataInvalidClassGroupsPubkey: vector<u8> = b"Invalid class_groups_pubkey_and_proof_bytes field in ValidatorMetadata.";
-
 #[error]
 const EMetadataInvalidNetworkAddress: vector<u8> = b"Invalid network_address field in ValidatorMetadata.";
 
@@ -55,57 +58,43 @@ const EMetadataInvalidP2pAddress: vector<u8> = b"Invalid p2p_address field in Va
 #[error]
 const EMetadataInvalidConsensusAddress: vector<u8> = b"Invalid consensus_address field in ValidatorMetadata.";
 
-// #[error]
-// const ECommissionRateTooHigh: vector<u8> = b"Commission rate set by the validator is higher than the threshold.";
-
 #[error]
 const EValidatorMetadataExceedingLengthLimit: vector<u8> = b"Validator Metadata is too long.";
 
-// #[error]
-// const ENotValidatorCandidate: vector<u8> = b"Intended validator is not a candidate one.";
-
-// #[error]
-// const EInvalidStakeAmount: vector<u8> = b"Stake amount is invalid or wrong.";
-
-// #[error]
-// const EInactiveValidator: vector<u8> = b"The validator is inactive.";
-
-// #[error]
-// const ENewCapNotCreatedByValidatorItself: vector<u8> = b"New Capability is not created by the validator itself.";
-
-// #[error]
-// const EInvalidCap: vector<u8> = b"Cap is not valid.";
-
-// #[error]
-// const EGasPriceHigherThanThreshold: vector<u8> = b"Validator trying to set computation price higher than threshold.";
-
+// === Structs ===
 
 /// Represents a validator info in the system.
+/// Contains all validator-specific data including public keys, network addresses,
+/// and metadata for both current and next epoch configurations.
 public struct ValidatorInfo has store {
+    /// Human-readable name of the validator
     name: String,
+    /// Unique identifier for this validator
     validator_id: ID,
 
-    /// The network address of the validator (could also contain extra info such as port, DNS and etc.).
+    /// The network address of the validator (could also contain extra info such as port, DNS and etc.)
     network_address: String,
-    /// The address of the validator used for p2p activities such as state sync (could also contain extra info such as port, DNS and etc.).
+    /// The address of the validator used for p2p activities such as state sync (could also contain extra info such as port, DNS and etc.)
     p2p_address: String,
     /// The address of the consensus
     consensus_address: String,
 
+    /// Current epoch public keys
     /// The public key bytes corresponding to the private key that the validator
-    /// holds to sign checkpoint messages.
+    /// holds to sign checkpoint messages
     protocol_pubkey_bytes: vector<u8>,
+    /// The protocol public key element for cryptographic operations
     protocol_pubkey: Element<UncompressedG1>,
     /// The public key bytes corresponding to the private key that the validator
     /// uses to establish TLS connections
     network_pubkey_bytes: vector<u8>,
-    /// The public key bytes correstponding to the consensus
+    /// The public key bytes corresponding to the consensus
     consensus_pubkey_bytes: vector<u8>,
     /// The validator's Class Groups public key and its associated proof.
-    /// This key is used for the network DKG process and for resharing the network MPC key.
+    /// This key is used for the network DKG process and for resharing the network MPC key
     class_groups_pubkey_and_proof_bytes: TableVec<vector<u8>>,
 
-    /// "next_epoch" metadata only takes effects in the next epoch.
+    /// Next epoch configurations - only take effect in the next epoch
     /// If none, current value will stay unchanged.
     next_epoch_protocol_pubkey_bytes: Option<vector<u8>>,
     next_epoch_network_pubkey_bytes: Option<vector<u8>>,
@@ -114,12 +103,15 @@ public struct ValidatorInfo has store {
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
-    /// Any extra fields that's not defined statically.
-    ///
+
+    /// Extended metadata field for additional validator information
     metadata: ExtendedField<ValidatorMetadata>,
 }
 
-/// A public constructor for the ValidatorInfo.
+// === Package Functions ===
+
+/// Creates a new ValidatorInfo instance with the provided parameters.
+/// Validates all inputs and verifies proof of possession for the protocol key.
 public(package) fun new(
     name: String,
     validator_id: ID,
@@ -136,6 +128,8 @@ public(package) fun new(
 ): ValidatorInfo {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
     let class_groups_pubkey_and_proof_bytes = class_groups_pubkey_and_proof_bytes.destroy();
+
+    // Verify proof of possession for protocol public key
     assert!(
         verify_proof_of_possession(
             DEFAULT_EPOCH_ID,
@@ -145,6 +139,7 @@ public(package) fun new(
         ),
         EInvalidProofOfPossession
     );
+
     let validator_info = ValidatorInfo {
         validator_id,
         name,
@@ -169,98 +164,24 @@ public(package) fun new(
     validator_info
 }
 
-// === Accessors ===
-
-/// Return the name of the validator info.
-public(package) fun metadata(self: &ValidatorInfo): ValidatorMetadata {
-    *self.metadata.borrow()
-}
-
-public fun validator_id(self: &ValidatorInfo): ID {
-    self.validator_id
-}
-
-public fun network_address(self: &ValidatorInfo): &String {
-    &self.network_address
-}
-
-public fun p2p_address(self: &ValidatorInfo): &String {
-    &self.p2p_address
-}
-
-public fun consensus_address(self: &ValidatorInfo): &String {
-    &self.consensus_address
-}
-
-public fun protocol_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
-    &self.protocol_pubkey_bytes
-}
-
-public fun protocol_pubkey(self: &ValidatorInfo): &Element<UncompressedG1> {
-    &self.protocol_pubkey
-}
-
-public fun network_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
-    &self.network_pubkey_bytes
-}
-
-public fun consensus_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
-    &self.consensus_pubkey_bytes
-}
-
-public fun class_groups_pubkey_and_proof_bytes(self: &ValidatorInfo): &TableVec<vector<u8>> {
-    &self.class_groups_pubkey_and_proof_bytes
-}
-
-public fun next_epoch_network_address(self: &ValidatorInfo): &Option<String> {
-    &self.next_epoch_network_address
-}
-
-public fun next_epoch_p2p_address(self: &ValidatorInfo): &Option<String> {
-    &self.next_epoch_p2p_address
-}
-
-public fun next_epoch_consensus_address(self: &ValidatorInfo): &Option<String> {
-    &self.next_epoch_consensus_address
-}
-
-public fun next_epoch_protocol_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
-    &self.next_epoch_protocol_pubkey_bytes
-}
-
-public fun next_epoch_network_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
-    &self.next_epoch_network_pubkey_bytes
-}
-
-public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
-    &self.next_epoch_consensus_pubkey_bytes
-}
-
-public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInfo): &Option<ClassGroupsPublicKeyAndProof> {
-    &self.next_epoch_class_groups_pubkey_and_proof_bytes
-}
-
-
-// === Modifiers ===
-
-/// Sets the name of the validator info.
+/// Sets the name of the validator.
 public(package) fun set_name(self: &mut ValidatorInfo, name: String) {
     self.name = name;
     self.validate();
 }
 
-/// Sets the network address or host of the validator info.
+/// Sets the network address of the validator.
 public(package) fun set_network_address(self: &mut ValidatorInfo, network_address: String) {
     self.network_address = network_address;
     self.validate();
 }
 
-/// Sets the metadata of the validator info.
+/// Sets the metadata of the validator.
 public(package) fun set_validator_metadata(self: &mut ValidatorInfo, metadata: ValidatorMetadata) {
     self.metadata.swap(metadata);
 }
 
-/// Sets network address of this validator, taking effects from next epoch
+/// Sets network address for next epoch.
 public(package) fun set_next_epoch_network_address(
     self: &mut ValidatorInfo,
     network_address: String,
@@ -269,13 +190,13 @@ public(package) fun set_next_epoch_network_address(
     self.validate();
 }
 
-/// Sets p2p address of this validator, taking effects from next epoch
+/// Sets P2P address for next epoch.
 public(package) fun set_next_epoch_p2p_address(self: &mut ValidatorInfo, p2p_address: String) {
     self.next_epoch_p2p_address = option::some(p2p_address);
     self.validate();
 }
 
-/// Sets primary address of this validator, taking effects from next epoch
+/// Sets consensus address for next epoch.
 public(package) fun set_next_epoch_consensus_address(
     self: &mut ValidatorInfo,
     consensus_address: String,
@@ -284,7 +205,7 @@ public(package) fun set_next_epoch_consensus_address(
     self.validate();
 }
 
-/// Sets protocol public key of this validator, taking effects from next epoch
+/// Sets protocol public key for next epoch with proof of possession verification.
 public(package) fun set_next_epoch_protocol_pubkey_bytes(
     self: &mut ValidatorInfo,
     protocol_pubkey_bytes: vector<u8>,
@@ -304,7 +225,7 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
     self.validate();
 }
 
-/// Sets network public key of this validator, taking effects from next epoch
+/// Sets network public key for next epoch.
 public(package) fun set_next_epoch_network_pubkey_bytes(
     self: &mut ValidatorInfo,
     network_pubkey_bytes: vector<u8>,
@@ -313,7 +234,7 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
     self.validate();
 }
 
-/// Sets consensus public key of this validator, taking effects from next epoch
+/// Sets consensus public key for next epoch.
 public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self: &mut ValidatorInfo,
     consensus_pubkey_bytes: vector<u8>,
@@ -322,7 +243,7 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
     self.validate();
 }
 
-/// Sets class groups public key and its associated proof of this validator, taking effects from next epoch
+/// Sets class groups public key and proof for next epoch.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self: &mut ValidatorInfo,
     class_groups_pubkey_and_proof: ClassGroupsPublicKeyAndProof
@@ -334,12 +255,10 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.validate();
 }
 
-
-
-/// Effectutate all staged next epoch metadata for this validator.
+/// Effectuate all staged next epoch metadata for this validator.
 /// NOTE: this function SHOULD ONLY be called by validator_set when
 /// advancing an epoch.
-public(package) fun roatate_next_epoch_info(self: &mut ValidatorInfo) {
+public(package) fun rotate_next_epoch_info(self: &mut ValidatorInfo) {
     if (self.next_epoch_network_address.is_some()) {
         self.network_address = self.next_epoch_network_address.extract();
         self.next_epoch_network_address = option::none();
@@ -356,15 +275,13 @@ public(package) fun roatate_next_epoch_info(self: &mut ValidatorInfo) {
     };
 
     if (self.next_epoch_protocol_pubkey_bytes.is_some()) {
-        self.protocol_pubkey_bytes =
-        self.next_epoch_protocol_pubkey_bytes.extract();
+        self.protocol_pubkey_bytes = self.next_epoch_protocol_pubkey_bytes.extract();
         self.next_epoch_protocol_pubkey_bytes = option::none();
         self.protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&self.protocol_pubkey_bytes));
     };
 
     if (self.next_epoch_network_pubkey_bytes.is_some()) {
-        self.network_pubkey_bytes =
-            self.next_epoch_network_pubkey_bytes.extract();
+        self.network_pubkey_bytes = self.next_epoch_network_pubkey_bytes.extract();
         self.next_epoch_network_pubkey_bytes = option::none();
     };
 
@@ -379,17 +296,18 @@ public(package) fun roatate_next_epoch_info(self: &mut ValidatorInfo) {
     };
 }
 
-fun update_class_groups_key_and_proof (
-    class_groups_pubkey_and_proof: &mut TableVec<vector<u8>>,
-    new_class_groups_key_and_proof: ClassGroupsPublicKeyAndProof,
-) {
-    let mut new_class_groups_key_and_proof = new_class_groups_key_and_proof.destroy();
-    let mut i = class_groups_pubkey_and_proof.length() - 1;
-    while (!new_class_groups_key_and_proof.is_empty()) {
-        *class_groups_pubkey_and_proof.borrow_mut(i) = new_class_groups_key_and_proof.pop_back();
-        i = i  - 1;
-    };
-    new_class_groups_key_and_proof.destroy_empty();
+public(package) fun proof_of_possession_intent_bytes(
+    epoch: u64,
+    sender_address: address,
+    bls_key: vector<u8>,
+): vector<u8> {
+    let mut intent_bytes = PROOF_OF_POSSESSION_INTENT;
+    let mut message = vector<u8>[];
+    message.append(bls_key);
+    message.append(sui::address::to_bytes(sender_address));
+    intent_bytes.append(bcs::to_bytes(&message));
+    intent_bytes.append(bcs::to_bytes(&epoch));
+    intent_bytes
 }
 
 /// Verify the provided proof of possession using the contained public key and the provided
@@ -400,12 +318,7 @@ public(package) fun verify_proof_of_possession(
     bls_key: vector<u8>,
     pop_signature: vector<u8>,
 ): bool {
-    let mut intent_bytes = PROOF_OF_POSSESSION_INTENT;
-    let mut message = vector<u8>[];
-    message.append(bls_key);
-    message.append(sui::address::to_bytes(sender_address));
-    intent_bytes.append(bcs::to_bytes(&message));
-    intent_bytes.append(bcs::to_bytes(&epoch));
+    let intent_bytes = proof_of_possession_intent_bytes(epoch, sender_address, bls_key);
     bls12381_min_pk_verify(
         &pop_signature,
         &bls_key,
@@ -414,9 +327,9 @@ public(package) fun verify_proof_of_possession(
 }
 
 /// Aborts if validator info is invalid
-public fun validate(self: &ValidatorInfo) {
+public(package) fun validate(self: &ValidatorInfo) {
         // Verify name length.
-    assert!(self.name.length() <= MAX_NODE_NAME_LENGTH, EInvalidNameLength);
+    assert!(self.name.length() <= MAX_VALIDATOR_NAME_LENGTH, EInvalidNameLength);
 
     // Verify address length.
     assert!(
@@ -473,10 +386,173 @@ public(package) fun destroy(self: ValidatorInfo) {
     next_epoch_class_groups_pubkey_and_proof_bytes.destroy!(|c| c.drop());
 }
 
-// === Testing ===
+
+public(package) fun is_duplicate(self: &ValidatorInfo, other: &ValidatorInfo): bool {
+    self.name == other.name
+    || self.network_address == other.network_address
+    || self.p2p_address == other.p2p_address
+    || self.protocol_pubkey_bytes == other.protocol_pubkey_bytes
+    || self.network_pubkey_bytes == other.network_pubkey_bytes
+    || self.network_pubkey_bytes == other.consensus_pubkey_bytes
+    || self.consensus_pubkey_bytes == other.consensus_pubkey_bytes
+    || self.consensus_pubkey_bytes == other.network_pubkey_bytes
+    // All next epoch parameters.
+    || is_equal_some(&self.next_epoch_network_address, &other.next_epoch_network_address)
+    || is_equal_some(&self.next_epoch_p2p_address, &other.next_epoch_p2p_address)
+    || is_equal_some(&self.next_epoch_protocol_pubkey_bytes, &other.next_epoch_protocol_pubkey_bytes)
+    || is_equal_some(&self.next_epoch_network_pubkey_bytes, &other.next_epoch_network_pubkey_bytes)
+    || is_equal_some(&self.next_epoch_network_pubkey_bytes, &other.next_epoch_consensus_pubkey_bytes)
+    || is_equal_some(&self.next_epoch_consensus_pubkey_bytes, &other.next_epoch_consensus_pubkey_bytes)
+    || is_equal_some(&self.next_epoch_consensus_pubkey_bytes, &other.next_epoch_network_pubkey_bytes)
+    // My next epoch parameters with other current epoch parameters.
+    || is_equal_some_and_value(&self.next_epoch_network_address, &other.network_address)
+    || is_equal_some_and_value(&self.next_epoch_p2p_address, &other.p2p_address)
+    || is_equal_some_and_value(&self.next_epoch_protocol_pubkey_bytes, &other.protocol_pubkey_bytes)
+    || is_equal_some_and_value(&self.next_epoch_network_pubkey_bytes, &other.network_pubkey_bytes)
+    || is_equal_some_and_value(&self.next_epoch_network_pubkey_bytes, &other.consensus_pubkey_bytes)
+    || is_equal_some_and_value(&self.next_epoch_consensus_pubkey_bytes, &other.consensus_pubkey_bytes)
+    || is_equal_some_and_value(&self.next_epoch_consensus_pubkey_bytes, &other.network_pubkey_bytes)
+    // Other next epoch parameters with my current epoch parameters.
+    || is_equal_some_and_value(&other.next_epoch_network_address, &self.network_address)
+    || is_equal_some_and_value(&other.next_epoch_p2p_address, &self.p2p_address)
+    || is_equal_some_and_value(&other.next_epoch_protocol_pubkey_bytes, &self.protocol_pubkey_bytes)
+    || is_equal_some_and_value(&other.next_epoch_network_pubkey_bytes, &self.network_pubkey_bytes)
+    || is_equal_some_and_value(&other.next_epoch_network_pubkey_bytes, &self.consensus_pubkey_bytes)
+    || is_equal_some_and_value(&other.next_epoch_consensus_pubkey_bytes, &self.consensus_pubkey_bytes)
+    || is_equal_some_and_value(&other.next_epoch_consensus_pubkey_bytes, &self.network_pubkey_bytes)
+}
+
+// === View Functions ===
+
+/// Returns the validator metadata
+public(package) fun metadata(self: &ValidatorInfo): ValidatorMetadata {
+    *self.metadata.borrow()
+}
+
+/// Returns the validator ID
+public fun validator_id(self: &ValidatorInfo): ID {
+    self.validator_id
+}
+
+/// Returns the network address
+public fun network_address(self: &ValidatorInfo): &String {
+    &self.network_address
+}
+
+/// Returns the P2P address
+public fun p2p_address(self: &ValidatorInfo): &String {
+    &self.p2p_address
+}
+
+/// Returns the consensus address
+public fun consensus_address(self: &ValidatorInfo): &String {
+    &self.consensus_address
+}
+
+/// Returns the protocol public key bytes
+public fun protocol_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
+    &self.protocol_pubkey_bytes
+}
+
+/// Returns the protocol public key element
+public fun protocol_pubkey(self: &ValidatorInfo): &Element<UncompressedG1> {
+    &self.protocol_pubkey
+}
+
+/// Returns the network public key bytes
+public fun network_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
+    &self.network_pubkey_bytes
+}
+
+/// Returns the consensus public key bytes
+public fun consensus_pubkey_bytes(self: &ValidatorInfo): &vector<u8> {
+    &self.consensus_pubkey_bytes
+}
+
+/// Returns the class groups public key and proof bytes
+public fun class_groups_pubkey_and_proof_bytes(self: &ValidatorInfo): &TableVec<vector<u8>> {
+    &self.class_groups_pubkey_and_proof_bytes
+}
+
+/// Returns the next epoch network address
+public fun next_epoch_network_address(self: &ValidatorInfo): &Option<String> {
+    &self.next_epoch_network_address
+}
+
+/// Returns the next epoch P2P address
+public fun next_epoch_p2p_address(self: &ValidatorInfo): &Option<String> {
+    &self.next_epoch_p2p_address
+}
+
+/// Returns the next epoch consensus address
+public fun next_epoch_consensus_address(self: &ValidatorInfo): &Option<String> {
+    &self.next_epoch_consensus_address
+}
+
+/// Returns the next epoch protocol public key bytes
+public fun next_epoch_protocol_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
+    &self.next_epoch_protocol_pubkey_bytes
+}
+
+/// Returns the next epoch network public key bytes
+public fun next_epoch_network_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
+    &self.next_epoch_network_pubkey_bytes
+}
+
+/// Returns the next epoch consensus public key bytes
+public fun next_epoch_consensus_pubkey_bytes(self: &ValidatorInfo): &Option<vector<u8>> {
+    &self.next_epoch_consensus_pubkey_bytes
+}
+
+/// Returns the next epoch class groups public key and proof
+public fun next_epoch_class_groups_pubkey_and_proof_bytes(self: &ValidatorInfo): &Option<ClassGroupsPublicKeyAndProof> {
+    &self.next_epoch_class_groups_pubkey_and_proof_bytes
+}
+
+// === Private Functions ===
+
+/// Checks if an Option contains a value equal to the provided value.
+fun is_equal_some_and_value<T>(a: &Option<T>, b: &T): bool {
+    if (a.is_none()) {
+        false
+    } else {
+        a.borrow() == b
+    }
+}
+
+/// Checks if two Options both contain values and those values are equal.
+fun is_equal_some<T>(a: &Option<T>, b: &Option<T>): bool {
+    if (a.is_none() || b.is_none()) {
+        false
+    } else {
+        a.borrow() == b.borrow()
+    }
+}
+
+/// Updates the class groups public key and proof with new values.
+fun update_class_groups_key_and_proof(
+    class_groups_pubkey_and_proof: &mut TableVec<vector<u8>>,
+    new_class_groups_key_and_proof: ClassGroupsPublicKeyAndProof,
+) {
+    let mut new_class_groups_key_and_proof = new_class_groups_key_and_proof.destroy();
+    let mut i = class_groups_pubkey_and_proof.length() - 1;
+    while (!new_class_groups_key_and_proof.is_empty()) {
+        *class_groups_pubkey_and_proof.borrow_mut(i) = new_class_groups_key_and_proof.pop_back();
+        i = i - 1;
+    };
+    new_class_groups_key_and_proof.destroy_empty();
+}
+
+// === Test Functions ===
 
 #[test_only]
-/// Create a validator info with dummy name & address
+use sui::table_vec;
+
+#[test_only]
+use ika_system::validator_metadata;
+
+#[test_only]
+/// Create a validator info with dummy name & address for testing purposes
 public fun new_for_testing(public_key: vector<u8>): ValidatorInfo {
     let ctx = &mut tx_context::dummy();
     let validator_id = ctx.fresh_object_address().to_id();
@@ -502,55 +578,5 @@ public fun new_for_testing(public_key: vector<u8>): ValidatorInfo {
         next_epoch_p2p_address: option::none(),
         next_epoch_consensus_address: option::none(),
         metadata: extended_field::new(validator_metadata::default(), ctx),
-    }
-}
-public fun is_duplicate(self: &ValidatorInfo, other: &ValidatorInfo): bool {
-            self.name == other.name
-            || self.network_address == other.network_address
-            || self.p2p_address == other.p2p_address
-            || self.protocol_pubkey_bytes == other.protocol_pubkey_bytes
-            || self.network_pubkey_bytes == other.network_pubkey_bytes
-            || self.network_pubkey_bytes == other.consensus_pubkey_bytes
-            || self.consensus_pubkey_bytes == other.consensus_pubkey_bytes
-            || self.consensus_pubkey_bytes == other.network_pubkey_bytes
-            // All next epoch parameters.
-            || is_equal_some(&self.next_epoch_network_address, &other.next_epoch_network_address)
-            || is_equal_some(&self.next_epoch_p2p_address, &other.next_epoch_p2p_address)
-            || is_equal_some(&self.next_epoch_protocol_pubkey_bytes, &other.next_epoch_protocol_pubkey_bytes)
-            || is_equal_some(&self.next_epoch_network_pubkey_bytes, &other.next_epoch_network_pubkey_bytes)
-            || is_equal_some(&self.next_epoch_network_pubkey_bytes, &other.next_epoch_consensus_pubkey_bytes)
-            || is_equal_some(&self.next_epoch_consensus_pubkey_bytes, &other.next_epoch_consensus_pubkey_bytes)
-            || is_equal_some(&self.next_epoch_consensus_pubkey_bytes, &other.next_epoch_network_pubkey_bytes)
-            // My next epoch parameters with other current epoch parameters.
-            || is_equal_some_and_value(&self.next_epoch_network_address, &other.network_address)
-            || is_equal_some_and_value(&self.next_epoch_p2p_address, &other.p2p_address)
-            || is_equal_some_and_value(&self.next_epoch_protocol_pubkey_bytes, &other.protocol_pubkey_bytes)
-            || is_equal_some_and_value(&self.next_epoch_network_pubkey_bytes, &other.network_pubkey_bytes)
-            || is_equal_some_and_value(&self.next_epoch_network_pubkey_bytes, &other.consensus_pubkey_bytes)
-            || is_equal_some_and_value(&self.next_epoch_consensus_pubkey_bytes, &other.consensus_pubkey_bytes)
-            || is_equal_some_and_value(&self.next_epoch_consensus_pubkey_bytes, &other.network_pubkey_bytes)
-            // Other next epoch parameters with my current epoch parameters.
-            || is_equal_some_and_value(&other.next_epoch_network_address, &self.network_address)
-            || is_equal_some_and_value(&other.next_epoch_p2p_address, &self.p2p_address)
-            || is_equal_some_and_value(&other.next_epoch_protocol_pubkey_bytes, &self.protocol_pubkey_bytes)
-            || is_equal_some_and_value(&other.next_epoch_network_pubkey_bytes, &self.network_pubkey_bytes)
-            || is_equal_some_and_value(&other.next_epoch_network_pubkey_bytes, &self.consensus_pubkey_bytes)
-            || is_equal_some_and_value(&other.next_epoch_consensus_pubkey_bytes, &self.consensus_pubkey_bytes)
-            || is_equal_some_and_value(&other.next_epoch_consensus_pubkey_bytes, &self.network_pubkey_bytes)
-}
-
-fun is_equal_some_and_value<T>(a: &Option<T>, b: &T): bool {
-    if (a.is_none()) {
-        false
-    } else {
-        a.borrow() == b
-    }
-}
-
-fun is_equal_some<T>(a: &Option<T>, b: &Option<T>): bool {
-    if (a.is_none() || b.is_none()) {
-        false
-    } else {
-        a.borrow() == b.borrow()
     }
 }

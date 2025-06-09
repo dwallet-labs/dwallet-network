@@ -41,7 +41,7 @@ pub const SYSTEM_MODULE_NAME: &IdentStr = ident_str!("system");
 pub const INIT_MODULE_NAME: &IdentStr = ident_str!("init");
 pub const VALIDATOR_CAP_MODULE_NAME: &IdentStr = ident_str!("validator_cap");
 pub const VALIDATOR_METADATA_MODULE_NAME: &IdentStr = ident_str!("validator_metadata");
-pub const PROTOCOL_CAP_MODULE_NAME: &IdentStr = ident_str!("protocol_cap");
+pub const SYSTEM_INNER_MODULE_NAME: &IdentStr = ident_str!("system_inner");
 pub const DWALLET_2PC_MPC_SECP256K1_MODULE_NAME: &IdentStr =
     ident_str!("dwallet_2pc_mpc_coordinator");
 

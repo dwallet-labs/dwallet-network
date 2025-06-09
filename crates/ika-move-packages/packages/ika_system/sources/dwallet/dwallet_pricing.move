@@ -14,10 +14,11 @@
 ///   - `dkg_second_round`
 module ika_system::dwallet_pricing;
 
-use sui::priority_queue::{Self, PriorityQueue};
+// === Imports ===
+use sui::{priority_queue::{Self, PriorityQueue}, vec_map::{Self, VecMap}};
 use ika_system::bls_committee::BlsCommittee;
-use sui::vec_map::{Self, VecMap};
 
+// === Structs ===
 
 /// Holds pricing information for a dWallet.
 /// The vector is indexed by the curve and signature algorithm and protocol.
@@ -47,6 +48,8 @@ public struct DWalletPricingCalculationVotes has copy, drop, store {
     default_pricing: DWalletPricing,
     working_pricing: DWalletPricing,
 }
+
+// === Public Functions ===
 
 /// Creates a new [`DWalletPricing`] object.
 ///
@@ -83,20 +86,6 @@ public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u3
         gas_fee_reimbursement_sui,
         gas_fee_reimbursement_sui_for_system_calls,
     })
-}
-
-fun insert_or_update_dwallet_pricing_value(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: DWalletPricingValue) {
-    let key = DWalletPricingKey {
-        curve,
-        signature_algorithm,
-        protocol,
-    };
-    if(self.pricing_map.contains(&key)) {
-        let existing_value = &mut self.pricing_map[&key];
-        *existing_value = value;
-    } else {
-        self.pricing_map.insert(key, value);
-    };
 }
 
 /// Returns the pricing information for a specific operation from the [`DWalletPricing`] table.
@@ -185,20 +174,6 @@ public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, valu
     }
 }
 
-/// Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal to this.
-fun quorum_below(bls_committee: BlsCommittee, vote_queue: &mut PriorityQueue<u64>): u64 {
-    let mut sum_votes = bls_committee.total_voting_power();
-    // We have a quorum initially, so we remove nodes until doing so breaks the quorum.
-    // The value at that point is the minimum value with support from a quorum.
-    loop {
-        let (value, votes) = vote_queue.pop_max();
-        sum_votes = sum_votes - votes;
-        if (!bls_committee.is_quorum_threshold(sum_votes)) {
-            return value
-        };
-    }
-}
-
 public(package) fun is_calculation_completed(calculation: &DWalletPricingCalculationVotes): bool {
     let mut i = 0;
     let (keys, _) = calculation.default_pricing.pricing_map.into_keys_values();
@@ -214,4 +189,34 @@ public(package) fun is_calculation_completed(calculation: &DWalletPricingCalcula
 
 public(package) fun calculated_pricing(calculation: &DWalletPricingCalculationVotes): DWalletPricing {
     calculation.working_pricing
+}
+
+// === Private Functions ===
+
+fun insert_or_update_dwallet_pricing_value(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: DWalletPricingValue) {
+    let key = DWalletPricingKey {
+        curve,
+        signature_algorithm,
+        protocol,
+    };
+    if(self.pricing_map.contains(&key)) {
+        let existing_value = &mut self.pricing_map[&key];
+        *existing_value = value;
+    } else {
+        self.pricing_map.insert(key, value);
+    };
+}
+
+/// Take the lowest value, s.t. a quorum  (2f + 1) voted for a value lower or equal to this.
+fun quorum_below(bls_committee: BlsCommittee, vote_queue: &mut PriorityQueue<u64>): u64 {
+    let mut sum_votes = bls_committee.total_voting_power();
+    // We have a quorum initially, so we remove nodes until doing so breaks the quorum.
+    // The value at that point is the minimum value with support from a quorum.
+    loop {
+        let (value, votes) = vote_queue.pop_max();
+        sum_votes = sum_votes - votes;
+        if (!bls_committee.is_quorum_threshold(sum_votes)) {
+            return value
+        };
+    }
 }
