@@ -311,7 +311,11 @@ async fn start(
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
             if i == 100 && (node_index == 0 || node_index == 1) {
-                warn!("Stopping node {}", node_index);
+                warn!(
+                    "Stopping node {}, db path: {}",
+                    node_index,
+                    &node.config().db_path.as_path()
+                );
                 node.stop();
                 fs::remove_dir_all(&node.config().db_path.as_path())?;
             }
