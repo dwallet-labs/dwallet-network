@@ -155,7 +155,7 @@ fun test_stake_after_committee_selection() {
     let bls_committee = runner.active_committee();
     // add excluded validator back to the list
     validators.push_back(excluded_validator);
-    
+
     // excluded validator should now be in the committee
     assert_eq!(bls_committee.members().length(), validators.length());
     validators.do_ref!(|validator| assert!(bls_committee.contains(&validator.validator_id())));
@@ -305,7 +305,7 @@ fun test_epoch_change_with_rewards_and_commission() {
 
     let admin = runner.admin();
 
-    // === perfrom dkg first round to add rewards ===
+    // === perform dkg first round to add rewards ===
 
     runner.perform_dwallet_dkg_first_round(&mut validators, admin);
 

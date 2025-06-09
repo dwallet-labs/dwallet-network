@@ -48,7 +48,7 @@ public(package) fun validator_operation_cap_validator_id(cap: &ValidatorOperatio
 public use fun validator_operation_cap_validator_id as ValidatorOperationCap.validator_id;
 
 /// Should be only called by the friend modules when adding a `Validator`
-/// or rotating an existing validaotr's `operation_cap_id`.
+/// or rotating an existing validator's `operation_cap_id`.
 public(package) fun new_validator_operation_cap(
     validator_id: ID,
     ctx: &mut TxContext,
@@ -66,7 +66,7 @@ public(package) fun validator_commission_cap_validator_id(cap: &ValidatorCommiss
 public use fun validator_commission_cap_validator_id as ValidatorCommissionCap.validator_id;
 
 /// Should be only called by the friend modules when adding a `Validator`
-/// or rotating an existing validaotr's `commission_cap_id`.
+/// or rotating an existing validator's `commission_cap_id`.
 public(package) fun new_validator_commission_cap(
     validator_id: ID,
     ctx: &mut TxContext,

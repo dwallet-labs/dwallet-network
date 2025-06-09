@@ -88,7 +88,7 @@ public struct ValidatorInfo has store {
     /// The public key bytes corresponding to the private key that the validator
     /// uses to establish TLS connections
     network_pubkey_bytes: vector<u8>,
-    /// The public key bytes correstponding to the consensus
+    /// The public key bytes corresponding to the consensus
     consensus_pubkey_bytes: vector<u8>,
     /// The validator's Class Groups public key and its associated proof.
     /// This key is used for the network DKG process and for resharing the network MPC key
@@ -103,7 +103,7 @@ public struct ValidatorInfo has store {
     next_epoch_network_address: Option<String>,
     next_epoch_p2p_address: Option<String>,
     next_epoch_consensus_address: Option<String>,
-    
+
     /// Extended metadata field for additional validator information
     metadata: ExtendedField<ValidatorMetadata>,
 }
@@ -128,7 +128,7 @@ public(package) fun new(
 ): ValidatorInfo {
     let protocol_pubkey = g1_to_uncompressed_g1(&g1_from_bytes(&protocol_pubkey_bytes));
     let class_groups_pubkey_and_proof_bytes = class_groups_pubkey_and_proof_bytes.destroy();
-    
+
     // Verify proof of possession for protocol public key
     assert!(
         verify_proof_of_possession(

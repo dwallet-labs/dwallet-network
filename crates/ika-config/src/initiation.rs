@@ -98,7 +98,8 @@ impl InitiationParameters {
 
     fn default_chain_start_timestamp_ms() -> u64 {
         std::time::SystemTime::now()
-            .checked_sub(Duration::from_secs(24 * 60 * 60)) // subtract 24 hours
+            // Subtract 24 hours.
+            .checked_sub(Duration::from_secs(24 * 60 * 60))
             .unwrap()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()

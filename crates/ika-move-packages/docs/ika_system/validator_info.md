@@ -143,7 +143,7 @@ and metadata for both current and next epoch configurations.
 <code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;</code>
 </dt>
 <dd>
- The public key bytes correstponding to the consensus
+ The public key bytes corresponding to the consensus
 </dd>
 <dt>
 <code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;</code>
