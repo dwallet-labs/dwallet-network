@@ -318,6 +318,15 @@ async fn start(
                 );
                 node.stop();
                 fs::remove_dir_all(&node.config().db_path.as_path())?;
+                fs::remove_dir_all(
+                    &node
+                        .config()
+                        .consensus_config
+                        .clone()
+                        .unwrap()
+                        .db_path
+                        .as_path(),
+                )?;
             }
             if i == 105 && node_index == 0 {
                 warn!("Restarting node {}", node_index);
