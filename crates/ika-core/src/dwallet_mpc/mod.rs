@@ -27,7 +27,7 @@ use ika_types::messages_dwallet_mpc::{
     PresignRequestEvent, SessionInfo,
 };
 use ika_types::messages_dwallet_mpc::{
-    DWalletEncryptionKeyReconfigurationRequestEvent, StartNetworkDKGEvent,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletNetworkDKGEncryptionKeyRequestEvent,
 };
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
@@ -199,8 +199,12 @@ pub(crate) fn session_info_from_event(
                 &deserialized_event,
             )))
         }
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
-            let deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent> =
+        t if t
+            == &DWalletMPCSuiEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            let deserialized_event: DWalletMPCSuiEvent<DWalletNetworkDKGEncryptionKeyRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(network_dkg::network_dkg_session_info(
                 deserialized_event,
@@ -622,7 +626,11 @@ pub(super) async fn session_input_from_event(
             )?;
             Ok((protocol_public_parameters, None))
         }
-        t if t == &DWalletMPCSuiEvent::<StartNetworkDKGEvent>::type_(packages_config) => {
+        t if t
+            == &DWalletMPCSuiEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof

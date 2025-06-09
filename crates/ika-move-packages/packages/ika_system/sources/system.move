@@ -549,9 +549,10 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut System,
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
     cap: &ProtocolCap,
+    params_for_network: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator.inner_mut(), cap, ctx);
+    self.inner_mut().request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator.inner_mut(), cap, params_for_network, ctx);
 }
 
 public fun set_supported_and_pricing(

@@ -20,8 +20,9 @@ use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCSuiEvent, DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState,
-    MPCProtocolInitData, SessionInfo, StartNetworkDKGEvent,
+    DWalletMPCSuiEvent, DWalletNetworkDKGEncryptionKeyRequestEvent,
+    DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState, MPCProtocolInitData,
+    SessionInfo,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use rand_core::OsRng;
@@ -299,7 +300,7 @@ pub(super) fn network_dkg_public_input(
 }
 
 pub(super) fn network_dkg_session_info(
-    deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<SessionInfo> {
     match key_scheme {
@@ -313,13 +314,13 @@ pub(super) fn network_dkg_session_info(
 }
 
 fn network_dkg_secp256k1_session_info(
-    deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkDkg(
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
@@ -327,13 +328,13 @@ fn network_dkg_secp256k1_session_info(
 }
 
 fn network_dkg_ristretto_session_info(
-    deserialized_event: DWalletMPCSuiEvent<StartNetworkDKGEvent>,
+    deserialized_event: DWalletMPCSuiEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkDkg(
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),

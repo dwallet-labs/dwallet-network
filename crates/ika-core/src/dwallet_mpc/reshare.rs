@@ -101,7 +101,7 @@ pub(super) fn network_decryption_key_reshare_session_info_from_event(
         session_type: deserialized_event.session_type.clone(),
         session_id: deserialized_event.session_id,
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DecryptionKeyReshare(deserialized_event),
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(deserialized_event),
     }
 }
 

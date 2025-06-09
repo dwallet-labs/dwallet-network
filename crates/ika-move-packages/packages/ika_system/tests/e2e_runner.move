@@ -489,7 +489,7 @@ public fun perform_network_encryption_key_dkg(
     let admin = runner.admin();
     let epoch = runner.epoch();
     runner.tx_with_protocol_cap!(admin, |system, dwallet_2pc_mpc_coordinator, protocol_cap, _clock, ctx| {
-        system.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, protocol_cap, ctx);
+        system.request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator, protocol_cap, x"", ctx);
 
         let dwallet_network_encryption_key_id = system.dwallet_2pc_mpc_coordinator_network_encryption_key_ids()[0];
         let next_checkpoint_sequence_number = dwallet_2pc_mpc_coordinator.last_processed_checkpoint_sequence_number().map!(|x| x + 1).destroy_or!(0);

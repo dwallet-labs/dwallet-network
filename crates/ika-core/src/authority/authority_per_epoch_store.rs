@@ -1849,37 +1849,42 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
-                DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let slices = if is_rejected {
-                        vec![NetworkKeyPublicOutputSlice {
-                            dwallet_network_decryption_key_id: init_event
-                                .event_data
-                                .dwallet_network_decryption_key_id
-                                .clone()
-                                .to_vec(),
-                            public_output: vec![],
-                            is_last: true,
-                            rejected: true,
-                        }]
-                    } else {
-                        Self::slice_network_dkg_public_output_into_messages(
-                            &init_event.event_data.dwallet_network_decryption_key_id,
-                            output,
-                        )
-                    };
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(key_scheme, init_event) => {
+                match key_scheme {
+                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                        let slices = if is_rejected {
+                            vec![NetworkKeyPublicOutputSlice {
+                                dwallet_network_decryption_key_id: init_event
+                                    .event_data
+                                    .dwallet_network_decryption_key_id
+                                    .clone()
+                                    .to_vec(),
+                                public_output: vec![],
+                                supported_curves: vec![
+                                    DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+                                ],
+                                is_last: true,
+                                rejected: true,
+                            }]
+                        } else {
+                            Self::slice_network_dkg_public_output_into_messages(
+                                &init_event.event_data.dwallet_network_decryption_key_id,
+                                output,
+                            )
+                        };
 
-                    let messages: Vec<_> = slices
-                        .into_iter()
-                        .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
-                        .collect();
-                    Ok(self.process_consensus_system_bulk_transaction(&messages))
+                        let messages: Vec<_> = slices
+                            .into_iter()
+                            .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
+                            .collect();
+                        Ok(self.process_consensus_system_bulk_transaction(&messages))
+                    }
+                    DWalletMPCNetworkKeyScheme::Ristretto => {
+                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                    }
                 }
-                DWalletMPCNetworkKeyScheme::Ristretto => {
-                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                }
-            },
-            MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+            }
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
                         dwallet_network_decryption_key_id: init_event
@@ -1888,6 +1893,7 @@ impl AuthorityPerEpochStore {
                             .clone()
                             .to_vec(),
                         public_output: vec![],
+                        supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
                         is_last: true,
                         rejected: true,
                     }]
@@ -1968,6 +1974,7 @@ impl AuthorityPerEpochStore {
                     .clone()
                     .to_vec(),
                 public_output: (*public_chunk).to_vec(),
+                supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
                 is_last: i == public_chunks.len() - 1,
                 rejected: false,
             });

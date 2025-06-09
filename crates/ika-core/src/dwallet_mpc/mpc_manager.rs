@@ -391,7 +391,7 @@ impl DWalletMPCManager {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                 )?,
-                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
+                MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => self
                     .get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                     )?,
