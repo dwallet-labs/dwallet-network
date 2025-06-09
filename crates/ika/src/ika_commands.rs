@@ -310,12 +310,12 @@ async fn start(
     loop {
         i += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            if i == 20 && (node_index == 0 || node_index == 1) {
+            if i == 200 && (node_index == 0 || node_index == 1) {
                 warn!("Stopping node {}", node_index);
                 node.stop();
                 fs::remove_dir_all(&node.config().db_path.as_path())?;
             }
-            if i == 25 && node_index == 0 {
+            if i == 205 && node_index == 0 {
                 warn!("Restarting node {}", node_index);
                 node.start().await?;
             }
