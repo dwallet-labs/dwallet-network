@@ -3,7 +3,6 @@
 
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
-use fastcrypto::groups::bls12381;
 use futures::future::{join_all, select, Either};
 use futures::FutureExt;
 use ika_types::committee::Committee;
@@ -90,7 +89,6 @@ use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
-use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -102,33 +100,6 @@ use typed_store::Map;
 const LAST_CONSENSUS_STATS_ADDR: u64 = 0;
 const OVERRIDE_PROTOCOL_UPGRADE_BUFFER_STAKE_INDEX: u64 = 0;
 pub const EPOCH_DB_PREFIX: &str = "epoch_";
-
-// Types for randomness DKG.
-#[allow(unused)]
-pub(crate) type PkG = bls12381::G2Element;
-#[allow(unused)]
-pub(crate) type EncG = bls12381::G2Element;
-
-// CertLockGuard and CertTxGuard are functionally identical right now, but we retain a distinction
-// anyway. If we need to support distributed object storage, having this distinction will be
-// useful, as we will most likely have to re-implement a retry / write-ahead-log at that point.
-pub struct CertLockGuard(#[allow(unused)] MutexGuard);
-pub struct CertTxGuard(#[allow(unused)] CertLockGuard);
-
-impl CertTxGuard {
-    pub fn release(self) {}
-    pub fn commit_tx(self) {}
-    pub fn as_lock_guard(&self) -> &CertLockGuard {
-        &self.0
-    }
-}
-
-impl CertLockGuard {
-    pub fn dummy_for_tests() -> Self {
-        let lock = Arc::new(parking_lot::Mutex::new(()));
-        Self(lock.try_lock_arc().unwrap())
-    }
-}
 
 pub enum CancelConsensusCertificateReason {
     CongestionOnObjects(Vec<ObjectID>),
@@ -314,11 +285,6 @@ pub struct AuthorityPerEpochStore {
     /// wait for in-memory tasks for the epoch to finish. If node crashes at this stage validator
     /// will start with the new epoch(and will open instance of per-epoch store for a new epoch).
     epoch_alive: tokio::sync::RwLock<bool>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// MutexTable for transaction locks (prevent concurrent execution of same transaction)
-    mutex_table: MutexTable<MessageDigest>,
 
     /// The moment when the current epoch started locally on this validator. Note that this
     /// value could be skewed if the node crashed and restarted in the middle of the epoch. That's
@@ -557,8 +523,6 @@ impl AuthorityEpochTables {
     }
 }
 
-pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
-
 impl AuthorityPerEpochStore {
     #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
     pub fn new(
@@ -611,7 +575,6 @@ impl AuthorityPerEpochStore {
             executed_digests_notify_read: NotifyRead::new(),
             synced_checkpoint_notify_read: NotifyRead::new(),
             highest_synced_checkpoint: RwLock::new(0),
-            mutex_table: MutexTable::new(MUTEX_TABLE_SIZE),
             epoch_open_time: current_time,
             epoch_close_time: Default::default(),
             metrics,
