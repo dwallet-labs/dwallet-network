@@ -1,5 +1,5 @@
 export RUST_LOG=info,ika_core=warn,ika_core::dwallet_mpc=info,consensus_core=warn
-export RUST_MIN_STACK=16777216
+#export RUST_MIN_STACK=16777216
 run-sui:
 	RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 86400000
 run-local:

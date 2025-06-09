@@ -54,8 +54,12 @@ export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 #export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
+# Day
 #export EPOCH_DURATION_TIME_MS=86400000
-export EPOCH_DURATION_TIME_MS=2400000
+# 40 minutes
+#export EPOCH_DURATION_TIME_MS=2400000
+# 2 hours
+export EPOCH_DURATION_TIME_MS=$((1000*60*60*2))
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
