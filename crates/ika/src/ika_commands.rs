@@ -314,7 +314,7 @@ async fn start(
                 warn!(
                     "Stopping node {}, db path: {}",
                     node_index,
-                    &node.config().db_path.as_path()
+                    &node.config().db_path.as_path().display()
                 );
                 node.stop();
                 fs::remove_dir_all(&node.config().db_path.as_path())?;
