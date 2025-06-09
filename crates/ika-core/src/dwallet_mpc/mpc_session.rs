@@ -873,7 +873,7 @@ impl DWalletMPCSession {
             );
             return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
         }
-        let mut round_messages_map = self
+        let round_messages_map = self
             .serialized_full_messages
             .entry(message.round_number)
             .or_default();
