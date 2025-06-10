@@ -9,7 +9,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
-use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use mpc::{AsynchronousRoundResult, Weight, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -19,14 +19,19 @@ use twopc_mpc::sign::Protocol;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty, DWalletImportedKeyVerificationParty};
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
+use crate::dwallet_mpc::{
+    authority_name_to_party_id_from_committee, message_digest, party_ids_to_authority_names,
+    MPCSessionLogger,
+};
 use crate::stake_aggregator::StakeAggregator;
+use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
@@ -95,6 +100,7 @@ pub(crate) struct DWalletMPCSession {
     agreed_mpc_protocol: Option<String>,
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
+    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCSession {
@@ -113,6 +119,7 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self {
             status,
@@ -130,6 +137,7 @@ impl DWalletMPCSession {
             mpc_protocol_to_voting_authorities: HashMap::new(),
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
+            dwallet_mpc_metrics,
         }
     }
 
@@ -608,7 +616,7 @@ impl DWalletMPCSession {
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(encoded_public_input)?;
                 self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
-                    
+
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
                     .iter()
@@ -1037,19 +1045,52 @@ impl DWalletMPCSession {
         }
     }
 
-    fn check_sign_expected_decrypters(&self, expected_decrypters: &HashSet<PartyID>) -> DwalletMPCResult<()> {
+    fn check_sign_expected_decrypters(
+        &self,
+        expected_decrypters: &HashSet<PartyID>,
+    ) -> DwalletMPCResult<()> {
         if self.current_round != 2 {
             return Ok(());
         }
-        let mut num_of_participating_expected_decrypters = 0;
+        let epoch_store = self.epoch_store()?;
+        let committee = epoch_store.committee();
+        let weighted_parties: HashMap<PartyID, Weight> = committee
+            .voting_rights
+            .iter()
+            .filter_map(|(name, weight)| {
+                let Ok(party_id) = authority_name_to_party_id_from_committee(committee, name)
+                else {
+                    return None;
+                };
+                if !expected_decrypters.contains(&party_id) {
+                    return None;
+                }
+                Some((party_id, *weight as Weight))
+            })
+            .collect::<HashMap<PartyID, Weight>>();
+        let weighted_parties = WeightedThresholdAccessStructure::new(
+            committee.quorum_threshold() as PartyID,
+            weighted_parties,
+        )
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+        let mut participating_expected_decrypters = HashSet::new();
         for party_id in expected_decrypters {
             if self
                 .serialized_full_messages
                 .get(&(self.current_round - 1))
                 .map_or(false, |messages| messages.contains_key(party_id))
             {
-                num_of_participating_expected_decrypters += 1;
+                participating_expected_decrypters.insert(*party_id);
             }
+        }
+        if weighted_parties.is_authorized_subset(&participating_expected_decrypters) {
+            self.dwallet_mpc_metrics
+                .number_of_expected_sign_sessions
+                .inc();
+        } else {
+            self.dwallet_mpc_metrics
+                .number_of_unexpected_sign_sessions
+                .inc();
         }
         Ok(())
     }

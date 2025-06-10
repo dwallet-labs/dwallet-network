@@ -17,7 +17,10 @@
 //! - **mpc_round**: The specific round number within a protocol session
 
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
-use prometheus::{register_int_gauge_vec_with_registry, IntGaugeVec, Registry};
+use prometheus::{
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
+    Registry,
+};
 use std::sync::Arc;
 
 /// Prometheus metrics for DWallet MPC operations.
@@ -71,6 +74,9 @@ pub struct DWalletMPCMetrics {
     /// allowing monitoring of performance trends and identification of
     /// slow-performing protocol rounds.
     last_completion_duration: IntGaugeVec,
+
+    pub number_of_unexpected_sign_sessions: IntGauge,
+    pub number_of_expected_sign_sessions: IntGauge,
 }
 
 impl DWalletMPCMetrics {
@@ -132,6 +138,18 @@ impl DWalletMPCMetrics {
                 "dwallet_mpc_last_completion_duration",
                 "Duration of the last completion in milliseconds",
                 &round_metric_labels,
+                registry
+            )
+            .unwrap(),
+            number_of_unexpected_sign_sessions: register_int_gauge_with_registry!(
+                "dwallet_mpc_number_of_unexpected_sign_sessions",
+                "Number of unexpected sign sessions",
+                registry
+            )
+            .unwrap(),
+            number_of_expected_sign_sessions: register_int_gauge_with_registry!(
+                "dwallet_mpc_number_of_expected_sign_sessions",
+                "Number of expected sign sessions",
                 registry
             )
             .unwrap(),
