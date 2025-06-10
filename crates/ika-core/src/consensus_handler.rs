@@ -190,7 +190,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 return;
             }
         }
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
         dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
         // Need to drop the verifier, as `self` is being used mutably later in this function.
         drop(dwallet_mpc_verifier);
@@ -399,7 +402,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
-        let dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_read()
+            .await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
@@ -414,7 +420,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
         info!("Performing a state sync for the dWallet MPC node");
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
         for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
             dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
         }
