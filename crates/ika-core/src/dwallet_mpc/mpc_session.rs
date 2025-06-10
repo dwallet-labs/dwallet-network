@@ -99,9 +99,6 @@ pub(crate) struct DWalletMPCSession {
 }
 
 impl DWalletMPCSession {
-    /// The round number where Sign protocol applies consensus delay.
-    const SIGN_DELAY_ROUND: usize = 2;
-
     /// The round number where NetworkDkg protocol applies consensus delay.
     const NETWORK_DKG_DELAY_ROUND: usize = 3;
 
@@ -920,13 +917,6 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             }),
             Some(protocol) => match protocol {
-                SIGN_STR_KEY => {
-                    let delay = self
-                        .epoch_store()?
-                        .protocol_config()
-                        .sign_second_round_delay() as usize;
-                    self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
-                }
                 NETWORK_ENCRYPTION_KEY_DKG_STR_KEY => {
                     let delay = self
                         .epoch_store()?
