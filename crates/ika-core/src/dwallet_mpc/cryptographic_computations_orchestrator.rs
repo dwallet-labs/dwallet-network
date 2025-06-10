@@ -176,7 +176,7 @@ impl CryptographicComputationsOrchestrator {
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
-                info!(
+                error!(
                     mpc_protocol=%mpc_protocol,
                     session_id=?session.session_id,
                     duration_ms = elapsed_ms,
