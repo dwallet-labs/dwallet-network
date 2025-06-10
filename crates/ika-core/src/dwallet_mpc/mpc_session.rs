@@ -635,7 +635,6 @@ impl DWalletMPCSession {
                     &logger,
                 );
                 self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
-                // self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
