@@ -442,6 +442,9 @@ validate_curve_and_signature_algorithm
 validate_curve_and_signature_algorithm_and_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+validate_network_encryption_key_supports_curve
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 register_encryption_key
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -584,6 +587,9 @@ dwallet_network_encryption_key_id
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 current_pricing
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+get_network_encryption_key_supported_curves
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 dwallet_id

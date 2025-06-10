@@ -3,7 +3,6 @@
 
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
-use fastcrypto::groups::bls12381;
 use futures::future::{join_all, select, Either};
 use futures::FutureExt;
 use ika_types::committee::Committee;
@@ -90,7 +89,6 @@ use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
-use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -102,33 +100,6 @@ use typed_store::Map;
 const LAST_CONSENSUS_STATS_ADDR: u64 = 0;
 const OVERRIDE_PROTOCOL_UPGRADE_BUFFER_STAKE_INDEX: u64 = 0;
 pub const EPOCH_DB_PREFIX: &str = "epoch_";
-
-// Types for randomness DKG.
-#[allow(unused)]
-pub(crate) type PkG = bls12381::G2Element;
-#[allow(unused)]
-pub(crate) type EncG = bls12381::G2Element;
-
-// CertLockGuard and CertTxGuard are functionally identical right now, but we retain a distinction
-// anyway. If we need to support distributed object storage, having this distinction will be
-// useful, as we will most likely have to re-implement a retry / write-ahead-log at that point.
-pub struct CertLockGuard(#[allow(unused)] MutexGuard);
-pub struct CertTxGuard(#[allow(unused)] CertLockGuard);
-
-impl CertTxGuard {
-    pub fn release(self) {}
-    pub fn commit_tx(self) {}
-    pub fn as_lock_guard(&self) -> &CertLockGuard {
-        &self.0
-    }
-}
-
-impl CertLockGuard {
-    pub fn dummy_for_tests() -> Self {
-        let lock = Arc::new(parking_lot::Mutex::new(()));
-        Self(lock.try_lock_arc().unwrap())
-    }
-}
 
 pub enum CancelConsensusCertificateReason {
     CongestionOnObjects(Vec<ObjectID>),
@@ -314,11 +285,6 @@ pub struct AuthorityPerEpochStore {
     /// wait for in-memory tasks for the epoch to finish. If node crashes at this stage validator
     /// will start with the new epoch(and will open instance of per-epoch store for a new epoch).
     epoch_alive: tokio::sync::RwLock<bool>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// MutexTable for transaction locks (prevent concurrent execution of same transaction)
-    mutex_table: MutexTable<MessageDigest>,
 
     /// The moment when the current epoch started locally on this validator. Note that this
     /// value could be skewed if the node crashed and restarted in the middle of the epoch. That's
@@ -557,8 +523,6 @@ impl AuthorityEpochTables {
     }
 }
 
-pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
-
 impl AuthorityPerEpochStore {
     #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
     pub fn new(
@@ -611,7 +575,6 @@ impl AuthorityPerEpochStore {
             executed_digests_notify_read: NotifyRead::new(),
             synced_checkpoint_notify_read: NotifyRead::new(),
             highest_synced_checkpoint: RwLock::new(0),
-            mutex_table: MutexTable::new(MUTEX_TABLE_SIZE),
             epoch_open_time: current_time,
             epoch_close_time: Default::default(),
             metrics,
@@ -1849,37 +1812,42 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::NetworkDkg(key_scheme, init_event) => match key_scheme {
-                DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                    let slices = if is_rejected {
-                        vec![NetworkKeyPublicOutputSlice {
-                            dwallet_network_decryption_key_id: init_event
-                                .event_data
-                                .dwallet_network_decryption_key_id
-                                .clone()
-                                .to_vec(),
-                            public_output: vec![],
-                            is_last: true,
-                            rejected: true,
-                        }]
-                    } else {
-                        Self::slice_network_dkg_public_output_into_messages(
-                            &init_event.event_data.dwallet_network_decryption_key_id,
-                            output,
-                        )
-                    };
+            MPCProtocolInitData::NetworkEncryptionKeyDkg(key_scheme, init_event) => {
+                match key_scheme {
+                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                        let slices = if is_rejected {
+                            vec![NetworkKeyPublicOutputSlice {
+                                dwallet_network_decryption_key_id: init_event
+                                    .event_data
+                                    .dwallet_network_decryption_key_id
+                                    .clone()
+                                    .to_vec(),
+                                public_output: vec![],
+                                supported_curves: vec![
+                                    DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+                                ],
+                                is_last: true,
+                                rejected: true,
+                            }]
+                        } else {
+                            Self::slice_network_dkg_public_output_into_messages(
+                                &init_event.event_data.dwallet_network_decryption_key_id,
+                                output,
+                            )
+                        };
 
-                    let messages: Vec<_> = slices
-                        .into_iter()
-                        .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
-                        .collect();
-                    Ok(self.process_consensus_system_bulk_transaction(&messages))
+                        let messages: Vec<_> = slices
+                            .into_iter()
+                            .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
+                            .collect();
+                        Ok(self.process_consensus_system_bulk_transaction(&messages))
+                    }
+                    DWalletMPCNetworkKeyScheme::Ristretto => {
+                        Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                    }
                 }
-                DWalletMPCNetworkKeyScheme::Ristretto => {
-                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
-                }
-            },
-            MPCProtocolInitData::DecryptionKeyReshare(init_event) => {
+            }
+            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
                         dwallet_network_decryption_key_id: init_event
@@ -1888,6 +1856,7 @@ impl AuthorityPerEpochStore {
                             .clone()
                             .to_vec(),
                         public_output: vec![],
+                        supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
                         is_last: true,
                         rejected: true,
                     }]
@@ -1968,6 +1937,7 @@ impl AuthorityPerEpochStore {
                     .clone()
                     .to_vec(),
                 public_output: (*public_chunk).to_vec(),
+                supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
                 is_last: i == public_chunks.len() - 1,
                 rejected: false,
             });

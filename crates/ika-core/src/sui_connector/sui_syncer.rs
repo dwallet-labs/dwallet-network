@@ -21,7 +21,6 @@ use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_types::base_types::ObjectID;
 use sui_types::{event::EventID, Identifier};
-use tokio::sync::watch;
 use tokio::sync::watch::Sender;
 use tokio::{
     sync::Notify,
@@ -63,8 +62,8 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        next_epoch_committee_sender: watch::Sender<Committee>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_sender: Sender<Committee>,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -101,7 +100,7 @@ where
         next_epoch_committee_sender: Sender<Committee>,
     ) {
         loop {
-            time::sleep(Duration::from_secs(2)).await;
+            time::sleep(Duration::from_secs(10)).await;
             let system_inner = sui_client.must_get_system_inner_object().await;
             let SystemInner::V1(system_inner) = system_inner;
             let Some(new_next_bls_committee) = system_inner.get_ika_next_epoch_committee() else {
@@ -185,7 +184,7 @@ where
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     ) {
         // (Key Obj ID, Epoch)
         let mut network_keys_cache: HashSet<(ObjectID, u64)> = HashSet::new();

@@ -159,6 +159,8 @@ const ECannotSetDuringVotesCalculation: u64 = 30;
 const EInsufficientIKAPayment: u64 = 31;
 /// Insufficient SUI payment
 const EInsufficientSUIPayment: u64 = 32;
+/// Network encryption key does not support the requested curve
+const ENetworkEncryptionKeyUnsupportedCurve: u64 = 33;
 
 #[error]
 const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
@@ -393,6 +395,10 @@ public struct DWalletNetworkEncryptionKey has key, store {
     network_dkg_public_output: TableVec<vector<u8>>,
     /// IKA fees accumulated for computation services
     computation_fee_charged_ika: Balance<IKA>,
+    /// Parameters for network dkg
+    dkg_params_for_network: vector<u8>,
+    /// Curves supported by this network encryption key
+    supported_curves: vector<u32>,
     /// Current operational state
     state: DWalletNetworkEncryptionKeyState,
 }
@@ -958,6 +964,8 @@ public struct DWalletEvent<E: copy + drop + store> has copy, drop, store {
 public struct DWalletNetworkDKGEncryptionKeyRequestEvent has copy, drop, store {
     /// ID of the network encryption key to be generated
     dwallet_network_encryption_key_id: ID,
+    /// Parameters for the network
+    params_for_network: vector<u8>,
 }
 
 /// Event emitted when network DKG for an encryption key completes successfully.
@@ -1866,6 +1874,7 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 /// A capability granting control over the new network encryption key
 public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
+    params_for_network: vector<u8>,
     ctx: &mut TxContext
 ): DWalletNetworkEncryptionKeyCap {
     // Create a new capability to control this encryption key.
@@ -1884,12 +1893,15 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         reconfiguration_public_outputs: sui::table::new(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
         computation_fee_charged_ika: balance::zero(),
+        dkg_params_for_network: params_for_network,
+        supported_curves: vector::empty(),
         state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
     });
 
     self.initiate_system_dwallet_session(
         DWalletNetworkDKGEncryptionKeyRequestEvent {
-            dwallet_network_encryption_key_id
+            dwallet_network_encryption_key_id,
+            params_for_network,
         },
         ctx,
     );
@@ -1938,16 +1950,18 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
     network_public_output_chunk: vector<u8>,
+    supported_curves: vector<u32>,
     is_last_chunk: bool,
     rejected: bool,
     ctx: &mut TxContext,
 ): Balance<SUI> {
-    if (is_last_chunk) {
-        self.session_management.completed_system_sessions_count = self.session_management.completed_system_sessions_count + 1;
-    };
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
         dwallet_network_encryption_key_id
     );
+    if (is_last_chunk) {
+        self.session_management.completed_system_sessions_count = self.session_management.completed_system_sessions_count + 1;
+        dwallet_network_encryption_key.supported_curves = supported_curves;
+    };
     if (rejected) {
         dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
         // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
@@ -1957,6 +1971,7 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
         self.initiate_system_dwallet_session(
             DWalletNetworkDKGEncryptionKeyRequestEvent {
                 dwallet_network_encryption_key_id,
+                params_for_network: dwallet_network_encryption_key.dkg_params_for_network,
             },
             ctx,
         );
@@ -1988,18 +2003,22 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     self: &mut DWalletCoordinatorInner,
     dwallet_network_encryption_key_id: ID,
     public_output: vector<u8>,
+    supported_curves: vector<u32>,
     is_last_chunk: bool,
     rejected: bool,
     ctx: &mut TxContext,
 ): Balance<SUI> {
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
+        dwallet_network_encryption_key_id
+    );
     // The Reconfiguration output can be large, so it is seperated into chunks.
     // We should only update the count once, so we check it is the last chunk before we do.
     if (is_last_chunk) {
         self.session_management.completed_system_sessions_count = self.session_management.completed_system_sessions_count + 1;
+        dwallet_network_encryption_key.supported_curves = supported_curves;
     };
 
     // Store this chunk as the last chunk in the chunks vector corresponding to the upcoming's epoch in the public outputs map.
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     if (rejected) {
         dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
             DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first } => {
@@ -2122,7 +2141,7 @@ fun emit_start_reconfiguration_event(
 
     self.initiate_system_dwallet_session(
         DWalletEncryptionKeyReconfigurationRequestEvent {
-            dwallet_network_encryption_key_id: cap.dwallet_network_encryption_key_id
+            dwallet_network_encryption_key_id: cap.dwallet_network_encryption_key_id,
         },
         ctx,
     );
@@ -2542,6 +2561,26 @@ fun validate_curve_and_signature_algorithm_and_hash_scheme(
     assert!(!self.support_config.paused_hash_schemes.contains(&hash_scheme), EHashSchemePaused);
 }
 
+/// Validates that a curve is supported by the network encryption key.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `dwallet_network_encryption_key_id`: ID of the network encryption key to validate
+/// - `curve`: Curve identifier to validate
+/// 
+/// ### Aborts
+/// - `EDWalletNetworkEncryptionKeyNotExist`: If the network encryption key doesn't exist
+/// - `ENetworkEncryptionKeyUnsupportedCurve`: If the curve is not supported by the network encryption key
+fun validate_network_encryption_key_supports_curve(
+    self: &DWalletCoordinatorInner,
+    dwallet_network_encryption_key_id: ID,
+    curve: u32,
+) {
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow(dwallet_network_encryption_key_id);
+    assert!(dwallet_network_encryption_key.supported_curves.contains(&curve), ENetworkEncryptionKeyUnsupportedCurve);
+}
+
 /// Registers an encryption key for secure dWallet share storage.
 /// 
 /// Creates and validates a new encryption key that can be used to encrypt
@@ -2697,6 +2736,7 @@ fun validate_approve_message(
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
 
     self.validate_curve_and_signature_algorithm_and_hash_scheme(dwallet.curve, signature_algorithm, hash_scheme);
+    self.validate_network_encryption_key_supports_curve(dwallet.dwallet_network_encryption_key_id, dwallet.curve);
 
     dwallet.is_imported_key_dwallet
 }
@@ -2745,6 +2785,7 @@ public(package) fun request_dwallet_dkg_first_round(
     // TODO(@Omer): check the state of the dWallet (i.e., not waiting for dkg.)
     // TODO(@Omer): I believe the best thing would be to always use the latest key. I'm not sure why the user should even supply the id.
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     // Create a new `DWalletCap` object.
     let id = object::new(ctx);
@@ -3341,6 +3382,7 @@ public(package) fun new_imported_key_dwallet(
 ): ImportedKeyDWalletCap {
     self.validate_curve(curve);
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     let id = object::new(ctx);
     let dwallet_id = id.to_inner();
@@ -3617,6 +3659,7 @@ public(package) fun request_presign(
     let curve = dwallet.curve;
 
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
+    self.validate_network_encryption_key_supports_curve(dwallet.dwallet_network_encryption_key_id, curve);
     
     assert!(!self.support_config.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
@@ -3711,6 +3754,7 @@ public(package) fun request_global_presign(
     let created_at_epoch = self.current_epoch;
 
     self.validate_curve_and_signature_algorithm(curve, signature_algorithm);
+    self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     assert!(self.support_config.signature_algorithms_allowed_global_presign.contains(&signature_algorithm), EInvalidSignatureAlgorithm);
 
@@ -4001,6 +4045,7 @@ fun validate_and_initiate_sign(
     });
     let is_imported_key_dwallet = dwallet.is_imported_key_dwallet;
     self.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+    self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     event::emit(emit_event);
     is_imported_key_dwallet
@@ -4140,6 +4185,7 @@ public(package) fun request_future_sign(
     let signature_algorithm = presign_obj.signature_algorithm;
 
     self.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
+    self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::some(signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
@@ -4669,17 +4715,19 @@ fun process_checkpoint_message(
             RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE => {
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
+                let supported_curves = bcs_body.peel_vec_u32();
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, supported_curves,is_last, rejected, ctx);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE => {
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
+                let supported_curves = bcs_body.peel_vec_u32();
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, is_last, rejected, ctx);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_reconfiguration(dwallet_network_encryption_key_id, public_output, supported_curves, is_last, rejected, ctx);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE => {
@@ -4837,6 +4885,26 @@ public(package) fun dwallet_network_encryption_key_id(self: &DWalletNetworkEncry
 
 public(package) fun current_pricing(self: &DWalletCoordinatorInner): DWalletPricing {
     self.pricing_and_fee_management.current
+}
+
+/// Get the supported curves for a network encryption key.
+/// 
+/// ### Parameters
+/// - `self`: Reference to the coordinator
+/// - `dwallet_network_encryption_key_id`: ID of the network encryption key
+/// 
+/// ### Returns
+/// Vector of supported curve identifiers
+/// 
+/// ### Aborts
+/// - `EDWalletNetworkEncryptionKeyNotExist`: If the network encryption key doesn't exist
+public(package) fun get_network_encryption_key_supported_curves(
+    self: &DWalletCoordinatorInner,
+    dwallet_network_encryption_key_id: ID,
+): vector<u32> {
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow(dwallet_network_encryption_key_id);
+    dwallet_network_encryption_key.supported_curves
 }
 
 /// === Public Functions ===
