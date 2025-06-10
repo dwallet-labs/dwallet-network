@@ -624,7 +624,6 @@ impl DWalletMPCSession {
 
                 // Extend base logger with decryption key shares for Sign protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
-                self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
@@ -635,6 +634,7 @@ impl DWalletMPCSession {
                     encoded_public_input,
                     &logger,
                 );
+                self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
                 // self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
