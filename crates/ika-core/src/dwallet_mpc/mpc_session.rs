@@ -1051,27 +1051,6 @@ impl DWalletMPCSession {
         if self.current_round != 2 {
             return Ok(());
         }
-        let epoch_store = self.epoch_store()?;
-        let committee = epoch_store.committee();
-        let weighted_parties: HashMap<PartyID, Weight> = committee
-            .voting_rights
-            .iter()
-            .filter_map(|(name, weight)| {
-                let Ok(party_id) = authority_name_to_party_id_from_committee(committee, name)
-                else {
-                    return None;
-                };
-                if !expected_decrypters.contains(&party_id) {
-                    return None;
-                }
-                Some((party_id, *weight as Weight))
-            })
-            .collect::<HashMap<PartyID, Weight>>();
-        let total_weight: Weight = weighted_parties.values().sum();
-        let quorum_threshold = total_weight * 2 / 3;
-        let weighted_parties =
-            WeightedThresholdAccessStructure::new(quorum_threshold, weighted_parties)
-                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
         let mut participating_expected_decrypters = HashSet::new();
         for party_id in expected_decrypters {
             if self
@@ -1082,7 +1061,8 @@ impl DWalletMPCSession {
                 participating_expected_decrypters.insert(*party_id);
             }
         }
-        if weighted_parties
+        if self
+            .weighted_threshold_access_structure
             .is_authorized_subset(&participating_expected_decrypters)
             .is_ok()
         {
