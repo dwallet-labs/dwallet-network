@@ -607,7 +607,8 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Sign(..) => {
                 let public_input = bcs::from_bytes(encoded_public_input)?;
-
+                self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
+                    
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
                     .iter()
@@ -1034,5 +1035,22 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             }),
         }
+    }
+
+    fn check_sign_expected_decrypters(&self, expected_decrypters: &HashSet<PartyID>) -> DwalletMPCResult<()> {
+        if self.current_round != 2 {
+            return Ok(());
+        }
+        let mut num_of_participating_expected_decrypters = 0;
+        for party_id in expected_decrypters {
+            if self
+                .serialized_full_messages
+                .get(&(self.current_round - 1))
+                .map_or(false, |messages| messages.contains_key(party_id))
+            {
+                num_of_participating_expected_decrypters += 1;
+            }
+        }
+        Ok(())
     }
 }
