@@ -1070,11 +1070,9 @@ impl DWalletMPCSession {
             .collect::<HashMap<PartyID, Weight>>();
         let total_weight: Weight = weighted_parties.values().sum();
         let quorum_threshold = total_weight * 2 / 3;
-        let weighted_parties = WeightedThresholdAccessStructure::new(
-            quorum_threshold,
-            weighted_parties,
-        )
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+        let weighted_parties =
+            WeightedThresholdAccessStructure::new(quorum_threshold, weighted_parties)
+                .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
         let mut participating_expected_decrypters = HashSet::new();
         for party_id in expected_decrypters {
             if self
