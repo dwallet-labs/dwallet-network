@@ -33,7 +33,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
     MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
     NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
-    SIGN_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 

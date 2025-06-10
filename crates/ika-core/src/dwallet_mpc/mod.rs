@@ -354,7 +354,7 @@ fn get_expected_decrypters(
     let weighted_threshold_access_structure =
         epoch_store.get_weighted_threshold_access_structure()?;
     let expected_decrypters_votes = weighted_threshold_access_structure.threshold as u32
-        + (total_votes as f64 * 0.05).floor() as u32;
+        + (total_votes as f64 * 0.10).floor() as u32;
     let mut votes_sum = 0;
     let mut expected_decrypters = vec![];
     while votes_sum < expected_decrypters_votes {
