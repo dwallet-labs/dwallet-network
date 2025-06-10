@@ -19,6 +19,7 @@ use twopc_mpc::sign::Protocol;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty, DWalletImportedKeyVerificationParty};
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
@@ -33,7 +34,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
     MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
     NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
-    SIGN_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 
@@ -96,12 +96,10 @@ pub(crate) struct DWalletMPCSession {
     agreed_mpc_protocol: Option<String>,
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
+    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCSession {
-    /// The round number where Sign protocol applies consensus delay.
-    const SIGN_DELAY_ROUND: usize = 2;
-
     /// The round number where NetworkDkg protocol applies consensus delay.
     const NETWORK_DKG_DELAY_ROUND: usize = 3;
 
@@ -117,6 +115,7 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self {
             status,
@@ -134,6 +133,7 @@ impl DWalletMPCSession {
             mpc_protocol_to_voting_authorities: HashMap::new(),
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
+            dwallet_mpc_metrics,
         }
     }
 
@@ -434,7 +434,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -497,7 +497,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -529,7 +529,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input.clone(),
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -587,7 +587,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -620,17 +620,17 @@ impl DWalletMPCSession {
 
                 // Extend base logger with decryption key shares for Sign protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
-
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     mpc_event_data.decryption_shares.clone(),
                     encoded_public_input,
                     &logger,
                 );
+                self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
@@ -717,7 +717,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     decryption_key_shares.clone(),
                     encoded_public_input,
                     &logger,
@@ -920,13 +920,6 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             }),
             Some(protocol) => match protocol {
-                SIGN_STR_KEY => {
-                    let delay = self
-                        .epoch_store()?
-                        .protocol_config()
-                        .sign_second_round_delay() as usize;
-                    self.check_round_delay(Self::SIGN_DELAY_ROUND, delay)
-                }
                 NETWORK_ENCRYPTION_KEY_DKG_STR_KEY => {
                     let delay = self
                         .epoch_store()?
@@ -1045,5 +1038,37 @@ impl DWalletMPCSession {
                 malicious_parties: vec![],
             }),
         }
+    }
+
+    fn update_expected_decrypters_metrics(
+        &self,
+        expected_decrypters: &HashSet<PartyID>,
+    ) -> DwalletMPCResult<()> {
+        if self.current_round != 2 {
+            return Ok(());
+        }
+        let participating_expected_decrypters: HashSet<PartyID> = expected_decrypters
+            .iter()
+            .filter(|party_id| {
+                self.serialized_full_messages
+                    .get(&(self.current_round - 1))
+                    .is_some_and(|messages| messages.contains_key(*party_id))
+            })
+            .copied()
+            .collect();
+        if self
+            .weighted_threshold_access_structure
+            .is_authorized_subset(&participating_expected_decrypters)
+            .is_ok()
+        {
+            self.dwallet_mpc_metrics
+                .number_of_expected_sign_sessions
+                .inc();
+        } else {
+            self.dwallet_mpc_metrics
+                .number_of_unexpected_sign_sessions
+                .inc();
+        }
+        Ok(())
     }
 }

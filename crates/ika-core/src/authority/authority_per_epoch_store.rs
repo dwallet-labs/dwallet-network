@@ -308,7 +308,7 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing dWallet MPC outputs.
     /// This state machine is used to store outputs and emit ones
     /// where the quorum of votes is valid.
-    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::RwLock<DWalletMPCOutputsVerifier>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
 }
@@ -651,7 +651,7 @@ impl AuthorityPerEpochStore {
     ) -> IkaResult<()> {
         if self
             .dwallet_mpc_outputs_verifier
-            .set(tokio::sync::Mutex::new(verifier))
+            .set(tokio::sync::RwLock::new(verifier))
             .is_err()
         {
             error!(
@@ -669,13 +669,31 @@ impl AuthorityPerEpochStore {
 
     /// Return the [`DWalletMPCOutputsVerifier`].
     /// Uses a Mutex because the instance is initialized from a different thread.
-    pub async fn get_dwallet_mpc_outputs_verifier(
+    pub async fn get_dwallet_mpc_outputs_verifier_write(
         &self,
-    ) -> tokio::sync::MutexGuard<DWalletMPCOutputsVerifier> {
+    ) -> tokio::sync::RwLockWriteGuard<DWalletMPCOutputsVerifier> {
         loop {
             match self.dwallet_mpc_outputs_verifier.get() {
                 Some(dwallet_mpc_outputs_verifier) => {
-                    return dwallet_mpc_outputs_verifier.lock().await
+                    return dwallet_mpc_outputs_verifier.write().await
+                }
+                None => {
+                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            }
+        }
+    }
+
+    /// Return the [`DWalletMPCOutputsVerifier`].
+    /// Uses a Mutex because the instance is initialized from a different thread.
+    pub async fn get_dwallet_mpc_outputs_verifier_read(
+        &self,
+    ) -> tokio::sync::RwLockReadGuard<DWalletMPCOutputsVerifier> {
+        loop {
+            match self.dwallet_mpc_outputs_verifier.get() {
+                Some(dwallet_mpc_outputs_verifier) => {
+                    return dwallet_mpc_outputs_verifier.read().await
                 }
                 None => {
                     error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
@@ -1403,7 +1421,7 @@ impl AuthorityPerEpochStore {
             Ok(events) => output.set_dwallet_mpc_round_events(events),
             Err(e) => error!(err=?e, "failed to read new Sui events"),
         }
-        let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier().await;
+        let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         output.set_dwallet_mpc_round_completed_sessions(
             outputs_verifier
                 .consensus_round_completed_sessions
@@ -1663,7 +1681,7 @@ impl AuthorityPerEpochStore {
         output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
-        let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier().await;
+        let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         let output_verification_result = dwallet_mpc_verifier
                 .try_verify_output(&output, &session_info, origin_authority)
                 .await
