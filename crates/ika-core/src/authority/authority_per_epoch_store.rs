@@ -13,6 +13,7 @@ use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -311,6 +312,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub(crate) perpetual_tables: Arc<AuthorityPerpetualTables>,
     pub(crate) packages_config: IkaPackagesConfig,
+    pub(crate) test: RefCell<Option<DWalletMPCOutputsVerifier>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -584,6 +586,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             perpetual_tables,
             packages_config,
+            test: RefCell::new(None),
         });
 
         s.update_buffer_stake_metric();
