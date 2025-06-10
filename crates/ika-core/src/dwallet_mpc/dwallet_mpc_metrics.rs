@@ -17,7 +17,10 @@
 //! - **mpc_round**: The specific round number within a protocol session
 
 use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
-use prometheus::{register_int_gauge_vec_with_registry, IntGaugeVec, Registry};
+use prometheus::{
+    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
+    Registry,
+};
 use std::sync::Arc;
 
 /// Prometheus metrics for DWallet MPC operations.
@@ -71,6 +74,11 @@ pub struct DWalletMPCMetrics {
     /// allowing monitoring of performance trends and identification of
     /// slow-performing protocol rounds.
     last_completion_duration: IntGaugeVec,
+
+    /// The number of sign sessions in which a quorum of the expected decrypters has participated.
+    pub number_of_expected_sign_sessions: IntGauge,
+    /// The number of sign sessions in which less than a quorum of the expected decrypters has participated.
+    pub number_of_unexpected_sign_sessions: IntGauge,
 }
 
 impl DWalletMPCMetrics {
@@ -102,7 +110,7 @@ impl DWalletMPCMetrics {
         Arc::new(Self {
             received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
-                "Number of received events start",
+                "Number of received start events",
                 &protocol_metric_labels,
                 registry
             )
@@ -132,6 +140,18 @@ impl DWalletMPCMetrics {
                 "dwallet_mpc_last_completion_duration",
                 "Duration of the last completion in milliseconds",
                 &round_metric_labels,
+                registry
+            )
+            .unwrap(),
+            number_of_unexpected_sign_sessions: register_int_gauge_with_registry!(
+                "dwallet_mpc_number_of_unexpected_sign_sessions",
+                "Number of unexpected sign sessions",
+                registry
+            )
+            .unwrap(),
+            number_of_expected_sign_sessions: register_int_gauge_with_registry!(
+                "dwallet_mpc_number_of_expected_sign_sessions",
+                "Number of expected sign sessions",
                 registry
             )
             .unwrap(),
@@ -183,7 +203,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round.
+    /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_call(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
         self.advance_calls
             .with_label_values(&[
@@ -203,7 +223,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round.
+    /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_completion(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
         self.advance_completions
             .with_label_values(&[
@@ -223,8 +243,8 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round
-    /// * `duration_ms` - Duration of the completion in milliseconds.
+    /// * `mpc_round` — String identifier for the specific MPC round
+    /// * `duration_ms` — Duration of the completion in milliseconds.
     pub fn set_last_completion_duration(
         &self,
         mpc_event_data: &MPCProtocolInitData,

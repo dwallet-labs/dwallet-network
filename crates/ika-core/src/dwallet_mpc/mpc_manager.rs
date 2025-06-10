@@ -719,6 +719,7 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
+            self.dwallet_mpc_metrics.clone(),
         );
         info!(
             // todo(zeev): add metadata.
