@@ -9,7 +9,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
-use mpc::{AsynchronousRoundResult, Weight, WeightedThresholdAccessStructure};
+use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -26,12 +26,8 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{
-    authority_name_to_party_id_from_committee, message_digest, party_ids_to_authority_names,
-    MPCSessionLogger,
-};
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
 use crate::stake_aggregator::StakeAggregator;
-use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
@@ -634,7 +630,7 @@ impl DWalletMPCSession {
                     encoded_public_input,
                     &logger,
                 );
-                self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
+                self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
@@ -1044,23 +1040,22 @@ impl DWalletMPCSession {
         }
     }
 
-    fn check_sign_expected_decrypters(
+    fn update_expected_decrypters_metrics(
         &self,
         expected_decrypters: &HashSet<PartyID>,
     ) -> DwalletMPCResult<()> {
         if self.current_round != 2 {
             return Ok(());
         }
-        let mut participating_expected_decrypters = HashSet::new();
-        for party_id in expected_decrypters {
-            if self
-                .serialized_full_messages
-                .get(&(self.current_round - 1))
-                .map_or(false, |messages| messages.contains_key(party_id))
-            {
-                participating_expected_decrypters.insert(*party_id);
-            }
-        }
+        let participating_expected_decrypters: HashSet<PartyID> = expected_decrypters
+            .iter()
+            .filter(|party_id| {
+                self.serialized_full_messages
+                    .get(&(self.current_round - 1))
+                    .map_or(false, |messages| messages.contains_key(*party_id))
+            })
+            .copied()
+            .collect();
         if self
             .weighted_threshold_access_structure
             .is_authorized_subset(&participating_expected_decrypters)

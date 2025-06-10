@@ -110,7 +110,7 @@ impl DWalletMPCMetrics {
         Arc::new(Self {
             received_events_start_count: register_int_gauge_vec_with_registry!(
                 "dwallet_mpc_received_events_start_count",
-                "Number of received events start",
+                "Number of received start events",
                 &protocol_metric_labels,
                 registry
             )
@@ -203,7 +203,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round.
+    /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_call(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
         self.advance_calls
             .with_label_values(&[
@@ -223,7 +223,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round.
+    /// * `mpc_round` — String identifier for the specific MPC round.
     pub fn add_advance_completion(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
         self.advance_completions
             .with_label_values(&[
@@ -243,8 +243,8 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
-    /// * `mpc_round` - String identifier for the specific MPC round
-    /// * `duration_ms` - Duration of the completion in milliseconds.
+    /// * `mpc_round` — String identifier for the specific MPC round
+    /// * `duration_ms` — Duration of the completion in milliseconds.
     pub fn set_last_completion_duration(
         &self,
         mpc_event_data: &MPCProtocolInitData,
