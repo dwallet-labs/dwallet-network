@@ -13,7 +13,6 @@ use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
 use std::path::{Path, PathBuf};
