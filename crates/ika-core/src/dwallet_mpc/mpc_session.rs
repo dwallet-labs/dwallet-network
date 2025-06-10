@@ -614,7 +614,6 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::Sign(..) => {
-                
                 let public_input = bcs::from_bytes(encoded_public_input)?;
 
                 let decryption_key_shares = mpc_event_data
@@ -1084,7 +1083,10 @@ impl DWalletMPCSession {
                 participating_expected_decrypters.insert(*party_id);
             }
         }
-        if weighted_parties.is_authorized_subset(&participating_expected_decrypters).is_ok() {
+        if weighted_parties
+            .is_authorized_subset(&participating_expected_decrypters)
+            .is_ok()
+        {
             self.dwallet_mpc_metrics
                 .number_of_expected_sign_sessions
                 .inc();
