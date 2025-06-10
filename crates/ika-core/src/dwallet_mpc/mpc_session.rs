@@ -1068,8 +1068,10 @@ impl DWalletMPCSession {
                 Some((party_id, *weight as Weight))
             })
             .collect::<HashMap<PartyID, Weight>>();
+        let total_weight: Weight = weighted_parties.values().sum();
+        let quorum_threshold = total_weight * 2 / 3;
         let weighted_parties = WeightedThresholdAccessStructure::new(
-            committee.quorum_threshold() as PartyID,
+            quorum_threshold,
             weighted_parties,
         )
         .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;

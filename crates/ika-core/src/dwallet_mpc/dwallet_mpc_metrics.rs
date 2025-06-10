@@ -74,7 +74,7 @@ pub struct DWalletMPCMetrics {
     /// allowing monitoring of performance trends and identification of
     /// slow-performing protocol rounds.
     last_completion_duration: IntGaugeVec,
-    
+
     /// The number of sign sessions in which a quorum of the expected decrypters has participated.
     pub number_of_expected_sign_sessions: IntGauge,
     /// The number of sign sessions in which less than a quorum of the expected decrypters has participated.
