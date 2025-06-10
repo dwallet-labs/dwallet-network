@@ -460,7 +460,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
     serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
-    public_input: P::PublicInput,
+    public_input: &P::PublicInput,
     private_input: P::PrivateInput,
     encoded_public_input: &MPCPublicInput,
     logger: &MPCSessionLogger,

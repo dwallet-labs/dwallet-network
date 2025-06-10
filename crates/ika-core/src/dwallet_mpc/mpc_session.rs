@@ -438,7 +438,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -501,7 +501,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -533,7 +533,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input.clone(),
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -591,7 +591,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     (),
                     encoded_public_input,
                     &base_logger,
@@ -614,8 +614,8 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::Sign(..) => {
+                
                 let public_input = bcs::from_bytes(encoded_public_input)?;
-                self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
 
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
@@ -631,11 +631,12 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     mpc_event_data.decryption_shares.clone(),
                     encoded_public_input,
                     &logger,
                 );
+                // self.check_sign_expected_decrypters(&public_input.expected_decrypters)?;
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
                         public_output,
@@ -722,7 +723,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    public_input,
+                    &public_input,
                     decryption_key_shares.clone(),
                     encoded_public_input,
                     &logger,
