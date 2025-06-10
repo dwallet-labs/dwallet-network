@@ -184,6 +184,7 @@ impl DWalletMPCSession {
                     self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let message = self.new_dwallet_mpc_message(message, &mpc_protocol.to_string())?;
+                let now = std::time::Instant::now();
                 tokio_runtime_handle.spawn(async move {
                     if let Err(err) = consensus_adapter
                         .submit_to_consensus(&[message], &epoch_store)
@@ -199,6 +200,8 @@ impl DWalletMPCSession {
                         );
                     }
                 });
+                let elapsed_ms = now.elapsed().as_millis();
+                warn!(?elapsed_ms, "submission to tokio thread pool took");
                 Ok(())
             }
             Ok(AsynchronousRoundResult::Finalize {

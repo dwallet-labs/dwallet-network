@@ -1,0 +1,11 @@
+log enable -f lldb.txt lldb all
+settings set stop-disassembly-count 0
+settings set stop-line-count-before 0
+settings set stop-line-count-after 0
+
+breakpoint set --name thread_monitor_report_stall
+breakpoint command add
+thread backtrace all
+continue
+DONE
+

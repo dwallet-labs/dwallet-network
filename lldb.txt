@@ -1,0 +1,602 @@
+ Processing command: settings set stop-disassembly-count 0
+ HandleCommand, cmd_obj : 'settings set'
+ HandleCommand, (revised) command_string: 'settings set stop-disassembly-count 0'
+ HandleCommand, wants_raw_input:'True'
+ HandleCommand, command line after removing command name(s): 'stop-disassembly-count 0'
+ HandleCommand, command succeeded
+ Processing command: settings set stop-line-count-before 0
+ HandleCommand, cmd_obj : 'settings set'
+ HandleCommand, (revised) command_string: 'settings set stop-line-count-before 0'
+ HandleCommand, wants_raw_input:'True'
+ HandleCommand, command line after removing command name(s): 'stop-line-count-before 0'
+ HandleCommand, command succeeded
+ Processing command: settings set stop-line-count-after 0
+ HandleCommand, cmd_obj : 'settings set'
+ HandleCommand, (revised) command_string: 'settings set stop-line-count-after 0'
+ HandleCommand, wants_raw_input:'True'
+ HandleCommand, command line after removing command name(s): 'stop-line-count-after 0'
+ HandleCommand, command succeeded
+ Processing command: breakpoint set --name thread_monitor_report_stall
+ HandleCommand, cmd_obj : 'breakpoint set'
+ HandleCommand, (revised) command_string: 'breakpoint set --name thread_monitor_report_stall'
+ HandleCommand, wants_raw_input:'False'
+ HandleCommand, command line after removing command name(s): '--name thread_monitor_report_stall'
+ 0x15b7209d8 Broadcaster("lldb.target")::BroadcastEvent (event_sp = {0x600002b989d8 Event: broadcaster = 0x15c043e00 (lldb.target), type = 0x00000001 (breakpoint-changed), data = {bkpt: 1 type: breakpoint added}}, unique =0) hijack = 0x0
+ 0x15b71a2a0 Listener('lldb.Debugger')::AddEvent (event_sp = {0x600002b989d8})
+ Target::AddBreakpoint (internal = no) => break_id = 1: name = 'thread_monitor_report_stall'
+
+
+ 0x15b71a2a0 'lldb.Debugger' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x600002b989d8
+ this = 0x000000015B71A2A0, timeout = <infinite> for lldb.Debugger
+ demangled itanium: _ZN14mysten_metrics20thread_stall_monitor27thread_monitor_report_stall17h5f093d4599b6078dE -> "mysten_metrics::thread_stall_monitor::thread_monitor_report_stall::h5f093d4599b6078d"
+ GDBRemoteCommunicationClient::SendGDBStoppointTypePacket() add at addr = 0x101bca1d8
+ 0x000000015C053F50 Communication::Write (src = 0x000000016F0250D8, src_len = 18) connection = 0x0000600000C30120
+ 0x600000c30120 ConnectionFileDescriptor::Write (src = 0x16f0250d8, src_len = 18)
+ 0x600000c30120 ConnectionFileDescriptor::Write(fd = 4, src = 0x16f0250d8, src_len = 18) => 18 (error = (null))
+ this = 0x000000015C053F50, dst = 0x000000016F022FF0, dst_len = 8192, timeout = 5000000 us, connection = 0x0000600000C30120
+ this = 0x0000600000C30120, timeout = 5000000 us
+ 0x600000c30120 ConnectionFileDescriptor::Read()  fd = 4, dst = 0x16f022ff0, dst_len = 8192) => 6, error = (null)
+ 0x15b7209d8 Broadcaster("lldb.target")::BroadcastEvent (event_sp = {0x600002b989d8 Event: broadcaster = 0x15c043e00 (lldb.target), type = 0x00000001 (breakpoint-changed), data = {bkpt: 1 type: locations resolved}}, unique =0) hijack = 0x0
+ 0x15b71a2a0 Listener('lldb.Debugger')::AddEvent (event_sp = {0x600002b989d8})
+ 0x15b71a2a0 'lldb.Debugger' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x600002b989d8
+ this = 0x000000015B71A2A0, timeout = <infinite> for lldb.Debugger
+ Added location: 1.1: 
+  module = /Users/itaylevy/code/dwallet-network/target/release/ika
+  compile unit = mysten_metrics.4b5f0f9b3a007915-cgu.14
+  function = mysten_metrics::thread_stall_monitor::thread_monitor_report_stall::h5f093d4599b6078d
+  location = /Users/itaylevy/.rustup/toolchains/1.85-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/sync/atomic.rs:3342:24
+  address = 0x0000000101bca1d8
+  resolved = true
+  hardware = false
+  hit count = 0   
+
+
+ demangled itanium: _ZN4core4sync6atomic11atomic_load17hc0e18a96d7da50d3E -> "core::sync::atomic::atomic_load::hc0e18a96d7da50d3"
+ HandleCommand, command succeeded
+ Processing command: breakpoint command add
+ HandleCommand, cmd_obj : 'breakpoint command add'
+ HandleCommand, (revised) command_string: 'breakpoint command add'
+ HandleCommand, wants_raw_input:'False'
+ HandleCommand, command line after removing command name(s): ''
+ HandleCommand, command succeeded
+ 0x15b71a6b8 Broadcaster("lldb.commandInterpreter")::BroadcastEvent (event_sp = {0x6000024aef18 Event: broadcaster = 0x15b71a440 (lldb.commandInterpreter), type = 0x00000004 (quit), data = <NULL>}, unique =0) hijack = 0x0
+ 0x15b71a2a0 Listener('lldb.Debugger')::AddEvent (event_sp = {0x6000024aef18})
+ 0x15b71a2a0 'lldb.Debugger' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x6000024aef18
+ [external] lldb::CommandInterpreterResult lldb::SBCommandInterpreterRunResult::GetResult() const (0x16f026b40)
+ [external] void lldb::SBDebugger::SetAsync(bool) (0x16f026da0, 1)
+ [external] void lldb::SBDebugger::SetInputFileHandle(FILE *, bool) (0x16f026da0, 0x1f485ac10, 1)
+ [external] void lldb::SBDebugger::RunCommandInterpreter(bool, bool) (0x16f026da0, 1, 0)
+ 0x1038f7cc8 ConnectionFileDescriptor::ConnectionFileDescriptor (fd = 0, owns_fd = 0)
+ 0x1038f7cc8 ConnectionFileDescriptor::CloseCommandPipe()
+ 0x1038f7cc8 ConnectionFileDescriptor::OpenCommandPipe() - success readfd=9 writefd=11
+ 0x1038f76d0 Listener::Listener('lldb.debugger.event-handler')
+ 0x1038f76d0 Listener::StartListeningForEvents (broadcaster = 0x15c0247b8, mask = 0x00000001) acquired_mask = 0x00000001 for lldb.debugger.event-handler
+ this = 0x00000001038F76D0, timeout = <infinite> for lldb.debugger.event-handler
+ thread created
+ 0x15b71a2a0 Listener::StartListeningForEvents (broadcaster = 0x15b71a440, mask = 0x0000001c) acquired_mask = 0x0000001c for lldb.Debugger
+ 0x15b71a2a0 Listener::StartListeningForEvents (broadcaster = 0x15c0247e8, mask = 0x0000000f) acquired_mask = 0x0000000f for lldb.Debugger
+ 0x15b71a7e8 Broadcaster("lldb.debugger.sync")::BroadcastEvent (event_sp = {0x6000024aef18 Event: broadcaster = 0x15c0247b8 (lldb.debugger.sync), type = 0x00000001, data = <NULL>}, unique =0) hijack = 0x0
+ 0x1038f76d0 Listener('lldb.debugger.event-handler')::AddEvent (event_sp = {0x6000024aef18})
+ this = 0x000000015B71A2A0, timeout = <infinite> for lldb.Debugger
+ 0x1038f76d0 'lldb.debugger.event-handler' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x6000024aef18
+ 0x1038f76d0 Listener::Clear('lldb.debugger.event-handler')
+ 0x1038f76d0 Listener::~Listener('lldb.debugger.event-handler')
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ [internal] void lldb::SBDebugger::DispatchInputInterrupt() (0x16f026da0)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ [internal] void lldb::SBDebugger::DispatchInputInterrupt() (0x16f026da0)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ [internal] void lldb::SBDebugger::DispatchInputInterrupt() (0x16f026da0)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ 0x1038f7cc8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0267a3, dst_len = 1) => 1, error = (null)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ 0x1038f7cc8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0267a3, dst_len = 1) => 1, error = (null)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ 0x1038f7cc8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0267a3, dst_len = 1) => 1, error = (null)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ 0x1038f7cc8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0267a3, dst_len = 1) => 1, error = (null)
+ this = 0x00000001038F7CC8, timeout = <infinite>
+ 0x1038f7cc8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0267a3, dst_len = 1) => 1, error = (null)
+ Processing command: exit
+ HandleCommand, cmd_obj : 'quit'
+ HandleCommand, (revised) command_string: 'quit'
+ HandleCommand, wants_raw_input:'False'
+ HandleCommand, command line after removing command name(s): ''
+ 0x1027043d8 ConnectionFileDescriptor::ConnectionFileDescriptor (fd = 0, owns_fd = 0)
+ 0x1027043d8 ConnectionFileDescriptor::CloseCommandPipe()
+ 0x1027043d8 ConnectionFileDescriptor::OpenCommandPipe() - success readfd=3 writefd=12
+ this = 0x00000001027043D8, timeout = <infinite>
+ 0x1027043d8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0260b3, dst_len = 1) => 1, error = (null)
+ this = 0x00000001027043D8, timeout = <infinite>
+ 0x1027043d8 ConnectionFileDescriptor::Read()  fd = 0, dst = 0x16f0260b3, dst_len = 1) => 1, error = (null)
+ 0x1027043d8 ConnectionFileDescriptor::~ConnectionFileDescriptor ()
+ 0x1027043d8 ConnectionFileDescriptor::Disconnect ()
+ 0x1027043d8 ConnectionFileDescriptor::CloseCommandPipe()
+ 0x15b71a6b8 Broadcaster("lldb.commandInterpreter")::BroadcastEvent (event_sp = {0x6000024e0018 Event: broadcaster = 0x15b71a440 (lldb.commandInterpreter), type = 0x00000004 (quit), data = <NULL>}, unique =0) hijack = 0x0
+ 0x15b71a2a0 Listener('lldb.Debugger')::AddEvent (event_sp = {0x6000024e0018})
+ HandleCommand, command did not succeed
+ 0x15b71a2a0 'lldb.Debugger' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x6000024e0018
+ 0x15b71a6b8 Broadcaster("lldb.commandInterpreter")::BroadcastEvent (event_sp = {0x6000024e0018 Event: broadcaster = 0x15b71a440 (lldb.commandInterpreter), type = 0x00000004 (quit), data = <NULL>}, unique =0) hijack = 0x0
+ 0x15b71a2a0 Listener('lldb.Debugger')::AddEvent (event_sp = {0x6000024e0018})
+ [external] int lldb::SBCommandInterpreter::GetQuitStatus() (0x16f026cf8)
+ [external] static void lldb::SBDebugger::Destroy(SBDebugger &) (0x16f026da0)
+ 0x15b71a2a0 Listener::Clear('lldb.Debugger')
+ Discarding thread plans for thread (tid = 0x1048922, force 1)
+ Discarding thread plans for thread (tid = 0x1048932, force 1)
+ Discarding thread plans for thread (tid = 0x1048933, force 1)
+ Discarding thread plans for thread (tid = 0x1048934, force 1)
+ Discarding thread plans for thread (tid = 0x1048935, force 1)
+ Discarding thread plans for thread (tid = 0x1048936, force 1)
+ Discarding thread plans for thread (tid = 0x1048937, force 1)
+ Discarding thread plans for thread (tid = 0x1048938, force 1)
+ Discarding thread plans for thread (tid = 0x1048939, force 1)
+ Discarding thread plans for thread (tid = 0x104893a, force 1)
+ Discarding thread plans for thread (tid = 0x104893b, force 1)
+ Discarding thread plans for thread (tid = 0x104893c, force 1)
+ Discarding thread plans for thread (tid = 0x104893d, force 1)
+ Discarding thread plans for thread (tid = 0x104893e, force 1)
+ Discarding thread plans for thread (tid = 0x104893f, force 1)
+ Discarding thread plans for thread (tid = 0x1048940, force 1)
+ Discarding thread plans for thread (tid = 0x1048941, force 1)
+ Discarding thread plans for thread (tid = 0x1048942, force 1)
+ Discarding thread plans for thread (tid = 0x1048943, force 1)
+ Discarding thread plans for thread (tid = 0x1048944, force 1)
+ Discarding thread plans for thread (tid = 0x1048945, force 1)
+ Discarding thread plans for thread (tid = 0x1048946, force 1)
+ Discarding thread plans for thread (tid = 0x1048947, force 1)
+ Discarding thread plans for thread (tid = 0x1048948, force 1)
+ Discarding thread plans for thread (tid = 0x1048949, force 1)
+ Discarding thread plans for thread (tid = 0x104894a, force 1)
+ Discarding thread plans for thread (tid = 0x104894b, force 1)
+ Discarding thread plans for thread (tid = 0x1048a38, force 1)
+ Discarding thread plans for thread (tid = 0x1048a39, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3a, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3b, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3c, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3d, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3e, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3f, force 1)
+ Discarding thread plans for thread (tid = 0x1048a40, force 1)
+ Discarding thread plans for thread (tid = 0x1048a41, force 1)
+ Discarding thread plans for thread (tid = 0x1048a42, force 1)
+ Discarding thread plans for thread (tid = 0x1048a43, force 1)
+ Discarding thread plans for thread (tid = 0x1048ae5, force 1)
+ Discarding thread plans for thread (tid = 0x1048fbf, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc0, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc1, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc2, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc3, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc4, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc5, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc6, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc7, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc8, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc9, force 1)
+ Discarding thread plans for thread (tid = 0x1048fca, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcb, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcc, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcd, force 1)
+ Discarding thread plans for thread (tid = 0x104901d, force 1)
+ Discarding thread plans for thread (tid = 0x104916e, force 1)
+ Discarding thread plans for thread (tid = 0x1049cd9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cda, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdc, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdd, force 1)
+ Discarding thread plans for thread (tid = 0x1049cde, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdf, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce0, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce1, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce2, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce3, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce4, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce5, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce6, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce7, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce8, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cea, force 1)
+ Discarding thread plans for thread (tid = 0x1049ceb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cec, force 1)
+ Discarding thread plans for thread (tid = 0x1049ced, force 1)
+ Discarding thread plans for thread (tid = 0x1049cee, force 1)
+ Discarding thread plans for thread (tid = 0x1049cef, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf0, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf1, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf2, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf3, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf4, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf5, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf6, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf7, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf8, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfa, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfc, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfd, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfe, force 1)
+ Discarding thread plans for thread (tid = 0x1049cff, force 1)
+ Discarding thread plans for thread (tid = 0x1049d00, force 1)
+ Discarding thread plans for thread (tid = 0x1049d01, force 1)
+ Discarding thread plans for thread (tid = 0x1049d02, force 1)
+ Discarding thread plans for thread (tid = 0x1049d03, force 1)
+ Discarding thread plans for thread (tid = 0x1049d04, force 1)
+ Discarding thread plans for thread (tid = 0x1049d05, force 1)
+ Discarding thread plans for thread (tid = 0x1049d06, force 1)
+ Discarding thread plans for thread (tid = 0x1049d07, force 1)
+ Discarding thread plans for thread (tid = 0x1049d08, force 1)
+ Discarding thread plans for thread (tid = 0x1049d09, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d10, force 1)
+ Discarding thread plans for thread (tid = 0x1049d11, force 1)
+ Discarding thread plans for thread (tid = 0x1049d12, force 1)
+ Discarding thread plans for thread (tid = 0x1049d13, force 1)
+ Discarding thread plans for thread (tid = 0x1049d14, force 1)
+ Discarding thread plans for thread (tid = 0x1049d15, force 1)
+ Discarding thread plans for thread (tid = 0x1049d16, force 1)
+ Discarding thread plans for thread (tid = 0x1049d17, force 1)
+ Discarding thread plans for thread (tid = 0x1049d18, force 1)
+ Discarding thread plans for thread (tid = 0x1049d19, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d20, force 1)
+ Discarding thread plans for thread (tid = 0x1049d21, force 1)
+ Discarding thread plans for thread (tid = 0x1049d22, force 1)
+ Discarding thread plans for thread (tid = 0x1049d23, force 1)
+ Discarding thread plans for thread (tid = 0x1049d24, force 1)
+ Discarding thread plans for thread (tid = 0x1049d25, force 1)
+ Discarding thread plans for thread (tid = 0x1049d26, force 1)
+ Discarding thread plans for thread (tid = 0x1049d27, force 1)
+ Discarding thread plans for thread (tid = 0x1049d28, force 1)
+ Discarding thread plans for thread (tid = 0x1049d29, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d30, force 1)
+ Discarding thread plans for thread (tid = 0x1049d31, force 1)
+ Discarding thread plans for thread (tid = 0x1049d32, force 1)
+ Discarding thread plans for thread (tid = 0x1049d33, force 1)
+ Discarding thread plans for thread (tid = 0x1049d34, force 1)
+ Discarding thread plans for thread (tid = 0x1049d35, force 1)
+ Discarding thread plans for thread (tid = 0x1049d36, force 1)
+ Discarding thread plans for thread (tid = 0x1049d37, force 1)
+ Discarding thread plans for thread (tid = 0x1049d38, force 1)
+ Discarding thread plans for thread (tid = 0x1049d39, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d40, force 1)
+ Discarding thread plans for thread (tid = 0x1049d41, force 1)
+ Discarding thread plans for thread (tid = 0x1049d42, force 1)
+ Discarding thread plans for thread (tid = 0x1049d43, force 1)
+ Discarding thread plans for thread (tid = 0x1049d44, force 1)
+ Discarding thread plans for thread (tid = 0x1049d45, force 1)
+ Discarding thread plans for thread (tid = 0x1049d46, force 1)
+ Discarding thread plans for thread (tid = 0x1049d47, force 1)
+ Discarding thread plans for thread (tid = 0x1049d48, force 1)
+ Discarding thread plans for thread (tid = 0x1049d49, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d50, force 1)
+ Discarding thread plans for thread (tid = 0x1049d51, force 1)
+ Discarding thread plans for thread (tid = 0x1049d52, force 1)
+ Discarding thread plans for thread (tid = 0x1049d53, force 1)
+ Discarding thread plans for thread (tid = 0x1049d54, force 1)
+ Discarding thread plans for thread (tid = 0x1049d55, force 1)
+ Discarding thread plans for thread (tid = 0x1049d56, force 1)
+ Discarding thread plans for thread (tid = 0x1049d57, force 1)
+ Discarding thread plans for thread (tid = 0x1049d58, force 1)
+ Discarding thread plans for thread (tid = 0x1049d59, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d60, force 1)
+ Discarding thread plans for thread (tid = 0x1049d61, force 1)
+ Discarding thread plans for thread (tid = 0x1049d62, force 1)
+ Discarding thread plans for thread (tid = 0x1049d63, force 1)
+ Discarding thread plans for thread (tid = 0x1049d64, force 1)
+ GDBRemoteCommunicationClient::SendGDBStoppointTypePacket() remove at addr = 0x101bca1d8
+ 0x000000015C053F50 Communication::Write (src = 0x000000016F026538, src_len = 18) connection = 0x0000600000C30120
+ 0x600000c30120 ConnectionFileDescriptor::Write (src = 0x16f026538, src_len = 18)
+ 0x600000c30120 ConnectionFileDescriptor::Write(fd = 4, src = 0x16f026538, src_len = 18) => 18 (error = (null))
+ this = 0x000000015C053F50, dst = 0x000000016F024450, dst_len = 8192, timeout = 5000000 us, connection = 0x0000600000C30120
+ this = 0x0000600000C30120, timeout = 5000000 us
+ 0x600000c30120 ConnectionFileDescriptor::Read()  fd = 4, dst = 0x16f024450, dst_len = 8192) => 6, error = (null)
+ GDBRemoteCommunicationClient::SendGDBStoppointTypePacket() remove at addr = 0x18f3f7ae0
+ 0x000000015C053F50 Communication::Write (src = 0x000000016F026538, src_len = 18) connection = 0x0000600000C30120
+ 0x600000c30120 ConnectionFileDescriptor::Write (src = 0x16f026538, src_len = 18)
+ 0x600000c30120 ConnectionFileDescriptor::Write(fd = 4, src = 0x16f026538, src_len = 18) => 18 (error = (null))
+ this = 0x000000015C053F50, dst = 0x000000016F024450, dst_len = 8192, timeout = 5000000 us, connection = 0x0000600000C30120
+ this = 0x0000600000C30120, timeout = 5000000 us
+ 0x600000c30120 ConnectionFileDescriptor::Read()  fd = 4, dst = 0x16f024450, dst_len = 8192) => 6, error = (null)
+ GDBRemoteCommunicationClient::SendGDBStoppointTypePacket() remove at addr = 0x1a0769d00
+ 0x000000015C053F50 Communication::Write (src = 0x000000016F026538, src_len = 18) connection = 0x0000600000C30120
+ 0x600000c30120 ConnectionFileDescriptor::Write (src = 0x16f026538, src_len = 18)
+ 0x600000c30120 ConnectionFileDescriptor::Write(fd = 4, src = 0x16f026538, src_len = 18) => 18 (error = (null))
+ this = 0x000000015C053F50, dst = 0x000000016F024450, dst_len = 8192, timeout = 5000000 us, connection = 0x0000600000C30120
+ this = 0x0000600000C30120, timeout = 5000000 us
+ 0x600000c30120 ConnectionFileDescriptor::Read()  fd = 4, dst = 0x16f024450, dst_len = 8192) => 6, error = (null)
+ 0x000000015C053F50 Communication::Write (src = 0x000000016F026578, src_len = 5) connection = 0x0000600000C30120
+ 0x600000c30120 ConnectionFileDescriptor::Write (src = 0x16f026578, src_len = 5)
+ 0x600000c30120 ConnectionFileDescriptor::Write(fd = 4, src = 0x16f026578, src_len = 5) => 5 (error = (null))
+ this = 0x000000015C053F50, dst = 0x000000016F024490, dst_len = 8192, timeout = 5000000 us, connection = 0x0000600000C30120
+ this = 0x0000600000C30120, timeout = 5000000 us
+ 0x600000c30120 ConnectionFileDescriptor::Read()  fd = 4, dst = 0x16f024490, dst_len = 8192) => 6, error = (null)
+ 0x15b721798 Broadcaster("lldb.process.gdb-remote.async-broadcaster")::BroadcastEvent (event_sp = {0x60000253f018 Event: broadcaster = 0x15c0544e0 (lldb.process.gdb-remote.async-broadcaster), type = 0x00000002 (async thread should exit), data = <NULL>}, unique =0) hijack = 0x0
+ 0x15b7218b0 Listener('lldb.process.gdb-remote.async-listener')::AddEvent (event_sp = {0x60000253f018})
+ 0x000000015C053F50 Communication::Disconnect ()
+ 0x600000c30120 ConnectionFileDescriptor::Disconnect ()
+ 0x15b7218b0 'lldb.process.gdb-remote.async-listener' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x60000253f018
+ Process::ControlPrivateStateThread (signal = 4)
+ Sending control event of type: 4.
+ 0x15b7212d8 Broadcaster("lldb.process.internal_state_control_broadcaster")::BroadcastEvent (event_sp = {0x6000024cfbd8 Event: broadcaster = 0x15c053350 (lldb.process.internal_state_control_broadcaster), type = 0x00000004 (control-resume), data = {Generic Event Data}}, unique =0) hijack = 0x0
+ 0x15b7213f0 Listener('lldb.process.internal_state_listener')::AddEvent (event_sp = {0x6000024cfbd8})
+ 0x15b7213f0 'lldb.process.internal_state_listener' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x6000024cfbd8
+ timeout = <infinite>, event_sp)...
+ this = 0x000000015B7213F0, timeout = <infinite> for lldb.process.internal_state_listener
+ Process::ControlPrivateStateThread (signal = 1)
+ Sending control event of type: 1.
+ 0x15b7212d8 Broadcaster("lldb.process.internal_state_control_broadcaster")::BroadcastEvent (event_sp = {0x6000024cfbd8 Event: broadcaster = 0x15c053350 (lldb.process.internal_state_control_broadcaster), type = 0x00000001 (control-stop), data = {Generic Event Data}}, unique =0) hijack = 0x0
+ 0x15b7213f0 Listener('lldb.process.internal_state_listener')::AddEvent (event_sp = {0x6000024cfbd8})
+ 0x15b7213f0 'lldb.process.internal_state_listener' Listener::FindNextEventInternal(broadcaster=0x0, broadcaster_names=0x0[0], event_type_mask=0x00000000, remove=1) event 0x6000024cfbd8
+ Discarding thread plans for thread (tid = 0x1048922, force 1)
+ Discarding thread plans for thread (tid = 0x1048932, force 1)
+ Discarding thread plans for thread (tid = 0x1048933, force 1)
+ Discarding thread plans for thread (tid = 0x1048934, force 1)
+ Discarding thread plans for thread (tid = 0x1048935, force 1)
+ Discarding thread plans for thread (tid = 0x1048936, force 1)
+ Discarding thread plans for thread (tid = 0x1048937, force 1)
+ Discarding thread plans for thread (tid = 0x1048938, force 1)
+ Discarding thread plans for thread (tid = 0x1048939, force 1)
+ Discarding thread plans for thread (tid = 0x104893a, force 1)
+ Discarding thread plans for thread (tid = 0x104893b, force 1)
+ Discarding thread plans for thread (tid = 0x104893c, force 1)
+ Discarding thread plans for thread (tid = 0x104893d, force 1)
+ Discarding thread plans for thread (tid = 0x104893e, force 1)
+ Discarding thread plans for thread (tid = 0x104893f, force 1)
+ Discarding thread plans for thread (tid = 0x1048940, force 1)
+ Discarding thread plans for thread (tid = 0x1048941, force 1)
+ Discarding thread plans for thread (tid = 0x1048942, force 1)
+ Discarding thread plans for thread (tid = 0x1048943, force 1)
+ Discarding thread plans for thread (tid = 0x1048944, force 1)
+ Discarding thread plans for thread (tid = 0x1048945, force 1)
+ Discarding thread plans for thread (tid = 0x1048946, force 1)
+ Discarding thread plans for thread (tid = 0x1048947, force 1)
+ Discarding thread plans for thread (tid = 0x1048948, force 1)
+ Discarding thread plans for thread (tid = 0x1048949, force 1)
+ Discarding thread plans for thread (tid = 0x104894a, force 1)
+ Discarding thread plans for thread (tid = 0x104894b, force 1)
+ Discarding thread plans for thread (tid = 0x1048a38, force 1)
+ Discarding thread plans for thread (tid = 0x1048a39, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3a, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3b, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3c, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3d, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3e, force 1)
+ Discarding thread plans for thread (tid = 0x1048a3f, force 1)
+ Discarding thread plans for thread (tid = 0x1048a40, force 1)
+ Discarding thread plans for thread (tid = 0x1048a41, force 1)
+ Discarding thread plans for thread (tid = 0x1048a42, force 1)
+ Discarding thread plans for thread (tid = 0x1048a43, force 1)
+ Discarding thread plans for thread (tid = 0x1048ae5, force 1)
+ Discarding thread plans for thread (tid = 0x1048fbf, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc0, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc1, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc2, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc3, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc4, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc5, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc6, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc7, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc8, force 1)
+ Discarding thread plans for thread (tid = 0x1048fc9, force 1)
+ Discarding thread plans for thread (tid = 0x1048fca, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcb, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcc, force 1)
+ Discarding thread plans for thread (tid = 0x1048fcd, force 1)
+ Discarding thread plans for thread (tid = 0x104901d, force 1)
+ Discarding thread plans for thread (tid = 0x104916e, force 1)
+ Discarding thread plans for thread (tid = 0x1049cd9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cda, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdc, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdd, force 1)
+ Discarding thread plans for thread (tid = 0x1049cde, force 1)
+ Discarding thread plans for thread (tid = 0x1049cdf, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce0, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce1, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce2, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce3, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce4, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce5, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce6, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce7, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce8, force 1)
+ Discarding thread plans for thread (tid = 0x1049ce9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cea, force 1)
+ Discarding thread plans for thread (tid = 0x1049ceb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cec, force 1)
+ Discarding thread plans for thread (tid = 0x1049ced, force 1)
+ Discarding thread plans for thread (tid = 0x1049cee, force 1)
+ Discarding thread plans for thread (tid = 0x1049cef, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf0, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf1, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf2, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf3, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf4, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf5, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf6, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf7, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf8, force 1)
+ Discarding thread plans for thread (tid = 0x1049cf9, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfa, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfb, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfc, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfd, force 1)
+ Discarding thread plans for thread (tid = 0x1049cfe, force 1)
+ Discarding thread plans for thread (tid = 0x1049cff, force 1)
+ Discarding thread plans for thread (tid = 0x1049d00, force 1)
+ Discarding thread plans for thread (tid = 0x1049d01, force 1)
+ Discarding thread plans for thread (tid = 0x1049d02, force 1)
+ Discarding thread plans for thread (tid = 0x1049d03, force 1)
+ Discarding thread plans for thread (tid = 0x1049d04, force 1)
+ Discarding thread plans for thread (tid = 0x1049d05, force 1)
+ Discarding thread plans for thread (tid = 0x1049d06, force 1)
+ Discarding thread plans for thread (tid = 0x1049d07, force 1)
+ Discarding thread plans for thread (tid = 0x1049d08, force 1)
+ Discarding thread plans for thread (tid = 0x1049d09, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d0f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d10, force 1)
+ Discarding thread plans for thread (tid = 0x1049d11, force 1)
+ Discarding thread plans for thread (tid = 0x1049d12, force 1)
+ Discarding thread plans for thread (tid = 0x1049d13, force 1)
+ Discarding thread plans for thread (tid = 0x1049d14, force 1)
+ Discarding thread plans for thread (tid = 0x1049d15, force 1)
+ Discarding thread plans for thread (tid = 0x1049d16, force 1)
+ Discarding thread plans for thread (tid = 0x1049d17, force 1)
+ Discarding thread plans for thread (tid = 0x1049d18, force 1)
+ Discarding thread plans for thread (tid = 0x1049d19, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d1f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d20, force 1)
+ Discarding thread plans for thread (tid = 0x1049d21, force 1)
+ Discarding thread plans for thread (tid = 0x1049d22, force 1)
+ Discarding thread plans for thread (tid = 0x1049d23, force 1)
+ Discarding thread plans for thread (tid = 0x1049d24, force 1)
+ Discarding thread plans for thread (tid = 0x1049d25, force 1)
+ Discarding thread plans for thread (tid = 0x1049d26, force 1)
+ Discarding thread plans for thread (tid = 0x1049d27, force 1)
+ Discarding thread plans for thread (tid = 0x1049d28, force 1)
+ Discarding thread plans for thread (tid = 0x1049d29, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d2f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d30, force 1)
+ Discarding thread plans for thread (tid = 0x1049d31, force 1)
+ Discarding thread plans for thread (tid = 0x1049d32, force 1)
+ Discarding thread plans for thread (tid = 0x1049d33, force 1)
+ Discarding thread plans for thread (tid = 0x1049d34, force 1)
+ Discarding thread plans for thread (tid = 0x1049d35, force 1)
+ Discarding thread plans for thread (tid = 0x1049d36, force 1)
+ Discarding thread plans for thread (tid = 0x1049d37, force 1)
+ Discarding thread plans for thread (tid = 0x1049d38, force 1)
+ Discarding thread plans for thread (tid = 0x1049d39, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d3f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d40, force 1)
+ Discarding thread plans for thread (tid = 0x1049d41, force 1)
+ Discarding thread plans for thread (tid = 0x1049d42, force 1)
+ Discarding thread plans for thread (tid = 0x1049d43, force 1)
+ Discarding thread plans for thread (tid = 0x1049d44, force 1)
+ Discarding thread plans for thread (tid = 0x1049d45, force 1)
+ Discarding thread plans for thread (tid = 0x1049d46, force 1)
+ Discarding thread plans for thread (tid = 0x1049d47, force 1)
+ Discarding thread plans for thread (tid = 0x1049d48, force 1)
+ Discarding thread plans for thread (tid = 0x1049d49, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d4f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d50, force 1)
+ Discarding thread plans for thread (tid = 0x1049d51, force 1)
+ Discarding thread plans for thread (tid = 0x1049d52, force 1)
+ Discarding thread plans for thread (tid = 0x1049d53, force 1)
+ Discarding thread plans for thread (tid = 0x1049d54, force 1)
+ Discarding thread plans for thread (tid = 0x1049d55, force 1)
+ Discarding thread plans for thread (tid = 0x1049d56, force 1)
+ Discarding thread plans for thread (tid = 0x1049d57, force 1)
+ Discarding thread plans for thread (tid = 0x1049d58, force 1)
+ Discarding thread plans for thread (tid = 0x1049d59, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5a, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5b, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5c, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5d, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5e, force 1)
+ Discarding thread plans for thread (tid = 0x1049d5f, force 1)
+ Discarding thread plans for thread (tid = 0x1049d60, force 1)
+ Discarding thread plans for thread (tid = 0x1049d61, force 1)
+ Discarding thread plans for thread (tid = 0x1049d62, force 1)
+ Discarding thread plans for thread (tid = 0x1049d63, force 1)
+ Discarding thread plans for thread (tid = 0x1049d64, force 1)
+ (plugin = gdb-remote status=6 (0x00000006), description="destroying when not connected to debugserver")
+ 0x000000015C053F50 Communication::Disconnect ()
+ 0x600000c30120 ConnectionFileDescriptor::Disconnect ()
+ 0x600000c30120 ConnectionFileDescriptor::Disconnect(): Nothing to disconnect
+ 0x000000015C053F50 Communication::Disconnect ()
+ 0x600000c30120 ConnectionFileDescriptor::Disconnect ()
+ 0x600000c30120 ConnectionFileDescriptor::Disconnect(): Nothing to disconnect
+ Went to stop the private state thread, but it was already invalid.
+ 0x000000015C053860 Communication::Disconnect ()
+ Target::RemoveBreakpointByID (break_id = -2, internal = yes)
+
+ Target::DisableBreakpointByID (break_id = -2, internal = yes)
+
+ Target::RemoveBreakpointByID (break_id = -1, internal = yes)
+
+ Target::DisableBreakpointByID (break_id = -1, internal = yes)
+
+ 0x15b7213f0 Listener::Clear('lldb.process.internal_state_listener')
+ Target::DisableAllWatchpoints
+
+ Target::ClearAllWatchpointHitCounts
+
+ Target::ClearAllWatchpointHistoricValues
+
+     [ClangASTImporter] Forgetting destination (ASTContext*)0x000000011D52F600
+ Couldn't get scratch TypeSystemClang
+ 0x1038f7cc8 ConnectionFileDescriptor::~ConnectionFileDescriptor ()
+ 0x1038f7cc8 ConnectionFileDescriptor::Disconnect ()
+ 0x1038f7cc8 ConnectionFileDescriptor::CloseCommandPipe()
+ 0x000000015B870200 Target::~Target()
+ 0x000000015B870400 Broadcaster::~Broadcaster("lldb.target")
+ 0x000000015C0247E8 Broadcaster::~Broadcaster("lldb.debugger")
+ 0x000000015C0247B8 Broadcaster::~Broadcaster("lldb.debugger.sync")
+ 0x15b720050 Listener::Clear('lldb.internal.Process.AttachSynchronous.hijack')
+ 0x15b720050 Listener::~Listener('lldb.internal.Process.AttachSynchronous.hijack')
+ 0x000000015B71A440 Broadcaster::~Broadcaster("lldb.commandInterpreter")
+ 0x000000015C043C00 Target::~Target()
+ 0x000000015C043E00 Broadcaster::~Broadcaster("lldb.target")
+ 0x000000015C0244D0 Broadcaster::~Broadcaster("lldb.targetList")
+ 0x0000600003039E60 Broadcaster::~Broadcaster("Driver")
+ [external] static void lldb::SBDebugger::Terminate() ()
