@@ -1052,7 +1052,7 @@ impl DWalletMPCSession {
             .filter(|party_id| {
                 self.serialized_full_messages
                     .get(&(self.current_round - 1))
-                    .map_or(false, |messages| messages.contains_key(*party_id))
+                    .is_some_and(|messages| messages.contains_key(*party_id))
             })
             .copied()
             .collect();

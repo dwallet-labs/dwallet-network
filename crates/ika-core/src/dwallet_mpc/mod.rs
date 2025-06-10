@@ -491,7 +491,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         access_threshold,
         messages.clone(),
         Some(private_input),
-        &public_input,
+        public_input,
         &mut rand_core::OsRng,
     ) {
         Ok(res) => res,
