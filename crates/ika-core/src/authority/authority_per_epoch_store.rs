@@ -1485,6 +1485,8 @@ impl AuthorityPerEpochStore {
         )?;
         batch.write()?;
 
+        // Delete the events from the perpetual tables only after all events are successfully stored,
+        // so that they can be recovered in case of a failure and won't be processed twice.
         self.perpetual_tables
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         Ok(events)
