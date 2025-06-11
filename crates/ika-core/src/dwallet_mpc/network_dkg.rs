@@ -244,8 +244,7 @@ pub(crate) fn advance_network_dkg(
 
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let PublicInput::NetworkEncryptionKeyDkg(public_input) =
-                &mpc_event_data.public_input_new
+            let PublicInput::NetworkEncryptionKeyDkg(public_input) = &mpc_event_data.public_input
             else {
                 unreachable!();
             };

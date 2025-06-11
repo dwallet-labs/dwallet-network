@@ -95,11 +95,10 @@ pub enum PublicInput {
 #[derive(Clone)]
 pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
-    pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
-    pub(crate) public_input_new: PublicInput,
+    pub(crate) public_input: PublicInput,
 }
 
 /// A dWallet MPC session.
@@ -459,7 +458,7 @@ impl DWalletMPCSession {
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
-                    &mpc_event_data.public_input_new
+                    &mpc_event_data.public_input
                 else {
                     unreachable!();
                 };
@@ -529,7 +528,7 @@ impl DWalletMPCSession {
                     crypto_round=?self.current_round,
                     "Advancing DKG first party",
                 );
-                let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input else {
                     unreachable!();
                 };
 
@@ -561,7 +560,7 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
-                let PublicInput::DKGSecond(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::DKGSecond(public_input) = &mpc_event_data.public_input else {
                     unreachable!();
                 };
 
@@ -620,7 +619,7 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::Presign(..) => {
-                let PublicInput::Presign(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::Presign(public_input) = &mpc_event_data.public_input else {
                     unreachable!();
                 };
 
@@ -659,7 +658,7 @@ impl DWalletMPCSession {
 
                 // Extend base logger with decryption key shares for Sign protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
-                let PublicInput::Sign(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::Sign(public_input) = &mpc_event_data.public_input else {
                     unreachable!();
                 };
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
@@ -707,7 +706,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
                 let PublicInput::EncryptedShareVerification(public_input) =
-                    &mpc_event_data.public_input_new
+                    &mpc_event_data.public_input
                 else {
                     unreachable!();
                 };
@@ -729,7 +728,7 @@ impl DWalletMPCSession {
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
                 let PublicInput::PartialSignatureVerification(public_input) =
-                    &mpc_event_data.public_input_new
+                    &mpc_event_data.public_input
                 else {
                     unreachable!();
                 };
@@ -749,7 +748,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
                 let PublicInput::NetworkEncryptionKeyReconfiguration(public_input) =
-                    &mpc_event_data.public_input_new
+                    &mpc_event_data.public_input
                 else {
                     unreachable!();
                 };
@@ -790,7 +789,7 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
                 let PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(public_input) =
-                    &mpc_event_data.public_input_new
+                    &mpc_event_data.public_input
                 else {
                     unreachable!();
                 };

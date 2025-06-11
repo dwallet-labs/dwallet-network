@@ -386,7 +386,6 @@ impl DWalletMPCManager {
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
-            public_input,
             private_input,
             decryption_shares: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
@@ -398,7 +397,7 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
-            public_input_new: new_public_input,
+            public_input: new_public_input,
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
