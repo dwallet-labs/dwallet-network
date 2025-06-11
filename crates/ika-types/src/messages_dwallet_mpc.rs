@@ -369,6 +369,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
             && event.module == DWALLET_MODULE_NAME.to_owned()
     }
 
+    /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher via the `SessionIdentifierData` enum. Guarantees same values of `self.session_identifier` yield different output for `User` and `System`
     pub fn session_identifier_digest(&self) -> [u8; 32] {
         let session_type = match self.session_type {
             SessionType::User { .. } => {
