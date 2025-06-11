@@ -6126,6 +6126,7 @@ dependencies = [
  "base64 0.21.7",
  "bcs",
  "byteorder",
+ "class_groups",
  "consensus-config",
  "derive_more 1.0.0",
  "dwallet-mpc-types",
@@ -6137,6 +6138,7 @@ dependencies = [
  "ika-protocol-config",
  "jsonrpsee",
  "move-core-types",
+ "mpc",
  "mysten-network",
  "once_cell",
  "prometheus",
@@ -6161,6 +6163,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tonic 0.13.1",
  "tracing",
+ "twopc_mpc",
  "typed-store-error",
 ]
 

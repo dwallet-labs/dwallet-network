@@ -2,7 +2,7 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,

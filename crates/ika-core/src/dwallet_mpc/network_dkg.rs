@@ -3,7 +3,7 @@
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
 use crate::dwallet_mpc::advance_and_serialize;
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,

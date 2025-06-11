@@ -28,7 +28,7 @@ pub const PRESIGN_PROTOCOL_FLAG: u32 = 5;
 pub const SIGN_PROTOCOL_FLAG: u32 = 6;
 pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
-
+use class_groups::dkg::Secp256k1Party;
 pub const NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY: &str =
     "NetworkEncryptionKeyReconfiguration";
 pub const NETWORK_ENCRYPTION_KEY_DKG_STR_KEY: &str = "NetworkEncryptionKeyDkg";
@@ -77,6 +77,19 @@ pub enum MPCProtocolInitData {
         DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
     ),
 }
+
+pub type DKGFirstParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
+// 
+// impl MPCProtocolInitData {
+//     pub fn get_dkg_first_round_input(&self) -> <DKGFirstParty as mpc::Party>::PublicInput {
+//         match self {
+//             MPCProtocolInitData::DKGFirst(_) => {
+//                 
+//             }
+//             _ => unreachable!()
+//         }
+//     }
+// }
 
 impl Display for MPCProtocolInitData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -735,3 +748,5 @@ impl DWalletMPCEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {
         }
     }
 }
+
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;

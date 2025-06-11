@@ -1,7 +1,7 @@
 //! This module provides a wrapper around the DKG protocol from the 2PC-MPC library.
 //!
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedCentralizedDKGPublicOutput,
     VersionedPublicKeyShareAndProof,
@@ -11,7 +11,7 @@ use mpc::Party;
 use twopc_mpc::dkg::Protocol;
 
 /// This struct represents the initial round of the DKG protocol.
-pub(super) type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
+pub type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
 pub(super) type DWalletImportedKeyVerificationParty =
     <AsyncProtocol as Protocol>::TrustedDealerDKGDecentralizedParty;
 /// This struct represents the final round of the DKG protocol.
