@@ -330,6 +330,7 @@ pub enum SessionType {
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+/// A wrapper around the pre-image session identifier, which is used to pad it with a distinguisher between the `User` and `System` sessions, so that when it is hashed, the same inner value in the two different options will yield a different output, thus guaranteeing user-initiated sessions can never block or reuse session IDs for system sessions. 
 pub enum SessionIdentifierData {
     User(Vec<u8>),
     System(Vec<u8>),
