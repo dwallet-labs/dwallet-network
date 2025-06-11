@@ -411,7 +411,8 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
-    pub(crate) dwallet_mpc_events_for_uncompleted_sessions: DBMap<ObjectID, DWalletMPCEvent>,
+    pub(crate) dwallet_mpc_events_for_uncompleted_sessions:
+        DBMap<SessionIdentifier, DWalletMPCEvent>,
 }
 
 // todo(zeev): why is it not used?
@@ -1445,7 +1446,7 @@ impl AuthorityPerEpochStore {
                             event,
                             session_info,
                         };
-                        new_events_map.push((event.session_info.session_id, event.clone()));
+                        new_events_map.push((event.session_info.session_identifier, event.clone()));
                         Some(event)
                     }
                     Ok(None) => {

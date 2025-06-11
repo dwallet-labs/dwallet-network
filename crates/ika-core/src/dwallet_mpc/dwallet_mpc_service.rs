@@ -221,19 +221,25 @@ impl DWalletMPCService {
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
                 }
+                // Delete all completed sessions from the local DB.
                 if let Ok(tables) = self.epoch_store.tables() {
                     let mut batch = tables.dwallet_mpc_events_for_uncompleted_sessions.batch();
                     if let Err(e) = batch.delete_batch(
                         &tables.dwallet_mpc_events_for_uncompleted_sessions,
                         [session_id],
                     ) {
-                        error!(error=?e, "Failed to delete batch for session {}", session_id);
+                        error!(error=?e,
+                            session_id=?session_id,
+                            "Failed to delete batch for session");
                     }
                     if let Err(e) = batch.write() {
-                        error!(error=?e, "Failed to write batch for session {}", session_id);
+                        error!(error=?e,
+                            session_id=?session_id,
+                            "Failed to write batch for session");
                     }
                 }
             }
+            // Read **new** dWallet MPC events from sui, save them to the local DB.
             if let Err(e) = self.epoch_store.read_new_sui_events().await {
                 error!(
                     error=?e,
@@ -241,6 +247,7 @@ impl DWalletMPCService {
                 continue;
             };
 
+            // Read all dWallet MPC events for uncompleted sessions from the local DB and handle them.
             let dwallet_mpc_events_for_uncompleted_sessions = match self.epoch_store.tables() {
                 Ok(tables) => tables.get_all_dwallet_mpc_events_for_uncompleted_sessions().unwrap_or_else(|e| {
                     error!(error=?e, "Failed to get all dWallet MPC events for uncompleted sessions");
@@ -251,7 +258,7 @@ impl DWalletMPCService {
                     vec![]
                 }
             };
-
+            // If session is already exists with event information, it will be ignored.
             for event in dwallet_mpc_events_for_uncompleted_sessions {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)

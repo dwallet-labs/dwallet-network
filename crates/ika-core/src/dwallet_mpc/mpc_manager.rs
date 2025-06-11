@@ -27,7 +27,7 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::watch;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
