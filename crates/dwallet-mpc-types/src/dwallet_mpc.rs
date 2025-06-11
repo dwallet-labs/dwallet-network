@@ -72,7 +72,7 @@ pub enum NetworkDecryptionKeyPublicOutputType {
 
 /// Network decryption key shares for the MPC protocol.
 /// Created for each DKG protocol and modified for each Reshare Protocol.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
