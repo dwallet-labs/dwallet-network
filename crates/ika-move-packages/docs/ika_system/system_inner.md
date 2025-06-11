@@ -162,6 +162,11 @@ Uses SystemParametersV1 as the parameters.
  The current epoch ID, starting from 0.
 </dd>
 <dt>
+<code>epoch_start_tx_digest: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64</code>
 </dt>
 <dd>
@@ -995,6 +1000,7 @@ This function will be called only once in init.
     // This type is fixed <b>as</b> it's created at <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>. It should not be updated during type upgrade.
     <b>let</b> system_state = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: 0,
+        epoch_start_tx_digest: *ctx.digest(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
         next_protocol_version: option::none(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
