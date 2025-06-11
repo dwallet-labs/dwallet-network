@@ -1,8 +1,9 @@
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import {Config, createSessionIdentifier} from './globals.js';
+import type { Config } from './globals.js';
 import {
+	createSessionIdentifier,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,

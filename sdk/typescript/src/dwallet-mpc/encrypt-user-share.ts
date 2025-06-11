@@ -8,7 +8,8 @@ import { bcs, toHex } from '@mysten/bcs';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
-import {Config, createSessionIdentifier, EncryptedDWalletData} from './globals.js';
+import type { Config, EncryptedDWalletData, EncryptedDWalletData } from './globals.js';
+import { createSessionIdentifier } from './globals.js';
 import {
 	delay,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,

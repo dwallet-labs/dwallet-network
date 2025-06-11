@@ -167,10 +167,7 @@ export async function sign(
 	});
 	const [verifiedPresignCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
-		arguments: [
-			dwalletStateArg,
-			tx.object(presign.cap_id),
-		],
+		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
 	});
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,

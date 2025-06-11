@@ -7,10 +7,9 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import { acceptEncryptedUserShare } from './dkg.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
+import type { Config, DWallet, SessionIdentifierRegisteredEvent } from './globals.js';
 import {
-	Config,
 	createSessionIdentifier,
-	DWallet,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
@@ -18,13 +17,15 @@ import {
 	getNetworkDecryptionKeyID,
 	getNetworkDecryptionKeyPublicOutput,
 	getObjectWithType,
-	isActiveDWallet, sessionIdentifierDigest,
-	SessionIdentifierRegisteredEvent,
+	isActiveDWallet,
+	sessionIdentifierDigest,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 
 interface DWalletImportedKeyVerificationRequestEvent {
 	event_data: {
+		dwallet_id: string;
+		dwallet_cap_id: string;
 		encrypted_user_secret_key_share_id: string;
 	};
 }
@@ -62,9 +63,10 @@ export async function createImportedDWallet(conf: Config, secretKey: Uint8Array)
 		encryptedUserShareAndProof,
 		public_output,
 	);
-	const dWalletID = verifyImportedDWalletEvent.dwallet_id;
-	const dWalletCapID = verifyImportedDWalletEvent.dwallet_cap_id;
-	const encryptedSecretShareID = verifyImportedDWalletEvent.encrypted_user_secret_key_share_id;
+	const dWalletID = verifyImportedDWalletEvent.event_data.dwallet_id;
+	const dWalletCapID = verifyImportedDWalletEvent.event_data.dwallet_cap_id;
+	const encryptedSecretShareID =
+		verifyImportedDWalletEvent.event_data.encrypted_user_secret_key_share_id;
 	const dwallet = await getObjectWithType(conf, dWalletID, isActiveDWallet);
 	await acceptEncryptedUserShare(conf, {
 		dwallet_id: dwallet.id.id,
@@ -132,7 +134,7 @@ export async function verifyImportedDWalletMoveCall(
 	centralized_party_message: Uint8Array,
 	encrypted_centralized_secret_share_and_proof: Uint8Array,
 	user_public_output: Uint8Array,
-): Promise<unknown> {
+): Promise<DWalletImportedKeyVerificationRequestEvent> {
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
@@ -199,11 +201,14 @@ export async function verifyImportedDWalletMoveCall(
 		throw new Error('invalid start session event');
 	}
 	await getObjectWithType(conf, startSessionEvent.event_data.dwallet_id, isActiveDWallet);
-	return startSessionEvent.event_data;
+	return startSessionEvent;
 }
 
 function isDWalletImportedKeyVerificationRequestEvent(
 	event: any,
 ): event is DWalletImportedKeyVerificationRequestEvent {
-	return event.event_data.encrypted_user_secret_key_share_id !== undefined;
+	return (
+		event.event_data.dwallet_id !== undefined &&
+		event.event_data.encrypted_user_secret_key_share_id !== undefined
+	);
 }
