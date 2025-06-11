@@ -87,7 +87,7 @@ impl SuiConnectorService {
         let sui_modules_to_watch = Self::get_sui_modules_to_watch(
             &perpetual_tables,
             sui_connector_config.sui_ika_system_module_last_processed_event_id_override,
-            epoch_start_cursor
+            epoch_start_cursor,
         );
 
         let task_handles = SuiSyncer::new(
