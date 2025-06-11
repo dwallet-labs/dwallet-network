@@ -59,8 +59,6 @@ pub enum PublicInput {
     /// The first round of the DKG protocol.
     DKGFirst(<DKGFirstParty as mpc::Party>::PublicInput),
     /// The second round of the DKG protocol.
-    /// Contains the data of the event that triggered the round,
-    /// and the network key version of the first round.
     DKGSecond(<DKGSecondParty as mpc::Party>::PublicInput),
     /// The first round of the Presign protocol for each message in the Batch.
     /// Contains the `ObjectId` of the dWallet object,
