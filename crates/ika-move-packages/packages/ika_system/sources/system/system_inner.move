@@ -565,7 +565,7 @@ public(package) fun advance_epoch(
     let last_epoch_change = self.epoch_start_timestamp_ms;
     let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
     assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
-
+    self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();
