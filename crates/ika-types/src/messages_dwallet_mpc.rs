@@ -18,7 +18,6 @@ use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-use sui_types::event::EventID;
 
 pub const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
 pub const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
@@ -236,7 +235,6 @@ pub struct DBSuiEvent {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
-    pub event_id: Option<EventID>,
     pub event: DBSuiEvent,
     pub session_info: SessionInfo,
 }

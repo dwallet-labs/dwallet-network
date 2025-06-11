@@ -1429,6 +1429,7 @@ impl AuthorityPerEpochStore {
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
     pub(crate) async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
         let pending_events = self.perpetual_tables.get_all_pending_events()?;
+        let mut new_events_map = Vec::new();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
@@ -1441,10 +1442,10 @@ impl AuthorityPerEpochStore {
                             "Received start event for session"
                         );
                         let event = DWalletMPCEvent {
-                            event_id: Some(id.clone()),
                             event,
                             session_info,
                         };
+                        new_events_map.push((event.session_info.session_id, event.clone()));
                         Some(event)
                     }
                     Ok(None) => {
@@ -1452,8 +1453,7 @@ impl AuthorityPerEpochStore {
                             event=?event,
                             "Received an event that does not trigger the start of an MPC flow"
                         );
-                        if let Err(e) = self.perpetual_tables
-                            .remove_pending_events(&[id.clone()]) {
+                        if let Err(e) = self.perpetual_tables.remove_pending_events(&[id.clone()]) {
                             error!(
                                 error=?e,
                                 event=?id,
@@ -1474,20 +1474,15 @@ impl AuthorityPerEpochStore {
             })
             .collect();
 
-        let _ = events
-            .iter()
-            .map(|event| {
-                let mut batch = self
-                    .tables()?
-                    .dwallet_mpc_events_for_uncompleted_sessions
-                    .batch();
-                batch.insert_batch(
-                    &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
-                    [(event.session_info.session_id, event.clone())],
-                )?;
-                Ok(())
-            })
-            .collect::<IkaResult<_>>()?;
+        let mut batch = self
+            .tables()?
+            .dwallet_mpc_events_for_uncompleted_sessions
+            .batch();
+        batch.insert_batch(
+            &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
+            new_events_map,
+        )?;
+        batch.write()?;
 
         self.perpetual_tables
             .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;

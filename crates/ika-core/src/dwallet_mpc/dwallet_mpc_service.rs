@@ -8,7 +8,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
@@ -114,7 +114,6 @@ impl DWalletMPCService {
                         session_info.epoch = self.epoch_id;
                         self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
-                                event_id: None,
                                 event,
                                 session_info: session_info.clone(),
                             })
@@ -175,21 +174,6 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
         self.load_missed_events().await;
-        let dwallet_mpc_events_for_uncompleted_sessions = match self.epoch_store.tables() {
-            Ok(tables) => tables.get_all_dwallet_mpc_events_for_uncompleted_sessions().unwrap_or_else(|e| {
-                error!(error=?e, "Failed to get all dWallet MPC events for uncompleted sessions");
-                vec![]
-            }),
-            Err(e) => {
-                error!(error=?e, "Failed to get tables from epoch store");
-                vec![]
-            }
-        };
-        for event in dwallet_mpc_events_for_uncompleted_sessions {
-            self.dwallet_mpc_manager
-                .handle_dwallet_db_event(event)
-                .await;
-        }
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
@@ -232,8 +216,11 @@ impl DWalletMPCService {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
-
-            completed_sessions.iter().for_each(|session_id| {
+            for session_id in completed_sessions {
+                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    session.clear_data();
+                    session.status = MPCSessionStatus::Finished;
+                }
                 if let Ok(tables) = self.epoch_store.tables() {
                     let mut batch = tables.dwallet_mpc_events_for_uncompleted_sessions.batch();
                     if let Err(e) = batch.delete_batch(
@@ -246,13 +233,29 @@ impl DWalletMPCService {
                         error!(error=?e, "Failed to write batch for session {}", session_id);
                     }
                 }
-            });
-
-            let Ok(events_from_sui) = self.epoch_store.read_new_sui_events().await else {
-                error!("failed to load dWallet MPC events from the local DB");
+            }
+            if let Err(e) = self.epoch_store.read_new_sui_events().await {
+                error!(
+                    error=?e,
+                    "failed to load dWallet MPC events from the local DB");
                 continue;
             };
-            for event in events_from_sui {
+
+            let dwallet_mpc_events_for_uncompleted_sessions = match self.epoch_store.tables() {
+                Ok(tables) => tables.get_all_dwallet_mpc_events_for_uncompleted_sessions().unwrap_or_else(|e| {
+                    error!(error=?e, "Failed to get all dWallet MPC events for uncompleted sessions");
+                    vec![]
+                }),
+                Err(e) => {
+                    error!(error=?e, "Failed to get tables from epoch store");
+                    vec![]
+                }
+            };
+            error!(
+                "Processing {} uncompleted DWallet MPC sessions",
+                dwallet_mpc_events_for_uncompleted_sessions.len()
+            );
+            for event in dwallet_mpc_events_for_uncompleted_sessions {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;

@@ -36,7 +36,6 @@ use ika_types::messages_dwallet_mpc::{
     NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 
 pub(crate) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -52,8 +51,6 @@ pub(crate) struct ReadyToAdvanceCheckResult {
 /// The DWallet MPC session data that is based on the event that initiated the session.
 #[derive(Clone)]
 pub struct MPCEventData {
-    /// The ID of the event that triggered the MPC session, if the ID is none the event was loaded from the missed events store.
-    pub event_id: Option<EventID>,
     pub private_input: MPCPrivateInput,
     pub(super) public_input: MPCPublicInput,
     pub init_protocol_data: MPCProtocolInitData,
@@ -138,6 +135,11 @@ impl DWalletMPCSession {
             consensus_rounds_since_quorum_reached: 0,
             dwallet_mpc_metrics,
         }
+    }
+
+    pub(crate) fn clear_data(&mut self) {
+        self.mpc_event_data = None;
+        self.serialized_full_messages = HashMap::new();
     }
 
     /// Returns the epoch store.
