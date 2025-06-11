@@ -106,12 +106,12 @@ pub fn create_dkg_output(
             let public_parameters =
                 protocol_public_parameters_by_key_scheme(network_dkg_public_output, key_scheme)?;
 
-            let session_id = CommitmentSizedNumber::from_le_slice(&session_identifier);
+            let session_identifier = CommitmentSizedNumber::from_le_slice(&session_identifier);
 
             let round_result = DKGCentralizedParty::advance(
                 decentralized_first_round_public_output,
                 &(),
-                &(public_parameters, session_id).into(),
+                &(public_parameters, session_identifier).into(),
                 &mut OsRng,
             )
             .context("advance() failed on the DKGCentralizedParty")?;
