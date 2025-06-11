@@ -11,6 +11,6 @@ anyhow.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 schemars.workspace = true
-
+twopc_mpc.workspace = true
 [lints]
 workspace = true

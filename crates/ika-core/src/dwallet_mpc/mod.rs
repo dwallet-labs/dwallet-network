@@ -4,6 +4,7 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
@@ -590,7 +591,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 pub(super) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
-) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
+) -> DwalletMPCResult<(MPCPublicInput, PublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
         t if t
@@ -607,7 +608,13 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_encryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((
+                vec![],
+                PublicInput::DWalletImportedKeyVerificationRequest(
+                    protocol_public_parameters.into(),
+                ),
+                None,
+            ))
         }
         t if t
             == &DWalletMPCSuiEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
@@ -624,7 +631,7 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((vec![], protocol_public_parameters.into(), None))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
@@ -637,7 +644,8 @@ pub(super) async fn session_input_from_event(
                 .clone();
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
-            Ok((
+            Ok((vec![],
+                PublicInput::NetworkEncryptionKeyDkg(
                 network_dkg::network_dkg_public_input(
                     &dwallet_mpc_manager
                         .epoch_store()?
@@ -646,7 +654,7 @@ pub(super) async fn session_input_from_event(
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )?,
+                )?),
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
                         .class_groups_keypair()
@@ -778,7 +786,7 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((vec![], None))
         }
         t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<FutureSignRequestEvent> =
@@ -790,7 +798,7 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((vec![], None))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string())),
     }

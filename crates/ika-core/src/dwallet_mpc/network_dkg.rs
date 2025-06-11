@@ -195,7 +195,7 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
-    pub fn get_protocol_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
+    pub fn get_protocol_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
             warn!(
                 ?key_id,
@@ -286,16 +286,13 @@ pub(super) fn network_dkg_public_input(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
-) -> DwalletMPCResult<Vec<u8>> {
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => generate_secp256k1_dkg_party_public_input(
             weighted_threshold_access_structure,
             encryption_keys_and_proofs,
         ),
-        DWalletMPCNetworkKeyScheme::Ristretto => generate_ristretto_dkg_party_public_input(
-            weighted_threshold_access_structure,
-            encryption_keys_and_proofs,
-        ),
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
     }
 }
 
@@ -344,7 +341,7 @@ fn network_dkg_ristretto_session_info(
 fn generate_secp256k1_dkg_party_public_input(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
-) -> DwalletMPCResult<Vec<u8>> {
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
     let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
         weighted_threshold_access_structure,
         secp256k1::scalar::PublicParameters::default(),
@@ -352,7 +349,7 @@ fn generate_secp256k1_dkg_party_public_input(
         encryption_keys_and_proofs,
     )
     .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
-    bcs::to_bytes(&public_params).map_err(DwalletMPCError::BcsError)
+    Ok(public_params)
 }
 
 fn generate_ristretto_dkg_party_public_input(

@@ -372,13 +372,13 @@ impl DWalletMPCManager {
         }
         Ok(())
     }
-
+    
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        let (public_input, private_input) = session_input_from_event(event, self).await?;
+        let (public_input, new_public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -394,6 +394,7 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
+            public_input_new: new_public_input
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
@@ -415,7 +416,7 @@ impl DWalletMPCManager {
     pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         self.network_keys.get_protocol_public_parameters(key_id)
     }
 

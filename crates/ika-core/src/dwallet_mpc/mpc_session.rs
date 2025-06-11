@@ -89,6 +89,7 @@ pub struct MPCEventData {
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
+    pub(crate) public_input_new: PublicInput
 }
 
 /// A dWallet MPC session.
