@@ -8,9 +8,9 @@ import { bcs, toHex } from '@mysten/bcs';
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { Config, EncryptedDWalletData, EncryptedDWalletData } from './globals.js';
-import { createSessionIdentifier } from './globals.js';
+import type { Config, EncryptedDWalletData } from './globals.js';
 import {
+	createSessionIdentifier,
 	delay,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
