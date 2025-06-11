@@ -10,6 +10,7 @@ use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use mpc::Party;
 use twopc_mpc::dkg::Protocol;
 
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 /// This struct represents the initial round of the DKG protocol.
 pub type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
 pub(super) type DWalletImportedKeyVerificationParty =
