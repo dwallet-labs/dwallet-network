@@ -11,7 +11,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
     SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput,
 };
 use group::PartyID;
@@ -589,7 +589,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 pub(super) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
-) -> DwalletMPCResult<(MPCPublicInput, PublicInput, MPCPrivateInput)> {
+) -> DwalletMPCResult<(PublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
         t if t

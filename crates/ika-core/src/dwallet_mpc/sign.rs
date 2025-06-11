@@ -3,7 +3,7 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;

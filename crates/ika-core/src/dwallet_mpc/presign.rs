@@ -2,7 +2,7 @@
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
 };
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::messages_dwallet_mpc::AsyncProtocol;

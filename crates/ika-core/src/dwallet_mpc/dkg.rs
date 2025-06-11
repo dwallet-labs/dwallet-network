@@ -2,7 +2,7 @@
 //!
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedCentralizedDKGPublicOutput,
+    SerializedWrappedMPCPublicOutput, VersionedCentralizedDKGPublicOutput,
     VersionedPublicKeyShareAndProof,
 };
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

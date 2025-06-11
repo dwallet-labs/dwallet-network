@@ -384,8 +384,7 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        let (public_input, new_public_input, private_input) =
-            session_input_from_event(event, self).await?;
+        let (public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -400,7 +399,7 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
-            public_input: new_public_input,
+            public_input,
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
