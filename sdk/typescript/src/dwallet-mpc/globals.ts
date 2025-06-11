@@ -3,6 +3,8 @@
 import * as fs from 'node:fs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { Transaction } from '@mysten/sui/transactions';
+import sha3 from 'js-sha3';
 
 export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
 export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
@@ -367,4 +369,51 @@ export interface DWallet {
 export interface EncryptedDWalletData {
 	dwallet_id: string;
 	encrypted_user_secret_key_share_id: string;
+}
+
+export interface SessionIdentifierRegisteredEvent {
+	session_object_id: string;
+	session_identifier_preimage: Uint8Array;
+}
+
+export async function createSessionIdentifier(
+	tx: Transaction,
+	dwalletCoordinatorArg: {
+		$kind: 'Input';
+		Input: number;
+		type?: 'object';
+	},
+	ikaSystemPackageId: string,
+) {
+	const freshObjectAddress = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::tx_context::fresh_object_address`,
+		arguments: [],
+		typeArguments: [],
+	});
+	const freshObjectAddressBytes = tx.moveCall({
+		target: `${SUI_PACKAGE_ID}::address::to_bytes`,
+		arguments: [freshObjectAddress],
+		typeArguments: [],
+	});
+	return tx.moveCall({
+		target: `${ikaSystemPackageId}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::register_session_identifier`,
+		arguments: [dwalletCoordinatorArg, freshObjectAddressBytes],
+		typeArguments: [],
+	});
+}
+
+function encodeToASCII(input: string): Uint8Array {
+	const asciiValues: number[] = [];
+	for (let i = 0; i < input.length; i++) {
+		asciiValues.push(input.charCodeAt(i));
+	}
+	return Uint8Array.from(asciiValues);
+}
+
+export function sessionIdentifierDigest(sessionIdentifier: Uint8Array): Uint8Array {
+	// Calculate the user session identifier for digest
+	const data = [...encodeToASCII('USER'), ...sessionIdentifier];
+	// Compute the SHA3-256 digest of the serialized data
+	const digest = sha3.keccak256.digest(data);
+	return Uint8Array.from(digest);
 }

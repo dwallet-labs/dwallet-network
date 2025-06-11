@@ -430,7 +430,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             {
                 error!(
                     "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_id, output.authority, err
+                    output.session_info.session_identifier, output.authority, err
                 );
             }
         }

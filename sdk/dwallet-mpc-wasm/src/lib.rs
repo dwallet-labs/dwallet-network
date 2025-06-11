@@ -15,13 +15,13 @@ pub fn create_dkg_centralized_output(
     network_dkg_public_output: Vec<u8>,
     key_scheme: u32,
     decentralized_first_round_public_output: Vec<u8>,
-    session_id: String,
+    session_identifier: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let dkg_centralized_result = &create_dkg_output(
         network_dkg_public_output,
         key_scheme,
         decentralized_first_round_public_output,
-        session_id,
+        session_identifier,
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
     serde_wasm_bindgen::to_value(&(
@@ -131,13 +131,13 @@ pub fn verify_secp_signature(
 #[wasm_bindgen]
 pub fn create_imported_dwallet_centralized_step(
     network_dkg_public_output: Vec<u8>,
-    dwallet_id: String,
+    session_identifier: Vec<u8>,
     secret_share: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     Ok(serde_wasm_bindgen::to_value(
         &create_imported_dwallet_centralized_step_inner(
             network_dkg_public_output,
-            dwallet_id,
+            session_identifier,
             secret_share,
         )
         .map_err(to_js_err)?,

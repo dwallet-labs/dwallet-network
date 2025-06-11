@@ -3,6 +3,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
 import {
+	createSessionIdentifier,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,
@@ -21,17 +22,23 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const dWalletStateData = await getDWalletSecpState(conf);
-
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_make_dwallet_user_secret_key_shares_public`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.pure.id(dwallet_id),
 			tx.pure(bcs.vector(bcs.u8()).serialize(secret_share)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
