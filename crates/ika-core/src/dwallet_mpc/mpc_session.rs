@@ -82,7 +82,7 @@ pub(crate) struct DWalletMPCSession {
     /// In round `1` We start the flow, without messages, from the event trigger.
     /// Decremented only upon an `TWOPCMPCThresholdNotReached` Error.
     pub(super) current_round: usize,
-    party_id: PartyID,
+    pub party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
@@ -412,32 +412,6 @@ impl DWalletMPCSession {
         let base_logger = MPCSessionLogger::new()
             .with_protocol_name(mpc_protocol_name.clone())
             .with_party_to_authority_map(party_to_authority_map.clone());
-
-        let party_id = self.party_id;
-        if party_id == 1 {
-            let scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
-            let group_public_parameters = secp256k1::group_element::PublicParameters::default();
-            let g = secp256k1::GroupElement::generator_from_public_parameters(&group_public_parameters).unwrap();
-            let s = secp256k1::Scalar::sample(&scalar_public_parameters, &mut OsRng).unwrap();
-            let mut h = g;
-
-            println!("party {party_id} starting at {:?}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-            let measurement = WallTime;
-
-            let now = measurement.start();
-            for i in (0..360*100) {
-                h = s * h;
-            }
-            let time = measurement.end(now).as_millis();
-
-            println!("party {party_id} finished at {:?} took {time}ms", SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-
-            return Ok(AsynchronousRoundResult::Finalize {
-                public_output: vec![],
-                private_output: vec![],
-                malicious_parties: vec![],
-            });
-        }
 
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {

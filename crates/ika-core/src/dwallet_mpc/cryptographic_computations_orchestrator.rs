@@ -181,6 +181,7 @@ impl CryptographicComputationsOrchestrator {
                     session_id=?session.session_id,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
+                    party_id = session.party_id,
                     current_round = session.current_round,
                     "MPC session advanced successfully"
                 );
