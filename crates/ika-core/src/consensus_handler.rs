@@ -415,9 +415,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
-            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
-        }
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
@@ -427,20 +424,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     "failed to verify output from session {:?} and party {:?}: {:?}",
                     output.session_info.session_id, output.authority, err
                 );
-            }
-        }
-        for message in self
-            .epoch_store
-            .tables()?
-            .get_all_dwallet_mpc_dwallet_mpc_messages()?
-        {
-            match message {
-                DWalletMPCDBMessage::Message(_)
-                | DWalletMPCDBMessage::EndOfDelivery
-                | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::MaliciousReport(..)
-                | DWalletMPCDBMessage::PerformCryptographicComputations
-                | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
             }
         }
         Ok(())
