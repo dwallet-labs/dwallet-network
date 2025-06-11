@@ -28,7 +28,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use sui_types::event::EventID;
 use tokio::sync::watch;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
@@ -201,7 +201,16 @@ impl DWalletMPCManager {
             );
             return;
         }
+        if let Some(_) = self.mpc_sessions.get(&event.session_info.session_id) {
+            debug!(
+                session_id=?event.session_info.session_id,
+                event_type=?event.event,
+                "Received an event for an existing MPC session",
+            );
+            return;
+        }
         if let Err(err) = self
+            // change this to receive event
             .handle_event(
                 event.event.clone(),
                 event.event_id.clone(),
@@ -387,7 +396,7 @@ impl DWalletMPCManager {
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
         let (public_input, private_input) = session_input_from_event(event, self).await?;
-        let mpc_event_data = MPCEventData {
+        let new_mpc_event_data = MPCEventData {
             event_id,
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -404,9 +413,6 @@ impl DWalletMPCManager {
                 _ => HashMap::new(),
             },
         };
-        let wrapped_mpc_event_data = Some(mpc_event_data.clone());
-        self.dwallet_mpc_metrics
-            .add_received_event_start(&mpc_event_data.init_protocol_data);
 
         if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
             match &session.mpc_event_data {
@@ -420,38 +426,26 @@ impl DWalletMPCManager {
                                     "Failed to get mutable reference to mpc_event_data".to_string(),
                                 )
                             })?
-                            .event_id = wrapped_mpc_event_data
-                            .as_ref()
-                            .ok_or_else(|| {
-                                DwalletMPCError::MPCManagerError(
-                                    "Failed to get reference to wrapped_mpc_event_data".to_string(),
-                                )
-                            })?
-                            .event_id;
+                            .event_id = new_mpc_event_data.event_id;
                     } else if existing_event_data.event_id
-                        != wrapped_mpc_event_data
-                            .as_ref()
-                            .ok_or_else(|| {
-                                DwalletMPCError::MPCManagerError(
-                                    "Failed to get reference to wrapped_mpc_event_data".to_string(),
-                                )
-                            })?
-                            .event_id
+                        != new_mpc_event_data.event_id
                     {
-                        warn!(
+                        error!(
                             session_id=?session_info.session_id,
                             existing_event_id=?existing_event_data.event_id,
                             new_event_id=?event_id,
-                            "received an event with a different event ID than the one already stored in the session",
+                            "received an event with a different event ID than the one already stored in the session, should never happen",
                         );
                     }
                 }
                 None => {
-                    session.mpc_event_data = wrapped_mpc_event_data;
+                    session.mpc_event_data = Some(new_mpc_event_data.clone());
                 }
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, wrapped_mpc_event_data);
+            self.push_new_mpc_session(&session_info.session_id, Some(new_mpc_event_data.clone()));
+            self.dwallet_mpc_metrics
+                .add_received_event_start(&new_mpc_event_data.init_protocol_data);
         }
         Ok(())
     }
