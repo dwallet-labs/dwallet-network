@@ -86,7 +86,9 @@ pub enum PublicInput {
     EncryptedShareVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     PartialSignatureVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as mpc::Party>::PublicInput),
-    MakeDWalletUserSecretKeySharesPublicPublicInput,
+    MakeDWalletUserSecretKeySharesPublicPublicInput(
+        twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+    ),
 }
 
 /// The DWallet MPC session data that is based on the event that initiated the session.
@@ -787,8 +789,13 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+                let PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(public_input) =
+                    &mpc_event_data.public_input_new
+                else {
+                    unreachable!();
+                };
                 match verify_secret_share(
-                    &mpc_event_data.public_input,
+                    public_input.clone(),
                     init_event.event_data.public_user_secret_key_shares.clone(),
                     init_event.event_data.public_output.clone(),
                 ) {

@@ -625,6 +625,9 @@ pub(super) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
+            let PublicInput(public_input) = &mpc_event_data.public_input_new else {
+                unreachable!();
+            };
             Ok((
                 vec![],
                 PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput,
