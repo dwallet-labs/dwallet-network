@@ -5,12 +5,9 @@
 use crate::dwallet_mpc::advance_and_serialize;
 use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
-use class_groups::dkg::{
-    RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
-};
-use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::construct_setup_parameters_per_crt_prime;
+use class_groups::dkg::{RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput};
 use class_groups::{
-    decryption_key_share, Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
+    Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use commitment::CommitmentSizedNumber;

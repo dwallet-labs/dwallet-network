@@ -10,7 +10,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
-use jsonrpsee::core::Serialize;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
