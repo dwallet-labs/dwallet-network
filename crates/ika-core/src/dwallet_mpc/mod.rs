@@ -610,17 +610,18 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_encryption_key_id,
             )?;
+            let dwallet_id = CommitmentSizedNumber::from_le_slice(
+                deserialized_event.event_data.dwallet_id.to_vec().as_slice(),
+            );
             let public_input = (
                 protocol_public_parameters,
-                deserialized_event.event_data.dwallet_id,
+                dwallet_id,
                 bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?,
             )
                 .into();
             Ok((
                 vec![],
-                PublicInput::DWalletImportedKeyVerificationRequest(
-                    public_input,
-                ),
+                PublicInput::DWalletImportedKeyVerificationRequest(public_input),
                 None,
             ))
         }
@@ -629,7 +630,11 @@ pub(super) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            Ok((vec![], PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput, None))
+            Ok((
+                vec![],
+                PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput,
+                None,
+            ))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(

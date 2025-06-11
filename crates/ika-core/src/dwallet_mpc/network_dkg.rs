@@ -3,7 +3,6 @@
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
 use crate::dwallet_mpc::advance_and_serialize;
-use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
@@ -19,6 +18,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCSuiEvent, DWalletNetworkDKGEncryptionKeyRequestEvent,
     DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState, MPCProtocolInitData,
@@ -195,7 +195,10 @@ impl DwalletMPCNetworkKeys {
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
-    pub fn get_protocol_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
+    pub fn get_protocol_public_parameters(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
             warn!(
                 ?key_id,

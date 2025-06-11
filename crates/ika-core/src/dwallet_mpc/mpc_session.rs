@@ -1,14 +1,20 @@
+use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput, VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput, VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
+    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
+    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput,
+};
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
+use jsonrpsee::core::Serialize;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use class_groups::dkg::Secp256k1Party;
-use jsonrpsee::core::Serialize;
-use serde::Deserialize;
 use tokio::runtime::Handle;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
@@ -27,7 +33,15 @@ use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessio
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{AsyncProtocol, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent, DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent, DWalletMPCMessage, DWalletMPCSuiEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData, MakeDWalletUserSecretKeySharesPublicRequestEvent, MaliciousReport, PresignRequestEvent, SessionInfo, SessionType, SignRequestEvent, ThresholdNotReachedReport, NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY};
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
+    DWalletMPCMessage, DWalletMPCSuiEvent, DWalletNetworkDKGEncryptionKeyRequestEvent,
+    EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MPCProtocolInitData,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, MaliciousReport, PresignRequestEvent,
+    SessionInfo, SessionType, SignRequestEvent, ThresholdNotReachedReport,
+    NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
+};
 use sui_types::base_types::{EpochId, ObjectID};
 
 /// Represents the result of checking whether the session is ready to advance.
@@ -47,9 +61,7 @@ pub enum PublicInput {
     ),
 
     /// The first round of the DKG protocol.
-    DKGFirst(
-        <DKGFirstParty as mpc::Party>::PublicInput,
-    ),
+    DKGFirst(<DKGFirstParty as mpc::Party>::PublicInput),
     /// The second round of the DKG protocol.
     /// Contains the data of the event that triggered the round,
     /// and the network key version of the first round.
@@ -65,9 +77,7 @@ pub enum PublicInput {
     /// The only round of the network DKG protocol.
     /// Contains the network key scheme, the dWallet network decryption key object ID
     /// and at the end of the session holds the new key version.
-    NetworkEncryptionKeyDkg(
-        <Secp256k1Party as mpc::Party>::PublicInput,
-    ),
+    NetworkEncryptionKeyDkg(<Secp256k1Party as mpc::Party>::PublicInput),
     /// The round of verifying the encrypted share proof is valid and
     /// that the signature on it is valid.
     /// This is not a real MPC round,
@@ -75,12 +85,9 @@ pub enum PublicInput {
     /// because the system does not support native functions.
     EncryptedShareVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     PartialSignatureVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
-    NetworkEncryptionKeyReconfiguration(
-        <ReshareSecp256k1Party as mpc::Party>::PublicInput,
-    ),
-    MakeDWalletUserSecretKeySharesPublicPublicInput
+    NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as mpc::Party>::PublicInput),
+    MakeDWalletUserSecretKeySharesPublicPublicInput,
 }
-
 
 /// The DWallet MPC session data that is based on the event that initiated the session.
 #[derive(Clone)]
@@ -90,7 +97,7 @@ pub struct MPCEventData {
     pub init_protocol_data: MPCProtocolInitData,
     pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
-    pub(crate) public_input_new: PublicInput
+    pub(crate) public_input_new: PublicInput,
 }
 
 /// A dWallet MPC session.

@@ -2,13 +2,13 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
-use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use mpc::Party;
 use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;

@@ -78,13 +78,14 @@ pub enum MPCProtocolInitData {
     ),
 }
 
-pub type DKGFirstParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
-// 
+pub type DKGFirstParty =
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
+//
 // impl MPCProtocolInitData {
 //     pub fn get_dkg_first_round_input(&self) -> <DKGFirstParty as mpc::Party>::PublicInput {
 //         match self {
 //             MPCProtocolInitData::DKGFirst(_) => {
-//                 
+//
 //             }
 //             _ => unreachable!()
 //         }

@@ -17,7 +17,10 @@ use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport};
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
+    MaliciousReport, SessionInfo, SessionType, ThresholdNotReachedReport,
+};
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -372,13 +375,14 @@ impl DWalletMPCManager {
         }
         Ok(())
     }
-    
+
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        let (public_input, new_public_input, private_input) = session_input_from_event(event, self).await?;
+        let (public_input, new_public_input, private_input) =
+            session_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
@@ -394,7 +398,7 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
-            public_input_new: new_public_input
+            public_input_new: new_public_input,
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
