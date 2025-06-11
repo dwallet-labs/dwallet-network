@@ -9,7 +9,10 @@ use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
 use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::construct_setup_parameters_per_crt_prime;
-use class_groups::{SecretKeyShareSizedInteger, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
+use class_groups::{
+    decryption_key_share, Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+};
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -93,8 +96,10 @@ fn get_decryption_key_shares_from_public_output(
             VersionedNetworkDkgOutput::V1(public_output) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
-                let setup_parameters_per_crt_prime =
-                    construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER).unwrap();
+                let setup_parameters_per_crt_prime = construct_setup_parameters_per_crt_prime(
+                    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+                )
+                .unwrap();
                 let secret_shares = public_output
                     .decrypt_decryption_key_shares::<secp256k1::GroupElement>(
                         party_id,
@@ -139,18 +144,15 @@ impl ValidatorPrivateDecryptionKeyData {
     /// Only for type convertion.
     fn convert_secret_key_shares_type_to_decryption_shares(
         secret_shares: HashMap<PartyID, SecretKeyShareSizedInteger>,
-        public_parameters: &[u8],
+        public_parameters: &Secp256k1DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        let public_params = bcs::from_bytes(public_parameters)
-            .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
-
         secret_shares
             .into_iter()
             .map(|(party_id, secret_key_share)| {
                 let decryption_key_share = <AsyncProtocol as Protocol>::DecryptionKeyShare::new(
                     party_id,
                     secret_key_share,
-                    &public_params,
+                    &public_parameters,
                     &mut OsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
@@ -192,7 +194,10 @@ impl DwalletMPCNetworkKeys {
             )
     }
 
-    pub fn get_decryption_public_parameters(&self, key_id: &ObjectID) -> DwalletMPCResult<Vec<u8>> {
+    pub fn get_decryption_public_parameters(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
         Ok(self
             .network_encryption_keys
             .get(key_id)
@@ -426,9 +431,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
                 epoch,
                 state: NetworkDecryptionKeyPublicOutputType::Reshare,
                 latest_public_output: mpc_public_output,
-                decryption_key_share_public_parameters: bcs::to_bytes(
-                    &decryption_key_share_public_parameters,
-                )?,
+                decryption_key_share_public_parameters,
                 protocol_public_parameters,
                 network_dkg_output: bcs::from_bytes(network_dkg_public_output)?,
             })
@@ -468,9 +471,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_dkg_public_output(
                     epoch,
                     state: NetworkDecryptionKeyPublicOutputType::NetworkDkg,
                     latest_public_output: mpc_public_output.clone(),
-                    decryption_key_share_public_parameters: bcs::to_bytes(
-                        &decryption_key_share_public_parameters,
-                    )?,
+                    decryption_key_share_public_parameters,
                     network_dkg_output: mpc_public_output,
                     protocol_public_parameters,
                 })

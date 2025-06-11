@@ -10,6 +10,7 @@ use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
+use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
@@ -428,7 +429,7 @@ impl DWalletMPCManager {
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
         self.network_keys.get_decryption_public_parameters(key_id)
     }
 

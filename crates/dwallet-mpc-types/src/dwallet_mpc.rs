@@ -83,7 +83,8 @@ pub struct NetworkDecryptionKeyPublicData {
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
-    pub decryption_key_share_public_parameters: Vec<u8>,
+    pub decryption_key_share_public_parameters:
+        class_groups::Secp256k1DecryptionKeySharePublicParameters,
 
     pub protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 

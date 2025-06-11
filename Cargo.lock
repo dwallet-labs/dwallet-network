@@ -3602,6 +3602,7 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "class_groups",
  "move-core-types",
  "schemars",
  "serde",

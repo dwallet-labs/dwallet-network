@@ -411,7 +411,7 @@ fn sign_session_public_input(
             .event_data
             .message_centralized_signature
             .clone(),
-        bcs::from_bytes(&decryption_pp)?,
+        decryption_pp,
         expected_decrypters,
     )
 }
