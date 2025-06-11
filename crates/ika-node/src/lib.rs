@@ -68,6 +68,7 @@ use sui_macros::{fail_point_async, replay_log};
 use sui_storage::{FileCompression, StorageFormat};
 use sui_types::base_types::EpochId;
 
+use ika_core::consensus_adapter::SubmitToConsensus;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
@@ -75,10 +76,9 @@ use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransactio
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::SystemInnerTrait;
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use sui_types::crypto::KeypairTraits;
 use sui_types::event::EventID;
-use ika_core::consensus_adapter::SubmitToConsensus;
-use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
 
@@ -278,8 +278,7 @@ impl IkaNode {
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
-        let epoch_start_tx_digest =
-            latest_system_state.epoch_start_tx_digest();
+        let epoch_start_tx_digest = latest_system_state.epoch_start_tx_digest();
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
@@ -372,9 +371,14 @@ impl IkaNode {
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
-        let epoch_start_cursor = EventID::from(
-            (TransactionDigest::from(epoch_start_tx_digest), 0),
-        );
+        let epoch_start_cursor = EventID::from((
+            TransactionDigest::new(
+                epoch_start_tx_digest
+                    .try_into()
+                    .expect("start epoch tx digest is not 32 bytes"),
+            ),
+            0,
+        ));
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
