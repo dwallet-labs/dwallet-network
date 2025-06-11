@@ -55,6 +55,7 @@ pub struct UpgradeCap {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SystemInnerV1 {
     pub epoch: u64,
+    pub epoch_start_tx_digest: Vec<u8>,
     pub protocol_version: u64,
     pub next_protocol_version: Option<u64>,
     pub upgrade_caps: Vec<UpgradeCap>,
