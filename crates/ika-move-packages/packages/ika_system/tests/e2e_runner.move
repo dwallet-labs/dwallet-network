@@ -642,7 +642,8 @@ public fun perform_dwallet_dkg_first_round(
         let dwallet_network_encryption_key_id = system.dwallet_2pc_mpc_coordinator_network_encryption_key_ids()[0];
         let mut payment_ika = ika_test_utils::mint_ika(1_000, ctx);
         let mut payment_sui = ika_test_utils::mint_sui(1_000, ctx);
-        let dwallet_cap = dwallet_2pc_mpc_coordinator.request_dwallet_dkg_first_round(dwallet_network_encryption_key_id, 0, &mut payment_ika, &mut payment_sui, ctx);
+        let session_identifier = dwallet_2pc_mpc_coordinator.register_session_identifier(ctx.fresh_object_address().to_bytes(), ctx);
+        let dwallet_cap = dwallet_2pc_mpc_coordinator.request_dwallet_dkg_first_round(dwallet_network_encryption_key_id, 0, session_identifier, &mut payment_ika, &mut payment_sui, ctx);
 
         let next_checkpoint_sequence_number = dwallet_2pc_mpc_coordinator.last_processed_checkpoint_sequence_number().map!(|x| x + 1).destroy_or!(0);
         let last_session_sequence_number = dwallet_2pc_mpc_coordinator.last_session_sequence_number();

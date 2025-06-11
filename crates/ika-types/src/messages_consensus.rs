@@ -6,7 +6,7 @@ use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionInfo,
+    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionIdentifier, SessionInfo,
     ThresholdNotReachedReport,
 };
 use crate::messages_system_checkpoints::{
@@ -41,12 +41,8 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
-    /// The message sent between MPC parties in a dwallet MPC session.
     DWalletMPCMessage(DWalletMPCMessageKey),
-    /// The output of a dwallet MPC session.
-    /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
-    /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, AuthorityName),
+    DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
     SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
@@ -72,11 +68,11 @@ impl Debug for ConsensusTransactionKey {
             Self::DWalletMPCMessage(message) => {
                 write!(f, "DWalletMPCMessage({:?})", message,)
             }
-            Self::DWalletMPCOutput(value, session_id, authority) => {
+            Self::DWalletMPCOutput(authority, session_identifier, value) => {
                 write!(
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?})",
-                    value, session_id, authority
+                    authority, session_identifier, value
                 )
             }
             Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
@@ -185,12 +181,12 @@ impl ConsensusTransaction {
     pub fn new_dwallet_mpc_message(
         authority: AuthorityName,
         message: Vec<u8>,
-        session_id: ObjectID,
+        session_identifier: SessionIdentifier,
         round_number: usize,
         mpc_protocol: String,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        session_id.into_bytes().hash(&mut hasher);
+        session_identifier.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -198,7 +194,7 @@ impl ConsensusTransaction {
                 message,
                 authority,
                 round_number,
-                session_id,
+                session_identifier,
                 mpc_protocol,
             }),
         }
@@ -229,7 +225,7 @@ impl ConsensusTransaction {
         report: MaliciousReport,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        report.session_id.hash(&mut hasher);
+        report.session_identifier.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -242,7 +238,7 @@ impl ConsensusTransaction {
         report: ThresholdNotReachedReport,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        report.session_id.hash(&mut hasher);
+        report.session_identifier.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -308,15 +304,15 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::DWalletMPCMessage(message) => {
                 ConsensusTransactionKey::DWalletMPCMessage(DWalletMPCMessageKey {
                     authority: message.authority,
-                    session_id: message.session_id,
+                    session_identifier: message.session_identifier,
                     round_number: message.round_number,
                 })
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
-                    output.clone(),
-                    session_info.session_id,
                     *authority,
+                    session_info.session_identifier,
+                    output.clone(),
                 )
             }
             ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, report) => {
