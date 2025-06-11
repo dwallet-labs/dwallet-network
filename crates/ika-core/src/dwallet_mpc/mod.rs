@@ -374,8 +374,8 @@ fn get_expected_decrypters(
 fn sign_session_public_input(
     deserialized_event: &DWalletMPCSuiEvent<SignRequestEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
     let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
@@ -763,53 +763,54 @@ pub(super) async fn session_input_from_event(
                 None,
             ))
         }
-        // t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
-        //     let deserialized_event: DWalletMPCSuiEvent<SignRequestEvent> =
-        //         deserialize_event_or_dynamic_field(&event.contents)?;
-        //     let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-        //         // The event is assign with a Secp256k1 dwallet.
-        //         // Todo (#473): Support generic network key scheme
-        //         &deserialized_event
-        //             .event_data
-        //             .dwallet_network_decryption_key_id,
-        //     )?;
-        //     Ok((
-        //         sign_session_public_input(
-        //             &deserialized_event,
-        //             dwallet_mpc_manager,
-        //             protocol_public_parameters,
-        //         )?,
-        //         None,
-        //     ))
-        // }
-        // t if t
-        //     == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
-        //         packages_config,
-        //     ) =>
-        // {
-        //     let deserialized_event: DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent> =
-        //         bcs::from_bytes(&event.contents)?;
-        //     let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-        //         // The event is assign with a Secp256k1 dwallet.
-        //         // Todo (#473): Support generic network key scheme
-        //         &deserialized_event
-        //             .event_data
-        //             .dwallet_network_decryption_key_id,
-        //     )?;
-        //     Ok((vec![], None))
-        // }
-        // t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
-        //     let deserialized_event: DWalletMPCSuiEvent<FutureSignRequestEvent> =
-        //         deserialize_event_or_dynamic_field(&event.contents)?;
-        //     let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-        //         // The event is assign with a Secp256k1 dwallet.
-        //         // Todo (#473): Support generic network key scheme
-        //         &deserialized_event
-        //             .event_data
-        //             .dwallet_network_decryption_key_id,
-        //     )?;
-        //     Ok((vec![], None))
-        // }
+        t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
+            let deserialized_event: DWalletMPCSuiEvent<SignRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_decryption_key_id,
+            )?;
+            Ok((
+                vec![],
+                PublicInput::Sign(sign_session_public_input(
+                    &deserialized_event,
+                    dwallet_mpc_manager,
+                    protocol_public_parameters,
+                )?),
+                None,
+            ))
+        }
+        t if t
+            == &DWalletMPCSuiEvent::<EncryptedShareVerificationRequestEvent>::type_(
+                packages_config,
+            ) =>
+        {
+            let deserialized_event: DWalletMPCSuiEvent<EncryptedShareVerificationRequestEvent> =
+                bcs::from_bytes(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_decryption_key_id,
+            )?;
+            Ok((vec![], None))
+        }
+        t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
+            let deserialized_event: DWalletMPCSuiEvent<FutureSignRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_decryption_key_id,
+            )?;
+            Ok((vec![], None))
+        }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string())),
     }
 }
