@@ -251,10 +251,7 @@ impl DWalletMPCService {
                     vec![]
                 }
             };
-            error!(
-                "Processing {} uncompleted DWallet MPC sessions",
-                dwallet_mpc_events_for_uncompleted_sessions.len()
-            );
+
             for event in dwallet_mpc_events_for_uncompleted_sessions {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
