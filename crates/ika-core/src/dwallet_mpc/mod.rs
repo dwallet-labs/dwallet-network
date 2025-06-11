@@ -797,7 +797,11 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((vec![], None))
+            Ok((
+                vec![],
+                PublicInput::EncryptedShareVerification(protocol_public_parameters),
+                None,
+            ))
         }
         t if t == &DWalletMPCSuiEvent::<FutureSignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletMPCSuiEvent<FutureSignRequestEvent> =
@@ -809,7 +813,7 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((vec![], None))
+            Ok((vec![],PublicInput::PartialSignatureVerification(protocol_public_parameters), None))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string())),
     }
