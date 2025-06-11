@@ -435,20 +435,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 );
             }
         }
-        for message in self
-            .epoch_store
-            .tables()?
-            .get_all_dwallet_mpc_dwallet_mpc_messages()?
-        {
-            match message {
-                DWalletMPCDBMessage::Message(_)
-                | DWalletMPCDBMessage::EndOfDelivery
-                | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::MaliciousReport(..)
-                | DWalletMPCDBMessage::PerformCryptographicComputations
-                | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
-            }
-        }
         Ok(())
     }
 }
