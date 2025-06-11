@@ -2910,7 +2910,8 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
 
     id.delete();
 
-    // Remove the corresponding session identifier object.
+    // Unpack and delete the corresponding session identifier object.
+    // This assures it cannot be reused for another session.
     let SessionIdentifier {
         id,
         identifier: session_identifier,
