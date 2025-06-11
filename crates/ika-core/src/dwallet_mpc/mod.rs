@@ -321,8 +321,8 @@ fn dkg_second_party_session_info(
 pub(crate) fn presign_public_input(
     session_id: ObjectID,
     deserialized_event: PresignRequestEvent,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<PresignParty as mpc::Party>::PublicInput> {
     <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
         // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
@@ -743,25 +743,26 @@ pub(super) async fn session_input_from_event(
                 None,
             ))
         }
-        // t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
-        //     let deserialized_event: DWalletMPCSuiEvent<PresignRequestEvent> =
-        //         deserialize_event_or_dynamic_field(&event.contents)?;
-        //     let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-        //         // The event is assign with a Secp256k1 dwallet.
-        //         // Todo (#473): Support generic network key scheme
-        //         &deserialized_event
-        //             .event_data
-        //             .dwallet_network_decryption_key_id,
-        //     )?;
-        //     Ok((
-        //         presign_public_input(
-        //             deserialized_event.session_id,
-        //             deserialized_event.event_data,
-        //             protocol_public_parameters,
-        //         )?,
-        //         None,
-        //     ))
-        // }
+        t if t == &DWalletMPCSuiEvent::<PresignRequestEvent>::type_(packages_config) => {
+            let deserialized_event: DWalletMPCSuiEvent<PresignRequestEvent> =
+                deserialize_event_or_dynamic_field(&event.contents)?;
+            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
+                // The event is assign with a Secp256k1 dwallet.
+                // Todo (#473): Support generic network key scheme
+                &deserialized_event
+                    .event_data
+                    .dwallet_network_decryption_key_id,
+            )?;
+            Ok((
+                vec![],
+                PublicInput::Presign(presign_public_input(
+                    deserialized_event.session_id,
+                    deserialized_event.event_data,
+                    protocol_public_parameters,
+                )?),
+                None,
+            ))
+        }
         // t if t == &DWalletMPCSuiEvent::<SignRequestEvent>::type_(packages_config) => {
         //     let deserialized_event: DWalletMPCSuiEvent<SignRequestEvent> =
         //         deserialize_event_or_dynamic_field(&event.contents)?;

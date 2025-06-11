@@ -15,24 +15,24 @@ pub(super) type PresignParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,
-    ) -> DwalletMPCResult<MPCPublicInput>;
+    ) -> DwalletMPCResult<<PresignParty as mpc::Party>::PublicInput>;
 }
 
 impl PresignPartyPublicInputGenerator for PresignParty {
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,
-    ) -> DwalletMPCResult<MPCPublicInput> {
+    ) -> DwalletMPCResult<<PresignParty as mpc::Party>::PublicInput> {
         let dkg_output = bcs::from_bytes(&dkg_output)?;
         match dkg_output {
             VersionedDwalletDKGSecondRoundPublicOutput::V1(output) => {
                 let pub_input = Self::PublicInput {
-                    protocol_public_parameters: bcs::from_bytes(&protocol_public_parameters)?,
+                    protocol_public_parameters,
                     dkg_output: bcs::from_bytes(&output)?,
                 };
-                Ok(bcs::to_bytes(&pub_input)?)
+                Ok(pub_input)
             }
         }
     }
