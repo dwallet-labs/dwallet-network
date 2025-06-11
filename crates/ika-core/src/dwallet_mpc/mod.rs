@@ -626,9 +626,8 @@ pub(super) async fn session_input_from_event(
             ) =>
         {
             let deserialized_event: DWalletMPCSuiEvent<
-                MakeDWalletUserSecretKeySharesPublicRequestEvent> = bcs::from_bytes(
-                &event.contents,
-            )?;
+                MakeDWalletUserSecretKeySharesPublicRequestEvent,
+            > = bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 &deserialized_event
                     .event_data
@@ -636,7 +635,9 @@ pub(super) async fn session_input_from_event(
             )?;
             Ok((
                 vec![],
-                PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(protocol_public_parameters),
+                PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(
+                    protocol_public_parameters,
+                ),
                 None,
             ))
         }
