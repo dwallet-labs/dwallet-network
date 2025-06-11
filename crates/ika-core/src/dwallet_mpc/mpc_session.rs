@@ -503,7 +503,7 @@ impl DWalletMPCSession {
                                 source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                                 encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                             },
-                            public_input
+                            public_input.protocol_public_parameters.clone()
                         )?;
                         let public_output = bcs::to_bytes(
                             &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
