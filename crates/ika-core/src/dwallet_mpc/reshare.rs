@@ -26,7 +26,7 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
         new_committee: Committee,
         decryption_key_share_public_parameters: Vec<u8>,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<MPCPublicInput>;
+    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput>;
 }
 
 fn current_tangible_party_id_to_upcoming(
@@ -54,7 +54,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         upcoming_committee: Committee,
         decryption_key_share_public_parameters: Vec<u8>,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<MPCPublicInput> {
+    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput> {
         let VersionedNetworkDkgOutput::V1(network_dkg_public_output) = network_dkg_public_output;
         let current_committee = current_committee.clone();
 
@@ -90,7 +90,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
         })?;
 
-        Ok(bcs::to_bytes(&public_input)?)
+        Ok(public_input)
     }
 }
 

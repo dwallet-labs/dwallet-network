@@ -644,9 +644,9 @@ pub(super) async fn session_input_from_event(
                 .clone();
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
-            Ok((vec![],
-                PublicInput::NetworkEncryptionKeyDkg(
-                network_dkg::network_dkg_public_input(
+            Ok((
+                vec![],
+                PublicInput::NetworkEncryptionKeyDkg(network_dkg::network_dkg_public_input(
                     &dwallet_mpc_manager
                         .epoch_store()?
                         .get_weighted_threshold_access_structure()?,
@@ -677,7 +677,8 @@ pub(super) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                <ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
+                vec![],
+                PublicInput::NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
@@ -692,7 +693,7 @@ pub(super) async fn session_input_from_event(
                                 .dwallet_network_decryption_key_id,
                         )
                         .await?,
-                )?,
+                )?),
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
                         .class_groups_keypair()
