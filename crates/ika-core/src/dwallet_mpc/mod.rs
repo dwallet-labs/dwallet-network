@@ -610,10 +610,16 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_encryption_key_id,
             )?;
+            let public_input = (
+                protocol_public_parameters,
+                deserialized_event.event_data.dwallet_id,
+                bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?,
+            )
+                .into();
             Ok((
                 vec![],
                 PublicInput::DWalletImportedKeyVerificationRequest(
-                    protocol_public_parameters,
+                    public_input,
                 ),
                 None,
             ))
