@@ -10,10 +10,7 @@ use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp2
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput};
 use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -482,7 +479,6 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         party_id,
         access_threshold,
         &serialized_messages,
-        encoded_public_input,
     );
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
@@ -612,10 +608,12 @@ pub(super) async fn session_input_from_event(
             let dwallet_id = CommitmentSizedNumber::from_le_slice(
                 deserialized_event.event_data.dwallet_id.to_vec().as_slice(),
             );
+            let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
+                bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?;
             let public_input = (
                 protocol_public_parameters,
                 dwallet_id,
-                bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?,
+                bcs::from_bytes(&centralized_party_message)?,
             )
                 .into();
             Ok((
@@ -890,7 +888,6 @@ impl MPCSessionLogger {
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
         messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
-        encoded_public_input: &MPCPublicInput,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -919,7 +916,6 @@ impl MPCSessionLogger {
             "party_id": party_id,
             "access_threshold": access_threshold,
             "messages": messages,
-            "public_input": encoded_public_input,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
             "class_groups_key_pair_and_proof": self.encoded_class_groups_key_pair_and_proof,

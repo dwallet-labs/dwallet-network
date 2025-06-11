@@ -443,7 +443,6 @@ impl DWalletMPCSession {
             "Advancing MPC session"
         );
         let session_id = CommitmentSizedNumber::from_le_slice(self.session_id.to_vec().as_slice());
-        let encoded_public_input = &mpc_event_data.public_input;
         let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
         let mpc_protocol_name = mpc_event_data.init_protocol_data.to_string();
 
@@ -457,8 +456,6 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
-                let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
-                    bcs::from_bytes(&event_data.event_data.centralized_party_message)?;
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) = &mpc_event_data.public_input_new else {
                     unreachable!();
                 };
@@ -506,7 +503,7 @@ impl DWalletMPCSession {
                                 source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                                 encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                             },
-                            encoded_public_input,
+                            public_input
                         )?;
                         let public_output = bcs::to_bytes(
                             &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
