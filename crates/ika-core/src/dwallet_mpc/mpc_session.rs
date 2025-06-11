@@ -78,6 +78,7 @@ pub enum PublicInput {
     NetworkEncryptionKeyReconfiguration(
         <ReshareSecp256k1Party as mpc::Party>::PublicInput,
     ),
+    MakeDWalletUserSecretKeySharesPublicPublicInput
 }
 
 

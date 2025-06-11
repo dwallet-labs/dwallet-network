@@ -613,7 +613,7 @@ pub(super) async fn session_input_from_event(
             Ok((
                 vec![],
                 PublicInput::DWalletImportedKeyVerificationRequest(
-                    protocol_public_parameters.into(),
+                    protocol_public_parameters,
                 ),
                 None,
             ))
@@ -623,17 +623,7 @@ pub(super) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            let deserialized_event: DWalletMPCSuiEvent<
-                MakeDWalletUserSecretKeySharesPublicRequestEvent,
-            > = deserialize_event_or_dynamic_field(&event.contents)?;
-            let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
-                &deserialized_event
-                    .event_data
-                    .dwallet_network_decryption_key_id,
-            )?;
-            Ok((vec![], protocol_public_parameters.into(), None))
+            Ok((vec![], PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput, None))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
