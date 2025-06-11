@@ -1836,7 +1836,7 @@ a complete signature.
 <dd>
 </dd>
 <dt>
-<code>identifier: vector&lt;u8&gt;</code>
+<code>identifier_preimage: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -2009,7 +2009,7 @@ ready for use in the dWallet system.
  ID of the session object
 </dd>
 <dt>
-<code>session_identifier: vector&lt;u8&gt;</code>
+<code>session_identifier_preimage: vector&lt;u8&gt;</code>
 </dt>
 <dd>
  Unique session identifier
@@ -2058,7 +2058,7 @@ epoch information, session type, and session ID for tracking and debugging.
  Type of session (User or System)
 </dd>
 <dt>
-<code>session_identifier: vector&lt;u8&gt;</code>
+<code>session_identifier_preimage: vector&lt;u8&gt;</code>
 </dt>
 <dd>
  Unique session identifier
@@ -2091,7 +2091,7 @@ epoch information, session type, and session ID for tracking and debugging.
 
 <dl>
 <dt>
-<code>session_identifier: vector&lt;u8&gt;</code>
+<code>session_identifier_preimage: vector&lt;u8&gt;</code>
 </dt>
 <dd>
  The identifier of the session
@@ -5425,7 +5425,7 @@ Registers a new session identifier.
 This function is used to register a new session identifier.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, identifier: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, identifier_preimage: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>
 </code></pre>
 
 
@@ -5434,18 +5434,18 @@ This function is used to register a new session identifier.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, identifier: vector&lt;u8&gt;, ctx: &<b>mut</b> TxContext): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
-    <b>assert</b>!(identifier.length() == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SESSION_IDENTIFIER_LENGTH">SESSION_IDENTIFIER_LENGTH</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierInvalidLength">ESessionIdentifierInvalidLength</a>);
-    <b>assert</b>!(!self.session_management.registered_session_identifiers.contains(identifier), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierAlreadyRegistered">ESessionIdentifierAlreadyRegistered</a>);
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, identifier_preimage: vector&lt;u8&gt;, ctx: &<b>mut</b> TxContext): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
+    <b>assert</b>!(identifier_preimage.length() == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SESSION_IDENTIFIER_LENGTH">SESSION_IDENTIFIER_LENGTH</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierInvalidLength">ESessionIdentifierInvalidLength</a>);
+    <b>assert</b>!(!self.session_management.registered_session_identifiers.contains(identifier_preimage), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierAlreadyRegistered">ESessionIdentifierAlreadyRegistered</a>);
     <b>let</b> id = object::new(ctx);
-    self.session_management.registered_session_identifiers.add(identifier, id.to_inner());
+    self.session_management.registered_session_identifiers.add(identifier_preimage, id.to_inner());
     event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifierRegisteredEvent">SessionIdentifierRegisteredEvent</a> {
         session_object_id: id.to_inner(),
-        session_identifier: identifier,
+        session_identifier_preimage: identifier_preimage,
     });
     <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
         id,
-        identifier,
+        identifier_preimage,
     }
 }
 </code></pre>
@@ -6279,9 +6279,9 @@ and epoch management in a unified manner.
     <b>let</b> consensus_validation_fee_charged_ika = payment_ika.split(pricing_value.consensus_validation_ika(), ctx).into_balance();
     <b>let</b> gas_fee_reimbursement_sui = payment_sui.split(pricing_value.gas_fee_reimbursement_sui(), ctx).into_balance();
     self.pricing_and_fee_management.gas_fee_reimbursement_sui.join(payment_sui.split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx).into_balance());
-    <b>let</b> identifier = session_identifier.identifier;
-    <b>assert</b>!(self.session_management.registered_session_identifiers.contains(identifier), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierNotExist">ESessionIdentifierNotExist</a>);
-    <b>assert</b>!(self.session_management.registered_session_identifiers.borrow(identifier) == session_identifier.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierNotExist">ESessionIdentifierNotExist</a>);
+    <b>let</b> identifier_preimage = session_identifier.identifier_preimage;
+    <b>assert</b>!(self.session_management.registered_session_identifiers.contains(identifier_preimage), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierNotExist">ESessionIdentifierNotExist</a>);
+    <b>assert</b>!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierNotExist">ESessionIdentifierNotExist</a>);
     <b>let</b> session_sequence_number = self.session_management.next_session_sequence_number;
     <b>let</b> session = <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSession">DWalletSession</a> {
         id: object::new(ctx),
@@ -6300,7 +6300,7 @@ and epoch management in a unified manner.
                 sequence_number: session_sequence_number,
             }
         },
-        session_identifier: identifier,
+        session_identifier_preimage: identifier_preimage,
         event_data,
     };
     self.session_management.user_requested_sessions_events.add(session.id.to_inner(), event);
@@ -6382,7 +6382,11 @@ These sessions are essential for network health and security.
         epoch: self.current_epoch,
         session_object_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         session_type: SessionType::System,
-        session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
+        // Notice that `session_identifier_preimage` is only the pre-image.
+        // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique).
+        // For <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events, we guarantee uniqueness by creating an object <b>address</b>, which can never repeat in Move (<a href="../ika_system/system.md#(ika_system=0x0)_system">system</a>-wide.)
+        // To avoid user-initiated events colliding with <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events, we pad the `session_identifier_preimage` differently <b>for</b> user and <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events before hashing it.
+        session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
     event::emit(event);
@@ -7263,19 +7267,19 @@ completion workflow without user fee management.
     <b>let</b> dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_network_encryption_key_id">dwallet_network_encryption_key_id</a>);
     <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionEvent">DWalletSessionEvent</a>&lt;E&gt; = self.session_management.user_requested_sessions_events.remove(id.to_inner());
     id.delete();
-    // Remove the corresponding session identifier object.
+    // Unpack and delete the corresponding session identifier object.
+    // This assures it cannot be reused <b>for</b> another session.
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
         id,
-        identifier: session_identifier,
+        identifier_preimage: session_identifier_preimage,
     } = session_identifier;
     id.delete();
     dwallet_network_encryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
     self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
     event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionResultEvent">DWalletSessionResultEvent</a> {
-        session_identifier,
+        session_identifier_preimage,
         status,
     });
-    //self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
     gas_fee_reimbursement_sui
 }
 </code></pre>
@@ -7985,7 +7989,7 @@ Request verification of the imported key dWallet from the Ika network.
 - <code>encryption_key_address</code>: The address of the encryption key.
 - <code>user_public_output</code>: The public output of the user.
 - <code>signer_public_key</code>: The public key of the signer.
-- <code>session_identifier</code>: The session identifier.
+- <code>session_identifier_preimage</code>: The session identifier.
 - <code>payment_ika</code>: The IKA payment for the operation.
 - <code>payment_sui</code>: The SUI payment for the operation.
 - <code>ctx</code>: The transaction context.

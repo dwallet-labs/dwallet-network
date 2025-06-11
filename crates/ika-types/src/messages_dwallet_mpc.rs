@@ -10,7 +10,6 @@ use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-use tracing::error;
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
@@ -329,13 +328,6 @@ pub enum SessionType {
     System,
 }
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
-/// A wrapper around the pre-image session identifier, which is used to pad it with a distinguisher between the `User` and `System` sessions, so that when it is hashed, the same inner value in the two different options will yield a different output, thus guaranteeing user-initiated sessions can never block or reuse session IDs for system sessions. 
-pub enum SessionIdentifierData {
-    User(Vec<u8>),
-    System(Vec<u8>),
-}
-
 pub type SessionIdentifier = [u8; 32];
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
@@ -345,7 +337,7 @@ pub struct DWalletSessionEvent<E: DWalletSessionEventTrait> {
     pub session_object_id: ObjectID,
     pub session_type: SessionType,
     // DO NOT MAKE THIS PUBLIC! ONLY CALL `session_identifier_digest`
-    session_identifier: Vec<u8>,
+    session_identifier_preimage: Vec<u8>,
     pub event_data: E,
 }
 
@@ -369,17 +361,22 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
             && event.module == DWALLET_MODULE_NAME.to_owned()
     }
 
-    /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher via the `SessionIdentifierData` enum. Guarantees same values of `self.session_identifier` yield different output for `User` and `System`
+    /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
+    /// Guarantees same values of `self.session_identifier_preimage` yield different output for `User` and `System`
     pub fn session_identifier_digest(&self) -> [u8; 32] {
+        // We are adding a string distinguisher between
+        // the `User` and `System` sessions, so that when it is hashed, the same inner value
+        // in the two different options will yield a different output, thus guaranteeing
+        // user-initiated sessions can never block or reuse session IDs for system sessions.
         let session_type = match self.session_type {
             SessionType::User { .. } => {
-                SessionIdentifierData::User(self.session_identifier.clone())
+                [b"USER", self.session_identifier_preimage.as_slice()].concat()
             }
-            SessionType::System => SessionIdentifierData::System(self.session_identifier.clone()),
+            SessionType::System => {
+                [b"SYSTEM", self.session_identifier_preimage.as_slice()].concat()
+            }
         };
-        keccak256_digest(
-            &bcs::to_bytes(&session_type).expect("Message serialization should not fail"),
-        )
+        keccak256_digest(&session_type)
     }
 }
 
