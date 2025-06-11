@@ -459,12 +459,9 @@ impl DWalletMPCSession {
                 );
                 let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
                     bcs::from_bytes(&event_data.event_data.centralized_party_message)?;
-                let public_input = (
-                    bcs::from_bytes(encoded_public_input)?,
-                    dwallet_id,
-                    bcs::from_bytes(&centralized_party_message)?,
-                )
-                    .into();
+                let PublicInput::DWalletImportedKeyVerificationRequest(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<
                     DWalletImportedKeyVerificationParty,
@@ -478,7 +475,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     (),
-                    encoded_public_input,
                     &base_logger,
                 );
                 match result.clone() {
@@ -532,7 +528,9 @@ impl DWalletMPCSession {
                     crypto_round=?self.current_round,
                     "Advancing DKG first party",
                 );
-                let public_input = bcs::from_bytes(encoded_public_input)?;
+                let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
                     session_id,
@@ -541,7 +539,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     (),
-                    encoded_public_input,
                     &base_logger,
                 );
                 match result.clone() {
@@ -563,8 +560,9 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
-                let public_input: <DKGSecondParty as mpc::Party>::PublicInput =
-                    bcs::from_bytes(encoded_public_input)?;
+                let PublicInput::DKGSecond(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
                     session_id,
@@ -573,7 +571,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     (),
-                    encoded_public_input,
                     &base_logger,
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
@@ -622,7 +619,9 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::Presign(..) => {
-                let public_input = bcs::from_bytes(encoded_public_input)?;
+                let PublicInput::Presign(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
                     session_id,
@@ -631,7 +630,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     (),
-                    encoded_public_input,
                     &base_logger,
                 );
                 match result.clone() {
@@ -670,7 +668,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     mpc_event_data.decryption_shares.clone(),
-                    encoded_public_input,
                     &logger,
                 );
                 self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
@@ -694,8 +691,8 @@ impl DWalletMPCSession {
                 advance_network_dkg(
                     session_id,
                     &self.weighted_threshold_access_structure,
+                    &self.mpc_event_data.clone().unwrap(),
                     self.party_id,
-                    encoded_public_input,
                     key_scheme,
                     self.serialized_full_messages.clone(),
                     bcs::from_bytes(
@@ -704,15 +701,16 @@ impl DWalletMPCSession {
                             .clone()
                             .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                     )?,
-                    encoded_public_input,
                     &base_logger,
                 )
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                let protocol_public_parameters = mpc_event_data.public_input.clone();
+                let PublicInput::EncryptedShareVerification(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
                 match verify_encrypted_share(
                     &verification_data.event_data,
-                    &protocol_public_parameters,
+                    public_input.clone(),
                 ) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],

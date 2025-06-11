@@ -34,6 +34,7 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
+use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {
@@ -226,12 +227,11 @@ impl DwalletMPCNetworkKeys {
 pub(crate) fn advance_network_dkg(
     session_id: CommitmentSizedNumber,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    mpc_event_data: &MPCEventData,
     party_id: PartyID,
-    public_input: &[u8],
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
-    encoded_public_input: &MPCPublicInput,
     logger: &crate::dwallet_mpc::MPCSessionLogger,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
@@ -244,14 +244,16 @@ pub(crate) fn advance_network_dkg(
 
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            let PublicInput::NetworkEncryptionKeyDkg(public_input) = &mpc_event_data.public_input_new else {
+                unreachable!();
+            };
             let result = advance_and_serialize::<Secp256k1Party>(
                 session_id,
                 party_id,
                 weighted_threshold_access_structure,
                 messages,
-                &bcs::from_bytes(public_input)?,
+                public_input,
                 class_groups_decryption_key,
-                encoded_public_input,
                 &logger,
             );
             match result.clone() {
@@ -271,16 +273,7 @@ pub(crate) fn advance_network_dkg(
                 _ => result,
             }
         }
-        DWalletMPCNetworkKeyScheme::Ristretto => advance_and_serialize::<RistrettoParty>(
-            session_id,
-            party_id,
-            weighted_threshold_access_structure,
-            messages,
-            &bcs::from_bytes(public_input)?,
-            class_groups_decryption_key,
-            encoded_public_input,
-            &logger,
-        ),
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
     }?;
     Ok(res)
 }

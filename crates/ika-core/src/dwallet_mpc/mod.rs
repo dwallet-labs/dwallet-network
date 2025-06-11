@@ -465,7 +465,6 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
-    encoded_public_input: &MPCPublicInput,
     logger: &MPCSessionLogger,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
