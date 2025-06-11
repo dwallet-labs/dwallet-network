@@ -77,16 +77,11 @@ fn get_decryption_key_shares_from_public_output(
             VersionedNetworkDkgOutput::V1(public_output) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
-                let setup_parameters_per_crt_prime = construct_setup_parameters_per_crt_prime(
-                    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-                )
-                .unwrap();
                 let secret_shares = dkg_public_output
                     .default_decryption_key_shares::<secp256k1::GroupElement>(
                         party_id,
                         weighted_threshold_access_structure,
                         decryption_key,
-                        &setup_parameters_per_crt_prime,
                     )
                     .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
                 Ok(secret_shares)
@@ -96,16 +91,11 @@ fn get_decryption_key_shares_from_public_output(
             VersionedNetworkDkgOutput::V1(public_output) => {
                 let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
-                let setup_parameters_per_crt_prime = construct_setup_parameters_per_crt_prime(
-                    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-                )
-                .unwrap();
                 let secret_shares = public_output
                     .decrypt_decryption_key_shares::<secp256k1::GroupElement>(
                         party_id,
                         weighted_threshold_access_structure,
                         decryption_key,
-                        &setup_parameters_per_crt_prime,
                     )
                     .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
                 Ok(secret_shares)
