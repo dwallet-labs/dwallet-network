@@ -424,9 +424,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
-        for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
-            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
-        }
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)

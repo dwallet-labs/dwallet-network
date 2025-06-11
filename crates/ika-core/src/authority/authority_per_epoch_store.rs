@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
@@ -411,7 +410,6 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
-    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
 
 // todo(zeev): why is it not used?
@@ -487,17 +485,6 @@ impl AuthorityEpochTables {
 
     pub fn get_last_consensus_stats(&self) -> IkaResult<Option<ExecutionIndicesWithStats>> {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
-    }
-
-    pub fn get_all_dwallet_mpc_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
-        Ok(self
-            .dwallet_mpc_events
-            .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
     }
 
     pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
@@ -611,20 +598,6 @@ impl AuthorityPerEpochStore {
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
-    }
-    /// Loads the dWallet MPC events from the given `Mysticeti` round.
-    pub(crate) async fn load_dwallet_mpc_events_from_round(
-        &self,
-        round: Round,
-    ) -> IkaResult<Vec<DWalletMPCEvent>> {
-        Ok(self
-            .tables()?
-            .dwallet_mpc_events
-            .safe_iter_with_bounds(Some(round), None)
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flat_map(|(_, events)| events)
-            .collect())
     }
 
     /// Loads the DWallet MPC completed sessions from the given mystecity round.
@@ -1417,10 +1390,6 @@ impl AuthorityPerEpochStore {
         let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
-        match self.read_new_sui_events().await {
-            Ok(events) => output.set_dwallet_mpc_round_events(events),
-            Err(e) => error!(err=?e, "failed to read new Sui events"),
-        }
         let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         output.set_dwallet_mpc_round_completed_sessions(
             outputs_verifier
@@ -1446,13 +1415,11 @@ impl AuthorityPerEpochStore {
     }
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
-    async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+    pub(crate) async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
         let pending_events = self.perpetual_tables.get_all_pending_events()?;
-        self.perpetual_tables
-            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
                 Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
                     Ok(Some(session_info)) => {
                         info!(
@@ -1462,6 +1429,7 @@ impl AuthorityPerEpochStore {
                             "Received start event for session"
                         );
                         let event = DWalletMPCEvent {
+                            event_id: Some(id.clone()),
                             event,
                             session_info,
                         };
@@ -2303,7 +2271,6 @@ pub(crate) struct ConsensusCommitOutput {
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
-    dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
     dwallet_mpc_completed_sessions: Vec<ObjectID>,
 }
 
@@ -2328,10 +2295,6 @@ impl ConsensusCommitOutput {
 
     pub(crate) fn set_dwallet_mpc_round_completed_sessions(&mut self, new_value: Vec<ObjectID>) {
         self.dwallet_mpc_completed_sessions = new_value;
-    }
-
-    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
-        self.dwallet_mpc_round_events = new_value;
     }
 
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {
@@ -2363,29 +2326,22 @@ impl ConsensusCommitOutput {
             batch.insert_batch(
                 &tables.dwallet_mpc_messages,
                 [(
-                    consensus_commit_stats.index.sub_dag_index,
+                    consensus_commit_stats.index.last_committed_round,
                     self.dwallet_mpc_round_messages,
                 )],
             )?;
             batch.insert_batch(
                 &tables.dwallet_mpc_completed_sessions,
                 [(
-                    consensus_commit_stats.index.sub_dag_index,
+                    consensus_commit_stats.index.last_committed_round,
                     self.dwallet_mpc_completed_sessions,
                 )],
             )?;
             batch.insert_batch(
                 &tables.dwallet_mpc_outputs,
                 [(
-                    consensus_commit_stats.index.sub_dag_index,
+                    consensus_commit_stats.index.last_committed_round,
                     self.dwallet_mpc_round_outputs,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_events,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_events,
                 )],
             )?;
         } else {

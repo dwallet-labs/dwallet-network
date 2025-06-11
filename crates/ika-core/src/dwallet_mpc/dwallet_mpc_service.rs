@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::Notify;
@@ -114,6 +115,7 @@ impl DWalletMPCService {
                         session_info.epoch = self.epoch_id;
                         self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
+                                event_id: None,
                                 event,
                                 session_info: session_info.clone(),
                             })
@@ -173,6 +175,23 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
+        let event_ids: Vec<EventID> = self
+            .epoch_store
+            .perpetual_tables
+            .get_all_pending_events()
+            .unwrap_or_default()
+            .keys()
+            .cloned()
+            .collect();
+        // Remove all pending events from previous epoch. The events are loaded from the network using `load_missed_events` function.
+        if let Err(e) = self
+            .epoch_store
+            .perpetual_tables
+            .remove_pending_events(&event_ids)
+        {
+            error!(err=?e, "failed to remove pending events from the local DB before starting MPC service");
+        }
+
         self.load_missed_events().await;
         loop {
             match self.exit.has_changed() {
@@ -216,17 +235,33 @@ impl DWalletMPCService {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
+            let mut completed_events = vec![];
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
+                    if let Some(mpc_event_data) = session.mpc_event_data.clone() {
+                        if let Some(event_id) = mpc_event_data.event_id {
+                            completed_events.push(event_id)
+                        } else {
+                            warn!(
+                                session_id=?session_id,
+                                "Session completed without an event ID, this could happen if the event loaded from the System object (missed event)"
+                            );
+                        }
+                    }
                 }
             }
-            let Ok(events_from_sui) = self
-                .epoch_store
-                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
-                .await
-            else {
+            if !completed_events.is_empty() {
+                if let Err(e) = self
+                    .epoch_store
+                    .perpetual_tables
+                    .remove_pending_events(&completed_events)
+                {
+                    error!(err=?e, "failed to remove completed sessions from the local DB");
+                }
+            }
+            let Ok(events_from_sui) = self.epoch_store.read_new_sui_events().await else {
                 error!("failed to load dWallet MPC events from the local DB");
                 continue;
             };
