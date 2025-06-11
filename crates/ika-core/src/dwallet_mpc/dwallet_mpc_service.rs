@@ -8,7 +8,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::watch::Receiver;
 use tokio::sync::Notify;
@@ -175,24 +174,22 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        let event_ids: Vec<EventID> = self
-            .epoch_store
-            .perpetual_tables
-            .get_all_pending_events()
-            .unwrap_or_default()
-            .keys()
-            .cloned()
-            .collect();
-        // Remove all pending events from previous epoch. The events are loaded from the network using `load_missed_events` function.
-        if let Err(e) = self
-            .epoch_store
-            .perpetual_tables
-            .remove_pending_events(&event_ids)
-        {
-            error!(err=?e, "failed to remove pending events from the local DB before starting MPC service");
-        }
-
         self.load_missed_events().await;
+        let dwallet_mpc_events_for_uncompleted_sessions = match self.epoch_store.tables() {
+            Ok(tables) => tables.get_all_dwallet_mpc_events_for_uncompleted_sessions().unwrap_or_else(|e| {
+                error!(error=?e, "Failed to get all dWallet MPC events for uncompleted sessions");
+                vec![]
+            }),
+            Err(e) => {
+                error!(error=?e, "Failed to get tables from epoch store");
+                vec![]
+            }
+        };
+        for event in dwallet_mpc_events_for_uncompleted_sessions {
+            self.dwallet_mpc_manager
+                .handle_dwallet_db_event(event)
+                .await;
+        }
         loop {
             match self.exit.has_changed() {
                 Ok(true) => {
@@ -235,32 +232,22 @@ impl DWalletMPCService {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
-            let mut completed_events = vec![];
-            for session_id in completed_sessions {
-                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
-                    session.clear_data();
-                    session.status = MPCSessionStatus::Finished;
-                    if let Some(mpc_event_data) = session.mpc_event_data.clone() {
-                        if let Some(event_id) = mpc_event_data.event_id {
-                            completed_events.push(event_id)
-                        } else {
-                            warn!(
-                                session_id=?session_id,
-                                "Session completed without an event ID, this could happen if the event loaded from the System object (missed event)"
-                            );
-                        }
+
+            completed_sessions.iter().for_each(|session_id| {
+                if let Ok(tables) = self.epoch_store.tables() {
+                    let mut batch = tables.dwallet_mpc_events_for_uncompleted_sessions.batch();
+                    if let Err(e) = batch.delete_batch(
+                        &tables.dwallet_mpc_events_for_uncompleted_sessions,
+                        [session_id],
+                    ) {
+                        error!(error=?e, "Failed to delete batch for session {}", session_id);
+                    }
+                    if let Err(e) = batch.write() {
+                        error!(error=?e, "Failed to write batch for session {}", session_id);
                     }
                 }
-            }
-            if !completed_events.is_empty() {
-                if let Err(e) = self
-                    .epoch_store
-                    .perpetual_tables
-                    .remove_pending_events(&completed_events)
-                {
-                    error!(err=?e, "failed to remove completed sessions from the local DB");
-                }
-            }
+            });
+
             let Ok(events_from_sui) = self.epoch_store.read_new_sui_events().await else {
                 error!("failed to load dWallet MPC events from the local DB");
                 continue;

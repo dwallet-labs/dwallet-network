@@ -88,6 +88,7 @@ use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
+use sui_types::event::EventID;
 use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -410,6 +411,7 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
+    pub(crate) dwallet_mpc_events_for_uncompleted_sessions: DBMap<ObjectID, DWalletMPCEvent>,
 }
 
 // todo(zeev): why is it not used?
@@ -485,6 +487,16 @@ impl AuthorityEpochTables {
 
     pub fn get_last_consensus_stats(&self) -> IkaResult<Option<ExecutionIndicesWithStats>> {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
+    }
+
+    pub fn get_all_dwallet_mpc_events_for_uncompleted_sessions(
+        &self,
+    ) -> IkaResult<Vec<DWalletMPCEvent>> {
+        Ok(self
+            .dwallet_mpc_events_for_uncompleted_sessions
+            .safe_iter()
+            .map(|item| item.map(|(_k, v)| v))
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
@@ -1440,6 +1452,14 @@ impl AuthorityPerEpochStore {
                             event=?event,
                             "Received an event that does not trigger the start of an MPC flow"
                         );
+                        if let Err(e) = self.perpetual_tables
+                            .remove_pending_events(&[id.clone()]) {
+                            error!(
+                                error=?e,
+                                event=?id,
+                                "Failed to remove event from perpetual tables",
+                            );
+                        }
                         None
                     }
                     Err(e) => {
@@ -1453,6 +1473,24 @@ impl AuthorityPerEpochStore {
                 }
             })
             .collect();
+
+        let _ = events
+            .iter()
+            .map(|event| {
+                let mut batch = self
+                    .tables()?
+                    .dwallet_mpc_events_for_uncompleted_sessions
+                    .batch();
+                batch.insert_batch(
+                    &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
+                    [(event.session_info.session_id, event.clone())],
+                )?;
+                Ok(())
+            })
+            .collect::<IkaResult<_>>()?;
+
+        self.perpetual_tables
+            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
         Ok(events)
     }
 

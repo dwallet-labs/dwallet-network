@@ -427,9 +427,7 @@ impl DWalletMPCManager {
                                 )
                             })?
                             .event_id = new_mpc_event_data.event_id;
-                    } else if existing_event_data.event_id
-                        != new_mpc_event_data.event_id
-                    {
+                    } else if existing_event_data.event_id != new_mpc_event_data.event_id {
                         error!(
                             session_id=?session_info.session_id,
                             existing_event_id=?existing_event_data.event_id,

@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
