@@ -652,8 +652,6 @@ impl DWalletMPCSession {
                 }
             }
             MPCProtocolInitData::Sign(..) => {
-                let public_input = bcs::from_bytes(encoded_public_input)?;
-
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
                     .iter()
@@ -662,6 +660,9 @@ impl DWalletMPCSession {
 
                 // Extend base logger with decryption key shares for Sign protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
+                let PublicInput::Sign(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_id,
                     self.party_id,
