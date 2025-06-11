@@ -10,7 +10,10 @@ use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp2
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
+    SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput,
+};
 use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
@@ -474,12 +477,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     // Update logger with malicious parties detected during deserialization.
     let logger = logger.clone().with_malicious_parties(malicious_parties);
 
-    logger.write_logs_to_disk(
-        session_id,
-        party_id,
-        access_threshold,
-        &serialized_messages,
-    );
+    logger.write_logs_to_disk(session_id, party_id, access_threshold, &serialized_messages);
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.

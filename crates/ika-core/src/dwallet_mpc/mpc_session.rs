@@ -456,7 +456,9 @@ impl DWalletMPCSession {
                 let dwallet_id = CommitmentSizedNumber::from_le_slice(
                     event_data.event_data.dwallet_id.to_vec().as_slice(),
                 );
-                let PublicInput::DWalletImportedKeyVerificationRequest(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
+                    &mpc_event_data.public_input_new
+                else {
                     unreachable!();
                 };
 
@@ -503,7 +505,7 @@ impl DWalletMPCSession {
                                 source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                                 encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                             },
-                            public_input.protocol_public_parameters.clone()
+                            public_input.protocol_public_parameters.clone(),
                         )?;
                         let public_output = bcs::to_bytes(
                             &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
@@ -702,13 +704,12 @@ impl DWalletMPCSession {
                 )
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
-                let PublicInput::EncryptedShareVerification(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::EncryptedShareVerification(public_input) =
+                    &mpc_event_data.public_input_new
+                else {
                     unreachable!();
                 };
-                match verify_encrypted_share(
-                    &verification_data.event_data,
-                    public_input.clone(),
-                ) {
+                match verify_encrypted_share(&verification_data.event_data, public_input.clone()) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
                         public_output: vec![],
                         private_output: vec![],

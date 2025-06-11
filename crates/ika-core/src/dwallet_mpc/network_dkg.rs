@@ -3,6 +3,7 @@
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
 use crate::dwallet_mpc::advance_and_serialize;
+use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
@@ -34,7 +35,6 @@ use twopc_mpc::secp256k1::class_groups::{
 };
 use twopc_mpc::sign::Protocol;
 use twopc_mpc::ProtocolPublicParameters;
-use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {
@@ -244,7 +244,9 @@ pub(crate) fn advance_network_dkg(
 
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let PublicInput::NetworkEncryptionKeyDkg(public_input) = &mpc_event_data.public_input_new else {
+            let PublicInput::NetworkEncryptionKeyDkg(public_input) =
+                &mpc_event_data.public_input_new
+            else {
                 unreachable!();
             };
             let result = advance_and_serialize::<Secp256k1Party>(
