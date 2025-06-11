@@ -11,7 +11,7 @@ use group::{secp256k1, PartyID};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletMPCSuiEvent, MPCProtocolInitData,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletSessionEvent, MPCProtocolInitData,
     SessionInfo,
 };
 use mpc::Party;
@@ -95,11 +95,11 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
 }
 
 pub(super) fn network_decryption_key_reshare_session_info_from_event(
-    deserialized_event: DWalletMPCSuiEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
+    deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
         session_type: deserialized_event.session_type.clone(),
-        session_id: deserialized_event.session_id,
+        session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         mpc_round: MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(deserialized_event),
     }
