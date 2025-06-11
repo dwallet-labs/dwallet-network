@@ -2449,6 +2449,10 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         epoch: self.current_epoch,
         session_object_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
         session_type: SessionType::System,
+        // Notice that `session_identifier` is only the pre-image. 
+        // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
+        // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide.)
+        // To avoid user-initiated events colliding with system events, we pad the `session_identifier` differently for user and system events before hashing it.
         session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
