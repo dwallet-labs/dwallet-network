@@ -7,7 +7,6 @@ use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
-use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{SuiClient, SuiClientInner};
@@ -17,8 +16,8 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
-    DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
-    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,

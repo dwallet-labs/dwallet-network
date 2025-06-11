@@ -158,7 +158,7 @@ impl CryptographicComputationsOrchestrator {
         {
             // This should not happen, but error just in case.
             error!(
-                session_id=?session.session_id,
+                session_id=?session.session_identifier,
                 mpc_protocol=?mpc_protocol,
                 error=?err,
                 "failed to send a `started` computation message",
@@ -171,14 +171,14 @@ impl CryptographicComputationsOrchestrator {
                 error!(
                     error=?err,
                     mpc_protocol=%mpc_protocol,
-                    session_id=?session.session_id,
+                    session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
                     mpc_protocol=%mpc_protocol,
-                    session_id=?session.session_id,
+                    session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
                     party_id = session.party_id,

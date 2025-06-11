@@ -10,6 +10,7 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config, EncryptedDWalletData } from './globals.js';
 import {
+	createSessionIdentifier,
 	delay,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
@@ -33,7 +34,7 @@ export interface ClassGroupsSecpKeyPair {
  * `EncryptionKey` Move object is created.
  */
 interface CreatedEncryptionKeyEvent {
-	session_id: string;
+	session_identifier: Uint8Array;
 	encryption_key_id: string;
 }
 
@@ -56,7 +57,7 @@ interface StartEncryptedShareVerificationEvent {
 	event_data: {
 		encrypted_user_secret_key_share_id: string;
 	};
-	session_id: string;
+	session_identifier: Uint8Array;
 }
 
 interface VerifiedEncryptedUserSecretKeyShare {
@@ -340,7 +341,11 @@ export async function transferEncryptedSecretShare(
 		arguments: [],
 		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
-
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		sourceConf.ikaConfig.ika_system_package_id,
+	);
 	tx.moveCall({
 		target: `${sourceConf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_re_encrypt_user_share_for`,
 		arguments: [
@@ -349,6 +354,7 @@ export async function transferEncryptedSecretShare(
 			destinationEncryptionKeyAddressArg,
 			encryptedCentralizedSecretShareAndProofArg,
 			sourceEncryptedUserSecretKeyShareIDArg,
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -367,7 +373,7 @@ export async function transferEncryptedSecretShare(
 			showEvents: true,
 		},
 	});
-	const startVerificationEvent = result.events?.at(0)?.parsedJson;
+	const startVerificationEvent = result.events?.at(1)?.parsedJson;
 	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
 		throw new Error('invalid start DKG first round event');
 	}
@@ -381,7 +387,7 @@ export async function transferEncryptedSecretShare(
 function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
-	return !!obj?.session_id && !!obj?.event_data?.encrypted_user_secret_key_share_id;
+	return !!obj?.session_identifier && !!obj?.event_data?.encrypted_user_secret_key_share_id;
 }
 
 function isVerifiedEncryptedUserSecretKeyShare(

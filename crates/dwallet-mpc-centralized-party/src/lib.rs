@@ -29,6 +29,7 @@ use rand_core::{OsRng, SeedableRng};
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups::encryption_key::public_parameters::Instantiate;
+use commitment::CommitmentSizedNumber;
 use serde::{Deserialize, Serialize};
 use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
@@ -93,7 +94,7 @@ pub fn create_dkg_output(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
     decentralized_first_round_public_output: SerializedWrappedMPCPublicOutput,
-    session_id: String,
+    session_identifier: Vec<u8>,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
@@ -105,7 +106,7 @@ pub fn create_dkg_output(
             let public_parameters =
                 protocol_public_parameters_by_key_scheme(network_dkg_public_output, key_scheme)?;
 
-            let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
+            let session_id = CommitmentSizedNumber::from_le_slice(&session_identifier);
 
             let round_result = DKGCentralizedParty::advance(
                 decentralized_first_round_public_output,
@@ -259,7 +260,7 @@ pub fn verify_secp_signature_inner(
 
 pub fn create_imported_dwallet_centralized_step_inner(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
-    dwallet_id: String,
+    session_identifier: Vec<u8>,
     secret_key: Vec<u8>,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters =
@@ -268,8 +269,10 @@ pub fn create_imported_dwallet_centralized_step_inner(
             DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
         )?;
     let secret_key = bcs::from_bytes(&secret_key)?;
-    let dwallet_id = commitment::CommitmentSizedNumber::from_le_hex(&dwallet_id);
-    let centralized_party_public_input = (protocol_public_parameters.clone(), dwallet_id).into();
+    let session_identifier = CommitmentSizedNumber::from_le_slice(&session_identifier);
+
+    let centralized_party_public_input =
+        (protocol_public_parameters.clone(), session_identifier).into();
 
     match ImportSecretKeyFirstStep::advance(
         (),
