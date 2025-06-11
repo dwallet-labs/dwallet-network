@@ -7,7 +7,12 @@ import { Transaction } from '@mysten/sui/transactions';
 
 import { acceptEncryptedUserShare } from './dkg.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
-import type { Config, DWallet, SessionIdentifierRegisteredEvent } from './globals.js';
+import type {
+	Config,
+	DWallet,
+	SessionIdentifierRegisteredEvent,
+	SharedObjectData,
+} from './globals.js';
 import {
 	createSessionIdentifier,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
