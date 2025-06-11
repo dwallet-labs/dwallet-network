@@ -41,10 +41,10 @@ pub(super) trait DKGFirstPartyPublicInputGenerator: Party {
 pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
     /// Generates the public input required for the second round of the DKG protocol.
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         first_round_output: SerializedWrappedMPCPublicOutput,
         centralized_party_public_key_share: SerializedWrappedMPCPublicOutput,
-    ) -> DwalletMPCResult<MPCPublicInput>;
+    ) -> DwalletMPCResult<<DKGSecondParty as mpc::Party>::PublicInput>;
 }
 
 impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
@@ -58,10 +58,10 @@ impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
 
 impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         first_round_output_buf: SerializedWrappedMPCPublicOutput,
         centralized_party_public_key_share_buf: SerializedWrappedMPCPublicOutput,
-    ) -> DwalletMPCResult<MPCPublicInput> {
+    ) -> DwalletMPCResult<<DKGSecondParty as mpc::Party>::PublicInput> {
         let first_round_output_buf: VersionedCentralizedDKGPublicOutput =
             bcs::from_bytes(&first_round_output_buf).map_err(DwalletMPCError::BcsError)?;
         let centralized_party_public_key_share: VersionedPublicKeyShareAndProof =
@@ -79,12 +79,12 @@ impl DKGSecondPartyPublicInputGenerator for DKGSecondParty {
                 };
 
                 let input: Self::PublicInput = (
-                    bcs::from_bytes(&protocol_public_parameters)?,
+                    protocol_public_parameters,
                     first_round_output,
                     centralized_party_public_key_share,
                 )
                     .into();
-                bcs::to_bytes(&input).map_err(DwalletMPCError::BcsError)
+                Ok(input)
             }
         }
     }

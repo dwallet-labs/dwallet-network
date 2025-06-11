@@ -295,10 +295,10 @@ fn dkg_first_party_session_info(
 
 fn dkg_second_public_input(
     deserialized_event: &DWalletDKGSecondRoundRequestEvent,
-    protocol_public_parameters: &[u8],
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DKGSecondParty as mpc::Party>::PublicInput> {
     <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters.to_vec(),
+        protocol_public_parameters,
         deserialized_event.first_round_output.clone(),
         deserialized_event
             .centralized_public_key_share_and_proof
@@ -734,10 +734,11 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                dkg_second_public_input(
+                vec![],
+                PublicInput::DKGSecond(dkg_second_public_input(
                     &deserialized_event.event_data,
-                    &protocol_public_parameters,
-                )?,
+                    protocol_public_parameters,
+                )?),
                 None,
             ))
         }
