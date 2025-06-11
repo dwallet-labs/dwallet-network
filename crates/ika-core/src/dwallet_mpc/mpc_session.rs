@@ -596,7 +596,7 @@ impl DWalletMPCSession {
                             source_encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                             encrypted_user_secret_key_share_id: ObjectID::new([0; 32]),
                         },
-                        &bcs::to_bytes(&public_input.protocol_public_parameters)?,
+                        public_input.protocol_public_parameters.clone(),
                     )?;
                 }
                 match result.clone() {
