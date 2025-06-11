@@ -21,6 +21,7 @@ use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::sync::Arc;
 use std::time::Instant;
+use fastcrypto::encoding::{Encoding, Hex};
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -178,7 +179,7 @@ impl CryptographicComputationsOrchestrator {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
                     mpc_protocol=%mpc_protocol,
-                    session_id=?session.session_identifier,
+                    session_id=?Hex::encode(session.session_identifier.as_slice()),
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
                     party_id = session.party_id,
