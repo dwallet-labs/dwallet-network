@@ -619,7 +619,6 @@ pub(super) async fn session_input_from_event(
             )
                 .into();
             Ok((
-                vec![],
                 PublicInput::DWalletImportedKeyVerificationRequest(public_input),
                 None,
             ))
@@ -638,7 +637,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(
                     protocol_public_parameters,
                 ),
@@ -657,7 +655,6 @@ pub(super) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                vec![],
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg::network_dkg_public_input(
                     &dwallet_mpc_manager
                         .epoch_store()?
@@ -689,7 +686,6 @@ pub(super) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                vec![],
                 PublicInput::NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
@@ -726,7 +722,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::DKGFirst(dkg_first_public_input(&protocol_public_parameters)?),
                 None,
             ))
@@ -746,7 +741,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::DKGSecond(dkg_second_public_input(
                     &deserialized_event.event_data,
                     protocol_public_parameters,
@@ -765,7 +759,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::Presign(presign_public_input(
                     deserialized_event.session_identifier_digest(),
                     deserialized_event.event_data,
@@ -785,7 +778,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::Sign(sign_session_public_input(
                     &deserialized_event,
                     dwallet_mpc_manager,
@@ -809,7 +801,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::EncryptedShareVerification(protocol_public_parameters),
                 None,
             ))
@@ -825,7 +816,6 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                vec![],
                 PublicInput::PartialSignatureVerification(protocol_public_parameters),
                 None,
             ))
