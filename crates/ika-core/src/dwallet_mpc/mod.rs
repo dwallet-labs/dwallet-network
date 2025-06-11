@@ -250,9 +250,11 @@ fn start_encrypted_share_verification_session_info(
     }
 }
 
-fn dkg_first_public_input(protocol_public_parameters: &[u8]) -> DwalletMPCResult<Vec<u8>> {
+fn dkg_first_public_input(
+    protocol_public_parameters: &twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DKGFirstParty as mpc::Party>::PublicInput> {
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters.to_vec(),
+        protocol_public_parameters.clone(),
     )
 }
 
@@ -713,7 +715,11 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((dkg_first_public_input(&protocol_public_parameters)?, None))
+            Ok((
+                vec![],
+                PublicInput::DKGFirst(dkg_first_public_input(&protocol_public_parameters)?),
+                None,
+            ))
         }
         t if t
             == &DWalletMPCSuiEvent::<DWalletDKGSecondRoundRequestEvent>::type_(packages_config) =>
