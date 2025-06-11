@@ -726,12 +726,15 @@ impl DWalletMPCSession {
                     )
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
+                let PublicInput::PartialSignatureVerification(public_input) = &mpc_event_data.public_input_new else {
+                    unreachable!();
+                };
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.event_data.dkg_output,
                     &event_data.event_data.presign,
                     &event_data.event_data.message_centralized_signature,
-                    &bcs::from_bytes(encoded_public_input)?,
+                    &public_input,
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -741,7 +744,11 @@ impl DWalletMPCSession {
                 })
             }
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
-                let public_input = bcs::from_bytes(encoded_public_input)?;
+                let PublicInput::NetworkEncryptionKeyReconfiguration(public_input) =
+                    &mpc_event_data.public_input_new
+                else {
+                    unreachable!();
+                };
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
                     .iter()
@@ -758,7 +765,6 @@ impl DWalletMPCSession {
                     self.serialized_full_messages.clone(),
                     &public_input,
                     decryption_key_shares.clone(),
-                    encoded_public_input,
                     &logger,
                 );
                 match result.clone() {
