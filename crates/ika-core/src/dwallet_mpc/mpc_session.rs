@@ -79,7 +79,7 @@ pub(crate) struct DWalletMPCSession {
     /// In round `1` We start the flow, without messages, from the event trigger.
     /// Decremented only upon an `TWOPCMPCThresholdNotReached` Error.
     pub(super) current_round: usize,
-    party_id: PartyID,
+    pub(crate) party_id: PartyID,
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
