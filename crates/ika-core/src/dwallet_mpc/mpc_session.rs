@@ -726,7 +726,9 @@ impl DWalletMPCSession {
                     )
                     .map_err(|err| DwalletMPCError::TwoPCMPCError(err.to_string()))?,
                 )?;
-                let PublicInput::PartialSignatureVerification(public_input) = &mpc_event_data.public_input_new else {
+                let PublicInput::PartialSignatureVerification(public_input) =
+                    &mpc_event_data.public_input_new
+                else {
                     unreachable!();
                 };
                 verify_partial_signature(
