@@ -24,7 +24,7 @@ use ika_core::consensus_manager::UpdatableConsensusClient;
 
 use ika_types::digests::ChainIdentifier;
 use ika_types::sui::SystemInner;
-use sui_types::base_types::{ConciseableName, ObjectID};
+use sui_types::base_types::{ConciseableName, ObjectID, TransactionDigest};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::{broadcast, watch, Mutex};
@@ -76,7 +76,7 @@ use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::sui::SystemInnerTrait;
 use sui_types::crypto::KeypairTraits;
-
+use sui_types::event::EventID;
 use ika_core::consensus_adapter::SubmitToConsensus;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use typed_store::rocks::default_db_options;
@@ -278,6 +278,8 @@ impl IkaNode {
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
+        let epoch_start_tx_digest =
+            latest_system_state.epoch_start_tx_digest();
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
@@ -370,6 +372,9 @@ impl IkaNode {
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
+        let epoch_start_cursor = EventID::from(
+            (TransactionDigest::from(epoch_start_tx_digest), 0),
+        );
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -380,6 +385,7 @@ impl IkaNode {
                 sui_connector_metrics,
                 network_keys_sender,
                 next_epoch_committee_sender,
+                epoch_start_cursor,
             )
             .await?,
         );

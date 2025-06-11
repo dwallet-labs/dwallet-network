@@ -188,7 +188,9 @@ impl SystemInnerTrait for SystemInnerV1 {
     fn epoch(&self) -> u64 {
         self.epoch
     }
-
+    fn epoch_start_tx_digest(&self) -> Vec<u8> {
+        self.epoch_start_tx_digest.clone()
+    }
     fn protocol_version(&self) -> u64 {
         self.protocol_version
     }
