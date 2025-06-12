@@ -6,10 +6,11 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
-use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
+use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
+use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
@@ -18,8 +19,8 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport,
-    SessionInfo, SessionType, ThresholdNotReachedReport,
+    AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
+    MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -42,7 +43,7 @@ pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,
     /// MPC sessions that where created.
-    pub(crate) mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
+    pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -193,7 +194,7 @@ impl DWalletMPCManager {
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if event.session_info.epoch != self.epoch_id {
             warn!(
-                session_id=?event.session_info.session_id,
+                session_identifier=?event.session_info.session_identifier,
                 event_type=?event.event,
                 event_epoch=?event.session_info.epoch,
                 "received an event for a different epoch, skipping"
@@ -233,7 +234,7 @@ impl DWalletMPCManager {
                 if let Err(err) = self.handle_message(message.clone()) {
                     error!(
                         ?err,
-                        session_id=?message.session_id,
+                        session_identifier=?message.session_identifier,
                         from_authority=?message.authority,
                         "failed to handle an MPC message with error"
                     );
@@ -295,15 +296,17 @@ impl DWalletMPCManager {
             .is_quorum_reached()
         {
             // Quorum has been reached, we can report the malicious actors.
-            self.prepare_for_round_retry(report.session_id)?;
+            self.prepare_for_round_retry(report.session_identifier)?;
         }
         Ok(())
     }
 
-    fn prepare_for_round_retry(&mut self, session_id: ObjectID) -> DwalletMPCResult<()> {
+    fn prepare_for_round_retry(
+        &mut self,
+        session_identifier: SessionIdentifier,
+    ) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
-        if let Some(session) = self.mpc_sessions.get_mut(&session_id) {
-            session.received_more_messages_since_last_advance = false;
+        if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
             session.attempts_count += 1;
             // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
             // So all parties that sent a regular MPC Message for the last executed
@@ -370,7 +373,7 @@ impl DWalletMPCManager {
                 authority=?epoch_store.name,
                 reporting_authority=?reporting_authority,
                 malicious_actors=?report.malicious_actors,
-                session_id=?report.session_id,
+                session_identifier=?report.session_identifier,
                 "node recognized itself as malicious"
             );
         }
@@ -386,32 +389,32 @@ impl DWalletMPCManager {
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
-            public_input,
             private_input,
             decryption_shares: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                 )?,
-                MPCProtocolInitData::DecryptionKeyReshare(init_event) => self
+                MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => self
                     .get_decryption_key_shares(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                     )?,
                 _ => HashMap::new(),
             },
+            public_input,
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
             .add_received_event_start(&mpc_event_data.init_protocol_data);
-        if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_id) {
+        if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_identifier) {
             warn!(
-                session_id=?session_info.session_id,
+                session_identifier=?session_info.session_identifier,
                 "received an event for an existing session (previously received messages)",
             );
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = wrapped_mpc_event_data;
             }
         } else {
-            self.push_new_mpc_session(&session_info.session_id, wrapped_mpc_event_data);
+            self.push_new_mpc_session(&session_info.session_identifier, wrapped_mpc_event_data);
         }
         Ok(())
     }
@@ -419,14 +422,14 @@ impl DWalletMPCManager {
     pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         self.network_keys.get_protocol_public_parameters(key_id)
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
         self.network_keys.get_decryption_public_parameters(key_id)
     }
 
@@ -522,7 +525,9 @@ impl DWalletMPCManager {
         for (index, pending_for_event_session) in
             self.pending_for_events_order.clone().iter().enumerate()
         {
-            let Some(live_session) = self.mpc_sessions.get(&pending_for_event_session.session_id)
+            let Some(live_session) = self
+                .mpc_sessions
+                .get(&pending_for_event_session.session_identifier)
             else {
                 // This should never happen
                 continue;
@@ -534,7 +539,7 @@ impl DWalletMPCManager {
                     .unwrap()
                     .init_protocol_data;
                 info!(
-                    session_id=?pending_for_event_session.session_id,
+                    session_identifier=?pending_for_event_session.session_identifier,
                     mpc_protocol=?mpc_protocol,
                     "Received event data for a known session"
                 );
@@ -559,11 +564,11 @@ impl DWalletMPCManager {
             // Safe to unwarp since the session was ready to compute.
             let live_session = self
                 .mpc_sessions
-                .get(&oldest_pending_session.session_id)
+                .get(&oldest_pending_session.session_identifier)
                 .unwrap();
             if live_session.status != MPCSessionStatus::Active {
                 info!(
-                    session_id=?oldest_pending_session.session_id,
+                    session_identifier=?oldest_pending_session.session_identifier,
                     "Session is not active, skipping"
                 );
                 continue;
@@ -571,7 +576,7 @@ impl DWalletMPCManager {
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
                 // This should never happen.
                 error!(
-                    session_id=?oldest_pending_session.session_id,
+                    session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "session does not have event data, skipping"
                 );
@@ -586,7 +591,7 @@ impl DWalletMPCManager {
             };
             if !should_advance {
                 info!(
-                    session_id=?oldest_pending_session.session_id,
+                    session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"
                 );
@@ -600,7 +605,7 @@ impl DWalletMPCManager {
                 .await
             {
                 error!(
-                    session_id=?oldest_pending_session.session_id,
+                    session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     mpc_protocol=?mpc_event_data.init_protocol_data,
                     error=?err,
@@ -622,7 +627,7 @@ impl DWalletMPCManager {
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> DwalletMPCResult<()> {
         info!(
-            session_id=?message.session_id,
+            session_identifier=?message.session_identifier,
             from_authority=?message.authority,
             receiving_authority=?self.epoch_store()?.name,
             crypto_round_number=?message.round_number,
@@ -635,7 +640,7 @@ impl DWalletMPCManager {
             .contains(&message.authority)
         {
             warn!(
-                session_id=?message.session_id,
+                session_identifier=?message.session_identifier,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
                 crypto_round_number=?message.round_number,
@@ -646,11 +651,11 @@ impl DWalletMPCManager {
             return Ok(());
         }
 
-        let session = match self.mpc_sessions.entry(message.session_id) {
+        let session = match self.mpc_sessions.entry(message.session_identifier) {
             Entry::Occupied(session) => session.into_mut(),
             Entry::Vacant(_) => {
                 warn!(
-                    session_id=?message.session_id,
+                    session_identifier=?message.session_identifier,
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
@@ -660,14 +665,16 @@ impl DWalletMPCManager {
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.push_new_mpc_session(&message.session_id, None);
-                self.mpc_sessions.get_mut(&message.session_id).unwrap()
+                self.push_new_mpc_session(&message.session_identifier, None);
+                self.mpc_sessions
+                    .get_mut(&message.session_identifier)
+                    .unwrap()
             }
         };
         match session.store_message(&message) {
             Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
                 error!(
-                    session_id=?message.session_id,
+                    session_identifier=?message.session_identifier,
                     from_authority=?message.authority,
                     receiving_authority=?self.epoch_store()?.name,
                     crypto_round_number=?message.round_number,
@@ -703,12 +710,12 @@ impl DWalletMPCManager {
     /// Otherwise, add the session to the pending queue.
     pub(super) fn push_new_mpc_session(
         &mut self,
-        session_id: &ObjectID,
+        session_identifier: &SessionIdentifier,
         mpc_event_data: Option<MPCEventData>,
     ) {
         info!(
-            "Received start MPC flow event for session ID {:?}",
-            session_id
+            "Received start MPC flow event for session identifier {:?}",
+            session_identifier
         );
 
         let new_session = DWalletMPCSession::new(
@@ -716,17 +723,18 @@ impl DWalletMPCManager {
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Active,
-            *session_id,
+            *session_identifier,
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
+            self.dwallet_mpc_metrics.clone(),
         );
         info!(
             // todo(zeev): add metadata.
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
             "Adding MPC session to active sessions",
         );
-        self.mpc_sessions.insert(*session_id, new_session);
+        self.mpc_sessions.insert(*session_identifier, new_session);
     }
 
     pub(super) async fn must_get_next_active_committee(&self) -> Committee {

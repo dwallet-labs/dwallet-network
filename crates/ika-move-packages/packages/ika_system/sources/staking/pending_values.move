@@ -3,17 +3,22 @@
 
 module ika_system::pending_values;
 
+// === Imports ===
 use sui::vec_map::{Self, VecMap};
 
-// Error codes
+// === Errors ===
 /// No value for the provided epoch exists.
 const EMissingEpochValue: u64 = 0;
 /// The value that the pending values should be reduced by for an epoch is too large.
 const EReduceValueTooLarge: u64 = 1;
 
+// === Structs ===
+
 /// Represents a map of pending values. The key is the epoch when the value is
 /// pending, and the value is the amount of IKAs or pool shares.
 public struct PendingValues(VecMap<u64, u64>) has copy, drop, store;
+
+// === Package Functions ===
 
 /// Create a new empty `PendingValues` instance.
 public(package) fun empty(): PendingValues { PendingValues(vec_map::empty()) }
@@ -84,6 +89,8 @@ public(package) fun unwrap(self: PendingValues): VecMap<u64, u64> {
 
 /// Check if the `PendingValues` is empty.
 public(package) fun is_empty(self: &PendingValues): bool { self.0.is_empty() }
+
+// === Tests ===
 
 #[test]
 fun test_pending_values() {

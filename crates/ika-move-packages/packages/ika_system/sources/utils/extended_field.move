@@ -3,7 +3,11 @@
 
 module ika_system::extended_field;
 
+// === Imports ===
+
 use sui::dynamic_field as df;
+
+// === Structs ===
 
 /// Extended field acts as a field, but stored in a dynamic field, hence, it does
 /// not bloat the original object's storage, storing only `UID` of the extended
@@ -12,6 +16,8 @@ public struct ExtendedField<phantom T: store> has key, store { id: UID }
 
 /// Key to store the value in the extended field. Never changes.
 public struct Key() has copy, drop, store;
+
+// === Public Functions ===
 
 /// Creates a new extended field with the given value.
 public fun new<T: store>(value: T, ctx: &mut TxContext): ExtendedField<T> {

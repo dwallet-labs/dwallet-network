@@ -8,15 +8,14 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 -  [Constants](#@Constants_0)
 -  [Function `create_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_create_dwallet_coordinator)
 -  [Function `share_dwallet_coordinator`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_share_dwallet_coordinator)
+-  [Function `register_session_identifier`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_session_identifier)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_process_checkpoint_message_by_quorum)
--  [Function `request_dwallet_network_encryption_key_dkg`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg)
 -  [Function `get_active_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_get_active_encryption_key)
 -  [Function `register_encryption_key`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_encryption_key)
 -  [Function `approve_message`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_approve_message)
 -  [Function `approve_imported_key_message`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_approve_imported_key_message)
 -  [Function `request_dwallet_dkg_first_round`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_first_round)
 -  [Function `request_dwallet_dkg_second_round`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_second_round)
--  [Function `new_imported_key_dwallet`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet)
 -  [Function `calculate_pricing_votes`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_calculate_pricing_votes)
 -  [Function `request_imported_key_dwallet_verification`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification)
 -  [Function `request_make_dwallet_user_secret_key_shares_public`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_make_dwallet_user_secret_key_shares_public)
@@ -35,6 +34,9 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 -  [Function `request_imported_key_sign_with_partial_user_signature`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign_with_partial_user_signature)
 -  [Function `match_partial_user_signature_with_message_approval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_match_partial_user_signature_with_message_approval)
 -  [Function `match_partial_user_signature_with_imported_key_message_approval`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_match_partial_user_signature_with_imported_key_message_approval)
+-  [Function `current_pricing`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_current_pricing)
+-  [Function `subsidize_coordinator_with_sui`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui)
+-  [Function `subsidize_coordinator_with_ika`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika)
 -  [Function `migrate`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_migrate)
 -  [Function `inner_mut`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut)
 -  [Function `inner`](#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner)
@@ -70,6 +72,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
 <b>use</b> <a href="../sui/object_table.md#sui_object_table">sui::object_table</a>;
+<b>use</b> <a href="../sui/party.md#sui_party">sui::party</a>;
 <b>use</b> <a href="../sui/priority_queue.md#sui_priority_queue">sui::priority_queue</a>;
 <b>use</b> <a href="../sui/sui.md#sui_sui">sui::sui</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
@@ -231,6 +234,34 @@ This function will be called only once in init.
 
 </details>
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_session_identifier"></a>
+
+## Function `register_session_identifier`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, identifier: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_session_identifier">register_session_identifier</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    identifier: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+): SessionIdentifier {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_register_session_identifier">register_session_identifier</a>(identifier, ctx)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_process_checkpoint_message_by_quorum"></a>
 
 ## Function `process_checkpoint_message_by_quorum`
@@ -262,33 +293,6 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     message.append(message4);
     <b>let</b> dwallet_inner = <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator">dwallet_2pc_mpc_coordinator</a>.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>();
     dwallet_inner.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg"></a>
-
-## Function `request_dwallet_network_encryption_key_dkg`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletNetworkEncryptionKeyCap">dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKeyCap</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(
-    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
-    ctx: &<b>mut</b> TxContext
-): DWalletNetworkEncryptionKeyCap {
-    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_network_encryption_key_dkg">request_dwallet_network_encryption_key_dkg</a>(ctx)
 }
 </code></pre>
 
@@ -436,7 +440,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>
 </code></pre>
 
 
@@ -449,6 +453,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     dwallet_network_encryption_key_id: ID,
     curve: u32,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -456,6 +461,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_first_round">request_dwallet_dkg_first_round</a>(
         dwallet_network_encryption_key_id,
         curve,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx
@@ -473,7 +479,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_second_round">request_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>, centralized_public_key_share_and_proof: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, user_public_output: vector&lt;u8&gt;, singer_public_key: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_dwallet_dkg_second_round">request_dwallet_dkg_second_round</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">dwallet_2pc_mpc_coordinator_inner::DWalletCap</a>, centralized_public_key_share_and_proof: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, user_public_output: vector&lt;u8&gt;, singer_public_key: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -490,6 +496,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     encryption_key_address: <b>address</b>,
     user_public_output: vector&lt;u8&gt;,
     singer_public_key: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -501,42 +508,10 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         encryption_key_address,
         user_public_output,
         singer_public_key,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx
-    )
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet"></a>
-
-## Function `new_imported_key_dwallet`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet">new_imported_key_dwallet</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet">new_imported_key_dwallet</a>(
-    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
-    dwallet_network_encryption_key_id: ID,
-    curve: u32,
-    ctx: &<b>mut</b> TxContext
-): ImportedKeyDWalletCap {
-    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_new_imported_key_dwallet">new_imported_key_dwallet</a>(
-        dwallet_network_encryption_key_id,
-        curve,
-        ctx,
     )
 }
 </code></pre>
@@ -580,7 +555,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification">request_imported_key_dwallet_verification</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_cap: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>, centralized_party_message: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, user_public_output: vector&lt;u8&gt;, signer_public_key: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification">request_imported_key_dwallet_verification</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, centralized_party_message: vector&lt;u8&gt;, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, encryption_key_address: <b>address</b>, user_public_output: vector&lt;u8&gt;, signer_public_key: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">dwallet_2pc_mpc_coordinator_inner::ImportedKeyDWalletCap</a>
 </code></pre>
 
 
@@ -591,23 +566,27 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification">request_imported_key_dwallet_verification</a>(
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
-    dwallet_cap: &ImportedKeyDWalletCap,
+    dwallet_network_encryption_key_id: ID,
+    curve: u32,
     centralized_party_message: vector&lt;u8&gt;,
     encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;,
     encryption_key_address: <b>address</b>,
     user_public_output: vector&lt;u8&gt;,
     signer_public_key: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
-) {
+): ImportedKeyDWalletCap {
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_dwallet_verification">request_imported_key_dwallet_verification</a>(
-        dwallet_cap,
+        dwallet_network_encryption_key_id,
+        curve,
         centralized_party_message,
         encrypted_centralized_secret_share_and_proof,
         encryption_key_address,
         user_public_output,
         signer_public_key,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -625,7 +604,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_make_dwallet_user_secret_key_shares_public">request_make_dwallet_user_secret_key_shares_public</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_user_secret_key_shares: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_make_dwallet_user_secret_key_shares_public">request_make_dwallet_user_secret_key_shares_public</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, public_user_secret_key_shares: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -638,6 +617,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     dwallet_id: ID,
     public_user_secret_key_shares: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext,
@@ -645,6 +625,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().request_make_dwallet_user_secret_key_share_public(
         dwallet_id,
         public_user_secret_key_shares,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -662,7 +643,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_re_encrypt_user_share_for">request_re_encrypt_user_share_for</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, destination_encryption_key_address: <b>address</b>, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, source_encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_re_encrypt_user_share_for">request_re_encrypt_user_share_for</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, destination_encryption_key_address: <b>address</b>, encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;, source_encrypted_user_secret_key_share_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -677,6 +658,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     destination_encryption_key_address: <b>address</b>,
     encrypted_centralized_secret_share_and_proof: vector&lt;u8&gt;,
     source_encrypted_user_secret_key_share_id: ID,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext,
@@ -686,6 +668,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         destination_encryption_key_address,
         encrypted_centralized_secret_share_and_proof,
         source_encrypted_user_secret_key_share_id,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -736,7 +719,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_presign">request_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPresignCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_presign">request_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, signature_algorithm: u32, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPresignCap</a>
 </code></pre>
 
 
@@ -749,6 +732,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     dwallet_id: ID,
     signature_algorithm: u32,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -756,6 +740,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_presign">request_presign</a>(
         dwallet_id,
         signature_algorithm,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -773,7 +758,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_global_presign">request_global_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, signature_algorithm: u32, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPresignCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_global_presign">request_global_presign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, curve: u32, signature_algorithm: u32, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPresignCap</a>
 </code></pre>
 
 
@@ -787,6 +772,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     dwallet_network_encryption_key_id: ID,
     curve: u32,
     signature_algorithm: u32,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -795,6 +781,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         dwallet_network_encryption_key_id,
         curve,
         signature_algorithm,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -869,7 +856,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_sign">request_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>, message_centralized_signature: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_sign">request_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>, message_centralized_signature: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -883,6 +870,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     presign_cap: VerifiedPresignCap,
     message_approval: MessageApproval,
     message_centralized_signature: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -891,6 +879,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         message_approval,
         presign_cap,
         message_centralized_signature,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx
@@ -908,7 +897,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign">request_imported_key_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>, message_centralized_signature: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign">request_imported_key_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>, message_centralized_signature: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -922,6 +911,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     presign_cap: VerifiedPresignCap,
     message_approval: ImportedKeyMessageApproval,
     message_centralized_signature: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -930,6 +920,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         message_approval,
         presign_cap,
         message_centralized_signature,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx
@@ -947,7 +938,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_future_sign">request_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message: vector&lt;u8&gt;, hash_scheme: u32, message_centralized_signature: vector&lt;u8&gt;, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPartialUserSignatureCap</a>
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_future_sign">request_future_sign</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, dwallet_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, presign_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPresignCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPresignCap</a>, message: vector&lt;u8&gt;, hash_scheme: u32, message_centralized_signature: vector&lt;u8&gt;, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::UnverifiedPartialUserSignatureCap</a>
 </code></pre>
 
 
@@ -963,6 +954,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     message: vector&lt;u8&gt;,
     hash_scheme: u32,
     message_centralized_signature: vector&lt;u8&gt;,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -973,6 +965,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         message,
         hash_scheme,
         message_centralized_signature,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -1048,7 +1041,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_sign_with_partial_user_signature">request_sign_with_partial_user_signature</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, partial_user_signature_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPartialUserSignatureCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_sign_with_partial_user_signature">request_sign_with_partial_user_signature</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, partial_user_signature_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPartialUserSignatureCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">dwallet_2pc_mpc_coordinator_inner::MessageApproval</a>, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1061,6 +1054,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
     message_approval: MessageApproval,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -1068,6 +1062,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_sign_with_partial_user_signature">request_sign_with_partial_user_signature</a>(
         partial_user_signature_cap,
         message_approval,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -1085,7 +1080,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign_with_partial_user_signature">request_imported_key_sign_with_partial_user_signature</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, partial_user_signature_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPartialUserSignatureCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign_with_partial_user_signature">request_imported_key_sign_with_partial_user_signature</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, partial_user_signature_cap: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_VerifiedPartialUserSignatureCap">dwallet_2pc_mpc_coordinator_inner::VerifiedPartialUserSignatureCap</a>, message_approval: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">dwallet_2pc_mpc_coordinator_inner::ImportedKeyMessageApproval</a>, session_identifier: (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>, payment_ika: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;, payment_sui: &<b>mut</b> <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1098,6 +1093,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
     partial_user_signature_cap: VerifiedPartialUserSignatureCap,
     message_approval: ImportedKeyMessageApproval,
+    session_identifier: SessionIdentifier,
     payment_ika: &<b>mut</b> Coin&lt;IKA&gt;,
     payment_sui: &<b>mut</b> Coin&lt;SUI&gt;,
     ctx: &<b>mut</b> TxContext
@@ -1105,6 +1101,7 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_request_imported_key_sign_with_partial_user_signature">request_imported_key_sign_with_partial_user_signature</a>(
         partial_user_signature_cap,
         message_approval,
+        session_identifier,
         payment_ika,
         payment_sui,
         ctx,
@@ -1171,6 +1168,88 @@ Being called by the Ika network to store outputs of completed MPC sessions to Su
         partial_user_signature_cap,
         message_approval,
     )
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_current_pricing"></a>
+
+## Function `current_pricing`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_current_pricing">current_pricing</a>(self: &(ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_system=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_current_pricing">current_pricing</a>(self: &<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>): DWalletPricing {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner">inner</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_current_pricing">current_pricing</a>()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui"></a>
+
+## Function `subsidize_coordinator_with_sui`
+
+Fund the coordinator with SUI - this let you subsidize the protocol.
+IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, sui: <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    sui: Coin&lt;SUI&gt;,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_sui">subsidize_coordinator_with_sui</a>(sui);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika"></a>
+
+## Function `subsidize_coordinator_with_ika`
+
+Fund the coordinator with IKA - this let you subsidize the protocol.
+IMPORTANT: YOU WON'T BE ABLE TO WITHDRAW THE FUNDS OR GET ANYTHING IN RETURN.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">dwallet_2pc_mpc_coordinator::DWalletCoordinator</a>, ika: <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;(ika=0x0)::ika::IKA&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    ika: Coin&lt;IKA&gt;,
+) {
+    self.<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_subsidize_coordinator_with_ika">subsidize_coordinator_with_ika</a>(ika);
 }
 </code></pre>
 

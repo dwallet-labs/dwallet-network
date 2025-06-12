@@ -264,7 +264,6 @@ pub struct ProtocolConfig {
     consensus_gc_depth: Option<u32>,
     decryption_key_reshare_third_round_delay: Option<u32>,
     network_dkg_third_round_delay: Option<u32>,
-    sign_second_round_delay: Option<u32>,
 }
 
 // feature flags
@@ -497,9 +496,8 @@ impl ProtocolConfig {
             consensus_max_num_transactions_in_block: Some(512),
             consensus_gc_depth: Some(60),
             // The delay is measured in consensus rounds.
-            decryption_key_reshare_third_round_delay: Some(20),
-            network_dkg_third_round_delay: Some(20),
-            sign_second_round_delay: Some(2),
+            decryption_key_reshare_third_round_delay: Some(10),
+            network_dkg_third_round_delay: Some(10),
         };
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);

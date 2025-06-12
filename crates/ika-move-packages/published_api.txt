@@ -19,6 +19,15 @@ BlsCommittee
 CommitteeQuorumVerifiedEvent
 	public struct
 	0x0::bls_committee
+total_voting_power
+	public fun
+	0x0::bls_committee
+quorum_threshold
+	public fun
+	0x0::bls_committee
+validity_threshold
+	public fun
+	0x0::bls_committee
 new_bls_committee_member
 	public(package) fun
 	0x0::bls_committee
@@ -39,15 +48,6 @@ validator_ids
 	0x0::bls_committee
 contains
 	public(package) fun
-	0x0::bls_committee
-total_voting_power
-	public fun
-	0x0::bls_committee
-quorum_threshold
-	public fun
-	0x0::bls_committee
-validity_threshold
-	public fun
 	0x0::bls_committee
 verify_certificate
 	public(package) fun
@@ -79,48 +79,15 @@ drop
 destroy
 	public fun
 	0x0::class_groups_public_key_and_proof
-StakedIka
+ObjectDisplay
 	public struct
-	0x0::staked_ika
-StakedIkaState
-	public enum
-	0x0::staked_ika
-mint
+	0x0::display
+PublisherKey
+	public struct
+	0x0::display
+create
 	public(package) fun
-	0x0::staked_ika
-into_balance
-	public(package) fun
-	0x0::staked_ika
-set_withdrawing
-	public(package) fun
-	0x0::staked_ika
-can_withdraw_early
-	public(package) fun
-	0x0::staked_ika
-validator_id
-	public fun
-	0x0::staked_ika
-value
-	public fun
-	0x0::staked_ika
-activation_epoch
-	public fun
-	0x0::staked_ika
-is_staked
-	public fun
-	0x0::staked_ika
-is_withdrawing
-	public fun
-	0x0::staked_ika
-withdraw_epoch
-	public fun
-	0x0::staked_ika
-join
-	public fun
-	0x0::staked_ika
-split
-	public fun
-	0x0::staked_ika
+	0x0::display
 DWalletPricing
 	public struct
 	0x0::dwallet_pricing
@@ -138,9 +105,6 @@ empty
 	0x0::dwallet_pricing
 insert_or_update_dwallet_pricing
 	public fun
-	0x0::dwallet_pricing
-insert_or_update_dwallet_pricing_value
-	fun
 	0x0::dwallet_pricing
 try_get_dwallet_pricing_value
 	public(package) fun
@@ -169,19 +133,28 @@ calculate_pricing_quorum_below
 pricing_value_quorum_below
 	public(package) fun
 	0x0::dwallet_pricing
-quorum_below
-	fun
-	0x0::dwallet_pricing
 is_calculation_completed
 	public(package) fun
 	0x0::dwallet_pricing
 calculated_pricing
 	public(package) fun
 	0x0::dwallet_pricing
-DWalletCoordinatorInner
+insert_or_update_dwallet_pricing_value
+	fun
+	0x0::dwallet_pricing
+quorum_below
+	fun
+	0x0::dwallet_pricing
+SessionManagement
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletSessionEventKey
+SupportConfig
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+PricingAndFeeManagement
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletCoordinatorInner
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletSession
@@ -229,10 +202,22 @@ PresignSession
 SignSession
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletEvent
+SessionIdentifier
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CreatedEncryptionKeyEvent
+MessageApproval
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+ImportedKeyMessageApproval
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+SessionIdentifierRegisteredEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletSessionEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletSessionResultEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDKGEncryptionKeyRequestEvent
@@ -280,6 +265,9 @@ CompletedDWalletImportedKeyVerificationEvent
 RejectedDWalletImportedKeyVerificationEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
+CreatedEncryptionKeyEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
 EncryptedShareVerificationRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -313,6 +301,12 @@ RejectedPresignEvent
 SignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
+CompletedSignEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+RejectedSignEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
 FutureSignRequestEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -322,22 +316,13 @@ CompletedFutureSignEvent
 RejectedFutureSignEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-CompletedSignEvent
-	public struct
-	0x0::dwallet_2pc_mpc_coordinator_inner
-RejectedSignEvent
-	public struct
-	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCheckpointInfoEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-MessageApproval
+SetMaxActiveSessionsBufferEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-ImportedKeyMessageApproval
-	public struct
-	0x0::dwallet_2pc_mpc_coordinator_inner
-NewImportedKeyDWalletEvent
+SetGasFeeReimbursementSuiSystemCallValueEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkEncryptionKeyState
@@ -361,14 +346,23 @@ SignState
 SessionType
 	public enum
 	0x0::dwallet_2pc_mpc_coordinator_inner
-lock_last_active_session_sequence_number
-	public(package) fun
+DWalletSessionStatusEvent
+	public enum
 	0x0::dwallet_2pc_mpc_coordinator_inner
 create_dwallet_coordinator_inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+lock_last_active_session_sequence_number
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+register_session_identifier
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_network_encryption_key_dkg
 	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+charge_gas_fee_reimbursement_sui_for_system_calls
+	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_network_encryption_key_dkg
 	public(package) fun
@@ -406,7 +400,7 @@ validate_active_and_get_public_output
 charge_and_create_current_epoch_dwallet_event
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-create_system_dwallet_event
+initiate_system_dwallet_session
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 get_active_dwallet_and_public_output
@@ -427,6 +421,9 @@ validate_curve_and_signature_algorithm
 validate_curve_and_signature_algorithm_and_hash_scheme
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+validate_network_encryption_key_supports_curve
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 register_encryption_key
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -439,17 +436,17 @@ approve_imported_key_message
 validate_approve_message
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_dwallet_dkg_first_round
-	public(package) fun
-	0x0::dwallet_2pc_mpc_coordinator_inner
 update_last_user_initiated_session_to_complete_in_current_epoch
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-all_current_epoch_user_initiated_sessions_completed
+all_current_epoch_sessions_completed
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 remove_user_initiated_session_and_charge
 	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_dwallet_dkg_first_round
+	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_dkg_first_round
 	public(package) fun
@@ -467,9 +464,6 @@ respond_re_encrypt_user_share_for
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 accept_encrypted_user_share
-	public(package) fun
-	0x0::dwallet_2pc_mpc_coordinator_inner
-new_imported_key_dwallet
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_imported_key_dwallet_verification
@@ -541,6 +535,12 @@ process_checkpoint_message_by_quorum
 process_checkpoint_message
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+set_max_active_sessions_buffer
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+set_gas_fee_reimbursement_sui_system_call_value
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 set_supported_and_pricing
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -553,36 +553,27 @@ set_paused_curves_and_signature_algorithms
 set_pricing_vote
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-ObjectDisplay
-	public struct
-	0x0::display
-PublisherKey
-	public struct
-	0x0::display
-create
+subsidize_coordinator_with_sui
 	public(package) fun
-	0x0::display
-init_staked_ika_display
-	fun
-	0x0::display
-init_dwallet_cap_display
-	fun
-	0x0::display
-init_imported_key_dwallet_cap_display
-	fun
-	0x0::display
-init_unverified_presign_cap_display
-	fun
-	0x0::display
-init_verified_presign_cap_display
-	fun
-	0x0::display
-init_unverified_partial_user_signature_cap_display
-	fun
-	0x0::display
-init_verified_partial_user_signature_cap_display
-	fun
-	0x0::display
+	0x0::dwallet_2pc_mpc_coordinator_inner
+subsidize_coordinator_with_ika
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+dwallet_network_encryption_key_id
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+current_pricing
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+get_network_encryption_key_supported_curves
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+dwallet_id
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+imported_key_dwallet_id
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletCoordinator
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator
@@ -592,11 +583,11 @@ create_dwallet_coordinator
 share_dwallet_coordinator
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator
-process_checkpoint_message_by_quorum
+register_session_identifier
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
-request_dwallet_network_encryption_key_dkg
-	public(package) fun
+process_checkpoint_message_by_quorum
+	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 get_active_encryption_key
 	public fun
@@ -614,9 +605,6 @@ request_dwallet_dkg_first_round
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_second_round
-	public fun
-	0x0::dwallet_2pc_mpc_coordinator
-new_imported_key_dwallet
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 calculate_pricing_votes
@@ -671,6 +659,15 @@ match_partial_user_signature_with_message_approval
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 match_partial_user_signature_with_imported_key_message_approval
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+current_pricing
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+subsidize_coordinator_with_sui
+	public fun
+	0x0::dwallet_2pc_mpc_coordinator
+subsidize_coordinator_with_ika
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 migrate
@@ -737,10 +734,10 @@ default
 	public(package) fun
 	0x0::validator_metadata
 validate_tcp
-	public fun
+	public(package) fun
 	0x0::multiaddr
 validate_udp
-	public fun
+	public(package) fun
 	0x0::multiaddr
 validate_with_transport
 	fun
@@ -758,6 +755,54 @@ ValidatorInfo
 	public struct
 	0x0::validator_info
 new
+	public(package) fun
+	0x0::validator_info
+set_name
+	public(package) fun
+	0x0::validator_info
+set_network_address
+	public(package) fun
+	0x0::validator_info
+set_validator_metadata
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_network_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_p2p_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_consensus_address
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_protocol_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_network_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_consensus_pubkey_bytes
+	public(package) fun
+	0x0::validator_info
+set_next_epoch_class_groups_pubkey_and_proof_bytes
+	public(package) fun
+	0x0::validator_info
+rotate_next_epoch_info
+	public(package) fun
+	0x0::validator_info
+proof_of_possession_intent_bytes
+	public(package) fun
+	0x0::validator_info
+verify_proof_of_possession
+	public(package) fun
+	0x0::validator_info
+validate
+	public(package) fun
+	0x0::validator_info
+destroy
+	public(package) fun
+	0x0::validator_info
+is_duplicate
 	public(package) fun
 	0x0::validator_info
 metadata
@@ -811,58 +856,13 @@ next_epoch_consensus_pubkey_bytes
 next_epoch_class_groups_pubkey_and_proof_bytes
 	public fun
 	0x0::validator_info
-set_name
-	public(package) fun
-	0x0::validator_info
-set_network_address
-	public(package) fun
-	0x0::validator_info
-set_validator_metadata
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_network_address
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_p2p_address
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_consensus_address
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_protocol_pubkey_bytes
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_network_pubkey_bytes
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_consensus_pubkey_bytes
-	public(package) fun
-	0x0::validator_info
-set_next_epoch_class_groups_pubkey_and_proof_bytes
-	public(package) fun
-	0x0::validator_info
-roatate_next_epoch_info
-	public(package) fun
-	0x0::validator_info
-update_class_groups_key_and_proof
-	fun
-	0x0::validator_info
-verify_proof_of_possession
-	public(package) fun
-	0x0::validator_info
-validate
-	public fun
-	0x0::validator_info
-destroy
-	public(package) fun
-	0x0::validator_info
-is_duplicate
-	public fun
-	0x0::validator_info
 is_equal_some_and_value
 	fun
 	0x0::validator_info
 is_equal_some
+	fun
+	0x0::validator_info
+update_class_groups_key_and_proof
 	fun
 	0x0::validator_info
 ValidatorCap
@@ -907,6 +907,48 @@ convert_to_ika_amount
 convert_to_share_amount
 	public(package) fun
 	0x0::token_exchange_rate
+StakedIka
+	public struct
+	0x0::staked_ika
+StakedIkaState
+	public enum
+	0x0::staked_ika
+mint
+	public(package) fun
+	0x0::staked_ika
+into_balance
+	public(package) fun
+	0x0::staked_ika
+set_withdrawing
+	public(package) fun
+	0x0::staked_ika
+can_withdraw_early
+	public(package) fun
+	0x0::staked_ika
+validator_id
+	public fun
+	0x0::staked_ika
+value
+	public fun
+	0x0::staked_ika
+activation_epoch
+	public fun
+	0x0::staked_ika
+is_staked
+	public fun
+	0x0::staked_ika
+is_withdrawing
+	public fun
+	0x0::staked_ika
+withdraw_epoch
+	public fun
+	0x0::staked_ika
+join
+	public fun
+	0x0::staked_ika
+split
+	public fun
+	0x0::staked_ika
 PendingValues
 	public struct
 	0x0::pending_values
@@ -1072,9 +1114,6 @@ is_withdrawing
 withdrawing_epoch
 	public(package) fun
 	0x0::validator
-is_preactive_at_epoch
-	fun
-	0x0::validator
 exchange_rates
 	public(package) fun
 	0x0::validator
@@ -1083,6 +1122,9 @@ is_empty
 	0x0::validator
 calculate_rewards
 	public(package) fun
+	0x0::validator
+is_preactive_at_epoch
+	fun
 	0x0::validator
 PendingActiveSetEntry
 	public struct
@@ -1102,20 +1144,11 @@ update_or_remove
 update
 	public(package) fun
 	0x0::pending_active_set
-insert
-	fun
-	0x0::pending_active_set
 remove
 	public(package) fun
 	0x0::pending_active_set
 find_validator_index
 	public(package) fun
-	0x0::pending_active_set
-insert_sorted
-	fun
-	0x0::pending_active_set
-reposition_validator
-	fun
 	0x0::pending_active_set
 set_max_validator_count
 	public(package) fun
@@ -1127,6 +1160,9 @@ set_max_validator_change_count
 	public(package) fun
 	0x0::pending_active_set
 reset_validator_changes
+	public(package) fun
+	0x0::pending_active_set
+set_min_validator_joining_stake
 	public(package) fun
 	0x0::pending_active_set
 max_validator_count
@@ -1141,20 +1177,26 @@ max_validator_change_count
 size
 	public(package) fun
 	0x0::pending_active_set
+min_validator_joining_stake
+	public(package) fun
+	0x0::pending_active_set
+total_stake
+	public(package) fun
+	0x0::pending_active_set
 active_ids
 	public(package) fun
 	0x0::pending_active_set
 active_ids_and_stake
 	public(package) fun
 	0x0::pending_active_set
-set_min_validator_joining_stake
-	public(package) fun
+insert
+	fun
 	0x0::pending_active_set
-min_validator_joining_stake
-	public(package) fun
+insert_sorted
+	fun
 	0x0::pending_active_set
-total_stake
-	public(package) fun
+reposition_validator
+	fun
 	0x0::pending_active_set
 ValidatorSet
 	public struct
@@ -1204,7 +1246,13 @@ rotate_operation_cap
 rotate_commission_cap
 	public(package) fun
 	0x0::validator_set
+collect_commission
+	public(package) fun
+	0x0::validator_set
 set_validator_name
+	public(package) fun
+	0x0::validator_set
+validator_metadata
 	public(package) fun
 	0x0::validator_set
 set_validator_metadata
@@ -1360,9 +1408,6 @@ create
 stake_subsidy_for_distribution
 	public(package) fun
 	0x0::protocol_treasury
-calculate_stake_subsidy_amount_per_distribution
-	fun
-	0x0::protocol_treasury
 set_stake_subsidy_rate
 	public(package) fun
 	0x0::protocol_treasury
@@ -1375,13 +1420,13 @@ stake_subsidy_amount_per_distribution
 get_stake_subsidy_distribution_counter
 	public(package) fun
 	0x0::protocol_treasury
-ProtocolCap
+calculate_stake_subsidy_amount_per_distribution
+	fun
+	0x0::protocol_treasury
+SystemInner
 	public struct
-	0x0::protocol_cap
-new_protocol_cap
-	public(package) fun
-	0x0::protocol_cap
-SystemInnerV1
+	0x0::system_inner
+ProtocolCap
 	public struct
 	0x0::system_inner
 SystemEpochInfoEvent
@@ -1391,6 +1436,39 @@ SystemProtocolCapVerifiedEvent
 	public struct
 	0x0::system_inner
 SystemCheckpointInfoEvent
+	public struct
+	0x0::system_inner
+SetNextProtocolVersionEvent
+	public struct
+	0x0::system_inner
+SetEpochDurationMsEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyStartEpochEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyRateEvent
+	public struct
+	0x0::system_inner
+SetStakeSubsidyPeriodLengthEvent
+	public struct
+	0x0::system_inner
+SetMinValidatorCountEvent
+	public struct
+	0x0::system_inner
+SetMaxValidatorCountEvent
+	public struct
+	0x0::system_inner
+SetMinValidatorJoiningStakeEvent
+	public struct
+	0x0::system_inner
+SetMaxValidatorChangeCountEvent
+	public struct
+	0x0::system_inner
+SetRewardSlashingRateEvent
+	public struct
+	0x0::system_inner
+SetApprovedUpgradeEvent
 	public struct
 	0x0::system_inner
 create
@@ -1409,6 +1487,9 @@ request_add_validator
 	public(package) fun
 	0x0::system_inner
 request_remove_validator
+	public(package) fun
+	0x0::system_inner
+validator_metadata
 	public(package) fun
 	0x0::system_inner
 set_validator_metadata
@@ -1436,6 +1517,9 @@ rotate_operation_cap
 	public(package) fun
 	0x0::system_inner
 rotate_commission_cap
+	public(package) fun
+	0x0::system_inner
+collect_commission
 	public(package) fun
 	0x0::system_inner
 set_validator_name
@@ -1471,7 +1555,7 @@ advance_epoch
 process_mid_epoch
 	public(package) fun
 	0x0::system_inner
-lock_last_active_session_sequence_number
+request_lock_epoch_sessions
 	public(package) fun
 	0x0::system_inner
 epoch
@@ -1499,6 +1583,9 @@ active_committee
 	public(package) fun
 	0x0::system_inner
 next_epoch_active_committee
+	public(package) fun
+	0x0::system_inner
+dwallet_2pc_mpc_coordinator_network_encryption_key_ids
 	public(package) fun
 	0x0::system_inner
 verify_cap
@@ -1591,7 +1678,13 @@ rotate_operation_cap
 rotate_commission_cap
 	public fun
 	0x0::system
+collect_commission
+	public fun
+	0x0::system
 set_validator_name
+	public fun
+	0x0::system
+validator_metadata
 	public fun
 	0x0::system
 set_validator_metadata
@@ -1625,6 +1718,9 @@ token_exchange_rates
 	public fun
 	0x0::system
 active_committee
+	public fun
+	0x0::system
+next_epoch_active_committee
 	public fun
 	0x0::system
 request_reconfig_mid_epoch
@@ -1667,6 +1763,9 @@ calculate_rewards
 	public fun
 	0x0::system
 can_withdraw_staked_ika_early
+	public fun
+	0x0::system
+dwallet_2pc_mpc_coordinator_network_encryption_key_ids
 	public fun
 	0x0::system
 inner_mut

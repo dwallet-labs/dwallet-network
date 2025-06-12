@@ -3,31 +3,37 @@
 
 module ika_system::system_inner;
 
-use ika::ika::IKA;
-use ika_system::protocol_treasury::ProtocolTreasury;
-use ika_system::token_exchange_rate::TokenExchangeRate;
-use ika_system::staked_ika::{StakedIka};
-use ika_system::validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap};
-use ika_system::validator_set::{ValidatorSet};
-use ika_system::bls_committee::{BlsCommittee};
-use ika_system::protocol_cap::ProtocolCap;
-use ika_system::validator_metadata::ValidatorMetadata;
-use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::dwallet_2pc_mpc_coordinator::{Self, DWalletCoordinator};
-use ika_system::dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner};
-use ika_system::dwallet_pricing::DWalletPricing;
-use sui::bag::{Self, Bag};
-use sui::balance::{Self, Balance};
-use sui::coin::Coin;
-use sui::event;
-use sui::table::Table;
-use sui::vec_set::{VecSet};
-use sui::clock::Clock;
-use sui::package::{UpgradeCap, UpgradeTicket, UpgradeReceipt};
-use sui::bcs;
-use std::string::String;
-use sui::vec_map::{Self, VecMap};
+// === Imports ===
 
+use ika::ika::IKA;
+use ika_system::{
+    bls_committee::BlsCommittee,
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
+    dwallet_2pc_mpc_coordinator,
+    dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner},
+    dwallet_pricing::DWalletPricing,
+    protocol_treasury::ProtocolTreasury,
+    staked_ika::StakedIka,
+    token_exchange_rate::TokenExchangeRate,
+    validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
+    validator_metadata::ValidatorMetadata,
+    validator_set::ValidatorSet
+};
+use std::string::String;
+use sui::{
+    bag::{Self, Bag},
+    balance::{Self, Balance},
+    bcs,
+    clock::Clock,
+    coin::Coin,
+    event,
+    package::{UpgradeCap, UpgradeTicket, UpgradeReceipt},
+    table::Table,
+    vec_map::{Self, VecMap},
+    vec_set::VecSet
+};
+
+// === Constants ===
 
 const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 
@@ -46,8 +52,27 @@ const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
 const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
 const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
 
+// === Errors ===
+
+const EHaveNotReachedEndEpochTime: u64 = 0;
+const EActiveBlsCommitteeMustInitialize: u64 = 1;
+const EIncorrectEpochInIkaSystemCheckpoint: u64 = 2;
+const EWrongIkaSystemCheckpointSequenceNumber: u64 = 3;
+const EApprovedUpgradeNotFound: u64 = 4;
+
+#[error]
+const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
+
+#[error]
+const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
+
+#[error]
+const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+
+// === Structs ===
+
 /// Uses SystemParametersV1 as the parameters.
-public struct SystemInnerV1 has store {
+public struct SystemInner has store {
     /// The current epoch ID, starting from 0.
     epoch: u64,
     /// The current protocol version, starting from 1.
@@ -67,6 +92,10 @@ public struct SystemInnerV1 has store {
     protocol_treasury: ProtocolTreasury,
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
+    /// The last processed checkpoint sequence number.
+    last_processed_checkpoint_sequence_number: Option<u64>,
+    /// The last checkpoint sequence number of the previous epoch.
+    previous_epoch_last_checkpoint_sequence_number: u64,
     /// The total messages processed.
     total_messages_processed: u64,
     /// The fees paid for computation.
@@ -76,11 +105,15 @@ public struct SystemInnerV1 has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_coordinator_id: Option<ID>,
     dwallet_2pc_mpc_coordinator_network_encryption_keys: vector<DWalletNetworkEncryptionKeyCap>,
-    last_processed_checkpoint_sequence_number: Option<u64>,
-    previous_epoch_last_checkpoint_sequence_number: u64,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
+
+public struct ProtocolCap has key, store {
+    id: UID,
+}
+
+// === Events ===
 
 /// Event containing system-level epoch information, emitted during
 /// the epoch advancement message.
@@ -107,25 +140,72 @@ public struct SystemCheckpointInfoEvent has copy, drop {
     timestamp_ms: u64,
 }
 
-// Errors
-const ENextCommitteeNotSetOnAdvanceEpoch: u64 = 0;
-const EHaveNotReachedEndEpochTime: u64 = 1;
-const EActiveBlsCommitteeMustInitialize: u64 = 2;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 3;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 4;
-const EApprovedUpgradeNotFound: u64 = 5;
+/// Event emitted when protocol version is set via checkpoint message.
+public struct SetNextProtocolVersionEvent has copy, drop {
+    epoch: u64,
+    next_protocol_version: u64,
+}
 
-#[error]
-const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
+/// Event emitted when epoch duration is set via checkpoint message.
+public struct SetEpochDurationMsEvent has copy, drop {
+    epoch: u64,
+    epoch_duration_ms: u64,
+}
 
-#[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
+/// Event emitted when stake subsidy start epoch is set via checkpoint message.
+public struct SetStakeSubsidyStartEpochEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_start_epoch: u64,
+}
 
-#[error]
-const EWrongEpochState: vector<u8> = b"The system is in the wrong epoch state for the operation.";
+/// Event emitted when stake subsidy rate is set via checkpoint message.
+public struct SetStakeSubsidyRateEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_rate: u16,
+}
 
-#[error]
-const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+/// Event emitted when stake subsidy period length is set via checkpoint message.
+public struct SetStakeSubsidyPeriodLengthEvent has copy, drop {
+    epoch: u64,
+    stake_subsidy_period_length: u64,
+}
+
+/// Event emitted when minimum validator count is set via checkpoint message.
+public struct SetMinValidatorCountEvent has copy, drop {
+    epoch: u64,
+    min_validator_count: u64,
+}
+
+/// Event emitted when maximum validator count is set via checkpoint message.
+public struct SetMaxValidatorCountEvent has copy, drop {
+    epoch: u64,
+    max_validator_count: u64,
+}
+
+/// Event emitted when minimum validator joining stake is set via checkpoint message.
+public struct SetMinValidatorJoiningStakeEvent has copy, drop {
+    epoch: u64,
+    min_validator_joining_stake: u64,
+}
+
+/// Event emitted when maximum validator change count is set via checkpoint message.
+public struct SetMaxValidatorChangeCountEvent has copy, drop {
+    epoch: u64,
+    max_validator_change_count: u64,
+}
+
+/// Event emitted when reward slashing rate is set via checkpoint message.
+public struct SetRewardSlashingRateEvent has copy, drop {
+    epoch: u64,
+    reward_slashing_rate: u16,
+}
+
+/// Event emitted when approved upgrade is set via checkpoint message.
+public struct SetApprovedUpgradeEvent has copy, drop {
+    epoch: u64,
+    package_id: ID,
+    digest: Option<vector<u8>>,
+}
 
 // ==== functions that can only be called by init ====
 
@@ -139,11 +219,17 @@ public(package) fun create(
     epoch_duration_ms: u64,
     stake_subsidy_start_epoch: u64,
     protocol_treasury: ProtocolTreasury,
-    authorized_protocol_cap_ids: vector<ID>,
     ctx: &mut TxContext,
-): SystemInnerV1 {
+): (SystemInner, ProtocolCap) {
+    let id = object::new(ctx);
+    let cap_id = id.to_inner();
+    let protocol_cap = ProtocolCap {
+        id,
+    };
+
+    let authorized_protocol_cap_ids = vector[cap_id];
     // This type is fixed as it's created at init. It should not be updated during type upgrade.
-    let system_state = SystemInnerV1 {
+    let system_state = SystemInner {
         epoch: 0,
         protocol_version,
         next_protocol_version: option::none(),
@@ -154,22 +240,22 @@ public(package) fun create(
         stake_subsidy_start_epoch,
         protocol_treasury,
         epoch_start_timestamp_ms,
+        last_processed_checkpoint_sequence_number: option::none(),
+        previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        last_processed_checkpoint_sequence_number: option::none(),
-        previous_epoch_last_checkpoint_sequence_number: 0,
         extra_fields: bag::new(ctx),
     };
-    system_state
+    (system_state, protocol_cap)
 }
 
-// ==== public(package) functions ====
+// === Package Functions ===
 
 public(package) fun initialize(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     max_validator_change_count: u64,
@@ -202,7 +288,7 @@ public(package) fun initialize(
 /// Note: `proof_of_possession_bytes` MUST be a valid signature using proof_of_possession_sender and protocol_pubkey_bytes.
 /// To produce a valid PoP, run [fn test_proof_of_possession_bytes].
 public(package) fun request_add_validator_candidate(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     name: String,
     protocol_pubkey_bytes: vector<u8>,
     network_pubkey_bytes: vector<u8>,
@@ -236,7 +322,7 @@ public(package) fun request_add_validator_candidate(
 /// Called by a validator candidate to remove themselves from the candidacy. After this call
 /// their staking pool becomes deactivate.
 public(package) fun request_remove_validator_candidate(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_remove_validator_candidate(self.epoch, cap);
@@ -247,7 +333,7 @@ public(package) fun request_remove_validator_candidate(
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
 public(package) fun request_add_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -259,15 +345,21 @@ public(package) fun request_add_validator(
 /// At the end of the epoch, the `validator` object will be returned to the sui_address
 /// of the validator.
 public(package) fun request_remove_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_remove_validator(self.epoch, cap);
 }
 
+public(package) fun validator_metadata(
+    self: &SystemInner,
+    validator_id: ID,
+): ValidatorMetadata {
+    self.validator_set.validator_metadata(validator_id)
+}
 
 public(package) fun set_validator_metadata(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     metadata: ValidatorMetadata,
 ) {
@@ -277,7 +369,7 @@ public(package) fun set_validator_metadata(
 /// A validator can call this function to set a new commission rate, updated at the end of
 /// the epoch.
 public(package) fun set_next_commission(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     new_commission_rate: u16,
     cap: &ValidatorOperationCap,
 ) {
@@ -292,7 +384,7 @@ public(package) fun set_next_commission(
 
 /// Add stake to a validator's staking pool.
 public(package) fun request_add_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     stake: Coin<IKA>,
     validator_id: ID,
     ctx: &mut TxContext,
@@ -309,37 +401,22 @@ public(package) fun request_add_stake(
 
 /// Withdraw some portion of a stake from a validator's staking pool.
 public(package) fun request_withdraw_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     staked_ika: &mut StakedIka,
 ) {
     self.validator_set.request_withdraw_stake(staked_ika, self.epoch);
 }
 
 public(package) fun withdraw_stake(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     staked_ika: StakedIka,
     ctx: &mut TxContext,
 ): Coin<IKA> {
     self.validator_set.withdraw_stake(staked_ika, self.epoch, ctx)
 }
 
-// public(package) fun convert_to_fungible_staked_ika(
-//     self: &mut SystemInnerV1,
-//     staked_ika: StakedIka,
-//     ctx: &mut TxContext,
-// ): FungibleStakedIka {
-//     self.validators.convert_to_fungible_staked_ika(self.epoch, staked_ika, ctx)
-// }
-
-// public(package) fun redeem_fungible_staked_ika(
-//     self: &mut SystemInnerV1,
-//     fungible_staked_ika: FungibleStakedIka,
-// ): Balance<IKA> {
-//     self.validators.redeem_fungible_staked_ika(self.epoch, fungible_staked_ika)
-// }
-
 public(package) fun report_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
 ) {
@@ -347,7 +424,7 @@ public(package) fun report_validator(
 }
 
 public(package) fun undo_report_validator(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorOperationCap,
     reportee_id: ID,
 ) {
@@ -358,17 +435,26 @@ public(package) fun undo_report_validator(
 
 /// Create a new `ValidatorOperationCap` and registers it.
 /// The original object is thus revoked.
-public(package) fun rotate_operation_cap(self: &mut SystemInnerV1, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
+public(package) fun rotate_operation_cap(self: &mut SystemInner, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorOperationCap {
     self.validator_set.rotate_operation_cap(cap, ctx)
 }
 
-public(package) fun rotate_commission_cap(self: &mut SystemInnerV1, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
+public(package) fun rotate_commission_cap(self: &mut SystemInner, cap: &ValidatorCap, ctx: &mut TxContext): ValidatorCommissionCap {
     self.validator_set.rotate_commission_cap(cap, ctx)
+}
+
+public(package) fun collect_commission(
+    self: &mut SystemInner,
+    cap: &ValidatorCommissionCap,
+    amount: Option<u64>,
+    ctx: &mut TxContext,
+): Coin<IKA> {
+    self.validator_set.collect_commission(cap, amount).into_coin(ctx)
 }
 
 /// Sets a validator's name.
 public(package) fun set_validator_name(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     name: String,
     cap: &ValidatorOperationCap
 ) {
@@ -378,7 +464,7 @@ public(package) fun set_validator_name(
 /// Sets a validator's network address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_network_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     network_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -388,7 +474,7 @@ public(package) fun set_next_epoch_network_address(
 /// Sets a validator's p2p address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_p2p_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     p2p_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -398,7 +484,7 @@ public(package) fun set_next_epoch_p2p_address(
 /// Sets a validator's consensus address.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_address(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     consensus_address: String,
     cap: &ValidatorOperationCap
 ) {
@@ -409,7 +495,7 @@ public(package) fun set_next_epoch_consensus_address(
 /// Sets a validator's public key of protocol key and proof of possession.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_protocol_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     protocol_pubkey_bytes: vector<u8>,
     proof_of_possession_bytes: vector<u8>,
     cap: &ValidatorOperationCap,
@@ -421,7 +507,7 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
 /// Sets a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_network_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     network_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap
 ) {
@@ -431,7 +517,7 @@ public(package) fun set_next_epoch_network_pubkey_bytes(
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_consensus_pubkey_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     consensus_pubkey_bytes: vector<u8>,
     cap: &ValidatorOperationCap
 ) {
@@ -442,7 +528,7 @@ public(package) fun set_next_epoch_consensus_pubkey_bytes(
 /// Sets a validator's public key and its associated proof of class groups key.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
     cap: &ValidatorOperationCap
 ) {
@@ -452,7 +538,7 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
 /// Sets a validator's pricing vote.
 /// The change will only take effects starting from the next epoch.
 public(package) fun set_pricing_vote(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     pricing: DWalletPricing,
     cap: &ValidatorOperationCap,
@@ -468,16 +554,16 @@ public(package) fun set_pricing_vote(
 /// 3. Distribute computation charge to validator stake.
 /// 4. Update all validators.
 public(package) fun advance_epoch(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     let now = clock.timestamp_ms();
     let last_epoch_change = self.epoch_start_timestamp_ms;
+    let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
+    assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
 
-    if (self.epoch == 0) assert!(now >= last_epoch_change, EWrongEpochState)
-    else assert!(now >= last_epoch_change + self.epoch_duration_ms, EWrongEpochState);
     self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();
@@ -486,16 +572,13 @@ public(package) fun advance_epoch(
     let current_epoch = self.epoch();
     // Include stake subsidy in the rewards given out to validators and stakers.
     // Delay distributing any stake subsidies until after `stake_subsidy_start_epoch`.
-    // And if this epoch is shorter than the regular epoch duration, don't distribute any stake subsidy.
-    if (
-        current_epoch >= self.stake_subsidy_start_epoch
-    ) {
+    if (current_epoch >= self.stake_subsidy_start_epoch) {
         stake_subsidy.join(self.protocol_treasury.stake_subsidy_for_distribution(ctx));
     };
 
     let stake_subsidy_amount = stake_subsidy.value();
 
-    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(self.next_epoch_active_committee(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
+    let dwallet_computation_and_consensus_validation_rewards = dwallet_coordinator.advance_epoch(next_epoch_active_committee.extract(), &self.dwallet_2pc_mpc_coordinator_network_encryption_keys);
 
     let total_computation_fees = dwallet_computation_and_consensus_validation_rewards.value();
 
@@ -540,81 +623,86 @@ public(package) fun advance_epoch(
 }
 
 public(package) fun process_mid_epoch(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     clock: &Clock,
     dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
     ctx: &mut TxContext,
 ) {
-    assert!(self.validator_set.next_epoch_active_committee().is_none() && clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
+    assert!(self.epoch > 0 && self.validator_set.next_epoch_active_committee().is_none() && now >= last_epoch_change + (self.epoch_duration_ms / 2), EHaveNotReachedMidEpochTime);
 
     self.validator_set.process_mid_epoch();
     let next_epoch_active_committee = self.validator_set.next_epoch_active_committee().extract();
     dwallet_coordinator_inner.mid_epoch_reconfiguration(next_epoch_active_committee, &self.dwallet_2pc_mpc_coordinator_network_encryption_keys, ctx);
 }
 
-public(package) fun lock_last_active_session_sequence_number(
-    self: &SystemInnerV1,
+public(package) fun request_lock_epoch_sessions(
+    self: &SystemInner,
     dwallet_coordinator: &mut DWalletCoordinatorInner,
     clock: &Clock,
 ) {
-    assert!(clock.timestamp_ms() > self.epoch_start_timestamp_ms + (self.epoch_duration_ms()), EHaveNotReachedEndEpochTime);
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
+    assert!(self.epoch > 0 && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
+
     dwallet_coordinator.lock_last_active_session_sequence_number();
 }
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
 /// since epochs are ever-increasing and epoch changes are intended to happen every 24 hours.
-public(package) fun epoch(self: &SystemInnerV1): u64 {
+public(package) fun epoch(self: &SystemInner): u64 {
     self.epoch
 }
 
-public(package) fun protocol_version(self: &SystemInnerV1): u64 {
+public(package) fun protocol_version(self: &SystemInner): u64 {
     self.protocol_version
 }
 
-public(package) fun upgrade_caps(self: &SystemInnerV1): &vector<UpgradeCap> {
+public(package) fun upgrade_caps(self: &SystemInner): &vector<UpgradeCap> {
     &self.upgrade_caps
 }
 
 /// Returns unix timestamp of the start of current epoch
-public(package) fun epoch_start_timestamp_ms(self: &SystemInnerV1): u64 {
+public(package) fun epoch_start_timestamp_ms(self: &SystemInner): u64 {
     self.epoch_start_timestamp_ms
 }
 
 /// Returns the total amount staked with `validator_id`.
 /// Aborts if `validator_id` is not an active validator.
 public(package) fun validator_stake_amount(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     validator_id: ID,
 ): u64 {
     self.validator_set.validator_total_stake_amount(validator_id)
 }
 
 /// Returns all the validators who are currently reporting `validator_id`
-public(package) fun get_reporters_of(self: &SystemInnerV1, validator_id: ID): VecSet<ID> {
+public(package) fun get_reporters_of(self: &SystemInner, validator_id: ID): VecSet<ID> {
     self.get_reporters_of(validator_id)
 }
 
 public(package) fun token_exchange_rates(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
-    let validators = &self.validator_set;
-    validators.token_exchange_rates(validator_id)
+    self.validator_set.token_exchange_rates(validator_id)
 }
 
-public(package) fun active_committee(self: &SystemInnerV1): BlsCommittee {
-    let validator_set = &self.validator_set;
-    validator_set.active_committee()
+public(package) fun active_committee(self: &SystemInner): BlsCommittee {
+    self.validator_set.active_committee()
 }
 
-public(package) fun next_epoch_active_committee(self: &SystemInnerV1): BlsCommittee {
-    let next_epoch_committee = self.validator_set.next_epoch_active_committee();
-    assert!(next_epoch_committee.is_some(), ENextCommitteeNotSetOnAdvanceEpoch);
-    return *next_epoch_committee.borrow()
+public(package) fun next_epoch_active_committee(self: &SystemInner): Option<BlsCommittee> {
+    self.validator_set.next_epoch_active_committee()
+}
+
+public(package) fun dwallet_2pc_mpc_coordinator_network_encryption_key_ids(self: &SystemInner): vector<ID> {
+    self.dwallet_2pc_mpc_coordinator_network_encryption_keys.map_ref!(|cap| cap.dwallet_network_encryption_key_id())
 }
 
 fun verify_cap(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     cap: &ProtocolCap,
 ) {
     let protocol_cap_id = object::id(cap);
@@ -628,18 +716,19 @@ fun verify_cap(
 }
 
 public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
-    self: &mut SystemInnerV1,
-    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
+    self: &mut SystemInner,
+    dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     cap: &ProtocolCap,
+    params_for_network: vector<u8>,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_coordinator.request_dwallet_network_encryption_key_dkg(ctx);
+    let key_cap = dwallet_2pc_mpc_coordinator_inner.request_dwallet_network_encryption_key_dkg(params_for_network, ctx);
     self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 
 public(package) fun set_supported_and_pricing(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
@@ -650,7 +739,7 @@ public(package) fun set_supported_and_pricing(
 }
 
 public(package) fun set_paused_curves_and_signature_algorithms(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     paused_curves: vector<u32>,
     paused_signature_algorithms: vector<u32>,
@@ -662,7 +751,7 @@ public(package) fun set_paused_curves_and_signature_algorithms(
 }
 
 public(package) fun authorize_upgrade_by_cap(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ProtocolCap,
     package_id: ID,
     digest: vector<u8>,
@@ -673,7 +762,7 @@ public(package) fun authorize_upgrade_by_cap(
 }
 
 public(package) fun authorize_upgrade_by_approval(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
 ): UpgradeTicket {
     assert!(self.approved_upgrades.contains(&package_id), EApprovedUpgradeNotFound);
@@ -682,7 +771,7 @@ public(package) fun authorize_upgrade_by_approval(
 }
 
 fun authorize_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
     digest: vector<u8>,
 ): UpgradeTicket  {
@@ -692,7 +781,7 @@ fun authorize_upgrade(
 }
 
 public(package) fun commit_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     receipt: UpgradeReceipt,
 ): ID {
     let receipt_cap_id = receipt.cap();
@@ -703,7 +792,7 @@ public(package) fun commit_upgrade(
 }
 
 public(package) fun process_checkpoint_message_by_cap(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ProtocolCap,
     message: vector<u8>,
     ctx: &mut TxContext,
@@ -713,7 +802,7 @@ public(package) fun process_checkpoint_message_by_cap(
 }
 
 public(package) fun process_checkpoint_message_by_quorum(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     signature: vector<u8>,
     signers_bitmap: vector<u8>,
     message: vector<u8>,
@@ -731,7 +820,7 @@ public(package) fun process_checkpoint_message_by_quorum(
     self.process_checkpoint_message(message, ctx);
 }
 
-public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message: vector<u8>, _ctx: &mut TxContext) {
+public(package) fun process_checkpoint_message(self: &mut SystemInner, message: vector<u8>, _ctx: &mut TxContext) {
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
@@ -762,40 +851,100 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
     while (i < len) {
         let message_data_type = bcs_body.peel_vec_length();
         // Parses params message BCS bytes directly.
-        if (message_data_type == SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE) {
-            let next_protocol_version = bcs_body.peel_u64();
-            self.next_protocol_version.fill(next_protocol_version);
-        } else if (message_data_type == SET_EPOCH_DURATION_MS_MESSAGE_TYPE) {
-            let epoch_duration_ms = bcs_body.peel_u64();
-            self.epoch_duration_ms = epoch_duration_ms;
-        } else if (message_data_type == SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE) {
-            let stake_subsidy_start_epoch = bcs_body.peel_u64();
-            self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
-        } else if (message_data_type == SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE) {
-            let stake_subsidy_rate = bcs_body.peel_u16();
-            self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
-        } else if (message_data_type == SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE) {
-            let stake_subsidy_period_length = bcs_body.peel_u64();
-            self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
-        } else if (message_data_type == SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE) {
-            let min_validator_count = bcs_body.peel_u64();
-            self.validator_set.set_min_validator_count(min_validator_count);
-        } else if (message_data_type == SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE) {
-            let max_validator_count = bcs_body.peel_u64();
-            self.validator_set.set_max_validator_count(max_validator_count);
-        } else if (message_data_type == SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE) {
-            let min_validator_joining_stake = bcs_body.peel_u64();
-            self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
-        } else if (message_data_type == SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE) {
-            let max_validator_change_count = bcs_body.peel_u64();
-            self.validator_set.set_max_validator_change_count(max_validator_change_count);
-        } else if (message_data_type == SET_REWARD_SLASHING_RATE_MESSAGE_TYPE) {
-            let reward_slashing_rate = bcs_body.peel_u16();
-            self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
-        } else if (message_data_type == SET_APPROVED_UPGRADE_MESSAGE_TYPE) {
-            let package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
-            let digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
-            self.set_approved_upgrade(package_id, digest);
+        match (message_data_type) {
+            SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE => {
+                let next_protocol_version = bcs_body.peel_u64();
+                self.next_protocol_version.fill(next_protocol_version);
+                event::emit(SetNextProtocolVersionEvent {
+                    epoch: self.epoch,
+                    next_protocol_version,
+                });
+            },
+            SET_EPOCH_DURATION_MS_MESSAGE_TYPE => {
+                let epoch_duration_ms = bcs_body.peel_u64();
+                self.epoch_duration_ms = epoch_duration_ms;
+                event::emit(SetEpochDurationMsEvent {
+                    epoch: self.epoch,
+                    epoch_duration_ms,
+                });
+            },
+            SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE => {
+                let stake_subsidy_start_epoch = bcs_body.peel_u64();
+                self.stake_subsidy_start_epoch = stake_subsidy_start_epoch;
+                event::emit(SetStakeSubsidyStartEpochEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_start_epoch,
+                });
+            },
+            SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE => {
+                let stake_subsidy_rate = bcs_body.peel_u16();
+                self.protocol_treasury.set_stake_subsidy_rate(stake_subsidy_rate);
+                event::emit(SetStakeSubsidyRateEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_rate,
+                });
+            },
+            SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE => {
+                let stake_subsidy_period_length = bcs_body.peel_u64();
+                self.protocol_treasury.set_stake_subsidy_period_length(stake_subsidy_period_length);
+                event::emit(SetStakeSubsidyPeriodLengthEvent {
+                    epoch: self.epoch,
+                    stake_subsidy_period_length,
+                });
+            },
+            SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE => {
+                let min_validator_count = bcs_body.peel_u64();
+                self.validator_set.set_min_validator_count(min_validator_count);
+                event::emit(SetMinValidatorCountEvent {
+                    epoch: self.epoch,
+                    min_validator_count,
+                });
+            },
+            SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE => {
+                let max_validator_count = bcs_body.peel_u64();
+                self.validator_set.set_max_validator_count(max_validator_count);
+                event::emit(SetMaxValidatorCountEvent {
+                    epoch: self.epoch,
+                    max_validator_count,
+                });
+            },
+            SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE => {
+                let min_validator_joining_stake = bcs_body.peel_u64();
+                self.validator_set.set_min_validator_joining_stake(min_validator_joining_stake);
+                event::emit(SetMinValidatorJoiningStakeEvent {
+                    epoch: self.epoch,
+                    min_validator_joining_stake,
+                });
+            },
+            SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE => {
+                let max_validator_change_count = bcs_body.peel_u64();
+                self.validator_set.set_max_validator_change_count(max_validator_change_count);
+                event::emit(SetMaxValidatorChangeCountEvent {
+                    epoch: self.epoch,
+                    max_validator_change_count,
+                });
+            },
+            SET_REWARD_SLASHING_RATE_MESSAGE_TYPE => {
+                let reward_slashing_rate = bcs_body.peel_u16();
+                self.validator_set.set_reward_slashing_rate(reward_slashing_rate);
+                event::emit(SetRewardSlashingRateEvent {
+                    epoch: self.epoch,
+                    reward_slashing_rate,
+                });
+            },
+            SET_APPROVED_UPGRADE_MESSAGE_TYPE => {
+                let package_id = object::id_from_bytes(bcs_body.peel_vec_u8());
+                let digest = bcs_body.peel_option!(|bcs| bcs.peel_vec_u8());
+                self.set_approved_upgrade(package_id, digest);
+                event::emit(SetApprovedUpgradeEvent {
+                    epoch: self.epoch,
+                    package_id,
+                    digest,
+                });
+            },
+            _ => {
+                // Unknown message type - skip
+            }
         };
         i = i + 1;
     };
@@ -806,7 +955,7 @@ public(package) fun process_checkpoint_message(self: &mut SystemInnerV1, message
 /// If `digest` is `some`, it will be inserted into the `approved_upgrades` map.
 /// If `digest` is `none`, it will be removed from the `approved_upgrades` map.
 fun set_approved_upgrade(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     package_id: ID,
     mut digest: Option<vector<u8>>,
 ) {
@@ -828,7 +977,7 @@ fun set_approved_upgrade(
 /// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
 /// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
 public(package) fun calculate_rewards(
-    self: &SystemInnerV1,
+    self: &SystemInner,
     node_id: ID,
     staked_principal: u64,
     activation_epoch: u64,
@@ -838,30 +987,36 @@ public(package) fun calculate_rewards(
 }
 
 /// Check whether StakedIka can be withdrawn directly.
-public(package) fun can_withdraw_staked_ika_early(self: &SystemInnerV1, staked_ika: &StakedIka): bool {
+public(package) fun can_withdraw_staked_ika_early(self: &SystemInner, staked_ika: &StakedIka): bool {
     self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
 }
 
+/// Returns the duration of an epoch in milliseconds.
+public(package) fun epoch_duration_ms(self: &SystemInner): u64 {
+    self.epoch_duration_ms
+}
+
+// === Test Functions ===
 
 #[test_only]
 /// Return the current validator set
-public(package) fun validator_set(self: &SystemInnerV1): &ValidatorSet {
+public(package) fun validator_set(self: &SystemInner): &ValidatorSet {
     &self.validator_set
 }
 
 #[test_only]
-public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter(self: &SystemInnerV1): u64 {
+public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter(self: &SystemInner): u64 {
     self.protocol_treasury.get_stake_subsidy_distribution_counter()
 }
 
 #[test_only]
-public(package) fun set_epoch_for_testing(self: &mut SystemInnerV1, epoch_num: u64) {
+public(package) fun set_epoch_for_testing(self: &mut SystemInner, epoch_num: u64) {
     self.epoch = epoch_num
 }
 
 #[test_only]
 public(package) fun request_add_validator_for_testing(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     cap: &ValidatorCap,
 ) {
     self.validator_set.request_add_validator(self.epoch, cap);
@@ -869,59 +1024,8 @@ public(package) fun request_add_validator_for_testing(
 
 #[test_only]
 public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
-    self: &mut SystemInnerV1,
+    self: &mut SystemInner,
     counter: u64,
 ) {
     self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
 }
-
-public(package) fun epoch_duration_ms(self: &SystemInnerV1): u64 {
-    self.epoch_duration_ms
-}
-
-// // CAUTION: THIS CODE IS ONLY FOR TESTING AND THIS MACRO MUST NEVER EVER BE REMOVED.  Creates a
-// // candidate validator - bypassing the proof of possession check and other metadata validation
-// // in the process.
-// #[test_only]
-// public(package) fun request_add_validator_candidate_for_testing(
-//     self: &mut SystemInnerV1,
-//     protocol_pubkey_bytes: vector<u8>,
-//     network_pubkey_bytes: vector<u8>,
-//     consensus_pubkey_bytes_bytes: vector<u8>,
-//     class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
-//     proof_of_possession_bytes: vector<u8>,
-//     name: vector<u8>,
-//     description: vector<u8>,
-//     image_url: vector<u8>,
-//     project_url: vector<u8>,
-//     network_address: vector<u8>,
-//     p2p_address: vector<u8>,
-//     consensus_address: vector<u8>,
-//     computation_price: u64,
-//     commission_rate: u16,
-//     ctx: &mut TxContext,
-// ): (ValidatorCap, ValidatorOperationCap) {
-//     let (validator, cap, operation_cap) = validator_inner_v1::new_for_testing(
-//         ctx.sender(),
-//         protocol_pubkey_bytes,
-//         network_pubkey_bytes,
-//         consensus_pubkey_bytes_bytes,
-//         class_groups_pubkey_and_proof_bytes,
-//         proof_of_possession_bytes,
-//         name,
-//         description,
-//         image_url,
-//         project_url,
-//         network_address,
-//         p2p_address,
-//         consensus_address,
-//         option::none(),
-//         computation_price,
-//         commission_rate,
-//         false, // not an initial validator active at init
-//         ctx,
-//     );
-
-//     self.validators.request_add_validator_candidate(validator, ctx);
-//     (cap, operation_cap)
-// }

@@ -7,7 +7,6 @@ use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
-use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
 use ika_sui_client::{SuiClient, SuiClientInner};
@@ -17,8 +16,8 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DKG_FIRST_ROUND_PROTOCOL_FLAG,
-    DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
-    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
@@ -149,7 +148,10 @@ where
         };
 
         if clock.timestamp_ms > mid_epoch_time
-            && coordinator.pricing_calculation_votes.is_some()
+            && coordinator
+                .pricing_and_fee_management
+                .calculation_votes
+                .is_some()
             && !epoch_switch_state.calculated_protocol_pricing
         {
             info!("Calculating protocols pricing");
@@ -175,7 +177,9 @@ where
         // The Epoch was finished.
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + ika_system_state_inner.epoch_duration_ms();
-        let epoch_not_locked = !coordinator.locked_last_session_to_complete_in_current_epoch;
+        let epoch_not_locked = !coordinator
+            .session_management
+            .locked_last_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
             && !epoch_switch_state.ran_lock_last_session
@@ -201,18 +205,29 @@ where
         }
 
         // Check if we can advance the epoch.
-        let all_epoch_sessions_finished = coordinator.number_of_completed_sessions
-            == coordinator.last_session_to_complete_in_current_epoch;
-        let all_immediate_sessions_completed = coordinator.started_system_sessions_count
-            == coordinator.completed_system_sessions_count;
+        let all_epoch_sessions_finished =
+            coordinator.session_management.number_of_completed_sessions
+                == coordinator
+                    .session_management
+                    .last_session_to_complete_in_current_epoch;
+        let all_immediate_sessions_completed =
+            coordinator.session_management.started_system_sessions_count
+                == coordinator
+                    .session_management
+                    .completed_system_sessions_count;
         let next_epoch_committee_exists =
             system_inner_v1.validator_set.next_epoch_committee.is_some();
-        if coordinator.locked_last_session_to_complete_in_current_epoch
+        if coordinator
+            .session_management
+            .locked_last_session_to_complete_in_current_epoch
             && all_epoch_sessions_finished
             && all_immediate_sessions_completed
             && next_epoch_committee_exists
             && !epoch_switch_state.ran_request_advance_epoch
-            && coordinator.pricing_calculation_votes.is_none()
+            && coordinator
+                .pricing_and_fee_management
+                .calculation_votes
+                .is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
@@ -412,12 +427,6 @@ where
                                 }
                             }
                         }
-                        Ok(None) => {
-                            info!(
-                                sequence_number = ?next_dwallet_checkpoint_sequence_number,
-                                "No checkpoint found for sequence number"
-                            );
-                        }
                         Err(e) => {
                             error!(
                                 sequence_number=?next_dwallet_checkpoint_sequence_number,
@@ -425,6 +434,7 @@ where
                                 "failed to get checkpoint"
                             );
                         }
+                        Ok(None) => {}
                     }
                 }
 

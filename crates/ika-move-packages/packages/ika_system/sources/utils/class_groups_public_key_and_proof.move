@@ -8,7 +8,11 @@
 /// the full key must be split into parts and stored dynamically using `table_vec`.
 module ika_system::class_groups_public_key_and_proof;
 
+// === Imports ===
+
 use sui::table_vec;
+
+// === Structs ===
 
 /// `ClassGroupsPublicKeyAndProofBuilder` is used to construct a `ClassGroupsPublicKeyAndProof` object.
 public struct ClassGroupsPublicKeyAndProofBuilder has key, store {
@@ -25,15 +29,16 @@ public struct ClassGroupsPublicKeyAndProof has key, store {
     public_keys_and_proofs: table_vec::TableVec<vector<u8>>,
 }
 
+// === Public Functions ===
+
 /// Creates a new `ClassGroupsPublicKeyAndProofBuilder` instance.
 public fun empty(
     ctx: &mut TxContext,
 ): ClassGroupsPublicKeyAndProofBuilder {
-    let builder = ClassGroupsPublicKeyAndProofBuilder { 
+    ClassGroupsPublicKeyAndProofBuilder { 
         id: object::new(ctx),
         public_keys_and_proofs: table_vec::empty(ctx),
-    };
-    builder 
+    }
 }
 
 /// Adds a public key and its corresponding proof to the `ClassGroupsPublicKeyAndProofBuilder`.

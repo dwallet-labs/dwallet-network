@@ -3,6 +3,7 @@
 import { Transaction } from '@mysten/sui/transactions';
 
 import {
+	createSessionIdentifier,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
 	getDWalletSecpState,
 	getObjectWithType,
@@ -10,7 +11,7 @@ import {
 } from './globals.js';
 import type { Config } from './globals.ts';
 
-interface CompletedPresign {
+export interface CompletedPresign {
 	state: {
 		fields: {
 			presign: Uint8Array;
@@ -41,17 +42,23 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const dWalletStateData = await getDWalletSecpState(conf);
-
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 	const presignCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.pure.id(dwallet_id),
 			tx.pure.u32(0),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -73,7 +80,7 @@ export async function presign(conf: Config, dwallet_id: string): Promise<Complet
 			showEvents: true,
 		},
 	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
+	const startSessionEvent = result.events?.at(1)?.parsedJson;
 	if (!isStartPresignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}

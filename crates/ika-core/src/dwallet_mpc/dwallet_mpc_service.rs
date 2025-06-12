@@ -83,7 +83,9 @@ impl DWalletMPCService {
             let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
             self.dwallet_mpc_manager
                 .update_last_session_to_complete_in_current_epoch(
-                    inner_state.last_session_to_complete_in_current_epoch,
+                    inner_state
+                        .session_management
+                        .last_session_to_complete_in_current_epoch,
                 );
         }
     }
@@ -117,7 +119,7 @@ impl DWalletMPCService {
                             })
                             .await;
                         info!(
-                            session_id=?session_info.session_id,
+                            session_identifier=?session_info.session_identifier,
                             session_type=?session_info.session_type,
                             mpc_round=?session_info.mpc_round,
                             "Successfully processed a missed event from Sui"
@@ -245,16 +247,18 @@ impl DWalletMPCService {
                 }
             };
 
-            let mut new_messages = vec![];
             for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
-                new_messages.extend(messages);
-            }
-            for message in new_messages {
+                for message in messages {
+                    self.dwallet_mpc_manager
+                        .handle_dwallet_db_message(message)
+                        .await;
+                }
                 self.dwallet_mpc_manager
-                    .handle_dwallet_db_message(message)
+                    .handle_dwallet_db_message(DWalletMPCDBMessage::EndOfDelivery)
                     .await;
             }
+
             self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;

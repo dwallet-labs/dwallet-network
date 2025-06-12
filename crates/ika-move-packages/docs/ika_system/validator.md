@@ -49,10 +49,10 @@ title: Module `(ika_system=0x0)::validator`
 -  [Function `is_active`](#(ika_system=0x0)_validator_is_active)
 -  [Function `is_withdrawing`](#(ika_system=0x0)_validator_is_withdrawing)
 -  [Function `withdrawing_epoch`](#(ika_system=0x0)_validator_withdrawing_epoch)
--  [Function `is_preactive_at_epoch`](#(ika_system=0x0)_validator_is_preactive_at_epoch)
 -  [Function `exchange_rates`](#(ika_system=0x0)_validator_exchange_rates)
 -  [Function `is_empty`](#(ika_system=0x0)_validator_is_empty)
 -  [Function `calculate_rewards`](#(ika_system=0x0)_validator_calculate_rewards)
+-  [Function `is_preactive_at_epoch`](#(ika_system=0x0)_validator_is_preactive_at_epoch)
 
 
 <pre><code><b>use</b> (ika=0x0)::ika;
@@ -87,6 +87,7 @@ title: Module `(ika_system=0x0)::validator`
 <b>use</b> <a href="../sui/group_ops.md#sui_group_ops">sui::group_ops</a>;
 <b>use</b> <a href="../sui/hex.md#sui_hex">sui::hex</a>;
 <b>use</b> <a href="../sui/object.md#sui_object">sui::object</a>;
+<b>use</b> <a href="../sui/party.md#sui_party">sui::party</a>;
 <b>use</b> <a href="../sui/table.md#sui_table">sui::table</a>;
 <b>use</b> <a href="../sui/table_vec.md#sui_table_vec">sui::table_vec</a>;
 <b>use</b> <a href="../sui/transfer.md#sui_transfer">sui::transfer</a>;
@@ -296,16 +297,20 @@ Represents the state of the validator.
 Variant <code>PreActive</code>
 </dt>
 <dd>
+ The validator is not active yet but can accept stakes.
 </dd>
 <dt>
 Variant <code>Active</code>
 </dt>
 <dd>
+ The validator is active and can accept stakes.
 </dd>
 <dt>
 Variant <code>Withdrawing</code>
 </dt>
 <dd>
+ The validator awaits the stake to be withdrawn. The value inside the
+ variant is the epoch in which the validator will be withdrawn.
 </dd>
 
 <dl>
@@ -328,6 +333,7 @@ Variant <code>Withdrawing</code>
 
 <a name="(ika_system=0x0)_validator_BASIS_POINT_DENOMINATOR"></a>
 
+The number of basis points in 100%.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_BASIS_POINT_DENOMINATOR">BASIS_POINT_DENOMINATOR</a>: u16 = 10000;
@@ -594,6 +600,7 @@ Otherwise, it will be activated in the current epoch.
 
 ## Function `activate`
 
+Activate the validator for participation in the network.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_activate">activate</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, <a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap">validator_cap</a>: &(ika_system=0x0)::<a href="../ika_system/validator_cap.md#(ika_system=0x0)_validator_cap_ValidatorCap">validator_cap::ValidatorCap</a>, current_epoch: u64, committee_selected: bool)
@@ -666,7 +673,8 @@ Set the state of the validator to <code>Withdrawing</code>.
 
 ## Function `deactivate`
 
-Set the state of the validator to <code>Withdrawing</code>.
+Deactivate the validator from network participation by setting the state to <code>Withdrawing</code>.
+This is a function to deactivate the validator from the network participation without validator cap.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_deactivate">deactivate</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, deactivation_epoch: u64)
@@ -917,7 +925,7 @@ Advance epoch for the <code><a href="../ika_system/validator.md#(ika_system=0x0)
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.rewards_pool.join(rewards);
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_ika_balance">ika_balance</a> = <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_ika_balance">ika_balance</a> + <a href="../ika_system/validator.md#(ika_system=0x0)_validator_rewards_amount">rewards_amount</a>;
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.latest_epoch = current_epoch;
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.roatate_next_epoch_info();
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.rotate_next_epoch_info();
     // Perform stake deduction / addition <b>for</b> the current epoch.
     <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_process_pending_stake">process_pending_stake</a>(current_epoch);
 }
@@ -1924,32 +1932,6 @@ Returns the epoch in which the validator is withdrawing.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_is_preactive_at_epoch"></a>
-
-## Function `is_preactive_at_epoch`
-
-Returns true if the provided validator is preactive at the provided epoch.
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive_at_epoch">is_preactive_at_epoch</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, epoch: u64): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive_at_epoch">is_preactive_at_epoch</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, epoch: u64): bool {
-    // Either the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> is currently preactive or the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>'s starting epoch is later than the provided epoch.
-    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive">is_preactive</a>() || (*<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>.borrow() &gt; epoch)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="(ika_system=0x0)_validator_exchange_rates"></a>
 
 ## Function `exchange_rates`
@@ -2035,6 +2017,32 @@ Calculate the rewards for an amount with value <code>staked_principal</code>, st
     <b>if</b> (ika_amount &gt;= staked_principal) {
         ika_amount - staked_principal
     } <b>else</b> 0
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_validator_is_preactive_at_epoch"></a>
+
+## Function `is_preactive_at_epoch`
+
+Returns true if the provided validator is preactive at the provided epoch.
+
+
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive_at_epoch">is_preactive_at_epoch</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &(ika_system=0x0)::<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">validator::Validator</a>, epoch: u64): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive_at_epoch">is_preactive_at_epoch</a>(<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>: &<a href="../ika_system/validator.md#(ika_system=0x0)_validator_Validator">Validator</a>, epoch: u64): bool {
+    // Either the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a> is currently preactive or the <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>'s starting epoch is later than the provided epoch.
+    <a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_is_preactive">is_preactive</a>() || (*<a href="../ika_system/validator.md#(ika_system=0x0)_validator">validator</a>.<a href="../ika_system/validator.md#(ika_system=0x0)_validator_activation_epoch">activation_epoch</a>.borrow() &gt; epoch)
 }
 </code></pre>
 

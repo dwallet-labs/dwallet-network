@@ -5,9 +5,12 @@
 /// It stores a fixed point exchange rate between the IKA token and validator shares.
 module ika_system::token_exchange_rate;
 
-// Error codes
+// === Errors ===
+
 /// The exchange rate between the shares and the IKA token is invalid.
 const EInvalidRate: u64 = 0;
+
+// === Structs ===
 
 /// Represents the exchange rate for the staking validator.
 public enum TokenExchangeRate has copy, drop, store {
@@ -20,6 +23,8 @@ public enum TokenExchangeRate has copy, drop, store {
         share_amount: u128,
     },
 }
+
+// === Package Functions ===
 
 /// Create an empty exchange rate.
 public(package) fun flat(): TokenExchangeRate {

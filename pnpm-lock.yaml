@@ -131,6 +131,9 @@ importers:
       graphql:
         specifier: ^16.11.0
         version: 16.11.0
+      js-sha3:
+        specifier: ^0.9.3
+        version: 0.9.3
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -3054,6 +3057,9 @@ packages:
 
   joi@17.13.3:
     resolution: {integrity: sha512-otDA4ldcIx+ZXsKHWmp0YizCweVRZG96J10b0FevjfuncLO1oX59THoAmHkNubYJ+9gWsYsp5k8v4ib6oDv1fA==}
+
+  js-sha3@0.9.3:
+    resolution: {integrity: sha512-BcJPCQeLg6WjEx3FE591wVAevlli8lxsxm9/FzV4HXkV49TmBH38Yvrpce6fjbADGMKFrBMGTqrVz3qPIZ88Gg==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -7657,6 +7663,8 @@ snapshots:
       '@sideway/address': 4.1.5
       '@sideway/formula': 3.0.1
       '@sideway/pinpoint': 2.0.0
+
+  js-sha3@0.9.3: {}
 
   js-tokens@4.0.0: {}
 

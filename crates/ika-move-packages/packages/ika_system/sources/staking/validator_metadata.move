@@ -4,8 +4,12 @@
 /// Metadata that describes a validator. Attached to the `StakingPool`
 module ika_system::validator_metadata;
 
+// === Imports ===
+
 use std::string::String;
 use sui::vec_map::{Self, VecMap};
+
+// === Structs ===
 
 /// Standard metadata for a validator. Created during the validator registration.
 public struct ValidatorMetadata has copy, drop, store {
@@ -14,6 +18,8 @@ public struct ValidatorMetadata has copy, drop, store {
     description: String,
     extra_fields: VecMap<String, String>,
 }
+
+// === Public Functions ===
 
 /// Create a new `ValidatorMetadata` instance
 public fun new(image_url: String, project_url: String, description: String): ValidatorMetadata {
@@ -70,6 +76,8 @@ public(package) fun default(): ValidatorMetadata {
         extra_fields: vec_map::empty(),
     }
 }
+
+// === Tests ===
 
 #[test]
 fun test_validator_metadata() {

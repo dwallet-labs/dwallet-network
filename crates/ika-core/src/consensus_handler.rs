@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -190,7 +189,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 return;
             }
         }
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
         dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
         // Need to drop the verifier, as `self` is being used mutably later in this function.
         drop(dwallet_mpc_verifier);
@@ -399,7 +401,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
-        let dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
+        let dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_read()
+            .await;
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
@@ -414,10 +419,10 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
         info!("Performing a state sync for the dWallet MPC node");
-        let mut dwallet_mpc_verifier = self.epoch_store.get_dwallet_mpc_outputs_verifier().await;
-        for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
-            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
-        }
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
@@ -425,22 +430,8 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             {
                 error!(
                     "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_id, output.authority, err
+                    output.session_info.session_identifier, output.authority, err
                 );
-            }
-        }
-        for message in self
-            .epoch_store
-            .tables()?
-            .get_all_dwallet_mpc_dwallet_mpc_messages()?
-        {
-            match message {
-                DWalletMPCDBMessage::Message(_)
-                | DWalletMPCDBMessage::EndOfDelivery
-                | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::MaliciousReport(..)
-                | DWalletMPCDBMessage::PerformCryptographicComputations
-                | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
             }
         }
         Ok(())

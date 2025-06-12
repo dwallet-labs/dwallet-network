@@ -23,10 +23,11 @@ use ika_types::sui::{
     DWALLET_2PC_MPC_SECP256K1_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
     FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
     INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_INNER_MODULE_NAME,
+    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
+    VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -328,6 +329,7 @@ pub async fn ika_system_request_dwallet_network_encryption_key_dkg_by_cap(
                 mutable: true,
             }),
             CallArg::Object(ObjectArg::ImmOrOwnedObject(protocol_cap_ref)),
+            CallArg::Pure(bcs::to_bytes::<Vec<u8>>(&vec![])?),
         ],
     )?;
 
@@ -763,7 +765,7 @@ pub async fn init_initialize(
 
     let protocol_cap_type = StructTag {
         address: ika_system_package_id.into(),
-        module: PROTOCOL_CAP_MODULE_NAME.into(),
+        module: SYSTEM_INNER_MODULE_NAME.into(),
         name: PROTOCOL_CAP_STRUCT_NAME.into(),
         type_params: vec![],
     };
