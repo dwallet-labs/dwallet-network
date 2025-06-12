@@ -18,7 +18,7 @@ homomorphic_encryption.workspace = true
 class_groups.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "229c20c"}
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "38f2595"}
 shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
 rand_core = "0.6.4"
 dwallet-mpc-types.workspace = true

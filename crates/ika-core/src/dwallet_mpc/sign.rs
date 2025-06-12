@@ -2,13 +2,13 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
-use crate::dwallet_mpc::mpc_session::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCPublicInput, SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use mpc::Party;
 use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;
@@ -26,26 +26,26 @@ pub(super) type SignPublicInput =
 /// when accessing [`Party::PublicInput`].
 pub(super) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,
         message: Vec<u8>,
         presign: SerializedWrappedMPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
-    ) -> DwalletMPCResult<MPCPublicInput>;
+    ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput>;
 }
 
 impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
-        protocol_public_parameters: Vec<u8>,
+        protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,
         message: Vec<u8>,
         presign: SerializedWrappedMPCPublicOutput,
         centralized_signed_message: SerializedWrappedMPCPublicOutput,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
         expected_decrypters: HashSet<PartyID>,
-    ) -> DwalletMPCResult<MPCPublicInput> {
+    ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
         let dkg_output = bcs::from_bytes(&dkg_output)?;
         let presign = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
@@ -56,7 +56,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
                     centralized_signed_message;
                 let public_input = SignPublicInput::from((
                     expected_decrypters,
-                    bcs::from_bytes(&protocol_public_parameters)?,
+                    protocol_public_parameters,
                     bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::HashedMessage>(
                         &message,
                     )?,
@@ -72,7 +72,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
                     decryption_key_share_public_parameters,
                 ));
 
-                Ok(bcs::to_bytes(&public_input)?)
+                Ok(public_input)
             }
         }
     }

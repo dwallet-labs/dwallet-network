@@ -4,14 +4,15 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
 use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCPublicInput,
-    SerializedWrappedMPCPublicOutput,
+    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
+    SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput,
 };
 use group::PartyID;
 use ika_types::committee::Committee;
@@ -253,9 +254,11 @@ fn start_encrypted_share_verification_session_info(
     }
 }
 
-fn dkg_first_public_input(protocol_public_parameters: &[u8]) -> DwalletMPCResult<Vec<u8>> {
+fn dkg_first_public_input(
+    protocol_public_parameters: &twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DKGFirstParty as mpc::Party>::PublicInput> {
     <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters.to_vec(),
+        protocol_public_parameters.clone(),
     )
 }
 
@@ -296,10 +299,10 @@ fn dkg_first_party_session_info(
 
 fn dkg_second_public_input(
     deserialized_event: &DWalletDKGSecondRoundRequestEvent,
-    protocol_public_parameters: &[u8],
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DKGSecondParty as mpc::Party>::PublicInput> {
     <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
-        protocol_public_parameters.to_vec(),
+        protocol_public_parameters,
         deserialized_event.first_round_output.clone(),
         deserialized_event
             .centralized_public_key_share_and_proof
@@ -322,8 +325,8 @@ fn dkg_second_party_session_info(
 pub(crate) fn presign_public_input(
     session_identifier: SessionIdentifier,
     deserialized_event: PresignRequestEvent,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<PresignParty as mpc::Party>::PublicInput> {
     <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
         // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
@@ -374,8 +377,8 @@ fn get_expected_decrypters(
 fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
     dwallet_mpc_manager: &DWalletMPCManager,
-    protocol_public_parameters: Vec<u8>,
-) -> DwalletMPCResult<Vec<u8>> {
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
     let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
@@ -408,7 +411,7 @@ fn sign_session_public_input(
             .event_data
             .message_centralized_signature
             .clone(),
-        bcs::from_bytes(&decryption_pp)?,
+        decryption_pp,
         expected_decrypters,
     )
 }
@@ -465,7 +468,6 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
-    encoded_public_input: &MPCPublicInput,
     logger: &MPCSessionLogger,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
@@ -478,13 +480,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     // Update logger with malicious parties detected during deserialization.
     let logger = logger.clone().with_malicious_parties(malicious_parties);
 
-    logger.write_logs_to_disk(
-        session_id,
-        party_id,
-        access_threshold,
-        &serialized_messages,
-        encoded_public_input,
-    );
+    logger.write_logs_to_disk(session_id, party_id, access_threshold, &serialized_messages);
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.
@@ -593,7 +589,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 pub(super) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
-) -> DwalletMPCResult<(MPCPublicInput, MPCPrivateInput)> {
+) -> DwalletMPCResult<(PublicInput, MPCPrivateInput)> {
     let packages_config = &dwallet_mpc_manager.epoch_store()?.packages_config;
     match &event.type_ {
         t if t
@@ -611,7 +607,21 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_encryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            let dwallet_id = CommitmentSizedNumber::from_le_slice(
+                deserialized_event.event_data.dwallet_id.to_vec().as_slice(),
+            );
+            let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
+                bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?;
+            let public_input = (
+                protocol_public_parameters,
+                dwallet_id,
+                bcs::from_bytes(&centralized_party_message)?,
+            )
+                .into();
+            Ok((
+                PublicInput::DWalletImportedKeyVerificationRequest(public_input),
+                None,
+            ))
         }
         t if t
             == &DWalletSessionEvent::<MakeDWalletUserSecretKeySharesPublicRequestEvent>::type_(
@@ -620,15 +630,18 @@ pub(super) async fn session_input_from_event(
         {
             let deserialized_event: DWalletSessionEvent<
                 MakeDWalletUserSecretKeySharesPublicRequestEvent,
-            > = deserialize_event_or_dynamic_field(&event.contents)?;
+            > = bcs::from_bytes(&event.contents)?;
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
-                // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((
+                PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(
+                    protocol_public_parameters,
+                ),
+                None,
+            ))
         }
         t if t
             == &DWalletSessionEvent::<DWalletNetworkDKGEncryptionKeyRequestEvent>::type_(
@@ -642,7 +655,7 @@ pub(super) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                network_dkg::network_dkg_public_input(
+                PublicInput::NetworkEncryptionKeyDkg(network_dkg::network_dkg_public_input(
                     &dwallet_mpc_manager
                         .epoch_store()?
                         .get_weighted_threshold_access_structure()?,
@@ -650,7 +663,7 @@ pub(super) async fn session_input_from_event(
                         .validators_class_groups_public_keys_and_proofs
                         .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
-                )?,
+                )?),
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
                         .class_groups_keypair()
@@ -673,7 +686,7 @@ pub(super) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                <ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
+                PublicInput::NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
                     dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                     dwallet_mpc_manager.must_get_next_active_committee().await,
                     dwallet_mpc_manager.get_decryption_key_share_public_parameters(
@@ -688,7 +701,7 @@ pub(super) async fn session_input_from_event(
                                 .dwallet_network_decryption_key_id,
                         )
                         .await?,
-                )?,
+                )?),
                 Some(bcs::to_bytes(
                     &class_groups_key_pair_and_proof
                         .class_groups_keypair()
@@ -708,7 +721,10 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((dkg_first_public_input(&protocol_public_parameters)?, None))
+            Ok((
+                PublicInput::DKGFirst(dkg_first_public_input(&protocol_public_parameters)?),
+                None,
+            ))
         }
         t if t
             == &DWalletSessionEvent::<DWalletDKGSecondRoundRequestEvent>::type_(
@@ -725,10 +741,10 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                dkg_second_public_input(
+                PublicInput::DKGSecond(dkg_second_public_input(
                     &deserialized_event.event_data,
-                    &protocol_public_parameters,
-                )?,
+                    protocol_public_parameters,
+                )?),
                 None,
             ))
         }
@@ -743,11 +759,11 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                presign_public_input(
+                PublicInput::Presign(presign_public_input(
                     deserialized_event.session_identifier_digest(),
                     deserialized_event.event_data,
                     protocol_public_parameters,
-                )?,
+                )?),
                 None,
             ))
         }
@@ -762,11 +778,11 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                sign_session_public_input(
+                PublicInput::Sign(sign_session_public_input(
                     &deserialized_event,
                     dwallet_mpc_manager,
                     protocol_public_parameters,
-                )?,
+                )?),
                 None,
             ))
         }
@@ -784,7 +800,10 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((
+                PublicInput::EncryptedShareVerification(protocol_public_parameters),
+                None,
+            ))
         }
         t if t == &DWalletSessionEvent::<FutureSignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<FutureSignRequestEvent> =
@@ -796,7 +815,10 @@ pub(super) async fn session_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
-            Ok((protocol_public_parameters, None))
+            Ok((
+                PublicInput::PartialSignatureVerification(protocol_public_parameters),
+                None,
+            ))
         }
         _ => Err(DwalletMPCError::NonMPCEvent(event.type_.name.to_string())),
     }
@@ -870,7 +892,6 @@ impl MPCSessionLogger {
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
         messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
-        encoded_public_input: &MPCPublicInput,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -899,7 +920,6 @@ impl MPCSessionLogger {
             "party_id": party_id,
             "access_threshold": access_threshold,
             "messages": messages,
-            "public_input": encoded_public_input,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
             "class_groups_key_pair_and_proof": self.encoded_class_groups_key_pair_and_proof,
