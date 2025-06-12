@@ -2444,15 +2444,15 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
     ctx: &mut TxContext,
 ) {
     self.session_management.started_system_sessions_count = self.session_management.started_system_sessions_count + 1;
-
+    let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
     let event = DWalletSessionEvent {
         epoch: self.current_epoch,
-        session_object_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        session_object_id: session_id,
         session_type: SessionType::System,
         session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
-    self.session_management.session_events.add(session.id.to_inner(), event);
+    self.session_management.session_events.add(session_id, event);
     event::emit(event);
 }
 
