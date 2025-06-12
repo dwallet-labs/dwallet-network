@@ -35,6 +35,21 @@ pub struct SuiConnectorMetrics {
 
     /// Total number of failed dwallet checkpoint writes to Sui.
     pub(crate) dwallet_checkpoint_writes_failure_total: IntGauge,
+
+    /// Sequence number of the next dwallet checkpoint to write to Sui.
+    pub(crate) system_checkpoint_sequence: IntGauge,
+
+    /// Sequence number of the last system checkpoint successfully written to Sui.
+    pub(crate) last_written_system_checkpoint_sequence: IntGauge,
+
+    /// Total number of system checkpoint write requests sent to Sui.
+    pub(crate) system_checkpoint_write_requests_total: IntGauge,
+
+    /// Total number of successful system checkpoint writes to Sui.
+    pub(crate) system_checkpoint_writes_success_total: IntGauge,
+
+    /// Total number of failed system checkpoint writes to Sui.
+    pub(crate) system_checkpoint_writes_failure_total: IntGauge,
 }
 
 impl SuiConnectorMetrics {
@@ -85,6 +100,36 @@ impl SuiConnectorMetrics {
             dwallet_checkpoint_writes_failure_total: register_int_gauge_with_registry!(
                 "sui_connector_dwallet_checkpoint_writes_failure_total",
                 "Total number of failed dwallet checkpoint writes to Sui",
+                registry,
+            )
+            .unwrap(),
+            system_checkpoint_writes_failure_total: register_int_gauge_with_registry!(
+                "sui_connector_system_checkpoint_writes_failure_total",
+                "Total number of failed system checkpoint writes to Sui",
+                registry,
+            )
+            .unwrap(),
+            system_checkpoint_writes_success_total: register_int_gauge_with_registry!(
+                "sui_connector_system_checkpoint_writes_success_total",
+                "Total number of successful system checkpoint writes to Sui",
+                registry,
+            )
+            .unwrap(),
+            system_checkpoint_write_requests_total: register_int_gauge_with_registry!(
+                "sui_connector_system_checkpoint_write_requests_total",
+                "Total number of system checkpoint write requests sent to Sui",
+                registry,
+            )
+            .unwrap(),
+            system_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_system_checkpoint_sequence",
+                "Sequence number of the next system checkpoint to write to Sui",
+                registry,
+            )
+            .unwrap(),
+            last_written_system_checkpoint_sequence: register_int_gauge_with_registry!(
+                "sui_connector_last_written_system_checkpoint_sequence",
+                "Sequence number of the last system checkpoint successfully written to Sui",
                 registry,
             )
             .unwrap(),
