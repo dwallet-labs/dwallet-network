@@ -4,8 +4,6 @@ run-sui:
 	RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 86400000
 run-local:
 	cargo run --release --package ika --bin ika -- start
-run-local-with-net-dkg:
-	cargo run --release --package ika --bin ika -- start
 run-local-with-net-dkg-short-epoch:
 	cargo run --release --package ika --bin ika -- start --epoch-duration-ms 600000
 snapshot:
