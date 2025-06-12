@@ -2408,12 +2408,12 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     assert!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
 
     let session_sequence_number = match (session_type) {
-        User => {
+        SessionType::User => {
             let next_session_sequence_number = self.session_management.next_session_sequence_number;
             self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
             next_session_sequence_number
         },
-        System => {
+        SessionType::System => {
             let next_system_session_sequence_number = self.session_management.next_system_session_sequence_number;
             self.session_management.next_system_session_sequence_number = next_system_session_sequence_number + 1;
             next_system_session_sequence_number
@@ -2490,6 +2490,7 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
         session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
+        session_sequence_number: self.session_management.next_system_session_sequence_number,
     };
     self.session_management.session_events.add(session_id, event);
     event::emit(event);
