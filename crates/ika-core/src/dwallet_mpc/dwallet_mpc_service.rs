@@ -230,12 +230,12 @@ impl DWalletMPCService {
                     ) {
                         error!(error=?e,
                             session_id=?session_id,
-                            "Failed to delete batch for session");
+                            "failed to delete batch for session");
                     }
                     if let Err(e) = batch.write() {
                         error!(error=?e,
                             session_id=?session_id,
-                            "Failed to write batch for session");
+                            "failed to write batch for session");
                     }
                 }
             }
@@ -250,11 +250,11 @@ impl DWalletMPCService {
             // Read all dWallet MPC events for uncompleted sessions from the local DB and handle them.
             let dwallet_mpc_events_for_uncompleted_sessions = match self.epoch_store.tables() {
                 Ok(tables) => tables.get_all_dwallet_mpc_events_for_uncompleted_sessions().unwrap_or_else(|e| {
-                    error!(error=?e, "Failed to get all dWallet MPC events for uncompleted sessions");
+                    error!(error=?e, "failed to get all dWallet MPC events for uncompleted sessions");
                     vec![]
                 }),
                 Err(e) => {
-                    error!(error=?e, "Failed to get tables from epoch store");
+                    error!(error=?e, "failed to get tables from epoch store");
                     vec![]
                 }
             };

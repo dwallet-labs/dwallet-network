@@ -2356,31 +2356,30 @@ impl ConsensusCommitOutput {
 
         // Write all the dWallet MPC related messages from this consensus round to the local DB.
         // The [`DWalletMPCService`] constantly reads and process those messages.
-        if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
-            batch.insert_batch(
-                &tables.dwallet_mpc_messages,
-                [(
-                    consensus_commit_stats.index.last_committed_round,
-                    self.dwallet_mpc_round_messages,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_completed_sessions,
-                [(
-                    consensus_commit_stats.index.last_committed_round,
-                    self.dwallet_mpc_completed_sessions,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_outputs,
-                [(
-                    consensus_commit_stats.index.last_committed_round,
-                    self.dwallet_mpc_round_outputs,
-                )],
-            )?;
-        } else {
-            error!("failed to retrieve consensus commit statistics when trying to write DWallet MPC messages to local DB");
-        }
+        batch.insert_batch(
+            &tables.dwallet_mpc_messages,
+            [(
+                self.consensus_round,
+                self.dwallet_mpc_round_messages,
+            )],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_completed_sessions,
+            [(
+                self.consensus_round,
+                self.dwallet_mpc_completed_sessions,
+            )],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_outputs,
+            [(
+                self.consensus_round,
+                self.dwallet_mpc_round_outputs,
+            )],
+        )?;
+
+        error!(consensus_commit_stats=?self.consensus_commit_stats, consensus_round=?self.consensus_round, "find me");
+
 
         batch.insert_batch(
             &tables.consensus_message_processed,
