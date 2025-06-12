@@ -173,8 +173,13 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        self.load_missed_events().await;
+        let mut loop_index = 0;
         loop {
+            // Load events from Sui every 5 minutes.
+            if loop_index % 3_000 == 0 {
+                self.load_missed_events().await;
+            }
+            loop_index += 1;
             match self.exit.has_changed() {
                 Ok(true) => {
                     warn!("DWalletMPCService exit signal received");
