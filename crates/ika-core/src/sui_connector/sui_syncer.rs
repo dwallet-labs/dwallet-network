@@ -353,7 +353,13 @@ where
                     SystemInner::V1(system_inner) => system_inner,
                 };
                 if start_epoch_cursor.is_none() {
-                    let start_epoch_event = EventID::from((system_inner.epoch_start_tx_digest, 0));
+                    let start_epoch_event = EventID::from((
+                        system_inner
+                            .epoch_start_tx_digest
+                            .try_into()
+                            .expect("start epoch TX digest in wrong length"),
+                        0,
+                    ));
                     if start_epoch_cursor != Some(start_epoch_event) {
                         start_epoch_cursor = Some(start_epoch_event);
                         cursor = start_epoch_cursor;
