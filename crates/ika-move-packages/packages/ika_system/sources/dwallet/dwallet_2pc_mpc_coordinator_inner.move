@@ -1830,6 +1830,7 @@ public(package) fun create_dwallet_coordinator_inner(
             started_system_sessions_count: 0,
             completed_system_sessions_count: 0,
             next_session_sequence_number: 1,
+            next_system_session_sequence_number: 1,
             last_user_initiated_session_to_complete_in_current_epoch: 0,
             locked_last_user_initiated_session_to_complete_in_current_epoch: true,
             max_active_sessions_buffer: 100,
@@ -2406,7 +2407,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     assert!(self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierNotExist);
     assert!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
 
-    let session_sequence_number = match session_type {
+    let session_sequence_number = match (session_type) {
         User => {
             let next_session_sequence_number = self.session_management.next_session_sequence_number;
             self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
