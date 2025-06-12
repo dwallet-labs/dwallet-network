@@ -347,9 +347,10 @@ where
         let mut loop_index = 0;
         loop {
             loop_index += 1;
-            // Fetching the epoch start TX digest less frequently as it is not expected to change often.
+            // Fetching the epoch start TX digest less frequently
+            // as it is unexpected to change often.
             if loop_index % 10 == 0 {
-                info!("Querying epoch start cursor from Sui");
+                debug!("Querying epoch start cursor from Sui");
                 let system_inner = match sui_client.must_get_system_inner_object().await {
                     SystemInner::V1(system_inner) => system_inner,
                 };
