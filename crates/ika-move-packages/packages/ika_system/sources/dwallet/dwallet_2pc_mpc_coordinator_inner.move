@@ -3058,6 +3058,7 @@ public(package) fun request_dwallet_dkg_first_round(
             dwallet_network_encryption_key_id,
             curve,
         },
+        SessionType::User,
         ctx,
     ));
 
@@ -3259,6 +3260,7 @@ public(package) fun request_dwallet_dkg_second_round(
             dwallet_network_encryption_key_id,
             curve,
         },
+        SessionType::User,
         ctx,
     );
 
@@ -3383,6 +3385,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 dwallet_network_encryption_key_id,
                 curve,
             },
+            SessionType::User,
             ctx,
         )
     );
@@ -3587,6 +3590,7 @@ public(package) fun request_imported_key_dwallet_verification(
             dwallet_network_encryption_key_id,
             curve,
         },
+        SessionType::User,
         ctx,
     );
 
@@ -3686,6 +3690,7 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
                 dwallet_id,
                 dwallet_network_encryption_key_id,
             },
+            SessionType::User,
             ctx,
         )
     );
@@ -3812,6 +3817,7 @@ public(package) fun request_presign(
                 curve,
                 signature_algorithm,
             },
+            SessionType::User,
             ctx,
         )
     );
@@ -3905,6 +3911,7 @@ public(package) fun request_global_presign(
                 curve,
                 signature_algorithm,
             },
+            SessionType::User,
             ctx,
         )
     );
@@ -4145,6 +4152,7 @@ fun validate_and_initiate_sign(
             message_centralized_signature,
             is_future_sign,
         },
+        SessionType::User,
         ctx,
     );
 
@@ -4325,6 +4333,7 @@ public(package) fun request_future_sign(
                 message_centralized_signature,
                 dwallet_network_encryption_key_id,
         },
+        SessionType::User,
         ctx,
     );
 
