@@ -1835,6 +1835,7 @@ impl AuthorityPerEpochStore {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
                         let slices = if is_rejected {
                             vec![NetworkKeyPublicOutputSlice {
+                                session_id: init_event.session_object_id.to_vec(),
                                 dwallet_network_decryption_key_id: init_event
                                     .event_data
                                     .dwallet_network_decryption_key_id
@@ -1851,6 +1852,7 @@ impl AuthorityPerEpochStore {
                             Self::slice_network_dkg_public_output_into_messages(
                                 &init_event.event_data.dwallet_network_decryption_key_id,
                                 output,
+                                init_event.session_object_id.to_vec(),
                             )
                         };
 
@@ -1868,6 +1870,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
+                        session_id: init_event.session_object_id.to_vec(),
                         dwallet_network_decryption_key_id: init_event
                             .event_data
                             .dwallet_network_decryption_key_id
@@ -1882,6 +1885,7 @@ impl AuthorityPerEpochStore {
                     Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
+                        init_event.session_object_id.to_vec(),
                     )
                 };
 
@@ -1939,6 +1943,7 @@ impl AuthorityPerEpochStore {
     fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
+        session_id: Vec<u8>,
     ) -> Vec<NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
@@ -1950,6 +1955,7 @@ impl AuthorityPerEpochStore {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
+                session_id: session_id.clone(),
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
@@ -2356,31 +2362,18 @@ impl ConsensusCommitOutput {
 
         // Write all the dWallet MPC related messages from this consensus round to the local DB.
         // The [`DWalletMPCService`] constantly reads and process those messages.
-        if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
-            batch.insert_batch(
-                &tables.dwallet_mpc_messages,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_messages,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_completed_sessions,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_completed_sessions,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_outputs,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_outputs,
-                )],
-            )?;
-        } else {
-            error!("failed to retrieve consensus commit statistics when trying to write DWallet MPC messages to local DB");
-        }
+        batch.insert_batch(
+            &tables.dwallet_mpc_messages,
+            [(self.consensus_round, self.dwallet_mpc_round_messages)],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_completed_sessions,
+            [(self.consensus_round, self.dwallet_mpc_completed_sessions)],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_outputs,
+            [(self.consensus_round, self.dwallet_mpc_round_outputs)],
+        )?;
 
         batch.insert_batch(
             &tables.consensus_message_processed,

@@ -364,6 +364,9 @@ request_dwallet_network_encryption_key_dkg
 charge_gas_fee_reimbursement_sui_for_system_calls
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+handle_completed_system_session
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_network_encryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
