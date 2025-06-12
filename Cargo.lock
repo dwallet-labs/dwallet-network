@@ -6134,6 +6134,7 @@ dependencies = [
  "fastcrypto",
  "fastcrypto-zkp",
  "group 0.1.0",
+ "hex",
  "ika-protocol-config",
  "jsonrpsee",
  "move-core-types",

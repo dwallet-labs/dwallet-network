@@ -12,7 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPubli
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, SessionIdentifierStruct};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -216,29 +216,39 @@ impl DWalletMPCService {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
+            error!("completed events");
+            let mut completed_sessions_ids = Vec::new();
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
+                    completed_sessions_ids.push(SessionIdentifierStruct(session.session_identifier));
                 }
+            }
+
+            if !completed_sessions_ids.is_empty() {
+                error!(completed_sessions_ids=?completed_sessions_ids, "completed sessions tp delete");
                 // Delete all completed sessions from the local DB.
                 if let Ok(tables) = self.epoch_store.tables() {
                     let mut batch = tables.dwallet_mpc_events_for_uncompleted_sessions.batch();
                     if let Err(e) = batch.delete_batch(
                         &tables.dwallet_mpc_events_for_uncompleted_sessions,
-                        [session_id],
+                        completed_sessions_ids.clone(),
                     ) {
                         error!(error=?e,
-                            session_id=?session_id,
+                            session_id=?completed_sessions_ids,
                             "failed to delete batch for session");
                     }
                     if let Err(e) = batch.write() {
                         error!(error=?e,
-                            session_id=?session_id,
+                            session_id=?completed_sessions_ids,
                             "failed to write batch for session");
                     }
+                    error!("sessions deleted");
                 }
             }
+
+            error!("read new events");
             // Read **new** dWallet MPC events from sui, save them to the local DB.
             if let Err(e) = self.epoch_store.read_new_sui_events().await {
                 error!(
@@ -258,12 +268,16 @@ impl DWalletMPCService {
                     vec![]
                 }
             };
+
+            error!(dwallet_mpc_events_for_uncompleted_sessions_len=?dwallet_mpc_events_for_uncompleted_sessions.len(), "events count");
             // If session is already exists with event information, it will be ignored.
             for event in dwallet_mpc_events_for_uncompleted_sessions {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;
             }
+
+            error!(last_read_consensus_round=?self.last_read_consensus_round, "last read consensus round");
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
                 .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
@@ -276,6 +290,7 @@ impl DWalletMPCService {
                 }
             };
 
+            error!(loaded_mpc_messages_count=?mpc_msgs_iter.len(), "loaded DWallet MPC messages from the local DB");
             for (round, messages) in mpc_msgs_iter {
                 self.last_read_consensus_round = round;
                 for message in messages {

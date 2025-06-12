@@ -72,10 +72,7 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
-    SessionType,
-};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionIdentifierStruct, SessionInfo, SessionType};
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
@@ -412,7 +409,7 @@ pub struct AuthorityEpochTables {
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
     pub(crate) dwallet_mpc_events_for_uncompleted_sessions:
-        DBMap<SessionIdentifier, DWalletMPCEvent>,
+        DBMap<SessionIdentifierStruct, DWalletMPCEvent>,
 }
 
 // todo(zeev): why is it not used?
@@ -1433,7 +1430,7 @@ impl AuthorityPerEpochStore {
         let mut new_events_map = Vec::new();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+            .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
                 Ok(event) => match session_info_from_event(event.clone(), &self.packages_config) {
                     Ok(Some(session_info)) => {
                         info!(
@@ -1446,7 +1443,7 @@ impl AuthorityPerEpochStore {
                             event,
                             session_info,
                         };
-                        new_events_map.push((event.session_info.session_identifier, event.clone()));
+                        new_events_map.push((SessionIdentifierStruct(event.session_info.session_identifier), event.clone()));
                         Some(event)
                     }
                     Ok(None) => {
@@ -1454,13 +1451,6 @@ impl AuthorityPerEpochStore {
                             event=?event,
                             "Received an event that does not trigger the start of an MPC flow"
                         );
-                        if let Err(e) = self.perpetual_tables.remove_pending_events(&[id.clone()]) {
-                            error!(
-                                error=?e,
-                                event=?id,
-                                "Failed to remove event from perpetual tables",
-                            );
-                        }
                         None
                     }
                     Err(e) => {
@@ -1475,20 +1465,25 @@ impl AuthorityPerEpochStore {
             })
             .collect();
 
-        let mut batch = self
-            .tables()?
-            .dwallet_mpc_events_for_uncompleted_sessions
-            .batch();
-        batch.insert_batch(
-            &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
-            new_events_map,
-        )?;
-        batch.write()?;
+        if !new_events_map.is_empty() {
+            let mut batch = self
+                .tables()?
+                .dwallet_mpc_events_for_uncompleted_sessions
+                .batch();
+            batch.insert_batch(
+                &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
+                new_events_map,
+            )?;
+            batch.write()?;
+        }
 
         // Delete the events from the perpetual tables only after all events are successfully stored,session-identifier-user
         // so that they can be recovered in case of a failure and won't be processed twice.
-        self.perpetual_tables
-            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        if !pending_events.is_empty() {
+            self.perpetual_tables
+                .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        }
+
         Ok(events)
     }
 
