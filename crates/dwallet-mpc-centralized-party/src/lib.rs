@@ -325,7 +325,8 @@ fn protocol_public_parameters_by_key_scheme(
                     >(encryption_scheme_public_parameters))
                 }
                 DWalletMPCNetworkKeyScheme::Ristretto => {
-                    // To add support here, we need to either make this function generic or have an enum over `ProtocolPublicParameters`
+                    // To add support here, we need to either make this
+                    // function generic or have an enum over `ProtocolPublicParameters`.
                     todo!()
                 }
             }
