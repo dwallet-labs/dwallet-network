@@ -1,11 +1,10 @@
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput,
-    MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
-    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
-    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedPresignOutput, VersionedSignOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCSessionPublicOutput, MPCSessionStatus,
+    SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput,
+    VersionedDecryptionKeyReshareOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
