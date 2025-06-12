@@ -5,7 +5,7 @@
 use crate::dwallet_mpc::advance_and_serialize;
 use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
-use class_groups::dkg::{RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput};
+use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
@@ -17,7 +17,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
     SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
-use group::{ristretto, secp256k1, PartyID};
+use group::{secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
@@ -139,7 +139,7 @@ impl ValidatorPrivateDecryptionKeyData {
                 let decryption_key_share = <AsyncProtocol as Protocol>::DecryptionKeyShare::new(
                     party_id,
                     secret_key_share,
-                    &public_parameters,
+                    public_parameters,
                     &mut OsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
@@ -345,20 +345,6 @@ fn generate_secp256k1_dkg_party_public_input(
     )
     .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
     Ok(public_params)
-}
-
-fn generate_ristretto_dkg_party_public_input(
-    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
-) -> DwalletMPCResult<Vec<u8>> {
-    let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
-        weighted_threshold_access_structure,
-        ristretto::scalar::PublicParameters::default(),
-        DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-        encryption_keys_and_proofs,
-    )
-    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
-    bcs::to_bytes(&public_params).map_err(DwalletMPCError::BcsError)
 }
 
 pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(

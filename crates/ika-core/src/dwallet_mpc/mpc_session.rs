@@ -1,17 +1,16 @@
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput,
     MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
     VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
     VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput,
+    VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -442,7 +441,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -506,7 +505,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -538,7 +537,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 )?;
@@ -597,7 +596,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -635,7 +634,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     mpc_event_data.decryption_shares.clone(),
                     &logger,
                 );
@@ -706,7 +705,7 @@ impl DWalletMPCSession {
                     &event_data.event_data.dkg_output,
                     &event_data.event_data.presign,
                     &event_data.event_data.message_centralized_signature,
-                    &public_input,
+                    public_input,
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -735,7 +734,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     decryption_key_shares.clone(),
                     &logger,
                 );
