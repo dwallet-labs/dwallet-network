@@ -178,9 +178,8 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
 
-        let last_committed_round = self.last_consensus_stats.index.sub_dag_index;
-
-        if self.should_perform_dwallet_mpc_state_sync().await {
+        let round = consensus_commit.leader_round();
+        if self.should_perform_dwallet_mpc_state_sync(round).await {
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
                     "epoch switched while performing dwallet mpc state sync: {:?}",
@@ -193,14 +192,12 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
-        dwallet_mpc_verifier.last_processed_consensus_round = last_committed_round;
+        dwallet_mpc_verifier.last_processed_consensus_round = round;
         // Need to drop the verifier, as `self` is being used mutably later in this function.
         drop(dwallet_mpc_verifier);
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
-        let round = consensus_commit.leader_round();
 
-        // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.
         assert!(round >= last_committed_round);
         if last_committed_round == round {
@@ -400,7 +397,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// This condition is only true if we process a round
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
-    async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
+    async fn should_perform_dwallet_mpc_state_sync(&self, consensus_round: u64) -> bool {
         let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_read()
@@ -408,8 +405,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
         // This condition is only true if we process a round before we processed the previous round,
         // which can only happen if we restart the node.
-        self.last_consensus_stats.index.sub_dag_index
-            > dwallet_mpc_verifier.last_processed_consensus_round + 1
+        consensus_round > dwallet_mpc_verifier.last_processed_consensus_round + 1
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
