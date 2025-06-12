@@ -17,7 +17,7 @@ use prometheus::{
 };
 use std::path::PathBuf;
 use std::time::Duration;
-use std::{collections::HashMap, pin::Pin, sync::Arc, vec};
+use std::{pin::Pin, sync::Arc, vec};
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use tracing::{error, info, instrument, warn};
@@ -29,7 +29,6 @@ use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use ika_types::supported_protocol_versions::{ProtocolConfig, SupportedProtocolVersions};
 use sui_macros::fail_point;
 use sui_types::crypto::Signer;
-use sui_types::event::EventID;
 use sui_types::executable_transaction::VerifiedExecutableTransaction;
 use sui_types::metrics::{BytecodeVerifierMetrics, LimitsMetrics};
 
@@ -777,7 +776,6 @@ impl AuthorityState {
         supported_protocol_versions: SupportedProtocolVersions,
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> IkaResult<Arc<AuthorityPerEpochStore>> {
         Self::check_protocol_version(
             supported_protocol_versions,
@@ -796,12 +794,7 @@ impl AuthorityState {
 
         let new_epoch = new_committee.epoch;
         let new_epoch_store = self
-            .reopen_epoch_db(
-                cur_epoch_store,
-                new_committee,
-                epoch_start_configuration,
-                perpetual_tables,
-            )
+            .reopen_epoch_db(cur_epoch_store, new_committee, epoch_start_configuration)
             .await?;
         assert_eq!(new_epoch_store.epoch(), new_epoch);
         //self.transaction_manager.reconfigure(new_epoch);
@@ -1024,7 +1017,6 @@ impl AuthorityState {
         cur_epoch_store: &AuthorityPerEpochStore,
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> IkaResult<Arc<AuthorityPerEpochStore>> {
         let new_epoch = new_committee.epoch;
         info!(new_epoch = ?new_epoch, "re-opening AuthorityEpochTables for new epoch");
@@ -1038,7 +1030,6 @@ impl AuthorityState {
             new_committee,
             epoch_start_configuration,
             cur_epoch_store.get_chain_identifier(),
-            perpetual_tables,
         );
         self.epoch_store.store(new_epoch_store.clone());
         Ok(new_epoch_store)

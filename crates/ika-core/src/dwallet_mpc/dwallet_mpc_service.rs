@@ -12,13 +12,17 @@ use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPubli
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::messages_dwallet_mpc::DWalletMPCEvent;
+use ika_types::error::{IkaError, IkaResult};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
+use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
+use tokio::sync::broadcast::error::TryRecvError;
 use tokio::sync::watch::Receiver;
 use tokio::sync::Notify;
 use tracing::{debug, error, info, warn};
@@ -38,6 +42,7 @@ pub struct DWalletMPCService {
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
 
 impl DWalletMPCService {
@@ -48,6 +53,7 @@ impl DWalletMPCService {
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
@@ -68,6 +74,7 @@ impl DWalletMPCService {
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
             network_keys_receiver,
+            new_events_receiver,
             exit,
         }
     }
@@ -231,50 +238,19 @@ impl DWalletMPCService {
                 }
             }
 
-            if !completed_sessions_ids.is_empty() {
-                // Delete all completed sessions from the local DB.
-                if let Ok(tables) = self.epoch_store.tables() {
-                    let mut batch = tables
-                        .dwallet_mpc_events_for_pending_and_active_sessions
-                        .batch();
-                    if let Err(e) = batch.delete_batch(
-                        &tables.dwallet_mpc_events_for_pending_and_active_sessions,
-                        completed_sessions_ids.clone(),
-                    ) {
-                        error!(error=?e,
-                            session_id=?completed_sessions_ids,
-                            "failed to delete batch for session");
-                    }
-                    if let Err(e) = batch.write() {
-                        error!(error=?e,
-                            session_id=?completed_sessions_ids,
-                            "failed to write batch for session");
-                    }
-                }
-            }
-
-            // Read **new** dWallet MPC events from sui, save them to the local DB.
-            if let Err(e) = self.epoch_store.read_new_sui_events().await {
-                error!(
-                    error=?e,
-                    "failed to load dWallet MPC events from the local DB");
-                continue;
-            };
-
-            // Read all dWallet MPC events for uncompleted sessions from the local DB and handle them.
-            let dwallet_mpc_events_for_pending_and_active_sessions = match self.epoch_store.tables() {
-                Ok(tables) => tables.get_all_dwallet_mpc_events_for_pending_and_active_sessions().unwrap_or_else(|e| {
-                    error!(error=?e, "failed to get all dWallet MPC events for uncompleted sessions");
-                    vec![]
-                }),
+            // Receive **new** dWallet MPC events and save them in the local DB.
+            let events = match self.receive_new_sui_events() {
+                Ok(events) => events,
                 Err(e) => {
-                    error!(error=?e, "failed to get tables from epoch store");
-                    vec![]
+                    error!(
+                    error=?e,
+                    "failed to receive dWallet MPC events");
+                    continue;
                 }
             };
 
             // If session is already exists with event information, it will be ignored.
-            for event in dwallet_mpc_events_for_pending_and_active_sessions {
+            for event in events {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;
@@ -307,5 +283,71 @@ impl DWalletMPCService {
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
         }
+    }
+
+    /// Read events from perpetual tables, remove them, and store in the current epoch tables.
+    fn receive_new_sui_events(&mut self) -> IkaResult<Vec<DWalletMPCEvent>> {
+        let pending_events = match self.new_events_receiver.try_recv() {
+            Ok(events) => events,
+            Err(TryRecvError::Empty) => {
+                debug!("No new Sui events to process");
+                return Ok(vec![]);
+            }
+            Err(e) => {
+                return Err(IkaError::ReveiverError(e.to_string()));
+            }
+        };
+
+        let pending_events = pending_events
+            .iter()
+            .map(|e| {
+                let serialized_event = bcs::to_bytes(&DBSuiEvent {
+                    type_: e.type_.clone(),
+                    contents: e.bcs.clone().into_bytes(),
+                })
+                .map_err(|e| IkaError::BCSError(e.to_string()))?;
+                Ok((e.id, serialized_event))
+            })
+            .collect::<IkaResult<Vec<(EventID, Vec<u8>)>>>()?;
+        let events: Vec<DWalletMPCEvent> = pending_events
+            .iter()
+            .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
+                Ok(event) => {
+                    match session_info_from_event(event.clone(), &self.epoch_store.packages_config)
+                    {
+                        Ok(Some(session_info)) => {
+                            info!(
+                                mpc_protocol=?session_info.mpc_round,
+                                session_identifier=?session_info.session_identifier,
+                                validator=?self.epoch_store.name,
+                                "Received start event for session"
+                            );
+                            let event = DWalletMPCEvent {
+                                event,
+                                session_info,
+                            };
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            warn!(
+                                event=?event,
+                                "Received an event that does not trigger the start of an MPC flow"
+                            );
+                            None
+                        }
+                        Err(e) => {
+                            error!("error getting session info from event: {}", e);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("failed to deserialize event: {}", e);
+                    None
+                }
+            })
+            .collect();
+
+        Ok(events)
     }
 }
