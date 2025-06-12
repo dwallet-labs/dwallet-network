@@ -278,7 +278,6 @@ impl IkaNode {
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
             latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
-        let epoch_start_tx_digest = latest_system_state.epoch_start_tx_digest();
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
@@ -371,14 +370,6 @@ impl IkaNode {
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
-        let epoch_start_cursor = EventID::from((
-            TransactionDigest::new(
-                epoch_start_tx_digest
-                    .try_into()
-                    .expect("start epoch tx digest is not 32 bytes"),
-            ),
-            0,
-        ));
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 perpetual_tables.clone(),
@@ -389,7 +380,6 @@ impl IkaNode {
                 sui_connector_metrics,
                 network_keys_sender,
                 next_epoch_committee_sender,
-                epoch_start_cursor,
             )
             .await?,
         );
