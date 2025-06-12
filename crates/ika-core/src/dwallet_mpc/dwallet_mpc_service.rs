@@ -221,21 +221,60 @@ impl DWalletMPCService {
                 error!("failed to load dWallet MPC completed sessions from the local DB");
                 continue;
             };
+
+            let mut completed_sessions_ids = Vec::new();
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
+                    completed_sessions_ids.push(session.session_identifier);
                 }
             }
-            let Ok(events_from_sui) = self
-                .epoch_store
-                .load_dwallet_mpc_events_from_round(self.last_read_consensus_round + 1)
-                .await
-            else {
-                error!("failed to load dWallet MPC events from the local DB");
+
+            if !completed_sessions_ids.is_empty() {
+                // Delete all completed sessions from the local DB.
+                if let Ok(tables) = self.epoch_store.tables() {
+                    let mut batch = tables
+                        .dwallet_mpc_events_for_pending_and_active_sessions
+                        .batch();
+                    if let Err(e) = batch.delete_batch(
+                        &tables.dwallet_mpc_events_for_pending_and_active_sessions,
+                        completed_sessions_ids.clone(),
+                    ) {
+                        error!(error=?e,
+                            session_id=?completed_sessions_ids,
+                            "failed to delete batch for session");
+                    }
+                    if let Err(e) = batch.write() {
+                        error!(error=?e,
+                            session_id=?completed_sessions_ids,
+                            "failed to write batch for session");
+                    }
+                }
+            }
+
+            // Read **new** dWallet MPC events from sui, save them to the local DB.
+            if let Err(e) = self.epoch_store.read_new_sui_events().await {
+                error!(
+                    error=?e,
+                    "failed to load dWallet MPC events from the local DB");
                 continue;
             };
-            for event in events_from_sui {
+
+            // Read all dWallet MPC events for uncompleted sessions from the local DB and handle them.
+            let dwallet_mpc_events_for_pending_and_active_sessions = match self.epoch_store.tables() {
+                Ok(tables) => tables.get_all_dwallet_mpc_events_for_pending_and_active_sessions().unwrap_or_else(|e| {
+                    error!(error=?e, "failed to get all dWallet MPC events for uncompleted sessions");
+                    vec![]
+                }),
+                Err(e) => {
+                    error!(error=?e, "failed to get tables from epoch store");
+                    vec![]
+                }
+            };
+
+            // If session is already exists with event information, it will be ignored.
+            for event in dwallet_mpc_events_for_pending_and_active_sessions {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
                     .await;
