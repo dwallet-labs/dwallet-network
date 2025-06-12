@@ -1997,13 +1997,16 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
     rejected: bool,
     ctx: &mut TxContext,
 ): Balance<SUI> {
+    if (is_last_chunk) {
+        self.handle_completed_system_session<DWalletNetworkDKGEncryptionKeyRequestEvent>(session_id);
+        let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
+            dwallet_network_encryption_key_id
+        );
+        dwallet_network_encryption_key.supported_curves = supported_curves;
+    };
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(
         dwallet_network_encryption_key_id
     );
-    if (is_last_chunk) {
-        self.handle_completed_system_session<DWalletNetworkDKGEncryptionKeyRequestEvent>(dwallet_network_encryption_key.id);
-        dwallet_network_encryption_key.supported_curves = supported_curves;
-    };
     if (rejected) {
         dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG;
         // TODO(@scaly): should we empty dwallet_network_encryption_key.network_dkg_public_output?
