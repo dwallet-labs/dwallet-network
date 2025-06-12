@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::config::{DynamicPeerValidationConfig, RemoteWriteConfig, StaticPeerValidationConfig};
 use crate::handlers::publish_metrics;
 use crate::histogram_relay::HistogramRelay;
@@ -13,6 +13,7 @@ use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, middleware, routing::post, Extension, Router};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PublicKey};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
+use ika_sui_client::SuiConnectorClient;
 use std::fs;
 use std::io::BufReader;
 use std::net::SocketAddr;
@@ -105,9 +106,9 @@ pub fn app(
         .route_layer(DefaultBodyLimit::max(var!(
             "MAX_BODY_SIZE",
             1024 * 1024 * 5
-        )))
-        .route_layer(middleware::from_fn(expect_mysten_proxy_header))
-        .route_layer(middleware::from_fn(expect_content_length));
+        )));
+    // .route_layer(middleware::from_fn(expect_mysten_proxy_header))
+    // .route_layer(middleware::from_fn(expect_content_length));
     if let Some(allower) = allower {
         router = router
             .route_layer(middleware::from_fn(expect_valid_public_key))
@@ -238,9 +239,7 @@ fn load_static_peers(
 }
 
 /// Default allow mode for server, we don't verify clients, everything is accepted
-pub fn create_server_cert_default_allow(
-    hostname: String,
-) -> Result<ServerConfig, sui_tls::rustls::Error> {
+pub fn create_server_cert_default_allow(hostname: String) -> Result<ServerConfig, rustls::Error> {
     let CertKeyPair(server_certificate, _) = generate_self_cert(hostname);
 
     ClientCertVerifier::new(AllowAll, SUI_VALIDATOR_SERVER_NAME.to_string()).rustls_server_config(
@@ -254,23 +253,32 @@ pub fn create_server_cert_default_allow(
 pub fn create_server_cert_enforce_peer(
     dynamic_peers: DynamicPeerValidationConfig,
     static_peers: Option<StaticPeerValidationConfig>,
+    sui_client: SuiConnectorClient,
 ) -> Result<(ServerConfig, Option<SuiNodeProvider>), sui_tls::rustls::Error> {
-    let (Some(certificate_path), Some(private_key_path)) =
-        (dynamic_peers.certificate_file, dynamic_peers.private_key)
-    else {
-        return Err(sui_tls::rustls::Error::General(
-            "missing certs to initialize server".into(),
-        ));
-    };
-    let static_peers = load_static_peers(static_peers).map_err(|e| {
-        sui_tls::rustls::Error::General(format!("unable to load static pub keys: {}", e))
-    })?;
-    let allower = SuiNodeProvider::new(dynamic_peers.url, dynamic_peers.interval, static_peers);
+    // let (Some(certificate_path), Some(private_key_path)) =
+    //     (dynamic_peers.certificate_file, dynamic_peers.private_key)
+    // else {
+    //     return Err(rustls::Error::General(
+    //         "missing certs to initialize server".into(),
+    //     ));
+    // };
+    let static_peers = load_static_peers(static_peers)
+        .map_err(|e| rustls::Error::General(format!("unable to load static pub keys: {}", e)))?;
+    let allower = SuiNodeProvider::new(dynamic_peers.interval, static_peers, sui_client.into());
     allower.poll_peer_list();
-    let c = ClientCertVerifier::new(allower.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
+
+    let CertKeyPair(server_certificate, _) = generate_self_cert(dynamic_peers.hostname.unwrap());
+
+    let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
         .rustls_server_config(
-            load_certs(&certificate_path),
-            load_private_key(&private_key_path),
+            vec![server_certificate.rustls_certificate()],
+            server_certificate.rustls_private_key(),
         )?;
+
+    // let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
+    //     .rustls_server_config(
+    //     load_certs(&certificate_path),
+    //     load_private_key(&private_key_path)
+    // )?;
     Ok((c, Some(allower)))
 }

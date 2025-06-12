@@ -1,11 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use anyhow::{bail, Context, Result};
 use fastcrypto::ed25519::Ed25519PublicKey;
 use fastcrypto::encoding::Base64;
 use fastcrypto::encoding::Encoding;
 use fastcrypto::traits::ToFromBytes;
 use futures::stream::{self, StreamExt};
+use ika_types::sui::EpochStartSystemTrait;
+use ika_types::sui::{EpochStartSystem, EpochStartValidatorInfoTrait};
 use once_cell::sync::Lazy;
 use prometheus::{register_counter_vec, register_histogram_vec};
 use prometheus::{CounterVec, HistogramVec};
@@ -59,28 +61,31 @@ pub struct AllowedPeer {
 /// sui_getValidators.  The node name, public key and other info is extracted from the chain and stored in this
 /// data structure.  We pass this struct to the tls verifier and it depends on the state contained within.
 /// Handlers also use this data in an Extractor extension to check incoming clients on the http api against known keys.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SuiNodeProvider {
-    sui_nodes: AllowedPeers,
-    bridge_nodes: AllowedPeers,
-    static_nodes: AllowedPeers,
-    rpc_url: String,
+    client: Arc<ika_sui_client::SuiConnectorClient>,
     rpc_poll_interval: Duration,
+    pub inner: SuiNodeProviderInner,
 }
 
-impl Allower for SuiNodeProvider {
+#[derive(Debug, Clone)]
+pub struct SuiNodeProviderInner {
+    sui_nodes: AllowedPeers,
+    static_nodes: AllowedPeers,
+}
+
+impl Allower for SuiNodeProviderInner {
     fn allowed(&self, key: &Ed25519PublicKey) -> bool {
         self.static_nodes.read().unwrap().contains_key(key)
             || self.sui_nodes.read().unwrap().contains_key(key)
-            || self.bridge_nodes.read().unwrap().contains_key(key)
     }
 }
 
 impl SuiNodeProvider {
     pub fn new(
-        rpc_url: String,
         rpc_poll_interval: Duration,
         static_peers: Vec<AllowedPeer>,
+        client: Arc<ika_sui_client::SuiConnectorClient>,
     ) -> Self {
         // build our hashmap with the static pub keys. we only do this one time at binary startup.
         let static_nodes: HashMap<Ed25519PublicKey, AllowedPeer> = static_peers
@@ -89,35 +94,28 @@ impl SuiNodeProvider {
             .collect();
         let static_nodes = Arc::new(RwLock::new(static_nodes));
         let sui_nodes = Arc::new(RwLock::new(HashMap::new()));
-        let bridge_nodes = Arc::new(RwLock::new(HashMap::new()));
         Self {
-            sui_nodes,
-            bridge_nodes,
-            static_nodes,
-            rpc_url,
+            client,
             rpc_poll_interval,
+            inner: SuiNodeProviderInner {
+                sui_nodes,
+                static_nodes,
+            },
         }
     }
 
     /// get is used to retrieve peer info in our handlers
     pub fn get(&self, key: &Ed25519PublicKey) -> Option<AllowedPeer> {
-        debug!("look for {:?}", key);
+        info!("look for {:?}", key);
         // check static nodes first
-        if let Some(v) = self.static_nodes.read().unwrap().get(key) {
+        if let Some(v) = self.inner.static_nodes.read().unwrap().get(key) {
             return Some(AllowedPeer {
                 name: v.name.to_owned(),
                 public_key: v.public_key.to_owned(),
             });
         }
         // check sui validators
-        if let Some(v) = self.sui_nodes.read().unwrap().get(key) {
-            return Some(AllowedPeer {
-                name: v.name.to_owned(),
-                public_key: v.public_key.to_owned(),
-            });
-        }
-        // check bridge validators
-        if let Some(v) = self.bridge_nodes.read().unwrap().get(key) {
+        if let Some(v) = self.inner.sui_nodes.read().unwrap().get(key) {
             return Some(AllowedPeer {
                 name: v.name.to_owned(),
                 public_key: v.public_key.to_owned(),
@@ -128,202 +126,48 @@ impl SuiNodeProvider {
 
     /// Get a mutable reference to the allowed sui validator map
     pub fn get_sui_mut(&mut self) -> &mut AllowedPeers {
-        &mut self.sui_nodes
-    }
-
-    /// get_validators will retrieve known validators
-    async fn get_validators(url: String) -> Result<SuiSystemStateSummary> {
-        let rpc_method = "suix_getLatestSuiSystemState";
-        let observe = || {
-            let timer = JSON_RPC_DURATION
-                .with_label_values(&[rpc_method])
-                .start_timer();
-            || {
-                timer.observe_duration();
-            }
-        }();
-        let client = reqwest::Client::builder().build().unwrap();
-        let request = serde_json::json!({
-            "jsonrpc": "2.0",
-            "method":rpc_method,
-            "id":1,
-        });
-        let response = client
-            .post(url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .body(request.to_string())
-            .send()
-            .await
-            .with_context(|| {
-                JSON_RPC_STATE
-                    .with_label_values(&[rpc_method, "failed_get"])
-                    .inc();
-                observe();
-                "unable to perform json rpc"
-            })?;
-
-        let raw = response.bytes().await.with_context(|| {
-            JSON_RPC_STATE
-                .with_label_values(&[rpc_method, "failed_body_extract"])
-                .inc();
-            observe();
-            "unable to extract body bytes from json rpc"
-        })?;
-
-        #[derive(Debug, Deserialize)]
-        struct ResponseBody {
-            result: SuiSystemStateSummary,
-        }
-
-        let body: ResponseBody = match serde_json::from_slice(&raw) {
-            Ok(b) => b,
-            Err(error) => {
-                JSON_RPC_STATE
-                    .with_label_values(&[rpc_method, "failed_json_decode"])
-                    .inc();
-                observe();
-                bail!(
-                    "unable to decode json: {error} response from json rpc: {:?}",
-                    raw
-                )
-            }
-        };
-        JSON_RPC_STATE
-            .with_label_values(&[rpc_method, "success"])
-            .inc();
-        observe();
-        Ok(body.result)
-    }
-
-    /// get_bridge_validators will retrieve known bridge validators
-    async fn get_bridge_validators(url: String) -> Result<BridgeSummary> {
-        let rpc_method = "suix_getLatestBridge";
-        let _timer = JSON_RPC_DURATION
-            .with_label_values(&[rpc_method])
-            .start_timer();
-        let client = reqwest::Client::builder().build().unwrap();
-        let request = serde_json::json!({
-            "jsonrpc": "2.0",
-            "method":rpc_method,
-            "id":1,
-        });
-        let response = client
-            .post(url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
-            .body(request.to_string())
-            .send()
-            .await
-            .with_context(|| {
-                JSON_RPC_STATE
-                    .with_label_values(&[rpc_method, "failed_get"])
-                    .inc();
-                "unable to perform json rpc"
-            })?;
-
-        let raw = response.bytes().await.with_context(|| {
-            JSON_RPC_STATE
-                .with_label_values(&[rpc_method, "failed_body_extract"])
-                .inc();
-            "unable to extract body bytes from json rpc"
-        })?;
-
-        #[derive(Debug, Deserialize)]
-        struct ResponseBody {
-            result: BridgeSummary,
-        }
-        let summary: BridgeSummary = match serde_json::from_slice::<ResponseBody>(&raw) {
-            Ok(b) => b.result,
-            Err(error) => {
-                JSON_RPC_STATE
-                    .with_label_values(&[rpc_method, "failed_json_decode"])
-                    .inc();
-                bail!(
-                    "unable to decode json: {error} response from json rpc: {:?}",
-                    raw
-                )
-            }
-        };
-        JSON_RPC_STATE
-            .with_label_values(&[rpc_method, "success"])
-            .inc();
-        Ok(summary)
+        &mut self.inner.sui_nodes
     }
 
     async fn update_sui_validator_set(&self) {
-        match Self::get_validators(self.rpc_url.to_owned()).await {
-            Ok(summary) => {
-                let validators = extract(summary);
-                let mut allow = self.sui_nodes.write().unwrap();
-                allow.clear();
-                allow.extend(validators);
-                info!(
-                    "{} sui validators managed to make it on the allow list",
-                    allow.len()
-                );
-            }
-            Err(error) => {
-                JSON_RPC_STATE
-                    .with_label_values(&["update_peer_count", "failed"])
-                    .inc();
-                error!("unable to refresh peer list: {error}");
-            }
-        };
+        let system_inner = self.client.must_get_system_inner_object().await;
+        let epoch_start = self.client.must_get_epoch_start_system(&system_inner).await;
+        let validators = epoch_start.get_ika_validators();
+        let validators = validators
+            .into_iter()
+            .map(|v| {
+                (
+                    v.get_network_pubkey(),
+                    AllowedPeer {
+                        name: v.get_name(),
+                        public_key: v.get_network_pubkey(),
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        info!("found {:?} ika validators", validators);
+        let mut allow = self.inner.sui_nodes.write().unwrap();
+        allow.clear();
+        allow.extend(validators);
+        info!(
+            "{} sui validators managed to make it on the allow list",
+            allow.len()
+        );
     }
 
-    async fn update_bridge_validator_set(&self, metrics_keys: MetricsPubKeys) {
-        let sui_system = match Self::get_validators(self.rpc_url.to_owned()).await {
-            Ok(summary) => summary,
-            Err(error) => {
-                JSON_RPC_STATE
-                    .with_label_values(&["update_bridge_peer_count", "failed"])
-                    .inc();
-                error!("unable to get sui system state: {error}");
-                return;
-            }
-        };
-        match Self::get_bridge_validators(self.rpc_url.to_owned()).await {
-            Ok(summary) => {
-                let names = sui_system
-                    .active_validators
-                    .into_iter()
-                    .map(|v| (v.sui_address, v.name))
-                    .collect();
-                let validators = extract_bridge(summary, Arc::new(names), metrics_keys).await;
-                let mut allow = self.bridge_nodes.write().unwrap();
-                allow.clear();
-                allow.extend(validators);
-                info!(
-                    "{} bridge validators managed to make it on the allow list",
-                    allow.len()
-                );
-            }
-            Err(error) => {
-                JSON_RPC_STATE
-                    .with_label_values(&["update_bridge_peer_count", "failed"])
-                    .inc();
-                error!("unable to refresh sui bridge peer list: {error}");
-            }
-        };
-    }
-
-    /// poll_peer_list will act as a refresh interval for our cache
+    /// poll_peer_list will act as a refresh interval for our cache.
     pub fn poll_peer_list(&self) {
-        info!("Started polling for peers using rpc: {}", self.rpc_url);
+        info!("Started polling for peers using client");
 
         let rpc_poll_interval = self.rpc_poll_interval;
         let cloned_self = self.clone();
-        let bridge_metrics_keys: MetricsPubKeys = Arc::new(RwLock::new(HashMap::new()));
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(rpc_poll_interval);
             interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
             loop {
                 interval.tick().await;
-
                 cloned_self.update_sui_validator_set().await;
-                cloned_self
-                    .update_bridge_validator_set(bridge_metrics_keys.clone())
-                    .await;
             }
         });
     }

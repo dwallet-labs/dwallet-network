@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use axum::{extract::Extension, http::StatusCode, routing::get, Router};
 use mysten_metrics::RegistryService;
-use prometheus::{Registry, TextEncoder};
+use prometheus::TextEncoder;
 use std::net::TcpListener;
 use std::sync::{Arc, RwLock};
 use tower::ServiceBuilder;
@@ -35,11 +35,10 @@ impl HealthCheck {
 // Creates a new http server that has as a sole purpose to expose
 // and endpoint that prometheus agent can use to poll for the metrics.
 // A RegistryService is returned that can be used to get access in prometheus Registries.
-pub fn start_prometheus_server(listener: TcpListener) -> RegistryService {
-    let registry = Registry::new();
-
-    let registry_service = RegistryService::new(registry);
-
+pub fn start_prometheus_server(
+    listener: TcpListener,
+    registry_service: RegistryService,
+) -> RegistryService {
     let pod_health_data = Arc::new(RwLock::new(HealthCheck::new()));
 
     let app = Router::new()

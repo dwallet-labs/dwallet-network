@@ -1,10 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use anyhow::{Context, Result};
 use core::time::Duration;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, DurationSeconds};
 use std::net::SocketAddr;
+use sui_types::base_types::ObjectID;
 use tracing::debug;
 
 #[serde_as]
@@ -24,7 +25,6 @@ pub struct ProxyConfig {
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct RemoteWriteConfig {
-    // TODO upgrade to https
     /// the remote_write url to post data to
     #[serde(default = "remote_write_url")]
     pub url: String,
@@ -60,6 +60,12 @@ pub struct DynamicPeerValidationConfig {
     /// private key for tls
     /// please use an absolute path
     pub private_key: Option<String>,
+    /// The move package ID of ika (IKA) on sui.
+    pub ika_package_id: ObjectID,
+    /// The move package ID of `ika_system` on sui.
+    pub ika_system_package_id: ObjectID,
+    /// The object ID of ika_system_state on sui.
+    pub ika_system_object_id: ObjectID,
 }
 
 /// StaticPeerValidationConfig, unlike the DynamicPeerValidationConfig, is not determined dynamically from rpc

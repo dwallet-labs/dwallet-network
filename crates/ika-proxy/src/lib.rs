@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pub mod admin;
 pub mod config;
 pub mod consumer;
@@ -106,7 +106,7 @@ mod tests {
             tokio::spawn(async move { run_dummy_remote_write(dummy_remote_write_listener).await });
 
         // init the tls config and allower
-        let mut allower = SuiNodeProvider::new("".into(), Duration::from_secs(30), vec![]);
+        let mut allower = SuiNodeProvider::new("".into(), Duration::from_secs(30), vec![], );
         let tls_config = ClientCertVerifier::new(
             allower.clone(),
             sui_tls::SUI_VALIDATOR_SERVER_NAME.to_string(),
@@ -138,7 +138,7 @@ mod tests {
             None,
         );
 
-        let listener = std::net::TcpListener::bind("localhost:0").unwrap();
+        let listener = TcpListener::bind("localhost:0").unwrap();
         let server_address = listener.local_addr().unwrap();
         let server_url = format!(
             "https://localhost:{}/publish/metrics",
@@ -197,7 +197,7 @@ mod tests {
         assert_eq!(status, reqwest::StatusCode::CREATED);
     }
 
-    /// this is a long test to ensure we are timing out clients that are slow  
+    /// this is a long test to ensure we are timing out clients that are slow
     #[tokio::test]
     async fn test_client_timeout() {
         // generate self-signed certificates
@@ -217,7 +217,7 @@ mod tests {
         });
 
         // init the tls config and allower
-        let mut allower = SuiNodeProvider::new("".into(), Duration::from_secs(30), vec![]);
+        let mut allower = SuiNodeProvider::new("".into(), Duration::from_secs(30), vec![], );
         let tls_config = ClientCertVerifier::new(
             allower.clone(),
             sui_tls::SUI_VALIDATOR_SERVER_NAME.to_string(),

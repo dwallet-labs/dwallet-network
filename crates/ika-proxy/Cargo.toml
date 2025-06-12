@@ -2,7 +2,7 @@
 name = "ika-proxy"
 version = "0.0.2"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -41,6 +41,9 @@ rustls-pemfile.workspace = true
 prost.workspace = true
 once_cell.workspace = true
 hex.workspace = true
+ika-sui-client.workspace = true
+ika-types.workspace = true
+
 
 telemetry-subscribers.workspace = true
 fastcrypto.workspace = true

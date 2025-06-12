@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-use crate::admin::{Labels, ReqwestClient};
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+use crate::admin;
+use crate::admin::{CertKeyPair, Labels, ReqwestClient};
 use crate::consumer::{convert_to_remote_write, populate_labels, NodeMetric};
 use crate::histogram_relay::HistogramRelay;
 use crate::middleware::LenDelimProtobuf;
@@ -9,6 +10,7 @@ use axum::{
     extract::{ConnectInfo, Extension},
     http::StatusCode,
 };
+use fastcrypto::ed25519::Ed25519PublicKey;
 use multiaddr::Multiaddr;
 use once_cell::sync::Lazy;
 use prometheus::{register_counter_vec, register_histogram_vec};
@@ -37,10 +39,41 @@ static HTTP_HANDLER_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
     .unwrap()
 });
 
-/// Publish handler which receives metrics from nodes.  Nodes will call us at this endpoint
-/// and we relay them to the upstream tsdb
+/// Publish handler, which receives metrics from nodes and relays them to upstream TSDB.
 ///
-/// Clients will receive a response after successfully relaying the metrics upstream
+/// This handler uses Axum's dependency injection system via Extension extractors to access
+/// shared application state and services. Each Extension(..) parameter extracts a different
+/// piece of functionality from the application context.
+///
+/// # Parameters
+///
+/// ## Dependency Injection via Extensions
+/// - `Extension(labels): Extension<Labels>` - Shared configuration labels (network name,
+///   inventory hostname) used for consistent metric labeling across all requests
+/// - `Extension(client): Extension<ReqwestClient>` - Shared HTTP client for making outbound
+///   requests to upstream time-series databases
+/// - `Extension(allowed_peer): Extension<Option<AllowedPeer>>` - Optional authenticated
+///   peer information. Contains the peer's name and public key for access control and
+///   metric labeling when authentication is enabled
+/// - `Extension(relay): Extension<HistogramRelay>` - Histogram processing service that
+///   handles specialized histogram metric processing
+///
+/// ## Request Data
+/// - `ConnectInfo(addr): ConnectInfo<SocketAddr>` - Client's socket address (IP + port)
+///   automatically provided by Axum for peer tracking
+/// - `LenDelimProtobuf(data): LenDelimProtobuf` - Length-delimited protobuf payload
+///   containing the metrics data from the node
+///
+/// # Flow
+/// 1. Metrics are received from authenticated nodes via protobuf
+/// 2. Request is tracked via prometheus counters and timing histograms
+/// 3. Metrics are populated with consistent labels (network, hostname, peer name)
+/// 4. Histogram data is submitted to the relay for specialized processing
+/// 5. Metrics are converted to remote write format and forwarded to upstream TSDB
+/// 6. Response is returned to the client after successful upstream relay
+///
+/// # Returns
+/// `(StatusCode, &'static str)` - HTTP status and response message indicating success/failure
 pub async fn publish_metrics(
     Extension(labels): Extension<Labels>,
     Extension(client): Extension<ReqwestClient>,

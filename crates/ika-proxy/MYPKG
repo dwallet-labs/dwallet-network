@@ -10,7 +10,7 @@ mypkg(
 podman_build(
     name="ika-proxy-image",
     registry="docker//us-central1-docker.pkg.dev/cryptic-bolt-398315/ika-proxy",
-    dockerfile="sui_proxy_dockerfile",
+    dockerfile="ika_proxy_dockerfile",
     resources=[":ika-proxy"],
     tag="testnet"
 )

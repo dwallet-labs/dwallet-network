@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::admin::ReqwestClient;
 use crate::prom_to_mimir::Mimir;
@@ -71,7 +71,7 @@ static CONSUMER_OPERATION_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
 pub struct NodeMetric {
     pub peer_addr: Multiaddr, // the sockaddr source address from the incoming request
     pub public_key: Ed25519PublicKey, // the public key from the sui blockchain
-    pub data: Vec<proto::MetricFamily>, // decoded protobuf of prometheus data
+    pub data: Vec<MetricFamily>, // decoded protobuf of prometheus data
 }
 
 /// The ProtobufDecoder will decode message delimited protobuf messages from prom_model.proto types
@@ -110,8 +110,8 @@ pub fn populate_labels(
     name: String,               // host field for grafana agent (from chain data)
     network: String,            // network name from ansible (via config)
     inventory_hostname: String, // inventory_name from ansible (via config)
-    data: Vec<proto::MetricFamily>,
-) -> Vec<proto::MetricFamily> {
+    data: Vec<MetricFamily>,
+) -> Vec<MetricFamily> {
     let timer = CONSUMER_OPERATION_DURATION
         .with_label_values(&["populate_labels"])
         .start_timer();
@@ -188,14 +188,14 @@ async fn check_response(
     response: reqwest::Response,
 ) -> Result<(), (StatusCode, &'static str)> {
     match response.status() {
-        reqwest::StatusCode::OK => {
+        StatusCode::OK => {
             CONSUMER_OPS
                 .with_label_values(&["check_response", "OK"])
                 .inc();
-            debug!("({}) SUCCESS: {:?}", reqwest::StatusCode::OK, request);
+            debug!("({}) SUCCESS: {:?}", StatusCode::OK, request);
             Ok(())
         }
-        reqwest::StatusCode::BAD_REQUEST => {
+        StatusCode::BAD_REQUEST => {
             let body = response
                 .text()
                 .await
@@ -295,12 +295,14 @@ pub async fn convert_to_remote_write(
             Ok(compressed) => compressed,
             Err(error) => return error,
         };
+        // println!("sending {:?} bytes to mimir", compressed);
 
         let response = match rc
             .client
             .post(rc.settings.url.to_owned())
             .header(reqwest::header::CONTENT_ENCODING, "snappy")
             .header(reqwest::header::CONTENT_TYPE, "application/x-protobuf")
+            // .header("X-Scope-OrgID", "demo") // required by Mimir
             .header("X-Prometheus-Remote-Write-Version", "0.1.0")
             .basic_auth(
                 rc.settings.username.to_owned(),
