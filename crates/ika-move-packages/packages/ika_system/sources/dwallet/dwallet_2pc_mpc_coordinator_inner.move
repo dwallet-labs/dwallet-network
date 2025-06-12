@@ -1977,6 +1977,11 @@ fun charge_gas_fee_reimbursement_sui_for_system_calls(
     }
 }
 
+fun handle_completed_system_session<E: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_id: ID) {
+    self.session_management.completed_system_sessions_count = self.session_management.completed_system_sessions_count + 1;
+    let _: DWalletSessionEvent<E> = self.session_management.session_events.remove(session_id);
+}
+
 /// Complete the Distributed Key Generation (DKG) session
 /// and store the public output corresponding to the newly created network (threshold) encryption key.
 ///
@@ -1984,6 +1989,7 @@ fun charge_gas_fee_reimbursement_sui_for_system_calls(
 /// with `is_last_chunk` set for the last call.
 public(package) fun respond_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
+    session_id: ID,
     dwallet_network_encryption_key_id: ID,
     network_public_output_chunk: vector<u8>,
     supported_curves: vector<u32>,
@@ -1995,7 +2001,7 @@ public(package) fun respond_dwallet_network_encryption_key_dkg(
         dwallet_network_encryption_key_id
     );
     if (is_last_chunk) {
-        self.session_management.completed_system_sessions_count = self.session_management.completed_system_sessions_count + 1;
+        self.handle_completed_system_session<DWalletNetworkDKGEncryptionKeyRequestEvent>(dwallet_network_encryption_key.id);
         dwallet_network_encryption_key.supported_curves = supported_curves;
     };
     if (rejected) {
@@ -4784,12 +4790,13 @@ fun process_checkpoint_message(
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE => {
+                let session_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let dwallet_network_encryption_key_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let public_output = bcs_body.peel_vec_u8();
                 let supported_curves = bcs_body.peel_vec_u32();
                 let is_last = bcs_body.peel_bool();
                 let rejected = bcs_body.peel_bool();
-                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(dwallet_network_encryption_key_id, public_output, supported_curves,is_last, rejected, ctx);
+                let gas_fee_reimbursement_sui = self.respond_dwallet_network_encryption_key_dkg(session_id, dwallet_network_encryption_key_id, public_output, supported_curves,is_last, rejected, ctx);
                 total_gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
             },
             RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE => {
