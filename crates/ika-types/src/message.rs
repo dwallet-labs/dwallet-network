@@ -64,6 +64,7 @@ pub struct PartialSignatureVerificationOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct NetworkKeyPublicOutputSlice {
+    pub session_id: Vec<u8>,
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub supported_curves: Vec<u32>,
