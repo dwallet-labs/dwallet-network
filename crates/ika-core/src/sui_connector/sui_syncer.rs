@@ -351,9 +351,7 @@ where
             // as it is unexpected to change often.
             if loop_index % 10 == 0 {
                 debug!("Querying epoch start cursor from Sui");
-                let system_inner = match sui_client.must_get_system_inner_object().await {
-                    SystemInner::V1(system_inner) => system_inner,
-                };
+                let SystemInner::V1(system_inner) = sui_client.must_get_system_inner_object().await;
                 let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
                 else {
                     // This should not happen, but if it does, we need to know about it.
