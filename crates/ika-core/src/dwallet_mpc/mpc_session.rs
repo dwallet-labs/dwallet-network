@@ -438,7 +438,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -507,14 +507,14 @@ impl DWalletMPCSession {
                 );
                 let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?mpc_event_data.init_protocol_data,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -556,7 +556,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -618,14 +618,14 @@ impl DWalletMPCSession {
             MPCProtocolInitData::Presign(..) => {
                 let PublicInput::Presign(public_input) = &mpc_event_data.public_input else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?mpc_event_data.init_protocol_data,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -674,7 +674,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -733,7 +733,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -765,7 +765,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -795,7 +795,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
@@ -846,7 +846,7 @@ impl DWalletMPCSession {
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "Session public input does not match the session type"
+                        "session public input does not match the session type"
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
