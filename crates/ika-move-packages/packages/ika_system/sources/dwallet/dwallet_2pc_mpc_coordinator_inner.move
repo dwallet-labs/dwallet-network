@@ -188,7 +188,7 @@ public struct SessionManagement has store {
     /// Active sessions indexed by sequence number
     sessions: ObjectTable<u64, DWalletSession>,
     /// Events for user-requested sessions, keyed by session ID
-    user_requested_sessions_events: Bag,
+    session_events: Bag,
     /// Number of completed user-initiated sessions
     number_of_completed_user_initiated_sessions: u64,
     /// Count of started system sessions
@@ -1824,7 +1824,7 @@ public(package) fun create_dwallet_coordinator_inner(
         session_management: SessionManagement {
             registered_session_identifiers: table::new(ctx),
             sessions: object_table::new(ctx),
-            user_requested_sessions_events: bag::new(ctx),
+            session_events: bag::new(ctx),
             number_of_completed_user_initiated_sessions: 0,
             started_system_sessions_count: 0,
             completed_system_sessions_count: 0,
@@ -2404,7 +2404,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         event_data,
     };
 
-    self.session_management.user_requested_sessions_events.add(session.id.to_inner(), event);
+    self.session_management.session_events.add(session.id.to_inner(), event);
     self.session_management.sessions.add(session_sequence_number, session);
     self.session_management.next_session_sequence_number = session_sequence_number + 1;
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
@@ -2452,7 +2452,7 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
-
+    self.session_management.session_events.add(session.id.to_inner(), event);
     event::emit(event);
 }
 
@@ -2906,7 +2906,7 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
 
     // Remove the corresponding event.
     let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
-    let _: DWalletSessionEvent<E> = self.session_management.user_requested_sessions_events.remove(id.to_inner());
+    let _: DWalletSessionEvent<E> = self.session_management.session_events.remove(id.to_inner());
 
     id.delete();
 
