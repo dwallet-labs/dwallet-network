@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
@@ -89,6 +88,7 @@ use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
 use std::time::Duration;
+use sui_types::event::EventID;
 use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -411,7 +411,8 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
-    pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
+    pub(crate) dwallet_mpc_events_for_pending_and_active_sessions:
+        DBMap<SessionIdentifier, DWalletMPCEvent>,
 }
 
 // todo(zeev): why is it not used?
@@ -489,15 +490,14 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_all_dwallet_mpc_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+    pub fn get_all_dwallet_mpc_events_for_pending_and_active_sessions(
+        &self,
+    ) -> IkaResult<Vec<DWalletMPCEvent>> {
         Ok(self
-            .dwallet_mpc_events
+            .dwallet_mpc_events_for_pending_and_active_sessions
             .safe_iter()
             .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
@@ -611,20 +611,6 @@ impl AuthorityPerEpochStore {
             validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
         }
         Ok(validators_class_groups_public_keys_and_proofs)
-    }
-    /// Loads the dWallet MPC events from the given `Mysticeti` round.
-    pub(crate) async fn load_dwallet_mpc_events_from_round(
-        &self,
-        round: Round,
-    ) -> IkaResult<Vec<DWalletMPCEvent>> {
-        Ok(self
-            .tables()?
-            .dwallet_mpc_events
-            .safe_iter_with_bounds(Some(round), None)
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flat_map(|(_, events)| events)
-            .collect())
     }
 
     /// Loads the DWallet MPC completed sessions from the given mystecity round.
@@ -1417,10 +1403,6 @@ impl AuthorityPerEpochStore {
         let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
         output.set_dwallet_mpc_round_messages(new_dwallet_mpc_round_messages);
         output.set_dwallet_mpc_round_outputs(Self::filter_dwallet_mpc_outputs(transactions));
-        match self.read_new_sui_events().await {
-            Ok(events) => output.set_dwallet_mpc_round_events(events),
-            Err(e) => error!(err=?e, "failed to read new Sui events"),
-        }
         let mut outputs_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         output.set_dwallet_mpc_round_completed_sessions(
             outputs_verifier
@@ -1446,10 +1428,9 @@ impl AuthorityPerEpochStore {
     }
 
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
-    async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
+    pub(crate) async fn read_new_sui_events(&self) -> IkaResult<Vec<DWalletMPCEvent>> {
         let pending_events = self.perpetual_tables.get_all_pending_events()?;
-        self.perpetual_tables
-            .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        let mut new_events_map = Vec::new();
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
             .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
@@ -1465,6 +1446,7 @@ impl AuthorityPerEpochStore {
                             event,
                             session_info,
                         };
+                        new_events_map.push((event.session_info.session_identifier, event.clone()));
                         Some(event)
                     }
                     Ok(None) => {
@@ -1485,6 +1467,28 @@ impl AuthorityPerEpochStore {
                 }
             })
             .collect();
+
+        if !new_events_map.is_empty() {
+            let mut batch = self
+                .tables()?
+                .dwallet_mpc_events_for_pending_and_active_sessions
+                .batch();
+            batch.insert_batch(
+                &self
+                    .tables()?
+                    .dwallet_mpc_events_for_pending_and_active_sessions,
+                new_events_map,
+            )?;
+            batch.write()?;
+        }
+
+        // Delete the events from the perpetual tables only after all events are successfully stored,session-identifier-user
+        // so that they can be recovered in case of a failure and won't be processed twice.
+        if !pending_events.is_empty() {
+            self.perpetual_tables
+                .remove_pending_events(&pending_events.keys().cloned().collect::<Vec<EventID>>())?;
+        }
+
         Ok(events)
     }
 
@@ -2304,7 +2308,6 @@ pub(crate) struct ConsensusCommitOutput {
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
-    dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
     dwallet_mpc_completed_sessions: Vec<SessionIdentifier>,
 }
 
@@ -2332,10 +2335,6 @@ impl ConsensusCommitOutput {
         new_value: Vec<SessionIdentifier>,
     ) {
         self.dwallet_mpc_completed_sessions = new_value;
-    }
-
-    pub(crate) fn set_dwallet_mpc_round_events(&mut self, new_value: Vec<DWalletMPCEvent>) {
-        self.dwallet_mpc_round_events = new_value;
     }
 
     fn record_consensus_commit_stats(&mut self, stats: ExecutionIndicesWithStats) {
@@ -2374,10 +2373,6 @@ impl ConsensusCommitOutput {
         batch.insert_batch(
             &tables.dwallet_mpc_outputs,
             [(self.consensus_round, self.dwallet_mpc_round_outputs)],
-        )?;
-        batch.insert_batch(
-            &tables.dwallet_mpc_events,
-            [(self.consensus_round, self.dwallet_mpc_round_events)],
         )?;
 
         batch.insert_batch(
