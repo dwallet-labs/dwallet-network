@@ -333,7 +333,7 @@ Session management data for the dWallet coordinator.
  Active sessions indexed by sequence number
 </dd>
 <dt>
-<code>user_requested_sessions_events: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
+<code>session_events: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
  Events for user-requested sessions, keyed by session ID
@@ -5329,7 +5329,7 @@ A new DWalletCoordinatorInner instance ready for use
         session_management: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionManagement">SessionManagement</a> {
             registered_session_identifiers: table::new(ctx),
             sessions: object_table::new(ctx),
-            user_requested_sessions_events: bag::new(ctx),
+            session_events: bag::new(ctx),
             number_of_completed_user_initiated_sessions: 0,
             started_system_sessions_count: 0,
             completed_system_sessions_count: 0,
@@ -6303,7 +6303,7 @@ and epoch management in a unified manner.
         session_identifier: identifier,
         event_data,
     };
-    self.session_management.user_requested_sessions_events.add(session.id.to_inner(), event);
+    self.session_management.session_events.add(session.id.to_inner(), event);
     self.session_management.sessions.add(session_sequence_number, session);
     self.session_management.next_session_sequence_number = session_sequence_number + 1;
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_update_last_user_initiated_session_to_complete_in_current_epoch">update_last_user_initiated_session_to_complete_in_current_epoch</a>();
@@ -6378,13 +6378,15 @@ These sessions are essential for network health and security.
     ctx: &<b>mut</b> TxContext,
 ) {
     self.session_management.started_system_sessions_count = self.session_management.started_system_sessions_count + 1;
+    <b>let</b> session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
     <b>let</b> event = <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionEvent">DWalletSessionEvent</a> {
         epoch: self.current_epoch,
-        session_object_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+        session_object_id: session_id,
         session_type: SessionType::System,
         session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
+    self.session_management.session_events.add(session_id, event);
     event::emit(event);
 }
 </code></pre>
@@ -7261,7 +7263,7 @@ completion workflow without user fee management.
     } = session;
     // Remove the corresponding event.
     <b>let</b> dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_network_encryption_key_id">dwallet_network_encryption_key_id</a>);
-    <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionEvent">DWalletSessionEvent</a>&lt;E&gt; = self.session_management.user_requested_sessions_events.remove(id.to_inner());
+    <b>let</b> _: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionEvent">DWalletSessionEvent</a>&lt;E&gt; = self.session_management.session_events.remove(id.to_inner());
     id.delete();
     // Remove the corresponding session identifier object.
     <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
