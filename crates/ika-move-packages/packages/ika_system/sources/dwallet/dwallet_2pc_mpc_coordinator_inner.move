@@ -198,6 +198,7 @@ public struct SessionManagement has store {
     /// The sequence number to assign to the next user-requested session.
     /// Initialized to `1` and incremented at every new session creation.
     next_session_sequence_number: u64,
+    next_system_session_sequence_number: u64,
     /// The last MPC session to process in the current epoch.
     /// The validators of the Ika network must always begin sessions,
     /// when they become available to them, so long their sequence number is lesser or equal to this value.
@@ -887,9 +888,7 @@ public enum SignState has copy, drop, store {
 /// System sessions are guaranteed to complete within their creation epoch.
 public enum SessionType has copy, drop, store {
     /// User-initiated session with sequence number for epoch scheduling
-    User {
-        sequence_number: u64,
-    },
+    User,
     /// System-initiated session (always completes in current epoch)
     System
 }
@@ -983,6 +982,7 @@ public struct DWalletSessionEvent<E: copy + drop + store> has copy, drop, store 
     session_type: SessionType,
     /// Unique session identifier
     session_identifier_preimage: vector<u8>,
+    session_sequence_number: u64,
     /// Event-specific data
     event_data: E,
 }
@@ -2389,11 +2389,11 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     event_data: E,
+    session_type: SessionType,
     ctx: &mut TxContext,
 ): DWalletSessionEvent<E> {
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
 
-    
     assert!(payment_ika.value() >= pricing_value.computation_ika() + pricing_value.consensus_validation_ika(), EInsufficientIKAPayment);
     assert!(payment_sui.value() >= pricing_value.gas_fee_reimbursement_sui() + pricing_value.gas_fee_reimbursement_sui_for_system_calls(), EInsufficientSUIPayment);
 
@@ -2406,7 +2406,18 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     assert!(self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierNotExist);
     assert!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
 
-    let session_sequence_number = self.session_management.next_session_sequence_number;
+    let session_sequence_number = match session_type {
+        User => {
+            let next_session_sequence_number = self.session_management.next_session_sequence_number;
+            self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
+            next_session_sequence_number
+        },
+        System => {
+            let next_system_session_sequence_number = self.session_management.next_system_session_sequence_number;
+            self.session_management.next_system_session_sequence_number = next_system_session_sequence_number + 1;
+            next_system_session_sequence_number
+        },
+    };
     let session = DWalletSession {
         id: object::new(ctx),
         session_identifier,
@@ -2420,12 +2431,9 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let event = DWalletSessionEvent {
         epoch: self.current_epoch,
         session_object_id: session.id.to_inner(),
-        session_type: {
-            SessionType::User {
-                sequence_number: session_sequence_number,
-            }
-        },
+        session_type,
         session_identifier_preimage: identifier_preimage,
+        session_sequence_number,
         event_data,
     };
 
