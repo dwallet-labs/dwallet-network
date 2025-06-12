@@ -12,11 +12,11 @@ use group::PartyID;
 use ika_types::committee::StakeUnit;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::SessionInfo;
+use ika_types::messages_dwallet_mpc::{SessionIdentifier, SessionInfo};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
-use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::base_types::EpochId;
 use sui_types::messages_consensus::Round;
 use tracing::info;
 
@@ -27,7 +27,7 @@ use tracing::info;
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
-    mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
+    mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
@@ -44,7 +44,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    pub(crate) consensus_round_completed_sessions: HashSet<ObjectID>,
+    pub(crate) consensus_round_completed_sessions: HashSet<SessionIdentifier>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
@@ -146,7 +146,7 @@ impl DWalletMPCOutputsVerifier {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
             mpc_protocol=?session_info.mpc_round,
-            session_id=?session_info.session_id,
+            session_identifier=?session_info.session_identifier,
             from_authority=?origin_authority,
             receiving_authority=?self.epoch_store()?.name,
             output_size_bytes=?output.len(),
@@ -157,7 +157,7 @@ impl DWalletMPCOutputsVerifier {
 
         let session_output_data = self
             .mpc_sessions_outputs
-            .entry(session_info.session_id)
+            .entry(session_info.session_identifier)
             .or_insert(SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
@@ -194,7 +194,7 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             session_output_data.clear_data();
             self.consensus_round_completed_sessions
-                .insert(session_info.session_id);
+                .insert(session_info.session_identifier);
             let mpc_event_data = session_info.mpc_round.clone();
             self.dwallet_mpc_metrics.add_completion(&mpc_event_data);
             return Ok(OutputVerificationResult {

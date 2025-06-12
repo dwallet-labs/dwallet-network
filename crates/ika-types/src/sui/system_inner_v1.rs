@@ -104,6 +104,7 @@ pub struct DWalletPricingCalculationVotes {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SessionManagement {
+    pub registered_session_identifiers: Table,
     pub sessions: ObjectTable,
     pub user_requested_sessions_events: Bag,
     pub number_of_completed_sessions: u64,

@@ -7,7 +7,7 @@ use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.
 pub fn verify_secret_share(
-    protocol_public_parameters: &[u8],
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<()> {
@@ -17,7 +17,7 @@ pub fn verify_secret_share(
     match dkg_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {
             <AsyncProtocol as twopc_mpc::dkg::Protocol>::verify_centralized_party_secret_key_share(
-                &bcs::from_bytes(protocol_public_parameters)?,
+                &protocol_public_parameters,
                 bcs::from_bytes(&dkg_output)?,
                 bcs::from_bytes(&secret_share)?,
             )

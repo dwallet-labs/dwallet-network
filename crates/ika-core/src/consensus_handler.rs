@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -431,7 +430,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             {
                 error!(
                     "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_id, output.authority, err
+                    output.session_info.session_identifier, output.authority, err
                 );
             }
         }
