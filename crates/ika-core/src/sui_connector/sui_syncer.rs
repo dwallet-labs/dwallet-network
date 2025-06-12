@@ -352,13 +352,12 @@ where
                 let system_inner = match sui_client.must_get_system_inner_object().await {
                     SystemInner::V1(system_inner) => system_inner,
                 };
-                let start_epoch_event = EventID::from((
-                    system_inner
-                        .epoch_start_tx_digest
-                        .try_into()
-                        .expect("start epoch TX digest in wrong length"),
-                    0,
-                ));
+                let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
+                else {
+                    error!("start epoch TX digest in wrong length");
+                    continue;
+                };
+                let start_epoch_event = EventID::from((epoch_start_tx_digest, 0));
                 if start_epoch_cursor != Some(start_epoch_event) {
                     start_epoch_cursor = Some(start_epoch_event);
                     cursor = start_epoch_cursor;
