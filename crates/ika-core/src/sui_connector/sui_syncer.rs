@@ -347,7 +347,7 @@ where
         let mut loop_index = 0;
         loop {
             loop_index += 1;
-            if loop_index % 10 == 0 || start_epoch_cursor.is_none() {
+            if loop_index % 10 == 0 {
                 info!("Querying epoch start cursor from Sui");
                 let system_inner = match sui_client.must_get_system_inner_object().await {
                     SystemInner::V1(system_inner) => system_inner,
