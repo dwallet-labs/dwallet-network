@@ -213,19 +213,4 @@ impl DWalletMPCOutputsVerifier {
             .upgrade()
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
-
-    /// Stores the session ID of the new MPC session,
-    /// and initializes the output data for it.
-    /// Needed, so we'll know when we receive a malicious output
-    /// that related to a non-existing session.
-    pub fn monitor_new_session_outputs(&mut self, session_info: &SessionInfo) {
-        self.mpc_sessions_outputs.insert(
-            session_info.session_identifier,
-            SessionOutputsData {
-                session_output_to_voting_authorities: HashMap::new(),
-                authorities_that_sent_output: HashSet::new(),
-                current_result: OutputVerificationStatus::NotEnoughVotes,
-            },
-        );
-    }
 }
