@@ -1818,6 +1818,7 @@ a complete signature.
 
 ## Struct `SessionIdentifier`
 
+The preimage is used to create the session identifier.
 
 
 <pre><code><b>public</b> <b>struct</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> <b>has</b> key, store
@@ -5425,6 +5426,22 @@ Registers a new session identifier.
 This function is used to register a new session identifier.
 
 
+<a name="@Parameters_94"></a>
+
+##### Parameters
+
+- <code>self</code>: Mutable reference to the coordinator.
+- <code>identifier_preimage</code>: The preimage bytes for creating the session identifier.
+- <code>ctx</code>: Transaction context for object creation.
+
+
+<a name="@Returns_95"></a>
+
+##### Returns
+
+A new session identifier object.
+
+
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner</a>, identifier_preimage: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">dwallet_2pc_mpc_coordinator_inner::SessionIdentifier</a>
 </code></pre>
 
@@ -5434,7 +5451,11 @@ This function is used to register a new session identifier.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, identifier_preimage: vector&lt;u8&gt;, ctx: &<b>mut</b> TxContext): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_register_session_identifier">register_session_identifier</a>(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
+    identifier_preimage: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+): <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SessionIdentifier">SessionIdentifier</a> {
     <b>assert</b>!(identifier_preimage.length() == <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SESSION_IDENTIFIER_LENGTH">SESSION_IDENTIFIER_LENGTH</a>, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierInvalidLength">ESessionIdentifierInvalidLength</a>);
     <b>assert</b>!(!self.session_management.registered_session_identifiers.contains(identifier_preimage), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ESessionIdentifierAlreadyRegistered">ESessionIdentifierAlreadyRegistered</a>);
     <b>let</b> id = object::new(ctx);
@@ -5464,7 +5485,7 @@ Creates a new network encryption key and initiates the DKG process through the v
 Returns a capability that grants control over the created encryption key.
 
 
-<a name="@Parameters_94"></a>
+<a name="@Parameters_96"></a>
 
 ##### Parameters
 
@@ -5472,7 +5493,7 @@ Returns a capability that grants control over the created encryption key.
 - <code>ctx</code>: Transaction context for object creation
 
 
-<a name="@Returns_95"></a>
+<a name="@Returns_97"></a>
 
 ##### Returns
 
@@ -5538,21 +5559,21 @@ Allocates SUI from the coordinator's gas reimbursement pool to cover
 transaction costs for system operations like network DKG and reconfiguration.
 
 
-<a name="@Parameters_96"></a>
+<a name="@Parameters_98"></a>
 
 ##### Parameters
 
 - <code>self</code>: Mutable reference to the coordinator
 
 
-<a name="@Returns_97"></a>
+<a name="@Returns_99"></a>
 
 ##### Returns
 
 SUI balance to reimburse gas costs for system operations
 
 
-<a name="@Logic_98"></a>
+<a name="@Logic_100"></a>
 
 ##### Logic
 
@@ -5949,7 +5970,7 @@ committee transitions, and network encryption key advancement. This is a
 critical operation that must be executed atomically.
 
 
-<a name="@Parameters_99"></a>
+<a name="@Parameters_101"></a>
 
 ##### Parameters
 
@@ -5958,14 +5979,14 @@ critical operation that must be executed atomically.
 - <code>dwallet_network_encryption_key_caps</code>: Capabilities for network encryption keys to advance
 
 
-<a name="@Returns_100"></a>
+<a name="@Returns_102"></a>
 
 ##### Returns
 
 Combined IKA balance from fees collected during the epoch
 
 
-<a name="@Effects_101"></a>
+<a name="@Effects_103"></a>
 
 ##### Effects
 
@@ -5978,7 +5999,7 @@ Combined IKA balance from fees collected during the epoch
 - Collects and returns accumulated fees
 
 
-<a name="@Aborts_102"></a>
+<a name="@Aborts_104"></a>
 
 ##### Aborts
 
@@ -6032,7 +6053,7 @@ Combined IKA balance from fees collected during the epoch
 Gets an immutable reference to a dWallet by ID.
 
 
-<a name="@Parameters_103"></a>
+<a name="@Parameters_105"></a>
 
 ##### Parameters
 
@@ -6040,14 +6061,14 @@ Gets an immutable reference to a dWallet by ID.
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_id">dwallet_id</a></code>: ID of the dWallet to retrieve
 
 
-<a name="@Returns_104"></a>
+<a name="@Returns_106"></a>
 
 ##### Returns
 
 Immutable reference to the dWallet
 
 
-<a name="@Aborts_105"></a>
+<a name="@Aborts_107"></a>
 
 ##### Aborts
 
@@ -6083,7 +6104,7 @@ Immutable reference to the dWallet
 Gets a mutable reference to a dWallet by ID.
 
 
-<a name="@Parameters_106"></a>
+<a name="@Parameters_108"></a>
 
 ##### Parameters
 
@@ -6091,14 +6112,14 @@ Gets a mutable reference to a dWallet by ID.
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_id">dwallet_id</a></code>: ID of the dWallet to retrieve
 
 
-<a name="@Returns_107"></a>
+<a name="@Returns_109"></a>
 
 ##### Returns
 
 Mutable reference to the dWallet
 
 
-<a name="@Aborts_108"></a>
+<a name="@Aborts_110"></a>
 
 ##### Aborts
 
@@ -6138,28 +6159,28 @@ This function ensures that a dWallet has completed its creation process
 operations like signing.
 
 
-<a name="@Parameters_109"></a>
+<a name="@Parameters_111"></a>
 
 ##### Parameters
 
 - <code>self</code>: Reference to the dWallet to validate
 
 
-<a name="@Returns_110"></a>
+<a name="@Returns_112"></a>
 
 ##### Returns
 
 Reference to the dWallet's public output
 
 
-<a name="@Aborts_111"></a>
+<a name="@Aborts_113"></a>
 
 ##### Aborts
 
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletInactive">EDWalletInactive</a></code>: If the dWallet is not in the <code>Active</code> state
 
 
-<a name="@Active_State_Requirements_112"></a>
+<a name="@Active_State_Requirements_114"></a>
 
 ##### Active State Requirements
 
@@ -6215,7 +6236,7 @@ user-initiated dWallet operations. It handles fee collection, session sequencing
 and epoch management in a unified manner.
 
 
-<a name="@Fee_Structure_113"></a>
+<a name="@Fee_Structure_115"></a>
 
 ##### Fee Structure
 
@@ -6225,7 +6246,7 @@ and epoch management in a unified manner.
 - **System Call SUI**: Reserved for internal system operations
 
 
-<a name="@Session_Management_114"></a>
+<a name="@Session_Management_116"></a>
 
 ##### Session Management
 
@@ -6235,7 +6256,7 @@ and epoch management in a unified manner.
 4. Stores event for retrieval during session completion
 
 
-<a name="@Epoch_Coordination_115"></a>
+<a name="@Epoch_Coordination_117"></a>
 
 ##### Epoch Coordination
 
@@ -6244,7 +6265,7 @@ and epoch management in a unified manner.
 - Fee distribution occurs only upon successful session completion
 
 
-<a name="@Security_Properties_116"></a>
+<a name="@Security_Properties_118"></a>
 
 ##### Security Properties
 
@@ -6326,7 +6347,7 @@ network maintenance operations that don't involve direct user interaction.
 These sessions are essential for network health and security.
 
 
-<a name="@Supported_System_Operations_117"></a>
+<a name="@Supported_System_Operations_119"></a>
 
 ##### Supported System Operations
 
@@ -6335,7 +6356,7 @@ These sessions are essential for network health and security.
 - **Network Maintenance**: Other validator network coordination tasks
 
 
-<a name="@Key_Differences_from_User_Sessions_118"></a>
+<a name="@Key_Differences_from_User_Sessions_120"></a>
 
 ##### Key Differences from User Sessions
 
@@ -6345,7 +6366,7 @@ These sessions are essential for network health and security.
 - **Network Priority**: These sessions have priority in validator processing
 
 
-<a name="@Session_Tracking_119"></a>
+<a name="@Session_Tracking_121"></a>
 
 ##### Session Tracking
 
@@ -6354,7 +6375,7 @@ These sessions are essential for network health and security.
 - Maintains epoch association for proper network coordination
 
 
-<a name="@Security_Properties_120"></a>
+<a name="@Security_Properties_122"></a>
 
 ##### Security Properties
 
@@ -6384,8 +6405,9 @@ These sessions are essential for network health and security.
         session_type: SessionType::System,
         // Notice that `session_identifier_preimage` is only the pre-image.
         // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique).
-        // For <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events, we guarantee uniqueness by creating an object <b>address</b>, which can never repeat in Move (<a href="../ika_system/system.md#(ika_system=0x0)_system">system</a>-wide.)
-        // To avoid user-initiated events colliding with <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events, we pad the `session_identifier_preimage` differently <b>for</b> user and <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events before hashing it.
+        // For <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events, we guarantee uniqueness by creating an object <b>address</b>, which can never repeat in Move (<a href="../ika_system/system.md#(ika_system=0x0)_system">system</a>-wide).
+        // To avoid user-initiated events colliding with <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events,
+        // we pad the `session_identifier_preimage` differently <b>for</b> user and <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> events before hashing it.
         session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
@@ -6408,7 +6430,7 @@ an active state suitable for cryptographic operations. The public output
 represents the cryptographic public key material.
 
 
-<a name="@Parameters_121"></a>
+<a name="@Parameters_123"></a>
 
 ##### Parameters
 
@@ -6416,7 +6438,7 @@ represents the cryptographic public key material.
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_id">dwallet_id</a></code>: Unique identifier of the target dWallet
 
 
-<a name="@Returns_122"></a>
+<a name="@Returns_124"></a>
 
 ##### Returns
 
@@ -6425,7 +6447,7 @@ A tuple containing:
 - Copy of the public output (cryptographic public key data)
 
 
-<a name="@Validation_Performed_123"></a>
+<a name="@Validation_Performed_125"></a>
 
 ##### Validation Performed
 
@@ -6434,7 +6456,7 @@ A tuple containing:
 - Ensures public output is available for cryptographic operations
 
 
-<a name="@Aborts_124"></a>
+<a name="@Aborts_126"></a>
 
 ##### Aborts
 
@@ -6477,7 +6499,7 @@ to the dWallet for operations that need to modify the dWallet state, such as
 updating session counts or state transitions.
 
 
-<a name="@Parameters_125"></a>
+<a name="@Parameters_127"></a>
 
 ##### Parameters
 
@@ -6485,7 +6507,7 @@ updating session counts or state transitions.
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_id">dwallet_id</a></code>: Unique identifier of the target dWallet
 
 
-<a name="@Returns_126"></a>
+<a name="@Returns_128"></a>
 
 ##### Returns
 
@@ -6494,7 +6516,7 @@ A tuple containing:
 - Copy of the public output (cryptographic public key data)
 
 
-<a name="@Common_Use_Cases_127"></a>
+<a name="@Common_Use_Cases_129"></a>
 
 ##### Common Use Cases
 
@@ -6504,7 +6526,7 @@ A tuple containing:
 - Managing active session associations
 
 
-<a name="@Validation_Performed_128"></a>
+<a name="@Validation_Performed_130"></a>
 
 ##### Validation Performed
 
@@ -6513,7 +6535,7 @@ A tuple containing:
 - Ensures public output is available for cryptographic operations
 
 
-<a name="@Aborts_129"></a>
+<a name="@Aborts_131"></a>
 
 ##### Aborts
 
@@ -6581,7 +6603,7 @@ Get the active encryption key ID by its address.
 Validates that a curve is supported and not paused.
 
 
-<a name="@Parameters_130"></a>
+<a name="@Parameters_132"></a>
 
 ##### Parameters
 
@@ -6589,7 +6611,7 @@ Validates that a curve is supported and not paused.
 - <code>curve</code>: Curve identifier to validate
 
 
-<a name="@Aborts_131"></a>
+<a name="@Aborts_133"></a>
 
 ##### Aborts
 
@@ -6626,7 +6648,7 @@ Validates that a curve is supported and not paused.
 Validates that a curve and signature algorithm combination is supported and not paused.
 
 
-<a name="@Parameters_132"></a>
+<a name="@Parameters_134"></a>
 
 ##### Parameters
 
@@ -6635,7 +6657,7 @@ Validates that a curve and signature algorithm combination is supported and not 
 - <code>signature_algorithm</code>: Signature algorithm to validate
 
 
-<a name="@Aborts_133"></a>
+<a name="@Aborts_135"></a>
 
 ##### Aborts
 
@@ -6677,7 +6699,7 @@ Validates that a curve and signature algorithm combination is supported and not 
 Validates that a curve, signature algorithm, and hash scheme combination is supported and not paused.
 
 
-<a name="@Parameters_134"></a>
+<a name="@Parameters_136"></a>
 
 ##### Parameters
 
@@ -6687,7 +6709,7 @@ Validates that a curve, signature algorithm, and hash scheme combination is supp
 - <code>hash_scheme</code>: Hash scheme to validate
 
 
-<a name="@Aborts_135"></a>
+<a name="@Aborts_137"></a>
 
 ##### Aborts
 
@@ -6732,7 +6754,7 @@ Validates that a curve, signature algorithm, and hash scheme combination is supp
 Validates that a curve is supported by the network encryption key.
 
 
-<a name="@Parameters_136"></a>
+<a name="@Parameters_138"></a>
 
 ##### Parameters
 
@@ -6741,7 +6763,7 @@ Validates that a curve is supported by the network encryption key.
 - <code>curve</code>: Curve identifier to validate
 
 
-<a name="@Aborts_137"></a>
+<a name="@Aborts_139"></a>
 
 ##### Aborts
 
@@ -6783,7 +6805,7 @@ Creates and validates a new encryption key that can be used to encrypt
 centralized secret key shares. The key signature is verified before registration.
 
 
-<a name="@Parameters_138"></a>
+<a name="@Parameters_140"></a>
 
 ##### Parameters
 
@@ -6795,7 +6817,7 @@ centralized secret key shares. The key signature is verified before registration
 - <code>ctx</code>: Transaction context for object creation
 
 
-<a name="@Effects_139"></a>
+<a name="@Effects_141"></a>
 
 ##### Effects
 
@@ -6803,7 +6825,7 @@ centralized secret key shares. The key signature is verified before registration
 - Emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CreatedEncryptionKeyEvent">CreatedEncryptionKeyEvent</a></code>
 
 
-<a name="@Aborts_140"></a>
+<a name="@Aborts_142"></a>
 
 ##### Aborts
 
@@ -6869,7 +6891,7 @@ using the given signature algorithm and hash scheme. This approval can later
 be used to initiate a signing session.
 
 
-<a name="@Parameters_141"></a>
+<a name="@Parameters_143"></a>
 
 ##### Parameters
 
@@ -6880,14 +6902,14 @@ be used to initiate a signing session.
 - <code>message</code>: Raw message bytes to be signed
 
 
-<a name="@Returns_142"></a>
+<a name="@Returns_144"></a>
 
 ##### Returns
 
 A <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_MessageApproval">MessageApproval</a></code> that can be used to request signing
 
 
-<a name="@Aborts_143"></a>
+<a name="@Aborts_145"></a>
 
 ##### Aborts
 
@@ -6941,7 +6963,7 @@ using the given signature algorithm and hash scheme. This approval can later
 be used to initiate a signing session.
 
 
-<a name="@Parameters_144"></a>
+<a name="@Parameters_146"></a>
 
 ##### Parameters
 
@@ -6952,14 +6974,14 @@ be used to initiate a signing session.
 - <code>message</code>: Raw message bytes to be signed
 
 
-<a name="@Returns_145"></a>
+<a name="@Returns_147"></a>
 
 ##### Returns
 
 A <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyMessageApproval">ImportedKeyMessageApproval</a></code> that can be used to request signing
 
 
-<a name="@Aborts_146"></a>
+<a name="@Aborts_148"></a>
 
 ##### Aborts
 
@@ -7048,7 +7070,7 @@ This ensures validators don't become overloaded and can complete sessions before
 epoch transitions.
 
 
-<a name="@Algorithm_147"></a>
+<a name="@Algorithm_149"></a>
 
 ##### Algorithm
 
@@ -7057,14 +7079,14 @@ epoch transitions.
 3. Only update if the new target is higher (prevents regression)
 
 
-<a name="@Parameters_148"></a>
+<a name="@Parameters_150"></a>
 
 ##### Parameters
 
 - <code>self</code>: Mutable reference to the coordinator
 
 
-<a name="@Effects_149"></a>
+<a name="@Effects_151"></a>
 
 ##### Effects
 
@@ -7115,21 +7137,21 @@ This function performs a comprehensive check to ensure the system is ready
 for epoch advancement by verifying that all scheduled sessions have finished.
 
 
-<a name="@Parameters_150"></a>
+<a name="@Parameters_152"></a>
 
 ##### Parameters
 
 - <code>self</code>: Reference to the coordinator
 
 
-<a name="@Returns_151"></a>
+<a name="@Returns_153"></a>
 
 ##### Returns
 
 <code><b>true</b></code> if all required sessions are completed and epoch can advance, <code><b>false</b></code> otherwise
 
 
-<a name="@Validation_Criteria_152"></a>
+<a name="@Validation_Criteria_154"></a>
 
 ##### Validation Criteria
 
@@ -7138,7 +7160,7 @@ for epoch advancement by verifying that all scheduled sessions have finished.
 3. **System Sessions Complete**: All started system sessions must be completed
 
 
-<a name="@Why_This_Matters_153"></a>
+<a name="@Why_This_Matters_155"></a>
 
 ##### Why This Matters
 
@@ -7148,7 +7170,7 @@ for epoch advancement by verifying that all scheduled sessions have finished.
 - Prevents resource leaks from abandoned sessions
 
 
-<a name="@Session_Types_154"></a>
+<a name="@Session_Types_156"></a>
 
 ##### Session Types
 
@@ -7187,7 +7209,7 @@ distribution, state cleanup, and session accounting. It's called when the
 validator network has finished processing a user's MPC request.
 
 
-<a name="@Parameters_155"></a>
+<a name="@Parameters_157"></a>
 
 ##### Parameters
 
@@ -7195,14 +7217,14 @@ validator network has finished processing a user's MPC request.
 - <code>session_sequence_number</code>: Sequential number of the session to complete
 
 
-<a name="@Returns_156"></a>
+<a name="@Returns_158"></a>
 
 ##### Returns
 
 Gas reimbursement balance to be distributed to the user
 
 
-<a name="@Session_Completion_Process_157"></a>
+<a name="@Session_Completion_Process_159"></a>
 
 ##### Session Completion Process
 
@@ -7213,7 +7235,7 @@ Gas reimbursement balance to be distributed to the user
 5. **Network Key Updates**: Credits computation fees to the network encryption key
 
 
-<a name="@Fee_Distribution_158"></a>
+<a name="@Fee_Distribution_160"></a>
 
 ##### Fee Distribution
 
@@ -7222,7 +7244,7 @@ Gas reimbursement balance to be distributed to the user
 - **Gas Reimbursement (SUI)**: Returned to caller for user refund
 
 
-<a name="@Security_Properties_159"></a>
+<a name="@Security_Properties_161"></a>
 
 ##### Security Properties
 
@@ -7232,7 +7254,7 @@ Gas reimbursement balance to be distributed to the user
 - Resource cleanup prevents memory leaks
 
 
-<a name="@System_Sessions_160"></a>
+<a name="@System_Sessions_162"></a>
 
 ##### System Sessions
 
@@ -7249,7 +7271,11 @@ completion workflow without user fee management.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_user_initiated_session_and_charge">remove_user_initiated_session_and_charge</a>&lt;E: <b>copy</b> + drop + store, Success: <b>copy</b> + drop + store, Rejected: <b>copy</b> + drop + store&gt;(self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>, session_sequence_number: u64, status: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionStatusEvent">DWalletSessionStatusEvent</a>&lt;Success, Rejected&gt;): Balance&lt;SUI&gt; {
+<pre><code><b>fun</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_remove_user_initiated_session_and_charge">remove_user_initiated_session_and_charge</a>&lt;E: <b>copy</b> + drop + store, Success: <b>copy</b> + drop + store, Rejected: <b>copy</b> + drop + store&gt;(
+    self: &<b>mut</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
+    session_sequence_number: u64,
+    status: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletSessionStatusEvent">DWalletSessionStatusEvent</a>&lt;Success, Rejected&gt;,
+): Balance&lt;SUI&gt; {
     self.session_management.number_of_completed_user_initiated_sessions = self.session_management.number_of_completed_user_initiated_sessions + 1;
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_update_last_user_initiated_session_to_complete_in_current_epoch">update_last_user_initiated_session_to_complete_in_current_epoch</a>();
     <b>let</b> session = self.session_management.sessions.remove(session_sequence_number);
@@ -7299,7 +7325,7 @@ of the DKG protocol through the validator network. Returns a capability that
 grants control over the newly created dWallet.
 
 
-<a name="@Parameters_161"></a>
+<a name="@Parameters_163"></a>
 
 ##### Parameters
 
@@ -7311,14 +7337,14 @@ grants control over the newly created dWallet.
 - <code>ctx</code>: Transaction context
 
 
-<a name="@Returns_162"></a>
+<a name="@Returns_164"></a>
 
 ##### Returns
 
 A new <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCap">DWalletCap</a></code> object granting control over the created dWallet
 
 
-<a name="@Effects_163"></a>
+<a name="@Effects_165"></a>
 
 ##### Effects
 
@@ -7328,7 +7354,7 @@ A new <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_sys
 - Emits a <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletDKGFirstRoundRequestEvent">DWalletDKGFirstRoundRequestEvent</a></code> to start the protocol
 
 
-<a name="@Aborts_164"></a>
+<a name="@Aborts_166"></a>
 
 ##### Aborts
 
@@ -7420,7 +7446,7 @@ request, advancing the dWallet through its initialization lifecycle. It represen
 the completion of the first phase of distributed cryptographic key generation.
 
 
-<a name="@Parameters_165"></a>
+<a name="@Parameters_167"></a>
 
 ##### Parameters
 
@@ -7431,14 +7457,14 @@ the completion of the first phase of distributed cryptographic key generation.
 - <code>session_sequence_number</code>: Session identifier for fee processing
 
 
-<a name="@Returns_166"></a>
+<a name="@Returns_168"></a>
 
 ##### Returns
 
 Gas reimbursement balance for user refund
 
 
-<a name="@DKG_First_Round_Process_167"></a>
+<a name="@DKG_First_Round_Process_169"></a>
 
 ##### DKG First Round Process
 
@@ -7449,7 +7475,7 @@ Gas reimbursement balance for user refund
 5. **State Transition**: Updates dWallet to next appropriate state
 
 
-<a name="@Success_Path_168"></a>
+<a name="@Success_Path_170"></a>
 
 ##### Success Path
 
@@ -7459,7 +7485,7 @@ Gas reimbursement balance for user refund
 - **Next Step**: User must verify output and initiate second round
 
 
-<a name="@Rejection_Path_169"></a>
+<a name="@Rejection_Path_171"></a>
 
 ##### Rejection Path
 
@@ -7469,7 +7495,7 @@ Gas reimbursement balance for user refund
 - **Next Step**: User must create new dWallet or retry operation
 
 
-<a name="@Security_Properties_170"></a>
+<a name="@Security_Properties_172"></a>
 
 ##### Security Properties
 
@@ -7479,7 +7505,7 @@ Gas reimbursement balance for user refund
 - Fees are processed regardless of success/failure
 
 
-<a name="@Network_Integration_171"></a>
+<a name="@Network_Integration_173"></a>
 
 ##### Network Integration
 
@@ -7546,7 +7572,7 @@ provide their encrypted secret share and request validator network verification.
 It creates the encrypted share object and transitions the dWallet to network verification.
 
 
-<a name="@Parameters_172"></a>
+<a name="@Parameters_174"></a>
 
 ##### Parameters
 
@@ -7562,7 +7588,7 @@ It creates the encrypted share object and transitions the dWallet to network ver
 - <code>ctx</code>: Transaction context
 
 
-<a name="@DKG_Second_Round_Process_173"></a>
+<a name="@DKG_Second_Round_Process_175"></a>
 
 ##### DKG Second Round Process
 
@@ -7573,7 +7599,7 @@ It creates the encrypted share object and transitions the dWallet to network ver
 5. **State Transition**: Updates dWallet to <code>AwaitingNetworkDKGVerification</code>
 
 
-<a name="@Cryptographic_Security_174"></a>
+<a name="@Cryptographic_Security_176"></a>
 
 ##### Cryptographic Security
 
@@ -7583,7 +7609,7 @@ It creates the encrypted share object and transitions the dWallet to network ver
 - **Threshold Security**: Maintains distributed key generation properties
 
 
-<a name="@Network_Integration_175"></a>
+<a name="@Network_Integration_177"></a>
 
 ##### Network Integration
 
@@ -7591,7 +7617,7 @@ Emits <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_sys
 triggering network verification of the encrypted share.
 
 
-<a name="@Aborts_176"></a>
+<a name="@Aborts_178"></a>
 
 ##### Aborts
 
@@ -7978,7 +8004,7 @@ Finalizes the <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#
 Request verification of the imported key dWallet from the Ika network.
 
 
-<a name="@Parameters_177"></a>
+<a name="@Parameters_179"></a>
 
 ##### Parameters
 
@@ -7995,14 +8021,14 @@ Request verification of the imported key dWallet from the Ika network.
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Returns_178"></a>
+<a name="@Returns_180"></a>
 
 ##### Returns
 
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ImportedKeyDWalletCap">ImportedKeyDWalletCap</a></code>: The cap of the imported key dWallet.
 
 
-<a name="@Aborts_179"></a>
+<a name="@Aborts_181"></a>
 
 ##### Aborts
 
@@ -8185,7 +8211,7 @@ process of making the user secret key shares of a dWallet public. It charges the
 the operation and creates a new event to record the request.
 
 
-<a name="@Parameters_180"></a>
+<a name="@Parameters_182"></a>
 
 ##### Parameters
 
@@ -8302,7 +8328,7 @@ signing latency from seconds to milliseconds. This function creates a dWallet-sp
 presign that can only be used with the specified dWallet.
 
 
-<a name="@Parameters_181"></a>
+<a name="@Parameters_183"></a>
 
 ##### Parameters
 
@@ -8314,7 +8340,7 @@ presign that can only be used with the specified dWallet.
 - <code>ctx</code>: Transaction context
 
 
-<a name="@Returns_182"></a>
+<a name="@Returns_184"></a>
 
 ##### Returns
 
@@ -8322,7 +8348,7 @@ presign that can only be used with the specified dWallet.
 
 
 
-<a name="@Security_Properties_183"></a>
+<a name="@Security_Properties_185"></a>
 
 ##### Security Properties
 
@@ -8332,7 +8358,7 @@ presign that can only be used with the specified dWallet.
 - **Expiration**: Presigns have limited validity period
 
 
-<a name="@Next_Steps_184"></a>
+<a name="@Next_Steps_186"></a>
 
 ##### Next Steps
 
@@ -8342,7 +8368,7 @@ presign that can only be used with the specified dWallet.
 4. Combine with message approval for actual signing
 
 
-<a name="@Aborts_185"></a>
+<a name="@Aborts_187"></a>
 
 ##### Aborts
 
@@ -8432,7 +8458,7 @@ that can be used with any compatible dWallet under the same network encryption k
 This enables better resource utilization and batch processing optimization.
 
 
-<a name="@Parameters_186"></a>
+<a name="@Parameters_188"></a>
 
 ##### Parameters
 
@@ -8445,14 +8471,14 @@ This enables better resource utilization and batch processing optimization.
 - <code>ctx</code>: Transaction context
 
 
-<a name="@Returns_187"></a>
+<a name="@Returns_189"></a>
 
 ##### Returns
 
 <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_UnverifiedPresignCap">UnverifiedPresignCap</a></code> that can be used with any compatible dWallet
 
 
-<a name="@Security_Considerations_188"></a>
+<a name="@Security_Considerations_190"></a>
 
 ##### Security Considerations
 
@@ -8462,7 +8488,7 @@ This enables better resource utilization and batch processing optimization.
 - Single-use property prevents replay attacks
 
 
-<a name="@Next_Steps_189"></a>
+<a name="@Next_Steps_191"></a>
 
 ##### Next Steps
 
@@ -8472,7 +8498,7 @@ This enables better resource utilization and batch processing optimization.
 4. Use with any compatible dWallet for signing operations
 
 
-<a name="@Aborts_190"></a>
+<a name="@Aborts_192"></a>
 
 ##### Aborts
 
@@ -8559,7 +8585,7 @@ This function handles the completion or rejection of presign generation by the
 validator network, updating the presign session state and emitting appropriate events.
 
 
-<a name="@Parameters_191"></a>
+<a name="@Parameters_193"></a>
 
 ##### Parameters
 
@@ -8572,14 +8598,14 @@ validator network, updating the presign session state and emitting appropriate e
 - <code>session_sequence_number</code>: Session sequence for fee processing
 
 
-<a name="@Returns_192"></a>
+<a name="@Returns_194"></a>
 
 ##### Returns
 
 Gas reimbursement balance for user refund
 
 
-<a name="@Success_Path_193"></a>
+<a name="@Success_Path_195"></a>
 
 ##### Success Path
 
@@ -8589,7 +8615,7 @@ Gas reimbursement balance for user refund
 - **Capability**: Associated capability can now be verified and used
 
 
-<a name="@Rejection_Path_194"></a>
+<a name="@Rejection_Path_196"></a>
 
 ##### Rejection Path
 
@@ -8600,7 +8626,7 @@ Gas reimbursement balance for user refund
 
 
 
-<a name="@Security_Properties_195"></a>
+<a name="@Security_Properties_197"></a>
 
 ##### Security Properties
 
@@ -8610,7 +8636,7 @@ Gas reimbursement balance for user refund
 - Rejection handling prevents use of incomplete presigns
 
 
-<a name="@Network_Integration_196"></a>
+<a name="@Network_Integration_198"></a>
 
 ##### Network Integration
 
@@ -8679,7 +8705,7 @@ Checks both the completion state and capability ID matching to ensure
 the capability is authentic and the presign is ready for use.
 
 
-<a name="@Parameters_197"></a>
+<a name="@Parameters_199"></a>
 
 ##### Parameters
 
@@ -8687,14 +8713,14 @@ the capability is authentic and the presign is ready for use.
 - <code>cap</code>: Unverified presign capability to validate
 
 
-<a name="@Returns_198"></a>
+<a name="@Returns_200"></a>
 
 ##### Returns
 
 <code><b>true</b></code> if the presign is completed and the capability is valid, <code><b>false</b></code> otherwise
 
 
-<a name="@Validation_Criteria_199"></a>
+<a name="@Validation_Criteria_201"></a>
 
 ##### Validation Criteria
 
@@ -9569,7 +9595,7 @@ processing the checkpoint contents. This ensures only valid, consensus-approved
 checkpoints are processed.
 
 
-<a name="@Parameters_200"></a>
+<a name="@Parameters_202"></a>
 
 ##### Parameters
 
@@ -9580,14 +9606,14 @@ checkpoints are processed.
 - <code>ctx</code>: Transaction context for coin creation
 
 
-<a name="@Returns_201"></a>
+<a name="@Returns_203"></a>
 
 ##### Returns
 
 SUI coin containing gas fee reimbursements from processed operations
 
 
-<a name="@Effects_202"></a>
+<a name="@Effects_204"></a>
 
 ##### Effects
 
@@ -9597,7 +9623,7 @@ SUI coin containing gas fee reimbursements from processed operations
 - Collects and returns gas fee reimbursements
 
 
-<a name="@Aborts_203"></a>
+<a name="@Aborts_205"></a>
 
 ##### Aborts
 
@@ -9894,7 +9920,7 @@ Default pricing is used to set the pricing for a protocol or curve if pricing is
 and it has to contain the default pricing for all protocols and curves as set in the <code>supported_curves_to_signature_algorithms_to_hash_schemes</code> parameter.
 
 
-<a name="@Parameters_204"></a>
+<a name="@Parameters_206"></a>
 
 ##### Parameters
 
@@ -9902,7 +9928,7 @@ and it has to contain the default pricing for all protocols and curves as set in
 - **<code>supported_curves_to_signature_algorithms_to_hash_schemes</code>**: A map of curves to signature algorithms to hash schemes.
 
 
-<a name="@Errors_205"></a>
+<a name="@Errors_207"></a>
 
 ##### Errors
 
@@ -9942,7 +9968,7 @@ Aborts if pricing is missing for any protocol or curve.
 IMPORTANT: every time a new protocol is added, this function must be updated with verifying the new protocol pricing.
 
 
-<a name="@Parameters_206"></a>
+<a name="@Parameters_208"></a>
 
 ##### Parameters
 
@@ -9950,7 +9976,7 @@ IMPORTANT: every time a new protocol is added, this function must be updated wit
 - **<code>default_pricing</code>**: The default pricing to use if pricing is missing for a protocol or curve.
 
 
-<a name="@Errors_207"></a>
+<a name="@Errors_209"></a>
 
 ##### Errors
 
@@ -10003,7 +10029,7 @@ Sets the paused curves, signature algorithms and hash schemes.
 This function is used to set the paused curves, signature algorithms and hash schemes.
 
 
-<a name="@Parameters_208"></a>
+<a name="@Parameters_210"></a>
 
 ##### Parameters
 
@@ -10047,7 +10073,7 @@ This function is used to set the pricing vote for a validator.
 Cannot be called during the votes calculation.
 
 
-<a name="@Parameters_209"></a>
+<a name="@Parameters_211"></a>
 
 ##### Parameters
 
@@ -10055,7 +10081,7 @@ Cannot be called during the votes calculation.
 - **<code>pricing_vote</code>**: The pricing vote for the validator.
 
 
-<a name="@Errors_210"></a>
+<a name="@Errors_212"></a>
 
 ##### Errors
 
@@ -10199,7 +10225,7 @@ Cannot be called during the votes calculation.
 Get the supported curves for a network encryption key.
 
 
-<a name="@Parameters_211"></a>
+<a name="@Parameters_213"></a>
 
 ##### Parameters
 
@@ -10207,14 +10233,14 @@ Get the supported curves for a network encryption key.
 - <code><a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_network_encryption_key_id">dwallet_network_encryption_key_id</a></code>: ID of the network encryption key
 
 
-<a name="@Returns_212"></a>
+<a name="@Returns_214"></a>
 
 ##### Returns
 
 Vector of supported curve identifiers
 
 
-<a name="@Aborts_213"></a>
+<a name="@Aborts_215"></a>
 
 ##### Aborts
 

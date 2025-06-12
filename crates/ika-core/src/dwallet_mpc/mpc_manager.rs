@@ -6,10 +6,11 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
-use crate::dwallet_mpc::mpc_session::{AsyncProtocol, DWalletMPCSession, MPCEventData};
+use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
 use crate::stake_aggregator::StakeAggregator;
+use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
@@ -18,8 +19,8 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData, MaliciousReport,
-    SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
+    AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
+    MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -387,7 +388,6 @@ impl DWalletMPCManager {
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type,
             init_protocol_data: session_info.mpc_round.clone(),
-            public_input,
             private_input,
             decryption_shares: match session_info.mpc_round {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
@@ -399,6 +399,7 @@ impl DWalletMPCManager {
                     )?,
                 _ => HashMap::new(),
             },
+            public_input,
         };
         let wrapped_mpc_event_data = Some(mpc_event_data.clone());
         self.dwallet_mpc_metrics
@@ -420,14 +421,14 @@ impl DWalletMPCManager {
     pub(crate) fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         self.network_keys.get_protocol_public_parameters(key_id)
     }
 
     pub(super) fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
-    ) -> DwalletMPCResult<Vec<u8>> {
+    ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
         self.network_keys.get_decryption_public_parameters(key_id)
     }
 

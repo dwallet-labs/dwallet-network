@@ -895,6 +895,7 @@ public enum SessionType has copy, drop, store {
 }
 
 
+/// The preimage is used to create the session identifier.
 public struct SessionIdentifier has key, store {
     id: UID,
     identifier_preimage: vector<u8>,
@@ -1881,7 +1882,19 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 /// Registers a new session identifier.
 /// 
 /// This function is used to register a new session identifier.
-public(package) fun register_session_identifier(self: &mut DWalletCoordinatorInner, identifier_preimage: vector<u8>, ctx: &mut TxContext): SessionIdentifier {
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator.
+/// - `identifier_preimage`: The preimage bytes for creating the session identifier.
+/// - `ctx`: Transaction context for object creation.
+/// 
+/// ### Returns
+/// A new session identifier object.
+public(package) fun register_session_identifier(
+    self: &mut DWalletCoordinatorInner,
+    identifier_preimage: vector<u8>,
+    ctx: &mut TxContext,
+): SessionIdentifier {
     assert!(identifier_preimage.length() == SESSION_IDENTIFIER_LENGTH, ESessionIdentifierInvalidLength);
     assert!(!self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierAlreadyRegistered);
     let id = object::new(ctx);
@@ -2451,8 +2464,9 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         session_type: SessionType::System,
         // Notice that `session_identifier_preimage` is only the pre-image. 
         // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
-        // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide.)
-        // To avoid user-initiated events colliding with system events, we pad the `session_identifier_preimage` differently for user and system events before hashing it.
+        // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide).
+        // To avoid user-initiated events colliding with system events,
+        // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
         session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
@@ -2891,7 +2905,11 @@ public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinat
 /// ### System Sessions
 /// This function is never called for system sessions, which handle their own
 /// completion workflow without user fee management.
-fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64, status: DWalletSessionStatusEvent<Success, Rejected>): Balance<SUI> {
+fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    session_sequence_number: u64,
+    status: DWalletSessionStatusEvent<Success, Rejected>,
+): Balance<SUI> {
     self.session_management.number_of_completed_user_initiated_sessions = self.session_management.number_of_completed_user_initiated_sessions + 1;
 
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
