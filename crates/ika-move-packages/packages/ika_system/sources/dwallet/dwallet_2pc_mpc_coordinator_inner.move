@@ -1948,6 +1948,9 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
     });
 
+    self.charge_and_create_current_epoch_dwallet_event(
+
+    );
     self.initiate_system_dwallet_session(
         DWalletNetworkDKGEncryptionKeyRequestEvent {
             dwallet_network_encryption_key_id,
