@@ -16,7 +16,6 @@ use ika_sui_client::SuiClient;
 use mysten_metrics::RegistryService;
 use prometheus::Registry;
 use std::env;
-use std::sync::Arc;
 use sui_tls::TlsAcceptor;
 use telemetry_subscribers::TelemetryConfig;
 use tracing::info;
@@ -76,22 +75,18 @@ async fn main() -> Result<()> {
     .await?;
 
     let (tls_config, allower) =
-        create_server_cert_enforce_peer(config.dynamic_peers, config.static_peers, sui_client)
-            .expect("unable to create tls server config");
-
-    // let (tls_config, allower) =
-    //     // we'll only use the dynamic peers in some cases — it makes little sense to run with the static's
-    //     // since this first mode allows all.
-    //     if config.dynamic_peers.certificate_file.is_none() || config.dynamic_peers.private_key.is_none() {
-    //         (
-    //             create_server_cert_default_allow(config.dynamic_peers.hostname.unwrap())
-    //                 .expect("unable to create self-signed server cert"),
-    //             None,
-    //         )
-    //     } else {
-    //         create_server_cert_enforce_peer(config.dynamic_peers, config.static_peers, sui_client)
-    //             .expect("unable to create tls server config")
-    //     };
+        // we'll only use the dynamic peers in some cases — it makes little sense to run with the static's
+        // since this first mode allows all.
+        if config.dynamic_peers.certificate_file.is_none() || config.dynamic_peers.private_key.is_none() {
+            (
+                create_server_cert_default_allow(config.dynamic_peers.hostname.unwrap())
+                    .expect("unable to create self-signed server cert"),
+                None,
+            )
+        } else {
+            create_server_cert_enforce_peer(config.dynamic_peers, config.static_peers, sui_client)
+                .expect("unable to create tls server config")
+        };
     let histogram_listener = std::net::TcpListener::bind(config.histogram_address)?;
     let metrics_listener = std::net::TcpListener::bind(config.metrics_address)?;
     let acceptor = TlsAcceptor::new(tls_config);

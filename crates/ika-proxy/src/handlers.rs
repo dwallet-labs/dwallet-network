@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-use crate::admin;
-use crate::admin::{CertKeyPair, Labels, ReqwestClient};
+use crate::admin::{Labels, ReqwestClient};
 use crate::consumer::{convert_to_remote_write, populate_labels, NodeMetric};
 use crate::histogram_relay::HistogramRelay;
 use crate::middleware::LenDelimProtobuf;
@@ -10,7 +9,6 @@ use axum::{
     extract::{ConnectInfo, Extension},
     http::StatusCode,
 };
-use fastcrypto::ed25519::Ed25519PublicKey;
 use multiaddr::Multiaddr;
 use once_cell::sync::Lazy;
 use prometheus::{register_counter_vec, register_histogram_vec};

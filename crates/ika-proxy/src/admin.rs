@@ -106,9 +106,9 @@ pub fn app(
         .route_layer(DefaultBodyLimit::max(var!(
             "MAX_BODY_SIZE",
             1024 * 1024 * 5
-        )));
-    // .route_layer(middleware::from_fn(expect_mysten_proxy_header))
-    // .route_layer(middleware::from_fn(expect_content_length));
+        )))
+        .route_layer(middleware::from_fn(expect_mysten_proxy_header))
+        .route_layer(middleware::from_fn(expect_content_length));
     if let Some(allower) = allower {
         router = router
             .route_layer(middleware::from_fn(expect_valid_public_key))
@@ -266,14 +266,6 @@ pub fn create_server_cert_enforce_peer(
         .map_err(|e| rustls::Error::General(format!("unable to load static pub keys: {}", e)))?;
     let allower = SuiNodeProvider::new(dynamic_peers.interval, static_peers, sui_client.into());
     allower.poll_peer_list();
-
-    // let CertKeyPair(server_certificate, _) = generate_self_cert(dynamic_peers.hostname.unwrap());
-
-    // let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
-    //     .rustls_server_config(
-    //         vec![server_certificate.rustls_certificate()],
-    //         server_certificate.rustls_private_key(),
-    //     )?;
 
     let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
         .rustls_server_config(
