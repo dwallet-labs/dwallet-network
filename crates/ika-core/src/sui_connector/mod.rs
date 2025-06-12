@@ -66,7 +66,6 @@ impl SuiConnectorService {
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
-        epoch_start_cursor: EventID,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -87,7 +86,6 @@ impl SuiConnectorService {
         let sui_modules_to_watch = Self::get_sui_modules_to_watch(
             &perpetual_tables,
             sui_connector_config.sui_ika_system_module_last_processed_event_id_override,
-            epoch_start_cursor,
         );
 
         let task_handles = SuiSyncer::new(
@@ -169,9 +167,8 @@ impl SuiConnectorService {
     }
 
     fn get_sui_modules_to_watch(
-        _perpetual_tables: &Arc<AuthorityPerpetualTables>,
+        perpetual_tables: &Arc<AuthorityPerpetualTables>,
         sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
-        epoch_start_cursor: EventID,
     ) -> HashMap<Identifier, Option<EventID>> {
         let sui_connector_modules = vec![
             TEST_MODULE_NAME.to_owned(),
@@ -182,22 +179,30 @@ impl SuiConnectorService {
                 "Overriding cursor for sui connector modules to {:?}",
                 cursor
             );
-            HashMap::from_iter(
+            return HashMap::from_iter(
                 sui_connector_modules
                     .iter()
                     .map(|module| (module.clone(), Some(cursor))),
-            )
-        } else {
-            info!(
-                ?epoch_start_cursor,
-                "Using epoch start cursor for sui connector modules",
             );
-            HashMap::from_iter(
-                sui_connector_modules
-                    .iter()
-                    .map(|module| (module.clone(), Some(epoch_start_cursor))),
-            )
         }
+
+        let sui_connector_module_stored_cursor = perpetual_tables
+            .get_sui_event_cursors(&sui_connector_modules)
+            .expect("Failed to get sui event cursors from AuthorityPerpetualTables");
+        let mut sui_modules_to_watch = HashMap::new();
+        for (module_identifier, cursor) in sui_connector_modules
+            .iter()
+            .zip(sui_connector_module_stored_cursor)
+        {
+            if cursor.is_none() {
+                info!(
+                "No cursor found for sui connector module {} in storage or config override, query start from the beginning.",
+                module_identifier
+            );
+            }
+            sui_modules_to_watch.insert(module_identifier.clone(), cursor);
+        }
+        sui_modules_to_watch
     }
 
     pub async fn get_available_move_packages(
