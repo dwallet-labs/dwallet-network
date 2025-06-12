@@ -241,19 +241,24 @@ impl DWalletMPCService {
                         &tables.dwallet_mpc_events_for_pending_and_active_sessions,
                         completed_sessions_ids.clone(),
                     ) {
-                        error!(error=?e,
+                        error!(
+                            error=?e,
                             session_id=?completed_sessions_ids,
-                            "failed to delete batch for session");
+                            "failed to delete batch for session"
+                        );
                     }
                     if let Err(e) = batch.write() {
-                        error!(error=?e,
+                        error!(
+                            error=?e,
                             session_id=?completed_sessions_ids,
-                            "failed to write batch for session");
+                            "failed to write batch for session"
+                        );
                     }
                 }
             }
 
-            // Read **new** dWallet MPC events from sui, save them to the local DB.
+            // Read **new** dWallet MPC events from sui that were previously stored in `perpetual_tables`.
+            // Saves them to the local DB.
             if let Err(e) = self.epoch_store.read_new_sui_events().await {
                 error!(
                     error=?e,
