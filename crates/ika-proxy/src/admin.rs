@@ -278,7 +278,7 @@ pub fn create_server_cert_enforce_peer(
     let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
         .rustls_server_config(
         load_certs(&certificate_path),
-        load_private_key(&private_key_path)
+        load_private_key(&private_key_path),
     )?;
     Ok((c, Some(allower)))
 }

@@ -26,11 +26,11 @@ bin_version::bin_version!();
 
 /// User agent we use when posting to mimir.
 static APP_USER_AGENT: &str = const_str::concat!(
-env!("CARGO_PKG_NAME"),
-"/",
-env!("CARGO_PKG_VERSION"),
-"/",
-VERSION
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+    "/",
+    VERSION
 );
 
 #[derive(Parser, Debug)]
@@ -73,10 +73,11 @@ async fn main() -> Result<()> {
         config.dynamic_peers.ika_system_package_id,
         config.dynamic_peers.ika_system_object_id,
     )
-        .await?;
+    .await?;
 
-    let (tls_config, allower) = create_server_cert_enforce_peer(config.dynamic_peers, config.static_peers, sui_client)
-        .expect("unable to create tls server config");
+    let (tls_config, allower) =
+        create_server_cert_enforce_peer(config.dynamic_peers, config.static_peers, sui_client)
+            .expect("unable to create tls server config");
 
     // let (tls_config, allower) =
     //     // we'll only use the dynamic peers in some cases — it makes little sense to run with the static's
