@@ -24,9 +24,7 @@ export enum Hash {
 }
 
 interface ReadySignObject {
-	id: {
-		id: string };
-	};
+	id: { id: string };
 	state: {
 		fields: {
 			signature: Uint8Array;
