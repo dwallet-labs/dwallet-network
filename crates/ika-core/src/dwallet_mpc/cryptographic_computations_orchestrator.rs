@@ -18,6 +18,7 @@
 //! — Updates the running sessions count accordingly
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
+use fastcrypto::encoding::{Encoding, Hex};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::sync::Arc;
 use std::time::Instant;
@@ -178,9 +179,10 @@ impl CryptographicComputationsOrchestrator {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
                     mpc_protocol=%mpc_protocol,
-                    session_id=?session.session_identifier,
+                    session_id=?Hex::encode(session.session_identifier.as_slice()),
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
+                    party_id = session.party_id,
                     current_round = session.current_round,
                     "MPC session advanced successfully"
                 );

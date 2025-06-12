@@ -329,6 +329,7 @@ pub enum SessionType {
 }
 
 pub type SessionIdentifier = [u8; 32];
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]

@@ -6,7 +6,7 @@ use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, VersionedNetworkDkgOutput};
+use dwallet_mpc_types::dwallet_mpc::VersionedNetworkDkgOutput;
 use group::{secp256k1, PartyID};
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -24,9 +24,9 @@ pub(super) trait ResharePartyPublicInputGenerator: Party {
     fn generate_public_input(
         committee: &Committee,
         new_committee: Committee,
-        decryption_key_share_public_parameters: Vec<u8>,
+        decryption_key_share_public_parameters: Secp256k1DecryptionKeySharePublicParameters,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<MPCPublicInput>;
+    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput>;
 }
 
 fn current_tangible_party_id_to_upcoming(
@@ -52,9 +52,9 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
     fn generate_public_input(
         current_committee: &Committee,
         upcoming_committee: Committee,
-        decryption_key_share_public_parameters: Vec<u8>,
+        decryption_key_share_public_parameters: Secp256k1DecryptionKeySharePublicParameters,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<MPCPublicInput> {
+    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput> {
         let VersionedNetworkDkgOutput::V1(network_dkg_public_output) = network_dkg_public_output;
         let current_committee = current_committee.clone();
 
@@ -79,9 +79,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             plaintext_space_public_parameters.clone(),
             current_encryption_keys_per_crt_prime_and_proofs.clone(),
             upcoming_encryption_keys_per_crt_prime_and_proofs.clone(),
-            bcs::from_bytes::<Secp256k1DecryptionKeySharePublicParameters>(
-                &decryption_key_share_public_parameters,
-            )?,
+            decryption_key_share_public_parameters,
             DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
             current_tangible_party_id_to_upcoming(current_committee, upcoming_committee).clone(),
             bcs::from_bytes(&network_dkg_public_output)?,
@@ -90,7 +88,7 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
             DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
         })?;
 
-        Ok(bcs::to_bytes(&public_input)?)
+        Ok(public_input)
     }
 }
 

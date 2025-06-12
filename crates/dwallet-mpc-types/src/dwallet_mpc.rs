@@ -72,7 +72,7 @@ pub enum NetworkDecryptionKeyPublicOutputType {
 
 /// Network decryption key shares for the MPC protocol.
 /// Created for each DKG protocol and modified for each Reshare Protocol.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
@@ -83,9 +83,10 @@ pub struct NetworkDecryptionKeyPublicData {
 
     /// The public parameters of the decryption key shares,
     /// updated only after a successful network DKG or Reshare.
-    pub decryption_key_share_public_parameters: Vec<u8>,
+    pub decryption_key_share_public_parameters:
+        class_groups::Secp256k1DecryptionKeySharePublicParameters,
 
-    pub protocol_public_parameters: Vec<u8>,
+    pub protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 
     /// The public output of the `NetworkDKG` process (the first and only one).
     /// On first instance it will be equal to `latest_public_output`.

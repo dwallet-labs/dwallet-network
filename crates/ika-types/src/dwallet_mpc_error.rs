@@ -162,6 +162,8 @@ pub enum DwalletMPCError {
         expected_epoch: u64,
         actual_epoch: u64,
     },
+    #[error("invalid session public input")]
+    InvalidSessionPublicInput,
 }
 
 /// A wrapper type for the result of a runtime operation.
