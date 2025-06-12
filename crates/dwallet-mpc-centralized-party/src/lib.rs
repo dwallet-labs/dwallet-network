@@ -48,18 +48,6 @@ pub struct DWalletPublicKeys {
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
 
-/// Extracts [`DWalletPublicKeys`] from the given [`DKGDecentralizedOutput`].
-// Can't use the TryFrom trait as it leads to conflicting implementations.
-// Must use `anyhow::Result`, because this function is being used also
-// in the centralized party crate.
-fn public_keys_from_dkg_output(value: DKGDecentralizedOutput) -> anyhow::Result<DWalletPublicKeys> {
-    Ok(DWalletPublicKeys {
-        centralized_public_share: bcs::to_bytes(&value.centralized_party_public_key_share)?,
-        decentralized_public_share: bcs::to_bytes(&value.public_key_share)?,
-        public_key: bcs::to_bytes(&value.public_key)?,
-    })
-}
-
 type SignedMessage = Vec<u8>;
 
 type Secp256k1EncryptionKey = EncryptionKey<
