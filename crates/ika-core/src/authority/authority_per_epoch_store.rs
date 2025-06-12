@@ -74,7 +74,6 @@ use ika_types::messages_dwallet_checkpoint::{
 };
 use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionIdentifierStruct, SessionInfo, SessionType};
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
