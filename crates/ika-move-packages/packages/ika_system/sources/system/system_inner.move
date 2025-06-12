@@ -75,6 +75,7 @@ const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the
 public struct SystemInner has store {
     /// The current epoch ID, starting from 0.
     epoch: u64,
+    epoch_start_tx_digest: vector<u8>,
     /// The current protocol version, starting from 1.
     protocol_version: u64,
     next_protocol_version: Option<u64>,
@@ -231,6 +232,7 @@ public(package) fun create(
     // This type is fixed as it's created at init. It should not be updated during type upgrade.
     let system_state = SystemInner {
         epoch: 0,
+        epoch_start_tx_digest: *ctx.digest(),
         protocol_version,
         next_protocol_version: option::none(),
         upgrade_caps,
@@ -563,7 +565,7 @@ public(package) fun advance_epoch(
     let last_epoch_change = self.epoch_start_timestamp_ms;
     let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
     assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
-
+    self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;
 
     let mut stake_subsidy = balance::zero();

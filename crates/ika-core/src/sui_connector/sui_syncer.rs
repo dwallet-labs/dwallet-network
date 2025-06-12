@@ -343,8 +343,27 @@ where
                 last_synced_sui_checkpoints_metric.set(latest_checkpoint_sequence_number as i64);
             }
         });
-
+        let mut start_epoch_cursor: Option<EventID> = None;
+        let mut loop_index = 0;
         loop {
+            loop_index += 1;
+            // Fetching the epoch start TX digest less frequently
+            // as it is unexpected to change often.
+            if loop_index % 10 == 0 {
+                debug!("Querying epoch start cursor from Sui");
+                let SystemInner::V1(system_inner) = sui_client.must_get_system_inner_object().await;
+                let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
+                else {
+                    // This should not happen, but if it does, we need to know about it.
+                    error!("cloud not parse `epoch_start_tx_digest` - wrong length");
+                    continue;
+                };
+                let start_epoch_event = EventID::from((epoch_start_tx_digest, 0));
+                if start_epoch_cursor != Some(start_epoch_event) {
+                    start_epoch_cursor = Some(start_epoch_event);
+                    cursor = start_epoch_cursor;
+                }
+            }
             interval.tick().await;
             let Ok(Ok(events)) = retry_with_max_elapsed_time!(
                 sui_client.query_events_by_module(module.clone(), cursor),

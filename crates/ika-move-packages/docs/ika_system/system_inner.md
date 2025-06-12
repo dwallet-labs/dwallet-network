@@ -162,6 +162,11 @@ Uses SystemParametersV1 as the parameters.
  The current epoch ID, starting from 0.
 </dd>
 <dt>
+<code>epoch_start_tx_digest: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64</code>
 </dt>
 <dd>
@@ -995,6 +1000,7 @@ This function will be called only once in init.
     // This type is fixed <b>as</b> it's created at <a href="../ika_system/init.md#(ika_system=0x0)_init">init</a>. It should not be updated during type upgrade.
     <b>let</b> system_state = <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: 0,
+        epoch_start_tx_digest: *ctx.digest(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
         next_protocol_version: option::none(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
@@ -1839,6 +1845,7 @@ gas coins.
     <b>let</b> last_epoch_change = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>;
     <b>let</b> <b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>();
     <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>.is_some() && now &gt;= last_epoch_change + self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
+    self.epoch_start_tx_digest = *ctx.digest();
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = now;
     <b>let</b> <b>mut</b> stake_subsidy = balance::zero();
     // during the transition from <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> N to <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> N + 1, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>() will <b>return</b> N

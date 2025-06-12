@@ -13,7 +13,7 @@ use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 /// and ensures the signing public key matches the address that initiated this transaction.
 pub(crate) fn verify_encrypted_share(
     verification_data: &EncryptedShareVerificationRequestEvent,
-    protocol_public_parameters: &[u8],
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 ) -> DwalletMPCResult<()> {
     let encrypted_centralized_secret_share_and_proof =
         match bcs::from_bytes(&verification_data.encrypted_centralized_secret_share_and_proof)? {
@@ -34,13 +34,13 @@ fn verify_centralized_secret_key_share_proof(
     encrypted_centralized_secret_share_and_proof: &[u8],
     serialized_dkg_public_output: &SerializedWrappedMPCPublicOutput,
     encryption_key: &[u8],
-    protocol_public_parameters: &[u8],
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 ) -> anyhow::Result<()> {
     let dkg_public_output = bcs::from_bytes(serialized_dkg_public_output)?;
     match dkg_public_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_public_output) => {
             <AsyncProtocol as Protocol>::verify_encryption_of_centralized_party_share_proof(
-                &bcs::from_bytes(protocol_public_parameters)?,
+                &protocol_public_parameters,
                 bcs::from_bytes(&dkg_public_output)?,
                 bcs::from_bytes(encryption_key)?,
                 bcs::from_bytes(encrypted_centralized_secret_share_and_proof)?,

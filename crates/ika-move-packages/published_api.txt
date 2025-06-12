@@ -79,48 +79,15 @@ drop
 destroy
 	public fun
 	0x0::class_groups_public_key_and_proof
-StakedIka
+ObjectDisplay
 	public struct
-	0x0::staked_ika
-StakedIkaState
-	public enum
-	0x0::staked_ika
-mint
+	0x0::display
+PublisherKey
+	public struct
+	0x0::display
+create
 	public(package) fun
-	0x0::staked_ika
-into_balance
-	public(package) fun
-	0x0::staked_ika
-set_withdrawing
-	public(package) fun
-	0x0::staked_ika
-can_withdraw_early
-	public(package) fun
-	0x0::staked_ika
-validator_id
-	public fun
-	0x0::staked_ika
-value
-	public fun
-	0x0::staked_ika
-activation_epoch
-	public fun
-	0x0::staked_ika
-is_staked
-	public fun
-	0x0::staked_ika
-is_withdrawing
-	public fun
-	0x0::staked_ika
-withdraw_epoch
-	public fun
-	0x0::staked_ika
-join
-	public fun
-	0x0::staked_ika
-split
-	public fun
-	0x0::staked_ika
+	0x0::display
 DWalletPricing
 	public struct
 	0x0::dwallet_pricing
@@ -235,13 +202,22 @@ PresignSession
 SignSession
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
+SessionIdentifier
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
 MessageApproval
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 ImportedKeyMessageApproval
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
-DWalletEvent
+SessionIdentifierRegisteredEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletSessionEvent
+	public struct
+	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletSessionResultEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletNetworkDKGEncryptionKeyRequestEvent
@@ -278,9 +254,6 @@ CompletedDWalletDKGSecondRoundEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 RejectedDWalletDKGSecondRoundEvent
-	public struct
-	0x0::dwallet_2pc_mpc_coordinator_inner
-NewImportedKeyDWalletEvent
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator_inner
 DWalletImportedKeyVerificationRequestEvent
@@ -373,16 +346,25 @@ SignState
 SessionType
 	public enum
 	0x0::dwallet_2pc_mpc_coordinator_inner
+DWalletSessionStatusEvent
+	public enum
+	0x0::dwallet_2pc_mpc_coordinator_inner
 create_dwallet_coordinator_inner
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 lock_last_active_session_sequence_number
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
+register_session_identifier
+	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
 request_dwallet_network_encryption_key_dkg
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 charge_gas_fee_reimbursement_sui_for_system_calls
+	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+handle_completed_system_session
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_network_encryption_key_dkg
@@ -457,9 +439,6 @@ approve_imported_key_message
 validate_approve_message
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-request_dwallet_dkg_first_round
-	public(package) fun
-	0x0::dwallet_2pc_mpc_coordinator_inner
 update_last_user_initiated_session_to_complete_in_current_epoch
 	fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
@@ -468,6 +447,9 @@ all_current_epoch_sessions_completed
 	0x0::dwallet_2pc_mpc_coordinator_inner
 remove_user_initiated_session_and_charge
 	fun
+	0x0::dwallet_2pc_mpc_coordinator_inner
+request_dwallet_dkg_first_round
+	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 respond_dwallet_dkg_first_round
 	public(package) fun
@@ -485,9 +467,6 @@ respond_re_encrypt_user_share_for
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 accept_encrypted_user_share
-	public(package) fun
-	0x0::dwallet_2pc_mpc_coordinator_inner
-new_imported_key_dwallet
 	public(package) fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
 request_imported_key_dwallet_verification
@@ -598,36 +577,6 @@ dwallet_id
 imported_key_dwallet_id
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator_inner
-ObjectDisplay
-	public struct
-	0x0::display
-PublisherKey
-	public struct
-	0x0::display
-create
-	public(package) fun
-	0x0::display
-init_staked_ika_display
-	fun
-	0x0::display
-init_dwallet_cap_display
-	fun
-	0x0::display
-init_imported_key_dwallet_cap_display
-	fun
-	0x0::display
-init_unverified_presign_cap_display
-	fun
-	0x0::display
-init_verified_presign_cap_display
-	fun
-	0x0::display
-init_unverified_partial_user_signature_cap_display
-	fun
-	0x0::display
-init_verified_partial_user_signature_cap_display
-	fun
-	0x0::display
 DWalletCoordinator
 	public struct
 	0x0::dwallet_2pc_mpc_coordinator
@@ -636,6 +585,9 @@ create_dwallet_coordinator
 	0x0::dwallet_2pc_mpc_coordinator
 share_dwallet_coordinator
 	public(package) fun
+	0x0::dwallet_2pc_mpc_coordinator
+register_session_identifier
+	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 process_checkpoint_message_by_quorum
 	public fun
@@ -656,9 +608,6 @@ request_dwallet_dkg_first_round
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 request_dwallet_dkg_second_round
-	public fun
-	0x0::dwallet_2pc_mpc_coordinator
-new_imported_key_dwallet
 	public fun
 	0x0::dwallet_2pc_mpc_coordinator
 calculate_pricing_votes
@@ -961,6 +910,48 @@ convert_to_ika_amount
 convert_to_share_amount
 	public(package) fun
 	0x0::token_exchange_rate
+StakedIka
+	public struct
+	0x0::staked_ika
+StakedIkaState
+	public enum
+	0x0::staked_ika
+mint
+	public(package) fun
+	0x0::staked_ika
+into_balance
+	public(package) fun
+	0x0::staked_ika
+set_withdrawing
+	public(package) fun
+	0x0::staked_ika
+can_withdraw_early
+	public(package) fun
+	0x0::staked_ika
+validator_id
+	public fun
+	0x0::staked_ika
+value
+	public fun
+	0x0::staked_ika
+activation_epoch
+	public fun
+	0x0::staked_ika
+is_staked
+	public fun
+	0x0::staked_ika
+is_withdrawing
+	public fun
+	0x0::staked_ika
+withdraw_epoch
+	public fun
+	0x0::staked_ika
+join
+	public fun
+	0x0::staked_ika
+split
+	public fun
+	0x0::staked_ika
 PendingValues
 	public struct
 	0x0::pending_values

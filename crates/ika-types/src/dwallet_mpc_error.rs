@@ -1,3 +1,4 @@
+use crate::messages_dwallet_mpc::SessionIdentifier;
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 use sui_types::base_types::{EpochId, ObjectID};
@@ -10,8 +11,11 @@ pub enum DwalletMPCError {
     #[error("sign state for the session with ID `{session_id:?}` was not found")]
     AggregatedSignStateNotFound { session_id: ObjectID },
 
-    #[error("mpc session with ID `{session_id:?}`, failed: {error}")]
-    MPCSessionError { session_id: ObjectID, error: String },
+    #[error("mpc session with ID `{session_identifier:?}`, failed: {error}")]
+    MPCSessionError {
+        session_identifier: SessionIdentifier,
+        error: String,
+    },
 
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
@@ -158,6 +162,8 @@ pub enum DwalletMPCError {
         expected_epoch: u64,
         actual_epoch: u64,
     },
+    #[error("invalid session public input")]
+    InvalidSessionPublicInput,
 }
 
 /// A wrapper type for the result of a runtime operation.

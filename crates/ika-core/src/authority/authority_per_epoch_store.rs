@@ -73,11 +73,11 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
     SessionType,
 };
+use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
@@ -410,7 +410,7 @@ pub struct AuthorityEpochTables {
     pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
-    pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<ObjectID>>,
+    pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
     pub(crate) dwallet_mpc_events: DBMap<u64, Vec<DWalletMPCEvent>>,
 }
 
@@ -631,7 +631,7 @@ impl AuthorityPerEpochStore {
     pub(crate) async fn load_dwallet_mpc_completed_sessions_from_round(
         &self,
         round: Round,
-    ) -> IkaResult<Vec<ObjectID>> {
+    ) -> IkaResult<Vec<SessionIdentifier>> {
         Ok(self
             .tables()?
             .dwallet_mpc_completed_sessions
@@ -1457,7 +1457,7 @@ impl AuthorityPerEpochStore {
                     Ok(Some(session_info)) => {
                         info!(
                             mpc_protocol=?session_info.mpc_round,
-                            session_id=?session_info.session_id,
+                            session_identifier=?session_info.session_identifier,
                             validator=?self.name,
                             "Received start event for session"
                         );
@@ -1686,7 +1686,7 @@ impl AuthorityPerEpochStore {
                 .try_verify_output(&output, &session_info, origin_authority)
                 .await
                 .unwrap_or_else(|e| {
-                    error!("error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
+                    error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
                     OutputVerificationResult {
                         result: OutputVerificationStatus::Malicious,
                         malicious_actors: vec![origin_authority],
@@ -1731,7 +1731,7 @@ impl AuthorityPerEpochStore {
         info!(
             validator=?self.name,
             mpc_protocol=?session_info.mpc_round,
-            session_id=?session_info.session_id,
+            session_identifier=?session_info.session_identifier,
             "Creating session output checkpoint transaction"
         );
         let (is_rejected, output) = match bcs::from_bytes(&output)? {
@@ -1758,7 +1758,6 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput {
                     output,
                     dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                    session_id: session_info.session_id.to_vec(),
                     encrypted_secret_share_id: init_event_data
                         .event_data
                         .encrypted_user_secret_key_share_id
@@ -1774,7 +1773,6 @@ impl AuthorityPerEpochStore {
                 };
                 let tx = MessageKind::RespondDWalletPresign(PresignOutput {
                     presign: output,
-                    session_id: bcs::to_bytes(&session_info.session_id)?,
                     dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
                     rejected: is_rejected,
@@ -1787,7 +1785,6 @@ impl AuthorityPerEpochStore {
                     unreachable!("Sign round should be a user session");
                 };
                 let tx = MessageKind::RespondDWalletSign(SignOutput {
-                    session_id: session_info.session_id.to_vec(),
                     signature: output,
                     dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                     is_future_sign: init_event.event_data.is_future_sign,
@@ -1819,7 +1816,6 @@ impl AuthorityPerEpochStore {
                 let tx = MessageKind::RespondDWalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                        session_id: session_info.session_id.to_vec(),
                         partial_centralized_signed_message_id: init_event_data
                             .event_data
                             .partial_centralized_signed_message_id
@@ -1835,6 +1831,7 @@ impl AuthorityPerEpochStore {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
                         let slices = if is_rejected {
                             vec![NetworkKeyPublicOutputSlice {
+                                session_id: init_event.session_object_id.to_vec(),
                                 dwallet_network_decryption_key_id: init_event
                                     .event_data
                                     .dwallet_network_decryption_key_id
@@ -1851,6 +1848,7 @@ impl AuthorityPerEpochStore {
                             Self::slice_network_dkg_public_output_into_messages(
                                 &init_event.event_data.dwallet_network_decryption_key_id,
                                 output,
+                                init_event.session_object_id.to_vec(),
                             )
                         };
 
@@ -1868,6 +1866,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
+                        session_id: init_event.session_object_id.to_vec(),
                         dwallet_network_decryption_key_id: init_event
                             .event_data
                             .dwallet_network_decryption_key_id
@@ -1882,6 +1881,7 @@ impl AuthorityPerEpochStore {
                     Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
+                        init_event.session_object_id.to_vec(),
                     )
                 };
 
@@ -1925,7 +1925,6 @@ impl AuthorityPerEpochStore {
                             .encrypted_user_secret_key_share_id
                             .to_vec()
                             .clone(),
-                        session_id: init_event.session_id.to_vec().clone(),
                         rejected: is_rejected,
                         session_sequence_number: sequence_number,
                     },
@@ -1940,6 +1939,7 @@ impl AuthorityPerEpochStore {
     fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
+        session_id: Vec<u8>,
     ) -> Vec<NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
@@ -1951,6 +1951,7 @@ impl AuthorityPerEpochStore {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
+                session_id: session_id.clone(),
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
@@ -2304,7 +2305,7 @@ pub(crate) struct ConsensusCommitOutput {
     dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
     dwallet_mpc_round_events: Vec<DWalletMPCEvent>,
-    dwallet_mpc_completed_sessions: Vec<ObjectID>,
+    dwallet_mpc_completed_sessions: Vec<SessionIdentifier>,
 }
 
 impl ConsensusCommitOutput {
@@ -2326,7 +2327,10 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_round_outputs = new_value;
     }
 
-    pub(crate) fn set_dwallet_mpc_round_completed_sessions(&mut self, new_value: Vec<ObjectID>) {
+    pub(crate) fn set_dwallet_mpc_round_completed_sessions(
+        &mut self,
+        new_value: Vec<SessionIdentifier>,
+    ) {
         self.dwallet_mpc_completed_sessions = new_value;
     }
 
@@ -2359,38 +2363,22 @@ impl ConsensusCommitOutput {
 
         // Write all the dWallet MPC related messages from this consensus round to the local DB.
         // The [`DWalletMPCService`] constantly reads and process those messages.
-        if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
-            batch.insert_batch(
-                &tables.dwallet_mpc_messages,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_messages,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_completed_sessions,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_completed_sessions,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_outputs,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_outputs,
-                )],
-            )?;
-            batch.insert_batch(
-                &tables.dwallet_mpc_events,
-                [(
-                    consensus_commit_stats.index.sub_dag_index,
-                    self.dwallet_mpc_round_events,
-                )],
-            )?;
-        } else {
-            error!("failed to retrieve consensus commit statistics when trying to write DWallet MPC messages to local DB");
-        }
+        batch.insert_batch(
+            &tables.dwallet_mpc_messages,
+            [(self.consensus_round, self.dwallet_mpc_round_messages)],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_completed_sessions,
+            [(self.consensus_round, self.dwallet_mpc_completed_sessions)],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_outputs,
+            [(self.consensus_round, self.dwallet_mpc_round_outputs)],
+        )?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_events,
+            [(self.consensus_round, self.dwallet_mpc_round_events)],
+        )?;
 
         batch.insert_batch(
             &tables.consensus_message_processed,

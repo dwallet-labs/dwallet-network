@@ -21,7 +21,6 @@ pub struct DKGFirstRoundOutput {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct DKGSecondRoundOutput {
     pub dwallet_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub encrypted_secret_share_id: Vec<u8>,
     pub output: Vec<u8>,
     pub rejected: bool,
@@ -32,7 +31,6 @@ pub struct DKGSecondRoundOutput {
 pub struct PresignOutput {
     pub dwallet_id: Option<Vec<u8>>,
     pub presign_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub presign: Vec<u8>,
     pub rejected: bool,
     pub session_sequence_number: u64,
@@ -42,7 +40,6 @@ pub struct PresignOutput {
 pub struct SignOutput {
     pub dwallet_id: Vec<u8>,
     pub sign_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub signature: Vec<u8>,
     pub is_future_sign: bool,
     pub rejected: bool,
@@ -59,7 +56,6 @@ pub struct EncryptedUserShareOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
-    pub session_id: Vec<u8>,
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
     pub rejected: bool,
@@ -68,6 +64,7 @@ pub struct PartialSignatureVerificationOutput {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct NetworkKeyPublicOutputSlice {
+    pub session_id: Vec<u8>,
     pub dwallet_network_decryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub supported_curves: Vec<u32>,
@@ -88,7 +85,6 @@ pub struct DWalletImportedKeyVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub encrypted_user_secret_key_share_id: Vec<u8>,
-    pub session_id: Vec<u8>,
     pub rejected: bool,
     pub session_sequence_number: u64,
 }

@@ -3,11 +3,19 @@ import { bcs } from '@mysten/bcs';
 import type { TransactionResult } from '@mysten/sui/dist/cjs/transactions/Transaction';
 import { Transaction } from '@mysten/sui/transactions';
 
-
-
-import { DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME, DWALLET_COORDINATOR_MOVE_MODULE_NAME, getDWalletSecpState, getObjectWithType, isActiveDWallet, isDWalletCap, isPresign, MPCKeyScheme, SUI_PACKAGE_ID } from './globals.js';
+import {
+	createSessionIdentifier,
+	DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME,
+	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
+	getDWalletSecpState,
+	getObjectWithType,
+	isActiveDWallet,
+	isDWalletCap,
+	isPresign,
+	MPCKeyScheme,
+	SUI_PACKAGE_ID,
+} from './globals.js';
 import type { Config } from './globals.ts';
-
 
 // noinspection JSUnusedGlobalSymbols
 export enum Hash {
@@ -17,7 +25,7 @@ export enum Hash {
 
 interface ReadySignObject {
 	id: {
-		id: string;
+		id: string };
 	};
 	state: {
 		fields: {
@@ -59,7 +67,7 @@ async function call_mpc_sign_tx(tx: Transaction, emptyIKACoin: TransactionResult
 			showEvents: true,
 		},
 	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
+	const startSessionEvent = result.events?.at(1)?.parsedJson;
 	if (!isStartSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
@@ -154,30 +162,28 @@ export async function sign(
 		message,
 	);
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
-
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
 	const [verifiedPresignCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
-		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
-			tx.object(presign.cap_id),
-		],
+		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
 	});
-
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			verifiedPresignCap,
 			messageApproval,
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -227,18 +233,24 @@ export async function signWithImportedDWallet(
 			tx.object(presign.cap_id),
 		],
 	});
-
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_sign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			verifiedPresignCap,
 			messageApproval,
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -297,31 +309,33 @@ export async function createUnverifiedPartialUserSignatureCap(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+
 	const [verifiedPresignCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_presign_cap`,
-		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
-			tx.object(presign.cap_id),
-		],
+		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
 	});
+
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 
 	const [unverifiedPartialUserSignatureCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_future_sign`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.pure.id(dwalletID),
 			verifiedPresignCap,
 			tx.pure(bcs.vector(bcs.u8()).serialize(message)),
 			tx.pure(bcs.u32().serialize(hash.valueOf())),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],
@@ -341,7 +355,7 @@ export async function createUnverifiedPartialUserSignatureCap(
 			showObjectChanges: true,
 		},
 	});
-	const startSessionEvent = result.events?.at(0)?.parsedJson;
+	const startSessionEvent = result.events?.at(1)?.parsedJson;
 	if (!isStartFutureSignEvent(startSessionEvent)) {
 		throw new Error('invalid start session event');
 	}
@@ -424,16 +438,25 @@ export async function completeFutureSign(
 	);
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 
+	const dwalletStateArg = tx.sharedObjectRef({
+		objectId: dWalletStateData.object_id,
+		initialSharedVersion: dWalletStateData.initial_shared_version,
+		mutable: true,
+	});
+
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
+
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign_with_partial_user_signature`,
 		arguments: [
-			tx.sharedObjectRef({
-				objectId: dWalletStateData.object_id,
-				initialSharedVersion: dWalletStateData.initial_shared_version,
-				mutable: true,
-			}),
+			dwalletStateArg,
 			tx.object(verifyPartialUserSignatureCapID),
 			messageApproval,
+			sessionIdentifier,
 			emptyIKACoin,
 			tx.gas,
 		],

@@ -123,6 +123,7 @@ impl System {
 #[enum_dispatch]
 pub trait SystemInnerTrait {
     fn epoch(&self) -> u64;
+    fn epoch_start_tx_digest(&self) -> Vec<u8>;
     fn protocol_version(&self) -> u64;
     fn next_protocol_version(&self) -> Option<u64>;
     fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64>;

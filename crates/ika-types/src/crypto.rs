@@ -15,7 +15,7 @@ use fastcrypto::bls12381::min_pk::{
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PrivateKey, Ed25519PublicKey};
 use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::error::FastCryptoError;
-use fastcrypto::hash::{Blake2b256, HashFunction};
+use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256};
 use fastcrypto::secp256k1::Secp256k1PublicKey;
 use fastcrypto::secp256r1::Secp256r1PublicKey;
 pub use fastcrypto::traits::KeyPair as KeypairTraits;
@@ -35,6 +35,7 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
+use std::io::Write;
 use std::str::FromStr;
 use sui_types::base_types::{ConciseableName, SuiAddress};
 use sui_types::crypto::SignatureScheme;
@@ -836,6 +837,13 @@ fn hash<S: Signable<H>, H: HashFunction<DIGEST_SIZE>, const DIGEST_SIZE: usize>(
 
 pub fn default_hash<S: Signable<DefaultHash>>(signable: &S) -> [u8; 32] {
     hash::<S, DefaultHash, 32>(signable)
+}
+
+pub fn keccak256_digest(bytes: &[u8]) -> [u8; 32] {
+    let mut hasher = Keccak256::default();
+    hasher.write_all(bytes).expect("Hasher should not fail");
+    let digest = hasher.finalize();
+    digest.into()
 }
 
 #[derive(Default)]
