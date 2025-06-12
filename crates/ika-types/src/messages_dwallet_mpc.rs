@@ -10,7 +10,6 @@ use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
-use tracing::error;
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
