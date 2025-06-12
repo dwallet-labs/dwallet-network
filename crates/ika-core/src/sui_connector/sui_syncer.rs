@@ -347,18 +347,18 @@ where
         let mut loop_index = 0;
         loop {
             loop_index += 1;
+            // Fetching the epoch start TX digest less frequently
+            // as it is unexpected to change often.
             if loop_index % 10 == 0 {
-                info!("Querying epoch start cursor from Sui");
-                let system_inner = match sui_client.must_get_system_inner_object().await {
-                    SystemInner::V1(system_inner) => system_inner,
+                debug!("Querying epoch start cursor from Sui");
+                let SystemInner::V1(system_inner) = sui_client.must_get_system_inner_object().await;
+                let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
+                else {
+                    // This should not happen, but if it does, we need to know about it.
+                    error!("cloud not parse `epoch_start_tx_digest` - wrong length");
+                    continue;
                 };
-                let start_epoch_event = EventID::from((
-                    system_inner
-                        .epoch_start_tx_digest
-                        .try_into()
-                        .expect("start epoch TX digest in wrong length"),
-                    0,
-                ));
+                let start_epoch_event = EventID::from((epoch_start_tx_digest, 0));
                 if start_epoch_cursor != Some(start_epoch_event) {
                     start_epoch_cursor = Some(start_epoch_event);
                     cursor = start_epoch_cursor;
