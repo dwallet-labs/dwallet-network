@@ -1951,7 +1951,7 @@ impl AuthorityPerEpochStore {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
-                session_id: vec![],
+                session_id,
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
