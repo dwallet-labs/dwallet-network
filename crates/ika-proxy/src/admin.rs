@@ -255,30 +255,30 @@ pub fn create_server_cert_enforce_peer(
     static_peers: Option<StaticPeerValidationConfig>,
     sui_client: SuiConnectorClient,
 ) -> Result<(ServerConfig, Option<SuiNodeProvider>), sui_tls::rustls::Error> {
-    // let (Some(certificate_path), Some(private_key_path)) =
-    //     (dynamic_peers.certificate_file, dynamic_peers.private_key)
-    // else {
-    //     return Err(rustls::Error::General(
-    //         "missing certs to initialize server".into(),
-    //     ));
-    // };
+    let (Some(certificate_path), Some(private_key_path)) =
+        (dynamic_peers.certificate_file, dynamic_peers.private_key)
+    else {
+        return Err(rustls::Error::General(
+            "missing certs to initialize server".into(),
+        ));
+    };
     let static_peers = load_static_peers(static_peers)
         .map_err(|e| rustls::Error::General(format!("unable to load static pub keys: {}", e)))?;
     let allower = SuiNodeProvider::new(dynamic_peers.interval, static_peers, sui_client.into());
     allower.poll_peer_list();
 
-    let CertKeyPair(server_certificate, _) = generate_self_cert(dynamic_peers.hostname.unwrap());
-
-    let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
-        .rustls_server_config(
-            vec![server_certificate.rustls_certificate()],
-            server_certificate.rustls_private_key(),
-        )?;
+    // let CertKeyPair(server_certificate, _) = generate_self_cert(dynamic_peers.hostname.unwrap());
 
     // let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
     //     .rustls_server_config(
-    //     load_certs(&certificate_path),
-    //     load_private_key(&private_key_path)
-    // )?;
+    //         vec![server_certificate.rustls_certificate()],
+    //         server_certificate.rustls_private_key(),
+    //     )?;
+
+    let c = ClientCertVerifier::new(allower.inner.clone(), SUI_VALIDATOR_SERVER_NAME.to_string())
+        .rustls_server_config(
+        load_certs(&certificate_path),
+        load_private_key(&private_key_path)
+    )?;
     Ok((c, Some(allower)))
 }

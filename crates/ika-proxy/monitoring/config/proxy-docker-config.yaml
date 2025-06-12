@@ -42,9 +42,11 @@ dynamic-peers:
   url: http://127.0.0.1:9000
   interval: 60
   hostname: localhost
-  ika-package-id: 0x97094636d8f6637f3ed14ec248bb812bd9a9250190f2b47d696a598d015d8949
-  ika-system-package-id: 0x1c913e4ebfd20597b870c4bafe29d9fb8ae074a5b0b447edfea70780bb7c17d0
-  ika-system-object-id: 0xaf570d10c50e0ab1c332355ba441544d8d731ada7ec2e79f89a0d5548d82290d
+  ika-package-id: 0x99b4c2d50f48ab00eed1c73176491ccfb09dfa07c5fcbe5515025b0503756377
+  ika-system-package-id: 0x63cf904ded9a076b9bd81bf82c669fc409dbed3df5d982fab7e37b888898f271
+  ika-system-object-id: 0xd21422cc164880acf16656655c8d21f3bdd83f4e7e9c85b1e727cc9d89291085
+  certificate-file: /Users/zeevmanilovich/cert/localhost.crt
+  private-key: /Users/zeevmanilovich/cert/localhost.key
 
 #dynamic-peers:
 #  # Sui JSON-RPC endpoint for validator discovery
