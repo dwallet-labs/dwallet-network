@@ -1,17 +1,15 @@
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
-    MPCSessionPublicOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput,
-    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReshareOutput,
-    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedImportedDWalletPublicOutput, VersionedPresignOutput, VersionedSignOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCSessionPublicOutput, MPCSessionStatus,
+    SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput,
+    VersionedDecryptionKeyReshareOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -432,7 +430,17 @@ impl DWalletMPCSession {
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
                     &mpc_event_data.public_input
                 else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<
@@ -442,7 +450,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -498,7 +506,17 @@ impl DWalletMPCSession {
                     "Advancing DKG first party",
                 );
                 let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input else {
-                    unreachable!();
+                    error!(
+                        should_never_happen=?true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
@@ -506,7 +524,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -530,7 +548,17 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::DKGSecond(event_data) => {
                 let PublicInput::DKGSecond(public_input) = &mpc_event_data.public_input else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
@@ -538,7 +566,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 )?;
@@ -589,7 +617,17 @@ impl DWalletMPCSession {
             }
             MPCProtocolInitData::Presign(..) => {
                 let PublicInput::Presign(public_input) = &mpc_event_data.public_input else {
-                    unreachable!();
+                    error!(
+                        should_never_happen=?true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
                 let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
@@ -597,7 +635,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     (),
                     &base_logger,
                 );
@@ -628,14 +666,24 @@ impl DWalletMPCSession {
                 // Extend base logger with decryption key shares for Sign protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
                 let PublicInput::Sign(public_input) = &mpc_event_data.public_input else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     mpc_event_data.decryption_shares.clone(),
                     &logger,
                 );
@@ -677,7 +725,17 @@ impl DWalletMPCSession {
                 let PublicInput::EncryptedShareVerification(public_input) =
                     &mpc_event_data.public_input
                 else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 match verify_encrypted_share(&verification_data.event_data, public_input.clone()) {
                     Ok(_) => Ok(AsynchronousRoundResult::Finalize {
@@ -699,14 +757,24 @@ impl DWalletMPCSession {
                 let PublicInput::PartialSignatureVerification(public_input) =
                     &mpc_event_data.public_input
                 else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 verify_partial_signature(
                     &hashed_message,
                     &event_data.event_data.dkg_output,
                     &event_data.event_data.presign,
                     &event_data.event_data.message_centralized_signature,
-                    &public_input,
+                    public_input,
                 )?;
 
                 Ok(AsynchronousRoundResult::Finalize {
@@ -719,7 +787,17 @@ impl DWalletMPCSession {
                 let PublicInput::NetworkEncryptionKeyReconfiguration(public_input) =
                     &mpc_event_data.public_input
                 else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 let decryption_key_shares = mpc_event_data
                     .decryption_shares
@@ -735,7 +813,7 @@ impl DWalletMPCSession {
                     self.party_id,
                     &self.weighted_threshold_access_structure,
                     self.serialized_full_messages.clone(),
-                    &public_input,
+                    public_input,
                     decryption_key_shares.clone(),
                     &logger,
                 );
@@ -760,7 +838,17 @@ impl DWalletMPCSession {
                 let PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(public_input) =
                     &mpc_event_data.public_input
                 else {
-                    unreachable!();
+                    error!(
+                        should_never_happen =? true,
+                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        validator=?self.epoch_store()?.name,
+                        session_identifier=?self.session_identifier,
+                        crypto_round=?self.current_round,
+                        weighted_parties=?self.weighted_threshold_access_structure,
+                        ?serialized_messages_skeleton,
+                        "session public input does not match the session type"
+                    );
+                    return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 match verify_secret_share(
                     public_input.clone(),

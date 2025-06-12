@@ -33,18 +33,20 @@ interface StartDKGFirstRoundEvent {
 		dwallet_cap_id: string;
 		dwallet_network_encryption_key_id: string;
 	};
-	session_identifier: Uint8Array;
+	session_identifier_preimage: Uint8Array;
 }
 
 interface StartDKGSecondRoundEvent {
 	event_data: {
 		encrypted_user_secret_key_share_id: string;
 	};
-	session_identifier: Uint8Array;
+	session_identifier_preimage: Uint8Array;
 }
 
 function isStartDKGSecondRoundEvent(obj: any): obj is StartDKGSecondRoundEvent {
-	return !!obj?.event_data?.encrypted_user_secret_key_share_id && !!obj?.session_identifier;
+	return (
+		!!obj?.event_data?.encrypted_user_secret_key_share_id && !!obj?.session_identifier_preimage
+	);
 }
 
 interface DKGSecondRoundMoveResponse {
@@ -68,7 +70,7 @@ interface WaitingForUserDWallet {
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
 	return (
 		!!obj?.event_data?.dwallet_id &&
-		!!obj?.session_identifier &&
+		!!obj?.session_identifier_preimage &&
 		!!obj?.event_data?.dwallet_cap_id &&
 		!!obj?.event_data?.dwallet_network_encryption_key_id
 	);
@@ -281,7 +283,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	const dwalletID = startDKGEvent.event_data.dwallet_id;
 	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
 	return {
-		sessionIdentifier: startDKGEvent.session_identifier,
+		sessionIdentifier: startDKGEvent.session_identifier_preimage,
 		output: output,
 		dwalletCapID: startDKGEvent.event_data.dwallet_cap_id,
 		dwalletID,

@@ -49,8 +49,8 @@ pub(super) trait DKGSecondPartyPublicInputGenerator: Party {
 impl DKGFirstPartyPublicInputGenerator for DKGFirstParty {
     fn generate_public_input(
         protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
-    ) -> DwalletMPCResult<<DKGFirstParty as mpc::Party>::PublicInput> {
-        let input: Self::PublicInput = protocol_public_parameters.into();
+    ) -> DwalletMPCResult<<DKGFirstParty as Party>::PublicInput> {
+        let input: Self::PublicInput = protocol_public_parameters;
         Ok(input)
     }
 }

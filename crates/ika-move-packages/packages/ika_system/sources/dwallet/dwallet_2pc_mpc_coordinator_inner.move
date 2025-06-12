@@ -895,9 +895,10 @@ public enum SessionType has copy, drop, store {
 }
 
 
+/// The preimage is used to create the session identifier.
 public struct SessionIdentifier has key, store {
     id: UID,
-    identifier: vector<u8>,
+    identifier_preimage: vector<u8>,
 }
 
 
@@ -966,7 +967,7 @@ public struct SessionIdentifierRegisteredEvent has copy, drop, store {
     /// ID of the session object
     session_object_id: ID,
     /// Unique session identifier
-    session_identifier: vector<u8>,
+    session_identifier_preimage: vector<u8>,
 }
 
 /// Generic wrapper for dWallet-related events with session context.
@@ -981,7 +982,7 @@ public struct DWalletSessionEvent<E: copy + drop + store> has copy, drop, store 
     /// Type of session (User or System)
     session_type: SessionType,
     /// Unique session identifier
-    session_identifier: vector<u8>,
+    session_identifier_preimage: vector<u8>,
     /// Event-specific data
     event_data: E,
 }
@@ -995,7 +996,7 @@ public enum DWalletSessionStatusEvent<Success: copy + drop + store, Rejected: co
 
 public struct DWalletSessionResultEvent<Success: copy + drop + store, Rejected: copy + drop + store> has copy, drop, store {
     /// The identifier of the session
-    session_identifier: vector<u8>,
+    session_identifier_preimage: vector<u8>,
     /// The status of the event
     status: DWalletSessionStatusEvent<Success, Rejected>,
 }
@@ -1881,18 +1882,30 @@ public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletC
 /// Registers a new session identifier.
 /// 
 /// This function is used to register a new session identifier.
-public(package) fun register_session_identifier(self: &mut DWalletCoordinatorInner, identifier: vector<u8>, ctx: &mut TxContext): SessionIdentifier {
-    assert!(identifier.length() == SESSION_IDENTIFIER_LENGTH, ESessionIdentifierInvalidLength);
-    assert!(!self.session_management.registered_session_identifiers.contains(identifier), ESessionIdentifierAlreadyRegistered);
+/// 
+/// ### Parameters
+/// - `self`: Mutable reference to the coordinator.
+/// - `identifier_preimage`: The preimage bytes for creating the session identifier.
+/// - `ctx`: Transaction context for object creation.
+/// 
+/// ### Returns
+/// A new session identifier object.
+public(package) fun register_session_identifier(
+    self: &mut DWalletCoordinatorInner,
+    identifier_preimage: vector<u8>,
+    ctx: &mut TxContext,
+): SessionIdentifier {
+    assert!(identifier_preimage.length() == SESSION_IDENTIFIER_LENGTH, ESessionIdentifierInvalidLength);
+    assert!(!self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierAlreadyRegistered);
     let id = object::new(ctx);
-    self.session_management.registered_session_identifiers.add(identifier, id.to_inner());
+    self.session_management.registered_session_identifiers.add(identifier_preimage, id.to_inner());
     event::emit(SessionIdentifierRegisteredEvent {
         session_object_id: id.to_inner(),
-        session_identifier: identifier,
+        session_identifier_preimage: identifier_preimage,
     });
     SessionIdentifier {
         id,
-        identifier,
+        identifier_preimage,
     }
 }
 
@@ -2389,9 +2402,9 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     let gas_fee_reimbursement_sui = payment_sui.split(pricing_value.gas_fee_reimbursement_sui(), ctx).into_balance();
     self.pricing_and_fee_management.gas_fee_reimbursement_sui.join(payment_sui.split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx).into_balance());
 
-    let identifier = session_identifier.identifier;
-    assert!(self.session_management.registered_session_identifiers.contains(identifier), ESessionIdentifierNotExist);
-    assert!(self.session_management.registered_session_identifiers.borrow(identifier) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
+    let identifier_preimage = session_identifier.identifier_preimage;
+    assert!(self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierNotExist);
+    assert!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
 
     let session_sequence_number = self.session_management.next_session_sequence_number;
     let session = DWalletSession {
@@ -2412,7 +2425,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
                 sequence_number: session_sequence_number,
             }
         },
-        session_identifier: identifier,
+        session_identifier_preimage: identifier_preimage,
         event_data,
     };
 
@@ -2461,7 +2474,12 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         epoch: self.current_epoch,
         session_object_id: session_id,
         session_type: SessionType::System,
-        session_identifier: tx_context::fresh_object_address(ctx).to_bytes(),
+        // Notice that `session_identifier_preimage` is only the pre-image. 
+        // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
+        // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide).
+        // To avoid user-initiated events colliding with system events,
+        // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
+        session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
     };
     self.session_management.session_events.add(session_id, event);
@@ -2899,7 +2917,11 @@ public(package) fun all_current_epoch_sessions_completed(self: &DWalletCoordinat
 /// ### System Sessions
 /// This function is never called for system sessions, which handle their own
 /// completion workflow without user fee management.
-fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(self: &mut DWalletCoordinatorInner, session_sequence_number: u64, status: DWalletSessionStatusEvent<Success, Rejected>): Balance<SUI> {
+fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: copy + drop + store, Rejected: copy + drop + store>(
+    self: &mut DWalletCoordinatorInner,
+    session_sequence_number: u64,
+    status: DWalletSessionStatusEvent<Success, Rejected>,
+): Balance<SUI> {
     self.session_management.number_of_completed_user_initiated_sessions = self.session_management.number_of_completed_user_initiated_sessions + 1;
 
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
@@ -2922,10 +2944,11 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
 
     id.delete();
 
-    // Remove the corresponding session identifier object.
+    // Unpack and delete the corresponding session identifier object.
+    // This assures it cannot be reused for another session.
     let SessionIdentifier {
         id,
-        identifier: session_identifier,
+        identifier_preimage: session_identifier_preimage,
     } = session_identifier;
 
     id.delete();
@@ -2934,11 +2957,10 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
     self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
 
     event::emit(DWalletSessionResultEvent {
-        session_identifier,
+        session_identifier_preimage,
         status,
     });
 
-    //self.gas_fee_reimbursement_sui.join(gas_fee_reimbursement_sui);
     gas_fee_reimbursement_sui
 }
 
@@ -3461,7 +3483,7 @@ public(package) fun accept_encrypted_user_share(
 /// - `encryption_key_address`: The address of the encryption key.
 /// - `user_public_output`: The public output of the user.
 /// - `signer_public_key`: The public key of the signer.
-/// - `session_identifier`: The session identifier.
+/// - `session_identifier_preimage`: The session identifier.
 /// - `payment_ika`: The IKA payment for the operation.
 /// - `payment_sui`: The SUI payment for the operation.
 /// - `ctx`: The transaction context.
