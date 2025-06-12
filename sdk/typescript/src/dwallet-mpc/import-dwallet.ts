@@ -36,7 +36,7 @@ interface DWalletImportedKeyVerificationRequestEvent {
 }
 
 function isSessionIdentifierRegisteredEvent(event: any): event is SessionIdentifierRegisteredEvent {
-	return event.session_object_id !== undefined && event.session_identifier !== undefined;
+	return event.session_object_id !== undefined && event.session_identifier_preimage !== undefined;
 }
 
 // todo(zeev): refactor for a better API
@@ -49,7 +49,7 @@ export async function createImportedDWallet(conf: Config, secretKey: Uint8Array)
 	// They include the encrypted network share, encrypted by the network encryption key.
 	const [secret_share, public_output, outgoing_message] = create_imported_dwallet_centralized_step(
 		networkDecryptionKeyPublicOutput,
-		sessionIdentifierDigest(sessionIdentifierRegisteredEvent.session_identifier),
+		sessionIdentifierDigest(sessionIdentifierRegisteredEvent.session_identifier_preimage),
 		secretKey,
 	);
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
@@ -104,18 +104,6 @@ export async function createSessionIdentifierMoveCall(
 		dwalletStateArg,
 		conf.ikaConfig.ika_system_package_id,
 	);
-	// const dwalletCap = tx.moveCall({
-	// 	target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::new_imported_key_dwallet`,
-	// 	arguments: [
-	// 		tx.sharedObjectRef({
-	// 			objectId: dwalletSecp256k1ID,
-	// 			initialSharedVersion: await getInitialSharedVersion(conf, dwalletSecp256k1ID),
-	// 			mutable: true,
-	// 		}),
-	// 		tx.pure.id(networkDecryptionKeyID),
-	// 		tx.pure.u32(0),
-	// 	],
-	// });
 	tx.transferObjects([sessionIdentifier], conf.suiClientKeypair.toSuiAddress());
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,

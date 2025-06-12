@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -424,9 +423,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
-        for event in self.epoch_store.tables()?.get_all_dwallet_mpc_events()? {
-            dwallet_mpc_verifier.monitor_new_session_outputs(&event.session_info);
-        }
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
@@ -436,20 +432,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     "failed to verify output from session {:?} and party {:?}: {:?}",
                     output.session_info.session_identifier, output.authority, err
                 );
-            }
-        }
-        for message in self
-            .epoch_store
-            .tables()?
-            .get_all_dwallet_mpc_dwallet_mpc_messages()?
-        {
-            match message {
-                DWalletMPCDBMessage::Message(_)
-                | DWalletMPCDBMessage::EndOfDelivery
-                | DWalletMPCDBMessage::MPCSessionFailed(_)
-                | DWalletMPCDBMessage::MaliciousReport(..)
-                | DWalletMPCDBMessage::PerformCryptographicComputations
-                | DWalletMPCDBMessage::ThresholdNotReachedReport(..) => {}
             }
         }
         Ok(())

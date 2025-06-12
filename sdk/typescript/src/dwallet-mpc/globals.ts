@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
-import { bcs } from '@mysten/bcs';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { Transaction } from '@mysten/sui/transactions';
@@ -374,7 +373,7 @@ export interface EncryptedDWalletData {
 
 export interface SessionIdentifierRegisteredEvent {
 	session_object_id: string;
-	session_identifier: Uint8Array;
+	session_identifier_preimage: Uint8Array;
 }
 
 export async function createSessionIdentifier(
@@ -403,20 +402,18 @@ export async function createSessionIdentifier(
 	});
 }
 
+function encodeToASCII(input: string): Uint8Array {
+	const asciiValues: number[] = [];
+	for (let i = 0; i < input.length; i++) {
+		asciiValues.push(input.charCodeAt(i));
+	}
+	return Uint8Array.from(asciiValues);
+}
+
 export function sessionIdentifierDigest(sessionIdentifier: Uint8Array): Uint8Array {
-	// Create a BCS enum type for the session identifier data (from rust code)
-	const enumDataType = bcs.enum('SessionIdentifierData', {
-		User: bcs.byteVector(),
-		System: bcs.byteVector(),
-	});
-	// Serialize the session identifier into bytes
-	// for user session identifier, we use the `User` variant
-	const data = enumDataType
-		.serialize({
-			User: sessionIdentifier,
-		})
-		.toBytes();
+	// Calculate the user session identifier for digest
+	const data = [...encodeToASCII('USER'), ...sessionIdentifier];
 	// Compute the SHA3-256 digest of the serialized data
 	const digest = sha3.keccak256.digest(data);
-	return Uint8Array.of(...digest);
+	return Uint8Array.from(digest);
 }

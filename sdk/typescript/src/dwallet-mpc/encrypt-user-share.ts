@@ -34,7 +34,7 @@ export interface ClassGroupsSecpKeyPair {
  * `EncryptionKey` Move object is created.
  */
 interface CreatedEncryptionKeyEvent {
-	session_identifier: Uint8Array;
+	session_identifier_preimage: Uint8Array;
 	encryption_key_id: string;
 }
 
@@ -57,7 +57,7 @@ interface StartEncryptedShareVerificationEvent {
 	event_data: {
 		encrypted_user_secret_key_share_id: string;
 	};
-	session_identifier: Uint8Array;
+	session_identifier_preimage: Uint8Array;
 }
 
 interface VerifiedEncryptedUserSecretKeyShare {
@@ -387,7 +387,9 @@ export async function transferEncryptedSecretShare(
 function isStartEncryptedShareVerificationEvent(
 	obj: any,
 ): obj is StartEncryptedShareVerificationEvent {
-	return !!obj?.session_identifier && !!obj?.event_data?.encrypted_user_secret_key_share_id;
+	return (
+		!!obj?.session_identifier_preimage && !!obj?.event_data?.encrypted_user_secret_key_share_id
+	);
 }
 
 function isVerifiedEncryptedUserSecretKeyShare(
