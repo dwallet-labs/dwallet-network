@@ -384,12 +384,35 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
+        if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
+            if session.mpc_event_data.is_none() {
+                let mpc_event_data = self.new_mpc_event(event, &session_info).await?;
+                if let Some(mut_session) =
+                    self.mpc_sessions.get_mut(&session_info.session_identifier)
+                {
+                    mut_session.mpc_event_data = Some(mpc_event_data);
+                }
+            }
+        } else {
+            let mpc_event_data = self.new_mpc_event(event, &session_info).await?;
+            self.dwallet_mpc_metrics
+                .add_received_event_start(&mpc_event_data.init_protocol_data);
+            self.push_new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
+        }
+        Ok(())
+    }
+
+    async fn new_mpc_event(
+        &self,
+        event: DBSuiEvent,
+        session_info: &SessionInfo,
+    ) -> Result<MPCEventData, DwalletMPCError> {
         let (public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
-            session_type: session_info.session_type,
+            session_type: session_info.session_type.clone(),
             init_protocol_data: session_info.mpc_round.clone(),
             private_input,
-            decryption_shares: match session_info.mpc_round {
+            decryption_shares: match session_info.mpc_round.clone() {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                 )?,
@@ -401,21 +424,7 @@ impl DWalletMPCManager {
             },
             public_input,
         };
-        let wrapped_mpc_event_data = Some(mpc_event_data.clone());
-        self.dwallet_mpc_metrics
-            .add_received_event_start(&mpc_event_data.init_protocol_data);
-        if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_identifier) {
-            warn!(
-                session_identifier=?session_info.session_identifier,
-                "received an event for an existing session (previously received messages)",
-            );
-            if session.mpc_event_data.is_none() {
-                session.mpc_event_data = wrapped_mpc_event_data;
-            }
-        } else {
-            self.push_new_mpc_session(&session_info.session_identifier, wrapped_mpc_event_data);
-        }
-        Ok(())
+        Ok(mpc_event_data)
     }
 
     pub(crate) fn get_protocol_public_parameters(

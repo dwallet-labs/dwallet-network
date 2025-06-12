@@ -72,7 +72,10 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionIdentifierStruct, SessionInfo, SessionType};
+use ika_types::messages_dwallet_mpc::{
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData,
+    SessionIdentifierStruct, SessionInfo, SessionType,
+};
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
@@ -1443,7 +1446,10 @@ impl AuthorityPerEpochStore {
                             event,
                             session_info,
                         };
-                        new_events_map.push((SessionIdentifierStruct(event.session_info.session_identifier), event.clone()));
+                        new_events_map.push((
+                            SessionIdentifierStruct(event.session_info.session_identifier),
+                            event.clone(),
+                        ));
                         Some(event)
                     }
                     Ok(None) => {
@@ -2353,28 +2359,18 @@ impl ConsensusCommitOutput {
         // The [`DWalletMPCService`] constantly reads and process those messages.
         batch.insert_batch(
             &tables.dwallet_mpc_messages,
-            [(
-                self.consensus_round,
-                self.dwallet_mpc_round_messages,
-            )],
+            [(self.consensus_round, self.dwallet_mpc_round_messages)],
         )?;
         batch.insert_batch(
             &tables.dwallet_mpc_completed_sessions,
-            [(
-                self.consensus_round,
-                self.dwallet_mpc_completed_sessions,
-            )],
+            [(self.consensus_round, self.dwallet_mpc_completed_sessions)],
         )?;
         batch.insert_batch(
             &tables.dwallet_mpc_outputs,
-            [(
-                self.consensus_round,
-                self.dwallet_mpc_round_outputs,
-            )],
+            [(self.consensus_round, self.dwallet_mpc_round_outputs)],
         )?;
 
         error!(consensus_commit_stats=?self.consensus_commit_stats, consensus_round=?self.consensus_round, "find me");
-
 
         batch.insert_batch(
             &tables.consensus_message_processed,

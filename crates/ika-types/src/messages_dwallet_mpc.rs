@@ -1,15 +1,15 @@
-use std::fmt;
 use crate::crypto::{keccak256_digest, AuthorityName};
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
+use rand::rngs::OsRng;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fmt::{Debug, Display};
-use rand::Rng;
-use rand::rngs::OsRng;
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
@@ -337,7 +337,9 @@ pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 pub type SessionIdentifier = [u8; 32];
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy, Serialize, Deserialize, JsonSchema, Debug)]
+#[derive(
+    Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy, Serialize, Deserialize, JsonSchema, Debug,
+)]
 pub struct SessionIdentifierStruct(pub [u8; 32]);
 
 // impl SessionIdentifierStruct {
@@ -415,7 +417,6 @@ pub struct SessionIdentifierStruct(pub [u8; 32]);
 //         }
 //     }
 // }
-
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
