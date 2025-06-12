@@ -386,7 +386,7 @@ impl DWalletMPCManager {
     ) -> DwalletMPCResult<()> {
         if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
             if session.mpc_event_data.is_none() {
-                let mpc_event_data = self.new_mpc_event(event, &session_info).await?;
+                let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
                 if let Some(mut_session) =
                     self.mpc_sessions.get_mut(&session_info.session_identifier)
                 {
@@ -394,7 +394,7 @@ impl DWalletMPCManager {
                 }
             }
         } else {
-            let mpc_event_data = self.new_mpc_event(event, &session_info).await?;
+            let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
             self.dwallet_mpc_metrics
                 .add_received_event_start(&mpc_event_data.init_protocol_data);
             self.push_new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
@@ -402,7 +402,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    async fn new_mpc_event(
+    async fn new_mpc_event_data(
         &self,
         event: DBSuiEvent,
         session_info: &SessionInfo,

@@ -4,11 +4,8 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
-use rand::rngs::OsRng;
-use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -331,92 +328,8 @@ pub enum SessionType {
     System,
 }
 
-pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
-
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
-
 pub type SessionIdentifier = [u8; 32];
-
-#[derive(
-    Ord, PartialOrd, Eq, PartialEq, Hash, Clone, Copy, Serialize, Deserialize, JsonSchema, Debug,
-)]
-pub struct SessionIdentifierStruct(pub [u8; 32]);
-
-// impl SessionIdentifierStruct {
-//     pub const fn new(address: [u8; Self::LENGTH]) -> Self {
-//         Self(address)
-//     }
-//
-//     /// The number of bytes in an address.
-//     pub const LENGTH: usize = 32;
-//
-//     /// Hex address: 0x0
-//     pub const ZERO: Self = Self([0u8; Self::LENGTH]);
-//
-//     /// Hex address: 0x1
-//     pub const ONE: Self = Self::get_hex_address_one();
-//
-//     /// Hex address: 0x2
-//     pub const TWO: Self = Self::get_hex_address_two();
-//
-//     pub const fn from_suffix(suffix: u16) -> SessionIdentifierStruct {
-//         let mut addr = [0u8; SessionIdentifierStruct::LENGTH];
-//         let [hi, lo] = suffix.to_be_bytes();
-//         addr[SessionIdentifierStruct::LENGTH - 2] = hi;
-//         addr[SessionIdentifierStruct::LENGTH - 1] = lo;
-//         SessionIdentifierStruct::new(addr)
-//     }
-//
-//     // const fn get_hex_address_one() -> Self {
-//     //     let mut addr = [0u8; SessionIdentifierStruct::LENGTH];
-//     //     addr[SessionIdentifierStruct::LENGTH - 1] = 1u8;
-//     //     Self(addr)
-//     // }
-//
-//     // const fn get_hex_address_two() -> Self {
-//     //     let mut addr = [0u8; SessionIdentifierStruct::LENGTH];
-//     //     addr[SessionIdentifierStruct::LENGTH - 1] = 2u8;
-//     //     Self(addr)
-//     // }
-//
-//     // pub fn random() -> Self {
-//     //     let mut rng = OsRng;
-//     //     let buf: [u8; Self::LENGTH] = rng.r#gen();
-//     //     Self(buf)
-//     // }
-//
-//     /// Return a canonical string representation of the address
-//     /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
-//     /// e.g., 0000000000000000000000000000000a, *not* 0x0000000000000000000000000000000a, 0xa, or 0xA
-//     /// Note: this function is guaranteed to be stable, and this is suitable for use inside
-//     /// Move native functions or the VM.
-//     /// However, one can pass with_prefix=true to get its representation with the 0x prefix.
-//     pub fn to_canonical_string(&self, with_prefix: bool) -> String {
-//         self.to_canonical_display(with_prefix).to_string()
-//     }
-//
-//     /// Implements Display for the address, with the prefix 0x if with_prefix is true.
-//     pub fn to_canonical_display(&self, with_prefix: bool) -> impl fmt::Display + '_ {
-//         struct HexDisplay<'a> {
-//             data: &'a [u8],
-//             with_prefix: bool,
-//         }
-//
-//         impl fmt::Display for HexDisplay<'_> {
-//             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//                 if self.with_prefix {
-//                     write!(f, "0x{}", hex::encode(self.data))
-//                 } else {
-//                     write!(f, "{}", hex::encode(self.data))
-//                 }
-//             }
-//         }
-//         HexDisplay {
-//             data: &self.0,
-//             with_prefix,
-//         }
-//     }
-// }
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]

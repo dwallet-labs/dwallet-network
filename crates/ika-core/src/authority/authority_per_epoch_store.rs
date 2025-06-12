@@ -73,8 +73,8 @@ use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData,
-    SessionIdentifierStruct, SessionInfo, SessionType,
+    DBSuiEvent, DWalletMPCEvent, DWalletMPCOutputMessage, MPCProtocolInitData, SessionInfo,
+    SessionType,
 };
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
@@ -411,8 +411,8 @@ pub struct AuthorityEpochTables {
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
     pub(crate) dwallet_mpc_completed_sessions: DBMap<u64, Vec<SessionIdentifier>>,
-    pub(crate) dwallet_mpc_events_for_uncompleted_sessions:
-        DBMap<SessionIdentifierStruct, DWalletMPCEvent>,
+    pub(crate) dwallet_mpc_events_for_pending_and_active_sessions:
+        DBMap<SessionIdentifier, DWalletMPCEvent>,
 }
 
 // todo(zeev): why is it not used?
@@ -490,11 +490,11 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_all_dwallet_mpc_events_for_uncompleted_sessions(
+    pub fn get_all_dwallet_mpc_events_for_pending_and_active_sessions(
         &self,
     ) -> IkaResult<Vec<DWalletMPCEvent>> {
         Ok(self
-            .dwallet_mpc_events_for_uncompleted_sessions
+            .dwallet_mpc_events_for_pending_and_active_sessions
             .safe_iter()
             .map(|item| item.map(|(_k, v)| v))
             .collect::<Result<Vec<_>, _>>()?)
@@ -1446,10 +1446,7 @@ impl AuthorityPerEpochStore {
                             event,
                             session_info,
                         };
-                        new_events_map.push((
-                            SessionIdentifierStruct(event.session_info.session_identifier),
-                            event.clone(),
-                        ));
+                        new_events_map.push((event.session_info.session_identifier, event.clone()));
                         Some(event)
                     }
                     Ok(None) => {
@@ -1474,10 +1471,12 @@ impl AuthorityPerEpochStore {
         if !new_events_map.is_empty() {
             let mut batch = self
                 .tables()?
-                .dwallet_mpc_events_for_uncompleted_sessions
+                .dwallet_mpc_events_for_pending_and_active_sessions
                 .batch();
             batch.insert_batch(
-                &self.tables()?.dwallet_mpc_events_for_uncompleted_sessions,
+                &self
+                    .tables()?
+                    .dwallet_mpc_events_for_pending_and_active_sessions,
                 new_events_map,
             )?;
             batch.write()?;
@@ -2357,20 +2356,31 @@ impl ConsensusCommitOutput {
 
         // Write all the dWallet MPC related messages from this consensus round to the local DB.
         // The [`DWalletMPCService`] constantly reads and process those messages.
-        batch.insert_batch(
-            &tables.dwallet_mpc_messages,
-            [(self.consensus_round, self.dwallet_mpc_round_messages)],
-        )?;
-        batch.insert_batch(
-            &tables.dwallet_mpc_completed_sessions,
-            [(self.consensus_round, self.dwallet_mpc_completed_sessions)],
-        )?;
-        batch.insert_batch(
-            &tables.dwallet_mpc_outputs,
-            [(self.consensus_round, self.dwallet_mpc_round_outputs)],
-        )?;
-
-        error!(consensus_commit_stats=?self.consensus_commit_stats, consensus_round=?self.consensus_round, "find me");
+        if let Some(consensus_commit_stats) = &self.consensus_commit_stats {
+            batch.insert_batch(
+                &tables.dwallet_mpc_messages,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_messages,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_completed_sessions,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_completed_sessions,
+                )],
+            )?;
+            batch.insert_batch(
+                &tables.dwallet_mpc_outputs,
+                [(
+                    consensus_commit_stats.index.sub_dag_index,
+                    self.dwallet_mpc_round_outputs,
+                )],
+            )?;
+        } else {
+            error!("failed to retrieve consensus commit statistics when trying to write DWallet MPC messages to local DB");
+        }
 
         batch.insert_batch(
             &tables.consensus_message_processed,

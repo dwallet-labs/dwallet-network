@@ -57,7 +57,6 @@ sui-types.workspace = true
 serde_repr.workspace = true
 rand_chacha = "0.3.1"
 base64.workspace = true
-hex = "0.4.3"
 
 [dev-dependencies]
 
