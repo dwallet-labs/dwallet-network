@@ -356,7 +356,8 @@ where
                 };
                 let Ok(epoch_start_tx_digest) = system_inner.epoch_start_tx_digest.try_into()
                 else {
-                    error!("start epoch TX digest in wrong length");
+                    // This should not happen, but if it does, we need to know about it.
+                    error!("cloud not parse `epoch_start_tx_digest` - wrong length");
                     continue;
                 };
                 let start_epoch_event = EventID::from((epoch_start_tx_digest, 0));
