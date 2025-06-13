@@ -888,9 +888,13 @@ public enum SignState has copy, drop, store {
 /// System sessions are guaranteed to complete within their creation epoch.
 public enum SessionType has copy, drop, store {
     /// User-initiated session with sequence number for epoch scheduling
-    User,
+    User {
+        sequence_number: u64,
+    },
     /// System-initiated session (always completes in current epoch)
-    System
+    System{
+        system_sequence_number: u64,
+    },
 }
 
 
@@ -2358,6 +2362,19 @@ fun validate_active_and_get_public_output(
     }
 }
 
+fun get_and_update_next_user_sequence_number(self: &mut DWalletCoordinatorInner) -> u64 {
+    let next_session_sequence_number = self.session_management.next_session_sequence_number;
+    self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
+    self.update_last_user_initiated_session_to_complete_in_current_epoch();
+    next_session_sequence_number
+}
+
+fun get_and_update_next_system_sequence_number(self: &mut DWalletCoordinatorInner) -> u64 {
+    let next_session_sequence_number = self.session_management.next_system_session_sequence_number;
+    self.session_management.next_system_session_sequence_number = next_session_sequence_number + 1;
+    next_session_sequence_number
+}
+
 /// Creates and charges a user-initiated MPC session for the current epoch.
 /// 
 /// This function implements the core session creation and payment logic for all
@@ -2443,8 +2460,6 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
 
     self.session_management.session_events.add(session.id.to_inner(), event);
     self.session_management.sessions.add(session_sequence_number, session);
-    self.session_management.next_session_sequence_number = session_sequence_number + 1;
-    self.update_last_user_initiated_session_to_complete_in_current_epoch();
 
     event
 }
