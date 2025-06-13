@@ -3064,7 +3064,7 @@ public(package) fun request_dwallet_dkg_first_round(
         state: DWalletState::DKGRequested,
     });
 
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     // Emit an event to request the Ika network to start DKG for this dWallet.
     event::emit(self.charge_and_create_current_epoch_dwallet_event(
         session_identifier,
@@ -3078,7 +3078,7 @@ public(package) fun request_dwallet_dkg_first_round(
             dwallet_network_encryption_key_id,
             curve,
         },
-        SessionType::User,
+        SessionType::User { sequence_number },
         ctx,
     ));
 
@@ -3258,7 +3258,7 @@ public(package) fun request_dwallet_dkg_second_round(
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
 
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
         session_identifier,
         dwallet_network_encryption_key_id,
@@ -3280,7 +3280,7 @@ public(package) fun request_dwallet_dkg_second_round(
             dwallet_network_encryption_key_id,
             curve,
         },
-        SessionType::User,
+        SessionType::User { sequence_number },
         ctx,
     );
 
@@ -3386,7 +3386,7 @@ public(package) fun request_re_encrypt_user_share_for(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
             session_identifier,
@@ -3405,7 +3405,7 @@ public(package) fun request_re_encrypt_user_share_for(
                 dwallet_network_encryption_key_id,
                 curve,
             },
-            SessionType::User,
+            SessionType::User { sequence_number },
             ctx,
         )
     );
@@ -3589,7 +3589,7 @@ public(package) fun request_imported_key_dwallet_verification(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
         session_identifier,
         dwallet_network_encryption_key_id,
@@ -3610,7 +3610,7 @@ public(package) fun request_imported_key_dwallet_verification(
             dwallet_network_encryption_key_id,
             curve,
         },
-        SessionType::User,
+        SessionType::User { sequence_number },
         ctx,
     );
 
@@ -3695,7 +3695,7 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
             session_identifier,
@@ -3710,7 +3710,7 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
                 dwallet_id,
                 dwallet_network_encryption_key_id,
             },
-            SessionType::User,
+            SessionType::User { sequence_number },
             ctx,
         )
     );
@@ -3821,7 +3821,7 @@ public(package) fun request_presign(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
             session_identifier,
@@ -3837,7 +3837,7 @@ public(package) fun request_presign(
                 curve,
                 signature_algorithm,
             },
-            SessionType::User,
+            SessionType::User { sequence_number },
             ctx,
         )
     );
@@ -3915,7 +3915,7 @@ public(package) fun request_global_presign(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     event::emit(
         self.charge_and_create_current_epoch_dwallet_event(
             session_identifier,
@@ -3931,7 +3931,7 @@ public(package) fun request_global_presign(
                 curve,
                 signature_algorithm,
             },
-            SessionType::User,
+            SessionType::User { sequence_number },
             ctx,
         )
     );
@@ -4147,7 +4147,7 @@ fun validate_and_initiate_sign(
     // Check that the curve of the dWallet matches that of the presign, and that the signature algorithm matches.
     assert!(dwallet.curve == curve, EDWalletMismatch);
     assert!(presign_signature_algorithm == signature_algorithm, EMessageApprovalMismatch);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     // Emit a `SignRequestEvent` to request the Ika network to sign `message`.
     let id = object::new(ctx);
     let sign_id = id.to_inner();
@@ -4172,7 +4172,7 @@ fun validate_and_initiate_sign(
             message_centralized_signature,
             is_future_sign,
         },
-        SessionType::User,
+        SessionType::User { sequence_number },
         ctx,
     );
 
@@ -4335,6 +4335,7 @@ public(package) fun request_future_sign(
 
     let mut pricing_value = self.pricing_and_fee_management.current.try_get_dwallet_pricing_value(curve, option::some(signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     let emit_event = self.charge_and_create_current_epoch_dwallet_event(
         session_identifier,
         dwallet_network_encryption_key_id,
@@ -4353,7 +4354,7 @@ public(package) fun request_future_sign(
                 message_centralized_signature,
                 dwallet_network_encryption_key_id,
         },
-        SessionType::User,
+        SessionType::User { sequence_number },
         ctx,
     );
 
