@@ -2427,18 +2427,11 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     assert!(self.session_management.registered_session_identifiers.contains(identifier_preimage), ESessionIdentifierNotExist);
     assert!(self.session_management.registered_session_identifiers.borrow(identifier_preimage) == session_identifier.id.to_inner(), ESessionIdentifierNotExist);
 
-    let session_sequence_number = match (session_type) {
-        SessionType::User => {
-            let next_session_sequence_number = self.session_management.next_session_sequence_number;
-            self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
-            next_session_sequence_number
-        },
-        SessionType::System => {
-            let next_system_session_sequence_number = self.session_management.next_system_session_sequence_number;
-            self.session_management.next_system_session_sequence_number = next_system_session_sequence_number + 1;
-            next_system_session_sequence_number
-        },
-    };
+    let session_sequence_number  = match (session_type) {
+        SessionType::User { session_sequence_number } => session_sequence_number,
+        SessionType::System { system_sequence_number } => system_sequence_number,
+    }
+
     let session = DWalletSession {
         id: object::new(ctx),
         session_identifier,
