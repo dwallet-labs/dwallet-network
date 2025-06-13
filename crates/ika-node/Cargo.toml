@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+sui-json-rpc-types.workspace = true
 dwallet-mpc-types.workspace = true
 anemo.workspace = true
 anemo-tower.workspace = true

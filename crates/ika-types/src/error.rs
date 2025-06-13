@@ -231,6 +231,9 @@ pub enum IkaError {
 
     #[error("BCS serialization error: {0}")]
     BCSError(String),
+
+    #[error("failed to receive data: {0}")]
+    ReveiverError(String),
 }
 
 pub type IkaResult<T = ()> = Result<T, IkaError>;

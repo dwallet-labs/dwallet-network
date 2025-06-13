@@ -70,7 +70,7 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
     /// Events that wait for the network key to update.
     /// Once we get the network key, these events will continue.
-    pub(crate) events_pending_for_network_key: Vec<(DBSuiEvent, SessionInfo)>,
+    pub(crate) events_pending_for_network_key: Vec<DWalletMPCEvent>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     pub(crate) threshold_not_reached_reports:
@@ -215,8 +215,7 @@ impl DWalletMPCManager {
                         key_id=?key_id,
                         "Adding event to pending for the network key"
                     );
-                    self.events_pending_for_network_key
-                        .push((event.event, event.session_info));
+                    self.events_pending_for_network_key.push(event);
                 }
                 _ => {
                     error!(?err, "failed to handle dWallet MPC event with error");
@@ -385,12 +384,35 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
+        if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
+            if session.mpc_event_data.is_none() {
+                let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
+                if let Some(mut_session) =
+                    self.mpc_sessions.get_mut(&session_info.session_identifier)
+                {
+                    mut_session.mpc_event_data = Some(mpc_event_data);
+                }
+            }
+        } else {
+            let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
+            self.dwallet_mpc_metrics
+                .add_received_event_start(&mpc_event_data.init_protocol_data);
+            self.push_new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
+        }
+        Ok(())
+    }
+
+    async fn new_mpc_event_data(
+        &self,
+        event: DBSuiEvent,
+        session_info: &SessionInfo,
+    ) -> Result<MPCEventData, DwalletMPCError> {
         let (public_input, private_input) = session_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
-            session_type: session_info.session_type,
+            session_type: session_info.session_type.clone(),
             init_protocol_data: session_info.mpc_round.clone(),
             private_input,
-            decryption_shares: match session_info.mpc_round {
+            decryption_shares: match session_info.mpc_round.clone() {
                 MPCProtocolInitData::Sign(init_event) => self.get_decryption_key_shares(
                     &init_event.event_data.dwallet_network_decryption_key_id,
                 )?,
@@ -402,21 +424,7 @@ impl DWalletMPCManager {
             },
             public_input,
         };
-        let wrapped_mpc_event_data = Some(mpc_event_data.clone());
-        self.dwallet_mpc_metrics
-            .add_received_event_start(&mpc_event_data.init_protocol_data);
-        if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_identifier) {
-            warn!(
-                session_identifier=?session_info.session_identifier,
-                "received an event for an existing session (previously received messages)",
-            );
-            if session.mpc_event_data.is_none() {
-                session.mpc_event_data = wrapped_mpc_event_data;
-            }
-        } else {
-            self.push_new_mpc_session(&session_info.session_identifier, wrapped_mpc_event_data);
-        }
-        Ok(())
+        Ok(mpc_event_data)
     }
 
     pub(crate) fn get_protocol_public_parameters(
@@ -510,17 +518,13 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        for (event, session_info) in self
+        for event in self
             .events_pending_for_network_key
             .drain(..)
             .collect::<Vec<_>>()
             .into_iter()
         {
-            self.handle_dwallet_db_event(DWalletMPCEvent {
-                event,
-                session_info,
-            })
-            .await;
+            self.handle_dwallet_db_event(event.clone()).await;
         }
         for (index, pending_for_event_session) in
             self.pending_for_events_order.clone().iter().enumerate()
