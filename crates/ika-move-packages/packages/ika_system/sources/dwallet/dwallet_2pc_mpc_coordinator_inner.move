@@ -2362,14 +2362,14 @@ fun validate_active_and_get_public_output(
     }
 }
 
-fun get_and_update_next_user_sequence_number(self: &mut DWalletCoordinatorInner) -> u64 {
+fun get_and_update_next_user_sequence_number(self: &mut DWalletCoordinatorInner) : u64 {
     let next_session_sequence_number = self.session_management.next_session_sequence_number;
     self.session_management.next_session_sequence_number = next_session_sequence_number + 1;
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
     next_session_sequence_number
 }
 
-fun get_and_update_next_system_sequence_number(self: &mut DWalletCoordinatorInner) -> u64 {
+fun get_and_update_next_system_sequence_number(self: &mut DWalletCoordinatorInner) : u64 {
     let next_session_sequence_number = self.session_management.next_system_session_sequence_number;
     self.session_management.next_system_session_sequence_number = next_session_sequence_number + 1;
     next_session_sequence_number
