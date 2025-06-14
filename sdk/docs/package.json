@@ -27,7 +27,7 @@
 		"@dwallet-network/dwallet.js": "workspace:*",
 		"@tanstack/react-query": "^5.0.0",
 		"@types/node": "^20.4.2",
-		"next": "^13.4.15",
+		"next": "^14.2.30",
 		"nextra": "^2.11.0",
 		"nextra-theme-docs": "^2.11.0",
 		"react": "^18.2.0",
