@@ -111,15 +111,23 @@ pub(crate) fn generate_access_structure_from_committee(
     WeightedThresholdAccessStructure::new(threshold, party_to_weight)
         .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))}
 
-/// Convert a given [`PartyID`] to it's corresponding authority name (address).
+/// Convert a given `party_id` to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<AuthorityName> {
-    Ok(*epoch_store
+    // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
+    // Convert it to an index to the committee authority names, which is in the range `0..number_of_tangible_parties`,
+    // Decrement the index to transform it from 1-based to 0-based.
+    // Safe to decrement as `PartyID` is `u16`, will never overflow.
+    let index = u32::from(party_id) - 1;
+
+    let authority_name = *epoch_store
         .committee()
-        .authority_by_index(party_id as u32 - 1)
-        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?)
+        .authority_by_index(index)
+        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?;
+
+    Ok(authority_name)
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
