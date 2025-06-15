@@ -5893,6 +5893,7 @@ dependencies = [
  "rayon",
  "reqwest 0.12.12",
  "serde",
+ "sui-json-rpc-types",
  "sui-macros",
  "sui-metrics-push-client",
  "sui-simulator",

@@ -3,13 +3,10 @@
 
 use super::*;
 use std::path::Path;
-use sui_json_rpc_types::SuiEvent;
-use sui_types::Identifier;
 use typed_store::rocks::{DBBatch, DBMap, MetricConf};
 use typed_store::traits::Map;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
-use ika_types::messages_dwallet_mpc::DBSuiEvent;
 use typed_store::rocksdb::Options;
 use typed_store::DBMapUtils;
 
@@ -21,12 +18,6 @@ pub struct AuthorityPerpetualTables {
 
     /// A singleton table that stores latest pruned checkpoint. Used to keep objects pruner progress
     pub(crate) pruned_checkpoint: DBMap<(), DWalletCheckpointSequenceNumber>,
-
-    /// pending events from sui received but not yet executed
-    pending_events: DBMap<EventID, Vec<u8>>,
-
-    /// module identifier to the last processed EventID
-    pub(crate) sui_syncer_cursors: DBMap<Identifier, EventID>,
 }
 
 impl AuthorityPerpetualTables {
@@ -86,48 +77,5 @@ impl AuthorityPerpetualTables {
         self.set_highest_pruned_checkpoint(&mut wb, checkpoint_number)?;
         wb.write()?;
         Ok(())
-    }
-
-    pub fn insert_pending_events(&self, module: Identifier, events: &[SuiEvent]) -> IkaResult {
-        let cursor = events.last().map(|e| e.id);
-        if let Some(cursor) = cursor {
-            let mut batch = self.pending_events.batch();
-            batch.insert_batch(&self.sui_syncer_cursors, [(module, cursor)])?;
-            let serialized_events: IkaResult<Vec<(EventID, Vec<u8>)>> = events
-                .iter()
-                .map(|e| {
-                    let serialized_event = bcs::to_bytes(&DBSuiEvent {
-                        type_: e.type_.clone(),
-                        contents: e.bcs.clone().into_bytes(),
-                    })
-                    .map_err(|e| IkaError::BCSError(e.to_string()))?;
-                    Ok((e.id, serialized_event))
-                })
-                .collect();
-            batch.insert_batch(&self.pending_events, serialized_events?)?;
-            batch.write()?;
-        }
-        Ok(())
-    }
-
-    pub(crate) fn remove_pending_events(&self, events: &[EventID]) -> IkaResult {
-        let mut batch = self.pending_events.batch();
-        batch.delete_batch(&self.pending_events, events)?;
-        batch.write()?;
-        Ok(())
-    }
-
-    pub fn get_all_pending_events(&self) -> IkaResult<HashMap<EventID, Vec<u8>>> {
-        Ok(self
-            .pending_events
-            .safe_iter_with_bounds(None, None)
-            .collect::<Result<HashMap<_, _>, _>>()?)
-    }
-
-    pub fn get_sui_event_cursors(
-        &self,
-        identifiers: &[Identifier],
-    ) -> IkaResult<Vec<Option<EventID>>> {
-        Ok(self.sui_syncer_cursors.multi_get(identifiers)?)
     }
 }

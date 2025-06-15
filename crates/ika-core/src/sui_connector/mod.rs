@@ -1,8 +1,7 @@
-use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
-use crate::sui_connector::sui_syncer::{SuiSyncer, SuiTargetModules};
+use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
@@ -19,15 +18,13 @@ use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use sui_json_rpc_types::Coin;
+use sui_json_rpc_types::{Coin, SuiEvent};
 use sui_sdk::apis::CoinReadApi;
 use sui_sdk::SuiClient as SuiSdkClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
-use sui_types::event::EventID;
 use sui_types::transaction::{ProgrammableTransaction, Transaction, TransactionData};
-use sui_types::Identifier;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing::info;
@@ -58,7 +55,6 @@ pub struct SuiConnectorService {
 
 impl SuiConnectorService {
     pub async fn new(
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
         checkpoint_store: Arc<DWalletCheckpointStore>,
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         sui_client: Arc<SuiClient<SuiSdkClient>>,
@@ -66,6 +62,7 @@ impl SuiConnectorService {
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
+        new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -83,21 +80,20 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
         );
 
-        let sui_modules_to_watch = Self::get_sui_modules_to_watch(
-            &perpetual_tables,
-            sui_connector_config.sui_ika_system_module_last_processed_event_id_override,
-        );
-
+        let sui_modules_to_watch = vec![
+            TEST_MODULE_NAME.to_owned(),
+            DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
+        ];
         let task_handles = SuiSyncer::new(
             sui_client.clone(),
-            SuiTargetModules::from(sui_modules_to_watch),
+            sui_modules_to_watch,
             sui_connector_metrics.clone(),
-            perpetual_tables,
         )
         .run(
             Duration::from_secs(2),
             next_epoch_committee_sender,
             network_keys_sender,
+            new_events_sender,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
@@ -164,45 +160,6 @@ impl SuiConnectorService {
             sui_key,
             sui_address,
         }))
-    }
-
-    fn get_sui_modules_to_watch(
-        perpetual_tables: &Arc<AuthorityPerpetualTables>,
-        sui_ika_system_module_last_processed_event_id_override: Option<EventID>,
-    ) -> HashMap<Identifier, Option<EventID>> {
-        let sui_connector_modules = vec![
-            TEST_MODULE_NAME.to_owned(),
-            DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
-        ];
-        if let Some(cursor) = sui_ika_system_module_last_processed_event_id_override {
-            info!(
-                "Overriding cursor for sui connector modules to {:?}",
-                cursor
-            );
-            return HashMap::from_iter(
-                sui_connector_modules
-                    .iter()
-                    .map(|module| (module.clone(), Some(cursor))),
-            );
-        }
-
-        let sui_connector_module_stored_cursor = perpetual_tables
-            .get_sui_event_cursors(&sui_connector_modules)
-            .expect("Failed to get sui event cursors from AuthorityPerpetualTables");
-        let mut sui_modules_to_watch = HashMap::new();
-        for (module_identifier, cursor) in sui_connector_modules
-            .iter()
-            .zip(sui_connector_module_stored_cursor)
-        {
-            if cursor.is_none() {
-                info!(
-                "No cursor found for sui connector module {} in storage or config override, query start from the beginning.",
-                module_identifier
-            );
-            }
-            sui_modules_to_watch.insert(module_identifier.clone(), cursor);
-        }
-        sui_modules_to_watch
     }
 
     pub async fn get_available_move_packages(

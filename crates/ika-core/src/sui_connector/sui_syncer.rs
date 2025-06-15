@@ -3,7 +3,6 @@
 
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
-use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
@@ -19,6 +18,7 @@ use im::HashSet;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
+use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::{event::EventID, Identifier};
 use tokio::sync::watch::Sender;
@@ -29,16 +29,12 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-/// Map from contract address to their start cursor (exclusive)
-pub type SuiTargetModules = HashMap<Identifier, Option<EventID>>;
-
 pub struct SuiSyncer<C> {
     sui_client: Arc<SuiClient<C>>,
     // The last transaction that the syncer has fully processed.
     // Syncer will resume posting this transaction (i.e., exclusive) when it starts.
-    cursors: SuiTargetModules,
+    modules: Vec<Identifier>,
     metrics: Arc<SuiConnectorMetrics>,
-    perpetual_tables: Arc<AuthorityPerpetualTables>,
 }
 
 impl<C> SuiSyncer<C>
@@ -47,15 +43,13 @@ where
 {
     pub fn new(
         sui_client: Arc<SuiClient<C>>,
-        cursors: SuiTargetModules,
+        modules: Vec<Identifier>,
         metrics: Arc<SuiConnectorMetrics>,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
     ) -> Self {
         Self {
             sui_client,
-            cursors,
+            modules,
             metrics,
-            perpetual_tables,
         }
     }
 
@@ -64,6 +58,7 @@ where
         query_interval: Duration,
         next_epoch_committee_sender: Sender<Committee>,
         network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -77,18 +72,17 @@ where
             sui_client_clone,
             network_keys_sender,
         ));
-        for (module, cursor) in self.cursors {
+        for module in self.modules {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
-            let perpetual_tables_clone = self.perpetual_tables.clone();
+            let new_events_sender_clone = new_events_sender.clone();
             task_handles.push(spawn_logged_monitored_task!(
                 Self::run_event_listening_task(
                     module,
-                    cursor,
                     sui_client_clone,
                     query_interval,
                     metrics,
-                    perpetual_tables_clone
+                    new_events_sender_clone,
                 )
             ));
         }
@@ -313,13 +307,12 @@ where
         // The module where interested events are defined.
         // Module is always of ika system package.
         module: Identifier,
-        mut cursor: Option<EventID>,
         sui_client: Arc<SuiClient<C>>,
         query_interval: Duration,
         metrics: Arc<SuiConnectorMetrics>,
-        perpetual_tables: Arc<AuthorityPerpetualTables>,
+        new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) {
-        info!(?module, ?cursor, "Starting sui events listening task");
+        info!(?module, "Starting sui events listening task");
         let mut interval = time::interval(query_interval);
         interval.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
@@ -343,10 +336,10 @@ where
                 last_synced_sui_checkpoints_metric.set(latest_checkpoint_sequence_number as i64);
             }
         });
+        let mut cursor: Option<EventID> = None;
         let mut start_epoch_cursor: Option<EventID> = None;
-        let mut loop_index = 0;
+        let mut loop_index: usize = 0;
         loop {
-            loop_index += 1;
             // Fetching the epoch start TX digest less frequently
             // as it is unexpected to change often.
             if loop_index % 10 == 0 {
@@ -364,6 +357,8 @@ where
                     cursor = start_epoch_cursor;
                 }
             }
+            loop_index += 1;
+
             interval.tick().await;
             let Ok(Ok(events)) = retry_with_max_elapsed_time!(
                 sui_client.query_events_by_module(module.clone(), cursor),
@@ -382,10 +377,10 @@ where
                     // We can then update the latest checkpoint metric.
                     notify.notify_one();
                 }
-                perpetual_tables
-                    .insert_pending_events(module.clone(), &events.data)
-                    // todo(zeev): this code can panic, check it.
-                    .expect("failed to insert pending events");
+                if let Err(e) = new_events_sender.send(events.data) {
+                    error!(error=?e, ?module, "failed to send new events to the channel");
+                }
+
                 if let Some(next) = events.next_cursor {
                     cursor = Some(next);
                 }
