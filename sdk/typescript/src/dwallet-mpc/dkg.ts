@@ -7,7 +7,6 @@ import {
 import { bcs } from '@mysten/bcs';
 import { Transaction } from '@mysten/sui/transactions';
 
-import type { ClassGroupsSecpKeyPair } from './encrypt-user-share.js';
 import { getOrCreateClassGroupsKeyPair } from './encrypt-user-share.js';
 import type { ActiveDWallet, DWallet, EncryptedDWalletData } from './globals.js';
 import {
@@ -81,12 +80,10 @@ export async function createDWallet(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
-	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const secondRoundResponse = await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
 		networkDecryptionKeyPublicOutput,
-		classGroupsSecpKeyPair,
 	);
 	await acceptEncryptedUserShare(conf, {
 		dwallet_id: secondRoundResponse.moveResponse.dwallet.id.id,
@@ -102,12 +99,18 @@ export async function createDWallet(
 	};
 }
 
-export async function launchDKGSecondRound(
+export async function createDWalletCentralizedParty(
 	conf: Config,
-	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	networkDecryptionKeyPublicOutput: Uint8Array,
-	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
-): Promise<DKGSecondRoundResponse> {
+	firstRoundOutputResult: DKGFirstRoundOutputResult,
+): Promise<{
+	centralizedPublicKeyShareAndProof: Uint8Array;
+	centralizedPublicOutput: Uint8Array;
+	encryptedUserShareAndProof: Uint8Array;
+	centralizedSecretKeyShare: Uint8Array;
+}> {
+	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
+
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
@@ -116,36 +119,61 @@ export async function launchDKGSecondRound(
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);
 
-	const dWalletStateData = await getDWalletSecpState(conf);
-
 	const encryptedUserShareAndProof = encrypt_secret_share(
 		centralizedSecretKeyShare,
 		classGroupsSecpKeyPair.encryptionKey,
 		networkDecryptionKeyPublicOutput,
 	);
 
-	const secondRoundMoveResponse = await dkgSecondRoundMoveCall(
-		conf,
-		dWalletStateData,
-		firstRoundOutputResult,
-		centralizedPublicKeyShareAndProof,
-		encryptedUserShareAndProof,
-		centralizedPublicOutput,
-	);
 	return {
-		moveResponse: secondRoundMoveResponse,
-		secretShare: centralizedSecretKeyShare,
+		centralizedPublicKeyShareAndProof,
+		centralizedPublicOutput,
+		encryptedUserShareAndProof,
+		centralizedSecretKeyShare,
 	};
 }
 
-export async function dkgSecondRoundMoveCall(
+export async function launchDKGSecondRound(
+	conf: Config,
+	firstRoundOutputResult: DKGFirstRoundOutputResult,
+	networkDecryptionKeyPublicOutput: Uint8Array,
+): Promise<DKGSecondRoundResponse> {
+	const centralizedPartyOutput = await createDWalletCentralizedParty(
+		conf,
+		networkDecryptionKeyPublicOutput,
+		firstRoundOutputResult,
+	);
+
+	const dWalletStateData = await getDWalletSecpState(conf);
+
+	const tx = await prepareDKGSecondRoundTransaction(
+		conf,
+		dWalletStateData,
+		firstRoundOutputResult,
+		centralizedPartyOutput.centralizedPublicKeyShareAndProof,
+		centralizedPartyOutput.encryptedUserShareAndProof,
+		centralizedPartyOutput.centralizedPublicOutput,
+	);
+
+	const secondRoundMoveResponse = await executeDKGSecondRoundTransaction(
+		conf,
+		firstRoundOutputResult,
+		tx,
+	);
+	return {
+		moveResponse: secondRoundMoveResponse,
+		secretShare: centralizedPartyOutput.centralizedSecretKeyShare,
+	};
+}
+
+export async function prepareDKGSecondRoundTransaction(
 	conf: Config,
 	dWalletStateData: SharedObjectData,
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	centralizedPublicKeyShareAndProof: Uint8Array,
 	encryptedUserShareAndProof: Uint8Array,
 	centralizedPublicOutput: Uint8Array,
-): Promise<DKGSecondRoundMoveResponse> {
+): Promise<Transaction> {
 	const tx = new Transaction();
 	const dwalletStateArg = tx.sharedObjectRef({
 		objectId: dWalletStateData.object_id,
@@ -197,6 +225,15 @@ export async function dkgSecondRoundMoveCall(
 		arguments: [emptyIKACoin],
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
+	return tx;
+}
+
+export async function executeDKGSecondRoundTransaction(
+	conf: Config,
+	firstRoundOutputResult: DKGFirstRoundOutputResult,
+	tx: Transaction,
+): Promise<DKGSecondRoundMoveResponse> {
+	console.time(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 	const result = await conf.client.signAndExecuteTransaction({
 		signer: conf.suiClientKeypair,
 		transaction: tx,
@@ -213,6 +250,10 @@ export async function dkgSecondRoundMoveCall(
 		throw new Error('invalid start session event');
 	}
 	const dwallet = await getObjectWithType(conf, firstRoundOutputResult.dwalletID, isActiveDWallet);
+	console.timeEnd(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
+	console.log(
+		`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startSessionEvent.session_identifier_preimage}`,
+	);
 	return {
 		dwallet,
 		encrypted_user_secret_key_share_id:
@@ -233,6 +274,11 @@ interface DKGFirstRoundOutputResult {
  * and as input for the centralized party round.
  */
 async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult> {
+	const tx = await prepareDKGFirstRoundTransaction(c);
+	return executeDKGFirstRoundTransaction(c, tx);
+}
+
+export async function prepareDKGFirstRoundTransaction(c: Config): Promise<Transaction> {
 	const tx = new Transaction();
 	const emptyIKACoin = tx.moveCall({
 		target: `${SUI_PACKAGE_ID}::coin::zero`,
@@ -268,6 +314,14 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 		arguments: [emptyIKACoin],
 		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
 	});
+	return tx;
+}
+
+export async function executeDKGFirstRoundTransaction(
+	c: Config,
+	tx: Transaction,
+): Promise<DKGFirstRoundOutputResult> {
+	console.time(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
 	const result = await c.client.signAndExecuteTransaction({
 		signer: c.suiClientKeypair,
 		transaction: tx,
@@ -282,6 +336,10 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 	}
 	const dwalletID = startDKGEvent.event_data.dwallet_id;
 	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
+	console.timeEnd(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
+	console.log(
+		`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startDKGEvent.session_identifier_preimage}`,
+	);
 	return {
 		sessionIdentifier: startDKGEvent.session_identifier_preimage,
 		output: output,
