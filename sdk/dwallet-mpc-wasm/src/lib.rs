@@ -5,7 +5,7 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, create_dkg_output,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share,
+    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share, math_that_should_take_1sec
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -85,6 +85,12 @@ pub fn decrypt_user_share(
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&decrypted_secret_share)?)
+}
+
+#[wasm_bindgen]
+pub fn do_math_that_should_take_1sec() -> () {
+    math_that_should_take_1sec();
+    // Ok(serde_wasm_bindgen::to_value(&())?)
 }
 
 /// Verifies that the given secret key share matches the given dWallet public key share.

@@ -466,3 +466,15 @@ pub fn decrypt_user_share_inner(
     let secret_share_bytes = bcs::to_bytes(&plaintext.value())?;
     Ok(secret_share_bytes)
 }
+
+pub fn math_that_should_take_1sec() {
+    let scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
+    let group_public_parameters = secp256k1::group_element::PublicParameters::default();
+    let g = secp256k1::GroupElement::generator_from_public_parameters(&group_public_parameters).unwrap();
+    let s = secp256k1::Scalar::sample(&scalar_public_parameters, &mut OsRng).unwrap();
+    let mut h = g;
+
+    for _ in 0..360*100*1 {
+        h = s * h;
+    }
+}

@@ -108,6 +108,7 @@ export async function launchDKGSecondRound(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	classGroupsSecpKeyPair: ClassGroupsSecpKeyPair,
 ): Promise<DKGSecondRoundResponse> {
+	console.time('create_dkg_centralized_output() took');
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
@@ -115,6 +116,7 @@ export async function launchDKGSecondRound(
 			Uint8Array.from(firstRoundOutputResult.output),
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);
+	console.timeEnd('create_dkg_centralized_output() took');
 
 	const dWalletStateData = await getDWalletSecpState(conf);
 

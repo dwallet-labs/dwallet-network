@@ -144,6 +144,7 @@ export async function sign(
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
+	console.time('create_sign_centralized_output() took');
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
 		MPCKeyScheme.Secp256k1,
@@ -153,6 +154,8 @@ export async function sign(
 		message,
 		hash,
 	);
+	console.timeEnd('create_sign_centralized_output() took');
+
 	const { dWalletStateData, tx, messageApproval } = await approveMessageTX(
 		conf,
 		dwalletCapID,

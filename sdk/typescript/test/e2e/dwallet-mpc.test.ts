@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import path from 'path';
-import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
+import { sample_dwallet_keypair, verify_secp_signature, do_math_that_should_take_1sec } from '@dwallet-network/dwallet-mpc-wasm';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -58,6 +58,12 @@ describe('Test dWallet MPC', () => {
 			encryptedSecretShareSigningKeypair,
 		};
 		await delay(2000);
+	});
+
+	it('should take 1 sec', async () => {
+		console.time('this should take 1s');
+		do_math_that_should_take_1sec();
+		console.timeEnd('this should take 1s');
 	});
 
 	it('read the network decryption key', async () => {
