@@ -726,7 +726,7 @@ public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
-    let key_cap = dwallet_2pc_mpc_coordinator_inner.request_dwallet_network_encryption_key_dkg(params_for_network, ctx);
+    let key_cap = dwallet_2pc_mpc_coordinator_inner.request_dwallet_network_encryption_key_dkg(params_for_network, session_identifier ,ctx);
     self.dwallet_2pc_mpc_coordinator_network_encryption_keys.push_back(key_cap);
 }
 
