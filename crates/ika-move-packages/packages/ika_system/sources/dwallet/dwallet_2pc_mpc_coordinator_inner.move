@@ -36,7 +36,7 @@ use sui::{
     table::{Self, Table},
     balance::{Self, Balance},
     bcs,
-    coin::Coin,
+    coin::{Self, Coin},
     bag::{Self, Bag},
     event,
     ed25519::ed25519_verify,
@@ -1928,6 +1928,7 @@ public(package) fun register_session_identifier(
 public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     params_for_network: vector<u8>,
+    session_identifier: SessionIdentifier,
     ctx: &mut TxContext
 ): DWalletNetworkEncryptionKeyCap {
     // Create a new capability to control this encryption key.
@@ -1951,14 +1952,19 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
     });
 
-    // self.charge_and_create_current_epoch_dwallet_event(
-    //
-    // );
-    self.initiate_system_dwallet_session(
+    let sequence_number = self.get_and_update_next_system_sequence_number();
+
+    self.charge_and_create_current_epoch_dwallet_event(
+        session_identifier,
+        dwallet_network_encryption_key_id,
+        self.pricing_and_fee_management.current,
+        coin::zero(),
+        coin::zero(),
         DWalletNetworkDKGEncryptionKeyRequestEvent {
             dwallet_network_encryption_key_id,
             params_for_network,
         },
+        SessionType::System { system_sequence_number: sequence_number },
         ctx,
     );
 
@@ -2453,55 +2459,6 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     self.session_management.sessions.add(session_sequence_number, session);
 
     event
-}
-
-/// Initiates a system-managed MPC session for network operations.
-/// 
-/// System sessions are initiated by the protocol itself for critical
-/// network maintenance operations that don't involve direct user interaction.
-/// These sessions are essential for network health and security.
-/// 
-/// ### Supported System Operations
-/// - **Network DKG**: Distributed Key Generation for encryption keys
-/// - **Key Reconfiguration**: Updating existing network encryption keys
-/// - **Network Maintenance**: Other validator network coordination tasks
-/// 
-/// ### Key Differences from User Sessions
-/// - **No Payment Required**: System operations don't charge users
-/// - **No Sequential Numbering**: System sessions use generated IDs
-/// - **Immediate Emission**: Events are emitted immediately rather than stored
-/// - **Network Priority**: These sessions have priority in validator processing
-/// 
-/// ### Session Tracking
-/// - Increments `started_system_sessions_count` for network monitoring
-/// - Uses fresh object addresses for unique session identification
-/// - Maintains epoch association for proper network coordination
-/// 
-/// ### Security Properties
-/// - System sessions cannot be initiated by external users
-/// - Session IDs are cryptographically unique to prevent conflicts
-/// - Epoch tracking ensures proper network state consistency
-fun initiate_system_dwallet_session<E: copy + drop + store>(
-    self: &mut DWalletCoordinatorInner,
-    event_data: E,
-    ctx: &mut TxContext,
-) {
-    self.session_management.started_system_sessions_count = self.session_management.started_system_sessions_count + 1;
-    let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-    let event = DWalletSessionEvent {
-        epoch: self.current_epoch,
-        session_object_id: session_id,
-        session_type: SessionType::System { system_sequence_number: self.session_management.next_system_session_sequence_number },
-        // Notice that `session_identifier_preimage` is only the pre-image. 
-        // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
-        // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide).
-        // To avoid user-initiated events colliding with system events,
-        // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
-        session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
-        event_data,
-    };
-    self.session_management.session_events.add(session_id, event);
-    event::emit(event);
 }
 
 /// Retrieves an active dWallet and its public output for read-only operations.

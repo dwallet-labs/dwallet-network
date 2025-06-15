@@ -722,6 +722,7 @@ public(package) fun request_dwallet_network_encryption_key_dkg_by_cap(
     dwallet_2pc_mpc_coordinator_inner: &mut DWalletCoordinatorInner,
     cap: &ProtocolCap,
     params_for_network: vector<u8>,
+    session_identifier: SessionIdentifier,
     ctx: &mut TxContext,
 ) {
     self.verify_cap(cap);
