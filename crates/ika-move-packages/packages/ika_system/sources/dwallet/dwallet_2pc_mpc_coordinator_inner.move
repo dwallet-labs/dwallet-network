@@ -1958,8 +1958,8 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         session_identifier,
         dwallet_network_encryption_key_id,
         self.pricing_and_fee_management.current,
-        coin::zero(),
-        coin::zero(),
+        coin::zero<IKA>(ctx),
+        coin::zero<SUI>(ctx),
         DWalletNetworkDKGEncryptionKeyRequestEvent {
             dwallet_network_encryption_key_id,
             params_for_network,

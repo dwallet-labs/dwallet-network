@@ -10,7 +10,7 @@ use ika_system::{
     bls_committee::BlsCommittee,
     class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
     dwallet_2pc_mpc_coordinator,
-    dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner},
+    dwallet_2pc_mpc_coordinator_inner::{DWalletNetworkEncryptionKeyCap, DWalletCoordinatorInner, SessionIdentifier},
     dwallet_pricing::DWalletPricing,
     protocol_treasury::ProtocolTreasury,
     staked_ika::StakedIka,
