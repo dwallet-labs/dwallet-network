@@ -125,7 +125,6 @@ impl CryptographicComputationsOrchestrator {
                 },
                 Err(err) => match err {
                     TryRecvError::Empty => {
-                        debug!("no new completed computations");
                         return;
                     }
                     TryRecvError::Disconnected => {
