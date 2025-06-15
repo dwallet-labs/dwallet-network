@@ -11,13 +11,13 @@ pub struct IkaRuntimes {
     pub metrics: Runtime,
 }
 
-const TWENTY_MEGA_BYTES: usize = 20 * 1024 * 1024;
+const SIXTEEN_MEGA_BYTES: usize = 16 * 1024 * 1024;
 
 impl IkaRuntimes {
     pub fn new(_config: &NodeConfig) -> Self {
         if let Err(err) = rayon::ThreadPoolBuilder::new()
             .panic_handler(|err| error!("Rayon thread pool task panicked: {:?}", err))
-            .stack_size(TWENTY_MEGA_BYTES)
+            .stack_size(SIXTEEN_MEGA_BYTES)
             .build_global()
         {
             error!(?err, "failed to create rayon thread pool");
@@ -26,7 +26,7 @@ impl IkaRuntimes {
         let ika_node = tokio::runtime::Builder::new_multi_thread()
             .thread_name("ika-node-runtime")
             .worker_threads(4)
-            .thread_stack_size(TWENTY_MEGA_BYTES)
+            .thread_stack_size(SIXTEEN_MEGA_BYTES)
             .enable_all()
             .build()
             .expect("Failed to create ika-node runtime");
