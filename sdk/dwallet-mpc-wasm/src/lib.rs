@@ -5,7 +5,8 @@ use dwallet_mpc_centralized_party::{
     advance_centralized_sign_party, create_dkg_output,
     create_imported_dwallet_centralized_step_inner, decrypt_user_share_inner,
     encrypt_secret_key_share_and_prove, generate_secp256k1_cg_keypair_from_seed_internal,
-    sample_dwallet_keypair_inner, verify_secp_signature_inner, verify_secret_share,
+    network_dkg_public_output_to_protocol_pp_inner, sample_dwallet_keypair_inner,
+    verify_secp_signature_inner, verify_secret_share,
 };
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -48,6 +49,15 @@ pub fn generate_secp_cg_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErro
     let (public_key, private_key) =
         generate_secp256k1_cg_keypair_from_seed_internal(seed).map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
+}
+
+#[wasm_bindgen]
+pub fn network_dkg_public_output_to_protocol_pp(
+    network_dkg_public_output: Vec<u8>,
+) -> Result<JsValue, JsError> {
+    let protocol_pp = network_dkg_public_output_to_protocol_pp_inner(network_dkg_public_output)
+        .map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&protocol_pp)?)
 }
 
 /// Encrypts the given secret share to the given encryption key.

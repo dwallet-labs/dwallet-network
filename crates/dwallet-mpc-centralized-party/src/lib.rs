@@ -68,6 +68,16 @@ pub struct CentralizedDKGWasmResult {
     pub centralized_secret_output: Vec<u8>,
 }
 
+pub fn network_dkg_public_output_to_protocol_pp_inner(
+    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+) -> anyhow::Result<Vec<u8>> {
+    let public_parameters = protocol_public_parameters_by_key_scheme(
+        network_dkg_public_output,
+        DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+    )?;
+    Ok(bcs::to_bytes(&public_parameters)?)
+}
+
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// This function is invoked by the centralized party to produce:
