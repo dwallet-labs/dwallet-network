@@ -1,7 +1,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::dkg::{
-    DKGFirstParty, DKGFirstPartyPublicInputGenerator, DKGSecondParty,
-    DKGSecondPartyPublicInputGenerator,
+use crate::dwallet_mpc::dwallet_dkg::{
+    DWalletDKGFirstParty, DWalletDKGFirstPartyPublicInputGenerator, DWalletDKGSecondParty,
+    DWalletDKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::PublicInput;
@@ -34,6 +34,7 @@ use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
+use rand_chacha::rand_core::SeedableRng;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
@@ -50,7 +51,7 @@ use sui_types::id::ID;
 use tracing::warn;
 
 mod cryptographic_computations_orchestrator;
-mod dkg;
+mod dwallet_dkg;
 pub mod dwallet_mpc_service;
 mod encrypt_user_share;
 mod malicious_handler;
@@ -82,8 +83,12 @@ pub(crate) fn authority_name_to_party_id_from_committee(
 
     // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
     // Increment the index to transform it from 0-based to 1-based.
-    let tangible_party_id: u32 = authority_index.checked_add(1).expect("should never have more than 2^32 parties");
-    let tangible_party_id: u16 = tangible_party_id.try_into().expect("should never have more than 2^16 parties");
+    let tangible_party_id: u32 = authority_index
+        .checked_add(1)
+        .expect("should never have more than 2^32 parties");
+    let tangible_party_id: u16 = tangible_party_id
+        .try_into()
+        .expect("should never have more than 2^16 parties");
 
     Ok(tangible_party_id)
 }
@@ -97,19 +102,22 @@ pub(crate) fn generate_access_structure_from_committee(
         .iter()
         .map(|(name, stake)| {
             let tangible_party_id = authority_name_to_party_id_from_committee(committee, name)?;
-            let weight: Weight = (*stake).try_into().expect("should never have more than 2^16 stake units");
+            let weight: Weight = (*stake)
+                .try_into()
+                .expect("should never have more than 2^16 stake units");
 
-            Ok((
-                tangible_party_id,
-                weight,
-            ))
+            Ok((tangible_party_id, weight))
         })
         .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-    let threshold: PartyID = committee.quorum_threshold().try_into().expect("should never have more than 2^16 parties");
+    let threshold: PartyID = committee
+        .quorum_threshold()
+        .try_into()
+        .expect("should never have more than 2^16 parties");
 
     // TODO: use error directly
     WeightedThresholdAccessStructure::new(threshold, party_to_weight)
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))}
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+}
 
 /// Convert a given `party_id` to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
@@ -148,13 +156,14 @@ pub(crate) fn party_ids_to_authority_names(
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletSessionEventTrait>(
     event_contents: &[u8],
 ) -> Result<DWalletSessionEvent<T>, bcs::Error> {
+    // TODO(Scaly): this is a really bad idea, we should know how we fetched it and deserialize accordingly.
     bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents).or_else(|_| {
         bcs::from_bytes::<Field<ID, DWalletSessionEvent<T>>>(event_contents)
             .map(|field| field.value)
     })
 }
 
-/// Parses the session info from the event and returns it.
+/// Parses the session info from the event that was emitted in Sui from the Move code, and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(
     event: DBSuiEvent,
@@ -190,7 +199,7 @@ pub(crate) fn session_info_from_event(
         t if t
             == &DWalletSessionEvent::<DWalletDKGFirstRoundRequestEvent>::type_(packages_config) =>
         {
-            Ok(Some(dkg_first_party_session_info(
+            Ok(Some(dwallet_dkg_first_party_session_info(
                 deserialize_event_or_dynamic_field::<DWalletDKGFirstRoundRequestEvent>(
                     &event.contents,
                 )?,
@@ -201,7 +210,7 @@ pub(crate) fn session_info_from_event(
                 packages_config,
             ) =>
         {
-            Ok(Some(dkg_second_party_session_info(
+            Ok(Some(dwallet_dkg_second_party_session_info(
                 deserialize_event_or_dynamic_field::<DWalletDKGSecondRoundRequestEvent>(
                     &event.contents,
                 )?,
@@ -275,10 +284,10 @@ fn start_encrypted_share_verification_session_info(
     }
 }
 
-fn dkg_first_public_input(
+fn dwallet_dkg_first_public_input(
     protocol_public_parameters: &twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
-) -> DwalletMPCResult<<DKGFirstParty as mpc::Party>::PublicInput> {
-    <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(
+) -> DwalletMPCResult<<DWalletDKGFirstParty as mpc::Party>::PublicInput> {
+    <DWalletDKGFirstParty as DWalletDKGFirstPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters.clone(),
     )
 }
@@ -307,7 +316,7 @@ fn dwallet_imported_key_verification_request_event_session_info(
     }
 }
 
-fn dkg_first_party_session_info(
+fn dwallet_dkg_first_party_session_info(
     deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent>,
 ) -> anyhow::Result<SessionInfo> {
     Ok(SessionInfo {
@@ -318,11 +327,11 @@ fn dkg_first_party_session_info(
     })
 }
 
-fn dkg_second_public_input(
+fn dwallet_dkg_second_public_input(
     deserialized_event: &DWalletDKGSecondRoundRequestEvent,
     protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
-) -> DwalletMPCResult<<DKGSecondParty as mpc::Party>::PublicInput> {
-    <DKGSecondParty as DKGSecondPartyPublicInputGenerator>::generate_public_input(
+) -> DwalletMPCResult<<DWalletDKGSecondParty as mpc::Party>::PublicInput> {
+    <DWalletDKGSecondParty as DWalletDKGSecondPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
         deserialized_event.first_round_output.clone(),
         deserialized_event
@@ -331,7 +340,7 @@ fn dkg_second_public_input(
     )
 }
 
-fn dkg_second_party_session_info(
+fn dwallet_dkg_second_party_session_info(
     deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
@@ -350,7 +359,8 @@ pub(crate) fn presign_public_input(
 ) -> DwalletMPCResult<<PresignParty as mpc::Party>::PublicInput> {
     <PresignParty as PresignPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
-        // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it (remove unwrap).
+        // TODO: IMPORTANT: for global presign for schnorr / eddsa signature where the presign is not per dWallet - change the code to support it.
+        // The Presign Party Public Input would not take the `DKGOutput` as input in that case - probably the go-to would be to have it as an Option in the `Protocol` trait.
         deserialized_event.dwallet_public_output.clone().ok_or(
             DwalletMPCError::MPCSessionError {
                 session_identifier,
@@ -371,28 +381,31 @@ fn presign_party_session_info(
     }
 }
 
-fn get_expected_decrypters(
+/// Deterministically determine the set of expected decrypters for an optimization of the threshold decryption in the Sign protocol.
+/// Pseudo-randomly samples a subset of size `t + 10% * n`, i.e. we add an extra ten-percent of validators,
+/// of which at least `t` should be online (send message) during the first round of Sign, i.e. they are expected to decrypt the signature.
+///
+/// This is a non-stateful way to agree on a subset (that has to be the same for all validators);
+/// in the future, we may consider generating this subset in a stateful manner that takes into account the validators' online/offline states, malicious activities etc.
+/// This would be better, though harder to implement in practice, and will only be done if we see that the current method is ineffective; however, we expect 10% to cover for these effects successfully.
+///
+/// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
+fn generate_expected_decrypters(
     epoch_store: Arc<AuthorityPerEpochStore>,
     session_identifier: SessionIdentifier,
 ) -> DwalletMPCResult<HashSet<PartyID>> {
-    let committee = epoch_store.committee();
-    let total_votes = committee.total_votes();
-    let mut shuffled_committee = committee.shuffle_by_stake_from_seed(session_identifier);
-    let weighted_threshold_access_structure =
-        epoch_store.get_weighted_threshold_access_structure()?;
-    let expected_decrypters_votes = weighted_threshold_access_structure.threshold as u32
-        + (total_votes as f64 * 0.10).floor() as u32;
-    let mut votes_sum = 0;
-    let mut expected_decrypters = vec![];
-    while votes_sum < expected_decrypters_votes {
-        let authority_name = shuffled_committee.pop().unwrap();
-        let authority_index = epoch_store.authority_name_to_party_id(&authority_name)?;
-        votes_sum += weighted_threshold_access_structure.party_to_weight[&authority_index] as u32;
-        expected_decrypters.push(authority_index);
-    }
-    Ok(expected_decrypters
-        .into_iter()
-        .collect::<HashSet<PartyID>>())
+    let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
+    let total_weight = access_structure.total_weight();
+    let expected_decrypters_weight =
+        access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
+
+    let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier);
+    // TODO(Scaly): use direct error here
+    let expected_decrypters = access_structure
+        .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+
+    Ok(expected_decrypters)
 }
 
 fn sign_session_public_input(
@@ -408,7 +421,7 @@ fn sign_session_public_input(
             .dwallet_network_decryption_key_id,
     )?;
 
-    let expected_decrypters = get_expected_decrypters(
+    let expected_decrypters = generate_expected_decrypters(
         dwallet_mpc_manager.epoch_store()?,
         deserialized_event.session_identifier_digest(),
     )?;
@@ -743,7 +756,7 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                PublicInput::DKGFirst(dkg_first_public_input(&protocol_public_parameters)?),
+                PublicInput::DKGFirst(dwallet_dkg_first_public_input(&protocol_public_parameters)?),
                 None,
             ))
         }
@@ -762,7 +775,7 @@ pub(super) async fn session_input_from_event(
                     .dwallet_network_decryption_key_id,
             )?;
             Ok((
-                PublicInput::DKGSecond(dkg_second_public_input(
+                PublicInput::DKGSecond(dwallet_dkg_second_public_input(
                     &deserialized_event.event_data,
                     protocol_public_parameters,
                 )?),
