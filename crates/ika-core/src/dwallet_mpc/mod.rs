@@ -88,23 +88,28 @@ pub(crate) fn authority_name_to_party_id_from_committee(
     Ok(tangible_party_id)
 }
 
+/// Convert a `committee` to a `WeightedThresholdAccessStructure` that is used by the cryptographic library.
 pub(crate) fn generate_access_structure_from_committee(
     committee: &Committee,
 ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
-    let weighted_parties: HashMap<PartyID, Weight> = committee
+    let party_to_weight: HashMap<PartyID, Weight> = committee
         .voting_rights
         .iter()
-        .map(|(name, weight)| {
+        .map(|(name, stake)| {
+            let tangible_party_id = authority_name_to_party_id_from_committee(committee, name)?;
+            let weight: Weight = (*stake).try_into().expect("should never have more than 2^16 stake units");
+
             Ok((
-                authority_name_to_party_id_from_committee(committee, name)?,
-                *weight as Weight,
+                tangible_party_id,
+                weight,
             ))
         })
         .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
+    let threshold: PartyID = committee.quorum_threshold().try_into().expect("should never have more than 2^16 parties");
 
-    WeightedThresholdAccessStructure::new(committee.quorum_threshold() as PartyID, weighted_parties)
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
-}
+    // TODO: use error directly
+    WeightedThresholdAccessStructure::new(threshold, party_to_weight)
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))}
 
 /// Convert a given [`PartyID`] to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
