@@ -68,16 +68,24 @@ pub(crate) mod sign;
 pub const FIRST_EPOCH_ID: EpochId = 0;
 static LOG_DIR: OnceLock<PathBuf> = OnceLock::new();
 
+/// Convert an `authority_name` to the tangible party ID (`PartyID`) in the `committee`.
 pub(crate) fn authority_name_to_party_id_from_committee(
     committee: &Committee,
     authority_name: &AuthorityName,
 ) -> DwalletMPCResult<PartyID> {
-    committee
+    // The index of the authority `authority_name` in the `committee`.
+    // This value is in the range `0..number_of_tangible_parties`,
+    // and represents a unique index to the set of authority names.
+    let authority_index = committee
         .authority_index(authority_name)
-        // Need to add 1 because the authority index is 0-based,
-        // and the twopc_mpc library uses 1-based party IDs.
-        .map(|index| (index + 1) as PartyID)
-        .ok_or(DwalletMPCError::AuthorityNameNotFound(*authority_name))
+        .ok_or(DwalletMPCError::AuthorityNameNotFound(*authority_name))?;
+
+    // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
+    // Increment the index to transform it from 0-based to 1-based.
+    let tangible_party_id: u32 = authority_index.checked_add(1).expect("should never have more than 2^32 parties");
+    let tangible_party_id: u16 = tangible_party_id.try_into().expect("should never have more than 2^16 parties");
+
+    Ok(tangible_party_id)
 }
 
 pub(crate) fn generate_access_structure_from_committee(
