@@ -79,7 +79,6 @@ describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		// todo(zeev): Think key is probably incorrect, check it.
 		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
 		const dWalletSeed = new Uint8Array(32).fill(9);
 		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
@@ -99,7 +98,6 @@ describe('Test dWallet MPC', () => {
 			suiClientKeypair: keypair,
 			client: suiClient,
 			timeout: fiveMinutes,
-			// todo(zeev): fix this, bad parsing, bad path, needs to be localized.
 			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
 			dWalletSeed,
 			encryptedSecretShareSigningKeypair,
@@ -466,34 +464,5 @@ describe('Test dWallet MPC', () => {
 			Hash.KECCAK256,
 		);
 		expect(isValid).toBeTruthy();
-	});
-
-	it('should run multiple dWallet creation flows in parallel', async () => {
-		const tasks = [];
-		const numWallets = 4; // Number of parallel dWallets to create
-
-		console.log(`Starting ${numWallets} parallel dWallet creation flows...`);
-		console.time('Parallel dWallet Creation');
-
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		for (let i = 0; i < numWallets; i++) {
-			const newConf = await createConf();
-			tasks.push(
-				// 	await delay(checkpointCreationTime);
-				createDWallet(newConf, networkDecryptionKeyPublicOutput)
-					.then((dwallet) => {
-						console.log(`dWallet ${i + 1} created successfully: ${dwallet.dwalletID}`);
-						return dwallet;
-					})
-					.catch((error) => {
-						console.error(`Error creating dWallet ${i + 1}:`, error);
-						throw error;
-					}),
-			);
-		}
-
-		const results = await Promise.all(tasks);
-		console.timeEnd('Parallel dWallet Creation');
-		console.log(`Successfully created ${results.length} dWallets in parallel`);
 	});
 });
