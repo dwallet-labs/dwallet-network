@@ -986,7 +986,6 @@ public struct DWalletSessionEvent<E: copy + drop + store> has copy, drop, store 
     session_type: SessionType,
     /// Unique session identifier
     session_identifier_preimage: vector<u8>,
-    session_sequence_number: u64,
     /// Event-specific data
     event_data: E,
 }
@@ -2447,7 +2446,6 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         session_object_id: session.id.to_inner(),
         session_type,
         session_identifier_preimage: identifier_preimage,
-        session_sequence_number,
         event_data,
     };
 
@@ -2501,7 +2499,6 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
         // we pad the `session_identifier_preimage` differently for user and system events before hashing it.
         session_identifier_preimage: tx_context::fresh_object_address(ctx).to_bytes(),
         event_data,
-        session_sequence_number: self.session_management.next_system_session_sequence_number,
     };
     self.session_management.session_events.add(session_id, event);
     event::emit(event);
