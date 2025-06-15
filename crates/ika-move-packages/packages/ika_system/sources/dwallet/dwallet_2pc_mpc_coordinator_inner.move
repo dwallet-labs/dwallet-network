@@ -892,7 +892,7 @@ public enum SessionType has copy, drop, store {
         sequence_number: u64,
     },
     /// System-initiated session (always completes in current epoch)
-    System{
+    System {
         system_sequence_number: u64,
     },
 }
@@ -1952,9 +1952,9 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
     });
 
-    self.charge_and_create_current_epoch_dwallet_event(
-
-    );
+    // self.charge_and_create_current_epoch_dwallet_event(
+    //
+    // );
     self.initiate_system_dwallet_session(
         DWalletNetworkDKGEncryptionKeyRequestEvent {
             dwallet_network_encryption_key_id,
@@ -2493,7 +2493,7 @@ fun initiate_system_dwallet_session<E: copy + drop + store>(
     let event = DWalletSessionEvent {
         epoch: self.current_epoch,
         session_object_id: session_id,
-        session_type: SessionType::System,
+        session_type: SessionType::System { system_sequence_number: self.session_management.next_system_session_sequence_number },
         // Notice that `session_identifier_preimage` is only the pre-image. 
         // For user-initiated events, we guarantee uniqueness by guaranteeing it never repeats (which guarantees the hash is unique). 
         // For system events, we guarantee uniqueness by creating an object address, which can never repeat in Move (system-wide).
@@ -4097,7 +4097,7 @@ fun validate_and_initiate_sign(
 
     assert!(self.presign_sessions.contains(presign_cap.presign_id), EPresignNotExist);
     let presign = self.presign_sessions.remove(presign_cap.presign_id);
-
+    let sequence_number = self.get_and_update_next_user_sequence_number();
     let (dwallet, dwallet_public_output) = self.get_active_dwallet_and_public_output_mut(dwallet_id);
 
     let VerifiedPresignCap {
@@ -4140,7 +4140,6 @@ fun validate_and_initiate_sign(
     // Check that the curve of the dWallet matches that of the presign, and that the signature algorithm matches.
     assert!(dwallet.curve == curve, EDWalletMismatch);
     assert!(presign_signature_algorithm == signature_algorithm, EMessageApprovalMismatch);
-    let sequence_number = self.get_and_update_next_user_sequence_number();
     // Emit a `SignRequestEvent` to request the Ika network to sign `message`.
     let id = object::new(ctx);
     let sign_id = id.to_inner();
