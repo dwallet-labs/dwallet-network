@@ -73,7 +73,7 @@ pub struct SystemCheckpointMessage {
 
 impl Message for SystemCheckpointMessage {
     type DigestType = SystemCheckpointMessageDigest;
-    const SCOPE: IntentScope = IntentScope::SystemCheckpoint;
+    const SCOPE: IntentScope = IntentScope::SystemCheckpointMessage;
 
     fn digest(&self) -> Self::DigestType {
         SystemCheckpointMessageDigest::new(default_hash(self))
@@ -163,7 +163,7 @@ impl CertifiedSystemCheckpointMessage {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::SystemCheckpoint),
+            Intent::ika_app(IntentScope::SystemCheckpointMessage),
             committee,
         )
     }
@@ -193,7 +193,7 @@ impl SignedSystemCheckpointMessage {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
             self.data(),
-            Intent::ika_app(IntentScope::SystemCheckpoint),
+            Intent::ika_app(IntentScope::SystemCheckpointMessage),
             committee,
         )
     }
