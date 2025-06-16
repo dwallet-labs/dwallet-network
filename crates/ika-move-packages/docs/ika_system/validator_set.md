@@ -476,7 +476,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 10;
 </code></pre>
 
 
@@ -485,8 +485,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: u64 = 11;
 </code></pre>
 
 
@@ -495,8 +494,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: u64 = 12;
 </code></pre>
 
 
