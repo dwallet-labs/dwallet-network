@@ -737,9 +737,9 @@ impl DWalletMPCOutputDigest {
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
-pub struct SystemCheckpointDigest(Digest);
+pub struct SystemCheckpointMessageDigest(Digest);
 
-impl SystemCheckpointDigest {
+impl SystemCheckpointMessageDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -769,45 +769,45 @@ impl SystemCheckpointDigest {
     }
 }
 
-impl AsRef<[u8]> for SystemCheckpointDigest {
+impl AsRef<[u8]> for SystemCheckpointMessageDigest {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl AsRef<[u8; 32]> for SystemCheckpointDigest {
+impl AsRef<[u8; 32]> for SystemCheckpointMessageDigest {
     fn as_ref(&self) -> &[u8; 32] {
         self.0.as_ref()
     }
 }
 
-impl From<SystemCheckpointDigest> for [u8; 32] {
-    fn from(digest: SystemCheckpointDigest) -> Self {
+impl From<SystemCheckpointMessageDigest> for [u8; 32] {
+    fn from(digest: SystemCheckpointMessageDigest) -> Self {
         digest.into_inner()
     }
 }
 
-impl From<[u8; 32]> for SystemCheckpointDigest {
+impl From<[u8; 32]> for SystemCheckpointMessageDigest {
     fn from(digest: [u8; 32]) -> Self {
         Self::new(digest)
     }
 }
 
-impl TryFrom<Vec<u8>> for SystemCheckpointDigest {
+impl TryFrom<Vec<u8>> for SystemCheckpointMessageDigest {
     type Error = IkaError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, IkaError> {
-        Digest::try_from(bytes).map(SystemCheckpointDigest)
+        Digest::try_from(bytes).map(SystemCheckpointMessageDigest)
     }
 }
 
-impl fmt::Display for SystemCheckpointDigest {
+impl fmt::Display for SystemCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl fmt::Debug for SystemCheckpointDigest {
+impl fmt::Debug for SystemCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("SystemCheckpointDigest")
             .field(&self.0)
@@ -815,19 +815,19 @@ impl fmt::Debug for SystemCheckpointDigest {
     }
 }
 
-impl fmt::LowerHex for SystemCheckpointDigest {
+impl fmt::LowerHex for SystemCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
 }
 
-impl fmt::UpperHex for SystemCheckpointDigest {
+impl fmt::UpperHex for SystemCheckpointMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::UpperHex::fmt(&self.0, f)
     }
 }
 
-impl std::str::FromStr for SystemCheckpointDigest {
+impl std::str::FromStr for SystemCheckpointMessageDigest {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -837,7 +837,7 @@ impl std::str::FromStr for SystemCheckpointDigest {
             return Err(anyhow::anyhow!("Invalid digest length. Expected 32 bytes"));
         }
         result.copy_from_slice(&buffer);
-        Ok(SystemCheckpointDigest::new(result))
+        Ok(SystemCheckpointMessageDigest::new(result))
     }
 }
 
