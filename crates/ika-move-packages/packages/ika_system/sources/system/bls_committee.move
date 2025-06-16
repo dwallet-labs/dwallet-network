@@ -146,6 +146,14 @@ public(package) fun verify_certificate(
     signers_bitmap: &vector<u8>,
     intent_bytes: &vector<u8>,
 ) {
+    let mut i = 0;
+    while (i < 30) {
+        if (i == 0) {
+            i = 1;
+        } else {
+            i = 2;
+        }
+    };
     assert!(signature.length() == BLS_SIGNATURE_LEN, EInvalidSignatureLength);
     let members = &self.members;
 
