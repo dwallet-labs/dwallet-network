@@ -1,4 +1,4 @@
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
 use crate::sui_connector::sui_syncer::SuiSyncer;

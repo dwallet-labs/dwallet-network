@@ -794,7 +794,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u32 = 0;
 </code></pre>
 
 
@@ -803,7 +803,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u32 = 1;
 </code></pre>
 
 
@@ -812,7 +812,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u32 = 2;
 </code></pre>
 
 
@@ -821,7 +821,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u32 = 3;
 </code></pre>
 
 
@@ -830,7 +830,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u32 = 4;
 </code></pre>
 
 
@@ -839,7 +839,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u32 = 5;
 </code></pre>
 
 
@@ -848,7 +848,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u32 = 6;
 </code></pre>
 
 
@@ -857,7 +857,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u32 = 7;
 </code></pre>
 
 
@@ -866,7 +866,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u64 = 8;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u32 = 8;
 </code></pre>
 
 
@@ -875,7 +875,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u32 = 9;
 </code></pre>
 
 
@@ -884,7 +884,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>: u64 = 10;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>: u32 = 10;
 </code></pre>
 
 
@@ -2564,9 +2564,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     // Note: the order of these fields, and the number must correspond to the Rust code in
     // `crates/ika-types/src/messages_system_checkpoints.rs`.
     <b>while</b> (i &lt; len) {
-        <b>let</b> message_data_type = bcs_body.peel_vec_length();
+        <b>let</b> message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses params message BCS bytes directly.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a> =&gt; {
                 <b>let</b> next_protocol_version = bcs_body.peel_u64();
                 self.next_protocol_version.fill(next_protocol_version);

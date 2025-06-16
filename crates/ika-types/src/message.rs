@@ -92,7 +92,7 @@ pub struct DWalletImportedKeyVerificationOutput {
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
-pub enum MessageKind {
+pub enum DWalletMessageKind {
     RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput),
     RespondDWalletEncryptedUserShare(EncryptedUserShareOutput),
@@ -107,35 +107,37 @@ pub enum MessageKind {
     SetGasFeeReimbursementSuiSystemCallValue(u64),
 }
 
-impl MessageKind {
+impl DWalletMessageKind {
     pub fn name(&self) -> &'static str {
         match self {
-            MessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+            DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
                 "RespondDWalletDKGFirstRoundOutput"
             }
-            MessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+            DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
                 "RespondDWalletDKGSecondRoundOutput"
             }
-            MessageKind::RespondDWalletEncryptedUserShare(_) => "RespondDWalletEncryptedUserShare",
-            MessageKind::RespondDWalletPresign(_) => "RespondDWalletPresign",
-            MessageKind::RespondDWalletSign(_) => "RespondDWalletSign",
-            MessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+            DWalletMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                "RespondDWalletEncryptedUserShare"
+            }
+            DWalletMessageKind::RespondDWalletPresign(_) => "RespondDWalletPresign",
+            DWalletMessageKind::RespondDWalletSign(_) => "RespondDWalletSign",
+            DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
                 "RespondDWalletPartialSignatureVerificationOutput"
             }
-            MessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
                 "RespondDWalletMPCNetworkDKGOutput"
             }
-            MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+            DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
                 "RespondDWalletMPCNetworkReconfigurationOutput"
             }
-            MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+            DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
                 "RespondMakeDWalletUserSecretKeySharesPublic"
             }
-            MessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+            DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
                 "RespondDWalletImportedKeyVerificationOutput"
             }
-            MessageKind::SetMaxActiveSessionsBuffer(_) => "SetMaxActiveSessionsBuffer",
-            MessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
+            DWalletMessageKind::SetMaxActiveSessionsBuffer(_) => "SetMaxActiveSessionsBuffer",
+            DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
                 "SetGasFeeReimbursementSuiSystemCallValue"
             }
         }
@@ -146,64 +148,64 @@ impl MessageKind {
     }
 }
 
-impl Display for MessageKind {
+impl Display for DWalletMessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            MessageKind::RespondDWalletMPCNetworkDKGOutput(output) => {
+            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(output) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondDwalletMPCNetworkDKGOutput {:?}",
                     output
                 )?;
             }
-            MessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+            DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
                 writeln!(writer, "MessageKind : RespondDwalletDKGFirstRoundOutput")?;
             }
-            MessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+            DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
                 writeln!(writer, "MessageKind : RespondDwalletDKGSecondRoundOutput")?;
             }
-            MessageKind::RespondDWalletPresign(_) => {
+            DWalletMessageKind::RespondDWalletPresign(_) => {
                 writeln!(writer, "MessageKind : RespondDwalletPresign")?;
             }
-            MessageKind::RespondDWalletSign(_) => {
+            DWalletMessageKind::RespondDWalletSign(_) => {
                 writeln!(writer, "MessageKind : RespondDwalletSign")?;
             }
-            MessageKind::RespondDWalletEncryptedUserShare(_) => {
+            DWalletMessageKind::RespondDWalletEncryptedUserShare(_) => {
                 writeln!(writer, "MessageKind : RespondDwalletEncryptedUserShare")?;
             }
-            MessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+            DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondDwalletPartialSignatureVerificationOutput"
                 )?;
             }
-            MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+            DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput"
                 )?;
             }
-            MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+            DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic"
                 )?;
             }
-            MessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+            DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondDWalletImportedKeyVerificationOutput"
                 )?;
             }
-            MessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+            DWalletMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
                 writeln!(
                     writer,
                     "MessageKind : SetMaxActiveSessionsBuffer({})",
                     buffer_size
                 )?;
             }
-            MessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
+            DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
                 writeln!(
                     writer,
                     "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",

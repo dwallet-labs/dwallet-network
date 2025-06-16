@@ -94,9 +94,10 @@ pub use generated::{
     state_sync_server::{StateSync, StateSyncServer},
 };
 use ika_archival::reader::ArchiveReaderBalancer;
-use ika_types::digests::{ChainIdentifier, SystemCheckpointDigest};
+use ika_types::digests::{ChainIdentifier, SystemCheckpointMessageDigest};
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpointMessage, SystemCheckpointSequenceNumber,
+    VerifiedSystemCheckpointMessage,
 };
 pub use server::GetCheckpointMessageRequest;
 pub use server::GetDWalletCheckpointAvailabilityResponse;
@@ -109,7 +110,7 @@ pub use server::GetDWalletCheckpointAvailabilityResponse;
 pub struct Handle {
     sender: mpsc::Sender<StateSyncMessage>,
     dwallet_checkpoint_event_sender: broadcast::Sender<VerifiedDWalletCheckpointMessage>,
-    system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
+    system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpointMessage>,
 }
 
 impl Handle {
@@ -137,7 +138,7 @@ impl Handle {
         self.dwallet_checkpoint_event_sender.subscribe()
     }
 
-    pub async fn send_system_checkpoint(&self, system_checkpoint: VerifiedSystemCheckpoint) {
+    pub async fn send_system_checkpoint(&self, system_checkpoint: VerifiedSystemCheckpointMessage) {
         self.sender
             .send(StateSyncMessage::VerifiedSystemCheckpointMessage(Box::new(
                 system_checkpoint,
@@ -148,7 +149,7 @@ impl Handle {
 
     pub fn subscribe_to_synced_system_checkpoints(
         &self,
-    ) -> broadcast::Receiver<VerifiedSystemCheckpoint> {
+    ) -> broadcast::Receiver<VerifiedSystemCheckpointMessage> {
         self.system_checkpoint_event_sender.subscribe()
     }
 }
@@ -161,9 +162,10 @@ struct PeerHeights {
     sequence_number_to_digest:
         HashMap<DWalletCheckpointSequenceNumber, DWalletCheckpointMessageDigest>,
 
-    unprocessed_system_checkpoint: HashMap<SystemCheckpointDigest, CertifiedSystemCheckpoint>,
+    unprocessed_system_checkpoint:
+        HashMap<SystemCheckpointMessageDigest, CertifiedSystemCheckpointMessage>,
     sequence_number_to_digest_system_checkpoint:
-        HashMap<SystemCheckpointSequenceNumber, SystemCheckpointDigest>,
+        HashMap<SystemCheckpointSequenceNumber, SystemCheckpointMessageDigest>,
 
     #[allow(unused)]
     // The amount of time to wait before retry if there are no peers to sync content from.
@@ -196,7 +198,7 @@ impl PeerHeights {
             .max()?
     }
 
-    pub fn highest_known_system_checkpoint(&self) -> Option<&CertifiedSystemCheckpoint> {
+    pub fn highest_known_system_checkpoint(&self) -> Option<&CertifiedSystemCheckpointMessage> {
         self.highest_known_system_checkpoint_sequence_number()
             .and_then(|s| self.sequence_number_to_digest_system_checkpoint.get(&s))
             .and_then(|digest| self.unprocessed_system_checkpoint.get(digest))
@@ -243,7 +245,7 @@ impl PeerHeights {
     pub fn update_peer_info_with_system_checkpoint(
         &mut self,
         peer_id: PeerId,
-        params: CertifiedSystemCheckpoint,
+        params: CertifiedSystemCheckpointMessage,
     ) -> bool {
         debug!("Update peer info with params message");
 
@@ -340,7 +342,10 @@ impl PeerHeights {
     }
 
     // TODO: also record who gives this system_checkpoint info for peer quality measurement?
-    pub fn insert_system_checkpoint(&mut self, system_checkpoint: CertifiedSystemCheckpoint) {
+    pub fn insert_system_checkpoint(
+        &mut self,
+        system_checkpoint: CertifiedSystemCheckpointMessage,
+    ) {
         let digest = *system_checkpoint.digest();
         let sequence_number = *system_checkpoint.sequence_number();
         self.unprocessed_system_checkpoint
@@ -350,7 +355,7 @@ impl PeerHeights {
     }
 
     #[allow(unused)]
-    pub fn remove_system_checkpoint(&mut self, digest: &SystemCheckpointDigest) {
+    pub fn remove_system_checkpoint(&mut self, digest: &SystemCheckpointMessageDigest) {
         if let Some(system_checkpoint) = self.unprocessed_system_checkpoint.remove(digest) {
             self.sequence_number_to_digest_system_checkpoint
                 .remove(system_checkpoint.sequence_number());
@@ -360,7 +365,7 @@ impl PeerHeights {
     pub fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Option<&CertifiedSystemCheckpoint> {
+    ) -> Option<&CertifiedSystemCheckpointMessage> {
         self.sequence_number_to_digest_system_checkpoint
             .get(&sequence_number)
             .and_then(|digest| self.get_system_checkpoint_by_digest(digest))
@@ -368,8 +373,8 @@ impl PeerHeights {
 
     pub fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Option<&CertifiedSystemCheckpoint> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Option<&CertifiedSystemCheckpointMessage> {
         self.unprocessed_system_checkpoint.get(digest)
     }
 
@@ -460,9 +465,9 @@ enum StateSyncMessage {
     // synced at the same time, only the highest checkpoint is sent.
     SyncedDWalletCheckpoint(Box<VerifiedDWalletCheckpointMessage>),
 
-    VerifiedSystemCheckpointMessage(Box<VerifiedSystemCheckpoint>),
+    VerifiedSystemCheckpointMessage(Box<VerifiedSystemCheckpointMessage>),
 
-    SyncedSystemCheckpoint(Box<VerifiedSystemCheckpoint>),
+    SyncedSystemCheckpoint(Box<VerifiedSystemCheckpointMessage>),
 }
 
 struct StateSyncEventLoop<S> {
@@ -486,7 +491,7 @@ struct StateSyncEventLoop<S> {
     sync_checkpoint_from_archive_task: Option<AbortHandle>,
     chain_identifier: ChainIdentifier,
 
-    system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpoint>,
+    system_checkpoint_event_sender: broadcast::Sender<VerifiedSystemCheckpointMessage>,
     sync_system_checkpoints_task: Option<AbortHandle>,
     system_checkpoint_download_limit_layer: Option<SystemCheckpointDownloadLimitLayer>,
     sync_system_checkpoint_from_archive_task: Option<AbortHandle>,
@@ -685,7 +690,7 @@ where
     #[instrument(level = "debug", skip_all)]
     fn handle_system_checkpoint_from_consensus(
         &mut self,
-        system_checkpoint: Box<VerifiedSystemCheckpoint>,
+        system_checkpoint: Box<VerifiedSystemCheckpointMessage>,
     ) {
         let latest_system_checkpoint_sequence_number = self
             .store
@@ -900,7 +905,7 @@ where
 
     fn spawn_notify_peers_of_system_checkpoint(
         &mut self,
-        system_checkpoint: VerifiedSystemCheckpoint,
+        system_checkpoint: VerifiedSystemCheckpointMessage,
     ) {
         let task = notify_peers_of_system_checkpoint(
             self.network.clone(),
@@ -936,7 +941,7 @@ async fn notify_peers_of_checkpoint(
 async fn notify_peers_of_system_checkpoint(
     network: anemo::Network,
     peer_heights: Arc<RwLock<PeerHeights>>,
-    system_checkpoint: VerifiedSystemCheckpoint,
+    system_checkpoint: VerifiedSystemCheckpointMessage,
     timeout: Duration,
 ) {
     let futs = peer_heights
@@ -1356,7 +1361,7 @@ async fn get_latest_from_peer_system_checkpoint(
 async fn query_peer_for_latest_info_system_checkpoint(
     client: &mut StateSyncClient<anemo::Peer>,
     timeout: Duration,
-) -> Option<CertifiedSystemCheckpoint> {
+) -> Option<CertifiedSystemCheckpointMessage> {
     let request = Request::new(()).with_timeout(timeout);
     let response = client
         .get_system_checkpoint_availability(request)
@@ -1448,10 +1453,13 @@ async fn sync_to_system_checkpoint<S>(
     store: S,
     peer_heights: Arc<RwLock<PeerHeights>>,
     metrics: Metrics,
-    pinned_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    pinned_system_checkpoints: Vec<(
+        SystemCheckpointSequenceNumber,
+        SystemCheckpointMessageDigest,
+    )>,
     system_checkpoint_header_download_concurrency: usize,
     timeout: Duration,
-    system_checkpoint: CertifiedSystemCheckpoint,
+    system_checkpoint: CertifiedSystemCheckpointMessage,
 ) -> Result<()>
 where
     S: WriteStore,
@@ -1549,7 +1557,7 @@ where
 
         // We can't verify the system_checkpoint
         let system_checkpoint = maybe_system_checkpoint
-            .map(VerifiedSystemCheckpoint::new_unchecked)
+            .map(VerifiedSystemCheckpointMessage::new_unchecked)
             .ok_or_else(|| {
                 anyhow::anyhow!("no peers were able to help sync system_checkpoint {next}")
             })?;

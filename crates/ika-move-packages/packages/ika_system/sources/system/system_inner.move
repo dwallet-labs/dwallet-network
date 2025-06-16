@@ -40,17 +40,17 @@ const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 // System checkpoint message data type constants corresponding to system parameters
 // Note: the order of these fields, and the number must correspond to the Rust code in
 // `crates/ika-types/src/messages_system_checkpoints.rs`.
-const SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u64 = 0;
-const SET_EPOCH_DURATION_MS_MESSAGE_TYPE: u64 = 1;
-const SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u64 = 2;
-const SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u64 = 3;
-const SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u64 = 4;
-const SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 5;
-const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 6;
-const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
-const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
-const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
-const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
+const SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u32 = 0;
+const SET_EPOCH_DURATION_MS_MESSAGE_TYPE: u32 = 1;
+const SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u32 = 2;
+const SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u32 = 3;
+const SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u32 = 4;
+const SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u32 = 5;
+const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u32 = 6;
+const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u32 = 7;
+const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u32 = 8;
+const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u32 = 9;
+const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 10;
 
 // === Errors ===
 
@@ -851,9 +851,9 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
     // Note: the order of these fields, and the number must correspond to the Rust code in
     // `crates/ika-types/src/messages_system_checkpoints.rs`.
     while (i < len) {
-        let message_data_type = bcs_body.peel_vec_length();
+        let message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses params message BCS bytes directly.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE => {
                 let next_protocol_version = bcs_body.peel_u64();
                 self.next_protocol_version.fill(next_protocol_version);

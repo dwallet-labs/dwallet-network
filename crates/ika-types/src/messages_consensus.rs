@@ -256,7 +256,7 @@ impl ConsensusTransaction {
         data: DWalletCheckpointSignatureMessage,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.dwallet_checkpoint_message
+        data.checkpoint_message
             .auth_sig()
             .signature
             .hash(&mut hasher);
@@ -269,7 +269,7 @@ impl ConsensusTransaction {
 
     pub fn new_system_checkpoint_signature_message(data: SystemCheckpointSignatureMessage) -> Self {
         let mut hasher = DefaultHasher::new();
-        data.system_checkpoint
+        data.checkpoint_message
             .auth_sig()
             .signature
             .hash(&mut hasher);
@@ -300,8 +300,8 @@ impl ConsensusTransaction {
         match &self.kind {
             ConsensusTransactionKind::DWalletCheckpointSignature(data) => {
                 ConsensusTransactionKey::DWalletCheckpointSignature(
-                    data.dwallet_checkpoint_message.auth_sig().authority,
-                    data.dwallet_checkpoint_message.sequence_number,
+                    data.checkpoint_message.auth_sig().authority,
+                    data.checkpoint_message.sequence_number,
                 )
             }
             ConsensusTransactionKind::CapabilityNotificationV1(cap) => {
@@ -332,8 +332,8 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::SystemCheckpointSignature(data) => {
                 ConsensusTransactionKey::SystemCheckpointSignature(
-                    data.system_checkpoint.auth_sig().authority,
-                    data.system_checkpoint.sequence_number,
+                    data.checkpoint_message.auth_sig().authority,
+                    data.checkpoint_message.sequence_number,
                 )
             }
         }

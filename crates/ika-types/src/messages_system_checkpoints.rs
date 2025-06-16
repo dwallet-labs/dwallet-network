@@ -18,7 +18,7 @@ use tap::TapFallible;
 use tracing::warn;
 
 pub use crate::digests::SystemCheckpointContentsDigest;
-pub use crate::digests::SystemCheckpointDigest;
+pub use crate::digests::SystemCheckpointMessageDigest;
 
 pub type SystemCheckpointSequenceNumber = u64;
 pub type SystemCheckpointTimestamp = u64;
@@ -27,7 +27,7 @@ pub type SystemCheckpointTimestamp = u64;
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `system_inner.move`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum SystemCheckpointKind {
+pub enum SystemCheckpointMessageKind {
     /// Set the next protocol version for the next epoch.
     SetNextConfigVersion(ProtocolVersion),
     /// Set a new epoch duration in milliseconds.
@@ -61,32 +61,32 @@ pub enum SystemCheckpointKind {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SystemCheckpoint {
+pub struct SystemCheckpointMessage {
     pub epoch: EpochId,
     pub sequence_number: SystemCheckpointSequenceNumber,
     /// Timestamp of the system checkpoint - number of milliseconds from the Unix epoch
     /// System checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
     /// system checkpoints can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: SystemCheckpointTimestamp,
-    pub messages: Vec<SystemCheckpointKind>,
+    pub messages: Vec<SystemCheckpointMessageKind>,
 }
 
-impl Message for SystemCheckpoint {
-    type DigestType = SystemCheckpointDigest;
+impl Message for SystemCheckpointMessage {
+    type DigestType = SystemCheckpointMessageDigest;
     const SCOPE: IntentScope = IntentScope::SystemCheckpoint;
 
     fn digest(&self) -> Self::DigestType {
-        SystemCheckpointDigest::new(default_hash(self))
+        SystemCheckpointMessageDigest::new(default_hash(self))
     }
 }
 
-impl SystemCheckpoint {
+impl SystemCheckpointMessage {
     pub fn new(
         epoch: EpochId,
         sequence_number: SystemCheckpointSequenceNumber,
-        messages: Vec<SystemCheckpointKind>,
+        messages: Vec<SystemCheckpointMessageKind>,
         timestamp_ms: SystemCheckpointTimestamp,
-    ) -> SystemCheckpoint {
+    ) -> SystemCheckpointMessage {
         Self {
             epoch,
             sequence_number,
@@ -130,7 +130,7 @@ impl SystemCheckpoint {
     }
 }
 
-impl Display for SystemCheckpoint {
+impl Display for SystemCheckpointMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -148,40 +148,17 @@ impl Display for SystemCheckpoint {
 // or other authenticated data structures to support light
 // clients and more efficient sync protocols.
 
-pub type SystemCheckpointEnvelope<S> = Envelope<SystemCheckpoint, S>;
-pub type CertifiedSystemCheckpoint = SystemCheckpointEnvelope<AuthorityStrongQuorumSignInfo>;
-pub type SignedSystemCheckpoint = SystemCheckpointEnvelope<AuthoritySignInfo>;
+pub type SystemCheckpointMessageEnvelope<S> = Envelope<SystemCheckpointMessage, S>;
+pub type CertifiedSystemCheckpointMessage =
+    SystemCheckpointMessageEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type SignedSystemCheckpointMessage = SystemCheckpointMessageEnvelope<AuthoritySignInfo>;
 
-pub type VerifiedSystemCheckpoint =
-    VerifiedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
-pub type TrustedSystemCheckpoint = TrustedEnvelope<SystemCheckpoint, AuthorityStrongQuorumSignInfo>;
+pub type VerifiedSystemCheckpointMessage =
+    VerifiedEnvelope<SystemCheckpointMessage, AuthorityStrongQuorumSignInfo>;
+pub type TrustedSystemCheckpointMessage =
+    TrustedEnvelope<SystemCheckpointMessage, AuthorityStrongQuorumSignInfo>;
 
-impl CertifiedSystemCheckpoint {
-    pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
-        self.data().verify_epoch(self.auth_sig().epoch)?;
-        self.auth_sig().verify_secure(
-            self.data(),
-            Intent::ika_app(IntentScope::SystemCheckpoint),
-            committee,
-        )
-    }
-
-    pub fn try_into_verified(self, committee: &Committee) -> IkaResult<VerifiedSystemCheckpoint> {
-        self.verify_authority_signatures(committee)?;
-        Ok(VerifiedSystemCheckpoint::new_from_verified(self))
-    }
-
-    pub fn into_summary_and_sequence(self) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
-        let summary = self.into_data();
-        (summary.sequence_number, summary)
-    }
-
-    pub fn get_validator_signature(self) -> AggregateAuthoritySignature {
-        self.auth_sig().signature.clone()
-    }
-}
-
-impl SignedSystemCheckpoint {
+impl CertifiedSystemCheckpointMessage {
     pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
         self.data().verify_epoch(self.auth_sig().epoch)?;
         self.auth_sig().verify_secure(
@@ -194,14 +171,46 @@ impl SignedSystemCheckpoint {
     pub fn try_into_verified(
         self,
         committee: &Committee,
-    ) -> IkaResult<VerifiedEnvelope<SystemCheckpoint, AuthoritySignInfo>> {
+    ) -> IkaResult<VerifiedSystemCheckpointMessage> {
         self.verify_authority_signatures(committee)?;
-        Ok(VerifiedEnvelope::<SystemCheckpoint, AuthoritySignInfo>::new_from_verified(self))
+        Ok(VerifiedSystemCheckpointMessage::new_from_verified(self))
+    }
+
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (SystemCheckpointSequenceNumber, SystemCheckpointMessage) {
+        let summary = self.into_data();
+        (summary.sequence_number, summary)
+    }
+
+    pub fn get_validator_signature(self) -> AggregateAuthoritySignature {
+        self.auth_sig().signature.clone()
     }
 }
 
-impl VerifiedSystemCheckpoint {
-    pub fn into_summary_and_sequence(self) -> (SystemCheckpointSequenceNumber, SystemCheckpoint) {
+impl SignedSystemCheckpointMessage {
+    pub fn verify_authority_signatures(&self, committee: &Committee) -> IkaResult {
+        self.data().verify_epoch(self.auth_sig().epoch)?;
+        self.auth_sig().verify_secure(
+            self.data(),
+            Intent::ika_app(IntentScope::SystemCheckpoint),
+            committee,
+        )
+    }
+
+    pub fn try_into_verified(
+        self,
+        committee: &Committee,
+    ) -> IkaResult<VerifiedEnvelope<SystemCheckpointMessage, AuthoritySignInfo>> {
+        self.verify_authority_signatures(committee)?;
+        Ok(VerifiedEnvelope::<SystemCheckpointMessage, AuthoritySignInfo>::new_from_verified(self))
+    }
+}
+
+impl VerifiedSystemCheckpointMessage {
+    pub fn into_summary_and_sequence(
+        self,
+    ) -> (SystemCheckpointSequenceNumber, SystemCheckpointMessage) {
         self.into_inner().into_summary_and_sequence()
     }
 }
@@ -209,12 +218,12 @@ impl VerifiedSystemCheckpoint {
 /// This is a message validators publish to consensus in order to sign system checkpoint
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SystemCheckpointSignatureMessage {
-    pub system_checkpoint: SignedSystemCheckpoint,
+    pub checkpoint_message: SignedSystemCheckpointMessage,
 }
 
 impl SystemCheckpointSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.system_checkpoint
+        self.checkpoint_message
             .verify_authority_signatures(committee)
     }
 }
