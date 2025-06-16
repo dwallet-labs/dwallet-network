@@ -17,8 +17,7 @@ const BLS_SIGNATURE_LEN: u64 = 96;
 
 const EInvalidBitmap: u64 = 0;
 
-#[error]
-const EInvalidSignatureLength: vector<u8> = b"The length of the provided bls signature is incorrect.";
+const EInvalidSignatureLength: u64 = b"The length of the provided bls signature is incorrect.";
 
 #[error]
 const EInvalidSignature: vector<u8> = b"Invalid certificate signature.";

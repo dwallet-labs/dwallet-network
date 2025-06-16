@@ -34,32 +34,23 @@ const ED25519_KEY_LEN: u64 = 32;
 // === Errors ===
 
 /// The proof of possession verification failed
-#[error]
-const EInvalidProofOfPossession: vector<u8> = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
+const EInvalidProofOfPossession: u64 = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
 
-#[error]
-const EInvalidNameLength: vector<u8> = b"Validator name length exceeds maximum allowed length.";
+const EInvalidNameLength: u64 = 0;
 
-#[error]
-const EMetadataInvalidProtocolPubkey: vector<u8> = b"Invalid protocol_pubkey_bytes field in ValidatorMetadata.";
+const EMetadataInvalidProtocolPubkey: u64 = 1;
 
-#[error]
-const EMetadataInvalidNetworkPubkey: vector<u8> = b"Invalid network_pubkey_bytes field in ValidatorMetadata.";
+const EMetadataInvalidNetworkPubkey: u64 = 2;
 
-#[error]
-const EMetadataInvalidConsensusPubkey: vector<u8> = b"Invalid consensus_pubkey_bytes field in ValidatorMetadata.";
+const EMetadataInvalidConsensusPubkey: u64 = 3;
 
-#[error]
-const EMetadataInvalidNetworkAddress: vector<u8> = b"Invalid network_address field in ValidatorMetadata.";
+const EMetadataInvalidNetworkAddress: u64 = 4;
 
-#[error]
-const EMetadataInvalidP2pAddress: vector<u8> = b"Invalid p2p_address field in ValidatorMetadata.";
+const EMetadataInvalidP2pAddress: u64 = 5;
 
-#[error]
-const EMetadataInvalidConsensusAddress: vector<u8> = b"Invalid consensus_address field in ValidatorMetadata.";
+const EMetadataInvalidConsensusAddress: u64 = 6;
 
-#[error]
-const EValidatorMetadataExceedingLengthLimit: vector<u8> = b"Validator Metadata is too long.";
+const EValidatorMetadataExceedingLengthLimit: u64 = 7;
 
 // === Structs ===
 
