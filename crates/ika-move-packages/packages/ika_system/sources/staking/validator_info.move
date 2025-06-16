@@ -33,9 +33,6 @@ const ED25519_KEY_LEN: u64 = 32;
 
 // === Errors ===
 
-/// The proof of possession verification failed
-const EInvalidProofOfPossession: u64 = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
-
 const EInvalidNameLength: u64 = 0;
 
 const EMetadataInvalidProtocolPubkey: u64 = 1;
@@ -51,6 +48,9 @@ const EMetadataInvalidP2pAddress: u64 = 5;
 const EMetadataInvalidConsensusAddress: u64 = 6;
 
 const EValidatorMetadataExceedingLengthLimit: u64 = 7;
+
+/// The proof of possession verification failed
+const EInvalidProofOfPossession: u64 = 8;
 
 // === Structs ===
 

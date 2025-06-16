@@ -49,13 +49,9 @@ const ECannotReportOneself: u64 = 6;
 const EReportRecordNotFound: u64 = 7;
 const ECannotJoinActiveSet: u64 = 8;
 const EBpsTooLarge: u64 = 9;
-const EInvalidCap: u64 = 101;
-
-#[error]
-const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch can be called only after advance epoch.";
-
-#[error]
-const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
+const EInvalidCap: u64 = 10;
+const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 11;
+const EAdvanceEpochOnlyAfterProcessMidEpoch: u64 = 12;
 
 // === Structs ===
 

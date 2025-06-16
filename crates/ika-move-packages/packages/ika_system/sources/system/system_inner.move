@@ -59,15 +59,9 @@ const EActiveBlsCommitteeMustInitialize: u64 = 1;
 const EIncorrectEpochInIkaSystemCheckpoint: u64 = 2;
 const EWrongIkaSystemCheckpointSequenceNumber: u64 = 3;
 const EApprovedUpgradeNotFound: u64 = 4;
-
-#[error]
-const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
-
-#[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
-
-#[error]
-const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+const EUnauthorizedProtocolCap: u64 = 5;
+const ECannotInitialize: u64 = 6;
+const EHaveNotReachedMidEpochTime: u64 = 7;
 
 // === Structs ===
 
