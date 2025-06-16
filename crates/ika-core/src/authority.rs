@@ -49,7 +49,7 @@ use crate::metrics::RateTracker;
 use crate::stake_aggregator::StakeAggregator;
 
 use crate::authority::authority_perpetual_tables::AuthorityPerpetualTables;
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 

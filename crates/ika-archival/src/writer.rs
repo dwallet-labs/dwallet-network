@@ -16,7 +16,7 @@ use ika_types::messages_dwallet_checkpoint::{
     CertifiedDWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
 };
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber,
+    CertifiedSystemCheckpointMessage, SystemCheckpointSequenceNumber,
 };
 use ika_types::storage::WriteStore;
 use object_store::DynObjectStore;
@@ -329,7 +329,10 @@ impl SystemCheckpointWriter {
         })
     }
 
-    pub fn write(&mut self, system_checkpoint_message: CertifiedSystemCheckpoint) -> Result<()> {
+    pub fn write(
+        &mut self,
+        system_checkpoint_message: CertifiedSystemCheckpointMessage,
+    ) -> Result<()> {
         match self.storage_format {
             StorageFormat::Blob => self.write_as_blob(system_checkpoint_message),
         }
@@ -337,7 +340,7 @@ impl SystemCheckpointWriter {
 
     pub fn write_as_blob(
         &mut self,
-        system_checkpoint_message: CertifiedSystemCheckpoint,
+        system_checkpoint_message: CertifiedSystemCheckpointMessage,
     ) -> Result<()> {
         assert_eq!(
             system_checkpoint_message.sequence_number,

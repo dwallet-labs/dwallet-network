@@ -43,10 +43,6 @@ use ika_config::{ConsensusConfig, NodeConfig};
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
-use ika_core::checkpoints::{
-    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
-    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
-};
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
 };
@@ -55,6 +51,10 @@ use ika_core::consensus_throughput_calculator::{
     ConsensusThroughputCalculator, ConsensusThroughputProfiler, ThroughputProfileRanges,
 };
 use ika_core::consensus_validator::{IkaTxValidator, IkaTxValidatorMetrics};
+use ika_core::dwallet_checkpoints::{
+    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
+    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
+};
 use ika_core::epoch::committee_store::CommitteeStore;
 use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;

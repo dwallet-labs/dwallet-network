@@ -3,7 +3,7 @@
 
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
@@ -22,7 +22,7 @@ use ika_types::messages_dwallet_mpc::{
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
-use ika_types::messages_system_checkpoints::SystemCheckpoint;
+use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
@@ -461,7 +461,7 @@ where
                                 &auth_sig.signers_map,
                                 &active_members,
                             );
-                            let message = bcs::to_bytes::<SystemCheckpoint>(
+                            let message = bcs::to_bytes::<SystemCheckpointMessage>(
                                 &system_checkpoint.into_message(),
                             )
                             .expect("Serializing system_checkpoint message cannot fail");

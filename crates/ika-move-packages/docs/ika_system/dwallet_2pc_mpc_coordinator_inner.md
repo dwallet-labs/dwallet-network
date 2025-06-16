@@ -4787,7 +4787,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE</a>: u32 = 0;
 </code></pre>
 
 
@@ -4796,7 +4796,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE</a>: u32 = 1;
 </code></pre>
 
 
@@ -4805,7 +4805,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE">RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE">RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE</a>: u32 = 2;
 </code></pre>
 
 
@@ -4814,7 +4814,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE">RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE">RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE</a>: u32 = 3;
 </code></pre>
 
 
@@ -4823,7 +4823,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>: u32 = 4;
 </code></pre>
 
 
@@ -4832,7 +4832,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE">RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE">RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE</a>: u32 = 5;
 </code></pre>
 
 
@@ -4841,7 +4841,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_SIGN_MESSAGE_TYPE">RESPOND_DWALLET_SIGN_MESSAGE_TYPE</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_SIGN_MESSAGE_TYPE">RESPOND_DWALLET_SIGN_MESSAGE_TYPE</a>: u32 = 6;
 </code></pre>
 
 
@@ -4850,7 +4850,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE</a>: u32 = 7;
 </code></pre>
 
 
@@ -4859,7 +4859,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE</a>: u64 = 8;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE</a>: u32 = 8;
 </code></pre>
 
 
@@ -4868,7 +4868,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE</a>: u32 = 9;
 </code></pre>
 
 
@@ -4877,7 +4877,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE">SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE</a>: u64 = 10;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE">SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE</a>: u32 = 10;
 </code></pre>
 
 
@@ -4886,7 +4886,7 @@ Signing with partial user signature protocol identifier
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a>: u64 = 11;
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a>: u32 = 11;
 </code></pre>
 
 
@@ -9737,12 +9737,9 @@ SUI coin containing gas fee reimbursements from processed operations
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> <b>mut</b> total_gas_fee_reimbursement_sui = balance::zero();
     <b>while</b> (i &lt; len) {
-        <b>let</b> message_data_type = bcs_body.peel_vec_length();
+        <b>let</b> message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses checkpoint BCS bytes directly.
-        // Messages with `message_data_type` 1 & 2 are handled by the <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>module</b>,
-        // but their bytes must be extracted here to allow correct parsing of types 3 and above.
-        // This step only extracts the bytes without further processing.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE">RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE</a> =&gt; {
                 <b>let</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_id">dwallet_id</a> = object::id_from_bytes(bcs_body.peel_vec_u8());
                 <b>let</b> first_round_output = bcs_body.peel_vec_u8();

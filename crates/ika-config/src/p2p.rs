@@ -3,7 +3,7 @@
 
 use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
 
-use ika_types::digests::SystemCheckpointDigest;
+use ika_types::digests::SystemCheckpointMessageDigest;
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessageDigest, DWalletCheckpointSequenceNumber,
 };
@@ -193,7 +193,10 @@ pub struct StateSyncConfig {
     /// skip verification of pinned system checkpoints, and reject system checkpoints with digests that don't
     /// match pinned values for a given sequence number.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub pinned_system_checkpoints: Vec<(SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    pub pinned_system_checkpoints: Vec<(
+        SystemCheckpointSequenceNumber,
+        SystemCheckpointMessageDigest,
+    )>,
 
     /// Size of the broadcast channel use for notifying other systems of newly sync'ed system checkpoints.
     ///

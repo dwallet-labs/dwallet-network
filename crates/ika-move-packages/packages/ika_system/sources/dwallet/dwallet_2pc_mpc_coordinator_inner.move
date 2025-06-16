@@ -82,18 +82,18 @@ const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 // Message data type constants corresponding to MessageKind enum variants (in ika-types/src/message.rs)
-const RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE: u64 = 0;
-const RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE: u64 = 1;
-const RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE: u64 = 2;
-const RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE: u64 = 3;
-const RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE: u64 = 4;
-const RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE: u64 = 5;
-const RESPOND_DWALLET_SIGN_MESSAGE_TYPE: u64 = 6;
-const RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE: u64 = 7;
-const RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE: u64 = 8;
-const RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE: u64 = 9;
-const SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE: u64 = 10;
-const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE: u64 = 11;
+const RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE: u32 = 0;
+const RESPOND_DWALLET_DKG_SECOND_ROUND_OUTPUT_MESSAGE_TYPE: u32 = 1;
+const RESPOND_DWALLET_ENCRYPTED_USER_SHARE_MESSAGE_TYPE: u32 = 2;
+const RESPOND_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_MESSAGE_TYPE: u32 = 3;
+const RESPOND_DWALLET_IMPORTED_KEY_VERIFICATION_OUTPUT_MESSAGE_TYPE: u32 = 4;
+const RESPOND_DWALLET_PRESIGN_MESSAGE_TYPE: u32 = 5;
+const RESPOND_DWALLET_SIGN_MESSAGE_TYPE: u32 = 6;
+const RESPOND_DWALLET_PARTIAL_SIGNATURE_VERIFICATION_OUTPUT_MESSAGE_TYPE: u32 = 7;
+const RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE: u32 = 8;
+const RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE: u32 = 9;
+const SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE: u32 = 10;
+const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE: u32 = 11;
 
 // === Errors ===
 
@@ -4708,12 +4708,9 @@ fun process_checkpoint_message(
     let mut i = 0;
     let mut total_gas_fee_reimbursement_sui = balance::zero();
     while (i < len) {
-        let message_data_type = bcs_body.peel_vec_length();
+        let message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses checkpoint BCS bytes directly.
-        // Messages with `message_data_type` 1 & 2 are handled by the system module,
-        // but their bytes must be extracted here to allow correct parsing of types 3 and above.
-        // This step only extracts the bytes without further processing.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             RESPOND_DWALLET_DKG_FIRST_ROUND_OUTPUT_MESSAGE_TYPE => {
                 let dwallet_id = object::id_from_bytes(bcs_body.peel_vec_u8());
                 let first_round_output = bcs_body.peel_vec_u8();
