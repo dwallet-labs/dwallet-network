@@ -58,7 +58,7 @@ impl Default for AppId {
 pub enum IntentScope {
     ProofOfPossession = 0, // Used as a signature representing an authority's proof of possession of its authority protocol key.
     DWalletCheckpointMessage = 1, // Used for an authority signature on a checkpoint.
-    SystemCheckpoint = 2,  // Used for an authority signature on a system checkpoint message.
+    SystemCheckpointMessage = 2, // Used for an authority signature on a system checkpoint message.
     DiscoveryPeers = 3,    // Used for reporting peer addresses in discovery.
 }
 

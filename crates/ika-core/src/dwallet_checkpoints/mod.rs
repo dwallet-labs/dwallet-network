@@ -283,7 +283,7 @@ impl DWalletCheckpointStore {
         Ok(self
             .watermarks
             .get(&DWalletCheckpointWatermark::HighestPruned)?
-            .unwrap_or_default()
+            .unwrap_or((1, Default::default()))
             .0)
     }
 
@@ -394,7 +394,7 @@ pub struct DWalletCheckpointBuilder {
     metrics: Arc<DWalletCheckpointMetrics>,
     max_messages_per_dwallet_checkpoint: usize,
     max_dwallet_checkpoint_size_bytes: usize,
-    previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
+    previous_epoch_last_checkpoint_sequence_number: u64,
 }
 
 pub struct DWalletCheckpointAggregator {
@@ -434,7 +434,7 @@ impl DWalletCheckpointBuilder {
         metrics: Arc<DWalletCheckpointMetrics>,
         max_messages_per_dwallet_checkpoint: usize,
         max_dwallet_checkpoint_size_bytes: usize,
-        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> Self {
         Self {
             state,
@@ -446,7 +446,7 @@ impl DWalletCheckpointBuilder {
             metrics,
             max_messages_per_dwallet_checkpoint,
             max_dwallet_checkpoint_size_bytes,
-            previous_epoch_last_dwallet_checkpoint_sequence_number,
+            previous_epoch_last_checkpoint_sequence_number,
         }
     }
 
@@ -527,7 +527,7 @@ impl DWalletCheckpointBuilder {
             }
         }
         debug!(
-            "Waiting for more dwallet checkpoints from consensus after processing {last_height:?}; {} pending checkpoints left unprocessed until next interval",
+            "Waiting for more dwallet checkpoints from consensus after processing {last_height:?}; {} pending dwallet checkpoints left unprocessed until next interval",
             grouped_pending_checkpoints.len(),
         );
     }
@@ -681,19 +681,21 @@ impl DWalletCheckpointBuilder {
         //         }
         //     }
         // }
-        let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq);
+        let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq).unwrap_or(0);
         // Epoch 0 is where we create the validator set (we are not running Epoch 0).
         // Once we initialize, the active committee starts in Epoch 1.
         // So there is no previous committee in epoch 1.
-        if epoch != 1 && last_checkpoint_seq.is_none() {
-            last_checkpoint_seq = Some(self.previous_epoch_last_dwallet_checkpoint_sequence_number);
+        if epoch != 1 && self.previous_epoch_last_checkpoint_sequence_number > last_checkpoint_seq {
+            last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
+        let sequence_number = last_checkpoint_seq + 1;
         info!(
-            next_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
+            sequence_number,
             checkpoint_timestamp = details.timestamp_ms,
             "Creating dwallet checkpoint(s) for {} messages",
             all_messages.len(),
         );
+
         let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
 
@@ -705,29 +707,30 @@ impl DWalletCheckpointBuilder {
 
         for (index, messages) in chunks.into_iter().enumerate() {
             let first_checkpoint_of_epoch = index == 0
-                && (last_checkpoint_seq.is_none()
-                    || last_checkpoint_seq.unwrap()
-                        == self.previous_epoch_last_dwallet_checkpoint_sequence_number);
+                && (last_checkpoint_seq == self.previous_epoch_last_checkpoint_sequence_number);
             if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();
             }
 
-            let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
-            last_checkpoint_seq = Some(sequence_number);
+            last_checkpoint_seq = sequence_number;
 
             let timestamp_ms = details.timestamp_ms;
             if let Some((_, last_checkpoint)) = &last_checkpoint {
                 if last_checkpoint.timestamp_ms > timestamp_ms {
-                    error!("Unexpected decrease of dwallet checkpoint timestamp, sequence: {}, previous: {}, current: {}",
-                    sequence_number,  last_checkpoint.timestamp_ms, timestamp_ms);
+                    error!(
+                        sequence_number,
+                        previous_timestamp_ms = last_checkpoint.timestamp_ms,
+                        current_timestamp_ms = timestamp_ms,
+                        "Unexpected decrease of dwallet checkpoint timestamp.",
+                    );
                 }
             }
 
             info!(
-                "dWallet Checkpoint sequence: {}, messages count: {}",
                 sequence_number,
-                messages.len()
+                messages_count = messages.len(),
+                "Creating a dwallet checkpoint"
             );
 
             let checkpoint_message =
@@ -858,7 +861,7 @@ impl DWalletCheckpointAggregator {
     }
 
     async fn run(mut self) {
-        info!("Starting CheckpointAggregator");
+        info!("Starting CheckpointDWalletAggregator");
         loop {
             if let Err(e) = self.run_and_notify().await {
                 error!(
@@ -946,9 +949,9 @@ impl DWalletCheckpointAggregator {
                 }
                 debug!(
                     checkpoint_seq = current.checkpoint_message.sequence_number,
-                    "Processing signature for dwallet checkpoint (digest: {:?}) from {:?}",
-                    current.checkpoint_message.digest(),
-                    data.checkpoint_message.auth_sig().authority.concise()
+                    digest=?current.checkpoint_message.digest(),
+                    from=?data.checkpoint_message.auth_sig().authority.concise(),
+                    "Processing signature for dwallet checkpoint.",
                 );
                 self.metrics
                     .dwallet_checkpoint_participation
@@ -993,7 +996,7 @@ impl DWalletCheckpointAggregator {
             .next()
             .transpose()?
             .map(|(seq, _)| seq + 1)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 }
 
@@ -1036,10 +1039,10 @@ impl DWalletCheckpointSignatureAggregator {
                     self.metrics.remote_dwallet_checkpoint_forks.inc();
                     warn!(
                         checkpoint_seq = self.checkpoint_message.sequence_number,
-                        "Validator {:?} has mismatching dwallet checkpoint digest {}, we have digest {}",
-                        author.concise(),
-                        their_digest,
-                        self.digest
+                        from=?author.concise(),
+                        ?their_digest,
+                        our_digest=?self.digest,
+                        "Validator has mismatching dwallet checkpoint digest than what we have.",
                     );
                     return Err(());
                 }
@@ -1088,7 +1091,8 @@ impl DWalletCheckpointService {
         previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<Self>, JoinSet<()> /* Handle to tasks */) {
         info!(
-            "Starting dwallet checkpoint service with {max_messages_per_checkpoint} max_messages_per_checkpoint and {max_checkpoint_size_bytes} max_checkpoint_size_bytes"
+            max_messages_per_checkpoint,
+            max_checkpoint_size_bytes, "Starting dwallet checkpoint service"
         );
         let notify_builder = Arc::new(Notify::new());
         let notify_aggregator = Arc::new(Notify::new());

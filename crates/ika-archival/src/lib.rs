@@ -433,7 +433,7 @@ where
         .get_highest_synced_dwallet_checkpoint()
         .map_err(|_| anyhow!("Failed to read highest synced checkpoint"))?
         .map(|c| c.sequence_number)
-        .unwrap_or(0);
+        .unwrap_or(1);
     info!("Highest synced checkpoint in db: {latest_checkpoint}");
     let action_counter = Arc::new(AtomicU64::new(0));
     let checkpoint_counter = Arc::new(AtomicU64::new(0));
@@ -469,7 +469,7 @@ where
                     .get_highest_synced_dwallet_checkpoint()
                     .map_err(|_| anyhow!("Failed to read highest-synced checkpoint"))?
                     .map(|c| c.sequence_number)
-                    .unwrap_or(0);
+                    .unwrap_or(1);
                 let percent = (latest_checkpoint * 100) / latest_dwallet_checkpoint_in_archive;
                 info!("done = {percent}%");
                 tokio::time::sleep(Duration::from_secs(60)).await;
@@ -494,7 +494,7 @@ where
         .get_highest_synced_dwallet_checkpoint()
         .map_err(|_| anyhow!("Failed to read watermark"))?
         .map(|c| c.sequence_number)
-        .unwrap_or(0);
+        .unwrap_or(1);
     info!("Highest verified checkpoint: {}", end);
     Ok(())
 }

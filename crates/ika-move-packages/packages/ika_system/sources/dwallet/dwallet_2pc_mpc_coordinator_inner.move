@@ -310,7 +310,7 @@ public struct DWalletCoordinatorInner has store {
     /// Total number of messages processed
     total_messages_processed: u64,
     /// Last processed checkpoint sequence number
-    last_processed_checkpoint_sequence_number: Option<u64>,
+    last_processed_checkpoint_sequence_number: u64,
     /// Last checkpoint sequence number from previous epoch
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// Cryptographic algorithm support configuration
@@ -1851,7 +1851,7 @@ public(package) fun create_dwallet_coordinator_inner(
         active_committee,
         previous_committee: bls_committee::empty(),
         total_messages_processed: 0,
-        last_processed_checkpoint_sequence_number: option::none(),
+        last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         support_config: SupportConfig {
             supported_curves_to_signature_algorithms_to_hash_schemes,
@@ -2254,10 +2254,7 @@ public(package) fun advance_epoch(
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
 
-    if (self.last_processed_checkpoint_sequence_number.is_some()) {
-        let last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
-    };
+    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
 
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = false;
     self.update_last_user_initiated_session_to_complete_in_current_epoch();
@@ -4688,13 +4685,8 @@ fun process_checkpoint_message(
 
     let sequence_number = bcs_body.peel_u64();
 
-    if(self.last_processed_checkpoint_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } else {
-        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
+    assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongCheckpointSequenceNumber);
+    self.last_processed_checkpoint_sequence_number = sequence_number;
 
     let timestamp_ms = bcs_body.peel_u64();
 

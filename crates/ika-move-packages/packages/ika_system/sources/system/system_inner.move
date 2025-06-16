@@ -56,8 +56,8 @@ const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 10;
 
 const EHaveNotReachedEndEpochTime: u64 = 0;
 const EActiveBlsCommitteeMustInitialize: u64 = 1;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 2;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 3;
+const EIncorrectEpochInSystemCheckpoint: u64 = 2;
+const EWrongSystemCheckpointSequenceNumber: u64 = 3;
 const EApprovedUpgradeNotFound: u64 = 4;
 
 #[error]
@@ -94,7 +94,7 @@ public struct SystemInner has store {
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
     /// The last processed checkpoint sequence number.
-    last_processed_checkpoint_sequence_number: Option<u64>,
+    last_processed_checkpoint_sequence_number: u64,
     /// The last checkpoint sequence number of the previous epoch.
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// The total messages processed.
@@ -242,7 +242,7 @@ public(package) fun create(
         stake_subsidy_start_epoch,
         protocol_treasury,
         epoch_start_timestamp_ms,
-        last_processed_checkpoint_sequence_number: option::none(),
+        last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
@@ -568,6 +568,8 @@ public(package) fun advance_epoch(
     self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;
 
+    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
+
     let mut stake_subsidy = balance::zero();
 
     // during the transition from epoch N to epoch N + 1, self.epoch() will return N
@@ -826,17 +828,12 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
-    assert!(epoch == self.epoch, EIncorrectEpochInIkaSystemCheckpoint);
+    assert!(epoch == self.epoch, EIncorrectEpochInSystemCheckpoint);
 
     let sequence_number = bcs_body.peel_u64();
 
-    if(self.last_processed_checkpoint_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } else {
-        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
+    assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongSystemCheckpointSequenceNumber);
+    self.last_processed_checkpoint_sequence_number = sequence_number;
 
     let timestamp_ms = bcs_body.peel_u64();
 
@@ -856,7 +853,7 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
         match (message_data_enum_tag) {
             SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE => {
                 let next_protocol_version = bcs_body.peel_u64();
-                self.next_protocol_version.fill(next_protocol_version);
+                self.next_protocol_version = option::some(next_protocol_version);
                 event::emit(SetNextProtocolVersionEvent {
                     epoch: self.epoch,
                     next_protocol_version,
