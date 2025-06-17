@@ -43,11 +43,17 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		await requestSuiFromFaucetV2({
-			host: getFaucetHost('localnet'),
-			recipient: address,
-		});
+		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+		// await requestSuiFromFaucetV2({
+		// 	// host: getFaucetHost('localnet'),
+		// 	host: 'https://faucet.sui.beta.devnet.ika-network.net',
+		// 	recipient: address,
+		// });
+		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		// await requestSuiFromFaucetV2({
+		// 	host: getFaucetHost('localnet'),
+		// 	recipient: address,
+		// });
 
 		conf = {
 			suiClientKeypair: keypair,
@@ -80,7 +86,9 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('should fetch the members protocol public keys', async () => {
-
+		const systemID = '0x7ddf34c18c2a2222bdb8edadab88f93964f1c5cb57c53a13cd9fcb9d694c81d6';
+		const obj = await conf.client.getObject({ id: systemID, options: { showContent: true } });
+		console.log({ obj });
 	});
 
 	it('should sign full flow', async () => {
