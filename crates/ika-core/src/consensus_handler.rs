@@ -199,6 +199,8 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 .await;
             dwallet_mpc_verifier.has_performed_state_sync = true;
             drop(dwallet_mpc_verifier);
+        } else {
+            drop(dwallet_mpc_verifier);
         }
         warn!("yes yes yes");
 
