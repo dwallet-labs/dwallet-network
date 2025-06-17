@@ -68,7 +68,7 @@ describe('Test dWallet MPC', () => {
 	it('should create a dWallet (DKG)', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet}`);
+		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
 	});
 
 	it('should run presign', async () => {
@@ -110,9 +110,12 @@ describe('Test dWallet MPC', () => {
 
 	it('should create a dwallet and publish its secret share', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
-		console.log('Creating dWallet...');
+
+		console.log('Step 1: dWallet Creation');
+		console.time('Step 1: dWallet Creation');
 		const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
-		console.log(`dWallet has been created successfully: ${dwallet.dwalletID}`);
+		console.timeEnd('Step 1: dWallet Creation');
+		console.log(`Step 1: dWallet created | dWalletID = ${dwallet.dwalletID}`);
 		await delay(checkpointCreationTime);
 		console.log('Running publish secret share...');
 		await makeDWalletUserSecretKeySharesPublicRequestEvent(
