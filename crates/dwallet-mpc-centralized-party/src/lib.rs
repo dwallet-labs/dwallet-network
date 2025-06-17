@@ -215,13 +215,9 @@ pub fn advance_centralized_sign_party(
 }
 
 pub fn sample_dwallet_keypair_inner(
-    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+    protocol_pp: Vec<u8>,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
-    let protocol_public_parameters: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_parameters: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let secret_key = twopc_mpc::secp256k1::Scalar::sample(
         &protocol_public_parameters
             .as_ref()
@@ -243,15 +239,11 @@ pub fn verify_secp_signature_inner(
     public_key: Vec<u8>,
     signature: Vec<u8>,
     message: Vec<u8>,
-    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+    protocol_pp: Vec<u8>,
     hash_type: u32,
 ) -> anyhow::Result<bool> {
     let VersionedSignOutput::V1(signature) = bcs::from_bytes(&signature)?;
-    let protocol_public_parameters: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_parameters: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let public_key = twopc_mpc::secp256k1::GroupElement::new(
         bcs::from_bytes(&public_key)?,
         &protocol_public_parameters.group_public_parameters,
