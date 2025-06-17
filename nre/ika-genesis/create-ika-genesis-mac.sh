@@ -59,7 +59,7 @@ export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 # 40 minutes
 #export EPOCH_DURATION_TIME_MS=2400000
 # 1 hour
-export EPOCH_DURATION_TIME_MS=$((1000*60*60*1))
+export EPOCH_DURATION_TIME_MS=$((1000*60*90*1))
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
