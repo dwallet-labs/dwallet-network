@@ -105,7 +105,7 @@ pub fn create_dkg_output(
     decentralized_first_round_public_output: SerializedWrappedMPCPublicOutput,
     session_identifier: Vec<u8>,
 ) -> anyhow::Result<CentralizedDKGWasmResult> {
-    let protocol_pp: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
+    let public_parameters: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let decentralized_first_round_public_output =
         bcs::from_bytes(&decentralized_first_round_public_output)?;
     match decentralized_first_round_public_output {
@@ -113,8 +113,6 @@ pub fn create_dkg_output(
             let (decentralized_first_round_public_output, _): <<AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty as Party>::PublicOutput =
                 bcs::from_bytes(&decentralized_first_round_public_output)
                     .context("failed to deserialize decentralized first round DKG output")?;
-            let public_parameters =
-                protocol_public_parameters_by_key_scheme(network_dkg_public_output, key_scheme)?;
 
             let session_identifier = CommitmentSizedNumber::from_le_slice(&session_identifier);
 
