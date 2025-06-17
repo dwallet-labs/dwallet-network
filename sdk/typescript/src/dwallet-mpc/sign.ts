@@ -12,7 +12,6 @@ import {
 	isActiveDWallet,
 	isDWalletCap,
 	isPresign,
-	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config } from './globals.ts';

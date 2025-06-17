@@ -1,4 +1,3 @@
-;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
@@ -9,10 +8,6 @@ import type { Transaction } from '@mysten/sui/transactions';
 import sha3 from 'js-sha3';
 import { createStorage } from 'unstorage';
 import fsDriver from 'unstorage/drivers/fs';
-
-
-
-
 
 export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
 export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
