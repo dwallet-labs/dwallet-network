@@ -36,12 +36,6 @@ pub struct DWalletMPCOutputsVerifier {
     pub completed_locking_next_committee: bool,
     #[allow(dead_code)]
     voted_to_lock_committee: HashSet<PartyID>,
-    /// The latest consensus round that was processed.
-    /// Used to check if there's a need to perform a state sync —
-    /// if the `latest_processed_dwallet_round` is behind
-    /// the currently processed round by more than one,
-    /// a state sync should be performed.
-    pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     pub(crate) consensus_round_completed_sessions: HashSet<SessionIdentifier>,
