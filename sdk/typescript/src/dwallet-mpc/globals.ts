@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
+import { promises as fs_async } from 'node:fs';
 import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -323,7 +324,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
+export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
@@ -333,7 +334,7 @@ export function cachePublicParameters(key_id: string, epoch: number, networkKey:
 	if (fs.existsSync(filePath)) {
 		fs.unlinkSync(filePath);
 	}
-	fs.writeFileSync(filePath, networkKey);
+	await fs_async.writeFile(filePath, networkKey);
 }
 
 export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
