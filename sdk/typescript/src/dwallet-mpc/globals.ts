@@ -1,8 +1,7 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { Buffer } from 'node:buffer';
 import * as fs from 'node:fs';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -297,7 +296,11 @@ export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array>
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	await cachePublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch, publicParameters);
+	await cachePublicParameters(
+		networkDecryptionKeyPublicOutputID,
+		currentEpoch,
+		Buffer.from(publicParameters),
+	);
 	return publicParameters;
 }
 
