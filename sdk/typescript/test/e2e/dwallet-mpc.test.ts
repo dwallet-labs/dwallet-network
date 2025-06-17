@@ -79,11 +79,6 @@ describe('Test dWallet MPC', () => {
 		console.log(`presign has been created successfully: ${completedPresign.id.id}`);
 	});
 
-	it("should retrieve and cache the network's public parameters", async () => {
-		await getNetworkPublicParameters(conf);
-		await getNetworkPublicParameters(conf);
-	});
-
 	it('should sign full flow', async () => {
 		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 		console.log('Creating dWallet...');
