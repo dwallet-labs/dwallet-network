@@ -50,7 +50,7 @@ pub struct EpochStats {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingSystemCheckpointInfo {
     pub timestamp_ms: SystemCheckpointTimestamp,
-    pub system_checkpoint_height: SystemCheckpointHeight,
+    pub checkpoint_height: SystemCheckpointHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -87,15 +87,15 @@ impl PendingSystemCheckpoint {
     }
 
     pub fn height(&self) -> SystemCheckpointHeight {
-        self.details().system_checkpoint_height
+        self.details().checkpoint_height
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BuilderSystemCheckpoint {
-    pub system_checkpoint_message: SystemCheckpointMessage,
+    pub checkpoint_message: SystemCheckpointMessage,
     // Height at which this system_checkpoint message was built. None for genesis system_checkpoint
-    pub system_checkpoint_height: Option<SystemCheckpointHeight>,
+    pub checkpoint_height: Option<SystemCheckpointHeight>,
     pub position_in_commit: usize,
 }
 
@@ -463,11 +463,8 @@ impl SystemCheckpointBuilder {
             .epoch_store
             .last_built_system_checkpoint_message_builder()
             .expect("epoch should not have ended");
-        let mut last_height = checkpoint_message
-            .clone()
-            .and_then(|s| s.system_checkpoint_height);
-        let mut last_timestamp =
-            checkpoint_message.map(|s| s.system_checkpoint_message.timestamp_ms);
+        let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
+        let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
         let min_checkpoint_interval_ms = self
             .epoch_store
@@ -528,7 +525,7 @@ impl SystemCheckpointBuilder {
         );
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().system_checkpoint_height))]
+    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
     async fn make_checkpoint(&self, pendings: Vec<PendingSystemCheckpoint>) -> anyhow::Result<()> {
         let last_details = pendings.last().unwrap().details().clone();
 
@@ -551,7 +548,7 @@ impl SystemCheckpointBuilder {
         let new_checkpoint = self
             .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
             .await?;
-        self.write_checkpoints(last_details.system_checkpoint_height, new_checkpoint)
+        self.write_checkpoints(last_details.checkpoint_height, new_checkpoint)
             .await?;
         Ok(())
     }
@@ -684,9 +681,9 @@ impl SystemCheckpointBuilder {
         if epoch != 1 && self.previous_epoch_last_checkpoint_sequence_number > last_checkpoint_seq {
             last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
-        let sequence_number = last_checkpoint_seq + 1;
+
         info!(
-            sequence_number,
+            next_sequence_number = last_checkpoint_seq + 1,
             checkpoint_timestamp = details.timestamp_ms,
             "Creating system checkpoint(s) for {} messages",
             all_messages.len(),
@@ -709,6 +706,7 @@ impl SystemCheckpointBuilder {
                     .record_epoch_first_system_checkpoint_creation_time_metric();
             }
 
+            let sequence_number = last_checkpoint_seq + 1;
             last_checkpoint_seq = sequence_number;
 
             let timestamp_ms = details.timestamp_ms;
