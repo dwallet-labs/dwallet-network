@@ -263,15 +263,11 @@ pub fn verify_secp_signature_inner(
 }
 
 pub fn create_imported_dwallet_centralized_step_inner(
-    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+    protocol_pp: Vec<u8>,
     session_identifier: Vec<u8>,
     secret_key: Vec<u8>,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-    let protocol_public_parameters: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_parameters: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let secret_key = bcs::from_bytes(&secret_key)?;
     let session_identifier = CommitmentSizedNumber::from_le_slice(&session_identifier);
 
