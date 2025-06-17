@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-mod metrics;
+mod system_checkpoint_metrics;
 mod system_checkpoint_output;
 
 use crate::authority::AuthorityState;
 use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
-pub use crate::system_checkpoints::metrics::SystemCheckpointMetrics;
+pub use crate::system_checkpoints::system_checkpoint_metrics::SystemCheckpointMetrics;
 use crate::system_checkpoints::system_checkpoint_output::{
     CertifiedSystemCheckpointOutput, SystemCheckpointOutput,
 };
@@ -22,11 +22,11 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::message_envelope::Message;
-use ika_types::messages_system_checkpoints::SystemCheckpointKind;
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SignedSystemCheckpoint, SystemCheckpoint, SystemCheckpointDigest,
-    SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage, SystemCheckpointTimestamp,
-    TrustedSystemCheckpoint, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpointMessage, SignedSystemCheckpointMessage, SystemCheckpointMessage,
+    SystemCheckpointMessageDigest, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
+    SystemCheckpointSignatureMessage, SystemCheckpointTimestamp, TrustedSystemCheckpointMessage,
+    VerifiedSystemCheckpointMessage,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -61,7 +61,7 @@ pub enum PendingSystemCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingSystemCheckpointV1 {
-    pub messages: Vec<SystemCheckpointKind>,
+    pub messages: Vec<SystemCheckpointMessageKind>,
     pub details: PendingSystemCheckpointInfo,
 }
 
@@ -78,7 +78,7 @@ impl PendingSystemCheckpoint {
         }
     }
 
-    pub fn messages(&self) -> &Vec<SystemCheckpointKind> {
+    pub fn messages(&self) -> &Vec<SystemCheckpointMessageKind> {
         &self.as_v1().messages
     }
 
@@ -93,7 +93,7 @@ impl PendingSystemCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BuilderSystemCheckpoint {
-    pub system_checkpoint_message: SystemCheckpoint,
+    pub system_checkpoint_message: SystemCheckpointMessage,
     // Height at which this system_checkpoint message was built. None for genesis system_checkpoint
     pub system_checkpoint_height: Option<SystemCheckpointHeight>,
     pub position_in_commit: usize,
@@ -104,8 +104,8 @@ pub struct SystemCheckpointStore {
     // /// Maps system_checkpoint contents digest to system_checkpoint contents
     // pub(crate) system_checkpoint_content: DBMap<SystemCheckpointContentsDigest, SystemCheckpointContents>,
     /// Maps system_checkpoint system_checkpoint message digest to system_checkpoint sequence number
-    pub(crate) checkpoint_sequence_by_digest:
-        DBMap<SystemCheckpointDigest, SystemCheckpointSequenceNumber>,
+    pub(crate) checkpoint_message_sequence_by_digest:
+        DBMap<SystemCheckpointMessageDigest, SystemCheckpointSequenceNumber>,
 
     // /// Stores entire system_checkpoint contents from state sync, indexed by sequence number, for
     // /// efficient reads of full system_checkpoints. Entries from this table are deleted after state
@@ -113,19 +113,24 @@ pub struct SystemCheckpointStore {
     // full_system_checkpoint_content: DBMap<SystemCheckpointSequenceNumber, FullSystemCheckpointContents>,
     /// Stores certified system_checkpoints
     pub(crate) certified_checkpoints:
-        DBMap<SystemCheckpointSequenceNumber, TrustedSystemCheckpoint>,
+        DBMap<SystemCheckpointSequenceNumber, TrustedSystemCheckpointMessage>,
     // /// Map from system_checkpoint digest to certified system_checkpoint
     // pub(crate) system_checkpoint_by_digest: DBMap<SystemCheckpointDigest, TrustedSystemCheckpoint>,
     /// Store locally computed system_checkpoint summaries so that we can detect forks and log useful
     /// information. Can be pruned as soon as we verify that we are in agreement with the latest
     /// certified system_checkpoint.
     pub(crate) locally_computed_checkpoints:
-        DBMap<SystemCheckpointSequenceNumber, SystemCheckpoint>,
+        DBMap<SystemCheckpointSequenceNumber, SystemCheckpointMessage>,
 
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed system_checkpoints
-    pub(crate) watermarks:
-        DBMap<SystemCheckpointWatermark, (SystemCheckpointSequenceNumber, SystemCheckpointDigest)>,
+    pub(crate) watermarks: DBMap<
+        SystemCheckpointWatermark,
+        (
+            SystemCheckpointSequenceNumber,
+            SystemCheckpointMessageDigest,
+        ),
+    >,
 }
 
 impl SystemCheckpointStore {
@@ -149,13 +154,13 @@ impl SystemCheckpointStore {
 
     pub fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
-        let sequence = self.checkpoint_sequence_by_digest.get(digest)?;
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
+        let sequence = self.checkpoint_message_sequence_by_digest.get(digest)?;
         if let Some(sequence) = sequence {
             self.certified_checkpoints
                 .get(&sequence)
-                .map(|maybe_system_checkpoint| maybe_system_checkpoint.map(|c| c.into()))
+                .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
         } else {
             Ok(None)
         }
@@ -164,22 +169,22 @@ impl SystemCheckpointStore {
     pub fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         self.certified_checkpoints
             .get(&sequence_number)
-            .map(|maybe_system_checkpoint| maybe_system_checkpoint.map(|c| c.into()))
+            .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
     }
 
     pub fn get_locally_computed_system_checkpoint(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<SystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<SystemCheckpointMessage>, TypedStoreError> {
         self.locally_computed_checkpoints.get(&sequence_number)
     }
 
     pub fn get_latest_certified_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         Ok(self
             .certified_checkpoints
             .reversed_safe_iter_with_bounds(None, None)?
@@ -190,7 +195,7 @@ impl SystemCheckpointStore {
 
     pub fn get_latest_locally_computed_system_checkpoint(
         &self,
-    ) -> Result<Option<SystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<SystemCheckpointMessage>, TypedStoreError> {
         Ok(self
             .locally_computed_checkpoints
             .reversed_safe_iter_with_bounds(None, None)?
@@ -202,12 +207,12 @@ impl SystemCheckpointStore {
     pub fn multi_get_system_checkpoint_by_sequence_number(
         &self,
         sequence_numbers: &[SystemCheckpointSequenceNumber],
-    ) -> Result<Vec<Option<VerifiedSystemCheckpoint>>, TypedStoreError> {
+    ) -> Result<Vec<Option<VerifiedSystemCheckpointMessage>>, TypedStoreError> {
         let system_checkpoints = self
             .certified_checkpoints
             .multi_get(sequence_numbers)?
             .into_iter()
-            .map(|maybe_system_checkpoint| maybe_system_checkpoint.map(|c| c.into()))
+            .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
             .collect();
 
         Ok(system_checkpoints)
@@ -215,7 +220,7 @@ impl SystemCheckpointStore {
 
     pub fn get_highest_verified_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
             .get(&SystemCheckpointWatermark::HighestVerified)?
@@ -224,12 +229,12 @@ impl SystemCheckpointStore {
         } else {
             return Ok(None);
         };
-        self.get_system_checkpoint_by_sequence_number(highest_verified.0)
+        self.get_system_checkpoint_by_digest(&highest_verified.1)
     }
 
     pub fn get_highest_synced_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
             .get(&SystemCheckpointWatermark::HighestSynced)?
@@ -238,7 +243,7 @@ impl SystemCheckpointStore {
         } else {
             return Ok(None);
         };
-        self.get_system_checkpoint_by_sequence_number(highest_synced.0)
+        self.get_system_checkpoint_by_digest(&highest_synced.1)
     }
 
     pub fn get_highest_executed_system_checkpoint_seq_number(
@@ -256,7 +261,7 @@ impl SystemCheckpointStore {
 
     pub fn get_highest_executed_system_checkpoint(
         &self,
-    ) -> Result<Option<VerifiedSystemCheckpoint>, TypedStoreError> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
             .get(&SystemCheckpointWatermark::HighestExecuted)?
@@ -265,7 +270,7 @@ impl SystemCheckpointStore {
         } else {
             return Ok(None);
         };
-        self.get_system_checkpoint_by_sequence_number(highest_executed.0)
+        self.get_system_checkpoint_by_digest(&highest_executed.1)
     }
 
     pub fn get_highest_pruned_system_checkpoint_seq_number(
@@ -274,37 +279,31 @@ impl SystemCheckpointStore {
         Ok(self
             .watermarks
             .get(&SystemCheckpointWatermark::HighestPruned)?
-            .unwrap_or_default()
+            .unwrap_or((1, Default::default()))
             .0)
     }
 
     // Called by consensus (ConsensusAggregator).
-    // Different from `insert_verified_system_checkpoint`, it does not touch
-    // the highest_verified_system_checkpoint watermark such that state sync
-    // will have a chance to process this system_checkpoint and perform some
+    // Different from `insert_verified_checkpoint`, it does not touch
+    // the highest_verified_checkpoint watermark such that state sync
+    // will have a chance to process this checkpoint and perform some
     // state-sync only things.
-    pub fn insert_certified_system_checkpoint(
+    pub fn insert_certified_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
         debug!(
-            system_checkpoint_seq = system_checkpoint.sequence_number(),
-            "Inserting certified system_checkpoint",
+            checkpoint_seq = checkpoint.sequence_number(),
+            "Inserting certified system checkpoint",
         );
         let mut batch = self.certified_checkpoints.batch();
         batch.insert_batch(
-            &self.checkpoint_sequence_by_digest,
-            [(
-                *system_checkpoint.digest(),
-                system_checkpoint.sequence_number(),
-            )],
+            &self.checkpoint_message_sequence_by_digest,
+            [(*checkpoint.digest(), checkpoint.sequence_number())],
         )?;
         batch.insert_batch(
             &self.certified_checkpoints,
-            [(
-                system_checkpoint.sequence_number(),
-                system_checkpoint.serializable_ref(),
-            )],
+            [(checkpoint.sequence_number(), checkpoint.serializable_ref())],
         )?;
         batch.write()?;
 
@@ -316,31 +315,28 @@ impl SystemCheckpointStore {
     #[instrument(level = "debug", skip_all)]
     pub fn insert_verified_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        self.insert_certified_system_checkpoint(system_checkpoint)?;
+        self.insert_certified_checkpoint(system_checkpoint)?;
         self.update_highest_verified_system_checkpoint(system_checkpoint)
     }
 
     pub fn update_highest_verified_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        if Some(*system_checkpoint.sequence_number())
+        if Some(*checkpoint.sequence_number())
             > self
                 .get_highest_verified_system_checkpoint()?
                 .map(|x| *x.sequence_number())
         {
             debug!(
-                system_checkpoint_seq = system_checkpoint.sequence_number(),
-                "Updating highest verified system_checkpoint",
+                checkpoint_seq = checkpoint.sequence_number(),
+                "Updating highest verified system checkpoint",
             );
             self.watermarks.insert(
                 &SystemCheckpointWatermark::HighestVerified,
-                &(
-                    *system_checkpoint.sequence_number(),
-                    *system_checkpoint.digest(),
-                ),
+                &(*checkpoint.sequence_number(), *checkpoint.digest()),
             )?;
         }
 
@@ -349,18 +345,15 @@ impl SystemCheckpointStore {
 
     pub fn update_highest_synced_system_checkpoint(
         &self,
-        system_checkpoint: &VerifiedSystemCheckpoint,
+        checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
         debug!(
-            system_checkpoint_seq = system_checkpoint.sequence_number(),
-            "Updating highest synced system_checkpoint",
+            checkpoint_seq = checkpoint.sequence_number(),
+            "Updating highest synced system checkpoint",
         );
         self.watermarks.insert(
             &SystemCheckpointWatermark::HighestSynced,
-            &(
-                *system_checkpoint.sequence_number(),
-                *system_checkpoint.digest(),
-            ),
+            &(*checkpoint.sequence_number(), *checkpoint.digest()),
         )
     }
 
@@ -396,7 +389,7 @@ pub struct SystemCheckpointBuilder {
     metrics: Arc<SystemCheckpointMetrics>,
     max_messages_per_system_checkpoint: usize,
     max_system_checkpoint_size_bytes: usize,
-    previous_epoch_last_system_checkpoint_sequence_number: u64,
+    previous_epoch_last_checkpoint_sequence_number: u64,
 }
 
 pub struct SystemCheckpointAggregator {
@@ -413,10 +406,11 @@ pub struct SystemCheckpointAggregator {
 // This holds information to aggregate signatures for one system_checkpoint
 pub struct SystemCheckpointSignatureAggregator {
     next_index: u64,
-    system_checkpoint: SystemCheckpoint,
-    digest: SystemCheckpointDigest,
+    checkpoint_message: SystemCheckpointMessage,
+    digest: SystemCheckpointMessageDigest,
     /// Aggregates voting stake for each signed system_checkpoint proposal by authority
-    signatures_by_digest: MultiStakeAggregator<SystemCheckpointDigest, SystemCheckpoint, true>,
+    signatures_by_digest:
+        MultiStakeAggregator<SystemCheckpointMessageDigest, SystemCheckpointMessage, true>,
     #[allow(dead_code)]
     tables: Arc<SystemCheckpointStore>,
     #[allow(dead_code)]
@@ -435,7 +429,7 @@ impl SystemCheckpointBuilder {
         metrics: Arc<SystemCheckpointMetrics>,
         max_messages_per_system_checkpoint: usize,
         max_system_checkpoint_size_bytes: usize,
-        previous_epoch_last_system_checkpoint_sequence_number: u64,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> Self {
         Self {
             state,
@@ -447,7 +441,7 @@ impl SystemCheckpointBuilder {
             metrics,
             max_messages_per_system_checkpoint,
             max_system_checkpoint_size_bytes,
-            previous_epoch_last_system_checkpoint_sequence_number,
+            previous_epoch_last_checkpoint_sequence_number,
         }
     }
 
@@ -465,42 +459,42 @@ impl SystemCheckpointBuilder {
         let _scope = monitored_scope("BuildSystemCheckpoints");
 
         // Collect info about the most recently built system_checkpoint.
-        let system_checkpoint = self
+        let checkpoint_message = self
             .epoch_store
             .last_built_system_checkpoint_message_builder()
             .expect("epoch should not have ended");
-        let mut last_height = system_checkpoint
+        let mut last_height = checkpoint_message
             .clone()
             .and_then(|s| s.system_checkpoint_height);
         let mut last_timestamp =
-            system_checkpoint.map(|s| s.system_checkpoint_message.timestamp_ms);
+            checkpoint_message.map(|s| s.system_checkpoint_message.timestamp_ms);
 
-        let min_system_checkpoint_interval_ms = self
+        let min_checkpoint_interval_ms = self
             .epoch_store
             .protocol_config()
             .min_system_checkpoint_interval_ms_as_option()
             .unwrap_or_default();
-        let mut grouped_pending_system_checkpoints = Vec::new();
-        let system_checkpoints_iter = self
+        let mut grouped_pending_checkpoints = Vec::new();
+        let checkpoints_iter = self
             .epoch_store
             .get_pending_system_checkpoints(last_height)
             .expect("unexpected epoch store error")
             .into_iter()
             .peekable();
-        for (height, pending) in system_checkpoints_iter {
-            // Group PendingSystemCheckpoints until:
+        for (height, pending) in checkpoints_iter {
+            // Group PendingCheckpoints until:
             // - minimum interval has elapsed ...
             let current_timestamp = pending.details().timestamp_ms;
             let can_build = match last_timestamp {
                 Some(last_timestamp) => {
-                    current_timestamp >= last_timestamp + min_system_checkpoint_interval_ms
+                    current_timestamp >= last_timestamp + min_checkpoint_interval_ms
                 }
                 None => true,
             };
-            grouped_pending_system_checkpoints.push(pending);
+            grouped_pending_checkpoints.push(pending);
             if !can_build {
                 debug!(
-                    system_checkpoint_commit_height = height,
+                    checkpoint_commit_height = height,
                     ?last_timestamp,
                     ?current_timestamp,
                     "waiting for more PendingSystemCheckpoints: minimum interval not yet elapsed"
@@ -512,15 +506,15 @@ impl SystemCheckpointBuilder {
             last_height = Some(height);
             last_timestamp = Some(current_timestamp);
             debug!(
-                system_checkpoint_commit_height = height,
-                "Making system_checkpoint at commit height"
+                checkpoint_commit_height = height,
+                "Making system checkpoint at commit height"
             );
             if let Err(e) = self
-                .make_system_checkpoints(std::mem::take(&mut grouped_pending_system_checkpoints))
+                .make_checkpoint(std::mem::take(&mut grouped_pending_checkpoints))
                 .await
             {
                 error!(
-                    "Error while making system_checkpoint, will retry in 1s: {:?}",
+                    "Error while making system checkpoint, will retry in 1s: {:?}",
                     e
                 );
                 tokio::time::sleep(Duration::from_secs(1)).await;
@@ -529,104 +523,98 @@ impl SystemCheckpointBuilder {
             }
         }
         debug!(
-            "Waiting for more system_checkpoints from consensus after processing {last_height:?}; {} pending system_checkpoints left unprocessed until next interval",
-            grouped_pending_system_checkpoints.len(),
+            "Waiting for more system checkpoints from consensus after processing {last_height:?}; {} pending system checkpoints left unprocessed until next interval",
+            grouped_pending_checkpoints.len(),
         );
     }
 
     #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().system_checkpoint_height))]
-    async fn make_system_checkpoints(
-        &self,
-        pendings: Vec<PendingSystemCheckpoint>,
-    ) -> anyhow::Result<()> {
+    async fn make_checkpoint(&self, pendings: Vec<PendingSystemCheckpoint>) -> anyhow::Result<()> {
         let last_details = pendings.last().unwrap().details().clone();
 
-        // Keeps track of the effects that are already included in the current system_checkpoint.
-        // This is used when there are multiple pending system_checkpoints to create a single system_checkpoint
-        // because in such scenarios, dependencies of a transaction may in earlier created system_checkpoints,
-        // or in earlier pending system_checkpoints.
-        //let mut effects_in_current_system_checkpoint = BTreeSet::new();
+        // Keeps track of the effects that are already included in the current checkpoint.
+        // This is used when there are multiple pending checkpoints to create a single checkpoint
+        // because in such scenarios, dependencies of a transaction may in earlier created checkpoints,
+        // or in earlier pending checkpoints.
+        //let mut effects_in_current_checkpoint = BTreeSet::new();
 
-        // Stores the transactions that should be included in the system_checkpoint. Transactions will be recorded in the system_checkpoint
+        // Stores the transactions that should be included in the checkpoint. Transactions will be recorded in the checkpoint
         // in this order.
-        let mut sorted_tx_effects_included_in_system_checkpoint = Vec::new();
-        for pending_system_checkpoint in pendings.into_iter() {
-            let pending = pending_system_checkpoint.into_v1();
-            // let txn_in_system_checkpoint = self
-            //     .resolve_system_checkpoint_transactions(pending.roots, &mut effects_in_current_system_checkpoint)
+        let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
+        for pending_checkpoint in pendings.into_iter() {
+            let pending = pending_checkpoint.into_v1();
+            // let txn_in_checkpoint = self
+            //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
-            sorted_tx_effects_included_in_system_checkpoint.extend(pending.messages);
+            sorted_tx_effects_included_in_checkpoint.extend(pending.messages);
         }
-        let new_system_checkpoint = self
-            .create_system_checkpoints(
-                sorted_tx_effects_included_in_system_checkpoint,
-                &last_details,
-            )
+        let new_checkpoint = self
+            .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
             .await?;
-        self.write_system_checkpoints(last_details.system_checkpoint_height, new_system_checkpoint)
+        self.write_checkpoints(last_details.system_checkpoint_height, new_checkpoint)
             .await?;
         Ok(())
     }
 
     #[instrument(level = "debug", skip_all)]
-    async fn write_system_checkpoints(
+    async fn write_checkpoints(
         &self,
         height: SystemCheckpointHeight,
-        new_system_checkpoints: Vec<SystemCheckpoint>,
+        new_checkpoints: Vec<SystemCheckpointMessage>,
     ) -> IkaResult {
         let _scope = monitored_scope("SystemCheckpointBuilder::write_system_checkpoints");
         //let mut batch = self.tables.system_checkpoint_content.batch();
         // let mut all_tx_digests =
         //     Vec::with_capacity(new_system_checkpoints.iter().map(|(_, c)| c.size()).sum());
 
-        for system_checkpoint in &new_system_checkpoints {
+        for checkpoint_message in &new_checkpoints {
             debug!(
-                system_checkpoint_commit_height = height,
-                system_checkpoint_seq = system_checkpoint.sequence_number,
-                system_checkpoint_digest = ?system_checkpoint.digest(),
-                "writing system_checkpoint",
+                checkpoint_commit_height = height,
+                checkpoint_seq = checkpoint_message.sequence_number,
+                checkpoint_digest = ?checkpoint_message.digest(),
+                "writing system checkpoint",
             );
             //all_tx_digests.extend(contents.iter().map(|digest| digest));
 
             self.output
-                .system_checkpoint_created(system_checkpoint, &self.epoch_store, &self.tables)
+                .system_checkpoint_created(checkpoint_message, &self.epoch_store, &self.tables)
                 .await?;
 
             self.metrics
                 .messages_included_in_system_checkpoint
-                .inc_by(system_checkpoint.messages.len() as u64);
-            let sequence_number = system_checkpoint.sequence_number;
+                .inc_by(checkpoint_message.messages.len() as u64);
+            let sequence_number = checkpoint_message.sequence_number;
             self.metrics
                 .last_constructed_system_checkpoint
                 .set(sequence_number as i64);
 
             // batch.insert_batch(
-            //     &self.tables.system_checkpoint_content,
+            //     &self.tables.checkpoint_content,
             //     [(contents.digest(), contents)],
             // )?;
 
             self.tables
                 .locally_computed_checkpoints
-                .insert(&sequence_number, system_checkpoint)?;
+                .insert(&sequence_number, checkpoint_message)?;
 
             // batch.insert_batch(
-            //     &self.tables.locally_computed_system_checkpoints,
+            //     &self.tables.locally_computed_checkpoints,
             //     [(sequence_number, summary)],
             // )?;
         }
 
         self.notify_aggregator.notify_one();
         self.epoch_store
-            .process_pending_system_checkpoint(height, new_system_checkpoints)?;
+            .process_pending_system_checkpoint(height, new_checkpoints)?;
         Ok(())
     }
 
     #[allow(clippy::type_complexity)]
-    fn split_system_checkpoint_chunks(
+    fn split_checkpoint_chunks(
         &self,
-        messages: Vec<SystemCheckpointKind>,
-    ) -> anyhow::Result<Vec<Vec<SystemCheckpointKind>>> {
-        let _guard = monitored_scope("SystemCheckpointBuilder::split_system_checkpoint_chunks");
+        messages: Vec<SystemCheckpointMessageKind>,
+    ) -> anyhow::Result<Vec<Vec<SystemCheckpointMessageKind>>> {
+        let _guard = monitored_scope("SystemCheckpointBuilder::split_checkpoint_chunks");
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
         let mut chunk_size: usize = 0;
@@ -640,8 +628,8 @@ impl SystemCheckpointBuilder {
                 || (chunk_size + size) > self.max_system_checkpoint_size_bytes
             {
                 if chunk.is_empty() {
-                    // Always allow at least one tx in a system_checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max system_checkpoint size ({}); allowing excessively large system_checkpoint to go through.", self.max_system_checkpoint_size_bytes);
+                    // Always allow at least one tx in a checkpoint.
+                    warn!("Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.", self.max_system_checkpoint_size_bytes);
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -659,105 +647,100 @@ impl SystemCheckpointBuilder {
             // Important: if some conditions are added here later, we need to make sure we always
             // have at least one chunk if last_pending_of_epoch is set
             chunks.push(chunk);
-            // Note: empty system_checkpoints are ok - they shouldn't happen at all on a network with even
+            // Note: empty checkpoints are ok - they shouldn't happen at all on a network with even
             // modest load.
         }
         Ok(chunks)
     }
 
     #[instrument(level = "debug", skip_all)]
-    async fn create_system_checkpoints(
+    async fn create_checkpoints(
         &self,
-        all_messages: Vec<SystemCheckpointKind>,
+        all_messages: Vec<SystemCheckpointMessageKind>,
         details: &PendingSystemCheckpointInfo,
-    ) -> anyhow::Result<Vec<SystemCheckpoint>> {
-        let _scope = monitored_scope("SystemCheckpointBuilder::create_system_checkpoints");
+    ) -> anyhow::Result<Vec<SystemCheckpointMessage>> {
+        let _scope = monitored_scope("SystemCheckpointBuilder::create_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
-        let mut last_system_checkpoint = self.epoch_store.last_built_system_checkpoint_message()?;
-        // if last_system_checkpoint.is_none() {
+        let mut last_checkpoint = self.epoch_store.last_built_system_checkpoint_message()?;
+        // if last_checkpoint.is_none() {
         //     let epoch = self.epoch_store.epoch();
         //     if epoch > 0 {
         //         let previous_epoch = epoch - 1;
         //         let last_verified = self.tables.get_epoch_last_system_checkpoint(previous_epoch)?;
-        //         last_system_checkpoint = last_verified.map(VerifiedSystemCheckpoint::into_summary_and_sequence);
+        //         last_checkpoint = last_verified.map(VerifiedSystemCheckpoint::into_summary_and_sequence);
         //         if let Some((ref seq, _)) = last_system_checkpoint {
-        //             debug!("No system_checkpoints in builder DB, taking system_checkpoint from previous epoch with sequence {seq}");
+        //             debug!("No last_checkpoint in builder DB, taking system_checkpoint from previous epoch with sequence {seq}");
         //         } else {
         //             // This is some serious bug with when SystemCheckpointBuilder started so surfacing it via panic
         //             panic!("Can not find last system_checkpoint for previous epoch {previous_epoch}");
         //         }
         //     }
         // }
-        let mut last_system_checkpoint_seq = last_system_checkpoint.as_ref().map(|(seq, _)| *seq);
+        let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq).unwrap_or(0);
         // Epoch 0 is where we create the validator set (we are not running Epoch 0).
         // Once we initialize, the active committee starts in Epoch 1.
         // So there is no previous committee in epoch 1.
-        if epoch != 1 && last_system_checkpoint_seq.is_none() {
-            last_system_checkpoint_seq =
-                Some(self.previous_epoch_last_system_checkpoint_sequence_number);
+        if epoch != 1 && self.previous_epoch_last_checkpoint_sequence_number > last_checkpoint_seq {
+            last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
+        let sequence_number = last_checkpoint_seq + 1;
         info!(
-            next_system_checkpoint_seq = last_system_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
-            system_checkpoint_timestamp = details.timestamp_ms,
-            "Creating system_checkpoint(s) for {} messages",
+            sequence_number,
+            checkpoint_timestamp = details.timestamp_ms,
+            "Creating system checkpoint(s) for {} messages",
             all_messages.len(),
         );
 
-        if !all_messages.is_empty() {
-            info!(
-                "SystemCheckpointBuilder::create_system_checkpoints: {} messages to be included in system_checkpoint",
-                all_messages.len()
-            );
-        }
-        let chunks = self.split_system_checkpoint_chunks(all_messages)?;
+        let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
 
-        let mut system_checkpoints = Vec::with_capacity(chunks_count);
+        let mut checkpoints = Vec::with_capacity(chunks_count);
         debug!(
-            ?last_system_checkpoint_seq,
-            "Creating {} system_checkpoints with {} transactions", chunks_count, total,
+            ?last_checkpoint_seq,
+            "Creating {} system checkpoints with {} transactions", chunks_count, total,
         );
 
         for (index, messages) in chunks.into_iter().enumerate() {
-            let first_system_checkpoint_of_epoch = index == 0
-                && (last_system_checkpoint_seq.is_none()
-                    || last_system_checkpoint_seq.unwrap()
-                        == self.previous_epoch_last_system_checkpoint_sequence_number);
-            if first_system_checkpoint_of_epoch {
+            let first_checkpoint_of_epoch = index == 0
+                && (last_checkpoint_seq == self.previous_epoch_last_checkpoint_sequence_number);
+            if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_system_checkpoint_creation_time_metric();
             }
 
-            let sequence_number = last_system_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
-            last_system_checkpoint_seq = Some(sequence_number);
+            last_checkpoint_seq = sequence_number;
 
             let timestamp_ms = details.timestamp_ms;
-            if let Some((_, last_system_checkpoint)) = &last_system_checkpoint {
-                if last_system_checkpoint.timestamp_ms > timestamp_ms {
-                    error!("Unexpected decrease of system_checkpoint timestamp, sequence: {}, previous: {}, current: {}",
-                    sequence_number,  last_system_checkpoint.timestamp_ms, timestamp_ms);
+            if let Some((_, last_checkpoint)) = &last_checkpoint {
+                if last_checkpoint.timestamp_ms > timestamp_ms {
+                    error!(
+                        sequence_number,
+                        previous_timestamp_ms = last_checkpoint.timestamp_ms,
+                        current_timestamp_ms = timestamp_ms,
+                        "Unexpected decrease of system checkpoint timestamp.",
+                    );
                 }
             }
 
             info!(
-                "SystemCheckpoint sequence: {}, messages count: {}",
                 sequence_number,
-                messages.len()
+                messages_count = messages.len(),
+                "Creating a system checkpoint"
             );
 
-            let system_checkpoint =
-                SystemCheckpoint::new(epoch, sequence_number, messages, timestamp_ms);
-            system_checkpoint
+            let checkpoint_message =
+                SystemCheckpointMessage::new(epoch, sequence_number, messages, timestamp_ms);
+            checkpoint_message
                 .report_system_checkpoint_age(&self.metrics.last_created_system_checkpoint_age);
-            last_system_checkpoint = Some((sequence_number, system_checkpoint.clone()));
-            system_checkpoints.push(system_checkpoint);
+            last_checkpoint = Some((sequence_number, checkpoint_message.clone()));
+            checkpoints.push(checkpoint_message);
         }
 
-        Ok(system_checkpoints)
+        Ok(checkpoints)
     }
 
-    // This function is used to check the invariants of the consensus commit prologue transactions in the system_checkpoint
+    // This function is used to check the invariants of the consensus commit prologue transactions in the checkpoint
     // in simtest.
     #[cfg(msim)]
     fn expensive_consensus_commit_prologue_invariants_check(
@@ -768,7 +751,7 @@ impl SystemCheckpointBuilder {
         if !self
             .epoch_store
             .protocol_config()
-            .prepend_prologue_tx_in_consensus_commit_in_system_checkpoints()
+            .prepend_prologue_tx_in_consensus_commit_in_checkpoints()
         {
             return;
         }
@@ -802,7 +785,7 @@ impl SystemCheckpointBuilder {
         // There should be at most one consensus commit prologue transaction in the roots.
         assert!(ccps.len() <= 1);
 
-        // Get all the transactions in the system_checkpoint.
+        // Get all the transactions in the checkpoint.
         let txs = self
             .state
             .get_transaction_cache_reader()
@@ -816,7 +799,7 @@ impl SystemCheckpointBuilder {
 
         if ccps.len() == 0 {
             // If there is no consensus commit prologue transaction in the roots, then there should be no
-            // consensus commit prologue transaction in the system_checkpoint.
+            // consensus commit prologue transaction in the checkpoint.
             for tx in txs.iter() {
                 if let Some(tx) = tx {
                     assert!(!matches!(
@@ -828,7 +811,7 @@ impl SystemCheckpointBuilder {
                 }
             }
         } else {
-            // If there is one consensus commit prologue, it must be the first one in the system_checkpoint.
+            // If there is one consensus commit prologue, it must be the first one in the checkpoint.
             assert!(matches!(
                 txs[0].as_ref().unwrap().transaction_data().kind(),
                 TransactionKind::ConsensusCommitPrologue(_)
@@ -878,7 +861,7 @@ impl SystemCheckpointAggregator {
         loop {
             if let Err(e) = self.run_and_notify().await {
                 error!(
-                    "Error while aggregating system_checkpoint, will retry in 1s: {:?}",
+                    "Error while aggregating system checkpoint, will retry in 1s: {:?}",
                     e
                 );
                 self.metrics.system_checkpoint_errors.inc();
@@ -891,33 +874,33 @@ impl SystemCheckpointAggregator {
     }
 
     async fn run_and_notify(&mut self) -> IkaResult {
-        let system_checkpoints = self.run_inner()?;
-        for system_checkpoint in system_checkpoints {
+        let checkpoint_messages = self.run_inner()?;
+        for checkpoint_message in checkpoint_messages {
             self.output
-                .certified_system_checkpoint_created(&system_checkpoint)
+                .certified_system_checkpoint_message_created(&checkpoint_message)
                 .await?;
         }
         Ok(())
     }
 
-    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedSystemCheckpoint>> {
+    fn run_inner(&mut self) -> IkaResult<Vec<CertifiedSystemCheckpointMessage>> {
         let _scope = monitored_scope("SystemCheckpointAggregator");
         let mut result = vec![];
         'outer: loop {
             let next_to_certify = self.next_checkpoint_to_certify()?;
             let current = if let Some(current) = &mut self.current {
-                // It's possible that the system_checkpoint was already certified by
+                // It's possible that the checkpoint was already certified by
                 // the rest of the network, and we've already received the
-                // certified system_checkpoint via StateSync. In this case, we reset
-                // the current signature aggregator to the next system_checkpoint to
-                // be certified
-                if current.system_checkpoint.sequence_number < next_to_certify {
+                // certified checkpoint via StateSync. In this case, we reset
+                // the current signature aggregator to the next checkpoint to
+                // be certified.
+                if current.checkpoint_message.sequence_number < next_to_certify {
                     self.current = None;
                     continue;
                 }
                 current
             } else {
-                let Some(system_checkpoint) = self
+                let Some(checkpoint_message) = self
                     .epoch_store
                     .get_built_system_checkpoint_message(next_to_certify)?
                 else {
@@ -925,8 +908,8 @@ impl SystemCheckpointAggregator {
                 };
                 self.current = Some(SystemCheckpointSignatureAggregator {
                     next_index: 0,
-                    digest: system_checkpoint.digest(),
-                    system_checkpoint,
+                    digest: checkpoint_message.digest(),
+                    checkpoint_message,
                     signatures_by_digest: MultiStakeAggregator::new(
                         self.epoch_store.committee().clone(),
                     ),
@@ -945,51 +928,51 @@ impl SystemCheckpointAggregator {
                 .pending_system_checkpoint_signatures
                 .safe_iter_with_bounds(
                     Some((
-                        current.system_checkpoint.sequence_number,
+                        current.checkpoint_message.sequence_number,
                         current.next_index,
                     )),
                     None,
                 );
             for item in iter {
                 let ((seq, index), data) = item?;
-                if seq != current.system_checkpoint.sequence_number {
+                if seq != current.checkpoint_message.sequence_number {
                     debug!(
-                        system_checkpoint_seq =? current.system_checkpoint.sequence_number,
-                        "Not enough system_checkpoint signatures",
+                        checkpoint_seq =? current.checkpoint_message.sequence_number,
+                        "Not enough system checkpoint signatures",
                     );
-                    // No more signatures (yet) for this system_checkpoint
+                    // No more signatures (yet) for this checkpoint
                     return Ok(result);
                 }
                 debug!(
-                    system_checkpoint_seq = current.system_checkpoint.sequence_number,
-                    "Processing signature for system_checkpoint (digest: {:?}) from {:?}",
-                    current.system_checkpoint.digest(),
-                    data.system_checkpoint.auth_sig().authority.concise()
+                    checkpoint_seq = current.checkpoint_message.sequence_number,
+                    digest=?current.checkpoint_message.digest(),
+                    from=?data.checkpoint_message.auth_sig().authority.concise(),
+                    "Processing signature for system checkpoint.",
                 );
                 self.metrics
                     .system_checkpoint_participation
                     .with_label_values(&[&format!(
                         "{:?}",
-                        data.system_checkpoint.auth_sig().authority.concise()
+                        data.checkpoint_message.auth_sig().authority.concise()
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
-                    let system_checkpoint = VerifiedSystemCheckpoint::new_unchecked(
-                        CertifiedSystemCheckpoint::new_from_data_and_sig(
-                            current.system_checkpoint.clone(),
+                    let checkpoint_message = VerifiedSystemCheckpointMessage::new_unchecked(
+                        CertifiedSystemCheckpointMessage::new_from_data_and_sig(
+                            current.checkpoint_message.clone(),
                             auth_signature,
                         ),
                     );
 
                     self.tables
-                        .insert_certified_system_checkpoint(&system_checkpoint)?;
+                        .insert_certified_checkpoint(&checkpoint_message)?;
                     self.metrics
                         .last_certified_system_checkpoint
-                        .set(current.system_checkpoint.sequence_number as i64);
-                    current.system_checkpoint.report_system_checkpoint_age(
+                        .set(current.checkpoint_message.sequence_number as i64);
+                    current.checkpoint_message.report_system_checkpoint_age(
                         &self.metrics.last_certified_system_checkpoint_age,
                     );
-                    result.push(system_checkpoint.into_inner());
+                    result.push(checkpoint_message.into_inner());
                     self.current = None;
                     continue 'outer;
                 } else {
@@ -1009,7 +992,7 @@ impl SystemCheckpointAggregator {
             .next()
             .transpose()?
             .map(|(seq, _)| seq + 1)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 }
 
@@ -1019,11 +1002,11 @@ impl SystemCheckpointSignatureAggregator {
         &mut self,
         data: SystemCheckpointSignatureMessage,
     ) -> Result<AuthorityStrongQuorumSignInfo, ()> {
-        let their_digest = *data.system_checkpoint.digest();
-        let (_, signature) = data.system_checkpoint.into_data_and_sig();
+        let their_digest = *data.checkpoint_message.digest();
+        let (_, signature) = data.checkpoint_message.into_data_and_sig();
         let author = signature.authority;
-        let envelope = SignedSystemCheckpoint::new_from_data_and_sig(
-            self.system_checkpoint.clone(),
+        let envelope = SignedSystemCheckpointMessage::new_from_data_and_sig(
+            self.checkpoint_message.clone(),
             signature,
         );
         match self.signatures_by_digest.insert(their_digest, envelope) {
@@ -1037,8 +1020,8 @@ impl SystemCheckpointSignatureAggregator {
             } => Err(()),
             InsertResult::Failed { error } => {
                 warn!(
-                    system_checkpoint_seq = self.system_checkpoint.sequence_number,
-                    "Failed to aggregate new signature from validator {:?}: {:?}",
+                    checkpoint_seq = self.checkpoint_message.sequence_number,
+                    "Failed to aggregate new system checkpoint signature from validator {:?}: {:?}",
                     author.concise(),
                     error
                 );
@@ -1051,11 +1034,11 @@ impl SystemCheckpointSignatureAggregator {
                 if their_digest != self.digest {
                     self.metrics.remote_system_checkpoint_forks.inc();
                     warn!(
-                        system_checkpoint_seq = self.system_checkpoint.sequence_number,
-                        "Validator {:?} has mismatching system_checkpoint digest {}, we have digest {}",
-                        author.concise(),
-                        their_digest,
-                        self.digest
+                        checkpoint_seq = self.checkpoint_message.sequence_number,
+                        from=?author.concise(),
+                        ?their_digest,
+                        our_digest=?self.digest,
+                        "Validator has mismatching system checkpoint digest than what we have.",
                     );
                     return Err(());
                 }
@@ -1073,13 +1056,13 @@ impl SystemCheckpointSignatureAggregator {
 }
 
 pub trait SystemCheckpointServiceNotify {
-    fn notify_system_checkpoint_signature(
+    fn notify_checkpoint_signature(
         &self,
         epoch_store: &AuthorityPerEpochStore,
         info: &SystemCheckpointSignatureMessage,
     ) -> IkaResult;
 
-    fn notify_system_checkpoint(&self) -> IkaResult;
+    fn notify_checkpoint(&self) -> IkaResult;
 }
 
 /// This is a service used to communicate with other pieces of ika(for ex. authority)
@@ -1101,10 +1084,11 @@ impl SystemCheckpointService {
         metrics: Arc<SystemCheckpointMetrics>,
         max_messages_per_system_checkpoint: usize,
         max_system_checkpoint_size_bytes: usize,
-        previous_epoch_last_system_checkpoint_sequence_number: u64,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<Self>, JoinSet<()> /* Handle to tasks */) {
         info!(
-            "Starting system_checkpoint service with {max_messages_per_system_checkpoint} max_messages_per_system_checkpoint and {max_system_checkpoint_size_bytes} max_system_checkpoint_size_bytes"
+            max_messages_per_system_checkpoint,
+            max_system_checkpoint_size_bytes, "Starting system checkpoint service"
         );
         let notify_builder = Arc::new(Notify::new());
         let notify_aggregator = Arc::new(Notify::new());
@@ -1121,7 +1105,7 @@ impl SystemCheckpointService {
             metrics.clone(),
             max_messages_per_system_checkpoint,
             max_system_checkpoint_size_bytes,
-            previous_epoch_last_system_checkpoint_sequence_number,
+            previous_epoch_last_checkpoint_sequence_number,
         );
         tasks.spawn(monitored_future!(builder.run()));
 
@@ -1164,29 +1148,29 @@ impl SystemCheckpointService {
         let mut batch = epoch_store.db_batch_for_test();
         output.write_to_batch(epoch_store, &mut batch)?;
         batch.write()?;
-        self.notify_system_checkpoint()?;
+        self.notify_checkpoint()?;
         Ok(())
     }
 }
 
 impl SystemCheckpointServiceNotify for SystemCheckpointService {
-    fn notify_system_checkpoint_signature(
+    fn notify_checkpoint_signature(
         &self,
         epoch_store: &AuthorityPerEpochStore,
         info: &SystemCheckpointSignatureMessage,
     ) -> IkaResult {
-        let sequence = info.system_checkpoint.sequence_number;
-        let signer = info.system_checkpoint.auth_sig().authority.concise();
+        let sequence = info.checkpoint_message.sequence_number;
+        let signer = info.checkpoint_message.auth_sig().authority.concise();
 
-        if let Some(highest_verified_system_checkpoint) = self
+        if let Some(highest_verified_checkpoint) = self
             .tables
             .get_highest_verified_system_checkpoint()?
             .map(|x| *x.sequence_number())
         {
-            if sequence <= highest_verified_system_checkpoint {
+            if sequence <= highest_verified_checkpoint {
                 debug!(
-                    system_checkpoint_seq = sequence,
-                    "Ignore system_checkpoint signature from {} - already certified", signer,
+                    checkpoint_seq = sequence,
+                    "Ignore system checkpoint signature from {} - already certified", signer,
                 );
                 self.metrics
                     .last_ignored_system_checkpoint_signature_received
@@ -1195,9 +1179,9 @@ impl SystemCheckpointServiceNotify for SystemCheckpointService {
             }
         }
         debug!(
-            system_checkpoint_seq = sequence,
-            "Received system_checkpoint signature, digest {} from {}",
-            info.system_checkpoint.digest(),
+            checkpoint_seq = sequence,
+            "Received system checkpoint signature, digest {} from {}",
+            info.checkpoint_message.digest(),
             signer,
         );
         self.metrics
@@ -1205,7 +1189,8 @@ impl SystemCheckpointServiceNotify for SystemCheckpointService {
             .with_label_values(&[&signer.to_string()])
             .set(sequence as i64);
         // While it can be tempting to make last_signature_index into AtomicU64, this won't work
-        // We need to make sure we write to `pending_signatures` and trigger `notify_aggregator` without race conditions
+        // We need to make sure we write to `pending_signatures`
+        // and trigger `notify_aggregator` without race conditions.
         let mut index = self.last_signature_index.lock();
         *index += 1;
         epoch_store.insert_system_checkpoint_signature(sequence, *index, info)?;
@@ -1213,7 +1198,7 @@ impl SystemCheckpointServiceNotify for SystemCheckpointService {
         Ok(())
     }
 
-    fn notify_system_checkpoint(&self) -> IkaResult {
+    fn notify_checkpoint(&self) -> IkaResult {
         self.notify_builder.notify_one();
         Ok(())
     }
