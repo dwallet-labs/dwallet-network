@@ -1,6 +1,5 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { Buffer } from 'node:buffer';
 import * as fs from 'node:fs';
 import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
@@ -299,7 +298,7 @@ export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array>
 	await cachePublicParameters(
 		networkDecryptionKeyPublicOutputID,
 		currentEpoch,
-		Buffer.from(publicParameters),
+		new Uint8Array(publicParameters),
 	);
 	return publicParameters;
 }
