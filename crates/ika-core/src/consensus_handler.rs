@@ -177,7 +177,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
-
+        let round = consensus_commit.leader_round();
         let mut dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
