@@ -158,8 +158,7 @@ pub fn create_dkg_output(
 /// The [`advance_centralized_sign_party`] function is
 /// called by the client (the centralized party).
 pub fn advance_centralized_sign_party(
-    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
-    key_scheme: u32,
+    protocol_pp: Vec<u8>,
     decentralized_party_dkg_public_output: SerializedWrappedMPCPublicOutput,
     centralized_party_secret_key_share: SerializedWrappedMPCPublicOutput,
     presign: SerializedWrappedMPCPublicOutput,
@@ -195,10 +194,7 @@ pub fn advance_centralized_sign_party(
                         hashed_message,
                         centralized_public_output.clone(),
                         presign,
-                        protocol_public_parameters_by_key_scheme(
-                            network_dkg_public_output.clone(),
-                            key_scheme,
-                        )?,
+                        bcs::from_bytes(&protocol_pp)?,
                     ),
                 );
 

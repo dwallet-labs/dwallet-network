@@ -164,7 +164,6 @@ pub fn create_sign_centralized_output(
 ) -> Result<JsValue, JsError> {
     let signed_message = advance_centralized_sign_party(
         network_dkg_public_output,
-        key_scheme,
         decentralized_party_dkg_public_output,
         centralized_party_dkg_secret_output,
         presign,
