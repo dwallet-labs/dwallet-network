@@ -472,7 +472,7 @@ impl AuthorityEpochTables {
             .flatten()
             .collect())
     }
-    
+
     pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
         Ok(self
             .dwallet_mpc_outputs

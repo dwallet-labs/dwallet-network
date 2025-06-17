@@ -100,7 +100,7 @@ impl DWalletMPCOutputsVerifier {
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
             dwallet_mpc_metrics,
-            has_performed_state_sync: false
+            has_performed_state_sync: false,
         }
     }
 
