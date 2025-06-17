@@ -26,7 +26,7 @@ use tracing::info;
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
-    pub(crate) mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
+    mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
@@ -43,7 +43,7 @@ pub struct DWalletMPCOutputsVerifier {
 }
 
 /// The data needed to manage the outputs of an MPC session.
-pub(crate) struct SessionOutputsData {
+struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
