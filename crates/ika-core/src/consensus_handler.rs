@@ -399,7 +399,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             return Ok(());
         }
         Err(IkaError::DwalletMPCError(
-            "Should not perform state sync".into(),
+            "should not perform state sync".into(),
         ))
     }
 
