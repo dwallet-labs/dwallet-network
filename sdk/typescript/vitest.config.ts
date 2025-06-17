@@ -12,10 +12,5 @@ export default defineConfig({
 		env: {
 			NODE_ENV: 'test',
 		},
-		poolOptions: {
-			threads: {
-				execArgv: ['--stack_size=204800'], // size in KB (here: 2 MB)
-			},
-		},
 	},
 });
