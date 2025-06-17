@@ -31,6 +31,6 @@
 		"module": "CommonJS",
 		"outDir": "./dist",
 		"rootDir": "src",
-		"isolatedModules": true
+		"isolatedModules": true,
 	}
 }

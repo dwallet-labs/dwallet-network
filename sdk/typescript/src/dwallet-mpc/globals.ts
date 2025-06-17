@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
 import { promises as fs_async } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
@@ -296,7 +298,7 @@ export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array>
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	cachePublicParameters(publicParameters, currentEpoch, key);
+	await cachePublicParameters(publicParameters, currentEpoch, key);
 	return publicParameters;
 }
 
@@ -325,6 +327,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 }
 
 export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
+	console.log('got here');
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
@@ -334,7 +337,13 @@ export async function cachePublicParameters(key_id: string, epoch: number, netwo
 	if (fs.existsSync(filePath)) {
 		fs.unlinkSync(filePath);
 	}
-	await fs_async.writeFile(filePath, networkKey);
+	try {
+		await pipeline(Readable.from(networkKey), fs.createWriteStream(filePath));
+	} catch (error) {
+		console.log(error);
+		throw error;
+	}
+	// await fs_async.writeFile(filePath, networkKey);
 }
 
 export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
