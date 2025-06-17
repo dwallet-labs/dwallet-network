@@ -1,13 +1,18 @@
+;
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
-import {
-	network_dkg_public_output_to_protocol_pp
-} from '@dwallet-network/dwallet-mpc-wasm';
+import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { Transaction } from '@mysten/sui/transactions';
 import sha3 from 'js-sha3';
+import { createStorage } from 'unstorage';
+import fsDriver from 'unstorage/drivers/fs';
+
+
+
+
 
 export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
 export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
@@ -338,12 +343,14 @@ export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8
 	fs.writeFileSync(filePath, networkKey);
 }
 
-export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
-	const configDirPath = `${process.env.HOME}/.ika`;
-	const keyDirPath = `${configDirPath}/${key_id}`;
-	const filePath = `${keyDirPath}/${epoch}.key`;
-	if (fs.existsSync(filePath)) {
-		return fs.readFileSync(filePath);
+export async function getCachedNetworkKey(
+	key_id: string,
+	epoch: number,
+	driver = fsDriver({ base: `${process.env.HOME}/.ika` }),
+): Promise<Uint8Array<ArrayBufferLike> | null> {
+	const storage = createStorage({ driver });
+	if (await storage.hasItem(`${key_id}/${epoch}.key`)) {
+		return await storage.getItem<Uint8Array>(`${key_id}/${epoch}.key`);
 	}
 	return null;
 }
