@@ -364,7 +364,7 @@ where
                 sui_client.query_events_by_module(module.clone(), cursor),
                 Duration::from_secs(120)
             ) else {
-                error!("failed to query events from the sui client — retrying");
+                warn!("sui client failed to query events from the sui network — retrying");
                 continue;
             };
 

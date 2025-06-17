@@ -186,7 +186,7 @@ impl DWalletMPCSession {
             }) => {
                 let session_id = self.session_identifier;
                 let validator_name = self.epoch_store()?.name;
-                let round_number = self.serialized_full_messages.len();
+                let round_number = self.current_round;
                 info!(
                     mpc_protocol=?mpc_protocol,
                     session_id=?session_id,

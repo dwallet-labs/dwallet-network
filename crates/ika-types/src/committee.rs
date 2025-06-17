@@ -403,6 +403,7 @@ pub trait CommitteeTrait<K: Ord> {
 
 #[derive(Clone, Debug)]
 pub struct NetworkMetadata {
+    pub name: String,
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,

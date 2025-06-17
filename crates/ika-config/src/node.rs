@@ -66,11 +66,11 @@ pub struct SuiConnectorConfig {
     pub sui_rpc_url: String,
     /// The expected sui chain identifier connecting to.
     pub sui_chain_identifier: SuiChainIdentifier,
-    /// The move package id of ika (IKA) on sui.
+    /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
-    /// The move package id of ika_system on sui.
+    /// The move package ID of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
-    /// The object id of ika_system_state on sui.
+    /// The object ID of ika_system_state on sui.
     pub ika_system_object_id: ObjectID,
 
     /// Only for sui connector notifiers, don't set `notifier_client_key_pair` otherwise.

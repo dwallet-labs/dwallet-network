@@ -10,8 +10,8 @@ use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::{
     default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath,
-    AuthorityOverloadConfig, ClassGroupsKeyPairWithPath, KeyPairWithPath, RunWithRange,
-    StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
+    AuthorityOverloadConfig, ClassGroupsKeyPairWithPath, KeyPairWithPath, MetricsConfig,
+    RunWithRange, StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
 };
 use std::path::PathBuf;
 use sui_types::base_types::ObjectID;
@@ -155,7 +155,10 @@ impl ValidatorConfigBuilder {
 
             end_of_epoch_broadcast_channel_capacity:
                 default_end_of_epoch_broadcast_channel_capacity(),
-            metrics: None,
+            metrics: Some(MetricsConfig {
+                push_interval_seconds: Some(20),
+                push_url: Some("http://localhost:9184/publish/metrics".to_string()),
+            }),
             supported_protocol_versions: self.supported_protocol_versions,
             state_archive_write_config: StateArchiveConfig::default(),
             state_archive_read_config: vec![],
@@ -367,7 +370,10 @@ impl FullnodeConfigBuilder {
             p2p_config,
             end_of_epoch_broadcast_channel_capacity:
                 default_end_of_epoch_broadcast_channel_capacity(),
-            metrics: None,
+            metrics: Some(MetricsConfig {
+                push_interval_seconds: Some(20),
+                push_url: Some("http://localhost:9184/publish/metrics".to_string()),
+            }),
             supported_protocol_versions: self.supported_protocol_versions,
             state_archive_write_config: StateArchiveConfig::default(),
             state_archive_read_config: vec![],

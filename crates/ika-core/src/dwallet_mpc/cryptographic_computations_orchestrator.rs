@@ -25,7 +25,7 @@ use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 /// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.
@@ -61,7 +61,7 @@ pub(crate) enum ComputationUpdate {
 pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of logical CPUs available for cryptographic computations on the validator's
     /// machine. Used to limit parallel task execution.
-    available_cores_for_cryptographic_computations: usize,
+    pub(crate) available_cores_for_cryptographic_computations: usize,
 
     /// A channel sender to notify the manager about computation lifecycle events.
     /// Used to track when computations start and complete, allowing proper resource management.
@@ -71,7 +71,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
     /// Used to prevent exceeding available CPU cores.
-    currently_running_sessions_count: usize,
+    pub(crate) currently_running_sessions_count: usize,
 }
 
 impl CryptographicComputationsOrchestrator {
@@ -107,6 +107,7 @@ impl CryptographicComputationsOrchestrator {
                 Ok(computation_update) => match computation_update {
                     ComputationUpdate::Started => {
                         info!(
+                            thread_count=rayon::current_num_threads(),
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Started cryptographic computation, increasing count"
                         );
@@ -115,6 +116,7 @@ impl CryptographicComputationsOrchestrator {
                     ComputationUpdate::Completed => {
                         // todo(#1081): metadata.
                         info!(
+                            thread_count=rayon::current_num_threads(),
                             currently_running_sessions_count =? self.currently_running_sessions_count,
                             "Completed cryptographic computation, decreasing count"
                         );
@@ -123,7 +125,7 @@ impl CryptographicComputationsOrchestrator {
                 },
                 Err(err) => match err {
                     TryRecvError::Empty => {
-                        info!("no new completed computations");
+                        debug!("no new completed computations");
                         return;
                     }
                     TryRecvError::Disconnected => {
