@@ -331,7 +331,8 @@ export async function cacheNetworkKey(
 	networkKey: Uint8Array,
 	driver = fsDriver({ base: `${process.env.HOME}/.ika` }),
 ) {
-	await driver.setItemRaw(`${key_id}/${epoch}.key`, networkKey, {});
+	const storage = createStorage({ driver });
+	await storage.setItemRaw(`${key_id}/${epoch}.key`, networkKey, {});
 }
 
 export async function getCachedNetworkKey(
