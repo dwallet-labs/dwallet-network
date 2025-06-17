@@ -388,7 +388,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
     /// Check if the dWallet MPC manager should perform a state sync.
     /// If so, block consensus and load all messages.
-    /// 
+    ///
     /// This condition is true if there are outputs in the DB & the verifier is empty.
     async fn should_perform_dwallet_mpc_state_sync(&self) -> IkaResult<()> {
         let dwallet_mpc_verifier = self
