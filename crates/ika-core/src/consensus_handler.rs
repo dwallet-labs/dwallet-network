@@ -183,7 +183,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
         if !dwallet_mpc_verifier.has_performed_state_sync {
-            warn!("performing state sync");
             drop(dwallet_mpc_verifier);
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
@@ -192,7 +191,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 );
                 return;
             }
-            warn!("performed state sync");
             let mut dwallet_mpc_verifier = self
                 .epoch_store
                 .get_dwallet_mpc_outputs_verifier_write()
@@ -202,7 +200,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         } else {
             drop(dwallet_mpc_verifier);
         }
-        warn!("yes yes yes");
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
