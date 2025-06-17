@@ -152,7 +152,6 @@
 		"graphql": "^16.11.0",
 		"js-sha3": "^0.9.3",
 		"tweetnacl": "^1.0.3",
-		"unstorage": "^1.16.0",
 		"valibot": "^1.1.0"
 	}
 }
