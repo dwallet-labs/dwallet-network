@@ -291,13 +291,13 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
-	const cachedKey = await getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
+	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
 	if (cachedKey) {
 		return cachedKey;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	await cacheNetworkKey(publicParameters, currentEpoch, key);
+	cacheNetworkKey(publicParameters, currentEpoch, key);
 	return publicParameters;
 }
 
@@ -325,24 +325,25 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export async function cacheNetworkKey(
-	key_id: string,
-	epoch: number,
-	networkKey: Uint8Array,
-	driver = fsDriver({ base: `${process.env.HOME}/.ika` }),
-) {
-	const storage = createStorage({ driver });
-	await storage.setItemRaw(`${key_id}/${epoch}.key`, networkKey, {});
+export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	if (!fs.existsSync(keyDirPath)) {
+		fs.mkdirSync(keyDirPath, { recursive: true });
+	}
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		fs.unlinkSync(filePath);
+	}
+	fs.writeFileSync(filePath, networkKey);
 }
 
-export async function getCachedNetworkKey(
-	key_id: string,
-	epoch: number,
-	driver = fsDriver({ base: `${process.env.HOME}/.ika` }),
-): Promise<Uint8Array<ArrayBufferLike> | null> {
-	const storage = createStorage({ driver });
-	if (await storage.hasItem(`${key_id}/${epoch}.key`)) {
-		return await storage.getItem<Uint8Array>(`${key_id}/${epoch}.key`);
+export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
+	const configDirPath = `${process.env.HOME}/.ika`;
+	const keyDirPath = `${configDirPath}/${key_id}`;
+	const filePath = `${keyDirPath}/${epoch}.key`;
+	if (fs.existsSync(filePath)) {
+		return fs.readFileSync(filePath);
 	}
 	return null;
 }
