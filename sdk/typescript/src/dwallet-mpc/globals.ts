@@ -326,7 +326,6 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 }
 
 export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
-	console.log('got here');
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
