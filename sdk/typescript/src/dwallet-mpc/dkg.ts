@@ -21,7 +21,6 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	MPCKeyScheme,
 	sessionIdentifierDigest,
 	SUI_PACKAGE_ID,
 } from './globals.js';
