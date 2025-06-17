@@ -390,18 +390,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     //     .send(executable_transactions);
     }
 
-    /// Check if the dWallet MPC manager should perform a state sync.
-    /// If so, block consensus and load all messages.
-    ///
-    /// This condition is true if there are outputs in the DB & the verifier is empty.
-    async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
-        let dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_read()
-            .await;
-        !dwallet_mpc_verifier.has_performed_state_sync
-    }
-
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
     /// Needs to be performed here,
     /// so system transactions will get created when they should, and a fork in the
