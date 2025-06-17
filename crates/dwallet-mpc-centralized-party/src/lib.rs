@@ -393,13 +393,9 @@ pub fn encrypt_secret_key_share_and_prove(
 pub fn verify_secret_share(
     secret_share: Vec<u8>,
     dkg_output: SerializedWrappedMPCPublicOutput,
-    network_dkg_public_output: Vec<u8>,
+    protocol_pp: Vec<u8>,
 ) -> anyhow::Result<bool> {
-    let protocol_public_params: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_params: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let dkg_output = bcs::from_bytes(&dkg_output)?;
     match dkg_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {
@@ -421,13 +417,9 @@ pub fn decrypt_user_share_inner(
     encryption_key: Vec<u8>,
     dwallet_dkg_output: Vec<u8>,
     encrypted_user_share_and_proof: Vec<u8>,
-    network_dkg_public_output: Vec<u8>,
+    protocol_pp: Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let protocol_public_params: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_params: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let VersionedEncryptedUserShare::V1(encrypted_user_share_and_proof) =
         bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let VersionedDwalletDKGSecondRoundPublicOutput::V1(dwallet_dkg_output) =
