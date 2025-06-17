@@ -1568,15 +1568,20 @@ impl AuthorityPerEpochStore {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         let output_verification_result = dwallet_mpc_verifier
-                .try_verify_output(&output, &session_info, origin_authority)
-                .await
-                .unwrap_or_else(|e| {
-                    error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
-                    OutputVerificationResult {
-                        result: OutputVerificationStatus::Malicious,
-                        malicious_actors: vec![origin_authority],
-                    }
-                });
+            .try_verify_output(&output, &session_info, origin_authority)
+            .await
+            .unwrap_or_else(|e| {
+                error!(
+                        session_identifier=?session_info.session_identifier,
+                        authority_index=?authority_index,
+                        error=?e,
+                        "error verifying DWalletMPCOutput output from session identifier"
+                );
+                OutputVerificationResult {
+                    result: OutputVerificationStatus::Malicious,
+                    malicious_actors: vec![origin_authority],
+                }
+            });
 
         match output_verification_result.result {
             OutputVerificationStatus::FirstQuorumReached(output) => self
