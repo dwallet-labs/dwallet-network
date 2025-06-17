@@ -300,7 +300,7 @@ pub fn create_imported_dwallet_centralized_step_inner(
     }
 }
 
-fn protocol_public_parameters_by_key_scheme(
+pub fn protocol_public_parameters_by_key_scheme(
     network_dkg_public_output: SerializedWrappedMPCPublicOutput,
     key_scheme: u32,
 ) -> anyhow::Result<ProtocolPublicParameters> {
