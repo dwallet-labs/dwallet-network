@@ -178,7 +178,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
         let round = consensus_commit.leader_round();
-        let mut dwallet_mpc_verifier = self
+        let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
@@ -186,8 +186,8 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             drop(dwallet_mpc_verifier);
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
-                    "epoch switched while performing dwallet mpc state sync: {:?}",
-                    err
+                    err=?err,
+                    "epoch switched while performing dwallet mpc state sync"
                 );
                 return;
             }
