@@ -1212,14 +1212,17 @@ impl IkaNode {
             }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
-                // Cancel the old checkpoint service tasks.
+                // Cancel the old dwallet checkpoint service & system checkpoint service tasks.
                 // Waiting for checkpoint builder to finish gracefully is not possible, because it
                 // may wait on transactions while consensus on peers have already shut down.
                 checkpoint_service_tasks.abort_all();
+                system_checkpoint_service_tasks.abort_all();
+
                 if let Err(err) = dwallet_mpc_service_exit.send(()) {
                     warn!(?err, "failed to send exit signal to dwallet mpc service");
                 }
                 drop(dwallet_mpc_service_exit);
+
                 while let Some(result) = checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
@@ -1230,7 +1233,6 @@ impl IkaNode {
                 }
                 info!("DWallet checkpoint service has shut down.");
 
-                system_checkpoint_service_tasks.abort_all();
                 while let Some(result) = system_checkpoint_service_tasks.join_next().await {
                     if let Err(err) = result {
                         if err.is_panic() {
