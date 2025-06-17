@@ -47,9 +47,14 @@ import {
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
 
-async function createConf(): Promise<Config> {
-	const keypair = Ed25519Keypair.generate();
-	const dWalletSeed = crypto.getRandomValues(new Uint8Array(32));
+async function createConf(
+	dWalletSeed: Uint8Array<ArrayBuffer>,
+	keypairSeed: string | null,
+): Promise<Config> {
+	const keypair =
+		keypairSeed == null
+			? Ed25519Keypair.generate()
+			: Ed25519Keypair.deriveKeypairFromSeed(keypairSeed);
 	const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
 		Buffer.from(dWalletSeed).toString('hex'),
 	);
@@ -79,29 +84,8 @@ describe('Test dWallet MPC', () => {
 	let conf: Config;
 
 	beforeEach(async () => {
-		const keypair = Ed25519Keypair.deriveKeypairFromSeed('0x2');
 		const dWalletSeed = new Uint8Array(32).fill(9);
-		const encryptedSecretShareSigningKeypair = Ed25519Keypair.deriveKeypairFromSeed(
-			Buffer.from(dWalletSeed).toString('hex'),
-		);
-		const address = keypair.getPublicKey().toSuiAddress();
-		console.log(`Address: ${address}`);
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
-		await requestSuiFromFaucetV2({
-			host: getFaucetHost('localnet'),
-			// host: 'https://faucet.sui.beta.devnet.ika-network.net',
-			recipient: address,
-		});
-
-		conf = {
-			suiClientKeypair: keypair,
-			client: suiClient,
-			timeout: fiveMinutes,
-			ikaConfig: require(path.resolve(process.cwd(), '../../ika_config.json')),
-			dWalletSeed,
-			encryptedSecretShareSigningKeypair,
-		};
+		conf = await createConf(dWalletSeed, '0x2');
 		await delay(2000);
 	});
 
@@ -112,7 +96,11 @@ describe('Test dWallet MPC', () => {
 			const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 
 			// Create a new configuration for each iteration
-			const configs = await Promise.all(Array.from({ length: iterations }, () => createConf()));
+			const configs = await Promise.all(
+				Array.from({ length: iterations }, () =>
+					createConf(crypto.getRandomValues(new Uint8Array(32)), null),
+				),
+			);
 
 			// -----------------------------
 			// Phase 1: DKG Initialization
