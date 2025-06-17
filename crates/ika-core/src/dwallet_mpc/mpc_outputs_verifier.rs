@@ -27,7 +27,7 @@ use tracing::info;
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
-    mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
+    pub(crate) mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// This data exists in the MPCManager, but in a different data structure.
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
@@ -103,7 +103,6 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
             dwallet_mpc_metrics,

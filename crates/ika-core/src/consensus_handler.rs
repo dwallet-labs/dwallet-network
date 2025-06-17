@@ -39,7 +39,8 @@ use crate::{
     dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     scoring_decision::update_low_scoring_authorities,
 };
-use ika_types::error::IkaResult;
+use ika_types::dwallet_mpc_error::DwalletMPCError;
+use ika_types::error::{IkaError, IkaResult};
 use tokio::task::JoinSet;
 use tracing::{error, info, instrument, trace_span, warn};
 
@@ -179,7 +180,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
 
         let round = consensus_commit.leader_round();
-        if self.should_perform_dwallet_mpc_state_sync(round).await {
+        if self.should_perform_dwallet_mpc_state_sync().await.is_ok() {
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
                     "epoch switched while performing dwallet mpc state sync: {:?}",
@@ -188,13 +189,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 return;
             }
         }
-        let mut dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
-            .await;
-        dwallet_mpc_verifier.last_processed_consensus_round = round;
-        // Need to drop the verifier, as `self` is being used mutably later in this function.
-        drop(dwallet_mpc_verifier);
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
@@ -397,15 +391,18 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// This condition is only true if we process a round
     /// before we processed the previous round,
     /// which can only happen if we restart the node.
-    async fn should_perform_dwallet_mpc_state_sync(&self, consensus_round: u64) -> bool {
+    async fn should_perform_dwallet_mpc_state_sync(&self) -> IkaResult<()> {
         let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_read()
             .await;
-        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
-        // This condition is only true if we process a round before we processed the previous round,
-        // which can only happen if we restart the node.
-        consensus_round > dwallet_mpc_verifier.last_processed_consensus_round + 1
+        let all_outputs = self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()?;
+        if !all_outputs.is_empty() && dwallet_mpc_verifier.mpc_sessions_outputs.is_empty() {
+            return Ok(());
+        }
+        Err(IkaError::DwalletMPCError(
+            "Should not perform state sync".into(),
+        ))
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
