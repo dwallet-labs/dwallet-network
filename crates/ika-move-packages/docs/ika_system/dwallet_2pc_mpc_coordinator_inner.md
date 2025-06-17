@@ -635,7 +635,7 @@ and various other fields, like the supported and paused curves, signing algorith
  Total number of messages processed
 </dd>
 <dt>
-<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
+<code>last_processed_checkpoint_sequence_number: u64</code>
 </dt>
 <dd>
  Last processed checkpoint sequence number
@@ -5357,7 +5357,7 @@ A new DWalletCoordinatorInner instance ready for use
         active_committee,
         previous_committee: <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_empty">bls_committee::empty</a>(),
         total_messages_processed: 0,
-        last_processed_checkpoint_sequence_number: option::none(),
+        last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         support_config: <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SupportConfig">SupportConfig</a> {
             supported_curves_to_signature_algorithms_to_hash_schemes,
@@ -6058,10 +6058,7 @@ Combined IKA balance from fees collected during the epoch
 ): Balance&lt;IKA&gt; {
     <b>assert</b>!(self.pricing_and_fee_management.calculation_votes.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPricingCalculationVotesMustBeCompleted">EPricingCalculationVotesMustBeCompleted</a>);
     <b>assert</b>!(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
-    <b>if</b> (self.last_processed_checkpoint_sequence_number.is_some()) {
-        <b>let</b> last_processed_checkpoint_sequence_number = *self.last_processed_checkpoint_sequence_number.borrow();
-        self.previous_epoch_last_checkpoint_sequence_number = last_processed_checkpoint_sequence_number;
-    };
+    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = <b>false</b>;
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_update_last_user_initiated_session_to_complete_in_current_epoch">update_last_user_initiated_session_to_complete_in_current_epoch</a>();
     self.current_epoch = self.current_epoch + 1;
@@ -9720,13 +9717,8 @@ SUI coin containing gas fee reimbursements from processed operations
     <b>let</b> epoch = bcs_body.peel_u64();
     <b>assert</b>!(epoch == self.current_epoch, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectEpochInCheckpoint">EIncorrectEpochInCheckpoint</a>);
     <b>let</b> sequence_number = bcs_body.peel_u64();
-    <b>if</b>(self.last_processed_checkpoint_sequence_number.is_none()) {
-        <b>assert</b>!(sequence_number == 0, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongCheckpointSequenceNumber">EWrongCheckpointSequenceNumber</a>);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } <b>else</b> {
-        <b>assert</b>!(sequence_number &gt; 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongCheckpointSequenceNumber">EWrongCheckpointSequenceNumber</a>);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
+    <b>assert</b>!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongCheckpointSequenceNumber">EWrongCheckpointSequenceNumber</a>);
+    self.last_processed_checkpoint_sequence_number = sequence_number;
     <b>let</b> timestamp_ms = bcs_body.peel_u64();
     event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_DWalletCheckpointInfoEvent">DWalletCheckpointInfoEvent</a> {
         epoch,

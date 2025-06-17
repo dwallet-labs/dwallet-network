@@ -393,7 +393,7 @@ impl PeerHeights {
 #[derive(Clone)]
 struct PeerBalancer {
     peers: VecDeque<(anemo::Peer, PeerStateSyncInfo)>,
-    requested_checkpoint: Option<DWalletCheckpointSequenceNumber>,
+    requested_dwallet_checkpoint: Option<DWalletCheckpointSequenceNumber>,
     requested_system_checkpoint: Option<SystemCheckpointSequenceNumber>,
 }
 
@@ -416,13 +416,13 @@ impl PeerBalancer {
                 .into_iter()
                 .map(|(_, peer, info)| (peer, info))
                 .collect(),
-            requested_checkpoint: None,
+            requested_dwallet_checkpoint: None,
             requested_system_checkpoint: None,
         }
     }
 
     pub fn with_checkpoint(mut self, checkpoint: DWalletCheckpointSequenceNumber) -> Self {
-        self.requested_checkpoint = Some(checkpoint);
+        self.requested_dwallet_checkpoint = Some(checkpoint);
         self
     }
 
@@ -444,7 +444,7 @@ impl Iterator for PeerBalancer {
             let idx =
                 rand::thread_rng().gen_range(0..std::cmp::min(SELECTION_WINDOW, self.peers.len()));
             let (peer, info) = self.peers.remove(idx).unwrap();
-            let requested_checkpoint = self.requested_checkpoint.unwrap_or(0);
+            let requested_checkpoint = self.requested_dwallet_checkpoint.unwrap_or(1);
             if info.height >= Some(requested_checkpoint) {
                 return Some(StateSyncClient::new(peer));
             }
@@ -620,7 +620,7 @@ where
                 self.maybe_start_system_checkpoint_summary_sync_task();
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
-                self.handle_checkpoint_from_consensus(checkpoint)
+                self.handle_dwallet_checkpoint_from_consensus(checkpoint)
             }
             // After we've successfully synced a checkpoint we can notify our peers
             StateSyncMessage::SyncedDWalletCheckpoint(checkpoint) => {
@@ -637,7 +637,7 @@ where
 
     // Handle a checkpoint that we received from consensus
     #[instrument(level = "debug", skip_all)]
-    fn handle_checkpoint_from_consensus(
+    fn handle_dwallet_checkpoint_from_consensus(
         &mut self,
         checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
@@ -665,7 +665,7 @@ where
         let checkpoint = *checkpoint;
         let next_sequence_number = latest_checkpoint_sequence_number
             .map(|s| s.checked_add(1).expect("exhausted u64"))
-            .unwrap_or(0);
+            .unwrap_or(1);
         if *checkpoint.sequence_number() > next_sequence_number {
             debug!(
                 "consensus sent too new of a checkpoint, expecting: {}, got: {}",
@@ -706,7 +706,7 @@ where
         let system_checkpoint = *system_checkpoint;
         let next_sequence_number = latest_system_checkpoint_sequence_number
             .map(|s| s.checked_add(1).expect("exhausted u64"))
-            .unwrap_or(0);
+            .unwrap_or(1);
         if *system_checkpoint.sequence_number() > next_sequence_number {
             debug!(
                 "consensus sent too new of a system_checkpoint, expecting: {}, got: {}",
@@ -1127,7 +1127,7 @@ where
 
     let peer_balancer = PeerBalancer::new(&network, peer_heights.clone());
     // range of the next sequence_numbers to fetch
-    let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(0)
+    let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(1)
         ..=*checkpoint.sequence_number())
         .map(|next| {
             let peers = peer_balancer.clone().with_checkpoint(next);
@@ -1198,7 +1198,7 @@ where
         assert_eq!(
             current
                 .map(|s| s.sequence_number().checked_add(1).expect("exhausted u64"))
-                .unwrap_or(0),
+                .unwrap_or(1),
             next
         );
 
@@ -1239,7 +1239,7 @@ where
             .get_highest_synced_dwallet_checkpoint()
             .expect("store operation should not fail")
             .map(|checkpoint| checkpoint.sequence_number)
-            .unwrap_or(0);
+            .unwrap_or(1);
         debug!("Syncing checkpoint messages from archive, highest_synced: {highest_synced}");
         let start = highest_synced
             .checked_add(1)
@@ -1480,7 +1480,7 @@ where
 
     let peer_balancer = PeerBalancer::new(&network, peer_heights.clone());
     // range of the next sequence_numbers to fetch
-    let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(0)
+    let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(1)
         ..=*system_checkpoint.sequence_number())
         .map(|next| {
             let peers = peer_balancer.clone().with_system_checkpoint(next);
@@ -1551,7 +1551,7 @@ where
         assert_eq!(
             current
                 .map(|s| s.sequence_number().checked_add(1).expect("exhausted u64"))
-                .unwrap_or(0),
+                .unwrap_or(1),
             next
         );
 
@@ -1596,7 +1596,7 @@ async fn sync_system_checkpoint_messages_from_archive<S>(
             .get_highest_synced_system_checkpoint()
             .expect("store operation should not fail")
             .map(|system_checkpoint| system_checkpoint.sequence_number)
-            .unwrap_or(0);
+            .unwrap_or(1);
         debug!("Syncing system_checkpoint messages from archive, highest_synced: {highest_synced}");
         let start = highest_synced
             .checked_add(1)

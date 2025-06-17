@@ -115,7 +115,7 @@ impl ArchiveReaderBalancer {
             let latest_checkpoint = reader
                 .latest_available_dwallet_checkpoint()
                 .await
-                .unwrap_or(0);
+                .unwrap_or(1);
             if latest_checkpoint >= checkpoint_range.end {
                 archives_with_complete_range.push(reader.clone());
             }
@@ -133,7 +133,7 @@ impl ArchiveReaderBalancer {
             let latest_checkpoint = reader
                 .latest_available_dwallet_checkpoint()
                 .await
-                .unwrap_or(0);
+                .unwrap_or(1);
             if latest_checkpoint >= checkpoint_range.start {
                 archives_with_partial_range.push(reader.clone());
             }

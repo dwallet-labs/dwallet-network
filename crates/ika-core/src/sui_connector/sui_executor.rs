@@ -317,19 +317,15 @@ where
                 .sui_client
                 .must_get_dwallet_coordinator_inner_v1()
                 .await;
-            let last_processed_dwallet_checkpoint_sequence_number: Option<u64> =
+            let last_processed_dwallet_checkpoint_sequence_number: u64 =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_dwallet_checkpoint_sequence_number =
-                last_processed_dwallet_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_dwallet_checkpoint_sequence_number + 1;
 
-            let last_processed_system_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_system_checkpoint_sequence_number();
+            let last_processed_system_checkpoint_sequence_number: u64 =
+                ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_system_checkpoint_sequence_number =
-                last_processed_system_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_system_checkpoint_sequence_number + 1;
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(

@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
@@ -248,26 +247,6 @@ pub struct AuthorityPerEpochStore {
     db_options: Option<Options>,
 
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    // Subscribers will get notified when a transaction is executed via checkpoint execution.
-    executed_transactions_to_checkpoint_notify_read:
-        NotifyRead<MessageDigest, DWalletCheckpointSequenceNumber>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    executed_digests_notify_read: NotifyRead<TransactionKey, MessageDigest>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Get notified when a synced checkpoint has reached CheckpointExecutor.
-    synced_checkpoint_notify_read: NotifyRead<DWalletCheckpointSequenceNumber, ()>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Caches the highest synced checkpoint sequence number as this has been notified from the CheckpointExecutor
-    highest_synced_checkpoint: RwLock<DWalletCheckpointSequenceNumber>,
 
     /// This is used to notify all epoch specific tasks that epoch has ended.
     epoch_alive_notify: NotifyOnce,
@@ -553,10 +532,6 @@ impl AuthorityPerEpochStore {
             user_certs_closed_notify: NotifyOnce::new(),
             epoch_alive: tokio::sync::RwLock::new(true),
             consensus_notify_read: NotifyRead::new(),
-            executed_transactions_to_checkpoint_notify_read: NotifyRead::new(),
-            executed_digests_notify_read: NotifyRead::new(),
-            synced_checkpoint_notify_read: NotifyRead::new(),
-            highest_synced_checkpoint: RwLock::new(0),
             epoch_open_time: current_time,
             epoch_close_time: Default::default(),
             metrics,
@@ -2002,7 +1977,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_checkpoint_signature(
@@ -2142,7 +2117,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_system_checkpoint_signature(
