@@ -325,17 +325,13 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
-	const configDirPath = `${process.env.HOME}/.ika`;
-	const keyDirPath = `${configDirPath}/${key_id}`;
-	if (!fs.existsSync(keyDirPath)) {
-		fs.mkdirSync(keyDirPath, { recursive: true });
-	}
-	const filePath = `${keyDirPath}/${epoch}.key`;
-	if (fs.existsSync(filePath)) {
-		fs.unlinkSync(filePath);
-	}
-	fs.writeFileSync(filePath, networkKey);
+export async function cacheNetworkKey(
+	key_id: string,
+	epoch: number,
+	networkKey: Uint8Array,
+	driver = fsDriver({ base: `${process.env.HOME}/.ika` }),
+) {
+	await driver.setItemRaw(`${key_id}/${epoch}.key`, networkKey, {});
 }
 
 export async function getCachedNetworkKey(
