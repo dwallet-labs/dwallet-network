@@ -291,13 +291,13 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
-	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
-	if (cachedKey) {
-		return cachedKey;
+	const cachedPP = getCachedPublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedPP) {
+		return cachedPP;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	cacheNetworkKey(publicParameters, currentEpoch, key);
+	cachePublicParameters(publicParameters, currentEpoch, key);
 	return publicParameters;
 }
 
@@ -325,7 +325,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
+export function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
@@ -338,7 +338,7 @@ export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8
 	fs.writeFileSync(filePath, networkKey);
 }
 
-export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
+export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	const filePath = `${keyDirPath}/${epoch}.key`;
