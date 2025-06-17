@@ -214,9 +214,7 @@ pub fn advance_centralized_sign_party(
     }
 }
 
-pub fn sample_dwallet_keypair_inner(
-    protocol_pp: Vec<u8>,
-) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+pub fn sample_dwallet_keypair_inner(protocol_pp: Vec<u8>) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let protocol_public_parameters: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let secret_key = twopc_mpc::secp256k1::Scalar::sample(
         &protocol_public_parameters
