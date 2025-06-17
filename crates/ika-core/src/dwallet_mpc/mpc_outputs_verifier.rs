@@ -39,6 +39,7 @@ pub struct DWalletMPCOutputsVerifier {
     epoch_id: EpochId,
     pub(crate) consensus_round_completed_sessions: HashSet<SessionIdentifier>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    pub(crate) has_performed_state_sync: bool,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -99,6 +100,7 @@ impl DWalletMPCOutputsVerifier {
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
             dwallet_mpc_metrics,
+            has_performed_state_sync: false
         }
     }
 

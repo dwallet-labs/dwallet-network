@@ -178,8 +178,11 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
 
-        let round = consensus_commit.leader_round();
-        if self.should_perform_dwallet_mpc_state_sync().await.is_ok() {
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
+        if !dwallet_mpc_verifier.has_performed_state_sync {
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
                     "epoch switched while performing dwallet mpc state sync: {:?}",
@@ -187,7 +190,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 );
                 return;
             }
+            dwallet_mpc_verifier.has_performed_state_sync = true;
         }
+        drop(dwallet_mpc_verifier);
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
@@ -389,18 +394,12 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// If so, block consensus and load all messages.
     ///
     /// This condition is true if there are outputs in the DB & the verifier is empty.
-    async fn should_perform_dwallet_mpc_state_sync(&self) -> IkaResult<()> {
+    async fn should_perform_dwallet_mpc_state_sync(&self) -> bool {
         let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_read()
             .await;
-        let all_outputs = self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()?;
-        if !all_outputs.is_empty() && dwallet_mpc_verifier.mpc_sessions_outputs.is_empty() {
-            return Ok(());
-        }
-        Err(IkaError::DwalletMPCError(
-            "should not perform state sync".into(),
-        ))
+        !dwallet_mpc_verifier.has_performed_state_sync
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
