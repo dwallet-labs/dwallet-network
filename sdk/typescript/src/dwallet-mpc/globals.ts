@@ -6,8 +6,6 @@ import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { Transaction } from '@mysten/sui/transactions';
 import sha3 from 'js-sha3';
-import { createStorage } from 'unstorage';
-import fsDriver from 'unstorage/drivers/fs';
 
 export const DWALLET_COORDINATOR_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator';
 export const DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME = 'dwallet_2pc_mpc_coordinator_inner';
