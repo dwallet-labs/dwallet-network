@@ -336,13 +336,7 @@ export async function cachePublicParameters(key_id: string, epoch: number, netwo
 	if (fs.existsSync(filePath)) {
 		fs.unlinkSync(filePath);
 	}
-	try {
-		await pipeline(Readable.from(networkKey), fs.createWriteStream(filePath));
-	} catch (error) {
-		console.log(error);
-		throw error;
-	}
-	// await fs_async.writeFile(filePath, networkKey);
+	fs.writeFileSync(filePath, networkKey);
 }
 
 export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
