@@ -297,7 +297,7 @@ export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array>
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
 	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	cacheNetworkKey(publicParameters, currentEpoch, key);
+	await cacheNetworkKey(publicParameters, currentEpoch, key);
 	return publicParameters;
 }
 
