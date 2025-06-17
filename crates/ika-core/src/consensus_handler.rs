@@ -39,7 +39,6 @@ use crate::{
     dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     scoring_decision::update_low_scoring_authorities,
 };
-use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::error::{IkaError, IkaResult};
 use tokio::task::JoinSet;
 use tracing::{error, info, instrument, trace_span, warn};

@@ -17,7 +17,6 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use sui_types::base_types::EpochId;
-use sui_types::messages_consensus::Round;
 use tracing::info;
 
 /// Verify the DWallet MPC outputs.
@@ -43,7 +42,7 @@ pub struct DWalletMPCOutputsVerifier {
 }
 
 /// The data needed to manage the outputs of an MPC session.
-struct SessionOutputsData {
+pub(crate) struct SessionOutputsData {
     /// Maps session's output to the authorities that voted for it.
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
