@@ -64,12 +64,12 @@ pub fn network_dkg_public_output_to_protocol_pp(
 pub fn encrypt_secret_share(
     secret_key_share: Vec<u8>,
     encryption_key: Vec<u8>,
-    network_dkg_public_output: Vec<u8>,
+    protocol_pp: Vec<u8>,
 ) -> Result<JsValue, JsError> {
     let encryption_and_proof = encrypt_secret_key_share_and_prove(
         secret_key_share,
         encryption_key,
-        network_dkg_public_output,
+        protocol_pp,
     )
     .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&encryption_and_proof)?)

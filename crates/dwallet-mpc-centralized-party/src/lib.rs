@@ -372,13 +372,9 @@ pub fn generate_secp256k1_cg_keypair_from_seed_internal(
 pub fn encrypt_secret_key_share_and_prove(
     secret_key_share: SerializedWrappedMPCPublicOutput,
     encryption_key: Vec<u8>,
-    network_dkg_public_output: SerializedWrappedMPCPublicOutput,
+    protocol_pp: SerializedWrappedMPCPublicOutput,
 ) -> anyhow::Result<Vec<u8>> {
-    let protocol_public_params: ProtocolPublicParameters =
-        protocol_public_parameters_by_key_scheme(
-            network_dkg_public_output,
-            DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-        )?;
+    let protocol_public_params: ProtocolPublicParameters = bcs::from_bytes(&protocol_pp)?;
     let secret_key_share: VersionedDwalletUserSecretShare = bcs::from_bytes(&secret_key_share)?;
     match secret_key_share {
         VersionedDwalletUserSecretShare::V1(secret_key_share) => {
