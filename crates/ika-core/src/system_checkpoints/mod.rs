@@ -682,12 +682,14 @@ impl SystemCheckpointBuilder {
             last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
 
-        info!(
-            next_sequence_number = last_checkpoint_seq + 1,
-            checkpoint_timestamp = details.timestamp_ms,
-            "Creating system checkpoint(s) for {} messages",
-            all_messages.len(),
-        );
+        if !all_messages.is_empty() {
+            info!(
+                next_sequence_number = last_checkpoint_seq + 1,
+                checkpoint_timestamp = details.timestamp_ms,
+                "Creating system checkpoint(s) for {} messages",
+                all_messages.len(),
+            );
+        }
 
         let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
