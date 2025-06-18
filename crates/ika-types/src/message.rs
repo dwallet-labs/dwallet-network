@@ -213,6 +213,71 @@ impl Display for DWalletMessageKind {
     }
 }
 
+impl Debug for DWalletMessageKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+        match &self {
+            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletMPCNetworkDKGOutput")?;
+            }
+            DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletDKGFirstRoundOutput")?;
+            }
+            DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletDKGSecondRoundOutput")?;
+            }
+            DWalletMessageKind::RespondDWalletPresign(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletPresign")?;
+            }
+            DWalletMessageKind::RespondDWalletSign(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletSign")?;
+            }
+            DWalletMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                writeln!(writer, "MessageKind : RespondDwalletEncryptedUserShare")?;
+            }
+            DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletPartialSignatureVerificationOutput"
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput"
+                )?;
+            }
+            DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic"
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletImportedKeyVerificationOutput"
+                )?;
+            }
+            DWalletMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetMaxActiveSessionsBuffer({})",
+                    buffer_size
+                )?;
+            }
+            DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
+                    value
+                )?;
+            }
+        }
+        write!(f, "{}", writer)
+    }
+}
+
 // #[enum_dispatch(MessageDataAPI)]
 // #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 // pub enum MessageKind {
