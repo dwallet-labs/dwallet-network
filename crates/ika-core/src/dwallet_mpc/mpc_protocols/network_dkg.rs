@@ -278,7 +278,7 @@ pub(crate) fn advance_network_dkg(
     Ok(res)
 }
 
-pub(super) fn network_dkg_public_input(
+pub(crate) fn network_dkg_public_input(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
@@ -292,7 +292,7 @@ pub(super) fn network_dkg_public_input(
     }
 }
 
-pub(super) fn network_dkg_session_info(
+pub(crate) fn network_dkg_session_info(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<SessionInfo> {

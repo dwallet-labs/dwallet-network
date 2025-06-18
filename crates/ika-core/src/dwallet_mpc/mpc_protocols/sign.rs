@@ -15,16 +15,16 @@ use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
-pub(super) type SignFirstParty =
+pub(crate) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
-pub(super) type SignPublicInput =
+pub(crate) type SignPublicInput =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedPartyPublicInput;
 
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.
 ///
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing [`Party::PublicInput`].
-pub(super) trait SignPartyPublicInputGenerator: Party {
+pub(crate) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
         protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,

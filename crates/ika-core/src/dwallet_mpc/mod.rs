@@ -1,48 +1,23 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::dwallet_dkg::{
+use crate::dwallet_mpc::mpc_protocols::dwallet_dkg::{
     DWalletDKGFirstParty, DWalletDKGFirstPartyPublicInputGenerator, DWalletDKGSecondParty,
     DWalletDKGSecondPartyPublicInputGenerator,
 };
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::PublicInput;
-use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
-use crate::dwallet_mpc::reconfiguration::{
+use crate::dwallet_mpc::mpc_protocols::presign::{PresignParty, PresignPartyPublicInputGenerator};
+use crate::dwallet_mpc::mpc_protocols::reconfiguration::{
     ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
 };
-use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
-use class_groups::SecretKeyShareSizedInteger;
-use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
-    SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput,
-};
+use crate::dwallet_mpc::mpc_protocols::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletImportedKeyVerificationRequestEvent,
-    SessionIdentifier, SignRequestEvent,
-};
-use ika_types::messages_dwallet_mpc::{
-    DWalletDKGSecondRoundRequestEvent, DWalletSessionEvent, DWalletSessionEventTrait,
-    EncryptedShareVerificationRequestEvent, IkaPackagesConfig, MPCProtocolInitData,
-    PresignRequestEvent, SessionInfo,
-};
-use ika_types::messages_dwallet_mpc::{
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletNetworkDKGEncryptionKeyRequestEvent,
-};
-use ika_types::messages_dwallet_mpc::{
-    FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
-};
+use ika_types::messages_dwallet_mpc::{DWalletSessionEvent, DWalletSessionEventTrait};
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use rand_chacha::rand_core::SeedableRng;
 use serde::de::DeserializeOwned;
-use serde_json::json;
-use shared_wasm_class_groups::message_digest::{message_digest, Hash};
-use std::collections::{HashMap, HashSet};
-use std::fs;
-use std::fs::File;
+use shared_wasm_class_groups::message_digest::message_digest;
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
@@ -50,24 +25,22 @@ use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::dynamic_field::Field;
 use sui_types::id::ID;
-use tracing::warn;
 
 mod cryptographic_computations_orchestrator;
-mod dwallet_dkg;
 pub mod dwallet_mpc_service;
-mod encrypt_user_share;
 mod malicious_handler;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
-pub mod network_dkg;
-mod presign;
 
 pub mod dwallet_mpc_metrics;
-mod make_dwallet_user_secret_key_shares_public;
-mod protocols;
-mod reconfiguration;
-pub(crate) mod sign;
+mod mpc_protocols;
+mod native_computations;
+
+pub(crate) use mpc_protocols::{dwallet_dkg, network_dkg, presign, reconfiguration, sign};
+pub(crate) use native_computations::{
+    encrypt_user_share, make_dwallet_user_secret_key_shares_public,
+};
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 static LOG_DIR: OnceLock<PathBuf> = OnceLock::new();

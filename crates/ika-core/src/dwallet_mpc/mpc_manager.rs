@@ -6,8 +6,10 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
+use crate::dwallet_mpc::mpc_protocols::network_dkg::{
+    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
+};
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;

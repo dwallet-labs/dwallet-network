@@ -11,10 +11,10 @@ use mpc::Party;
 use twopc_mpc::dkg::Protocol;
 /// This struct represents the initial round of the DKG protocol.
 pub type DWalletDKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
-pub(super) type DWalletImportedKeyVerificationParty =
+pub(crate) type DWalletImportedKeyVerificationParty =
     <AsyncProtocol as Protocol>::TrustedDealerDKGDecentralizedParty;
 /// This struct represents the final round of the DKG protocol.
-pub(super) type DWalletDKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundParty;
+pub(crate) type DWalletDKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundParty;
 
 /// A trait for generating the public input for the initial round of the DKG protocol.
 ///
@@ -23,7 +23,7 @@ pub(super) type DWalletDKGSecondParty = <AsyncProtocol as Protocol>::ProofVerifi
 /// It defines the parameters and logic
 /// necessary to initiate the first round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
-pub(super) trait DWalletDKGFirstPartyPublicInputGenerator: Party {
+pub(crate) trait DWalletDKGFirstPartyPublicInputGenerator: Party {
     /// Generates the public input required for the first round of the DKG protocol.
     fn generate_public_input(
         protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
@@ -37,7 +37,7 @@ pub(super) trait DWalletDKGFirstPartyPublicInputGenerator: Party {
 /// It defines the parameters and logic
 /// necessary to initiate the second round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
-pub(super) trait DWalletDKGSecondPartyPublicInputGenerator: Party {
+pub(crate) trait DWalletDKGSecondPartyPublicInputGenerator: Party {
     /// Generates the public input required for the second round of the DKG protocol.
     fn generate_public_input(
         protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,

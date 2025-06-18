@@ -17,9 +17,9 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::Party;
 use std::collections::HashMap;
 
-pub(super) type ReconfigurationSecp256k1Party = Secp256k1Party;
+pub(crate) type ReconfigurationSecp256k1Party = Secp256k1Party;
 
-pub(super) trait ReconfigurationPartyPublicInputGenerator: Party {
+pub(crate) trait ReconfigurationPartyPublicInputGenerator: Party {
     /// Generates the public input required for the reconfiguration protocol.
     fn generate_public_input(
         committee: &Committee,
@@ -92,7 +92,7 @@ impl ReconfigurationPartyPublicInputGenerator for ReconfigurationSecp256k1Party 
     }
 }
 
-pub(super) fn network_decryption_key_reconfiguration_session_info_from_event(
+pub(crate) fn network_decryption_key_reconfiguration_session_info_from_event(
     deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {
