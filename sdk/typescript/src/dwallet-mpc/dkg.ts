@@ -79,7 +79,9 @@ export async function createDWallet(
 	conf: Config,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<DWallet> {
+	console.time('launchDKGFirstRound');
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
+	console.timeEnd('launchDKGFirstRound');
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const secondRoundResponse = await launchDKGSecondRound(
 		conf,
