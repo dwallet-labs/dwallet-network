@@ -91,7 +91,7 @@ pub struct DWalletImportedKeyVerificationOutput {
 
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
+#[derive(PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum DWalletMessageKind {
     RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput),
