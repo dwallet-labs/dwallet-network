@@ -6,7 +6,9 @@ use crate::dwallet_mpc::dwallet_dkg::{
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
-use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
+use crate::dwallet_mpc::reconfiguration::{
+    ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
+};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
@@ -63,7 +65,8 @@ mod presign;
 
 pub mod dwallet_mpc_metrics;
 mod make_dwallet_user_secret_key_shares_public;
-mod reshare;
+mod protocols;
+mod reconfiguration;
 pub(crate) mod sign;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;

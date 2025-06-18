@@ -1,7 +1,7 @@
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::public_input::dwallet_imported_key_verification_request_event_session_info;
 use crate::dwallet_mpc::mpc_session::PublicInput;
-use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg, reshare};
+use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg, reconfiguration};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput};
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::messages_dwallet_mpc::{
@@ -105,7 +105,9 @@ pub(crate) fn session_info_from_event(
                 DWalletEncryptionKeyReconfigurationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(
-                reshare::network_decryption_key_reshare_session_info_from_event(deserialized_event),
+                reconfiguration::network_decryption_key_reconfiguration_session_info_from_event(
+                    deserialized_event,
+                ),
             ))
         }
         t if t

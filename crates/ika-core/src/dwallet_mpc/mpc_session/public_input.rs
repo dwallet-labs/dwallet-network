@@ -6,7 +6,9 @@ use crate::dwallet_mpc::dwallet_dkg::{
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator};
-use crate::dwallet_mpc::reshare::{ResharePartyPublicInputGenerator, ReshareSecp256k1Party};
+use crate::dwallet_mpc::reconfiguration::{
+    ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
+};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg};
 use commitment::CommitmentSizedNumber;
@@ -254,7 +256,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                    PublicInput::NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as ResharePartyPublicInputGenerator>::generate_public_input(
+                    PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(
                         dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
                         dwallet_mpc_manager.must_get_next_active_committee().await,
                         dwallet_mpc_manager.get_decryption_key_share_public_parameters(
