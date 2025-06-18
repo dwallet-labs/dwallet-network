@@ -295,7 +295,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 }
             }
         }
-        info!(num_txs = transactions.len(), "Parsed transactions");
+        debug!(num_txs = transactions.len(), "Parsed transactions");
         for (i, authority) in self.committee.authorities() {
             let hostname = &authority.hostname;
             self.metrics
