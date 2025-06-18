@@ -276,7 +276,8 @@ impl Debug for DWalletMessageKind {
             DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
                 writeln!(
                     writer,
-                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic"
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic {:?}",
+                    self.digest()
                 )?;
             }
             DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
