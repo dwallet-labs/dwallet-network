@@ -91,7 +91,7 @@ pub struct DWalletImportedKeyVerificationOutput {
 
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
+#[derive(PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
 pub enum DWalletMessageKind {
     RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput),
@@ -192,6 +192,99 @@ impl Display for DWalletMessageKind {
                 writeln!(
                     writer,
                     "MessageKind : RespondDWalletImportedKeyVerificationOutput"
+                )?;
+            }
+            DWalletMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetMaxActiveSessionsBuffer({})",
+                    buffer_size
+                )?;
+            }
+            DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
+                writeln!(
+                    writer,
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
+                    value
+                )?;
+            }
+        }
+        write!(f, "{}", writer)
+    }
+}
+
+impl Debug for DWalletMessageKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut writer = String::new();
+        match &self {
+            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletMPCNetworkDKGOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletDKGFirstRoundOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletDKGSecondRoundOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletPresign(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletPresign {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletSign(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletSign {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletEncryptedUserShare(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletEncryptedUserShare {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDwalletPartialSignatureVerificationOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletMPCNetworkReconfigurationOutput {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondMakeDWalletUserSecretKeySharesPublic {:?}",
+                    self.digest()
+                )?;
+            }
+            DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_) => {
+                writeln!(
+                    writer,
+                    "MessageKind : RespondDWalletImportedKeyVerificationOutput {:?}",
+                    self.digest()
                 )?;
             }
             DWalletMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
