@@ -1,3 +1,8 @@
+mod advance_and_serialize;
+mod logger;
+mod public_input;
+mod session_info;
+
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -28,7 +33,7 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
@@ -38,6 +43,11 @@ use ika_types::messages_dwallet_mpc::{
     NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
+
+pub(crate) use advance_and_serialize::advance_and_serialize;
+pub(crate) use logger::MPCSessionLogger;
+pub(crate) use public_input::session_input_from_event;
+pub(crate) use session_info::session_info_from_event;
 
 /// Represents the result of checking whether the session is ready to advance.
 ///
@@ -445,9 +455,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<
-                    DWalletImportedKeyVerificationParty,
-                >(
+                let result = advance_and_serialize::<DWalletImportedKeyVerificationParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -521,7 +529,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<DWalletDKGFirstParty>(
+                let result = advance_and_serialize::<DWalletDKGFirstParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -563,7 +571,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<DWalletDKGSecondParty>(
+                let result = advance_and_serialize::<DWalletDKGSecondParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -632,7 +640,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
+                let result = advance_and_serialize::<PresignParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -680,7 +688,7 @@ impl DWalletMPCSession {
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
-                let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
+                let result = advance_and_serialize::<SignFirstParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -810,7 +818,7 @@ impl DWalletMPCSession {
                 // Extend base logger with decryption key shares for Reshare protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                let result = advance_and_serialize::<ReshareSecp256k1Party>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
