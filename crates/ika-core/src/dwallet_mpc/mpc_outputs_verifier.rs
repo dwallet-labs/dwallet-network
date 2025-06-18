@@ -17,7 +17,6 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use sui_types::base_types::EpochId;
-use sui_types::messages_consensus::Round;
 use tracing::info;
 
 /// Verify the DWallet MPC outputs.
@@ -36,16 +35,11 @@ pub struct DWalletMPCOutputsVerifier {
     pub completed_locking_next_committee: bool,
     #[allow(dead_code)]
     voted_to_lock_committee: HashSet<PartyID>,
-    /// The latest consensus round that was processed.
-    /// Used to check if there's a need to perform a state sync —
-    /// if the `latest_processed_dwallet_round` is behind
-    /// the currently processed round by more than one,
-    /// a state sync should be performed.
-    pub(crate) last_processed_consensus_round: Round,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     pub(crate) consensus_round_completed_sessions: HashSet<SessionIdentifier>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+    pub(crate) has_performed_state_sync: bool,
 }
 
 /// The data needed to manage the outputs of an MPC session.
@@ -103,10 +97,10 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            last_processed_consensus_round: 0,
             epoch_id: epoch_store.epoch(),
             consensus_round_completed_sessions: Default::default(),
             dwallet_mpc_metrics,
+            has_performed_state_sync: false,
         }
     }
 

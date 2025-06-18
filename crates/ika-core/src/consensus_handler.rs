@@ -177,9 +177,13 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
-
         let round = consensus_commit.leader_round();
-        if self.should_perform_dwallet_mpc_state_sync(round).await {
+        let mut dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_write()
+            .await;
+        if !dwallet_mpc_verifier.has_performed_state_sync {
+            drop(dwallet_mpc_verifier);
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
                     "epoch switched while performing dwallet mpc state sync: {:?}",
@@ -187,14 +191,15 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 );
                 return;
             }
+            let mut dwallet_mpc_verifier = self
+                .epoch_store
+                .get_dwallet_mpc_outputs_verifier_write()
+                .await;
+            dwallet_mpc_verifier.has_performed_state_sync = true;
+            drop(dwallet_mpc_verifier);
+        } else {
+            drop(dwallet_mpc_verifier);
         }
-        let mut dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
-            .await;
-        dwallet_mpc_verifier.last_processed_consensus_round = round;
-        // Need to drop the verifier, as `self` is being used mutably later in this function.
-        drop(dwallet_mpc_verifier);
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
@@ -390,22 +395,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     //
                                     // self.transaction_manager_sender
                                     //     .send(executable_transactions);
-    }
-
-    /// Check if the dWallet MPC manager should perform a state sync.
-    /// If so, block consensus and load all messages.
-    /// This condition is only true if we process a round
-    /// before we processed the previous round,
-    /// which can only happen if we restart the node.
-    async fn should_perform_dwallet_mpc_state_sync(&self, consensus_round: u64) -> bool {
-        let dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_read()
-            .await;
-        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
-        // This condition is only true if we process a round before we processed the previous round,
-        // which can only happen if we restart the node.
-        consensus_round > dwallet_mpc_verifier.last_processed_consensus_round + 1
     }
 
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
