@@ -951,7 +951,7 @@ impl DWalletCheckpointAggregator {
                     checkpoint_seq = current.checkpoint_message.sequence_number,
                     digest=?current.checkpoint_message.digest(),
                     timestamp=?current.checkpoint_message.timestamp_ms,
-                    messages=?current.checkpoint_message.messages,
+                    messages=current.checkpoint_message.messages,
                     sequence_number=?current.checkpoint_message.sequence_number,
                     epoch=?current.checkpoint_message.epoch,
                     from=?data.checkpoint_message.auth_sig().authority.concise(),
