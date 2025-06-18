@@ -603,6 +603,11 @@ impl DWalletMPCManager {
                 SessionType::System => true,
             };
             if !should_advance {
+                info!(
+                    session_identifier=?oldest_pending_session.session_identifier,
+                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
+                    "Session should not be computed yet, skipping"
+                );
                 self.pending_for_computation_order
                     .push_back(oldest_pending_session.clone());
                 continue;
