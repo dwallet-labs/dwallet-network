@@ -28,7 +28,7 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::watch;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
@@ -603,7 +603,7 @@ impl DWalletMPCManager {
                 SessionType::System => true,
             };
             if !should_advance {
-                info!(
+                debug!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"
