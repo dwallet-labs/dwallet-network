@@ -217,7 +217,7 @@ impl Debug for DWalletMessageKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut writer = String::new();
         match &self {
-            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(value) => {
+            DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(_) => {
                 writeln!(
                     writer,
                     "MessageKind : RespondDwalletMPCNetworkDKGOutput {:?}",
