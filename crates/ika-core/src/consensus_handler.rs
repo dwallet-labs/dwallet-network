@@ -41,7 +41,7 @@ use crate::{
 };
 use ika_types::error::IkaResult;
 use tokio::task::JoinSet;
-use tracing::{error, info, instrument, trace_span, warn};
+use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -230,7 +230,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             timestamp
         };
 
-        info!(
+        debug!(
             %consensus_commit,
             epoch = ?self.epoch_store.epoch(),
             "Received consensus output"
