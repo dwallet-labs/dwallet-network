@@ -162,17 +162,36 @@ export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDe
 }
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_object_id,
-	});
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_object_id,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
+	const startTime = Date.now();
+	let result: string | undefined;
+
+	while (!result && Date.now() - startTime <= c.timeout) {
+		try {
+			const dynamicFields = await c.client.getDynamicFields({
+				parentId: c.ikaConfig.ika_system_object_id,
+			});
+			const innerSystemState = await c.client.getDynamicFieldObject({
+				parentId: c.ikaConfig.ika_system_object_id,
+				name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+			});
+			if (isIKASystemStateInner(innerSystemState.data?.content)) {
+				result = innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
+				return result;
+			}
+		} catch (error) {
+			// If we're still within timeout, wait a bit and retry
+			if (Date.now() - startTime <= c.timeout) {
+				await delay(5_000); // Wait 5 seconds before retrying
+				continue;
+			}
+			throw error; // If we've exceeded timeout, throw the error
+		}
 	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to get dwallet secp256k1 object ID within ${c.timeout / (60 * 1000)} minutes (${seconds} seconds passed).`,
+	);
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
