@@ -688,7 +688,7 @@ impl SystemCheckpointBuilder {
                 checkpoint_timestamp = details.timestamp_ms,
                 "Creating system checkpoint(s) for {} messages",
                 all_messages.len(),
-            );   
+            );
         }
 
         let chunks = self.split_checkpoint_chunks(all_messages)?;
