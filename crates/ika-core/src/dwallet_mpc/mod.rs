@@ -14,7 +14,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
     SerializedWrappedMPCPublicOutput, VersionedImportedDWalletPublicOutput,
 };
-use group::PartyID;
+use group::{OsCsRng, PartyID};
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -491,7 +491,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         messages.clone(),
         Some(private_input),
         public_input,
-        &mut rand_core::OsCsRng,
+        &mut OsCsRng,
     ) {
         Ok(res) => res,
         Err(e) => {

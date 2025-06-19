@@ -77,6 +77,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
 class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a", features = ["threshold", "parallel"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a" }
 twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "bulletproofs", "paillier", "class_groups"], rev = "72a2cc7a"}
 group = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
 homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
@@ -559,4 +560,5 @@ sha2 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha2-v0.11.0-r
 sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-rc.0" }
 digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
 signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
+curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }

@@ -17,7 +17,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
     SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
-use group::{secp256k1, PartyID};
+use group::{secp256k1, PartyID, OsCsRng};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;

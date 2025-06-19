@@ -15,6 +15,7 @@ dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
+getrandom = { version = "0.3" , features = ["wasm_js"] }
 rand_core = "0.9"
 rand_chacha = "0.9"
 serde = { version = "1.0", features = ["derive"] }
