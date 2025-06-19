@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "10246739" }
 shared_wasm_class_groups = { path = "../shared-wasm-class-groups" } # TODO: no parallel?  features = ["threshold"]
 class_groups.workspace = true
 group.workspace = true
@@ -15,8 +15,9 @@ dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
-rand_core = "0.9"
-rand_chacha = "0.9"
+rand_core = { version = "0.9", default-features = false }
+rand_chacha = { version = "0.9", default-features = false }
+getrandom = { version = "0.2.16", features = ["js"] } # TODO: idk why, but we need this, also this is old version
 serde = { version = "1.0", features = ["derive"] }
 crypto-bigint.workspace = true
 

@@ -19,7 +19,7 @@ ika-types.workspace = true
 dwallet-mpc-types.workspace = true
 twopc_mpc.workspace = true
 flate2 = "1.0.35"
-rand.workspace = true
+rand = { workspace = true, default-features = false}
 base64.workspace = true
 
 [lints]
