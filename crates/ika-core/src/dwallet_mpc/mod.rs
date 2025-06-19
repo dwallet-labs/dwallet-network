@@ -947,6 +947,8 @@ impl MPCSessionLogger {
         output_sender_party_id: PartyID,
         output: &[u8],
         session_info: &SessionInfo,
+        round: u64,
+        idx: usize,
     ) {
         if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -962,10 +964,8 @@ impl MPCSessionLogger {
                 return;
             }
         };
-        let filename = format!(
-            "session_{}_output_from_{}.json",
-            session_id, output_sender_party_id
-        );
+        let filename =
+            format!("{round}_{idx}_session_{session_id}_from_{output_sender_party_id}.json",);
         let path = log_dir.join(&filename);
 
         // Serialize to JSON.

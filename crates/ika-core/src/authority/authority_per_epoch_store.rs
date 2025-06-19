@@ -381,6 +381,7 @@ pub struct AuthorityEpochTables {
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
     pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
+    // Consensus round -> Message.
     pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
@@ -486,7 +487,8 @@ impl AuthorityEpochTables {
 }
 
 impl AuthorityPerEpochStore {
-    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
+    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch
+    ))]
     pub fn new(
         name: AuthorityName,
         committee: Arc<Committee>,
@@ -1383,26 +1385,26 @@ impl AuthorityPerEpochStore {
             .iter()
             .filter_map(|transaction| {
                 let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                    transaction,
-                    ..
-                }) = transaction;
+                                                              transaction,
+                                                              ..
+                                                          }) = transaction;
                 match transaction {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCMessage(message),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                                                                    kind: ConsensusTransactionKind::DWalletMPCMessage(message),
+                                                                    ..
+                                                                }) => Some(DWalletMPCDBMessage::Message(message.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
+                                                                    kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
+                                                                    ..
+                                                                }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCMaliciousReport(
-                                authority_name,
-                                report,
-                            ),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::MaliciousReport(
+                                                                    kind:
+                                                                    ConsensusTransactionKind::DWalletMPCMaliciousReport(
+                                                                        authority_name,
+                                                                        report,
+                                                                    ),
+                                                                    ..
+                                                                }) => Some(DWalletMPCDBMessage::MaliciousReport(
                         *authority_name,
                         report.clone(),
                     )),

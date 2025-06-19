@@ -427,25 +427,40 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
 
-        for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
-            let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
-            let mpc_protocol_name = output.session_info.mpc_round.to_string();
+        for (round, outputs) in self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_outputs
+            .safe_iter()
+            .collect::<Result<Vec<_>, _>>()?
+        // .collect::<IkaResult<Vec<(u64, Vec<DWalletMPCOutputMessage>)>>>()?
+        {
+            for (idx, output) in outputs.into_iter().enumerate() {
+                let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
+                let mpc_protocol_name = output.session_info.mpc_round.to_string();
 
-            // Create a base logger with common parameters.
-            let base_logger = MPCSessionLogger::new()
-                .with_protocol_name(mpc_protocol_name.clone())
-                .with_party_to_authority_map(party_to_authority_map.clone());
-            let session_identifier =
-                CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier);
-            base_logger.write_output_to_disk(
-                session_identifier,
-                self.epoch_store
-                    .authority_name_to_party_id(&self.epoch_store.name)?,
-                self.epoch_store
-                    .authority_name_to_party_id(&output.authority)?,
-                &output.output,
-                &output.session_info,
-            );
+                // Create a base logger with common parameters.
+                let base_logger = MPCSessionLogger::new()
+                    .with_protocol_name(mpc_protocol_name.clone())
+                    .with_party_to_authority_map(party_to_authority_map.clone());
+                let session_identifier =
+                    CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier);
+
+                base_logger.write_output_to_disk(
+                    session_identifier,
+                    self.epoch_store
+                        .authority_name_to_party_id(&self.epoch_store.name)?,
+                    self.epoch_store
+                        .authority_name_to_party_id(&output.authority)?,
+                    &output.output,
+                    &output.session_info,
+                    round,
+                    idx,
+                );
+            }
+        }
+
+        for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
                 .await
