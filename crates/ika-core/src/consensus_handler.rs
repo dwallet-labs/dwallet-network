@@ -416,6 +416,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             info!(
                 sequence_number=?item.0,
                 batch_sequence_number=?item.1.checkpoint_height,
+                validator=?self.epoch_store.name,
                 "Checkpoint sequence number"
             )
         }
