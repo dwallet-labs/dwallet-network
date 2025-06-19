@@ -1,11 +1,13 @@
 use crate::crypto::{keccak256_digest, AuthorityName};
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
+use fastcrypto::encoding::{Encoding, Hex};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::fmt::{Debug, Display};
 use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
@@ -328,7 +330,21 @@ pub enum SessionType {
     System,
 }
 
-pub type SessionIdentifier = [u8; 32];
+#[derive(Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, Hash, Copy, Ord, PartialOrd)]
+pub struct SessionIdentifier(pub [u8; 32]);
+
+impl From<[u8; 32]> for SessionIdentifier {
+    fn from(value: [u8; 32]) -> Self {
+        SessionIdentifier(value)
+    }
+}
+
+impl Debug for SessionIdentifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(write!(f, "SessionIdentifier(0x{})", Hex::encode(self.0))?)
+    }
+}
+
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletSessionEvent`.
@@ -364,7 +380,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
 
     /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
     /// Guarantees same values of `self.session_identifier_preimage` yield different output for `User` and `System`
-    pub fn session_identifier_digest(&self) -> [u8; 32] {
+    pub fn session_identifier_digest(&self) -> SessionIdentifier {
         // We are adding a string distinguisher between
         // the `User` and `System` sessions, so that when it is hashed, the same inner value
         // in the two different options will yield a different output, thus guaranteeing
@@ -377,7 +393,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
                 [b"SYSTEM", self.session_identifier_preimage.as_slice()].concat()
             }
         };
-        keccak256_digest(&session_type)
+        SessionIdentifier(keccak256_digest(&session_type))
     }
 }
 

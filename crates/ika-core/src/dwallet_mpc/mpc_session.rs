@@ -416,7 +416,7 @@ impl DWalletMPCSession {
             ?serialized_messages_skeleton,
             "Advancing MPC session"
         );
-        let session_identifier = CommitmentSizedNumber::from_le_slice(&self.session_identifier);
+        let session_identifier = CommitmentSizedNumber::from_le_slice(&self.session_identifier.0);
         let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
         let mpc_protocol_name = mpc_event_data.init_protocol_data.to_string();
 

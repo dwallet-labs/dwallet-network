@@ -356,7 +356,7 @@ fn get_expected_decrypters(
 ) -> DwalletMPCResult<HashSet<PartyID>> {
     let committee = epoch_store.committee();
     let total_votes = committee.total_votes();
-    let mut shuffled_committee = committee.shuffle_by_stake_from_seed(session_identifier);
+    let mut shuffled_committee = committee.shuffle_by_stake_from_seed(session_identifier.0);
     let weighted_threshold_access_structure =
         epoch_store.get_weighted_threshold_access_structure()?;
     let expected_decrypters_votes = weighted_threshold_access_structure.threshold as u32

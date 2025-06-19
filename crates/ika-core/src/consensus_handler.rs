@@ -180,7 +180,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
         let round = consensus_commit.leader_round();
-        let mut dwallet_mpc_verifier = self
+        let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
@@ -420,7 +420,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 .with_protocol_name(mpc_protocol_name.clone())
                 .with_party_to_authority_map(party_to_authority_map.clone());
             let session_identifier =
-                CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier);
+                CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier.0);
             base_logger.write_output_to_disk(
                 session_identifier,
                 self.epoch_store
