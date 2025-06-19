@@ -6,8 +6,8 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a" }
-shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7" }
+shared_wasm_class_groups = { path = "../shared-wasm-class-groups" } # TODO: no parallel?  features = ["threshold"]
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true
@@ -15,7 +15,6 @@ dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
-getrandom = { version = "0.3" , features = ["wasm_js"] }
 rand_core = "0.9"
 rand_chacha = "0.9"
 serde = { version = "1.0", features = ["derive"] }
@@ -23,3 +22,11 @@ crypto-bigint.workspace = true
 
 [lints]
 workspace = true
+
+[patch.crates-io]
+sha2 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha2-v0.11.0-rc.0" }
+sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-rc.0" }
+digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
+signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
+curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }

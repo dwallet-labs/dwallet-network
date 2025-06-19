@@ -97,27 +97,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bulletproofs"
-version = "5.0.0"
-source = "git+https://github.com/ycscaly/bulletproofs.git?rev=8e93b12b#8e93b12b479534758de4877bc18fc2a94edbf28c"
-dependencies = [
- "byteorder",
- "clear_on_drop",
- "curve25519-dalek",
- "digest",
- "getrandom 0.3.3",
- "group 0.13.0",
- "merlin",
- "rand 0.9.1",
- "rand_core 0.9.3",
- "serde",
- "serde_derive",
- "sha3",
- "subtle",
- "thiserror 2.0.12",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -166,7 +145,7 @@ dependencies = [
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -187,18 +166,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "clear_on_drop"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38508a63f4979f0048febc9966fadbd48e5dab31fd0ec6a3f151bbf4a74f7423"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
@@ -307,7 +277,6 @@ dependencies = [
  "curve25519-dalek-derive",
  "digest",
  "fiat-crypto",
- "group 0.14.0-pre.0",
  "rand_core 0.9.3",
  "rustc_version",
  "serde",
@@ -401,7 +370,6 @@ dependencies = [
  "commitment",
  "crypto-bigint",
  "dwallet-mpc-types",
- "getrandom 0.3.3",
  "group 0.1.0",
  "homomorphic_encryption",
  "mpc",
@@ -475,7 +443,7 @@ dependencies = [
  "base16ct",
  "crypto-bigint",
  "digest",
- "ff 0.14.0-pre.0",
+ "ff",
  "group 0.14.0-pre.0",
  "hybrid-array",
  "pkcs8",
@@ -484,26 +452,6 @@ dependencies = [
  "serdect",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "enhanced_maurer"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
-dependencies = [
- "commitment",
- "crypto-bigint",
- "getrandom 0.3.3",
- "group 0.1.0",
- "homomorphic_encryption",
- "maurer",
- "merlin",
- "mpc",
- "proof",
- "serde",
- "serde_json",
- "thiserror 2.0.12",
- "tiresias",
 ]
 
 [[package]]
@@ -525,16 +473,6 @@ name = "ethnum"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca81e6b4777c89fd810c25a4be2b1bd93ea034fbe58e6a75216a34c6b82c539b"
-
-[[package]]
-name = "ff"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0b50bfb653653f9ca9095b427bed08ab8d75a137839d9ad64eb11810d5b6393"
-dependencies = [
- "rand_core 0.6.4",
- "subtle",
-]
 
 [[package]]
 name = "ff"
@@ -610,7 +548,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek",
@@ -628,22 +566,11 @@ dependencies = [
 
 [[package]]
 name = "group"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
-dependencies = [
- "ff 0.13.1",
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "group"
 version = "0.14.0-pre.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ff6a0b2dd4b981b1ae9e3e6830ab146771f3660d31d57bafd9018805a91b0f1"
 dependencies = [
- "ff 0.14.0-pre.0",
+ "ff",
  "rand_core 0.9.3",
  "subtle",
 ]
@@ -678,7 +605,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "crypto-bigint",
  "getrandom 0.3.3",
@@ -869,7 +796,7 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -939,7 +866,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -1134,9 +1061,8 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
- "bulletproofs",
  "commitment",
  "crypto-bigint",
  "curve25519-dalek",
@@ -1665,22 +1591,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tiresias"
-version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
-dependencies = [
- "crypto-bigint",
- "crypto-primes",
- "group 0.1.0",
- "homomorphic_encryption",
- "merlin",
- "mpc",
- "serde",
- "subtle",
- "thiserror 2.0.12",
-]
-
-[[package]]
 name = "toml_datetime"
 version = "0.6.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1700,12 +1610,11 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=72a2cc7a#72a2cc7a27c9fef64693d97c5789f883d2391bcf"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=5cc882c7#5cc882c78c85bb0cccc38f8b38ec8c4686b4a68c"
 dependencies = [
  "class_groups",
  "commitment",
  "crypto-bigint",
- "enhanced_maurer",
  "getrandom 0.3.3",
  "group 0.1.0",
  "homomorphic_encryption",
@@ -1716,7 +1625,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
- "tiresias",
 ]
 
 [[package]]

@@ -75,12 +75,12 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a", features = ["threshold", "parallel"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "bulletproofs", "paillier", "class_groups"], rev = "72a2cc7a"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7", features = ["threshold", "parallel"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "5cc882c7"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5cc882c7"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
