@@ -1828,7 +1828,7 @@ impl AuthorityPerEpochStore {
     fn slice_network_dkg_public_output_into_messages(
         dwallet_network_decryption_key_id: &ObjectID,
         public_output: Vec<u8>,
-        session_id: Vec<u8>,
+        session_identifier: Vec<u8>,
     ) -> Vec<NetworkKeyPublicOutputSlice> {
         let mut slices = Vec::new();
         // We set a total of 5 KB since we need 6 KB buffer for other params.
@@ -1840,7 +1840,7 @@ impl AuthorityPerEpochStore {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
-                session_identifier: session_id.clone(),
+                session_identifier: session_identifier.clone(),
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
