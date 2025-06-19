@@ -43,6 +43,7 @@ pub(crate) async fn public_input_from_event(
             let deserialized_event: DWalletSessionEvent<
                 DWalletImportedKeyVerificationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -50,17 +51,22 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_encryption_key_id,
             )?;
+
+            // TODO(@Scaly): This should be the session id!
             let dwallet_id = CommitmentSizedNumber::from_le_slice(
                 deserialized_event.event_data.dwallet_id.to_vec().as_slice(),
             );
+
             let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
                 bcs::from_bytes(&deserialized_event.event_data.centralized_party_message)?;
+
             let public_input = (
                 protocol_public_parameters,
                 dwallet_id,
                 bcs::from_bytes(&centralized_party_message)?,
             )
                 .into();
+
             Ok((
                 PublicInput::DWalletImportedKeyVerificationRequest(public_input),
                 None,
@@ -74,11 +80,13 @@ pub(crate) async fn public_input_from_event(
             let deserialized_event: DWalletSessionEvent<
                 MakeDWalletUserSecretKeySharesPublicRequestEvent,
             > = bcs::from_bytes(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(
                     protocol_public_parameters,
@@ -95,8 +103,10 @@ pub(crate) async fn public_input_from_event(
                 .node_config
                 .class_groups_key_pair_and_proof
                 .clone();
+
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
+
             Ok((
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
                     &dwallet_mpc_manager
@@ -122,12 +132,15 @@ pub(crate) async fn public_input_from_event(
             let deserialized_event: DWalletSessionEvent<
                 DWalletEncryptionKeyReconfigurationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
+
             let class_groups_key_pair_and_proof = dwallet_mpc_manager
                 .node_config
                 .class_groups_key_pair_and_proof
                 .clone();
+
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
+
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(
                         dwallet_mpc_manager.epoch_store()?.committee().as_ref(),
@@ -157,13 +170,15 @@ pub(crate) async fn public_input_from_event(
         {
             let deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
-                // Todo (#473): Support generic network key scheme
+                // Todo (#473): Support generic network key scheme - take curve from event
                 &deserialized_event
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::DKGFirst(dwallet_dkg_first_public_input(&protocol_public_parameters)?),
                 None,
@@ -176,6 +191,7 @@ pub(crate) async fn public_input_from_event(
         {
             let deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -183,6 +199,7 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::DKGSecond(dwallet_dkg_second_public_input(
                     &deserialized_event.event_data,
@@ -194,6 +211,7 @@ pub(crate) async fn public_input_from_event(
         t if t == &DWalletSessionEvent::<PresignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<PresignRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -201,6 +219,7 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::Presign(presign_public_input(
                     deserialized_event.session_identifier_digest(),
@@ -213,6 +232,7 @@ pub(crate) async fn public_input_from_event(
         t if t == &DWalletSessionEvent::<SignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<SignRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -220,6 +240,7 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::Sign(sign_session_public_input(
                     &deserialized_event,
@@ -236,6 +257,7 @@ pub(crate) async fn public_input_from_event(
         {
             let deserialized_event: DWalletSessionEvent<EncryptedShareVerificationRequestEvent> =
                 bcs::from_bytes(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -243,6 +265,7 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::EncryptedShareVerification(protocol_public_parameters),
                 None,
@@ -251,6 +274,7 @@ pub(crate) async fn public_input_from_event(
         t if t == &DWalletSessionEvent::<FutureSignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<FutureSignRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             let protocol_public_parameters = dwallet_mpc_manager.get_protocol_public_parameters(
                 // The event is assign with a Secp256k1 dwallet.
                 // Todo (#473): Support generic network key scheme
@@ -258,6 +282,7 @@ pub(crate) async fn public_input_from_event(
                     .event_data
                     .dwallet_network_decryption_key_id,
             )?;
+
             Ok((
                 PublicInput::PartialSignatureVerification(protocol_public_parameters),
                 None,

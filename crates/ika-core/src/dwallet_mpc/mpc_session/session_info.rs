@@ -82,11 +82,13 @@ pub(crate) fn session_info_from_event(
         t if t == &DWalletSessionEvent::<SignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<SignRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             Ok(Some(sign_party_session_info(&deserialized_event)))
         }
         t if t == &DWalletSessionEvent::<FutureSignRequestEvent>::type_(packages_config) => {
             let deserialized_event: DWalletSessionEvent<FutureSignRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             Ok(Some(get_verify_partial_signatures_session_info(
                 &deserialized_event,
             )))
@@ -99,8 +101,10 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletSessionEvent<
                 DWalletNetworkDKGEncryptionKeyRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
+
             Ok(Some(network_dkg_session_info(
                 deserialized_event,
+                // TODO(@Scaly): this information should come from the Move
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?))
         }
@@ -112,6 +116,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletSessionEvent<
                 DWalletEncryptionKeyReconfigurationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
+
             Ok(Some(
                 network_decryption_key_reconfiguration_session_info_from_event(deserialized_event),
             ))
@@ -123,6 +128,7 @@ pub(crate) fn session_info_from_event(
         {
             let deserialized_event: DWalletSessionEvent<EncryptedShareVerificationRequestEvent> =
                 deserialize_event_or_dynamic_field(&event.contents)?;
+
             Ok(Some(start_encrypted_share_verification_session_info(
                 deserialized_event,
             )))
