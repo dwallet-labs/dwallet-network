@@ -542,7 +542,7 @@ impl DWalletCheckpointBuilder {
         // Stores the transactions that should be included in the checkpoint. Transactions will be recorded in the checkpoint
         // in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
-        let next = next_checkpoint_to_build.into_v1();
+        let next = next_checkpoint_to_build.clone().into_v1();
         // let txn_in_checkpoint = self
         //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
         //     .await?;
