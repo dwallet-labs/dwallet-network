@@ -1720,7 +1720,7 @@ impl AuthorityPerEpochStore {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
                         let slices = if is_rejected {
                             vec![NetworkKeyPublicOutputSlice {
-                                session_id: init_event.session_identifier_digest().to_vec(),
+                                session_identifier: init_event.session_identifier_digest().to_vec(),
                                 dwallet_network_decryption_key_id: init_event
                                     .event_data
                                     .dwallet_network_decryption_key_id
@@ -1755,7 +1755,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
-                        session_id: init_event.session_identifier_digest().to_vec(),
+                        session_identifier: init_event.session_identifier_digest().to_vec(),
                         dwallet_network_decryption_key_id: init_event
                             .event_data
                             .dwallet_network_decryption_key_id
@@ -1840,7 +1840,7 @@ impl AuthorityPerEpochStore {
             // If the chunk is missing, use an empty slice, as the size of the slices can be different.
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
-                session_id: session_id.clone(),
+                session_identifier: session_id.clone(),
                 dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
                     .clone()
                     .to_vec(),
