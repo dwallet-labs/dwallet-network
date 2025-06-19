@@ -1720,7 +1720,7 @@ impl AuthorityPerEpochStore {
                     DWalletMPCNetworkKeyScheme::Secp256k1 => {
                         let slices = if is_rejected {
                             vec![NetworkKeyPublicOutputSlice {
-                                session_id: init_event.session_object_id.to_vec(),
+                                session_id: init_event.session_identifier_digest().to_vec(),
                                 dwallet_network_decryption_key_id: init_event
                                     .event_data
                                     .dwallet_network_decryption_key_id
@@ -1737,7 +1737,7 @@ impl AuthorityPerEpochStore {
                             Self::slice_network_dkg_public_output_into_messages(
                                 &init_event.event_data.dwallet_network_decryption_key_id,
                                 output,
-                                init_event.session_object_id.to_vec(),
+                                init_event.session_identifier_digest().to_vec(),
                             )
                         };
 
@@ -1755,7 +1755,7 @@ impl AuthorityPerEpochStore {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
-                        session_id: init_event.session_object_id.to_vec(),
+                        session_id: init_event.session_identifier_digest().to_vec(),
                         dwallet_network_decryption_key_id: init_event
                             .event_data
                             .dwallet_network_decryption_key_id
@@ -1770,7 +1770,7 @@ impl AuthorityPerEpochStore {
                     Self::slice_network_dkg_public_output_into_messages(
                         &init_event.event_data.dwallet_network_decryption_key_id,
                         output,
-                        init_event.session_object_id.to_vec(),
+                        init_event.session_identifier_digest().to_vec(),
                     )
                 };
 
