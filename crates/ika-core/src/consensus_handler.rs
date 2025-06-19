@@ -405,6 +405,11 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
+
+        let checkpoint_messages = self
+            .epoch_store.tables()?.bu
+            .builder_dwallet_checkpoint_message_v1;
+        
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self
             .epoch_store
