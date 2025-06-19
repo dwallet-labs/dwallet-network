@@ -18,7 +18,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedImportedDwalletOutgoingMessage, VersionedNetworkDkgOutput, VersionedPresignOutput,
     VersionedPublicKeyShareAndProof, VersionedSignOutput, VersionedUserSignedMessage,
 };
-use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable};
+use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable, OsCsRng};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
@@ -112,7 +112,7 @@ pub fn create_dkg_output(
                 decentralized_first_round_public_output,
                 &(),
                 &(public_parameters, session_identifier).into(),
-                &mut OsRng,
+                &mut OsCsRng,
             )
             .context("advance() failed on the DKGCentralizedParty")?;
 
@@ -198,7 +198,7 @@ pub fn advance_centralized_sign_party(
                 (),
                 &bcs::from_bytes(&centralized_party_secret_key_share)?,
                 &centralized_party_public_input,
-                &mut OsRng,
+                &mut OsCsRng,
             )
             .context("advance() failed on the SignCentralizedParty")?;
 
@@ -222,7 +222,7 @@ pub fn sample_dwallet_keypair_inner(
         &protocol_public_parameters
             .as_ref()
             .scalar_group_public_parameters,
-        &mut OsRng,
+        &mut OsCsRng,
     )?;
     let public_parameters = group::secp256k1::group_element::PublicParameters::default();
     let generator_group_element =
@@ -278,7 +278,7 @@ pub fn create_imported_dwallet_centralized_step_inner(
         (),
         &secret_key,
         &centralized_party_public_input,
-        &mut OsRng,
+        &mut OsCsRng,
     ) {
         Ok(round_result) => {
             let public_output = round_result.public_output;
@@ -376,7 +376,7 @@ pub fn encrypt_secret_key_share_and_prove(
         VersionedDwalletUserSecretShare::V1(secret_key_share) => {
             let encryption_key = bcs::from_bytes(&encryption_key)?;
             let secret_key_share = bcs::from_bytes(&secret_key_share)?;
-            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsRng)?;
+            let result = <AsyncProtocol as twopc_mpc::dkg::Protocol>::encrypt_and_prove_centralized_party_share(&protocol_public_params, encryption_key, secret_key_share, &mut OsCsRng)?;
             Ok(bcs::to_bytes(&VersionedEncryptedUserShare::V1(
                 bcs::to_bytes(&result)?,
             ))?)
@@ -434,7 +434,7 @@ pub fn decrypt_user_share_inner(
         bcs::from_bytes(&dwallet_dkg_output)?,
         bcs::from_bytes(&encryption_key)?,
         bcs::from_bytes(&encrypted_user_share_and_proof)?,
-        &mut OsRng,
+        &mut OsCsRng,
     )
         .map_err(Into::<anyhow::Error>::into)?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;

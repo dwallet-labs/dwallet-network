@@ -44,7 +44,7 @@ fn verify_centralized_secret_key_share_proof(
                 bcs::from_bytes(&dkg_public_output)?,
                 bcs::from_bytes(encryption_key)?,
                 bcs::from_bytes(encrypted_centralized_secret_share_and_proof)?,
-                &mut OsRng,
+                &mut OsCsRng,
             )
             .map_err(Into::<anyhow::Error>::into)?;
             Ok(())

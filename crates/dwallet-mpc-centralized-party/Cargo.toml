@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "e5eaa62" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "72a2cc7a" }
 shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
 class_groups.workspace = true
 group.workspace = true
@@ -15,9 +15,9 @@ dwallet-mpc-types.workspace = true
 schemars.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
-rand_core = "0.6.4"
-rand_chacha = "0.3.1"
-serde = { version = "^1.0.219", features = ["derive"] }
+rand_core = "0.9"
+rand_chacha = "0.9"
+serde = { version = "1.0", features = ["derive"] }
 crypto-bigint.workspace = true
 
 [lints]

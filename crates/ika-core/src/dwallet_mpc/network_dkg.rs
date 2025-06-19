@@ -140,7 +140,7 @@ impl ValidatorPrivateDecryptionKeyData {
                     party_id,
                     secret_key_share,
                     public_parameters,
-                    &mut OsRng,
+                    &mut OsCsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
 
