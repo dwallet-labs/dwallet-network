@@ -529,8 +529,11 @@ impl DWalletCheckpointBuilder {
         );
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
-    async fn make_checkpoint(&self, pending_checkpoints: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
+    #[instrument(level = "debug", skip_all, fields(last_height = pending_checkpoints.last().unwrap().details().checkpoint_height))]
+    async fn make_checkpoint(
+        &self,
+        pending_checkpoints: Vec<PendingDWalletCheckpoint>,
+    ) -> anyhow::Result<()> {
         let last_details = pending_checkpoints.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
