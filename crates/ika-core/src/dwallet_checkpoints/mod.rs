@@ -531,7 +531,7 @@ impl DWalletCheckpointBuilder {
 
     #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
     async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
-        let last_details = pendings.last().unwrap().details().clone();
+        let next_checkpoint_to_build = pendings.first().unwrap().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
         // This is used when there are multiple pending checkpoints to create a single checkpoint
@@ -542,17 +542,15 @@ impl DWalletCheckpointBuilder {
         // Stores the transactions that should be included in the checkpoint. Transactions will be recorded in the checkpoint
         // in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
-        for pending_checkpoint in pendings.into_iter() {
-            let pending = pending_checkpoint.into_v1();
-            // let txn_in_checkpoint = self
-            //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
-            //     .await?;
-            sorted_tx_effects_included_in_checkpoint.extend(pending.messages);
-        }
+        let next = next_checkpoint_to_build.into_v1();
+        // let txn_in_checkpoint = self
+        //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
+        //     .await?;
+        sorted_tx_effects_included_in_checkpoint.extend(next.messages);
         let new_checkpoint = self
-            .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
+            .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &next_checkpoint_to_build.details())
             .await?;
-        self.write_checkpoints(last_details.checkpoint_height, new_checkpoint)
+        self.write_checkpoints(next_checkpoint_to_build.details().checkpoint_height, new_checkpoint)
             .await?;
         Ok(())
     }
