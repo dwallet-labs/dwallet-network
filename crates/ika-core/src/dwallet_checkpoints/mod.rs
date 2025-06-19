@@ -548,10 +548,16 @@ impl DWalletCheckpointBuilder {
         //     .await?;
         sorted_tx_effects_included_in_checkpoint.extend(next.messages);
         let new_checkpoint = self
-            .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &next_checkpoint_to_build.details())
+            .create_checkpoints(
+                sorted_tx_effects_included_in_checkpoint,
+                &next_checkpoint_to_build.details(),
+            )
             .await?;
-        self.write_checkpoints(next_checkpoint_to_build.details().checkpoint_height, new_checkpoint)
-            .await?;
+        self.write_checkpoints(
+            next_checkpoint_to_build.details().checkpoint_height,
+            new_checkpoint,
+        )
+        .await?;
         Ok(())
     }
 
