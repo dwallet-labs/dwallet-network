@@ -278,6 +278,76 @@ pub(crate) fn advance_network_dkg(
     Ok(res)
 }
 
+pub(crate) fn network_dkg_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => generate_secp256k1_dkg_party_public_input(
+            weighted_threshold_access_structure,
+            encryption_keys_and_proofs,
+        ),
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
+    }
+}
+
+pub(crate) fn network_dkg_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+) -> DwalletMPCResult<SessionInfo> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(network_dkg_secp256k1_session_info(deserialized_event))
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(network_dkg_ristretto_session_info(deserialized_event))
+        }
+    }
+}
+
+fn network_dkg_secp256k1_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+            deserialized_event,
+        ),
+    }
+}
+
+fn network_dkg_ristretto_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+            DWalletMPCNetworkKeyScheme::Ristretto,
+            deserialized_event,
+        ),
+    }
+}
+
+pub(crate) fn generate_secp256k1_dkg_party_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
+    let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
+        weighted_threshold_access_structure,
+        secp256k1::scalar::PublicParameters::default(),
+        DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+        encryption_keys_and_proofs,
+    )
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
+    Ok(public_params)
+}
+
 pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,

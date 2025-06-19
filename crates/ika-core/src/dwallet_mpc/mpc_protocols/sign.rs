@@ -3,15 +3,20 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{AsyncProtocol, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCProtocolInitData,
+    SessionIdentifier, SessionInfo, SignRequestEvent,
+};
 use mpc::{Party, Weight};
 use rand_core::SeedableRng;
+use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::HashSet;
 use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
@@ -32,7 +37,7 @@ pub(crate) type SignPublicInput =
 /// This would be better, though harder to implement in practice, and will only be done if we see that the current method is ineffective; however, we expect 10% to cover for these effects successfully.
 ///
 /// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
-pub(crate) fn generate_expected_decrypters(
+fn generate_expected_decrypters(
     epoch_store: Arc<AuthorityPerEpochStore>,
     session_identifier: SessionIdentifier,
 ) -> DwalletMPCResult<HashSet<PartyID>> {
@@ -48,6 +53,70 @@ pub(crate) fn generate_expected_decrypters(
         .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
 
     Ok(expected_decrypters)
+}
+
+pub(crate) fn sign_session_public_input(
+    deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
+    dwallet_mpc_manager: &DWalletMPCManager,
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
+    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
+        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+        // Todo (#473): Support generic network key scheme
+        &deserialized_event
+            .event_data
+            .dwallet_network_decryption_key_id,
+    )?;
+
+    let expected_decrypters = generate_expected_decrypters(
+        dwallet_mpc_manager.epoch_store()?,
+        deserialized_event.session_identifier_digest(),
+    )?;
+
+    <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+        deserialized_event
+            .event_data
+            .dwallet_decentralized_public_output
+            .clone(),
+        bcs::to_bytes(
+            &message_digest(
+                &deserialized_event.event_data.message.clone(),
+                &Hash::try_from(deserialized_event.event_data.hash_scheme)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+            )
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+        )?,
+        deserialized_event.event_data.presign.clone(),
+        deserialized_event
+            .event_data
+            .message_centralized_signature
+            .clone(),
+        decryption_pp,
+        expected_decrypters,
+    )
+}
+
+pub(crate) fn sign_party_session_info(
+    deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
+    }
+}
+
+pub(crate) fn get_verify_partial_signatures_session_info(
+    deserialized_event: &DWalletSessionEvent<FutureSignRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+    }
 }
 
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.

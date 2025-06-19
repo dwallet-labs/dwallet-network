@@ -10,7 +10,7 @@ use crate::dwallet_mpc::mpc_protocols::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_authority_names};
+use crate::dwallet_mpc::{mpc_session::public_input_from_event, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
@@ -409,7 +409,7 @@ impl DWalletMPCManager {
         event: DBSuiEvent,
         session_info: &SessionInfo,
     ) -> Result<MPCEventData, DwalletMPCError> {
-        let (public_input, private_input) = session_input_from_event(event, self).await?;
+        let (public_input, private_input) = public_input_from_event(event, self).await?;
         let mpc_event_data = MPCEventData {
             session_type: session_info.session_type.clone(),
             init_protocol_data: session_info.mpc_round.clone(),

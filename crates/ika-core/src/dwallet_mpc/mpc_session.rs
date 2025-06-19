@@ -46,7 +46,7 @@ use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) use advance_and_serialize::advance_and_serialize;
 pub(crate) use logger::MPCSessionLogger;
-pub(crate) use public_input::session_input_from_event;
+pub(crate) use public_input::public_input_from_event;
 pub(crate) use session_info::session_info_from_event;
 
 /// Represents the result of checking whether the session is ready to advance.

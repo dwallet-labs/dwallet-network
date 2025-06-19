@@ -1,15 +1,24 @@
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::PublicInput;
-use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg, reconfiguration};
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput};
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
+use crate::dwallet_mpc::deserialize_event_or_dynamic_field;
+use crate::dwallet_mpc::dwallet_dkg::{
+    dwallet_dkg_first_party_session_info, dwallet_dkg_second_party_session_info,
+    dwallet_imported_key_verification_request_event_session_info,
+};
+use crate::dwallet_mpc::encrypt_user_share::start_encrypted_share_verification_session_info;
+use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::make_dwallet_user_secret_key_shares_public_request_event_session_info;
+use crate::dwallet_mpc::network_dkg::network_dkg_session_info;
+use crate::dwallet_mpc::presign::presign_party_session_info;
+use crate::dwallet_mpc::reconfiguration::network_decryption_key_reconfiguration_session_info_from_event;
+use crate::dwallet_mpc::sign::{
+    get_verify_partial_signatures_session_info, sign_party_session_info,
+};
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
     DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
     DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent, DWalletSessionEventTrait,
     EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, IkaPackagesConfig,
-    MPCProtocolInitData, MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent,
-    SessionInfo, SignRequestEvent,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SessionInfo,
+    SignRequestEvent,
 };
 
 /// Parses the session info from the event that was emitted in Sui from the Move code, and returns it.
@@ -119,149 +128,5 @@ pub(crate) fn session_info_from_event(
             )))
         }
         _ => Ok(None),
-    }
-}
-
-fn network_decryption_key_reconfiguration_session_info_from_event(
-    deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(deserialized_event),
-    }
-}
-
-fn network_dkg_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
-    key_scheme: DWalletMPCNetworkKeyScheme,
-) -> DwalletMPCResult<SessionInfo> {
-    match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            Ok(network_dkg_secp256k1_session_info(deserialized_event))
-        }
-        DWalletMPCNetworkKeyScheme::Ristretto => {
-            Ok(network_dkg_ristretto_session_info(deserialized_event))
-        }
-    }
-}
-
-fn network_dkg_secp256k1_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            deserialized_event,
-        ),
-    }
-}
-
-fn network_dkg_ristretto_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
-            DWalletMPCNetworkKeyScheme::Ristretto,
-            deserialized_event,
-        ),
-    }
-}
-
-fn start_encrypted_share_verification_session_info(
-    deserialized_event: DWalletSessionEvent<EncryptedShareVerificationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
-    }
-}
-
-fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
-    deserialized_event: DWalletSessionEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
-            deserialized_event,
-        ),
-    }
-}
-
-fn dwallet_imported_key_verification_request_event_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
-    }
-}
-
-fn dwallet_dkg_first_party_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent>,
-) -> anyhow::Result<SessionInfo> {
-    Ok(SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
-    })
-}
-
-fn dwallet_dkg_second_party_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
-
-        epoch: deserialized_event.epoch,
-    }
-}
-
-fn presign_party_session_info(
-    deserialized_event: DWalletSessionEvent<PresignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
-    }
-}
-
-fn sign_party_session_info(
-    deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
-    }
-}
-
-fn get_verify_partial_signatures_session_info(
-    deserialized_event: &DWalletSessionEvent<FutureSignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
     }
 }

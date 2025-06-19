@@ -6,7 +6,11 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedPublicKeyShareAndProof,
 };
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::AsyncProtocol;
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
+    DWalletImportedKeyVerificationRequestEvent, DWalletSessionEvent, MPCProtocolInitData,
+    SessionInfo,
+};
 use mpc::Party;
 use twopc_mpc::dkg::Protocol;
 /// This struct represents the initial round of the DKG protocol.
@@ -15,6 +19,61 @@ pub(crate) type DWalletImportedKeyVerificationParty =
     <AsyncProtocol as Protocol>::TrustedDealerDKGDecentralizedParty;
 /// This struct represents the final round of the DKG protocol.
 pub(crate) type DWalletDKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundParty;
+
+pub(crate) fn dwallet_dkg_first_public_input(
+    protocol_public_parameters: &twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DWalletDKGFirstParty as mpc::Party>::PublicInput> {
+    <DWalletDKGFirstParty as DWalletDKGFirstPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters.clone(),
+    )
+}
+
+pub(crate) fn dwallet_dkg_second_public_input(
+    deserialized_event: &DWalletDKGSecondRoundRequestEvent,
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<DWalletDKGSecondParty as mpc::Party>::PublicInput> {
+    <DWalletDKGSecondParty as DWalletDKGSecondPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+        deserialized_event.first_round_output.clone(),
+        deserialized_event
+            .centralized_public_key_share_and_proof
+            .clone(),
+    )
+}
+
+pub(crate) fn dwallet_imported_key_verification_request_event_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
+    }
+}
+
+pub(crate) fn dwallet_dkg_first_party_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent>,
+) -> anyhow::Result<SessionInfo> {
+    Ok(SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
+    })
+}
+
+pub(crate) fn dwallet_dkg_second_party_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
+
+        epoch: deserialized_event.epoch,
+    }
+}
 
 /// A trait for generating the public input for the initial round of the DKG protocol.
 ///
