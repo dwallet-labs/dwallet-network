@@ -467,6 +467,12 @@ impl DWalletCheckpointBuilder {
             .epoch_store
             .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
+        if checkpoint_message.is_some() {
+            debug!(
+                checkpoint_message_seq_number =? checkpoint_message.clone().unwrap().checkpoint_height,
+                "Checking if we can build a new dwallet checkpoint",
+            );
+        }
         let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
         let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
