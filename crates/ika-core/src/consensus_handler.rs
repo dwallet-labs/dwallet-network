@@ -44,6 +44,7 @@ use crate::{
 use ika_types::error::IkaResult;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, instrument, trace_span, warn};
+use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -405,6 +406,21 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
+        for item in self
+            .epoch_store
+            .tables()?
+            .builder_dwallet_checkpoint_message_v1
+            .safe_iter()
+        {
+            let item = item?;
+            info!(
+                sequence_number=?item.0,
+                batch_sequence_number=?item.1.checkpoint_height,
+                validator=?self.epoch_store.name,
+                "Checkpoint sequence number"
+            )
+        }
+
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self
             .epoch_store

@@ -344,7 +344,7 @@ pub struct AuthorityEpochTables {
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_dwallet_checkpoint_message_v1:
+    pub(crate) builder_dwallet_checkpoint_message_v1:
         DBMap<DWalletCheckpointSequenceNumber, BuilderDWalletCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
