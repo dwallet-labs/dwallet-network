@@ -9,6 +9,7 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
+use commitment::CommitmentSizedNumber;
 use consensus_config::Committee as ConsensusCommittee;
 use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
@@ -25,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
+use crate::dwallet_mpc::MPCSessionLogger;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -408,7 +410,26 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
+
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
+            let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
+            let mpc_protocol_name = output.session_info.mpc_round.to_string();
+
+            // Create a base logger with common parameters.
+            let base_logger = MPCSessionLogger::new()
+                .with_protocol_name(mpc_protocol_name.clone())
+                .with_party_to_authority_map(party_to_authority_map.clone());
+            let session_identifier =
+                CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier);
+            base_logger.write_output_to_disk(
+                session_identifier,
+                self.epoch_store
+                    .authority_name_to_party_id(&self.epoch_store.name)?,
+                self.epoch_store
+                    .authority_name_to_party_id(&output.authority)?,
+                &output.output,
+                &output.session_info,
+            );
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
                 .await
