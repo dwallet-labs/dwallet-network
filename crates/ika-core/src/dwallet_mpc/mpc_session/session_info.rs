@@ -1,5 +1,4 @@
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::public_input::dwallet_imported_key_verification_request_event_session_info;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg, reconfiguration};
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCPrivateInput};
@@ -91,7 +90,7 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: DWalletSessionEvent<
                 DWalletNetworkDKGEncryptionKeyRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
-            Ok(Some(network_dkg::network_dkg_session_info(
+            Ok(Some(network_dkg_session_info(
                 deserialized_event,
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?))
@@ -105,9 +104,7 @@ pub(crate) fn session_info_from_event(
                 DWalletEncryptionKeyReconfigurationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
             Ok(Some(
-                reconfiguration::network_decryption_key_reconfiguration_session_info_from_event(
-                    deserialized_event,
-                ),
+                network_decryption_key_reconfiguration_session_info_from_event(deserialized_event),
             ))
         }
         t if t
@@ -122,6 +119,59 @@ pub(crate) fn session_info_from_event(
             )))
         }
         _ => Ok(None),
+    }
+}
+
+fn network_decryption_key_reconfiguration_session_info_from_event(
+    deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(deserialized_event),
+    }
+}
+
+fn network_dkg_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+) -> DwalletMPCResult<SessionInfo> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            Ok(network_dkg_secp256k1_session_info(deserialized_event))
+        }
+        DWalletMPCNetworkKeyScheme::Ristretto => {
+            Ok(network_dkg_ristretto_session_info(deserialized_event))
+        }
+    }
+}
+
+fn network_dkg_secp256k1_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+            DWalletMPCNetworkKeyScheme::Secp256k1,
+            deserialized_event,
+        ),
+    }
+}
+
+fn network_dkg_ristretto_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+            DWalletMPCNetworkKeyScheme::Ristretto,
+            deserialized_event,
+        ),
     }
 }
 
@@ -146,6 +196,17 @@ fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
         mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
             deserialized_event,
         ),
+    }
+}
+
+fn dwallet_imported_key_verification_request_event_session_info(
+    deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
     }
 }
 

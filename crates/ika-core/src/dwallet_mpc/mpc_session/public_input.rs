@@ -9,13 +9,18 @@ use crate::dwallet_mpc::presign::{PresignParty, PresignPartyPublicInputGenerator
 use crate::dwallet_mpc::reconfiguration::{
     ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
 };
-use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
+use crate::dwallet_mpc::sign::{
+    generate_expected_decrypters, SignFirstParty, SignPartyPublicInputGenerator,
+};
 use crate::dwallet_mpc::{deserialize_event_or_dynamic_field, network_dkg};
+use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
+use class_groups::DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER;
 use commitment::CommitmentSizedNumber;
+use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, VersionedImportedDWalletPublicOutput,
 };
-use group::PartyID;
+use group::{secp256k1, PartyID};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
@@ -25,11 +30,39 @@ use ika_types::messages_dwallet_mpc::{
     MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SessionIdentifier,
     SessionInfo, SignRequestEvent,
 };
-use mpc::Weight;
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use rand_core::SeedableRng;
 use shared_wasm_class_groups::message_digest::{message_digest, Hash};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+
+fn network_dkg_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+    key_scheme: DWalletMPCNetworkKeyScheme,
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
+    match key_scheme {
+        DWalletMPCNetworkKeyScheme::Secp256k1 => generate_secp256k1_dkg_party_public_input(
+            weighted_threshold_access_structure,
+            encryption_keys_and_proofs,
+        ),
+        DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
+    }
+}
+
+fn generate_secp256k1_dkg_party_public_input(
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
+    let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
+        weighted_threshold_access_structure,
+        secp256k1::scalar::PublicParameters::default(),
+        DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+        encryption_keys_and_proofs,
+    )
+    .map_err(|e| DwalletMPCError::InvalidMPCPartyType(e.to_string()))?;
+    Ok(public_params)
+}
 
 fn dwallet_dkg_first_public_input(
     protocol_public_parameters: &twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
@@ -37,17 +70,6 @@ fn dwallet_dkg_first_public_input(
     <DWalletDKGFirstParty as DWalletDKGFirstPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters.clone(),
     )
-}
-
-pub(super) fn dwallet_imported_key_verification_request_event_session_info(
-    deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
-        session_type: deserialized_event.session_type.clone(),
-        session_identifier: deserialized_event.session_identifier_digest(),
-        epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
-    }
 }
 
 fn dwallet_dkg_second_public_input(
@@ -79,33 +101,6 @@ pub(crate) fn presign_public_input(
             },
         )?,
     )
-}
-
-/// Deterministically determine the set of expected decrypters for an optimization of the threshold decryption in the Sign protocol.
-/// Pseudo-randomly samples a subset of size `t + 10% * n`, i.e. we add an extra ten-percent of validators,
-/// of which at least `t` should be online (send message) during the first round of Sign, i.e. they are expected to decrypt the signature.
-///
-/// This is a non-stateful way to agree on a subset (that has to be the same for all validators);
-/// in the future, we may consider generating this subset in a stateful manner that takes into account the validators' online/offline states, malicious activities etc.
-/// This would be better, though harder to implement in practice, and will only be done if we see that the current method is ineffective; however, we expect 10% to cover for these effects successfully.
-///
-/// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
-fn generate_expected_decrypters(
-    epoch_store: Arc<AuthorityPerEpochStore>,
-    session_identifier: SessionIdentifier,
-) -> DwalletMPCResult<HashSet<PartyID>> {
-    let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
-    let total_weight = access_structure.total_weight();
-    let expected_decrypters_weight =
-        access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
-
-    let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier);
-    // TODO(Scaly): use direct error here
-    let expected_decrypters = access_structure
-        .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
-        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
-
-    Ok(expected_decrypters)
 }
 
 fn sign_session_public_input(
@@ -225,7 +220,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
                 .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
             Ok((
-                PublicInput::NetworkEncryptionKeyDkg(network_dkg::network_dkg_public_input(
+                PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
                     &dwallet_mpc_manager
                         .epoch_store()?
                         .get_weighted_threshold_access_structure()?,

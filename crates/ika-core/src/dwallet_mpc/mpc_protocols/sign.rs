@@ -2,15 +2,18 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::AsyncProtocol;
-use mpc::Party;
+use ika_types::messages_dwallet_mpc::{AsyncProtocol, SessionIdentifier};
+use mpc::{Party, Weight};
+use rand_core::SeedableRng;
 use std::collections::HashSet;
+use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -19,6 +22,33 @@ pub(crate) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
 pub(crate) type SignPublicInput =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedPartyPublicInput;
+
+/// Deterministically determine the set of expected decrypters for an optimization of the threshold decryption in the Sign protocol.
+/// Pseudo-randomly samples a subset of size `t + 10% * n`, i.e. we add an extra ten-percent of validators,
+/// of which at least `t` should be online (send message) during the first round of Sign, i.e. they are expected to decrypt the signature.
+///
+/// This is a non-stateful way to agree on a subset (that has to be the same for all validators);
+/// in the future, we may consider generating this subset in a stateful manner that takes into account the validators' online/offline states, malicious activities etc.
+/// This would be better, though harder to implement in practice, and will only be done if we see that the current method is ineffective; however, we expect 10% to cover for these effects successfully.
+///
+/// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
+pub(crate) fn generate_expected_decrypters(
+    epoch_store: Arc<AuthorityPerEpochStore>,
+    session_identifier: SessionIdentifier,
+) -> DwalletMPCResult<HashSet<PartyID>> {
+    let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
+    let total_weight = access_structure.total_weight();
+    let expected_decrypters_weight =
+        access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
+
+    let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier);
+    // TODO(Scaly): use direct error here
+    let expected_decrypters = access_structure
+        .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+
+    Ok(expected_decrypters)
+}
 
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.
 ///
