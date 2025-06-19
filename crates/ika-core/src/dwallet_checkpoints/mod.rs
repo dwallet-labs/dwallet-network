@@ -468,14 +468,19 @@ impl DWalletCheckpointBuilder {
             .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
         let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
+        // last_height = 5, last_height = 10
         let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
-
+        // last_timestamp = 5, last_timestamp = 10
+        // min_interval = 3
         let min_checkpoint_interval_ms = self
             .epoch_store
             .protocol_config()
             .min_dwallet_checkpoint_interval_ms_as_option()
             .unwrap_or_default();
         let mut grouped_pending_checkpoints = Vec::new();
+        // iter = [11, 12, 13]
+        // validator with last_height = 5 builds checkpoint with [11]
+        // validator with last_height = 10 builds checkpoint with [11, 12, 13]
         let checkpoints_iter = self
             .epoch_store
             .get_pending_dwallet_checkpoints(last_height)
