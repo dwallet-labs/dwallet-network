@@ -478,10 +478,10 @@ impl DWalletCheckpointBuilder {
                         .unwrap();
                     if checkpoint_message.checkpoint_height != Some(i) {
                         error!(
-                        checkpoint_height=? checkpoint_message.checkpoint_height,
-                        ?i,
-                        "Unexpected checkpoint height in the builder DB"
-                    )
+                            checkpoint_height=? checkpoint_message.checkpoint_height,
+                            ?i,
+                            "Unexpected checkpoint height in the builder DB"
+                        )
                     }
                     i += 1;
                     let mut next_checkpoint = checkpoint.clone();
