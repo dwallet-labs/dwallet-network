@@ -75,12 +75,12 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "11fd8dcf"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "11fd8dcf", features = ["threshold", "parallel"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "11fd8dcf" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "11fd8dcf"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "11fd8dcf"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "11fd8dcf"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "eada6f30"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "eada6f30", features = ["threshold", "parallel"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "eada6f30" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "eada6f30"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "eada6f30"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "eada6f30"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -556,9 +556,5 @@ spinners = "4.1.0"
 include_dir = "0.7.3"
 
 [patch.crates-io]
-sha2 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha2-v0.11.0-rc.0" }
-sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-rc.0" }
-digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
-signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
 curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }

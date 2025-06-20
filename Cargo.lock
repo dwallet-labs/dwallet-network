@@ -2296,7 +2296,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -2459,7 +2459,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "group 0.1.0",
@@ -2936,7 +2936,8 @@ dependencies = [
 [[package]]
 name = "crypto-common"
 version = "0.2.0-rc.3"
-source = "git+https://github.com/RustCrypto/traits.git?tag=digest-v0.11.0-rc.0#2b44f2c6aa76d5b40252fc820fc590a2d3dae50a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a23fa214dea9efd4dacee5a5614646b30216ae0f05d4bb51bafb50e9da1c5be"
 dependencies = [
  "hybrid-array",
 ]
@@ -3391,7 +3392,8 @@ dependencies = [
 [[package]]
 name = "digest"
 version = "0.11.0-rc.0"
-source = "git+https://github.com/RustCrypto/traits.git?tag=digest-v0.11.0-rc.0#2b44f2c6aa76d5b40252fc820fc590a2d3dae50a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "460dd7f37e4950526b54a5a6b1f41b6c8e763c58eb9a8fc8fc05ba5c2f44ca7b"
 dependencies = [
  "block-buffer 0.11.0-rc.4",
  "const-oid 0.10.1",
@@ -4904,7 +4906,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "curve25519-dalek",
@@ -5187,7 +5189,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "group 0.1.0",
@@ -7185,7 +7187,7 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -8219,7 +8221,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -9858,7 +9860,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -11515,7 +11517,8 @@ dependencies = [
 [[package]]
 name = "sha2"
 version = "0.11.0-rc.0"
-source = "git+https://github.com/RustCrypto/hashes.git?tag=sha2-v0.11.0-rc.0#f76b69640c481029e377bee7881f987ed0b888f7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa1d2e6b3cc4e43a8258a9a3b17aa5dfd2cc5186c7024bba8a64aa65b2c71a59"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -11547,7 +11550,8 @@ dependencies = [
 [[package]]
 name = "sha3"
 version = "0.11.0-rc.0"
-source = "git+https://github.com/RustCrypto/hashes.git?tag=sha3-v0.11.0-rc.0#f76b69640c481029e377bee7881f987ed0b888f7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9e6a92fd180fd205defdc0b78288ce847c7309d329fd6647a814567e67db50e"
 dependencies = [
  "digest 0.11.0-rc.0",
  "keccak 0.2.0-pre.0",
@@ -11668,7 +11672,8 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "3.0.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git?tag=signature-v3.0.0-rc.1#faf3f65bd129e6ec881f841cfb47c6a852232561"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8852cecbd17ba45978bbbe43061ebe36a2ae376058c5c172e09f72888f8f7de"
 dependencies = [
  "digest 0.11.0-rc.0",
  "rand_core 0.9.3",
@@ -15422,7 +15427,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=11fd8dcf#11fd8dcf328d240a211033848d684fa7007a6c09"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=eada6f30#eada6f30cdc5fcd584761257b1f6a355563cf5c0"
 dependencies = [
  "class_groups",
  "commitment",
