@@ -6,6 +6,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
+use crate::dwallet_mpc::MPCSessionLogger;
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
 use group::PartyID;
