@@ -467,6 +467,43 @@ impl DWalletCheckpointBuilder {
             .epoch_store
             .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
+        if let Some(checkpoint) = checkpoint_message.clone() {
+            let mut i = 500;
+            loop {
+                let checkpoint_message = self
+                    .epoch_store
+                    .last_built_dwallet_checkpoint_message_builder()
+                    .expect("epoch should not have ended")
+                    .unwrap();
+                if checkpoint_message.checkpoint_height != Some(i) {
+                    error!(
+                        checkpoint_height=? checkpoint_message.checkpoint_height,
+                        ?i,
+                        "Unexpected checkpoint height in the builder DB"
+                    )
+                }
+                i += 1;
+                let mut next_checkpoint = checkpoint.clone();
+                next_checkpoint.checkpoint_height = Some(i);
+                let mut batch = self
+                    .epoch_store
+                    .tables()
+                    .unwrap()
+                    .builder_dwallet_checkpoint_message_v1
+                    .batch();
+                batch
+                    .insert_batch(
+                        &self
+                            .epoch_store
+                            .tables()
+                            .unwrap()
+                            .builder_dwallet_checkpoint_message_v1,
+                        [(i, next_checkpoint)],
+                    )
+                    .unwrap();
+                batch.write().unwrap();
+            }
+        }
         let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
         let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
