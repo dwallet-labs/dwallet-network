@@ -18,7 +18,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedImportedDwalletOutgoingMessage, VersionedNetworkDkgOutput, VersionedPresignOutput,
     VersionedPublicKeyShareAndProof, VersionedSignOutput, VersionedUserSignedMessage,
 };
-use group::{secp256k1, CyclicGroupElement, GroupElement, Samplable, OsCsRng};
+use group::{secp256k1, CyclicGroupElement, GroupElement, OsCsRng, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
