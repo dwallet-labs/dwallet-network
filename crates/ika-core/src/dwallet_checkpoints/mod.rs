@@ -21,6 +21,7 @@ use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
+use crate::dwallet_mpc::MPCSessionLogger;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::error::{IkaError, IkaResult};
@@ -543,7 +544,9 @@ impl DWalletCheckpointBuilder {
         // in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
         for pending_checkpoint in pendings.into_iter() {
+            let logger = MPCSessionLogger::new();
             let pending = pending_checkpoint.into_v1();
+            logger.write_pending_checkpoint(&pending);
             // let txn_in_checkpoint = self
             //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
