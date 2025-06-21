@@ -2,6 +2,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedEncryptedUserShare,
 };
+use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletSessionEvent, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, SessionInfo,
@@ -57,7 +58,7 @@ fn verify_centralized_secret_key_share_proof(
                 bcs::from_bytes(&dkg_public_output)?,
                 bcs::from_bytes(encryption_key)?,
                 bcs::from_bytes(encrypted_centralized_secret_share_and_proof)?,
-                &mut OsRng,
+                &mut OsCsRng,
             )
             .map_err(Into::<anyhow::Error>::into)?;
             Ok(())

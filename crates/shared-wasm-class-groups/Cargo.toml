@@ -15,8 +15,8 @@ schemars.workspace = true
 anyhow.workspace = true
 dwallet-mpc-types.workspace = true
 k256.workspace = true
-sha2 = "0.10.8"
-sha3 = "0.10.8"
+sha2 = "^0.11.0-rc.0"
+sha3 = "^0.11.0-rc.0"
 
 [lints]
 workspace = true

@@ -17,7 +17,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
     SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
-use group::{secp256k1, PartyID};
+use group::{secp256k1, OsCsRng, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
@@ -141,7 +141,7 @@ impl ValidatorPrivateDecryptionKeyData {
                     party_id,
                     secret_key_share,
                     public_parameters,
-                    &mut OsRng,
+                    &mut OsCsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
 
