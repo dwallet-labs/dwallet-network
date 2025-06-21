@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::MPCSessionLogger;
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -181,7 +181,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
         let round = consensus_commit.leader_round();
-        let mut dwallet_mpc_verifier = self
+        let dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;

@@ -7,7 +7,6 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletSessionEvent, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, SessionInfo,
 };
-use rand_core::OsRng;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 

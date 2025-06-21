@@ -26,7 +26,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCProtocolInitData, SessionInfo,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use rand_core::OsRng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::warn;
@@ -157,14 +156,6 @@ impl DwalletMPCNetworkKeys {
             network_encryption_keys: Default::default(),
             validator_private_dec_key_data: node_context,
         }
-    }
-
-    pub fn validator_decryption_keys_shares(
-        &self,
-    ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.validator_private_dec_key_data
-            .validator_decryption_key_shares
-            .clone()
     }
 
     pub fn update_network_key(

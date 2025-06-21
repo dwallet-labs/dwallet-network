@@ -50,6 +50,7 @@ once_cell.workspace = true
 parking_lot.workspace = true
 prometheus.workspace = true
 rand.workspace = true
+rand_chacha.workspace = true
 roaring.workspace = true
 rayon.workspace = true
 reqwest.workspace = true

@@ -25,7 +25,7 @@ use homomorphic_encryption::{
 };
 use mpc::two_party::Round;
 use mpc::Party;
-use rand_core::{OsRng, SeedableRng};
+use rand_core::SeedableRng;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups::encryption_key::public_parameters::Instantiate;

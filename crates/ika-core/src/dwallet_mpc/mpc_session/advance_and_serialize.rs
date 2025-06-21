@@ -3,7 +3,7 @@ use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
 };
-use group::PartyID;
+use group::{OsCsRng, PartyID};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
@@ -49,7 +49,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         messages.clone(),
         Some(private_input),
         public_input,
-        &mut rand_core::OsRng,
+        &mut OsCsRng,
     ) {
         Ok(res) => res,
         Err(e) => {

@@ -1,3 +1,4 @@
+use crate::dwallet_checkpoints::PendingDWalletCheckpointV1;
 use crate::dwallet_mpc::LOG_DIR;
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
@@ -5,6 +6,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput};
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCError;
+use ika_types::messages_dwallet_mpc::SessionInfo;
 use mpc::WeightedThresholdAccessStructure;
 use serde_json::json;
 use std::collections::HashMap;
@@ -109,6 +111,96 @@ impl MPCSessionLogger {
             "class_groups_key_pair_and_proof": self.encoded_class_groups_key_pair_and_proof,
             "decryption_key_shares": self.decryption_key_shares,
             "malicious_parties": self.malicious_parties,
+        });
+
+        let mut file = match File::create(&path) {
+            Ok(f) => f,
+            Err(e) => {
+                warn!("Failed to create log file {}: {}", path.display(), e);
+                return;
+            }
+        };
+        if let Err(e) = file.write_all(log.to_string().as_bytes()) {
+            warn!("Failed to write to the log file {}: {}", path.display(), e);
+        }
+    }
+
+    /// Writes MPC session logs to disk if logging is enabled
+    pub fn write_output_to_disk(
+        &self,
+        session_id: CommitmentSizedNumber,
+        party_id: PartyID,
+        output_sender_party_id: PartyID,
+        output: &Vec<u8>,
+        session_info: &SessionInfo,
+    ) {
+        if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
+            return;
+        }
+
+        warn!("Writing MPC session output to disk");
+
+        // Get (and initialize once) the log directory
+        let log_dir = match self.get_log_dir() {
+            Ok(dir) => dir,
+            Err(err) => {
+                warn!(?err, "Failed to get the logs directory");
+                return;
+            }
+        };
+        let filename = format!(
+            "session_{}_output_from_{}.json",
+            session_id, output_sender_party_id
+        );
+        let path = log_dir.join(&filename);
+
+        // Serialize to JSON.
+        let log = json!({
+            "session_id": session_id,
+            "party_id": party_id,
+            "mpc_protocol": self.mpc_protocol_name,
+            "party_to_authority_map": self.party_to_authority_map,
+            "output": output.clone(),
+            "session_info": session_info.clone(),
+        });
+
+        let mut file = match File::create(&path) {
+            Ok(f) => f,
+            Err(e) => {
+                warn!("Failed to create log file {}: {}", path.display(), e);
+                return;
+            }
+        };
+        if let Err(e) = file.write_all(log.to_string().as_bytes()) {
+            warn!("Failed to write to the log file {}: {}", path.display(), e);
+        }
+    }
+
+    /// Writes MPC session logs to disk if logging is enabled
+    pub fn write_pending_checkpoint(&self, pending_checkpoint: &PendingDWalletCheckpointV1) {
+        if std::env::var("IKA_WRITE_PENDING_CHECKPOINTS").unwrap_or_default() != "1" {
+            return;
+        }
+
+        warn!("Writing MPC pending checkpoint to disk");
+
+        // Get (and initialize once) the log directory
+        let log_dir = match self.get_log_dir() {
+            Ok(dir) => dir,
+            Err(err) => {
+                warn!(?err, "Failed to get the logs directory");
+                return;
+            }
+        };
+        let filename = format!(
+            "pending_checkpoint_{}.json",
+            pending_checkpoint.details.checkpoint_height
+        );
+        let path = log_dir.join(&filename);
+
+        // Serialize to JSON.
+        let log = json!({
+            "pending_checkpoint": pending_checkpoint
         });
 
         let mut file = match File::create(&path) {
