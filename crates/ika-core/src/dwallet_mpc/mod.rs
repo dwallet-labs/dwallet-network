@@ -898,7 +898,13 @@ impl MPCSessionLogger {
             return;
         }
 
-        warn!("Writing MPC session logs to disk");
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC session logs to disk");
+        }
 
         // Determine round number
         let round = messages.len();
@@ -954,9 +960,13 @@ impl MPCSessionLogger {
         if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
             return;
         }
-
-        warn!("Writing MPC session output to disk");
-
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC session output to disk");
+        }
         // Get (and initialize once) the log directory
         let log_dir = match self.get_log_dir() {
             Ok(dir) => dir,
@@ -997,7 +1007,13 @@ impl MPCSessionLogger {
             return;
         }
 
-        warn!("Writing MPC pending checkpoint to disk");
+        if std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() % 60 == 0)
+            .unwrap_or(false)
+        {
+            warn!("Writing MPC pending checkpoint to disk");
+        }
 
         // Get (and initialize once) the log directory
         let log_dir = match self.get_log_dir() {

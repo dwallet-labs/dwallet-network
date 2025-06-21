@@ -31,7 +31,7 @@ export VALIDATOR_NUM=115
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 #export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta.devnet.ika-network.net"
+export SUBDOMAIN="beta.devnet2.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
