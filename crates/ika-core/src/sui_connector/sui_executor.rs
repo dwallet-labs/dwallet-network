@@ -478,10 +478,13 @@ where
                             if response.is_err() {
                                 panic!("failed to submit system checkpoint for over 24 hours, err: {:?}", response.err());
                             }
-                            info!(
-                                ?next_system_checkpoint_sequence_number,
-                                "Successfully submitted system checkpoint"
-                            );
+                            self.metrics.system_checkpoint_writes_success_total.inc();
+                            self.metrics
+                                .last_written_system_checkpoint_sequence
+                                .set(next_dwallet_checkpoint_sequence_number as i64);
+                            last_submitted_system_checkpoint =
+                                Some(next_system_checkpoint_sequence_number);
+                            info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
                         }
                     }
                 }
