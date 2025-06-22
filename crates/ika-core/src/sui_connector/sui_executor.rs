@@ -161,23 +161,21 @@ where
             && !epoch_switch_state.calculated_protocol_pricing
         {
             info!("Calculating protocols pricing");
-            match Self::calculate_protocols_pricing(
+            let result = retry_with_max_elapsed_time!(Self::calculate_protocols_pricing(
                 &self.sui_client,
                 self.ika_system_package_id,
                 sui_notifier,
                 dwallet_2pc_mpc_coordinator_id,
                 self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                Ok(..) => {
-                    info!("Successfully calculated protocols pricing");
-                    epoch_switch_state.calculated_protocol_pricing = true;
-                }
-                Err(err) => {
-                    error!(?err, "failed to calculate protocols pricing");
-                }
+            ), Duration::from_secs(60 * 60 * 24));
+            if result.is_err() {
+                panic!(
+                    "failed to calculate protocols pricing for over 24 hours, err: {:?}",
+                    result.err()
+                );
             }
+            info!("Successfully calculated protocols pricing");
+            epoch_switch_state.calculated_protocol_pricing = true;
         }
 
         // The Epoch was finished.
