@@ -536,7 +536,7 @@ where
         sui_notifier: &SuiNotifier,
         dwallet_coordinator_id: ObjectID,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<SuiTransactionBlockResponse> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
             .first()
@@ -763,7 +763,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_mid_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -817,7 +817,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -872,7 +872,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -931,7 +931,7 @@ where
         sui_client: &Arc<SuiClient<C>>,
         _metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
