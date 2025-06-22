@@ -248,6 +248,7 @@ where
                     response.err()
                 );
             }
+            info!("Successfully requested advance epoch");
         }
     }
 
@@ -395,6 +396,10 @@ where
                                     if response.is_err() {
                                         panic!("failed to submit dwallet checkpoint for over 24 hours, err: {:?}", response.err());
                                     }
+                                    info!(
+                                        ?next_dwallet_checkpoint_sequence_number,
+                                        "Successfully submitted dwallet checkpoint"
+                                    );
                                 }
                                 None => {
                                     info!(
@@ -461,6 +466,10 @@ where
                             if response.is_err() {
                                 panic!("failed to submit system checkpoint for over 24 hours, err: {:?}", response.err());
                             }
+                            info!(
+                                ?next_system_checkpoint_sequence_number,
+                                "Successfully submitted system checkpoint"
+                            );
                         }
                     }
                 }
