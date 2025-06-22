@@ -20,7 +20,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::event::EventID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::broadcast::error::TryRecvError;
 use tokio::sync::watch::Receiver;
@@ -65,6 +64,7 @@ impl DWalletMPCService {
             dwallet_mpc_metrics,
         )
         .await;
+
         Self {
             last_read_consensus_round: 0,
             read_messages: 0,
@@ -82,11 +82,13 @@ impl DWalletMPCService {
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
         let system_inner = self.sui_client.must_get_system_inner_object().await;
         let SystemInner::V1(system_inner) = system_inner;
+
         if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
             let coordinator_state = self
                 .sui_client
                 .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
                 .await;
+
             let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
             self.dwallet_mpc_manager
                 .update_last_session_to_complete_in_current_epoch(
@@ -116,8 +118,7 @@ impl DWalletMPCService {
                 match session_info_from_event(event.clone(), &epoch_store.packages_config) {
                     Ok(Some(mut session_info)) => {
                         // We modify the session info to include the current epoch ID,
-                        // or else
-                        // this event will be ignored while handled.
+                        // or else this event will be ignored while handled.
                         session_info.epoch = self.epoch_id;
                         self.dwallet_mpc_manager
                             .handle_dwallet_db_event(DWalletMPCEvent {
@@ -153,7 +154,10 @@ impl DWalletMPCService {
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
                     for (key_id, key_data) in new_keys.iter() {
-                        info!("Updating network key for key_id: {:?}", key_id);
+                        info!(
+                            "Updating (decrypting new shares) network key for key_id: {:?}",
+                            key_id
+                        );
                         self.dwallet_mpc_manager
                             .network_keys
                             .update_network_key(
@@ -182,7 +186,7 @@ impl DWalletMPCService {
     pub async fn spawn(&mut self) {
         let mut loop_index = 0;
         loop {
-            // Load events from Sui every 5 minutes.
+            // Load events from Sui every 5 minutes (3000*100ms = 300,000ms = 300s = 5m).
             if loop_index % 3_000 == 0 {
                 self.load_missed_events().await;
             }
@@ -205,8 +209,9 @@ impl DWalletMPCService {
                     authority=?self.epoch_store.name,
                     "the node has identified itself as malicious and is no longer participating in MPC protocols"
                 );
-                tokio::time::sleep(Duration::from_secs(120)).await;
-                continue;
+
+                // This signifies a bug, we can't proceed before we fix it.
+                break;
             }
             self.update_network_keys().await;
 
@@ -298,52 +303,42 @@ impl DWalletMPCService {
             }
         };
 
-        let pending_events = pending_events
-            .iter()
-            .map(|e| {
-                let serialized_event = bcs::to_bytes(&DBSuiEvent {
-                    type_: e.type_.clone(),
-                    contents: e.bcs.clone().into_bytes(),
-                })
-                .map_err(|e| IkaError::BCSError(e.to_string()))?;
-                Ok((e.id, serialized_event))
-            })
-            .collect::<IkaResult<Vec<(EventID, Vec<u8>)>>>()?;
         let events: Vec<DWalletMPCEvent> = pending_events
             .iter()
-            .filter_map(|(_id, event)| match bcs::from_bytes::<DBSuiEvent>(event) {
-                Ok(event) => {
-                    match session_info_from_event(event.clone(), &self.epoch_store.packages_config)
-                    {
-                        Ok(Some(session_info)) => {
-                            info!(
-                                mpc_protocol=?session_info.mpc_round,
-                                session_identifier=?session_info.session_identifier,
-                                validator=?self.epoch_store.name,
-                                "Received start event for session"
-                            );
-                            let event = DWalletMPCEvent {
-                                event,
-                                session_info,
-                            };
-                            Some(event)
-                        }
-                        Ok(None) => {
-                            warn!(
-                                event=?event,
-                                "Received an event that does not trigger the start of an MPC flow"
-                            );
-                            None
-                        }
-                        Err(e) => {
-                            error!("error getting session info from event: {}", e);
-                            None
-                        }
+            .filter_map(|event| {
+                let id = event.id;
+                let event = DBSuiEvent {
+                    type_: event.type_.clone(),
+                    contents: event.bcs.clone().into_bytes(),
+                };
+
+                match session_info_from_event(event.clone(), &self.epoch_store.packages_config) {
+                    Ok(Some(session_info)) => {
+                        info!(
+                            mpc_protocol=?session_info.mpc_round,
+                            session_identifier=?session_info.session_identifier,
+                            validator=?self.epoch_store.name,
+                            id=format!("{:?}", id),
+                            "Received start event for session"
+                        );
+                        let event = DWalletMPCEvent {
+                            event,
+                            session_info,
+                        };
+                        Some(event)
                     }
-                }
-                Err(e) => {
-                    error!("failed to deserialize event: {}", e);
-                    None
+                    Ok(None) => {
+                        warn!(
+                            event=?event,
+                            id=format!("{:?}", id),
+                            "Received an event that does not trigger the start of an MPC flow"
+                        );
+                        None
+                    }
+                    Err(e) => {
+                        error!("error getting session info from event: {}", e);
+                        None
+                    }
                 }
             })
             .collect();
