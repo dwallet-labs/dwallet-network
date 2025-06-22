@@ -393,7 +393,7 @@ where
                                             signature.clone(),
                                             signers_bitmap.clone(),
                                             message.clone(),
-                                            sui_notifier.clone(),
+                                            sui_notifier,
                                             &self.sui_client.clone(),
                                             &self.metrics.clone(),
                                             self.notifier_tx_lock.clone().clone(),
