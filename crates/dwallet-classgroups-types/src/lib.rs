@@ -5,7 +5,7 @@ use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem:
     CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use class_groups::{CompactIbqf, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
-use crypto_bigint::rand_core::{OsRng, RngCore};
+use crypto_bigint::rand_core::RngCore;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
