@@ -232,19 +232,21 @@ where
                 .is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
-            if let Err(e) = Self::process_request_advance_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("failed to process request advance epoch: {:?}", e);
-            } else {
-                info!("Successfully processed request advance epoch");
-                epoch_switch_state.ran_request_advance_epoch = true;
+            let response = retry_with_max_elapsed_time!(
+                Self::process_request_advance_epoch(
+                    self.ika_system_package_id.clone(),
+                    dwallet_2pc_mpc_coordinator_id.clone(),
+                    sui_notifier.clone(),
+                    &self.sui_client.clone(),
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(60 * 60 * 24)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit request advance epoch for over 24 hours, err: {:?}",
+                    response.err()
+                );
             }
         }
     }
