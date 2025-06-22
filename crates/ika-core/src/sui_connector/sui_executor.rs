@@ -923,7 +923,7 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<SuiTransactionBlockResponse> {
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1013,7 +1013,19 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(_) => {
+                metrics
+                    .dwallet_checkpoint_writes_success_total
+                    .inc();
+                metrics
+                    .last_written_dwallet_checkpoint_sequence
+                    .set(
+                        next_dwallet_checkpoint_sequence_number as i64,
+                    );
+            }
+            Err(err) => {}
+        }
     }
 
     async fn handle_system_checkpoint_execution_task(

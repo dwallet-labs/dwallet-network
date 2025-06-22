@@ -78,10 +78,10 @@ macro_rules! retry_with_max_elapsed_time {
                     Ok(_) => {
                         return Ok(result);
                     }
-                    Err(e) => {
+                    Err(err) => {
                         // For simplicity we treat every error as transient so we can retry until max_elapsed_time
-                        debug!("Retrying due to error: {:?}", e);
-                        return Err(backoff::Error::transient(e));
+                        error!(?err, "Retrying due to error");
+                        return Err(backoff::Error::transient(err));
                     }
                 }
             };
