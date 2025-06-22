@@ -716,6 +716,13 @@ where
                     let result = sui_client
                         .execute_transaction_block_with_effects(transaction)
                         .await?;
+                    if !result.errors.is_empty() {
+                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                            "{:?}",
+                            result.errors
+                        ))
+                        .into());
+                    }
                     *digest_guard = Some(result.digest);
                     return Ok(result);
                 }
@@ -1114,14 +1121,6 @@ where
                 &err
             );
             return Err(err.unwrap().into());
-        }
-        let result = result?;
-        if !result.errors.is_empty() {
-            metrics.system_checkpoint_writes_failure_total.inc();
-            return Err(IkaError::SuiClientTxFailureGeneric(format!(
-                "{:?}",
-                result.errors
-            )));
         }
         Ok(())
     }
