@@ -254,6 +254,7 @@ where
                 );
             }
             info!("Successfully requested advance epoch");
+            epoch_switch_state.ran_request_advance_epoch = true;
         }
     }
 
