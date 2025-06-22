@@ -1026,7 +1026,7 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1105,11 +1105,19 @@ where
         )
         .await;
 
-        let response = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?;
-        if !response.errors.is_empty() {
+        let result = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await;
+        if result.is_err() {
+            metrics.system_checkpoint_writes_failure_total.inc();
+            let err = result.err();
+            error!("failed to submit system checkpoint to consensus, error: {:?}", &err);
+            return Err(err.unwrap().into());
+        }
+        let result = result?;
+        if !result.errors.is_empty() {
+            metrics.system_checkpoint_writes_failure_total.inc();
             return Err(IkaError::SuiClientTxFailureGeneric(format!(
                 "{:?}",
-                response.errors
+                result.errors
             )));
         }
         Ok(())
