@@ -26,7 +26,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCProtocolInitData, SessionInfo,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use rand_core::OsRng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::warn;

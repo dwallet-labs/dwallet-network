@@ -15,11 +15,11 @@ group.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption.workspace = true
-class_groups.workspace = true
+class_groups = { workspace = true, features = ["threshold", "parallel"]}
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
 commitment.workspace = true
-shared_wasm_class_groups = { path = "../shared-wasm-class-groups" }
+message-digest = { path = "../message-digest" }
 rand_core = "0.9"
 dwallet-mpc-types.workspace = true
 anyhow = { workspace = true, features = ["backtrace"] }
@@ -110,8 +110,8 @@ num_enum.workspace = true
 strum_macros.workspace = true
 derive_more.workspace = true
 backoff.workspace = true
-sha3 = "^0.11.0-rc.0"
-sha2 = "^0.11.0-rc.0"
+sha3 = "0.11.0-rc.0"
+sha2 = "0.11.0-rc.0"
 base64 = "0.22.1"
 
 [dev-dependencies]

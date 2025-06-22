@@ -378,7 +378,7 @@ dependencies = [
  "rand_core 0.9.3",
  "schemars 0.8.22",
  "serde",
- "shared_wasm_class_groups",
+ "message-digest",
  "twopc_mpc",
 ]
 
@@ -1430,7 +1430,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shared_wasm_class_groups"
+name = "message-digest"
 version = "1.0.0"
 dependencies = [
  "anyhow",

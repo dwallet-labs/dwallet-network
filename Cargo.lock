@@ -3584,12 +3584,12 @@ dependencies = [
  "getrandom 0.2.16",
  "group 0.1.0",
  "homomorphic_encryption",
+ "message-digest",
  "mpc",
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
  "schemars",
  "serde",
- "shared_wasm_class_groups",
  "twopc_mpc",
 ]
 
@@ -5734,6 +5734,7 @@ dependencies = [
  "jsonrpsee",
  "k256 0.14.0-pre.7",
  "lru 0.10.1",
+ "message-digest",
  "mockall",
  "moka",
  "more-asserts",
@@ -5772,7 +5773,6 @@ dependencies = [
  "sha2 0.11.0-rc.0",
  "sha3 0.11.0-rc.0",
  "shared-crypto",
- "shared_wasm_class_groups",
  "signature 3.0.0-rc.1",
  "static_assertions",
  "strum_macros 0.24.3",
@@ -7246,6 +7246,22 @@ dependencies = [
  "keccak 0.1.5",
  "rand_core 0.6.4",
  "zeroize",
+]
+
+[[package]]
+name = "message-digest"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "base64 0.21.7",
+ "bcs",
+ "dwallet-mpc-types",
+ "group 0.1.0",
+ "k256 0.14.0-pre.7",
+ "schemars",
+ "serde",
+ "sha2 0.11.0-rc.0",
+ "sha3 0.11.0-rc.0",
 ]
 
 [[package]]
@@ -11577,25 +11593,6 @@ dependencies = [
  "fastcrypto",
  "serde",
  "serde_repr",
-]
-
-[[package]]
-name = "shared_wasm_class_groups"
-version = "1.0.0"
-dependencies = [
- "anyhow",
- "base64 0.21.7",
- "bcs",
- "class_groups",
- "dwallet-mpc-types",
- "group 0.1.0",
- "k256 0.14.0-pre.7",
- "mpc",
- "schemars",
- "serde",
- "sha2 0.11.0-rc.0",
- "sha3 0.11.0-rc.0",
- "twopc_mpc",
 ]
 
 [[package]]

@@ -7,7 +7,7 @@ version.workspace = true
 mpc.workspace = true
 twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76" }
-shared_wasm_class_groups = { path = "../shared-wasm-class-groups" } # TODO: no parallel?  features = ["threshold"]
+message-digest = { path = "../message-digest" }
 class_groups.workspace = true
 group.workspace = true
 homomorphic_encryption.workspace = true

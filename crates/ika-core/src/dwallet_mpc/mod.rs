@@ -34,10 +34,10 @@ use ika_types::messages_dwallet_mpc::{
 use ika_types::messages_dwallet_mpc::{
     FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent,
 };
+use message_digest::message_digest::{message_digest, Hash};
 use mpc::{AsynchronouslyAdvanceable, Weight, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
