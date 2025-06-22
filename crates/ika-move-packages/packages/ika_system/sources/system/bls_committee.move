@@ -15,13 +15,13 @@ const BLS_SIGNATURE_LEN: u64 = 96;
 
 // === Errors ===
 
+/// The signers bitmap is invalid.
 const EInvalidBitmap: u64 = 0;
-
+/// The length of the provided bls signature is incorrect.
 const EInvalidSignatureLength: u64 = 1;
-
+/// Invalid certificate signature.
 const EInvalidSignature: u64 = 2;
-
-
+/// Not enough stake of signers for the bls signature.
 const ENotEnoughStake: u64 = 3;
 
 // === Structs ===
