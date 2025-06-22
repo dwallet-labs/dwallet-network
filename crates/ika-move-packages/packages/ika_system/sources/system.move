@@ -623,9 +623,6 @@ public fun process_checkpoint_message_by_quorum(
     message: vector<u8>,
     ctx: &mut TxContext,
 ) {
-    if (1 == 1) {
-        abort 1
-    };
     self.inner_mut().process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
 }
 
