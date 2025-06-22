@@ -17,14 +17,12 @@ const BLS_SIGNATURE_LEN: u64 = 96;
 
 const EInvalidBitmap: u64 = 0;
 
-#[error]
-const EInvalidSignatureLength: vector<u8> = b"The length of the provided bls signature is incorrect.";
+const EInvalidSignatureLength: u64 = 1;
 
-#[error]
-const EInvalidSignature: vector<u8> = b"Invalid certificate signature.";
+const EInvalidSignature: u64 = 2;
 
-#[error]
-const ENotEnoughStake: vector<u8> = b"Not enough stake of signers for the bls signature.";
+
+const ENotEnoughStake: u64 = 3;
 
 // === Structs ===
 
