@@ -17,8 +17,14 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	SUI_PACKAGE_ID,
 } from './globals.js';
+import {
+	createDWalletStateArg,
+	createEmptyIKACoin,
+	destroyEmptyIKACoin,
+	executeTransactionWithRetry,
+	executeTransactionWithTiming,
+} from './transaction-utils.js';
 
 /**
  * A class groups key pair.
@@ -202,39 +208,16 @@ async function registerEncryptionKey(
 			),
 		],
 	});
-	let res;
-	const startTime = Date.now();
-	while (!res && Date.now() - startTime <= conf.timeout) {
-		try {
-			res = await conf.client.signAndExecuteTransaction({
-				signer: conf.suiClientKeypair,
-				transaction: tx,
-				options: {
-					showEvents: true,
-				},
-			});
-		} catch (error) {
-			// If we're still within timeout, wait a bit and retry
-			if (Date.now() - startTime <= conf.timeout) {
-				await delay(5_000); // Wait 5 seconds before retrying
-				continue;
-			}
-			throw error; // If we've exceeded timeout, throw the error
-		}
-	}
 
-	if (!res) {
-		throw new Error(
-			`Failed to get transaction response within ${conf.timeout / (60 * 1000)} minutes`,
+	return await executeTransactionWithRetry(conf, tx, 'register encryption key', (result) => {
+		const createdEncryptionKeyEvent = result.events?.find((event) =>
+			isCreatedEncryptionKeyEvent(event.parsedJson),
 		);
-	}
-	const createdEncryptionKeyEvent = res.events?.find((event) =>
-		isCreatedEncryptionKeyEvent(event.parsedJson),
-	);
-	if (!createdEncryptionKeyEvent) {
-		throw new Error('Encryption key registration failed');
-	}
-	return createdEncryptionKeyEvent.parsedJson as CreatedEncryptionKeyEvent;
+		if (!createdEncryptionKeyEvent) {
+			throw new Error('Encryption key registration failed');
+		}
+		return createdEncryptionKeyEvent.parsedJson as CreatedEncryptionKeyEvent;
+	});
 }
 
 function isCreatedEncryptionKeyEvent(obj: any): obj is CreatedEncryptionKeyEvent {
@@ -340,12 +323,7 @@ export async function transferEncryptedSecretShare(
 ): Promise<string> {
 	const destSuiPublicKey = await fetchPublicKeyByAddress(sourceConf, destSuiAddress);
 	const tx = new Transaction();
-	const dwalletSecpState = await getDWalletSecpState(sourceConf);
-	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dwalletSecpState.object_id,
-		initialSharedVersion: dwalletSecpState.initial_shared_version,
-		mutable: true,
-	});
+	const dwalletStateArg = await createDWalletStateArg(tx, sourceConf);
 	const dwalletIDArg = tx.pure.id(dwalletID);
 	const destinationEncryptionKeyAddress = destSuiPublicKey.toSuiAddress();
 	const destinationEncryptionKeyAddressArg = tx.pure.address(destinationEncryptionKeyAddress);
@@ -355,11 +333,7 @@ export async function transferEncryptedSecretShare(
 	const sourceEncryptedUserSecretKeyShareIDArg = tx.pure.id(
 		source_encrypted_user_secret_key_share_id,
 	);
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	const emptyIKACoin = createEmptyIKACoin(tx, sourceConf);
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
@@ -379,28 +353,23 @@ export async function transferEncryptedSecretShare(
 		],
 	});
 
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${sourceConf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	destroyEmptyIKACoin(tx, emptyIKACoin, sourceConf);
 
-	const result = await sourceConf.client.signAndExecuteTransaction({
-		signer: sourceConf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
-	});
-	const startVerificationEvent = result.events?.at(1)?.parsedJson;
-	if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
-		throw new Error('invalid start DKG first round event');
-	}
-	await waitForChainVerification(
+	const result = await executeTransactionWithTiming(
 		sourceConf,
-		startVerificationEvent.event_data.encrypted_user_secret_key_share_id,
+		tx,
+		'transfer encrypted secret share',
+		(result) => {
+			const startVerificationEvent = result.events?.at(1)?.parsedJson;
+			if (!isStartEncryptedShareVerificationEvent(startVerificationEvent)) {
+				throw new Error('invalid start DKG first round event');
+			}
+			return startVerificationEvent;
+		},
 	);
-	return startVerificationEvent.event_data.encrypted_user_secret_key_share_id;
+
+	await waitForChainVerification(sourceConf, result.event_data.encrypted_user_secret_key_share_id);
+	return result.event_data.encrypted_user_secret_key_share_id;
 }
 
 function isStartEncryptedShareVerificationEvent(

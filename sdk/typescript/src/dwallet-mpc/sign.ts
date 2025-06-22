@@ -151,7 +151,6 @@ export async function prepareSignTransaction(
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
-	console.time(`sign centralized party ${conf.suiClientKeypair.toSuiAddress()}`);
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
 		MPCKeyScheme.Secp256k1,
@@ -161,7 +160,6 @@ export async function prepareSignTransaction(
 		message,
 		hash,
 	);
-	console.timeEnd(`sign centralized party ${conf.suiClientKeypair.toSuiAddress()}`);
 
 	const { tx, messageApproval } = await approveMessageTX(conf, dwalletCapID, hash, message);
 	const emptyIKACoin = createEmptyIKACoin(tx, conf);
