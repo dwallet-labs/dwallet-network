@@ -3,14 +3,8 @@
 import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 
-import {
-	Config,
-	createSessionIdentifier,
-	DWALLET_COORDINATOR_INNER_MOVE_MODULE_NAME,
-	getDWalletSecpState,
-	SharedObjectData,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+import type { Config } from './globals.js';
+import { createSessionIdentifier, getDWalletSecpState, SUI_PACKAGE_ID } from './globals.js';
 
 /**
  * Creates an empty IKA coin for transaction gas
@@ -130,35 +124,4 @@ export async function createBaseTransaction(conf: Config): Promise<{
 	);
 
 	return { tx, emptyIKACoin, dwalletStateArg, sessionIdentifier };
-}
-
-/**
- * Type guard utility for checking if an object has a specific property
- */
-export function hasProperty<T extends string>(obj: any, prop: T): obj is Record<T, any> {
-	return obj && typeof obj === 'object' && prop in obj;
-}
-
-/**
- * Type guard utility for checking if an object has nested properties
- */
-export function hasNestedProperty(obj: any, ...props: string[]): boolean {
-	let current = obj;
-	for (const prop of props) {
-		if (!current || typeof current !== 'object' || !(prop in current)) {
-			return false;
-		}
-		current = current[prop];
-	}
-	return true;
-}
-
-/**
- * Type guard utility for checking if an object has an event_data property with specific fields
- */
-export function hasEventData(obj: any, requiredFields: string[]): boolean {
-	return (
-		hasProperty(obj, 'event_data') &&
-		requiredFields.every((field) => hasProperty(obj.event_data, field))
-	);
 }

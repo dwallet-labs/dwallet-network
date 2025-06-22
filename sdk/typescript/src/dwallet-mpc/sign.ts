@@ -147,7 +147,6 @@ export async function prepareSignTransaction(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
 ): Promise<Transaction> {
-	const { isDWalletCap, isActiveDWallet, isPresign } = await import('./globals.js');
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
@@ -206,7 +205,6 @@ export async function signWithImportedDWallet(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
 ): Promise<ReadySignObject> {
-	const { isDWalletCap, isActiveDWallet, isPresign } = await import('./globals.js');
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
@@ -282,7 +280,6 @@ export async function createUnverifiedPartialUserSignatureCap(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 	hash = Hash.KECCAK256,
 ): Promise<string> {
-	const { isDWalletCap, isActiveDWallet, isPresign } = await import('./globals.js');
 	const dwalletCap = await getObjectWithType(conf, dwalletCapID, isDWalletCap);
 	const dwalletID = dwalletCap.dwallet_id;
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
