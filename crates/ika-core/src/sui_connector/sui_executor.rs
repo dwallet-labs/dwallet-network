@@ -142,6 +142,7 @@ where
                 );
             }
             info!("Successfully processed mid epoch");
+            epoch_switch_state.ran_mid_epoch = true;
         }
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
