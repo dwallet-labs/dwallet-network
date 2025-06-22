@@ -67,22 +67,22 @@ impl fmt::Display for MPCSessionStatus {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Hash)]
 pub enum NetworkDecryptionKeyPublicOutputType {
     NetworkDkg,
-    Reshare,
+    Reconfiguration,
 }
 
 /// Network decryption key shares for the MPC protocol.
-/// Created for each DKG protocol and modified for each Reshare Protocol.
+/// Created for each DKG protocol and modified for each Reconfiguration Protocol.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
     /// The epoch of the last version update.
     pub epoch: u64,
 
     pub state: NetworkDecryptionKeyPublicOutputType,
-    /// The public output of the `latest` decryption key update (NetworkDKG/Reshare).
+    /// The public output of the `latest` decryption key update (NetworkDKG/Reconfiguration).
     pub latest_public_output: VersionedNetworkDkgOutput,
 
     /// The public parameters of the decryption key shares,
-    /// updated only after a successful network DKG or Reshare.
+    /// updated only after a successful network DKG or Reconfiguration.
     pub decryption_key_share_public_parameters:
         class_groups::Secp256k1DecryptionKeySharePublicParameters,
 
@@ -153,7 +153,7 @@ pub enum VersionedNetworkDkgOutput {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum VersionedDecryptionKeyReshareOutput {
+pub enum VersionedDecryptionKeyReconfigurationOutput {
     V1(MPCPublicOutput),
 }
 

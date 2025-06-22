@@ -26,7 +26,3 @@ wasm_js = ["group/wasm_js", "dep:getrandom"]
 
 [lints]
 workspace = true
-
-[patch.crates-io]
-curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }

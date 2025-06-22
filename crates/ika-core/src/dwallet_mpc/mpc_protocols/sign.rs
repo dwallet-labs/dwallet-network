@@ -2,29 +2,128 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
 };
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::AsyncProtocol;
-use mpc::Party;
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCProtocolInitData,
+    SessionIdentifier, SessionInfo, SignRequestEvent,
+};
+use message_digest::message_digest::{message_digest, Hash};
+use mpc::{Party, Weight};
+use rand_core::SeedableRng;
 use std::collections::HashSet;
+use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 
-pub(super) type SignFirstParty =
+pub(crate) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
-pub(super) type SignPublicInput =
+pub(crate) type SignPublicInput =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedPartyPublicInput;
+
+/// Deterministically determine the set of expected decrypters for an optimization of the threshold decryption in the Sign protocol.
+/// Pseudo-randomly samples a subset of size `t + 10% * n`, i.e. we add an extra ten-percent of validators,
+/// of which at least `t` should be online (send message) during the first round of Sign, i.e. they are expected to decrypt the signature.
+///
+/// This is a non-stateful way to agree on a subset (that has to be the same for all validators);
+/// in the future, we may consider generating this subset in a stateful manner that takes into account the validators' online/offline states, malicious activities etc.
+/// This would be better, though harder to implement in practice, and will only be done if we see that the current method is ineffective; however, we expect 10% to cover for these effects successfully.
+///
+/// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
+fn generate_expected_decrypters(
+    epoch_store: Arc<AuthorityPerEpochStore>,
+    session_identifier: SessionIdentifier,
+) -> DwalletMPCResult<HashSet<PartyID>> {
+    let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
+    let total_weight = access_structure.total_weight();
+    let expected_decrypters_weight =
+        access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
+
+    let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier);
+    // TODO(Scaly): use direct error here
+    let expected_decrypters = access_structure
+        .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
+        .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
+
+    Ok(expected_decrypters)
+}
+
+pub(crate) fn sign_session_public_input(
+    deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
+    dwallet_mpc_manager: &DWalletMPCManager,
+    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
+    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
+        // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
+        // Todo (#473): Support generic network key scheme
+        &deserialized_event
+            .event_data
+            .dwallet_network_decryption_key_id,
+    )?;
+
+    let expected_decrypters = generate_expected_decrypters(
+        dwallet_mpc_manager.epoch_store()?,
+        deserialized_event.session_identifier_digest(),
+    )?;
+
+    <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
+        protocol_public_parameters,
+        deserialized_event
+            .event_data
+            .dwallet_decentralized_public_output
+            .clone(),
+        bcs::to_bytes(
+            &message_digest(
+                &deserialized_event.event_data.message.clone(),
+                &Hash::try_from(deserialized_event.event_data.hash_scheme)
+                    .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+            )
+            .map_err(|e| DwalletMPCError::SignatureVerificationFailed(e.to_string()))?,
+        )?,
+        deserialized_event.event_data.presign.clone(),
+        deserialized_event
+            .event_data
+            .message_centralized_signature
+            .clone(),
+        decryption_pp,
+        expected_decrypters,
+    )
+}
+
+pub(crate) fn sign_party_session_info(
+    deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
+    }
+}
+
+pub(crate) fn get_verify_partial_signatures_session_info(
+    deserialized_event: &DWalletSessionEvent<FutureSignRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+    }
+}
 
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.
 ///
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing [`Party::PublicInput`].
-pub(super) trait SignPartyPublicInputGenerator: Party {
+pub(crate) trait SignPartyPublicInputGenerator: Party {
     fn generate_public_input(
         protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
         dkg_output: SerializedWrappedMPCPublicOutput,
