@@ -71,7 +71,6 @@ export async function executeSignTransaction(tx: Transaction, conf: Config) {
 		extractSignResult,
 	);
 
-	console.log(`Sign: ${conf.suiClientKeypair.toSuiAddress()} - ${signObj.id.id}`);
 	return signObj;
 }
 
@@ -362,8 +361,8 @@ export async function verifySignWithPartialUserSignatures(
 	conf: Config,
 	unverifiedPartialUserSignatureCapID: string,
 ): Promise<string> {
-	const dwalletStateArg = await createDWalletStateArg(new Transaction(), conf);
 	const tx = new Transaction();
+	const dwalletStateArg = await createDWalletStateArg(tx, conf);
 
 	const [verifiedPartialUserSignatureCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::verify_partial_user_signature_cap`,

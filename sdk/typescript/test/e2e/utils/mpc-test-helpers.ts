@@ -139,7 +139,7 @@ export async function prepareSignTransactionForFlow(
 		cfg,
 		presignResult.id.id,
 		dkgFirst.dwalletCapID,
-		Buffer.from('hello world'),
+		new TextEncoder().encode('hello world'),
 		centralizedSecretKeyShare,
 		networkDecryptionKeyPublicOutput,
 		Hash.KECCAK256,

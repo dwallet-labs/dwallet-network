@@ -224,7 +224,9 @@ async function registerEncryptionKey(
 	}
 
 	if (!res) {
-		throw new Error(`Failed to get transaction response within ${conf.timeout / (60 * 1000)} minutes`);
+		throw new Error(
+			`Failed to get transaction response within ${conf.timeout / (60 * 1000)} minutes`,
+		);
 	}
 	const createdEncryptionKeyEvent = res.events?.find((event) =>
 		isCreatedEncryptionKeyEvent(event.parsedJson),
