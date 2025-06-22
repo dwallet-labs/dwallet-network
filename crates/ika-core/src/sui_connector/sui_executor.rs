@@ -466,7 +466,7 @@ where
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
                             self.metrics.system_checkpoint_write_requests_total.inc();
-                            let task = Self::handle_system_checkpoint_execution_task(
+                            let task = Self::handle_system_checkpoint_execution_task_until_success(
                                 self.ika_system_package_id,
                                 signature,
                                 signers_bitmap,
