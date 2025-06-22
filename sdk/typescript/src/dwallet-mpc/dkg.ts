@@ -21,7 +21,6 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	MPCKeyScheme,
 	sessionIdentifierDigest,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -111,7 +110,6 @@ export async function launchDKGSecondRound(
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
-			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(firstRoundOutputResult.output),
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);
