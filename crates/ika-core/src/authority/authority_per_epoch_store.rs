@@ -344,7 +344,7 @@ pub struct AuthorityEpochTables {
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_dwallet_checkpoint_message_v1:
+    pub(crate) builder_dwallet_checkpoint_message_v1:
         DBMap<DWalletCheckpointSequenceNumber, BuilderDWalletCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
@@ -1185,7 +1185,7 @@ impl AuthorityPerEpochStore {
             messages: verified_messages.clone(),
             details: PendingDWalletCheckpointInfo {
                 timestamp_ms: consensus_commit_info.timestamp,
-                dwallet_checkpoint_height: checkpoint_height,
+                checkpoint_height,
             },
         });
         self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
@@ -1196,7 +1196,7 @@ impl AuthorityPerEpochStore {
             messages: system_checkpoint_verified_messages.clone(),
             details: PendingSystemCheckpointInfo {
                 timestamp_ms: consensus_commit_info.timestamp,
-                system_checkpoint_height,
+                checkpoint_height: system_checkpoint_height,
             },
         });
         self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
@@ -1911,8 +1911,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderDWalletCheckpointMessage {
-                dwallet_checkpoint_message: summary,
-                dwallet_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -1955,7 +1955,7 @@ impl AuthorityPerEpochStore {
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
     pub fn get_built_dwallet_checkpoint_message(
@@ -1966,7 +1966,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_dwallet_checkpoint_message_v1
             .get(&sequence)?
-            .map(|s| s.dwallet_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_dwallet_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2051,8 +2051,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
-                system_checkpoint_message: summary,
-                system_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -2095,7 +2095,7 @@ impl AuthorityPerEpochStore {
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.system_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
     pub fn get_built_system_checkpoint_message(
@@ -2106,7 +2106,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.system_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_system_checkpoint_signature_index(&self) -> IkaResult<u64> {

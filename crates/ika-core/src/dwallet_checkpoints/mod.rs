@@ -21,6 +21,7 @@ use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
+use crate::dwallet_mpc::MPCSessionLogger;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::error::{IkaError, IkaResult};
@@ -53,7 +54,7 @@ pub struct EpochStats {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingDWalletCheckpointInfo {
     pub timestamp_ms: DWalletCheckpointTimestamp,
-    pub dwallet_checkpoint_height: DWalletCheckpointHeight,
+    pub checkpoint_height: DWalletCheckpointHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -90,16 +91,16 @@ impl PendingDWalletCheckpoint {
     }
 
     pub fn height(&self) -> DWalletCheckpointHeight {
-        self.details().dwallet_checkpoint_height
+        self.details().checkpoint_height
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BuilderDWalletCheckpointMessage {
-    pub dwallet_checkpoint_message: DWalletCheckpointMessage,
+    pub checkpoint_message: DWalletCheckpointMessage,
     // The Height at which this `dwallet_checkpoint` message was built.
     // None for genesis dwallet_checkpoint.
-    pub dwallet_checkpoint_height: Option<DWalletCheckpointHeight>,
+    pub checkpoint_height: Option<DWalletCheckpointHeight>,
     pub position_in_commit: usize,
 }
 
@@ -467,11 +468,8 @@ impl DWalletCheckpointBuilder {
             .epoch_store
             .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
-        let mut last_height = checkpoint_message
-            .clone()
-            .and_then(|s| s.dwallet_checkpoint_height);
-        let mut last_timestamp =
-            checkpoint_message.map(|s| s.dwallet_checkpoint_message.timestamp_ms);
+        let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
+        let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
         let min_checkpoint_interval_ms = self
             .epoch_store
@@ -532,7 +530,7 @@ impl DWalletCheckpointBuilder {
         );
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().dwallet_checkpoint_height))]
+    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
     async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
         let last_details = pendings.last().unwrap().details().clone();
 
@@ -546,7 +544,9 @@ impl DWalletCheckpointBuilder {
         // in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
         for pending_checkpoint in pendings.into_iter() {
+            let logger = MPCSessionLogger::new();
             let pending = pending_checkpoint.into_v1();
+            logger.write_pending_checkpoint(&pending);
             // let txn_in_checkpoint = self
             //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
@@ -555,7 +555,7 @@ impl DWalletCheckpointBuilder {
         let new_checkpoint = self
             .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
             .await?;
-        self.write_checkpoints(last_details.dwallet_checkpoint_height, new_checkpoint)
+        self.write_checkpoints(last_details.checkpoint_height, new_checkpoint)
             .await?;
         Ok(())
     }
@@ -688,13 +688,15 @@ impl DWalletCheckpointBuilder {
         if epoch != 1 && self.previous_epoch_last_checkpoint_sequence_number > last_checkpoint_seq {
             last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
-        let sequence_number = last_checkpoint_seq + 1;
-        info!(
-            sequence_number,
-            checkpoint_timestamp = details.timestamp_ms,
-            "Creating dwallet checkpoint(s) for {} messages",
-            all_messages.len(),
-        );
+
+        if !all_messages.is_empty() {
+            info!(
+                next_sequence_number = last_checkpoint_seq + 1,
+                checkpoint_timestamp = details.timestamp_ms,
+                "Creating dwallet checkpoint(s) for {} messages",
+                all_messages.len(),
+            );
+        }
 
         let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
@@ -713,6 +715,7 @@ impl DWalletCheckpointBuilder {
                     .record_epoch_first_checkpoint_creation_time_metric();
             }
 
+            let sequence_number = last_checkpoint_seq + 1;
             last_checkpoint_seq = sequence_number;
 
             let timestamp_ms = details.timestamp_ms;
@@ -950,6 +953,10 @@ impl DWalletCheckpointAggregator {
                 debug!(
                     checkpoint_seq = current.checkpoint_message.sequence_number,
                     digest=?current.checkpoint_message.digest(),
+                    timestamp=?current.checkpoint_message.timestamp_ms,
+                    messages=?current.checkpoint_message.messages,
+                    sequence_number=?current.checkpoint_message.sequence_number,
+                    epoch=?current.checkpoint_message.epoch,
                     from=?data.checkpoint_message.auth_sig().authority.concise(),
                     "Processing signature for dwallet checkpoint.",
                 );
