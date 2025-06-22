@@ -376,46 +376,20 @@ where
                                         "Processing checkpoint with signers"
                                     );
 
-                                    let task = Self::handle_dwallet_checkpoint_execution_task(
-                                        self.ika_system_package_id,
-                                        dwallet_2pc_mpc_coordinator_id,
-                                        signature,
-                                        signers_bitmap,
-                                        message,
-                                        sui_notifier,
-                                        &self.sui_client,
-                                        &self.metrics,
-                                        self.notifier_tx_lock.clone(),
-                                    )
-                                    .await;
-                                    match task {
-                                        Ok(_) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_success_total
-                                                .inc();
-                                            self.metrics
-                                                .last_written_dwallet_checkpoint_sequence
-                                                .set(
-                                                    next_dwallet_checkpoint_sequence_number as i64,
-                                                );
-                                            last_submitted_dwallet_checkpoint =
-                                                Some(next_dwallet_checkpoint_sequence_number);
-                                            info!(
-                                                ?next_dwallet_checkpoint_sequence_number,
-                                                "Sui transaction successfully executed for checkpoint sequence number"
-                                            );
-                                        }
-                                        Err(err) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_failure_total
-                                                .inc();
-                                            error!(
-                                            ?next_dwallet_checkpoint_sequence_number,
-                                            ?err,
-                                            "Sui transaction execution failed for checkpoint sequence number"
-                                        );
-                                        }
-                                    };
+                                    let response = retry_with_max_elapsed_time!(Self::handle_dwallet_checkpoint_execution_task(
+                                        self.ika_system_package_id.clone(),
+                                        dwallet_2pc_mpc_coordinator_id.clone(),
+                                        signature.clone(),
+                                        signers_bitmap.clone(),
+                                        message.clone(),
+                                        sui_notifier.clone(),
+                                        &self.sui_client.clone(),
+                                        &self.metrics.clone(),
+                                        self.notifier_tx_lock.clone().clone(),
+                                    ), Duration::from_secs(60 * 60 * 24));
+                                    if response.is_err() {
+                                        panic!("failed to submit dwallet checkpoint for over 24 hours, err: {:?}", response.err());
+                                    }
                                 }
                                 None => {
                                     info!(
@@ -480,7 +454,7 @@ where
                                 Duration::from_secs(60 * 60 * 24)
                             );
                             if response.is_err() {
-                                panic!(?response, "failed to submit system checkpoint for over 24 hours");
+                                panic!("failed to submit system checkpoint for over 24 hours, err: {:?}", response.err());
                             }
                         }
                     }
