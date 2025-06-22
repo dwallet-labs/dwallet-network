@@ -161,13 +161,16 @@ where
             && !epoch_switch_state.calculated_protocol_pricing
         {
             info!("Calculating protocols pricing");
-            let result = retry_with_max_elapsed_time!(Self::calculate_protocols_pricing(
-                &self.sui_client,
-                self.ika_system_package_id,
-                sui_notifier,
-                dwallet_2pc_mpc_coordinator_id,
-                self.notifier_tx_lock.clone(),
-            ), Duration::from_secs(60 * 60 * 24));
+            let result = retry_with_max_elapsed_time!(
+                Self::calculate_protocols_pricing(
+                    &self.sui_client,
+                    self.ika_system_package_id,
+                    sui_notifier,
+                    dwallet_2pc_mpc_coordinator_id,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(60 * 60 * 24)
+            );
             if result.is_err() {
                 panic!(
                     "failed to calculate protocols pricing for over 24 hours, err: {:?}",
