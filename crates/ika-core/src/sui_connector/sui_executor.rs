@@ -40,7 +40,6 @@ use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
 use tokio::time::{self, Duration};
-use tracing::debug;
 use tracing::{error, info};
 
 #[derive(PartialEq, Eq, Debug)]
@@ -242,7 +241,7 @@ where
                 Self::process_request_advance_epoch(
                     self.ika_system_package_id.clone(),
                     dwallet_2pc_mpc_coordinator_id.clone(),
-                    sui_notifier.clone(),
+                    sui_notifier,
                     &self.sui_client.clone(),
                     self.notifier_tx_lock.clone(),
                 ),
