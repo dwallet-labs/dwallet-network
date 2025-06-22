@@ -1,6 +1,6 @@
 mod advance_and_serialize;
+mod input;
 mod logger;
-mod public_input;
 mod session_info;
 
 use class_groups::dkg::Secp256k1Party;
@@ -45,8 +45,8 @@ use ika_types::messages_dwallet_mpc::{
 use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) use advance_and_serialize::advance_and_serialize;
+pub(crate) use input::session_input_from_event;
 pub(crate) use logger::MPCSessionLogger;
-pub(crate) use public_input::public_input_from_event;
 pub(crate) use session_info::session_info_from_event;
 
 /// Represents the result of checking whether the session is ready to advance.

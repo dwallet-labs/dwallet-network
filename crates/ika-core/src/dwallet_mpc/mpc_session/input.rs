@@ -29,7 +29,7 @@ use ika_types::messages_dwallet_mpc::{
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) async fn public_input_from_event(
+pub(crate) async fn session_input_from_event(
     event: DBSuiEvent,
     dwallet_mpc_manager: &DWalletMPCManager,
 ) -> DwalletMPCResult<(PublicInput, MPCPrivateInput)> {
