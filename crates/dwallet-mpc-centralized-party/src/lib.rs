@@ -30,8 +30,8 @@ use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
 use class_groups::encryption_key::public_parameters::Instantiate;
 use commitment::CommitmentSizedNumber;
+use message_digest::message_digest::message_digest;
 use serde::{Deserialize, Serialize};
-use shared_wasm_class_groups::message_digest::message_digest;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
 use twopc_mpc::sign::verify_signature;
