@@ -14,9 +14,9 @@ use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCProtocolInitData,
     SessionIdentifier, SessionInfo, SignRequestEvent,
 };
+use message_digest::message_digest::{message_digest, Hash};
 use mpc::{Party, Weight};
 use rand_core::SeedableRng;
-use shared_wasm_class_groups::message_digest::{message_digest, Hash};
 use std::collections::HashSet;
 use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
