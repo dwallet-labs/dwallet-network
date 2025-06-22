@@ -304,7 +304,11 @@ export async function createUnverifiedPartialUserSignatureCap(
 		arguments: [dwalletStateArg, tx.object(presign.cap_id)],
 	});
 
-	const sessionIdentifier = await createSessionIdentifier(tx, dwalletStateArg, conf);
+	const sessionIdentifier = await createSessionIdentifier(
+		tx,
+		dwalletStateArg,
+		conf.ikaConfig.ika_system_package_id,
+	);
 
 	const [unverifiedPartialUserSignatureCap] = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_future_sign`,
