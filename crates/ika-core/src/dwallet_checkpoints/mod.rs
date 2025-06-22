@@ -24,7 +24,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::message::DWalletMessageKind;
+use ika_types::message::{DWalletMessageKind, NetworkKeyPublicOutputSlice};
 use ika_types::message_envelope::Message;
 use ika_types::messages_dwallet_checkpoint::{
     CertifiedDWalletCheckpointMessage, DWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
@@ -486,6 +486,23 @@ impl DWalletCheckpointBuilder {
                     i += 1;
                     let mut next_checkpoint = checkpoint.clone();
                     next_checkpoint.checkpoint_height = Some(i);
+                    next_checkpoint.checkpoint_message = DWalletCheckpointMessage::new(
+                        checkpoint.checkpoint_message.epoch,
+                        checkpoint.checkpoint_message.sequence_number,
+                        vec![
+                            DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(
+                                NetworkKeyPublicOutputSlice {
+                                    dwallet_network_decryption_key_id: vec![],
+                                    public_output: [8u8; 31_457_280].to_vec(),
+                                    session_id: vec![],
+                                    is_last: false,
+                                    rejected: false,
+                                    supported_curves: vec![],
+                                },
+                            ),
+                        ],
+                        checkpoint.checkpoint_message.timestamp_ms,
+                    );
                     let mut batch = self
                         .epoch_store
                         .tables()
