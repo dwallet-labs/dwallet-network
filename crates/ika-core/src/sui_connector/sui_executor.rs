@@ -466,7 +466,7 @@ where
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
                             self.metrics.system_checkpoint_write_requests_total.inc();
-                            retry_with_max_elapsed_time!(
+                            let response = retry_with_max_elapsed_time!(
                                 Self::handle_system_checkpoint_execution_task(
                                     self.ika_system_package_id.clone(),
                                     signature.clone(),
@@ -479,6 +479,9 @@ where
                                 ),
                                 Duration::from_secs(60 * 60 * 24)
                             );
+                            if response.is_err() {
+                                panic!(?response, "failed to submit system checkpoint for over 24 hours");
+                            }
                         }
                     }
                 }
