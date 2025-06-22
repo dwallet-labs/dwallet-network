@@ -183,7 +183,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let round = consensus_commit.leader_round();
         let dwallet_mpc_verifier = self
             .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
+            .get_dwallet_mpc_outputs_verifier_read()
             .await;
         if !dwallet_mpc_verifier.has_performed_state_sync {
             drop(dwallet_mpc_verifier);
