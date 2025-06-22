@@ -187,23 +187,21 @@ where
             && !epoch_switch_state.ran_lock_last_session
         {
             info!("Calling `lock_last_active_session_sequence_number()`");
-            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
+            let response = retry_with_max_elapsed_time!(Self::lock_last_session_to_complete_in_current_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
                 self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!(
-                    "failed to lock last active session sequence number: {:?}",
-                    e
+            ), Duration::from_secs(60 * 60 * 24));
+            if response.is_err() {
+                panic!(
+                    "failed to submit lock last session for over 24 hours, err: {:?}",
+                    response.err()
                 );
-            } else {
-                info!("Successfully locked last active session sequence number");
-                epoch_switch_state.ran_lock_last_session = true;
             }
+            epoch_switch_state.ran_lock_last_session = true;
+            info!("Successfully locked last session in current epoch");
         }
 
         // Check if we can advance the epoch.
