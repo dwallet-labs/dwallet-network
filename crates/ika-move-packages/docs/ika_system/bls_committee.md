@@ -177,8 +177,7 @@ Event emitted after verifying quorum of signature
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignatureLength">EInvalidSignatureLength</a>: vector&lt;u8&gt; = b"The length of the provided bls signature is incorrect.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignatureLength">EInvalidSignatureLength</a>: u64 = 1;
 </code></pre>
 
 
@@ -187,8 +186,7 @@ Event emitted after verifying quorum of signature
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: vector&lt;u8&gt; = b"Invalid certificate signature.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: u64 = 2;
 </code></pre>
 
 
@@ -197,8 +195,7 @@ Event emitted after verifying quorum of signature
 
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_ENotEnoughStake">ENotEnoughStake</a>: vector&lt;u8&gt; = b"Not enough stake of signers <b>for</b> the bls signature.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_ENotEnoughStake">ENotEnoughStake</a>: u64 = 3;
 </code></pre>
 
 
