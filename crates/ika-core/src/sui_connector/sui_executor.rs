@@ -376,17 +376,20 @@ where
                                         "Processing checkpoint with signers"
                                     );
 
-                                    let response = retry_with_max_elapsed_time!(Self::handle_dwallet_checkpoint_execution_task(
-                                        self.ika_system_package_id.clone(),
-                                        dwallet_2pc_mpc_coordinator_id.clone(),
-                                        signature.clone(),
-                                        signers_bitmap.clone(),
-                                        message.clone(),
-                                        sui_notifier.clone(),
-                                        &self.sui_client.clone(),
-                                        &self.metrics.clone(),
-                                        self.notifier_tx_lock.clone().clone(),
-                                    ), Duration::from_secs(60 * 60 * 24));
+                                    let response = retry_with_max_elapsed_time!(
+                                        Self::handle_dwallet_checkpoint_execution_task(
+                                            self.ika_system_package_id.clone(),
+                                            dwallet_2pc_mpc_coordinator_id.clone(),
+                                            signature.clone(),
+                                            signers_bitmap.clone(),
+                                            message.clone(),
+                                            sui_notifier.clone(),
+                                            &self.sui_client.clone(),
+                                            &self.metrics.clone(),
+                                            self.notifier_tx_lock.clone().clone(),
+                                        ),
+                                        Duration::from_secs(60 * 60 * 24)
+                                    );
                                     if response.is_err() {
                                         panic!("failed to submit dwallet checkpoint for over 24 hours, err: {:?}", response.err());
                                     }
