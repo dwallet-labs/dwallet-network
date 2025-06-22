@@ -466,32 +466,19 @@ where
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
                             self.metrics.system_checkpoint_write_requests_total.inc();
-                            let task = Self::handle_system_checkpoint_execution_task_until_success(
-                                self.ika_system_package_id,
-                                signature,
-                                signers_bitmap,
-                                message,
-                                sui_notifier,
-                                &self.sui_client,
-                                &self.metrics,
-                                self.notifier_tx_lock.clone(),
-                            )
-                            .await;
-                            match task {
-                                Ok(_) => {
-                                    self.metrics.system_checkpoint_writes_success_total.inc();
-                                    self.metrics
-                                        .last_written_system_checkpoint_sequence
-                                        .set(next_dwallet_checkpoint_sequence_number as i64);
-                                    last_submitted_system_checkpoint =
-                                        Some(next_system_checkpoint_sequence_number);
-                                    info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
-                                }
-                                Err(err) => {
-                                    self.metrics.system_checkpoint_writes_failure_total.inc();
-                                    error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
-                                }
-                            };
+                            retry_with_max_elapsed_time!(
+                                Self::handle_system_checkpoint_execution_task(
+                                    self.ika_system_package_id.clone(),
+                                    signature.clone(),
+                                    signers_bitmap.clone(),
+                                    message.clone(),
+                                    sui_notifier,
+                                    &self.sui_client.clone(),
+                                    &self.metrics.clone(),
+                                    self.notifier_tx_lock.clone(),
+                                ),
+                                Duration::from_secs(60 * 60 * 24)
+                            );
                         }
                     }
                 }
@@ -1022,32 +1009,6 @@ where
         Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
-    async fn handle_system_checkpoint_execution_task_until_success(
-        ika_system_package_id: ObjectID,
-        signature: Vec<u8>,
-        signers_bitmap: Vec<u8>,
-        message: Vec<u8>,
-        sui_notifier: &SuiNotifier,
-        sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
-        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
-        loop {
-            retry_with_max_elapsed_time!(
-                Self::handle_system_checkpoint_execution_task(
-                    ika_system_package_id,
-                    signature.clone(),
-                    signers_bitmap.clone(),
-                    message.clone(),
-                    sui_notifier,
-                    sui_client,
-                    _metrics,
-                    notifier_tx_lock.clone()
-                ),
-                Duration::from_secs(30)
-            );
-        }
-    }
     async fn handle_system_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
         signature: Vec<u8>,
