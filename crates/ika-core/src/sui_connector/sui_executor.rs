@@ -9,7 +9,7 @@ use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_sui_client::{SuiClient, SuiClientInner};
+use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
@@ -34,11 +34,13 @@ use itertools::Itertools;
 use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
+use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{Argument, CallArg, ObjectArg, Transaction};
 use tokio::time::{self, Duration};
+use tracing::debug;
 use tracing::{error, info};
 
 #[derive(PartialEq, Eq, Debug)]
@@ -703,7 +705,7 @@ where
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
         transaction: Transaction,
         sui_client: &Arc<SuiClient<C>>,
-    ) -> DwalletMPCResult<()> {
+    ) -> DwalletMPCResult<SuiTransactionBlockResponse> {
         loop {
             // Small delay to avoid spamming the node.
             tokio::time::sleep(Duration::from_millis(500)).await;
@@ -722,7 +724,7 @@ where
                         .execute_transaction_block_with_effects(transaction)
                         .await?;
                     *digest_guard = Some(result.digest);
-                    return Ok(());
+                    return Ok(result);
                 }
 
                 // ──────────────── Previous transaction exists → check its status ────────────────
@@ -747,7 +749,7 @@ where
                                 .execute_transaction_block_with_effects(transaction)
                                 .await?;
                             *digest_guard = Some(result.digest);
-                            return Ok(());
+                            return Ok(result);
                         }
                     }
                 }
@@ -1020,6 +1022,32 @@ where
         Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
     }
 
+    async fn handle_system_checkpoint_execution_task_until_success(
+        ika_system_package_id: ObjectID,
+        signature: Vec<u8>,
+        signers_bitmap: Vec<u8>,
+        message: Vec<u8>,
+        sui_notifier: &SuiNotifier,
+        sui_client: &Arc<SuiClient<C>>,
+        _metrics: &Arc<SuiConnectorMetrics>,
+        notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
+    ) -> IkaResult<()> {
+        loop {
+            retry_with_max_elapsed_time!(
+                Self::handle_system_checkpoint_execution_task(
+                    ika_system_package_id,
+                    signature.clone(),
+                    signers_bitmap.clone(),
+                    message.clone(),
+                    sui_notifier,
+                    sui_client,
+                    _metrics,
+                    notifier_tx_lock.clone()
+                ),
+                Duration::from_secs(30)
+            );
+        }
+    }
     async fn handle_system_checkpoint_execution_task(
         ika_system_package_id: ObjectID,
         signature: Vec<u8>,
@@ -1106,7 +1134,14 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        let response = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?;
+        if !response.errors.is_empty() {
+            return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                "{:?}",
+                response.errors
+            )));
+        }
+        Ok(())
     }
 }
 
