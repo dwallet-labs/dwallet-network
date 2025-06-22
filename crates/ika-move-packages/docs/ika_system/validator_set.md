@@ -384,6 +384,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_ENonValidatorInReportRecords"></a>
 
+The validator is not in the report records.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENonValidatorInReportRecords">ENonValidatorInReportRecords</a>: u64 = 0;
@@ -393,6 +394,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EDuplicateValidator"></a>
 
+The validator is already in the validator set.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EDuplicateValidator">EDuplicateValidator</a>: u64 = 1;
@@ -402,6 +404,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_ENotAValidator"></a>
 
+The validator is not a validator.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ENotAValidator">ENotAValidator</a>: u64 = 2;
@@ -411,6 +414,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EValidatorNotCandidate"></a>
 
+The validator is not a candidate.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorNotCandidate">EValidatorNotCandidate</a>: u64 = 3;
@@ -420,6 +424,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EStakingBelowThreshold"></a>
 
+The validator is not staking below the threshold.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>: u64 = 4;
@@ -429,6 +434,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EValidatorAlreadyRemoved"></a>
 
+The validator is already removed.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EValidatorAlreadyRemoved">EValidatorAlreadyRemoved</a>: u64 = 5;
@@ -438,6 +444,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_ECannotReportOneself"></a>
 
+The validator cannot report on itself.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotReportOneself">ECannotReportOneself</a>: u64 = 6;
@@ -447,6 +454,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EReportRecordNotFound"></a>
 
+The report record is not found.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EReportRecordNotFound">EReportRecordNotFound</a>: u64 = 7;
@@ -456,6 +464,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_ECannotJoinActiveSet"></a>
 
+The validator cannot join the active set.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ECannotJoinActiveSet">ECannotJoinActiveSet</a>: u64 = 8;
@@ -465,6 +474,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EBpsTooLarge"></a>
 
+The bps is too large.
 
 
 <pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EBpsTooLarge">EBpsTooLarge</a>: u64 = 9;
@@ -474,29 +484,30 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <a name="(ika_system=0x0)_validator_set_EInvalidCap"></a>
 
+The cap is invalid.
 
 
-<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 101;
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EInvalidCap">EInvalidCap</a>: u64 = 10;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch"></a>
 
+Process mid epoch can be called only after advance epoch.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: vector&lt;u8&gt; = b"Process mid epoch can be called only after advance epoch.";
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>: u64 = 11;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch"></a>
 
+Advance epoch can be called only after process mid epoch.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: vector&lt;u8&gt; = b"Advance epoch can be called only after process mid epoch.";
+<pre><code><b>const</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EAdvanceEpochOnlyAfterProcessMidEpoch">EAdvanceEpochOnlyAfterProcessMidEpoch</a>: u64 = 12;
 </code></pre>
 
 

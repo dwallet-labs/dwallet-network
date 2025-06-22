@@ -891,6 +891,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime"></a>
 
+The system has not reached the end epoch time.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>: u64 = 0;
@@ -900,6 +901,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize"></a>
 
+The active BLS committee must be initialized.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: u64 = 1;
@@ -909,6 +911,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EIncorrectEpochInSystemCheckpoint"></a>
 
+The epoch in the system checkpoint is incorrect.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInSystemCheckpoint">EIncorrectEpochInSystemCheckpoint</a>: u64 = 2;
@@ -918,6 +921,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EWrongSystemCheckpointSequenceNumber"></a>
 
+The sequence number in the system checkpoint is incorrect.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongSystemCheckpointSequenceNumber">EWrongSystemCheckpointSequenceNumber</a>: u64 = 3;
@@ -927,6 +931,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound"></a>
 
+The approved upgrade is not found.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound">EApprovedUpgradeNotFound</a>: u64 = 4;
@@ -936,30 +941,30 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap"></a>
 
+The protocol cap is unauthorized.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap">EUnauthorizedProtocolCap</a>: vector&lt;u8&gt; = b"The protocol cap is unauthorized.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap">EUnauthorizedProtocolCap</a>: u64 = 5;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_ECannotInitialize"></a>
 
+Too early for initialization time or already initialized.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or already initialized.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: u64 = 6;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime"></a>
 
+The system has not reached the mid epoch time.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: vector&lt;u8&gt; = b"The <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>has</b> not reached the mid <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> time.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: u64 = 7;
 </code></pre>
 
 
