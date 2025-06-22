@@ -3,8 +3,8 @@
 
 import path from 'path';
 import { sample_dwallet_keypair, verify_secp_signature } from '@dwallet-network/dwallet-mpc-wasm';
-import { SuiClient } from '@mysten/sui/client';
-import { requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -44,11 +44,11 @@ describe('Test dWallet MPC', () => {
 		);
 		const address = keypair.getPublicKey().toSuiAddress();
 		console.log(`Address: ${address}`);
-		// const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
+		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		// const suiClient = new SuiClient({ url: 'https://fullnode.sui.beta.devnet.ika-network.net' });
 		await requestSuiFromFaucetV2({
-			// host: getFaucetHost('localnet'),
-			host: 'https://faucet.sui.beta.devnet.ika-network.net',
+			host: getFaucetHost('localnet'),
+			// host: 'https://faucet.sui.beta.devnet.ika-network.net',
 			recipient: address,
 		});
 
