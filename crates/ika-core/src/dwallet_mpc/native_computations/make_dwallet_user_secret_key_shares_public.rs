@@ -2,7 +2,24 @@ use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedImportedSecretShare,
 };
+use ika_types::messages_dwallet_mpc::{
+    DWalletSessionEvent, MPCProtocolInitData, MakeDWalletUserSecretKeySharesPublicRequestEvent,
+    SessionInfo,
+};
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+
+pub(crate) fn make_dwallet_user_secret_key_shares_public_request_event_session_info(
+    deserialized_event: DWalletSessionEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
+) -> SessionInfo {
+    SessionInfo {
+        session_type: deserialized_event.session_type.clone(),
+        session_identifier: deserialized_event.session_identifier_digest(),
+        epoch: deserialized_event.epoch,
+        mpc_round: MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(
+            deserialized_event,
+        ),
+    }
+}
 
 /// Verifies the given secret share matches the given dWallets`
 /// DKG output centralized_party_public_key_share.

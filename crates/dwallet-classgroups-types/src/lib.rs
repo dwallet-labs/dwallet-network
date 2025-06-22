@@ -5,10 +5,11 @@ use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem:
     CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use class_groups::{CompactIbqf, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
-use crypto_bigint::rand_core::{OsRng, RngCore};
+use crypto_bigint::rand_core::RngCore;
 use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
+use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
@@ -99,7 +100,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
 /// Generates a cryptographically secure random seed for class groups key generation.
 pub fn sample_seed() -> [u8; RNG_SEED_SIZE] {
     let mut bytes = [0u8; RNG_SEED_SIZE];
-    OsRng.fill_bytes(&mut bytes);
+    OsCsRng.fill_bytes(&mut bytes);
     bytes
 }
 
