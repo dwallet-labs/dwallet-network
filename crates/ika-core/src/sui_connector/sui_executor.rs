@@ -406,14 +406,10 @@ where
                                         ?next_dwallet_checkpoint_sequence_number,
                                         "Successfully submitted dwallet checkpoint"
                                     );
-                                    self.metrics
-                                        .dwallet_checkpoint_writes_success_total
-                                        .inc();
+                                    self.metrics.dwallet_checkpoint_writes_success_total.inc();
                                     self.metrics
                                         .last_written_dwallet_checkpoint_sequence
-                                        .set(
-                                            next_dwallet_checkpoint_sequence_number as i64,
-                                        );
+                                        .set(next_dwallet_checkpoint_sequence_number as i64);
                                     last_submitted_dwallet_checkpoint =
                                         Some(next_dwallet_checkpoint_sequence_number);
                                 }
@@ -1013,19 +1009,11 @@ where
         )
         .await;
 
-        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
-            Ok(_) => {
-                metrics
-                    .dwallet_checkpoint_writes_success_total
-                    .inc();
-                metrics
-                    .last_written_dwallet_checkpoint_sequence
-                    .set(
-                        next_dwallet_checkpoint_sequence_number as i64,
-                    );
-            }
-            Err(err) => {}
+        let result = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await;
+        if result.is_err() {
+            metrics.dwallet_checkpoint_writes_failure_total.inc();
         }
+        Ok(result?)
     }
 
     async fn handle_system_checkpoint_execution_task(
