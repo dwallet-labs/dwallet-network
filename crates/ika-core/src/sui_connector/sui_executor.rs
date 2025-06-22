@@ -125,20 +125,20 @@ where
             && !epoch_switch_state.ran_mid_epoch
         {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) = Self::process_mid_epoch(
+            let response = retry_with_max_elapsed_time!(Self::process_mid_epoch(
                 self.ika_system_package_id,
                 dwallet_2pc_mpc_coordinator_id,
                 sui_notifier,
                 &self.sui_client,
                 self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("`process_mid_epoch()` failed: {:?}", e);
-            } else {
-                info!("`process_mid_epoch()` successful");
-                epoch_switch_state.ran_mid_epoch = true;
+            ), Duration::from_secs(60 * 60 * 24));
+            if response.is_err() {
+                panic!(
+                    "failed to submit mid epoch for over 24 hours, err: {:?}",
+                    response.err()
+                );
             }
+            info!("Successfully processed mid epoch");
         }
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
