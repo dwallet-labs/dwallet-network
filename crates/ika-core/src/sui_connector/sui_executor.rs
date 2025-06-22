@@ -125,13 +125,16 @@ where
             && !epoch_switch_state.ran_mid_epoch
         {
             info!("Calling `process_mid_epoch()`");
-            let response = retry_with_max_elapsed_time!(Self::process_mid_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            ), Duration::from_secs(60 * 60 * 24));
+            let response = retry_with_max_elapsed_time!(
+                Self::process_mid_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(60 * 60 * 24)
+            );
             if response.is_err() {
                 panic!(
                     "failed to submit mid epoch for over 24 hours, err: {:?}",
@@ -187,13 +190,16 @@ where
             && !epoch_switch_state.ran_lock_last_session
         {
             info!("Calling `lock_last_active_session_sequence_number()`");
-            let response = retry_with_max_elapsed_time!(Self::lock_last_session_to_complete_in_current_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            ), Duration::from_secs(60 * 60 * 24));
+            let response = retry_with_max_elapsed_time!(
+                Self::lock_last_session_to_complete_in_current_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(60 * 60 * 24)
+            );
             if response.is_err() {
                 panic!(
                     "failed to submit lock last session for over 24 hours, err: {:?}",
