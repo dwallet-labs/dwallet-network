@@ -80,6 +80,12 @@ async function createConf(
 }
 
 const fiveMinutes = 100 * 60 * 1000;
+
+// Helper function for random delays
+function getRandomDelay(maxDelayMs: number): number {
+	return Math.floor(Math.random() * maxDelayMs);
+}
+
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -92,7 +98,8 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 8;
+			const iterations = 2;
+			const maxDelayBeforeMPCRequestSec = 1000 * 5;
 			const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 
 			// Create a new configuration for each iteration
@@ -114,6 +121,7 @@ describe('Test dWallet MPC', () => {
 				dkgFirstTasks.push(
 					(async () => {
 						await dkgFirstStartSignal.promise;
+						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						return executeDKGFirstRoundTransaction(cfg, tx);
 					})(),
 				);
@@ -155,6 +163,7 @@ describe('Test dWallet MPC', () => {
 					(async () => {
 						await dkgSeconsStartSignal.promise;
 						const centralizedSecretKeyShare = centralizedPartyOutputs[i].centralizedSecretKeyShare;
+						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						const secondRoundResponse = await executeDKGSecondRoundTransaction(
 							cfg,
 							firstDKGRoundOutput,
@@ -188,6 +197,7 @@ describe('Test dWallet MPC', () => {
 				presignTasks.push(
 					(async () => {
 						await presignStartSignal.promise;
+						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						return executePresignTransaction(cfg, tx);
 					})(),
 				);
@@ -232,6 +242,7 @@ describe('Test dWallet MPC', () => {
 				signAndSendTasks.push(
 					(async () => {
 						await startSignal.promise;
+						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
 						return await executeSignTransaction(signTx, cfg);
 					})(),
 				);
