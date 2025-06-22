@@ -406,6 +406,16 @@ where
                                         ?next_dwallet_checkpoint_sequence_number,
                                         "Successfully submitted dwallet checkpoint"
                                     );
+                                    self.metrics
+                                        .dwallet_checkpoint_writes_success_total
+                                        .inc();
+                                    self.metrics
+                                        .last_written_dwallet_checkpoint_sequence
+                                        .set(
+                                            next_dwallet_checkpoint_sequence_number as i64,
+                                        );
+                                    last_submitted_dwallet_checkpoint =
+                                        Some(next_dwallet_checkpoint_sequence_number);
                                 }
                                 None => {
                                     info!(
