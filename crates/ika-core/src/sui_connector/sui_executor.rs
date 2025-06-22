@@ -1109,7 +1109,10 @@ where
         if result.is_err() {
             metrics.system_checkpoint_writes_failure_total.inc();
             let err = result.err();
-            error!("failed to submit system checkpoint to consensus, error: {:?}", &err);
+            error!(
+                "failed to submit system checkpoint to consensus, error: {:?}",
+                &err
+            );
             return Err(err.unwrap().into());
         }
         let result = result?;
