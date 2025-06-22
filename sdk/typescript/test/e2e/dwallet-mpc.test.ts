@@ -8,16 +8,7 @@ import { getFaucetHost, requestSuiFromFaucetV2 } from '@mysten/sui/faucet';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import {
-	acceptEncryptedUserShare,
-	createDWallet,
-	createDWalletCentralizedParty,
-	executeDKGFirstRoundTransaction,
-	executeDKGSecondRoundTransaction,
-	launchDKGFirstRound,
-	prepareDKGFirstRoundTransaction,
-	prepareDKGSecondRoundTransaction,
-} from '../../src/dwallet-mpc/dkg';
+import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import {
 	checkpointCreationTime,
 	Config,
@@ -27,11 +18,7 @@ import {
 	getObjectWithType,
 } from '../../src/dwallet-mpc/globals';
 import { createImportedDWallet } from '../../src/dwallet-mpc/import-dwallet';
-import {
-	executePresignTransaction,
-	preparePresignTransaction,
-	presign,
-} from '../../src/dwallet-mpc/presign';
+import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	isDWalletWithPublicUserSecretKeyShares,
 	makeDWalletUserSecretKeySharesPublicRequestEvent,
@@ -39,13 +26,21 @@ import {
 import {
 	completeFutureSign,
 	createUnverifiedPartialUserSignatureCap,
-	executeSignTransaction,
 	Hash,
-	prepareSignTransaction,
 	sign,
 	signWithImportedDWallet,
 	verifySignWithPartialUserSignatures,
 } from '../../src/dwallet-mpc/sign';
+import {
+	createCentralizedParty,
+	createConcurrentTasks,
+	createConfigurations,
+	executeSignTransactionForFlow,
+	prepareAndExecuteDKGFirstRound,
+	prepareAndExecuteDKGSecondRound,
+	prepareAndExecutePresign,
+	prepareSignTransactionForFlow,
+} from './utils/mpc-test-helpers';
 
 async function createConf(
 	dWalletSeed: Uint8Array<ArrayBuffer>,
@@ -81,11 +76,6 @@ async function createConf(
 
 const fiveMinutes = 100 * 60 * 1000;
 
-// Helper function for random delays
-function getRandomDelay(maxDelayMs: number): number {
-	return Math.floor(Math.random() * maxDelayMs);
-}
-
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
@@ -102,154 +92,85 @@ describe('Test dWallet MPC', () => {
 			const maxDelayBeforeMPCRequestSec = 1000 * 5;
 			const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 
-			// Create a new configuration for each iteration
-			const configs = await Promise.all(
-				Array.from({ length: iterations }, () =>
-					createConf(crypto.getRandomValues(new Uint8Array(32)), null),
-				),
-			);
+			// Create configurations for all iterations
+			const configs = await createConfigurations(iterations, createConf);
 
 			// -----------------------------
 			// Phase 1: DKG Initialization
 			// -----------------------------
-			const dkgFirstStartSignal = Promise.withResolvers();
-			const dkgFirstTasks = [];
+			const dkgFirsts = await createConcurrentTasks(
+				iterations,
+				configs,
+				prepareAndExecuteDKGFirstRound,
+				maxDelayBeforeMPCRequestSec,
+			);
 
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const tx = await prepareDKGFirstRoundTransaction(cfg);
-				dkgFirstTasks.push(
-					(async () => {
-						await dkgFirstStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						return executeDKGFirstRoundTransaction(cfg, tx);
-					})(),
-				);
-			}
+			// Create centralized parties
+			const centralizedPartyOutputs = await Promise.all(
+				configs.map((cfg, i) =>
+					createCentralizedParty(cfg, networkDecryptionKeyPublicOutput, dkgFirsts[i]),
+				),
+			);
 
-			dkgFirstStartSignal.resolve();
-
-			const dkgFirsts = await Promise.all(dkgFirstTasks);
-
-			const centralizedSecretKeySharesTsks = [];
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const dkgFirst = dkgFirsts[i];
-				centralizedSecretKeySharesTsks.push(
-					(async () => {
-						return createDWalletCentralizedParty(cfg, networkDecryptionKeyPublicOutput, dkgFirst);
-					})(),
-				);
-			}
-
-			const centralizedPartyOutputs = await Promise.all(centralizedSecretKeySharesTsks);
 			const dWalletStateData = await getDWalletSecpState(conf);
 
-			const dkgSeconsStartSignal = Promise.withResolvers();
-			const dkgSecondTasks = [];
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const firstDKGRoundOutput = dkgFirsts[i];
-				const centralizedPartyOutput = centralizedPartyOutputs[i];
-				const tx = await prepareDKGSecondRoundTransaction(
-					cfg,
-					dWalletStateData,
-					firstDKGRoundOutput,
-					centralizedPartyOutput.centralizedPublicKeyShareAndProof,
-					centralizedPartyOutput.encryptedUserShareAndProof,
-					centralizedPartyOutput.centralizedPublicOutput,
-				);
-				dkgSecondTasks.push(
-					(async () => {
-						await dkgSeconsStartSignal.promise;
-						const centralizedSecretKeyShare = centralizedPartyOutputs[i].centralizedSecretKeyShare;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						const secondRoundResponse = await executeDKGSecondRoundTransaction(
-							cfg,
-							firstDKGRoundOutput,
-							tx,
-						);
-						await acceptEncryptedUserShare(cfg, {
-							dwallet_id: secondRoundResponse.dwallet.id.id,
-							encrypted_user_secret_key_share_id:
-								secondRoundResponse.encrypted_user_secret_key_share_id,
-						});
-						return [secondRoundResponse, centralizedSecretKeyShare];
-					})(),
-				);
-			}
-
-			dkgSeconsStartSignal.resolve();
-			const dwallets = await Promise.all(dkgSecondTasks);
+			// Execute DKG second round
+			const dwallets = await createConcurrentTasks(
+				iterations,
+				configs,
+				(cfg, i) =>
+					prepareAndExecuteDKGSecondRound(
+						cfg,
+						dWalletStateData,
+						dkgFirsts[i],
+						centralizedPartyOutputs[i],
+					),
+				maxDelayBeforeMPCRequestSec,
+			);
 
 			await delay(checkpointCreationTime);
 
 			// -----------------------------
 			// Phase 2: Presign
 			// -----------------------------
-			const presignStartSignal = Promise.withResolvers();
-			const presignTasks = [];
-
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const [dwallet, _] = dwallets[i];
-				const tx = await preparePresignTransaction(cfg, dwallet.dwallet.id.id);
-				presignTasks.push(
-					(async () => {
-						await presignStartSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						return executePresignTransaction(cfg, tx);
-					})(),
-				);
-			}
-
-			presignStartSignal.resolve();
-			const presignResults = await Promise.all(presignTasks);
+			const presignResults = await createConcurrentTasks(
+				iterations,
+				configs,
+				(cfg, i) => {
+					const [dwallet] = dwallets[i];
+					return prepareAndExecutePresign(cfg, dwallet.dwallet.id.id);
+				},
+				maxDelayBeforeMPCRequestSec,
+			);
 
 			// -----------------------------
 			// Phase 3: Sign and Send
 			// -----------------------------
-			const startSignal = Promise.withResolvers();
-			const signAndSendTasks: Promise<any>[] = [];
-
 			await delay(checkpointCreationTime);
 
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const [_, centralizedSecretKeyShare] = dwallets[i];
-				const dkgFirst = dkgFirsts[i];
-				const presignResult = presignResults[i];
-				signAndSendTasks.push(
-					(async () => {
-						return prepareSignTransaction(
-							cfg,
-							presignResult.id.id,
-							dkgFirst.dwalletCapID,
-							Buffer.from('hello world'),
-							centralizedSecretKeyShare,
-							networkDecryptionKeyPublicOutput,
-							Hash.KECCAK256,
-						);
-					})(),
-				);
-			}
+			// Prepare sign transactions
+			const signTxs = await Promise.all(
+				configs.map((cfg, i) => {
+					const [_, centralizedSecretKeyShare] = dwallets[i];
+					const dkgFirst = dkgFirsts[i];
+					const presignResult = presignResults[i];
+					return prepareSignTransactionForFlow(
+						cfg,
+						presignResult,
+						dkgFirst,
+						centralizedSecretKeyShare,
+						networkDecryptionKeyPublicOutput,
+					);
+				}),
+			);
 
-			const signTxs = await Promise.all(signAndSendTasks);
-
-			for (let i = 0; i < iterations; i++) {
-				const cfg = configs[i];
-				const signTx = signTxs[i];
-				signAndSendTasks.push(
-					(async () => {
-						await startSignal.promise;
-						await delay(getRandomDelay(maxDelayBeforeMPCRequestSec));
-						return await executeSignTransaction(signTx, cfg);
-					})(),
-				);
-			}
-
-			startSignal.resolve();
-			await Promise.all(signAndSendTasks);
+			// Execute sign transactions
+			await createConcurrentTasks(
+				iterations,
+				configs,
+				(cfg, i) => executeSignTransactionForFlow(cfg, signTxs[i]),
+				maxDelayBeforeMPCRequestSec,
+			);
 		},
 		70 * 1000 * 60,
 	);
