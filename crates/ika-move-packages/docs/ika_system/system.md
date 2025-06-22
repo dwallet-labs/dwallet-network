@@ -1631,6 +1631,9 @@ Advances the epoch to the next epoch.
     message: vector&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext,
 ) {
+    <b>if</b> (1 == 1) {
+        <b>abort</b> 1
+    };
     self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
 }
 </code></pre>
