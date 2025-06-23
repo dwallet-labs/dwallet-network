@@ -488,6 +488,7 @@ impl IkaNode {
                 next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
                 dwallet_mpc_metrics.clone(),
+                end_of_publish_receiver
             )
             .await?;
             // This is only needed during cold start.
@@ -763,6 +764,7 @@ impl IkaNode {
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> Result<ValidatorComponents> {
         let mut config_clone = config.clone();
         let consensus_config = config_clone
@@ -1321,6 +1323,7 @@ impl IkaNode {
                             next_epoch_committee_receiver.clone(),
                             sui_client.clone(),
                             dwallet_mpc_metrics.clone(),
+                            ,
                         )
                         .await?,
                     )
