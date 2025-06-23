@@ -26,7 +26,7 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=75
+export VALIDATOR_NUM=115
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
@@ -59,7 +59,7 @@ export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
 # 40 minutes
 #export EPOCH_DURATION_TIME_MS=2400000
 # 1 hour
-export EPOCH_DURATION_TIME_MS=$((1000*60*60*1))
+export EPOCH_DURATION_TIME_MS=$((1000*60*45*1))
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
