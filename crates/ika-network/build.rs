@@ -83,7 +83,7 @@ fn build_anemo_services(out_dir: &Path) {
             anemo_build::manual::Method::builder()
                 .name("push_system_checkpoint")
                 .route_name("PushSystemCheckpoint")
-                .request_type("ika_types::messages_system_checkpoints::CertifiedSystemCheckpoint")
+                .request_type("ika_types::messages_system_checkpoints::CertifiedSystemCheckpointMessage")
                 .response_type("()")
                 .codec_path(codec_path)
                 .build(),
@@ -94,7 +94,7 @@ fn build_anemo_services(out_dir: &Path) {
                 .route_name("GetSystemCheckpoint")
                 .request_type("crate::state_sync::server::GetSystemCheckpointRequest")
                 .response_type(
-                    "Option<ika_types::messages_system_checkpoints::CertifiedSystemCheckpoint>",
+                    "Option<ika_types::messages_system_checkpoints::CertifiedSystemCheckpointMessage>",
                 )
                 .codec_path(codec_path)
                 .build(),

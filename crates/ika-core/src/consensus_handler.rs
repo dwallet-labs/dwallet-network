@@ -9,12 +9,13 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
+use commitment::CommitmentSizedNumber;
 use consensus_config::Committee as ConsensusCommittee;
 use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
-use ika_types::message::MessageKind;
+use ika_types::message::DWalletMessageKind;
 use ika_types::messages_consensus::{
     AuthorityIndex, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
 };
@@ -25,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -34,14 +36,15 @@ use crate::{
         },
         AuthorityMetrics, AuthorityState,
     },
-    checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     consensus_throughput_calculator::ConsensusThroughputCalculator,
     consensus_types::consensus_output_api::ConsensusCommitAPI,
+    dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     scoring_decision::update_low_scoring_authorities,
 };
 use ika_types::error::IkaResult;
 use tokio::task::JoinSet;
-use tracing::{error, info, instrument, trace_span, warn};
+use tracing::{debug, error, info, instrument, trace_span, warn};
+use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -177,24 +180,29 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
-
         let round = consensus_commit.leader_round();
-        if self.should_perform_dwallet_mpc_state_sync(round).await {
+        let dwallet_mpc_verifier = self
+            .epoch_store
+            .get_dwallet_mpc_outputs_verifier_read()
+            .await;
+        if !dwallet_mpc_verifier.has_performed_state_sync {
+            drop(dwallet_mpc_verifier);
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
                 error!(
-                    "epoch switched while performing dwallet mpc state sync: {:?}",
-                    err
+                    err=?err,
+                    "epoch switched while performing dwallet mpc state sync"
                 );
                 return;
             }
+            let mut dwallet_mpc_verifier = self
+                .epoch_store
+                .get_dwallet_mpc_outputs_verifier_write()
+                .await;
+            dwallet_mpc_verifier.has_performed_state_sync = true;
+            drop(dwallet_mpc_verifier);
+        } else {
+            drop(dwallet_mpc_verifier);
         }
-        let mut dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
-            .await;
-        dwallet_mpc_verifier.last_processed_consensus_round = round;
-        // Need to drop the verifier, as `self` is being used mutably later in this function.
-        drop(dwallet_mpc_verifier);
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
@@ -230,7 +238,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             timestamp
         };
 
-        info!(
+        debug!(
             %consensus_commit,
             epoch = ?self.epoch_store.epoch(),
             "Received consensus output"
@@ -295,7 +303,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 }
             }
         }
-        info!(num_txs = transactions.len(), "Parsed transactions");
+        debug!(num_txs = transactions.len(), "Parsed transactions");
         for (i, authority) in self.committee.authorities() {
             let hostname = &authority.hostname;
             self.metrics
@@ -392,33 +400,66 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     //     .send(executable_transactions);
     }
 
-    /// Check if the dWallet MPC manager should perform a state sync.
-    /// If so, block consensus and load all messages.
-    /// This condition is only true if we process a round
-    /// before we processed the previous round,
-    /// which can only happen if we restart the node.
-    async fn should_perform_dwallet_mpc_state_sync(&self, consensus_round: u64) -> bool {
-        let dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_read()
-            .await;
-        // Check if the dwallet mpc manager should perform a state sync, and if so block consensus and load all messages
-        // This condition is only true if we process a round before we processed the previous round,
-        // which can only happen if we restart the node.
-        consensus_round > dwallet_mpc_verifier.last_processed_consensus_round + 1
-    }
-
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
     /// Needs to be performed here,
     /// so system transactions will get created when they should, and a fork in the
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
+        for item in self
+            .epoch_store
+            .tables()?
+            .builder_dwallet_checkpoint_message_v1
+            .safe_iter()
+        {
+            let item = item?;
+            info!(
+                sequence_number=?item.0,
+                batch_sequence_number=?item.1.checkpoint_height,
+                validator=?self.epoch_store.name,
+                "Checkpoint sequence number"
+            )
+        }
+
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_write()
             .await;
+
+        for (round, outputs) in self
+            .epoch_store
+            .tables()?
+            .dwallet_mpc_outputs
+            .safe_iter()
+            .collect::<Result<Vec<_>, _>>()?
+        // .collect::<IkaResult<Vec<(u64, Vec<DWalletMPCOutputMessage>)>>>()?
+        {
+            for (idx, output) in outputs.into_iter().enumerate() {
+                let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
+                let mpc_protocol_name = output.session_info.mpc_round.to_string();
+
+                // Create a base logger with common parameters.
+                let base_logger = MPCSessionLogger::new()
+                    .with_protocol_name(mpc_protocol_name.clone())
+                    .with_party_to_authority_map(party_to_authority_map.clone());
+                let session_identifier =
+                    CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier);
+
+                base_logger.write_output_to_disk(
+                    session_identifier,
+                    self.epoch_store
+                        .authority_name_to_party_id(&self.epoch_store.name)?,
+                    self.epoch_store
+                        .authority_name_to_party_id(&output.authority)?,
+                    &output.output,
+                    &output.session_info,
+                    round,
+                    idx,
+                );
+            }
+        }
+
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             if let Err(err) = dwallet_mpc_verifier
                 .try_verify_output(&output.output, &output.session_info, output.authority)
@@ -496,7 +537,7 @@ pub struct SequencedConsensusTransaction {
 #[derive(Debug, Clone)]
 pub enum SequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(MessageKind),
+    System(DWalletMessageKind),
 }
 
 impl Serialize for SequencedConsensusTransactionKind {
@@ -520,7 +561,7 @@ impl<'de> Deserialize<'de> for SequencedConsensusTransactionKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum SerializableSequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(MessageKind),
+    System(DWalletMessageKind),
 }
 
 impl From<&SequencedConsensusTransactionKind> for SerializableSequencedConsensusTransactionKind {

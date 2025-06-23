@@ -6,9 +6,11 @@ use sui_types::base_types::ObjectID;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
+use crate::dwallet_mpc::mpc_protocols::network_dkg::{
+    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
+};
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
-use crate::dwallet_mpc::{party_ids_to_authority_names, session_input_from_event};
+use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
@@ -28,7 +30,7 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::sync::watch;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
@@ -603,7 +605,7 @@ impl DWalletMPCManager {
                 SessionType::System => true,
             };
             if !should_advance {
-                info!(
+                debug!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"

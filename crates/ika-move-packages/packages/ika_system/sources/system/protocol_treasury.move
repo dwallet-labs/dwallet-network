@@ -14,6 +14,7 @@ use sui::{
 
 // === Errors ===
 
+/// The stake subsidy rate is too large.
 const ESubsidyDecreaseRateTooLarge: u64 = 0;
 
 // === Constants ===

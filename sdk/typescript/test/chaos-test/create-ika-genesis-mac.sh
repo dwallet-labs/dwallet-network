@@ -107,8 +107,8 @@ done
 
 RUST_MIN_STACK=16777216
 
-RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME" --target-dir ./target
-cp ./target/release/"$BINARY_NAME" .
+RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME"
+cp ../../../../target/release/"$BINARY_NAME" .
 BINARY_NAME="$(pwd)/$BINARY_NAME"
 
 VALIDATORS_ARRAY=()
@@ -328,16 +328,18 @@ request_and_generate_yaml() {
             }
           }')
 
-    if [[ "$response" == 2* ]]; then
-      echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
-      jq . "$VALIDATOR_DIR/faucet_response.json"
-      break
-    else
-      echo "[Faucet] ❌ Attempt $attempt failed with HTTP $response for '$VALIDATOR_NAME'"
-      (( attempt++ ))
-      sleep $(( sleep_time ** attempt ))
-    fi
-  done
+    if [[ "$response" == "201" || "$response" == "200" ]]; then
+        echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
+        jq . "$VALIDATOR_DIR/faucet_response.json"
+        break
+      else
+        echo "[Faucet] ❌ Attempt $attempt failed with HTTP $response for '$VALIDATOR_NAME'"
+        (( attempt++ ))
+        sleep $(( sleep_time ** attempt ))
+      fi
+    done
+
+
 
   if (( attempt > max_attempts )); then
     echo "[Faucet] ❗ Failed to get tokens for '$VALIDATOR_NAME' after $max_attempts attempts."
@@ -345,7 +347,7 @@ request_and_generate_yaml() {
 }
 
 # Concurrency control (compatible with bash < 4.3)
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -425,7 +427,7 @@ process_validator() {
 }
 
 # Launch jobs with a max concurrency of 5 using a simple counter
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do

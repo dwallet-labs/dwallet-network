@@ -94,7 +94,7 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
             );
 
             let message = DWalletCheckpointSignatureMessage {
-                dwallet_checkpoint_message: summary,
+                checkpoint_message: summary,
             };
             let transaction =
                 ConsensusTransaction::new_dwallet_checkpoint_signature_message(message);

@@ -19,7 +19,7 @@ use tracing::warn;
 
 pub use crate::digests::DWalletCheckpointContentsDigest;
 pub use crate::digests::DWalletCheckpointMessageDigest;
-use crate::message::MessageKind;
+use crate::message::DWalletMessageKind;
 
 pub type DWalletCheckpointSequenceNumber = u64;
 pub type DWalletCheckpointTimestamp = u64;
@@ -34,7 +34,7 @@ pub struct DWalletCheckpointMessage {
     /// DWallet checkpoint timestamps are monotonic, but not strongly monotonic - subsequent
     /// dwallet checkpoints can have same timestamp if they originate from the same underlining consensus commit
     pub timestamp_ms: DWalletCheckpointTimestamp,
-    pub messages: Vec<MessageKind>,
+    pub messages: Vec<DWalletMessageKind>,
 }
 
 impl Message for DWalletCheckpointMessage {
@@ -50,7 +50,7 @@ impl DWalletCheckpointMessage {
     pub fn new(
         epoch: EpochId,
         sequence_number: DWalletCheckpointSequenceNumber,
-        messages: Vec<MessageKind>,
+        messages: Vec<DWalletMessageKind>,
         timestamp_ms: DWalletCheckpointTimestamp,
     ) -> DWalletCheckpointMessage {
         Self {
@@ -187,12 +187,12 @@ impl VerifiedDWalletCheckpointMessage {
 /// This is a message validators publish to consensus to sign dwallet checkpoint.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DWalletCheckpointSignatureMessage {
-    pub dwallet_checkpoint_message: SignedDWalletCheckpointMessage,
+    pub checkpoint_message: SignedDWalletCheckpointMessage,
 }
 
 impl DWalletCheckpointSignatureMessage {
     pub fn verify(&self, committee: &Committee) -> IkaResult {
-        self.dwallet_checkpoint_message
+        self.checkpoint_message
             .verify_authority_signatures(committee)
     }
 }

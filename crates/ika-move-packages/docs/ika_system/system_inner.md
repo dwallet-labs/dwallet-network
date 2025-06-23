@@ -220,7 +220,7 @@ Uses SystemParametersV1 as the parameters.
  Unix timestamp of the current epoch start.
 </dd>
 <dt>
-<code>last_processed_checkpoint_sequence_number: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;u64&gt;</code>
+<code>last_processed_checkpoint_sequence_number: u64</code>
 </dt>
 <dd>
  The last processed checkpoint sequence number.
@@ -794,7 +794,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u64 = 0;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a>: u32 = 0;
 </code></pre>
 
 
@@ -803,7 +803,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_EPOCH_DURATION_MS_MESSAGE_TYPE">SET_EPOCH_DURATION_MS_MESSAGE_TYPE</a>: u32 = 1;
 </code></pre>
 
 
@@ -812,7 +812,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE</a>: u32 = 2;
 </code></pre>
 
 
@@ -821,7 +821,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE">SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE</a>: u32 = 3;
 </code></pre>
 
 
@@ -830,7 +830,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u64 = 4;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE">SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE</a>: u32 = 4;
 </code></pre>
 
 
@@ -839,7 +839,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 5;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u32 = 5;
 </code></pre>
 
 
@@ -848,7 +848,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE</a>: u32 = 6;
 </code></pre>
 
 
@@ -857,7 +857,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE">SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE</a>: u32 = 7;
 </code></pre>
 
 
@@ -866,7 +866,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u64 = 8;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE">SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE</a>: u32 = 8;
 </code></pre>
 
 
@@ -875,7 +875,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u64 = 9;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_REWARD_SLASHING_RATE_MESSAGE_TYPE">SET_REWARD_SLASHING_RATE_MESSAGE_TYPE</a>: u32 = 9;
 </code></pre>
 
 
@@ -884,13 +884,14 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>: u64 = 10;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_APPROVED_UPGRADE_MESSAGE_TYPE">SET_APPROVED_UPGRADE_MESSAGE_TYPE</a>: u32 = 10;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime"></a>
 
+The system has not reached the end epoch time.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>: u64 = 0;
@@ -900,6 +901,7 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize"></a>
 
+The active BLS committee must be initialized.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EActiveBlsCommitteeMustInitialize">EActiveBlsCommitteeMustInitialize</a>: u64 = 1;
@@ -907,26 +909,29 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
-<a name="(ika_system=0x0)_system_inner_EIncorrectEpochInIkaSystemCheckpoint"></a>
+<a name="(ika_system=0x0)_system_inner_EIncorrectEpochInSystemCheckpoint"></a>
+
+The epoch in the system checkpoint is incorrect.
 
 
-
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInIkaSystemCheckpoint">EIncorrectEpochInIkaSystemCheckpoint</a>: u64 = 2;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInSystemCheckpoint">EIncorrectEpochInSystemCheckpoint</a>: u64 = 2;
 </code></pre>
 
 
 
-<a name="(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber"></a>
+<a name="(ika_system=0x0)_system_inner_EWrongSystemCheckpointSequenceNumber"></a>
+
+The sequence number in the system checkpoint is incorrect.
 
 
-
-<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>: u64 = 3;
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongSystemCheckpointSequenceNumber">EWrongSystemCheckpointSequenceNumber</a>: u64 = 3;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound"></a>
 
+The approved upgrade is not found.
 
 
 <pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound">EApprovedUpgradeNotFound</a>: u64 = 4;
@@ -936,30 +941,30 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 <a name="(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap"></a>
 
+The protocol cap is unauthorized.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap">EUnauthorizedProtocolCap</a>: vector&lt;u8&gt; = b"The protocol cap is unauthorized.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EUnauthorizedProtocolCap">EUnauthorizedProtocolCap</a>: u64 = 5;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_ECannotInitialize"></a>
 
+Too early for initialization time or already initialized.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: vector&lt;u8&gt; = b"Too early <b>for</b> initialization time or already initialized.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>: u64 = 6;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime"></a>
 
+The system has not reached the mid epoch time.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: vector&lt;u8&gt; = b"The <a href="../ika_system/system.md#(ika_system=0x0)_system">system</a> <b>has</b> not reached the mid <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> time.";
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>: u64 = 7;
 </code></pre>
 
 
@@ -1010,7 +1015,7 @@ This function will be called only once in init.
         stake_subsidy_start_epoch,
         <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>,
-        last_processed_checkpoint_sequence_number: option::none(),
+        last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
@@ -1847,6 +1852,7 @@ gas coins.
     <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>.is_some() && now &gt;= last_epoch_change + self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
     self.epoch_start_tx_digest = *ctx.digest();
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = now;
+    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
     <b>let</b> <b>mut</b> stake_subsidy = balance::zero();
     // during the transition from <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> N to <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> N + 1, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>() will <b>return</b> N
     <b>let</b> current_epoch = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>();
@@ -2544,15 +2550,10 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_process_checkpoint_message">process_checkpoint_message</a>(self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a>, message: vector&lt;u8&gt;, _ctx: &<b>mut</b> TxContext) {
     <b>let</b> <b>mut</b> bcs_body = bcs::new(<b>copy</b> message);
     <b>let</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> = bcs_body.peel_u64();
-    <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInIkaSystemCheckpoint">EIncorrectEpochInIkaSystemCheckpoint</a>);
+    <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> == self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EIncorrectEpochInSystemCheckpoint">EIncorrectEpochInSystemCheckpoint</a>);
     <b>let</b> sequence_number = bcs_body.peel_u64();
-    <b>if</b>(self.last_processed_checkpoint_sequence_number.is_none()) {
-        <b>assert</b>!(sequence_number == 0, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } <b>else</b> {
-        <b>assert</b>!(sequence_number &gt; 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongIkaSystemCheckpointSequenceNumber">EWrongIkaSystemCheckpointSequenceNumber</a>);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
+    <b>assert</b>!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EWrongSystemCheckpointSequenceNumber">EWrongSystemCheckpointSequenceNumber</a>);
+    self.last_processed_checkpoint_sequence_number = sequence_number;
     <b>let</b> timestamp_ms = bcs_body.peel_u64();
     event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemCheckpointInfoEvent">SystemCheckpointInfoEvent</a> {
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
@@ -2564,12 +2565,12 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     // Note: the order of these fields, and the number must correspond to the Rust code in
     // `crates/ika-types/src/messages_system_checkpoints.rs`.
     <b>while</b> (i &lt; len) {
-        <b>let</b> message_data_type = bcs_body.peel_vec_length();
+        <b>let</b> message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses params message BCS bytes directly.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE">SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE</a> =&gt; {
                 <b>let</b> next_protocol_version = bcs_body.peel_u64();
-                self.next_protocol_version.fill(next_protocol_version);
+                self.next_protocol_version = option::some(next_protocol_version);
                 event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetNextProtocolVersionEvent">SetNextProtocolVersionEvent</a> {
                     <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
                     next_protocol_version,

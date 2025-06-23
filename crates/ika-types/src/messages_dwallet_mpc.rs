@@ -231,7 +231,7 @@ impl Debug for MPCProtocolInitData {
                 write!(f, "PartialSignatureVerification")
             }
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
-                write!(f, "DecryptionKeyReshare")
+                write!(f, "DecryptionKeyReconfiguration")
             }
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")

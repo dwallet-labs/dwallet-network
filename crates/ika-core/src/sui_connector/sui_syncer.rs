@@ -234,7 +234,10 @@ where
             {
                 Ok(committee) => committee,
                 Err(e) => {
-                    error!("failed to initiate committee: {e}");
+                    warn!(
+                        error=?e,
+                        "failed to initiate committee"
+                    );
                     continue;
                 }
             };
@@ -242,7 +245,10 @@ where
                 match generate_access_structure_from_committee(&active_committee) {
                     Ok(access_structure) => access_structure,
                     Err(e) => {
-                        error!("failed to generate access structure: {e}");
+                        error!(
+                            error=?e,
+                            "failed to generate access structure"
+                        );
                         continue;
                     }
                 };
