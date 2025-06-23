@@ -138,7 +138,6 @@
 		"ws": "^8.18.2"
 	},
 	"dependencies": {
-		"dotenv": "^16.5.0",
 		"@dwallet-network/dwallet-mpc-wasm": "workspace:*",
 		"@graphql-typed-document-node/core": "^3.2.0",
 		"@kubernetes/client-node": "^1.1.2",
