@@ -131,7 +131,7 @@ impl MPCSessionLogger {
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
         output_sender_party_id: PartyID,
-        output: &Vec<u8>,
+        output: &[u8],
         session_info: &SessionInfo,
     ) {
         if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
@@ -160,7 +160,7 @@ impl MPCSessionLogger {
             "party_id": party_id,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
-            "output": output.clone(),
+            "output": output.to_owned(),
             "session_info": session_info.clone(),
         });
 

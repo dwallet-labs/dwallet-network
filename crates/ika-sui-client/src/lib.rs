@@ -155,6 +155,9 @@ where
             // all the necessary missed events must be synced as well.
             // Note that we make sure that the coordinator's epoch number matches ours,
             // so that we know for sure that our Sui state is synced.
+            if dwallet_coordinator_inner.current_epoch > epoch_id {
+                return Err(IkaError::EpochEnded(epoch_id));
+            }
             if dwallet_coordinator_inner.current_epoch != epoch_id {
                 warn!(
                     sui_state_current_epoch=?dwallet_coordinator_inner.current_epoch,
