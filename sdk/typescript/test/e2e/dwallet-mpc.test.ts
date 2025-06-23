@@ -32,10 +32,10 @@ import {
 } from '../../src/dwallet-mpc/sign';
 
 const fiveMinutes = 10000000 * 60 * 1000;
-// const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
-// const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
-const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
-const SUI_FAUCET_HOST = getFaucetHost('localnet');
+const SUI_FULLNODE_URL = 'https://fullnode.sui.beta.devnet.ika-network.net';
+const SUI_FAUCET_HOST = 'https://faucet.sui.beta.devnet.ika-network.net';
+// const SUI_FULLNODE_URL = getFullnodeUrl('localnet');
+// const SUI_FAUCET_HOST = getFaucetHost('localnet');
 
 async function createConf(): Promise<Config> {
 	const keypair = Ed25519Keypair.generate();
