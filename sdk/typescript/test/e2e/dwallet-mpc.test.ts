@@ -91,7 +91,6 @@ async function runSignFullFlow(conf: Config) {
 	console.timeEnd('Step 3: Sign Phase');
 }
 
-const fiveMinutes = 100 * 60 * 1000;
 describe('Test dWallet MPC', () => {
 	let conf: Config;
 
