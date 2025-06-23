@@ -4,7 +4,7 @@ import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
-import { createSessionIdentifier, getDWalletSecpState, SUI_PACKAGE_ID } from './globals.js';
+import { createSessionIdentifier, delay, getDWalletSecpState, SUI_PACKAGE_ID } from './globals.js';
 
 /**
  * Creates an empty IKA coin for transaction gas
@@ -84,7 +84,6 @@ export async function executeTransactionWithRetry<T>(
 	operationName: string,
 	extractResult?: (result: SuiTransactionBlockResponse) => T,
 ): Promise<T> {
-	const { delay } = await import('./globals.js');
 	const startTime = Date.now();
 
 	while (Date.now() - startTime <= conf.timeout) {
