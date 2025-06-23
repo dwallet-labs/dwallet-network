@@ -550,6 +550,22 @@ public(package) fun set_pricing_vote(
     self.validator_set.set_pricing_vote(dwallet_coordinator_inner, pricing, cap);
 }
 
+
+
+
+public(package) fun start_advance_epoch(
+    self: &mut SystemInner,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    let now = clock.timestamp_ms();
+    let last_epoch_change = self.epoch_start_timestamp_ms;
+    assert!(
+        now >= last_epoch_change + self.epoch_duration_ms,
+        EHaveNotReachedEndEpochTime
+    );
+}
+
 /// This function should be called at the end of an epoch, and advances the system to the next epoch.
 /// It does the following things:
 /// 1. Add storage charge to the storage fund.

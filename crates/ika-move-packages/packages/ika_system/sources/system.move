@@ -545,6 +545,11 @@ public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DW
     inner_system.advance_epoch(inner_dwallet, clock, ctx);
 }
 
+public fun request_start_advance_epoch(self: &mut System, clock: &Clock, ctx: &mut TxContext) {
+    let inner_system = self.inner_mut();
+    inner_system.start_advance_epoch(clock, ctx);
+}
+
 public fun request_dwallet_network_encryption_key_dkg_by_cap(
     self: &mut System,
     dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
