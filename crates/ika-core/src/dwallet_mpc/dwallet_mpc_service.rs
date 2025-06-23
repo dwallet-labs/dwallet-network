@@ -126,6 +126,7 @@ impl DWalletMPCService {
                                     session_identifier=?session_info.session_identifier,
                                     session_type=?session_info.session_type,
                                     mpc_round=?session_info.mpc_round,
+                                    current_epoch=?self.epoch_store.epoch(),
                                     "Successfully processed a missed event from Sui"
                                 );
                             }
@@ -143,9 +144,15 @@ impl DWalletMPCService {
                     return;
                 }
                 Err(err) => {
+                    error!(
+                        ?err,
+                        current_epoch=?self.epoch_store.epoch(),
+                         "Failed to load missed events from Sui"
+                    );
                     if let IkaError::EpochEnded(_) = err {
                         return;
                     };
+                    tokio::time::sleep(Duration::from_secs(2)).await;
                 }
             }
         }
