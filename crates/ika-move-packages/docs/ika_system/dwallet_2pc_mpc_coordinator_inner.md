@@ -653,6 +653,11 @@ and various other fields, like the supported and paused curves, signing algorith
  Cryptographic algorithm support configuration
 </dd>
 <dt>
+<code>received_end_of_publish: bool</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>extra_fields: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
@@ -4891,6 +4896,15 @@ Signing with partial user signature protocol identifier
 
 
 
+<a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_END_OF_EPOCH_MESSAGE_TYPE"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_END_OF_EPOCH_MESSAGE_TYPE">END_OF_EPOCH_MESSAGE_TYPE</a>: u32 = 12;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EDWalletMismatch"></a>
 
 dWallet parameters do not match expected values
@@ -5366,6 +5380,7 @@ A new DWalletCoordinatorInner instance ready for use
             paused_hash_schemes: vector[],
             signature_algorithms_allowed_global_presign: vector[],
         },
+        received_end_of_publish: <b>false</b>,
         extra_fields: bag::new(ctx),
     }
 }
@@ -6058,6 +6073,7 @@ Combined IKA balance from fees collected during the epoch
 ): Balance&lt;IKA&gt; {
     <b>assert</b>!(self.pricing_and_fee_management.calculation_votes.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPricingCalculationVotesMustBeCompleted">EPricingCalculationVotesMustBeCompleted</a>);
     <b>assert</b>!(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
+    <b>assert</b>!(self.received_end_of_publish, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = <b>false</b>;
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_update_last_user_initiated_session_to_complete_in_current_epoch">update_last_user_initiated_session_to_complete_in_current_epoch</a>();
@@ -9862,6 +9878,9 @@ SUI coin containing gas fee reimbursements from processed operations
             <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE">SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE</a> =&gt; {
                 <b>let</b> gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
                 self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_set_gas_fee_reimbursement_sui_system_call_value">set_gas_fee_reimbursement_sui_system_call_value</a>(gas_fee_reimbursement_sui_system_call_value);
+            },
+            <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_END_OF_EPOCH_MESSAGE_TYPE">END_OF_EPOCH_MESSAGE_TYPE</a> =&gt; {
+                self.received_end_of_publish = <b>true</b>;
             },
             _ =&gt; {},
         };
