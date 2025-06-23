@@ -330,8 +330,7 @@ where
                     .calculation_votes
                     .is_none()
             {
-                if let Err(err) = end_of_publish_sender
-                    .send(Some(system_inner_v1.epoch)) {
+                if let Err(err) = end_of_publish_sender.send(Some(system_inner_v1.epoch)) {
                     error!(?err, "failed to send end of publish epoch to the channel");
                 }
             }
