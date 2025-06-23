@@ -107,8 +107,8 @@ done
 
 RUST_MIN_STACK=16777216
 
-RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME" --target-dir ./target
-cp ./target/release/"$BINARY_NAME" .
+RUST_MIN_STACK=$RUST_MIN_STACK cargo build --release --bin "$BINARY_NAME"
+cp ../../../../target/release/"$BINARY_NAME" .
 BINARY_NAME="$(pwd)/$BINARY_NAME"
 
 VALIDATORS_ARRAY=()
@@ -202,22 +202,13 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # Fetch the alias and change it (the --alias option is not working currently)
     SUI_CURRENT_ALIAS=$(jq -r '.[].alias' sui.aliases)
-    echo "hey"
     sui keytool update-alias "$SUI_CURRENT_ALIAS" "$VALIDATOR_NAME"
-    echo "hey1"
-    echo "SUBDOMAIN=$SUBDOMAIN"
-    echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL" 
-    echo "SUI_ADDR=$SUI_ADDR"
-    echo "SUI_CONFIG_PATH=$SUI_CONFIG_PATH"
-    echo "SUI_KEYSTORE_FILE=$SUI_KEYSTORE_FILE"
-    echo "SUI_CLIENT_YAML_FILE=$SUI_CLIENT_YAML_FILE"
-
     yq e -i ".envs[].alias = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".envs[].rpc = \"$SUI_FULLNODE_RPC_URL\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_address = \"$SUI_ADDR\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".active_env = \"$SUBDOMAIN\"" "$SUI_CLIENT_YAML_FILE"
     yq e -i ".keystore.File = \"$SUI_CONFIG_PATH/$SUI_KEYSTORE_FILE\"" "$SUI_CLIENT_YAML_FILE"
-    echo "hey2"
+
     popd > /dev/null
     cp -r $SUI_CONFIG_PATH "$VALIDATOR_DIR/$SUI_BACKUP_DIR"
     SENDER_SUI_ADDR=$SUI_ADDR
@@ -258,10 +249,6 @@ rm -rf "$SUI_CONFIG_PATH"
 cargo build --bin ika-swarm-config
 cp ../../../../../target/debug/ika-swarm-config .
 
-# echo params to next call
-echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
-echo "SUI_FAUCET_URL=$SUI_FAUCET_URL"
-
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
@@ -272,9 +259,6 @@ echo "SUI_FAUCET_URL=$SUI_FAUCET_URL"
 ./ika-swarm-config init-env --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path ./ika_publish_config.json --epoch-duration-ms "$EPOCH_DURATION_TIME_MS"
 
 export PUBLISHER_DIR=publisher
-echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
-echo "PUBLISHER_DIR=$PUBLISHER_DIR"
-#exit 1
 
 mkdir -p $PUBLISHER_DIR
 mv ika_publish_config.json $PUBLISHER_DIR/
@@ -344,16 +328,18 @@ request_and_generate_yaml() {
             }
           }')
 
-    if [[ "$response" == "201" ]]; then
-      echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
-      jq . "$VALIDATOR_DIR/faucet_response.json"
-      break
-    else
-      echo "[Faucet] ❌ Attempt $attempt failed with HTTP $response for '$VALIDATOR_NAME'"
-      (( attempt++ ))
-      sleep $(( sleep_time ** attempt ))
-    fi
-  done
+    if [[ "$response" == "201" || "$response" == "200" ]]; then
+        echo "[Faucet] ✅ Success for '$VALIDATOR_NAME'"
+        jq . "$VALIDATOR_DIR/faucet_response.json"
+        break
+      else
+        echo "[Faucet] ❌ Attempt $attempt failed with HTTP $response for '$VALIDATOR_NAME'"
+        (( attempt++ ))
+        sleep $(( sleep_time ** attempt ))
+      fi
+    done
+
+
 
   if (( attempt > max_attempts )); then
     echo "[Faucet] ❗ Failed to get tokens for '$VALIDATOR_NAME' after $max_attempts attempts."
@@ -361,7 +347,7 @@ request_and_generate_yaml() {
 }
 
 # Concurrency control (compatible with bash < 4.3)
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -441,7 +427,7 @@ process_validator() {
 }
 
 # Launch jobs with a max concurrency of 5 using a simple counter
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do
@@ -538,10 +524,8 @@ rm -rf "$SUI_CONFIG_PATH"
 mkdir -p "$SUI_CONFIG_PATH"
 cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
-echo "SUI_FULLNODE_RPC_URL=$SUI_FULLNODE_RPC_URL"
-echo "PUBLISHER_DIR=$PUBLISHER_DIR"
 ./ika-swarm-config ika-system-initialize --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --ika-config-path $PUBLISHER_DIR/ika_publish_config.json
-echo hey5
+
 # This if the file name that the SDK is looking for.
 mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 
