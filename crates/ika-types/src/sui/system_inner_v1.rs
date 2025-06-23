@@ -155,6 +155,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub last_processed_checkpoint_sequence_number: u64,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub support_config: SupportConfig,
+    pub received_end_of_publish: bool,
     pub extra_fields: Bag,
 }
 
