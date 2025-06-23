@@ -24,7 +24,7 @@ use ika_core::consensus_manager::UpdatableConsensusClient;
 
 use ika_types::digests::ChainIdentifier;
 use ika_types::sui::SystemInner;
-use sui_types::base_types::{ConciseableName, ObjectID};
+use sui_types::base_types::ConciseableName;
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::{broadcast, watch, Mutex};
@@ -162,7 +162,6 @@ mod simulator {
     }
 }
 
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
@@ -182,7 +181,6 @@ use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
 use simulator::*;
-use tokio::sync::watch::Receiver;
 
 pub struct IkaNode {
     config: NodeConfig,
@@ -366,9 +364,6 @@ impl IkaNode {
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
 
-        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
-        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
-            watch::channel::<Committee>(committee);
         let (new_events_sender, new_events_receiver) = tokio::sync::broadcast::channel(10000);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
@@ -377,8 +372,6 @@ impl IkaNode {
                 sui_client.clone(),
                 config.sui_connector_config.clone(),
                 sui_connector_metrics,
-                network_keys_sender,
-                next_epoch_committee_sender,
                 new_events_sender,
             )
             .await?,
@@ -481,9 +474,7 @@ impl IkaNode {
                 previous_epoch_last_dwallet_checkpoint_sequence_number,
                 previous_epoch_last_system_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
-                network_keys_receiver.clone(),
                 new_events_receiver.resubscribe(),
-                next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
                 dwallet_mpc_metrics.clone(),
             )
@@ -531,9 +522,7 @@ impl IkaNode {
         spawn_monitored_task!(async move {
             let result = Self::monitor_reconfiguration(
                 node_copy,
-                network_keys_receiver.clone(),
                 new_events_receiver.resubscribe(),
-                next_epoch_committee_receiver.clone(),
                 sui_client_clone,
                 dwallet_mpc_metrics,
             )
@@ -756,9 +745,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Result<ValidatorComponents> {
@@ -812,9 +799,7 @@ impl IkaNode {
             ika_tx_validator_metrics,
             previous_epoch_last_dwallet_checkpoint_sequence_number,
             previous_epoch_last_system_checkpoint_sequence_number,
-            network_keys_receiver,
             new_events_receiver,
-            next_epoch_committee_receiver,
             sui_client,
         )
         .await
@@ -837,9 +822,7 @@ impl IkaNode {
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_dwallet_checkpoint_service(
@@ -870,9 +853,7 @@ impl IkaNode {
             sui_client,
             Arc::new(consensus_adapter.clone()),
             config.clone(),
-            network_keys_receiver,
             new_events_receiver,
-            next_epoch_committee_receiver,
             dwallet_mpc_metrics.clone(),
         )
         .await;
@@ -1081,9 +1062,7 @@ impl IkaNode {
     /// after which it initiates reconfiguration of the entire system.
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Result<()> {
@@ -1275,10 +1254,7 @@ impl IkaNode {
                             ika_tx_validator_metrics,
                             previous_epoch_last_checkpoint_sequence_number,
                             previous_epoch_last_system_checkpoint_sequence_number,
-                            // safe to unwrap because we are a validator
-                            network_keys_receiver.clone(),
                             new_events_receiver.resubscribe(),
-                            next_epoch_committee_receiver.clone(),
                             sui_client_clone2.clone(),
                         )
                         .await?,
@@ -1313,10 +1289,7 @@ impl IkaNode {
                             self.metrics.clone(),
                             previous_epoch_last_checkpoint_sequence_number,
                             previous_epoch_last_system_checkpoint_sequence_number,
-                            // safe to unwrap because we are a validator
-                            network_keys_receiver.clone(),
                             new_events_receiver.resubscribe(),
-                            next_epoch_committee_receiver.clone(),
                             sui_client.clone(),
                             dwallet_mpc_metrics.clone(),
                         )
@@ -1377,11 +1350,13 @@ impl IkaNode {
         sui_client: Arc<SuiConnectorClient>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> watch::Sender<()> {
+        let epoch_start_state = epoch_store.epoch_start_state();
+        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
+            watch::channel::<Committee>(epoch_start_state.get_ika_committee().clone());
         let (exit_sender, exit_receiver) = watch::channel(());
         let mut service = DWalletMPCService::new(
             epoch_store.clone(),
@@ -1396,7 +1371,7 @@ impl IkaNode {
         )
         .await;
 
-        spawn_monitored_task!(service.spawn());
+        spawn_monitored_task!(service.spawn(next_epoch_committee_sender, network_keys_sender));
 
         exit_sender
     }

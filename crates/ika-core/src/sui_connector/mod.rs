@@ -5,17 +5,15 @@ use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::{SuiClient, SuiClientInner};
-use ika_types::committee::{Committee, EpochId};
+use ika_types::committee::EpochId;
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use shared_crypto::intent::{Intent, IntentMessage};
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::{Coin, SuiEvent};
@@ -25,7 +23,6 @@ use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use sui_types::transaction::{ProgrammableTransaction, Transaction, TransactionData};
-use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing::info;
 
@@ -60,8 +57,6 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
@@ -89,12 +84,7 @@ impl SuiConnectorService {
             sui_modules_to_watch,
             sui_connector_metrics.clone(),
         )
-        .run(
-            Duration::from_secs(2),
-            next_epoch_committee_sender,
-            network_keys_sender,
-            new_events_sender,
-        )
+        .run(Duration::from_secs(2), new_events_sender)
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
         Ok(Self {
