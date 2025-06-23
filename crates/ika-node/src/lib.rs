@@ -821,6 +821,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             sui_client,
+            end_of_publish_receiver
         )
         .await
     }
@@ -846,6 +847,7 @@ impl IkaNode {
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
+        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> Result<ValidatorComponents> {
         let (checkpoint_service, checkpoint_service_tasks) = Self::start_dwallet_checkpoint_service(
             config,
@@ -879,6 +881,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             dwallet_mpc_metrics.clone(),
+            end_of_publish_receiver
         )
         .await;
         // This verifier is in sync with the consensus,
@@ -1286,6 +1289,7 @@ impl IkaNode {
                             new_events_receiver.resubscribe(),
                             next_epoch_committee_receiver.clone(),
                             sui_client_clone2.clone(),
+                            end_of_publish_receiver.clone(),
                         )
                         .await?,
                     )
@@ -1388,6 +1392,7 @@ impl IkaNode {
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> watch::Sender<()> {
         let (exit_sender, exit_receiver) = watch::channel(());
         let mut service = DWalletMPCService::new(
@@ -1400,6 +1405,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             dwallet_mpc_metrics,
+            end_of_publish_receiver,
         )
         .await;
 

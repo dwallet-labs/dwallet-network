@@ -95,6 +95,7 @@ pub enum MPCProtocolInitData {
     NetworkEncryptionKeyReconfiguration(
         DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
     ),
+    EndOfPublish
 }
 
 impl Display for MPCProtocolInitData {
