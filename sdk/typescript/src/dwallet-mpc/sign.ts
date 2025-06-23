@@ -234,7 +234,7 @@ export async function signWithImportedDWallet(
 		conf.ikaConfig.ika_system_package_id,
 	);
 	tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_sign`,
+		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_sign`,
 		arguments: [
 			dwalletStateArg,
 			verifiedPresignCap,
