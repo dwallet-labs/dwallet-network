@@ -70,7 +70,7 @@ where
         ));
         // Todo (#810): Check the usage adding the task handle to the task_handles vector.
         tokio::spawn(Self::sync_dwallet_network_keys(
-            sui_client_clone,
+            sui_client_clone.clone(),
             network_keys_sender,
         ));
         tokio::spawn(Self::sync_dwallet_end_of_publish(
