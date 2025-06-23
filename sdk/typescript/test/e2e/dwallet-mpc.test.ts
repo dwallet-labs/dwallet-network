@@ -63,7 +63,7 @@ async function createConf(): Promise<Config> {
 }
 
 async function runSignFullFlow(conf: Config) {
-	const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
+	const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(conf);
 	console.log('Creating dWallet...');
 	console.time('Step 1: dWallet Creation');
 	const dwallet = await createDWallet(conf, networkDecryptionKeyPublicOutput);
