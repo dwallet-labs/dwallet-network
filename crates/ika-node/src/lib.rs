@@ -488,7 +488,7 @@ impl IkaNode {
                 next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
                 dwallet_mpc_metrics.clone(),
-                end_of_publish_receiver.clone()
+                end_of_publish_receiver.clone(),
             )
             .await?;
             // This is only needed during cold start.
@@ -539,7 +539,7 @@ impl IkaNode {
                 next_epoch_committee_receiver.clone(),
                 sui_client_clone,
                 dwallet_mpc_metrics,
-                end_of_publish_receiver.clone()
+                end_of_publish_receiver.clone(),
             )
             .await;
             if let Err(error) = result {
