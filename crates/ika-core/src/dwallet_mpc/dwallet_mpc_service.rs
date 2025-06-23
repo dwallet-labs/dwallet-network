@@ -103,47 +103,60 @@ impl DWalletMPCService {
     async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
-            let Ok(events) = self
+            // let Ok(events) = self
+            //     .sui_client
+            //     .get_dwallet_mpc_missed_events(epoch_store.epoch())
+            //     .await
+            // else {
+            //     error!("failed to fetch missed dWallet MPC events from Sui");
+            //     tokio::time::sleep(Duration::from_secs(2)).await;
+            //     continue;
+            // };
+            match self
                 .sui_client
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
                 .await
-            else {
-                error!("failed to fetch missed dWallet MPC events from Sui");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
-            for event in events {
-                match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                    Ok(Some(mut session_info)) => {
-                        // We modify the session info to include the current epoch ID,
-                        // or else
-                        // this event will be ignored while handled.
-                        session_info.epoch = self.epoch_id;
-                        self.dwallet_mpc_manager
-                            .handle_dwallet_db_event(DWalletMPCEvent {
-                                event,
-                                session_info: session_info.clone(),
-                            })
-                            .await;
-                        info!(
-                            session_identifier=?session_info.session_identifier,
-                            session_type=?session_info.session_type,
-                            mpc_round=?session_info.mpc_round,
-                            "Successfully processed a missed event from Sui"
-                        );
+            {
+                Ok(events) => {
+                    for event in events {
+                        match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                            Ok(Some(mut session_info)) => {
+                                // We modify the session info to include the current epoch ID,
+                                // or else
+                                // this event will be ignored while handled.
+                                session_info.epoch = self.epoch_id;
+                                self.dwallet_mpc_manager
+                                    .handle_dwallet_db_event(DWalletMPCEvent {
+                                        event,
+                                        session_info: session_info.clone(),
+                                    })
+                                    .await;
+                                info!(
+                                    session_identifier=?session_info.session_identifier,
+                                    session_type=?session_info.session_type,
+                                    mpc_round=?session_info.mpc_round,
+                                    "Successfully processed a missed event from Sui"
+                                );
+                            }
+                            Ok(None) => {
+                                warn!("Received an event that does not trigger the start of an MPC flow");
+                            }
+                            Err(e) => {
+                                error!(
+                                    erorr=?e,
+                                    "error while processing a missed event"
+                                );
+                            }
+                        }
                     }
-                    Ok(None) => {
-                        warn!("Received an event that does not trigger the start of an MPC flow");
-                    }
-                    Err(e) => {
-                        error!(
-                            erorr=?e,
-                            "error while processing a missed event"
-                        );
-                    }
+                    return;
+                }
+                Err(err) => {
+                    if let IkaError::EpochEnded(_) = err {
+                        return;
+                    };
                 }
             }
-            return;
         }
     }
 
