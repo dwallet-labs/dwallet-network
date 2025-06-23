@@ -487,6 +487,7 @@ impl ConsensusAdapter {
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult<JoinHandle<()>> {
+        // TODO(Scaly): clean up this code.
         // if transactions.len() > 1 {
         //     // In soft bundle, we need to check if all transactions are of CertifiedTransaction
         //     // kind. The check is required because we assume this in submit_and_wait_inner.
@@ -788,6 +789,7 @@ impl ConsensusAdapter {
                 .await
             {
                 Err(err) => {
+                    // TODO(Scaly): is this our reconfig? this seems patchy.
                     // This can happen during reconfig, or when consensus has full internal buffers
                     // and needs to back pressure, so retry a few times before logging warnings.
                     if retries > 30 || (retries > 3 && (is_soft_bundle)) {

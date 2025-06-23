@@ -99,52 +99,57 @@ impl DWalletMPCService {
         }
     }
 
-    /// Load missed events from the Sui network.
-    /// These events are from different Epochs, not necessarily the current one.
-    ///
-    async fn load_missed_events(&mut self) {
+    /// Proactively pull uncompleted events from the Sui network.
+    /// We do that to assure we don't miss any events.
+    /// These events might be from a different Epoch, not necessarily the current one.
+    async fn fetch_uncompleted_events(&mut self) -> Vec<DWalletMPCEvent> {
         let epoch_store = self.epoch_store.clone();
         loop {
             let Ok(events) = self
                 .sui_client
-                .get_dwallet_mpc_missed_events(epoch_store.epoch())
+                .pull_dwallet_mpc_uncompleted_events(epoch_store.epoch())
                 .await
             else {
                 error!("failed to fetch missed dWallet MPC events from Sui");
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             };
-            for event in events {
+
+            let events = events.into_iter().flat_map(|event|{
                 match session_info_from_event(event.clone(), &epoch_store.packages_config) {
                     Ok(Some(mut session_info)) => {
-                        // We modify the session info to include the current epoch ID,
-                        // or else this event will be ignored while handled.
-                        session_info.epoch = self.epoch_id;
-                        self.dwallet_mpc_manager
-                            .handle_dwallet_db_event(DWalletMPCEvent {
-                                event,
-                                session_info: session_info.clone(),
-                            })
-                            .await;
-                        info!(
+                        let event = DWalletMPCEvent {
+                            event,
+                            session_info: session_info.clone(),
+                            override_epoch_check: true
+                        };
+
+                        debug!(
                             session_identifier=?session_info.session_identifier,
                             session_type=?session_info.session_type,
                             mpc_round=?session_info.mpc_round,
-                            "Successfully processed a missed event from Sui"
+                            "Fetched uncompleted event from Sui"
                         );
+
+                        Some(event)
                     }
                     Ok(None) => {
                         warn!("Received an event that does not trigger the start of an MPC flow");
+
+                        None
                     }
                     Err(e) => {
                         error!(
                             erorr=?e,
                             "error while processing a missed event"
                         );
+
+                        None
                     }
                 }
-            }
-            return;
+            }).collect();
+
+            return events;
         }
     }
 
@@ -186,9 +191,12 @@ impl DWalletMPCService {
     pub async fn spawn(&mut self) {
         let mut loop_index = 0;
         loop {
+            let mut events = vec![];
+
             // Load events from Sui every 5 minutes (3000*100ms = 300,000ms = 300s = 5m).
+            // Note: when we spawn, `loop_index == 0` so we fetch uncompleted events on spawn.
             if loop_index % 3_000 == 0 {
-                self.load_missed_events().await;
+                events = self.fetch_uncompleted_events().await;
             }
             loop_index += 1;
             match self.exit.has_changed() {
@@ -234,18 +242,32 @@ impl DWalletMPCService {
                 continue;
             };
 
+            // TODO(@scaly): in a session, save a map between the rounds of the consensus to the messages.
+            // save this also in the db, and when we state-sync, we don't run any computation until the last round of the consensus was synced
+            // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
+            // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
+            // read if the sui consensus syncs these values somehow
+
+            // TODO(@scaly) save in the db a map of all sessions, and what round I am at, so when we read it we block computation until reaching there.
+
+            // TODO(@scaly) here we are reading from the db the messages, so if we shutdown in the middle of the session, we read our own messages.
+            // the consesnus output writes to the db, and we read from it.
+
+            // TODO(@scaly) completed_sessions_ids is unused. Shouldn't we log this?
             let mut completed_sessions_ids = Vec::new();
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
+                    // Mark the session as completed, but *don't remove it from the map* (important!)
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
+
                     completed_sessions_ids.push(session.session_identifier);
                 }
             }
 
             // Receive **new** dWallet MPC events and save them in the local DB.
-            let events = match self.receive_new_sui_events() {
-                Ok(events) => events,
+            match self.receive_new_sui_events() {
+                Ok(new_events) => events.extend(new_events),
                 Err(e) => {
                     error!(
                     error=?e,
@@ -279,6 +301,7 @@ impl DWalletMPCService {
                         .handle_dwallet_db_message(message)
                         .await;
                 }
+                // TODO(Scaly): why is there a message `EndOfDelivery` and `PerformCryptographicComputations` ? why not call function?
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_message(DWalletMPCDBMessage::EndOfDelivery)
                     .await;

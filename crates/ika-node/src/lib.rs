@@ -865,6 +865,17 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
+        // This verifier is in sync with the consensus,
+        // used to verify outputs before sending a system TX to store them.
+        epoch_store.set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(
+            &epoch_store,
+            dwallet_mpc_metrics.clone(),
+        ))?;
+
+        // TODO(Scaly): perform state sync here
+        // TODO(Scaly): return the finished sessions, and pass it to `start_dwallet_mpc_service()`, so then we can open these sessions already and set them to finish.
+
+
         let dwallet_mpc_service_exit_sender = Self::start_dwallet_mpc_service(
             epoch_store.clone(),
             sui_client,
@@ -876,12 +887,6 @@ impl IkaNode {
             dwallet_mpc_metrics.clone(),
         )
         .await;
-        // This verifier is in sync with the consensus,
-        // used to verify outputs before sending a system TX to store them.
-        epoch_store.set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(
-            &epoch_store,
-            dwallet_mpc_metrics.clone(),
-        ))?;
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
@@ -914,6 +919,7 @@ impl IkaNode {
             throughput_calculator,
         );
 
+        // TODO(@scaly): this should sync, and not return before its synced.
         consensus_manager
             .start(
                 config,
@@ -928,6 +934,8 @@ impl IkaNode {
                 ),
             )
             .await;
+
+        // TODO(@Scaly): here we are synced, so spawn service.
 
         Ok(ValidatorComponents {
             consensus_manager,
@@ -1396,6 +1404,7 @@ impl IkaNode {
         )
         .await;
 
+        // TODO(Scaly): don't do this here
         spawn_monitored_task!(service.spawn());
 
         exit_sender

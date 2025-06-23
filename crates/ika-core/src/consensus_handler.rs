@@ -185,6 +185,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .epoch_store
             .get_dwallet_mpc_outputs_verifier_read()
             .await;
+        // TODO(Scaly): instead of doing perform_dwallet_mpc_state_sync() here, we should just call it in
         if !dwallet_mpc_verifier.has_performed_state_sync {
             drop(dwallet_mpc_verifier);
             if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
