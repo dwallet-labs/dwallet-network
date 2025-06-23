@@ -112,7 +112,6 @@ function printPerformanceSummary(metrics: PerformanceMetrics[], operation: strin
 	}
 }
 
-const fiveMinutes = 100 * 60 * 1000;
 describe('Parallel Performance Tests', () => {
 	let conf: Config;
 	let networkDecryptionKeyPublicOutput: string;
