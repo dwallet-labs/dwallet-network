@@ -1820,8 +1820,9 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            _ => {
-                todo!()
+            MPCProtocolInitData::EndOfPublish => {
+                let tx = DWalletMessageKind::EndOfPublish;
+                Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
         }
     }

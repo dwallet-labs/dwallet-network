@@ -105,6 +105,7 @@ pub enum DWalletMessageKind {
     RespondDWalletMPCNetworkReconfigurationOutput(NetworkKeyPublicOutputSlice),
     SetMaxActiveSessionsBuffer(u64),
     SetGasFeeReimbursementSuiSystemCallValue(u64),
+    EndOfPublish,
 }
 
 impl DWalletMessageKind {
