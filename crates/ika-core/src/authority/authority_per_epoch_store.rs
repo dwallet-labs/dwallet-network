@@ -1820,6 +1820,9 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
+            _ => {
+                todo!()
+            }
         }
     }
 

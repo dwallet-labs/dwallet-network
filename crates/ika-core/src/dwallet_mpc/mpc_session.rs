@@ -438,6 +438,9 @@ impl DWalletMPCSession {
             .with_party_to_authority_map(party_to_authority_map.clone());
 
         match &mpc_event_data.init_protocol_data {
+            MPCProtocolInitData::EndOfPublish => {
+                unreachable!()
+            }
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
                     &mpc_event_data.public_input
