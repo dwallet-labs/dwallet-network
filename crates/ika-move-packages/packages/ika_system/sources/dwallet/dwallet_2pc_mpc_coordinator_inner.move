@@ -2253,6 +2253,7 @@ public(package) fun advance_epoch(
 ): Balance<IKA> {
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
+    assert!(self.received_end_of_publish, ECannotAdvanceEpoch);
 
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
 
