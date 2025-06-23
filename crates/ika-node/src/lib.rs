@@ -366,6 +366,7 @@ impl IkaNode {
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
 
+        let (end_of_publish_sender, end_of_publish_receiver) = watch::channel::<Option<u64>>(None);
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
@@ -380,6 +381,7 @@ impl IkaNode {
                 network_keys_sender,
                 next_epoch_committee_sender,
                 new_events_sender,
+                end_of_publish_sender,
             )
             .await?,
         );
