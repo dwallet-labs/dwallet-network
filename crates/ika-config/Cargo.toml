@@ -17,7 +17,7 @@ anyhow = { workspace = true, features = ["backtrace"] }
 dirs.workspace = true
 fastcrypto.workspace = true
 once_cell.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_with.workspace = true
 tracing.workspace = true

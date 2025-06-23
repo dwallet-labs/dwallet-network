@@ -3,7 +3,7 @@
 
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
-use crate::checkpoints::DWalletCheckpointStore;
+use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
@@ -22,7 +22,7 @@ use ika_types::messages_dwallet_mpc::{
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
-use ika_types::messages_system_checkpoints::SystemCheckpoint;
+use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
@@ -317,19 +317,15 @@ where
                 .sui_client
                 .must_get_dwallet_coordinator_inner_v1()
                 .await;
-            let last_processed_dwallet_checkpoint_sequence_number: Option<u64> =
+            let last_processed_dwallet_checkpoint_sequence_number: u64 =
                 dwallet_coordinator_inner.last_processed_checkpoint_sequence_number;
             let next_dwallet_checkpoint_sequence_number =
-                last_processed_dwallet_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_dwallet_checkpoint_sequence_number + 1;
 
-            let last_processed_system_checkpoint_sequence_number: Option<u64> =
-                ika_system_state_inner.last_processed_system_checkpoint_sequence_number();
+            let last_processed_system_checkpoint_sequence_number: u64 =
+                ika_system_state_inner.last_processed_checkpoint_sequence_number();
             let next_system_checkpoint_sequence_number =
-                last_processed_system_checkpoint_sequence_number
-                    .map(|s| s + 1)
-                    .unwrap_or(0);
+                last_processed_system_checkpoint_sequence_number + 1;
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 self.run_epoch_switch(
@@ -461,7 +457,7 @@ where
                                 &auth_sig.signers_map,
                                 &active_members,
                             );
-                            let message = bcs::to_bytes::<SystemCheckpoint>(
+                            let message = bcs::to_bytes::<SystemCheckpointMessage>(
                                 &system_checkpoint.into_message(),
                             )
                             .expect("Serializing a `system_checkpoint` message cannot fail");

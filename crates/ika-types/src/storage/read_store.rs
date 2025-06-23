@@ -3,12 +3,12 @@
 
 use super::error::Result;
 use crate::committee::{Committee, EpochId};
-use crate::digests::{DWalletCheckpointMessageDigest, SystemCheckpointDigest};
+use crate::digests::{DWalletCheckpointMessageDigest, SystemCheckpointMessageDigest};
 use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, VerifiedDWalletCheckpointMessage,
 };
 use crate::messages_system_checkpoints::{
-    SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    SystemCheckpointSequenceNumber, VerifiedSystemCheckpointMessage,
 };
 use std::sync::Arc;
 
@@ -76,7 +76,7 @@ pub trait ReadStore {
         sequence_number: DWalletCheckpointSequenceNumber,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>>;
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint>;
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage>;
 
     fn get_latest_system_checkpoint_sequence_number(
         &self,
@@ -85,21 +85,25 @@ pub trait ReadStore {
         Ok(*latest_system_checkpoint.sequence_number())
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>>;
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
 
     fn get_lowest_available_system_checkpoint(&self) -> Result<SystemCheckpointSequenceNumber>;
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>>;
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
 
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>>;
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>>;
 }
 
 impl<T: ReadStore + ?Sized> ReadStore for &T {
@@ -149,15 +153,19 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
         (*self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         (*self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (*self).get_highest_verified_system_checkpoint()
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (*self).get_highest_synced_system_checkpoint()
     }
 
@@ -167,15 +175,15 @@ impl<T: ReadStore + ?Sized> ReadStore for &T {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (*self).get_system_checkpoint_by_digest(digest)
     }
 
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (*self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
@@ -227,15 +235,19 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
         (**self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         (**self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_highest_verified_system_checkpoint()
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_highest_synced_system_checkpoint()
     }
 
@@ -245,15 +257,15 @@ impl<T: ReadStore + ?Sized> ReadStore for Box<T> {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_system_checkpoint_by_digest(digest)
     }
 
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }
@@ -305,15 +317,19 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
         (**self).get_dwallet_checkpoint_by_sequence_number(sequence_number)
     }
 
-    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpoint> {
+    fn get_latest_system_checkpoint(&self) -> Result<VerifiedSystemCheckpointMessage> {
         (**self).get_latest_system_checkpoint()
     }
 
-    fn get_highest_verified_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_verified_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_highest_verified_system_checkpoint()
     }
 
-    fn get_highest_synced_system_checkpoint(&self) -> Result<Option<VerifiedSystemCheckpoint>> {
+    fn get_highest_synced_system_checkpoint(
+        &self,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_highest_synced_system_checkpoint()
     }
 
@@ -323,15 +339,15 @@ impl<T: ReadStore + ?Sized> ReadStore for Arc<T> {
 
     fn get_system_checkpoint_by_digest(
         &self,
-        digest: &SystemCheckpointDigest,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+        digest: &SystemCheckpointMessageDigest,
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_system_checkpoint_by_digest(digest)
     }
 
     fn get_system_checkpoint_by_sequence_number(
         &self,
         sequence_number: SystemCheckpointSequenceNumber,
-    ) -> Result<Option<VerifiedSystemCheckpoint>> {
+    ) -> Result<Option<VerifiedSystemCheckpointMessage>> {
         (**self).get_system_checkpoint_by_sequence_number(sequence_number)
     }
 }

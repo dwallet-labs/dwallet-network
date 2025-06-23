@@ -5,11 +5,11 @@ mod dwallet_checkpoint_metrics;
 mod dwallet_checkpoint_output;
 
 use crate::authority::AuthorityState;
-pub use crate::checkpoints::dwallet_checkpoint_metrics::DWalletCheckpointMetrics;
-use crate::checkpoints::dwallet_checkpoint_output::{
+pub use crate::dwallet_checkpoints::dwallet_checkpoint_metrics::DWalletCheckpointMetrics;
+use crate::dwallet_checkpoints::dwallet_checkpoint_output::{
     CertifiedDWalletCheckpointMessageOutput, DWalletCheckpointOutput,
 };
-pub use crate::checkpoints::dwallet_checkpoint_output::{
+pub use crate::dwallet_checkpoints::dwallet_checkpoint_output::{
     LogDWalletCheckpointOutput, SendDWalletCheckpointToStateSync,
     SubmitDWalletCheckpointToConsensus,
 };
@@ -21,16 +21,16 @@ use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::message::MessageKind;
+use ika_types::message::DWalletMessageKind;
 use ika_types::message_envelope::Message;
-use ika_types::messages_dwallet_checkpoint::SignedDWalletCheckpointMessage;
 use ika_types::messages_dwallet_checkpoint::{
     CertifiedDWalletCheckpointMessage, DWalletCheckpointMessage, DWalletCheckpointSequenceNumber,
-    DWalletCheckpointSignatureMessage, DWalletCheckpointTimestamp, TrustedDWalletCheckpointMessage,
-    VerifiedDWalletCheckpointMessage,
+    DWalletCheckpointSignatureMessage, DWalletCheckpointTimestamp, SignedDWalletCheckpointMessage,
+    TrustedDWalletCheckpointMessage, VerifiedDWalletCheckpointMessage,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -54,7 +54,7 @@ pub struct EpochStats {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingDWalletCheckpointInfo {
     pub timestamp_ms: DWalletCheckpointTimestamp,
-    pub dwallet_checkpoint_height: DWalletCheckpointHeight,
+    pub checkpoint_height: DWalletCheckpointHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -65,7 +65,7 @@ pub enum PendingDWalletCheckpoint {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingDWalletCheckpointV1 {
-    pub messages: Vec<MessageKind>,
+    pub messages: Vec<DWalletMessageKind>,
     pub details: PendingDWalletCheckpointInfo,
 }
 
@@ -82,7 +82,7 @@ impl PendingDWalletCheckpoint {
         }
     }
 
-    pub fn messages(&self) -> &Vec<MessageKind> {
+    pub fn messages(&self) -> &Vec<DWalletMessageKind> {
         &self.as_v1().messages
     }
 
@@ -91,22 +91,22 @@ impl PendingDWalletCheckpoint {
     }
 
     pub fn height(&self) -> DWalletCheckpointHeight {
-        self.details().dwallet_checkpoint_height
+        self.details().checkpoint_height
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BuilderDWalletCheckpointMessage {
-    pub dwallet_checkpoint_message: DWalletCheckpointMessage,
+    pub checkpoint_message: DWalletCheckpointMessage,
     // The Height at which this `dwallet_checkpoint` message was built.
     // None for genesis dwallet_checkpoint.
-    pub dwallet_checkpoint_height: Option<DWalletCheckpointHeight>,
+    pub checkpoint_height: Option<DWalletCheckpointHeight>,
     pub position_in_commit: usize,
 }
 
 #[derive(DBMapUtils)]
 pub struct DWalletCheckpointStore {
-    /// Maps dwallet_checkpoint contents digest to dwallet_checkpoint contents
+    // /// Maps dwallet_checkpoint contents digest to dwallet_checkpoint contents
     // pub(crate) dwallet_checkpoint_content: DBMap<DWalletCheckpointContentsDigest, DWalletCheckpointContents>,
     /// Maps dwallet_checkpoint message digest to dwallet_checkpoint sequence number
     pub(crate) checkpoint_message_sequence_by_digest:
@@ -156,47 +156,6 @@ impl DWalletCheckpointStore {
             MetricConf::new("dwallet_checkpoint_readonly"),
         )
     }
-
-    // #[instrument(level = "info", skip_all)]
-    // pub fn insert_genesis_checkpoint(
-    //     &self,
-    //     checkpoint: VerifiedCheckpointMessage,
-    //     contents: CheckpointContents,
-    //     epoch_store: &AuthorityPerEpochStore,
-    // ) {
-    //     assert_eq!(
-    //         checkpoint.epoch(),
-    //         0,
-    //         "can't call insert_genesis_checkpoint with a checkpoint not in epoch 0"
-    //     );
-    //     assert_eq!(
-    //         *checkpoint.sequence_number(),
-    //         0,
-    //         "can't call insert_genesis_checkpoint with a checkpoint that doesn't have a sequence number of 0"
-    //     );
-    //
-    //     // Only insert the genesis checkpoint if the DB is empty and doesn't have it already
-    //     if self
-    //         .get_dwallet_checkpoint_by_digest(checkpoint.digest())
-    //         .unwrap()
-    //         .is_none()
-    //     {
-    //         if epoch_store.epoch() == checkpoint.epoch {
-    //             epoch_store
-    //                 .put_genesis_checkpoint_in_builder(checkpoint.data(), &contents)
-    //                 .unwrap();
-    //         } else {
-    //             debug!(
-    //                 validator_epoch =% epoch_store.epoch(),
-    //                 genesis_epoch =% checkpoint.epoch(),
-    //                 "Not inserting checkpoint builder data for genesis checkpoint",
-    //             );
-    //         }
-    //         self.insert_checkpoint_contents(contents).unwrap();
-    //         self.insert_verified_checkpoint(&checkpoint).unwrap();
-    //         self.update_highest_synced_checkpoint(&checkpoint).unwrap();
-    //     }
-    // }
 
     pub fn get_dwallet_checkpoint_by_digest(
         &self,
@@ -325,84 +284,9 @@ impl DWalletCheckpointStore {
         Ok(self
             .watermarks
             .get(&DWalletCheckpointWatermark::HighestPruned)?
-            .unwrap_or_default()
+            .unwrap_or((1, Default::default()))
             .0)
     }
-
-    // pub fn get_checkpoint_contents(
-    //     &self,
-    //     digest: &CheckpointContentsDigest,
-    // ) -> Result<Option<CheckpointContents>, TypedStoreError> {
-    //     self.checkpoint_content.get(digest)
-    // }
-
-    // pub fn get_full_checkpoint_contents_by_sequence_number(
-    //     &self,
-    //     seq: CheckpointSequenceNumber,
-    // ) -> Result<Option<FullCheckpointContents>, TypedStoreError> {
-    //     self.full_checkpoint_content.get(&seq)
-    // }
-
-    // fn check_for_checkpoint_fork(
-    //     &self,
-    //     local_checkpoint: &Checkpoint,
-    //     verified_checkpoint: &VerifiedCheckpoint,
-    // ) {
-    //     if local_checkpoint != verified_checkpoint.data() {
-    //         let verified_contents = self
-    //             .get_checkpoint_contents(&verified_checkpoint.messages)
-    //             .map(|opt_contents| {
-    //                 opt_contents
-    //                     .map(|contents| format!("{:?}", contents))
-    //                     .unwrap_or_else(|| {
-    //                         format!(
-    //                             "Verified checkpoint contents not found, digest: {:?}",
-    //                             verified_checkpoint.messages,
-    //                         )
-    //                     })
-    //             })
-    //             .map_err(|e| {
-    //                 format!(
-    //                     "Failed to get verified checkpoint contents, digest: {:?} error: {:?}",
-    //                     verified_checkpoint.messages, e
-    //                 )
-    //             })
-    //             .unwrap_or_else(|err_msg| err_msg);
-    //
-    //         let local_contents = self
-    //             .get_checkpoint_contents(&local_checkpoint.messages)
-    //             .map(|opt_contents| {
-    //                 opt_contents
-    //                     .map(|contents| format!("{:?}", contents))
-    //                     .unwrap_or_else(|| {
-    //                         format!(
-    //                             "Local checkpoint contents not found, digest: {:?}",
-    //                             local_checkpoint.messages
-    //                         )
-    //                     })
-    //             })
-    //             .map_err(|e| {
-    //                 format!(
-    //                     "Failed to get local checkpoint contents, digest: {:?} error: {:?}",
-    //                     local_checkpoint.messages, e
-    //                 )
-    //             })
-    //             .unwrap_or_else(|err_msg| err_msg);
-    //
-    //         // checkpoint contents may be too large for panic message.
-    //         error!(
-    //             verified_checkpoint = ?verified_checkpoint.data(),
-    //             ?verified_contents,
-    //             ?local_checkpoint,
-    //             ?local_contents,
-    //             "Local checkpoint fork detected!",
-    //         );
-    //         panic!(
-    //             "Local checkpoint fork detected for sequence number: {}",
-    //             local_checkpoint.sequence_number()
-    //         );
-    //     }
-    // }
 
     // Called by consensus (ConsensusAggregator).
     // Different from `insert_verified_checkpoint`, it does not touch
@@ -415,7 +299,7 @@ impl DWalletCheckpointStore {
     ) -> Result<(), TypedStoreError> {
         debug!(
             checkpoint_seq = checkpoint.sequence_number(),
-            "Inserting certified checkpoint",
+            "Inserting certified dwallet checkpoint",
         );
         let mut batch = self.certified_checkpoints.batch();
         batch.insert_batch(
@@ -427,13 +311,6 @@ impl DWalletCheckpointStore {
             [(checkpoint.sequence_number(), checkpoint.serializable_ref())],
         )?;
         batch.write()?;
-
-        // if let Some(local_checkpoint) = self
-        //     .locally_computed_checkpoints
-        //     .get(checkpoint.sequence_number())?
-        // {
-        //     self.check_for_checkpoint_fork(&local_checkpoint, checkpoint);
-        // }
 
         Ok(())
     }
@@ -460,7 +337,7 @@ impl DWalletCheckpointStore {
         {
             debug!(
                 checkpoint_seq = checkpoint.sequence_number(),
-                "Updating highest verified checkpoint",
+                "Updating highest verified dwallet checkpoint",
             );
             self.watermarks.insert(
                 &DWalletCheckpointWatermark::HighestVerified,
@@ -477,7 +354,7 @@ impl DWalletCheckpointStore {
     ) -> Result<(), TypedStoreError> {
         debug!(
             checkpoint_seq = checkpoint.sequence_number(),
-            "Updating highest synced checkpoint",
+            "Updating highest synced dwallet checkpoint",
         );
         self.watermarks.insert(
             &DWalletCheckpointWatermark::HighestSynced,
@@ -518,7 +395,7 @@ pub struct DWalletCheckpointBuilder {
     metrics: Arc<DWalletCheckpointMetrics>,
     max_messages_per_dwallet_checkpoint: usize,
     max_dwallet_checkpoint_size_bytes: usize,
-    previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
+    previous_epoch_last_checkpoint_sequence_number: u64,
 }
 
 pub struct DWalletCheckpointAggregator {
@@ -534,7 +411,7 @@ pub struct DWalletCheckpointAggregator {
 // This holds information to aggregate signatures for one dwallet_checkpoint.
 pub struct DWalletCheckpointSignatureAggregator {
     next_index: u64,
-    dwallet_checkpoint_message: DWalletCheckpointMessage,
+    checkpoint_message: DWalletCheckpointMessage,
     digest: DWalletCheckpointMessageDigest,
     /// Aggregates voting stake for each signed dwallet_checkpoint proposal by authority.
     signatures_by_digest:
@@ -558,7 +435,7 @@ impl DWalletCheckpointBuilder {
         metrics: Arc<DWalletCheckpointMetrics>,
         max_messages_per_dwallet_checkpoint: usize,
         max_dwallet_checkpoint_size_bytes: usize,
-        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
+        previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> Self {
         Self {
             state,
@@ -570,7 +447,7 @@ impl DWalletCheckpointBuilder {
             metrics,
             max_messages_per_dwallet_checkpoint,
             max_dwallet_checkpoint_size_bytes,
-            previous_epoch_last_dwallet_checkpoint_sequence_number,
+            previous_epoch_last_checkpoint_sequence_number,
         }
     }
 
@@ -591,11 +468,8 @@ impl DWalletCheckpointBuilder {
             .epoch_store
             .last_built_dwallet_checkpoint_message_builder()
             .expect("epoch should not have ended");
-        let mut last_height = checkpoint_message
-            .clone()
-            .and_then(|s| s.dwallet_checkpoint_height);
-        let mut last_timestamp =
-            checkpoint_message.map(|s| s.dwallet_checkpoint_message.timestamp_ms);
+        let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
+        let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
         let min_checkpoint_interval_ms = self
             .epoch_store
@@ -625,7 +499,7 @@ impl DWalletCheckpointBuilder {
                     checkpoint_commit_height = height,
                     ?last_timestamp,
                     ?current_timestamp,
-                    "waiting for more PendingCheckpoints: minimum interval not yet elapsed"
+                    "waiting for more PendingDWalletCheckpoints: minimum interval not yet elapsed"
                 );
                 continue;
             }
@@ -635,27 +509,33 @@ impl DWalletCheckpointBuilder {
             last_timestamp = Some(current_timestamp);
             debug!(
                 checkpoint_commit_height = height,
-                "Making checkpoint at commit height"
+                "Making dwallet checkpoint at commit height"
             );
             if let Err(e) = self
                 .make_checkpoint(std::mem::take(&mut grouped_pending_checkpoints))
                 .await
             {
-                error!("Error while making checkpoint, will retry in 1s: {:?}", e);
+                error!(
+                    "Error while making dwallet checkpoint, will retry in 1s: {:?}",
+                    e
+                );
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 self.metrics.dwallet_checkpoint_errors.inc();
                 return;
             }
         }
         debug!(
-            "Waiting for more checkpoints from consensus after processing {last_height:?}; {} pending checkpoints left unprocessed until next interval",
+            "Waiting for more dwallet checkpoints from consensus after processing {last_height:?}; {} pending dwallet checkpoints left unprocessed until next interval",
             grouped_pending_checkpoints.len(),
         );
     }
 
-    #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().dwallet_checkpoint_height))]
-    async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
-        let last_details = pendings.last().unwrap().details().clone();
+    #[instrument(level = "debug", skip_all, fields(last_height = pending_checkpoints.last().unwrap().details().checkpoint_height))]
+    async fn make_checkpoint(
+        &self,
+        pending_checkpoints: Vec<PendingDWalletCheckpoint>,
+    ) -> anyhow::Result<()> {
+        let last_details = pending_checkpoints.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
         // This is used when there are multiple pending checkpoints to create a single checkpoint
@@ -666,8 +546,10 @@ impl DWalletCheckpointBuilder {
         // Stores the transactions that should be included in the checkpoint. Transactions will be recorded in the checkpoint
         // in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
-        for pending_checkpoint in pendings.into_iter() {
+        for pending_checkpoint in pending_checkpoints.into_iter() {
+            let logger = MPCSessionLogger::new();
             let pending = pending_checkpoint.into_v1();
+            logger.write_pending_checkpoint(&pending);
             // let txn_in_checkpoint = self
             //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
@@ -676,129 +558,10 @@ impl DWalletCheckpointBuilder {
         let new_checkpoint = self
             .create_checkpoints(sorted_tx_effects_included_in_checkpoint, &last_details)
             .await?;
-        self.write_checkpoints(last_details.dwallet_checkpoint_height, new_checkpoint)
+        self.write_checkpoints(last_details.checkpoint_height, new_checkpoint)
             .await?;
         Ok(())
     }
-
-    // Given the root transactions of a pending checkpoint, resolve the transactions should be included in
-    // the checkpoint, and return them in the order they should be included in the checkpoint.
-    // `effects_in_current_checkpoint` tracks the transactions that already exist in the current
-    // checkpoint.
-    // #[instrument(level = "debug", skip_all)]
-    // async fn resolve_checkpoint_transactions(
-    //     &self,
-    //     roots: Vec<MessageDigest>,
-    //     effects_in_current_checkpoint: &mut BTreeSet<TransactionDigest>,
-    // ) -> IkaResult<Vec<MessageData>> {
-    //     self.metrics
-    //         .checkpoint_roots_count
-    //         .inc_by(roots.len() as u64);
-    //
-    //     let root_digests = self
-    //         .epoch_store
-    //         .notify_read_executed_digests(&roots)
-    //         .in_monitored_scope("DWalletCheckpointNotifyDigests")
-    //         .await?;
-    //
-    //     let root_effects = self
-    //         .effects_store
-    //         .notify_read_executed_effects(&root_digests)
-    //         .in_monitored_scope("DWalletCheckpointNotifyRead")
-    //         .await?;
-    //
-    //     let _scope = monitored_scope("DWalletCheckpointBuilder");
-    //
-    //     let consensus_commit_prologue = if self
-    //         .epoch_store
-    //         .protocol_config()
-    //         .prepend_prologue_tx_in_consensus_commit_in_checkpoints()
-    //     {
-    //         // If the roots contains consensus commit prologue transaction, we want to extract it,
-    //         // and put it to the front of the checkpoint.
-    //
-    //         let consensus_commit_prologue = self
-    //             .extract_consensus_commit_prologue(&root_digests, &root_effects)
-    //             .await?;
-    //
-    //         // Get the unincluded depdnencies of the consensus commit prologue. We should expect no
-    //         // other dependencies that haven't been included in any previous checkpoints.
-    //         if let Some((ccp_digest, ccp_effects)) = &consensus_commit_prologue {
-    //             let unsorted_ccp = self.complete_checkpoint_effects(
-    //                 vec![ccp_effects.clone()],
-    //                 effects_in_current_checkpoint,
-    //             )?;
-    //
-    //             // No other dependencies of this consensus commit prologue that haven't been included
-    //             // in any previous checkpoint.
-    //             assert_eq!(unsorted_ccp.len(), 1);
-    //             assert_eq!(unsorted_ccp[0].transaction_digest(), ccp_digest);
-    //         }
-    //         consensus_commit_prologue
-    //     } else {
-    //         None
-    //     };
-    //
-    //     let unsorted =
-    //         self.complete_checkpoint_effects(root_effects, effects_in_current_checkpoint)?;
-    //
-    //     let _scope = monitored_scope("DWalletCheckpointBuilder::causal_sort");
-    //     let mut sorted: Vec<TransactionEffects> = Vec::with_capacity(unsorted.len() + 1);
-    //     if let Some((ccp_digest, ccp_effects)) = consensus_commit_prologue {
-    //         #[cfg(debug_assertions)]
-    //         {
-    //             // When consensus_commit_prologue is extracted, it should not be included in the `unsorted`.
-    //             for tx in unsorted.iter() {
-    //                 assert!(tx.transaction_digest() != &ccp_digest);
-    //             }
-    //         }
-    //         sorted.push(ccp_effects);
-    //     }
-    //     //sorted.extend(CausalOrder::causal_sort(unsorted));
-    //
-    //     #[cfg(msim)]
-    //     {
-    //         // Check consensus commit prologue invariants in sim test.
-    //         self.expensive_consensus_commit_prologue_invariants_check(&root_digests, &sorted);
-    //     }
-    //
-    //     Ok(sorted)
-    // }
-
-    // This function is used to extract the consensus commit prologue digest and effects from the root
-    // transactions.
-    // This function can only be used when prepend_prologue_tx_in_consensus_commit_in_checkpoints is enabled.
-    // The consensus commit prologue is expected to be the first transaction in the roots.
-    // async fn extract_consensus_commit_prologue(
-    //     &self,
-    //     root_digests: &[TransactionDigest],
-    //     root_effects: &[TransactionEffects],
-    // ) -> IkaResult<Option<(TransactionDigest, TransactionEffects)>> {
-    //     let _scope = monitored_scope("DWalletCheckpointBuilder::extract_consensus_commit_prologue");
-    //     if root_digests.is_empty() {
-    //         return Ok(None);
-    //     }
-    //
-    //     // Reads the first transaction in the roots, and checks whether it is a consensus commit prologue
-    //     // transaction.
-    //     // When prepend_prologue_tx_in_consensus_commit_in_checkpoints is enabled, the consensus commit prologue
-    //     // transaction should be the first transaction in the roots written by the consensus handler.
-    //     let first_tx = self
-    //         .state
-    //         .get_transaction_cache_reader()
-    //         .get_transaction_block(&root_digests[0])?
-    //         .expect("Transaction block must exist");
-    //
-    //     Ok(match first_tx.transaction_data().kind() {
-    //         TransactionKind::ConsensusCommitPrologue(_)
-    //         | TransactionKind::ConsensusCommitPrologueV2(_)
-    //         | TransactionKind::ConsensusCommitPrologueV3(_) => {
-    //             assert_eq!(first_tx.digest(), root_effects[0].transaction_digest());
-    //             Some((*first_tx.digest(), root_effects[0].clone()))
-    //         }
-    //         _ => None,
-    //     })
-    // }
 
     #[instrument(level = "debug", skip_all)]
     async fn write_checkpoints(
@@ -816,7 +579,7 @@ impl DWalletCheckpointBuilder {
                 checkpoint_commit_height = height,
                 checkpoint_seq = checkpoint_message.sequence_number,
                 checkpoint_digest = ?checkpoint_message.digest(),
-                "writing checkpoint",
+                "writing dwallet checkpoint",
             );
             //all_tx_digests.extend(contents.iter().map(|digest| digest));
 
@@ -847,45 +610,17 @@ impl DWalletCheckpointBuilder {
             // )?;
         }
 
-        // Durably commit transactions (but not their outputs) to the database.
-        // Called before writing a locally built checkpoint to the CheckpointStore, so that
-        // the inputs of the checkpoint cannot be lost.
-        // These transactions are guaranteed to be final unless this validator
-        // forks (i.e. constructs a checkpoint which will never be certified). In this case
-        // some non-final transactions could be left in the database.
-        //
-        // This is an intermediate solution until we delay commits to the epoch db. After
-        // we have done that, crash recovery will be done by re-processing consensus commits
-        // and pending_consensus_transactions, and this method can be removed.
-        // self.state
-        //     .get_cache_commit()
-        //     .persist_transactions(&all_tx_digests)
-        //     .await?;
-
-        //batch.write()?;
-
-        // for (local_checkpoint, _) in &new_checkpoints {
-        //     if let Some(certified_checkpoint) = self
-        //         .tables
-        //         .certified_checkpoints
-        //         .get(local_checkpoint.sequence_number())?
-        //     {
-        //         self.tables
-        //             .check_for_checkpoint_fork(local_checkpoint, &certified_checkpoint.into());
-        //     }
-        // }
-
         self.notify_aggregator.notify_one();
         self.epoch_store
-            .process_pending_checkpoint(height, new_checkpoints)?;
+            .process_pending_dwallet_checkpoint(height, new_checkpoints)?;
         Ok(())
     }
 
     #[allow(clippy::type_complexity)]
     fn split_checkpoint_chunks(
         &self,
-        messages: Vec<MessageKind>,
-    ) -> anyhow::Result<Vec<Vec<MessageKind>>> {
+        messages: Vec<DWalletMessageKind>,
+    ) -> anyhow::Result<Vec<Vec<DWalletMessageKind>>> {
         let _guard = monitored_scope("DWalletCheckpointBuilder::split_checkpoint_chunks");
         let mut chunks = Vec::new();
         let mut chunk = Vec::new();
@@ -901,7 +636,7 @@ impl DWalletCheckpointBuilder {
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_dwallet_checkpoint_size_bytes);
+                    warn!("Size of single transaction ({size}) exceeds max dwallet checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_dwallet_checkpoint_size_bytes);
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -928,7 +663,7 @@ impl DWalletCheckpointBuilder {
     #[instrument(level = "debug", skip_all)]
     async fn create_checkpoints(
         &self,
-        all_messages: Vec<MessageKind>,
+        all_messages: Vec<DWalletMessageKind>,
         details: &PendingDWalletCheckpointInfo,
     ) -> anyhow::Result<Vec<DWalletCheckpointMessage>> {
         let _scope = monitored_scope("DWalletCheckpointBuilder::create_checkpoints");
@@ -949,69 +684,22 @@ impl DWalletCheckpointBuilder {
         //         }
         //     }
         // }
-        let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq);
+        let mut last_checkpoint_seq = last_checkpoint.as_ref().map(|(seq, _)| *seq).unwrap_or(0);
         // Epoch 0 is where we create the validator set (we are not running Epoch 0).
         // Once we initialize, the active committee starts in Epoch 1.
         // So there is no previous committee in epoch 1.
-        if epoch != 1 && last_checkpoint_seq.is_none() {
-            last_checkpoint_seq = Some(self.previous_epoch_last_dwallet_checkpoint_sequence_number);
+        if epoch != 1 && self.previous_epoch_last_checkpoint_sequence_number > last_checkpoint_seq {
+            last_checkpoint_seq = self.previous_epoch_last_checkpoint_sequence_number;
         }
-        info!(
-            next_dwallet_checkpoint_seq = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0),
-            checkpoint_timestamp = details.timestamp_ms,
-            "Creating dwallet checkpoint(s) for {} messages",
-            all_messages.len(),
-        );
 
-        // let all_digests: Vec<_> = all_messages
-        //     .iter()
-        //     .map(|message| message.digest())
-        //     .collect();
-        // let mut all_effects_and_transaction_sizes = Vec::with_capacity(all_messages.len());
-        // let mut transactions = Vec::with_capacity(all_messages.len());
-        // let mut transaction_keys = Vec::with_capacity(all_messages.len());
-        // {
-        //     let _guard = monitored_scope("DWalletCheckpointBuilder::wait_for_transactions_sequenced");
-        //     debug!(
-        //         ?last_checkpoint_seq,
-        //         "Waiting for {:?} certificates to appear in consensus",
-        //         all_messages.len()
-        //     );
-
-        //     for (effects, transaction_and_size) in all_messages
-        //         .into_iter()
-        //         .zip(transactions_and_sizes.into_iter())
-        //     {
-        //         let (transaction, size) = transaction_and_size
-        //             .unwrap_or_else(|| panic!("Could not find executed transaction {:?}", effects));
-        //         match transaction.inner().transaction_data().kind() {
-        //             TransactionKind::ConsensusCommitPrologue(_)
-        //             | TransactionKind::ConsensusCommitPrologueV2(_)
-        //             | TransactionKind::ConsensusCommitPrologueV3(_)
-        //             | TransactionKind::AuthenticatorStateUpdate(_) => {
-        //                 // ConsensusCommitPrologue and AuthenticatorStateUpdate are guaranteed to be
-        //                 // processed before we reach here.
-        //             }
-        //             TransactionKind::RandomnessStateUpdate(rsu) => {
-        //                 randomness_rounds
-        //                     .insert(*effects.transaction_digest(), rsu.randomness_round);
-        //             }
-        //             _ => {
-        //                 // All other tx should be included in the call to
-        //                 // `consensus_messages_processed_notify`.
-        //                 transaction_keys.push(SequencedConsensusTransactionKey::External(
-        //                     ConsensusTransactionKey::Certificate(*effects.transaction_digest()),
-        //                 ));
-        //             }
-        //         }
-        //         transactions.push(transaction);
-        //         all_effects_and_transaction_sizes.push((effects, size));
-        //     }
-        //
-        //     self.epoch_store
-        //         .consensus_messages_processed_notify(transaction_keys)
-        //         .await?;
-        // }
+        if !all_messages.is_empty() {
+            info!(
+                next_sequence_number = last_checkpoint_seq + 1,
+                checkpoint_timestamp = details.timestamp_ms,
+                "Creating dwallet checkpoint(s) for {} messages",
+                all_messages.len(),
+            );
+        }
 
         let chunks = self.split_checkpoint_chunks(all_messages)?;
         let chunks_count = chunks.len();
@@ -1019,42 +707,44 @@ impl DWalletCheckpointBuilder {
         let mut checkpoints = Vec::with_capacity(chunks_count);
         debug!(
             ?last_checkpoint_seq,
-            "Creating {} checkpoints with {} transactions", chunks_count, total,
+            "Creating {} dwallet checkpoints with {} transactions", chunks_count, total,
         );
 
         for (index, messages) in chunks.into_iter().enumerate() {
             let first_checkpoint_of_epoch = index == 0
-                && (last_checkpoint_seq.is_none()
-                    || last_checkpoint_seq.unwrap()
-                        == self.previous_epoch_last_dwallet_checkpoint_sequence_number);
+                && (last_checkpoint_seq == self.previous_epoch_last_checkpoint_sequence_number);
             if first_checkpoint_of_epoch {
                 self.epoch_store
                     .record_epoch_first_checkpoint_creation_time_metric();
             }
 
-            let sequence_number = last_checkpoint_seq.map(|s| s + 1).unwrap_or(0);
-            last_checkpoint_seq = Some(sequence_number);
+            let sequence_number = last_checkpoint_seq + 1;
+            last_checkpoint_seq = sequence_number;
 
             let timestamp_ms = details.timestamp_ms;
             if let Some((_, last_checkpoint)) = &last_checkpoint {
                 if last_checkpoint.timestamp_ms > timestamp_ms {
-                    error!("Unexpected decrease of checkpoint timestamp, sequence: {}, previous: {}, current: {}",
-                    sequence_number,  last_checkpoint.timestamp_ms, timestamp_ms);
+                    error!(
+                        sequence_number,
+                        previous_timestamp_ms = last_checkpoint.timestamp_ms,
+                        current_timestamp_ms = timestamp_ms,
+                        "Unexpected decrease of dwallet checkpoint timestamp.",
+                    );
                 }
             }
 
             info!(
-                "dWallet Checkpoint sequence: {}, messages count: {}",
                 sequence_number,
-                messages.len()
+                messages_count = messages.len(),
+                "Creating a dwallet checkpoint"
             );
 
-            let dwallet_checkpoint_message =
+            let checkpoint_message =
                 DWalletCheckpointMessage::new(epoch, sequence_number, messages, timestamp_ms);
-            dwallet_checkpoint_message
+            checkpoint_message
                 .report_dwallet_checkpoint_age(&self.metrics.last_created_dwallet_checkpoint_age);
-            last_checkpoint = Some((sequence_number, dwallet_checkpoint_message.clone()));
-            checkpoints.push(dwallet_checkpoint_message);
+            last_checkpoint = Some((sequence_number, checkpoint_message.clone()));
+            checkpoints.push(checkpoint_message);
         }
 
         Ok(checkpoints)
@@ -1177,11 +867,11 @@ impl DWalletCheckpointAggregator {
     }
 
     async fn run(mut self) {
-        info!("Starting CheckpointAggregator");
+        info!("Starting CheckpointDWalletAggregator");
         loop {
             if let Err(e) = self.run_and_notify().await {
                 error!(
-                    "Error while aggregating checkpoint, will retry in 1s: {:?}",
+                    "Error while aggregating dwallet checkpoint, will retry in 1s: {:?}",
                     e
                 );
                 self.metrics.dwallet_checkpoint_errors.inc();
@@ -1214,7 +904,7 @@ impl DWalletCheckpointAggregator {
                 // certified checkpoint via StateSync. In this case, we reset
                 // the current signature aggregator to the next checkpoint to
                 // be certified.
-                if current.dwallet_checkpoint_message.sequence_number < next_to_certify {
+                if current.checkpoint_message.sequence_number < next_to_certify {
                     self.current = None;
                     continue;
                 }
@@ -1222,14 +912,14 @@ impl DWalletCheckpointAggregator {
             } else {
                 let Some(checkpoint_message) = self
                     .epoch_store
-                    .get_built_checkpoint_message(next_to_certify)?
+                    .get_built_dwallet_checkpoint_message(next_to_certify)?
                 else {
                     return Ok(result);
                 };
                 self.current = Some(DWalletCheckpointSignatureAggregator {
                     next_index: 0,
                     digest: checkpoint_message.digest(),
-                    dwallet_checkpoint_message: checkpoint_message,
+                    checkpoint_message,
                     signatures_by_digest: MultiStakeAggregator::new(
                         self.epoch_store.committee().clone(),
                     ),
@@ -1248,44 +938,42 @@ impl DWalletCheckpointAggregator {
                 .pending_dwallet_checkpoint_signatures
                 .safe_iter_with_bounds(
                     Some((
-                        current.dwallet_checkpoint_message.sequence_number,
+                        current.checkpoint_message.sequence_number,
                         current.next_index,
                     )),
                     None,
                 );
             for item in iter {
                 let ((seq, index), data) = item?;
-                if seq != current.dwallet_checkpoint_message.sequence_number {
+                if seq != current.checkpoint_message.sequence_number {
                     debug!(
-                        checkpoint_seq =? current.dwallet_checkpoint_message.sequence_number,
-                        "Not enough checkpoint signatures",
+                        checkpoint_seq =? current.checkpoint_message.sequence_number,
+                        "Not enough dwallet checkpoint signatures",
                     );
                     // No more signatures (yet) for this checkpoint
                     return Ok(result);
                 }
                 debug!(
-                    checkpoint_seq = current.dwallet_checkpoint_message.sequence_number,
-                    "Processing signature for checkpoint (digest: {:?}) from {:?}",
-                    current.dwallet_checkpoint_message.digest(),
-                    data.dwallet_checkpoint_message
-                        .auth_sig()
-                        .authority
-                        .concise()
+                    checkpoint_seq = current.checkpoint_message.sequence_number,
+                    digest=?current.checkpoint_message.digest(),
+                    timestamp=?current.checkpoint_message.timestamp_ms,
+                    messages=?current.checkpoint_message.messages,
+                    sequence_number=?current.checkpoint_message.sequence_number,
+                    epoch=?current.checkpoint_message.epoch,
+                    from=?data.checkpoint_message.auth_sig().authority.concise(),
+                    "Processing signature for dwallet checkpoint.",
                 );
                 self.metrics
                     .dwallet_checkpoint_participation
                     .with_label_values(&[&format!(
                         "{:?}",
-                        data.dwallet_checkpoint_message
-                            .auth_sig()
-                            .authority
-                            .concise()
+                        data.checkpoint_message.auth_sig().authority.concise()
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(data) {
                     let checkpoint_message = VerifiedDWalletCheckpointMessage::new_unchecked(
                         CertifiedDWalletCheckpointMessage::new_from_data_and_sig(
-                            current.dwallet_checkpoint_message.clone(),
+                            current.checkpoint_message.clone(),
                             auth_signature,
                         ),
                     );
@@ -1294,12 +982,10 @@ impl DWalletCheckpointAggregator {
                         .insert_certified_checkpoint(&checkpoint_message)?;
                     self.metrics
                         .last_certified_dwallet_checkpoint
-                        .set(current.dwallet_checkpoint_message.sequence_number as i64);
-                    current
-                        .dwallet_checkpoint_message
-                        .report_dwallet_checkpoint_age(
-                            &self.metrics.last_certified_dwallet_checkpoint_age,
-                        );
+                        .set(current.checkpoint_message.sequence_number as i64);
+                    current.checkpoint_message.report_dwallet_checkpoint_age(
+                        &self.metrics.last_certified_dwallet_checkpoint_age,
+                    );
                     result.push(checkpoint_message.into_inner());
                     self.current = None;
                     continue 'outer;
@@ -1320,7 +1006,7 @@ impl DWalletCheckpointAggregator {
             .next()
             .transpose()?
             .map(|(seq, _)| seq + 1)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 }
 
@@ -1330,11 +1016,11 @@ impl DWalletCheckpointSignatureAggregator {
         &mut self,
         data: DWalletCheckpointSignatureMessage,
     ) -> Result<AuthorityStrongQuorumSignInfo, ()> {
-        let their_digest = *data.dwallet_checkpoint_message.digest();
-        let (_, signature) = data.dwallet_checkpoint_message.into_data_and_sig();
+        let their_digest = *data.checkpoint_message.digest();
+        let (_, signature) = data.checkpoint_message.into_data_and_sig();
         let author = signature.authority;
         let envelope = SignedDWalletCheckpointMessage::new_from_data_and_sig(
-            self.dwallet_checkpoint_message.clone(),
+            self.checkpoint_message.clone(),
             signature,
         );
         match self.signatures_by_digest.insert(their_digest, envelope) {
@@ -1348,8 +1034,8 @@ impl DWalletCheckpointSignatureAggregator {
             } => Err(()),
             InsertResult::Failed { error } => {
                 warn!(
-                    checkpoint_seq = self.dwallet_checkpoint_message.sequence_number,
-                    "Failed to aggregate new signature from validator {:?}: {:?}",
+                    checkpoint_seq = self.checkpoint_message.sequence_number,
+                    "Failed to aggregate new dwallet checkpoint signature from validator {:?}: {:?}",
                     author.concise(),
                     error
                 );
@@ -1362,11 +1048,11 @@ impl DWalletCheckpointSignatureAggregator {
                 if their_digest != self.digest {
                     self.metrics.remote_dwallet_checkpoint_forks.inc();
                     warn!(
-                        checkpoint_seq = self.dwallet_checkpoint_message.sequence_number,
-                        "Validator {:?} has mismatching checkpoint digest {}, we have digest {}",
-                        author.concise(),
-                        their_digest,
-                        self.digest
+                        checkpoint_seq = self.checkpoint_message.sequence_number,
+                        from=?author.concise(),
+                        ?their_digest,
+                        our_digest=?self.digest,
+                        "Validator has mismatching dwallet checkpoint digest than what we have.",
                     );
                     return Err(());
                 }
@@ -1381,230 +1067,7 @@ impl DWalletCheckpointSignatureAggregator {
             }
         }
     }
-
-    // /// Check if there is a split brain condition in checkpoint signature aggregation, defined
-    // /// as any state wherein it is no longer possible to achieve quorum on a checkpoint proposal,
-    // /// irrespective of the outcome of any outstanding votes.
-    // fn check_for_split_brain(&self) {
-    //     debug!(
-    //         checkpoint_seq = self.summary.sequence_number,
-    //         "Checking for split brain condition"
-    //     );
-    //     if self.signatures_by_digest.quorum_unreachable() {
-    //         // TODO: at this point we should immediately halt processing
-    //         // of new transaction certificates to avoid building on top of
-    //         // forked output
-    //         // self.halt_all_execution();
-    //
-    //         let digests_by_stake_messages = self
-    //             .signatures_by_digest
-    //             .get_all_unique_values()
-    //             .into_iter()
-    //             .sorted_by_key(|(_, (_, stake))| -(*stake as i64))
-    //             .map(|(digest, (_authorities, total_stake))| {
-    //                 format!("{:?} (total stake: {})", digest, total_stake)
-    //             })
-    //             .collect::<Vec<String>>();
-    //         error!(
-    //             checkpoint_seq = self.summary.sequence_number,
-    //             "Split brain detected in checkpoint signature aggregation! Remaining stake: {:?}, Digests by stake: {:?}",
-    //             self.signatures_by_digest.uncommitted_stake(),
-    //             digests_by_stake_messages,
-    //         );
-    //         self.metrics.split_brain_checkpoint_forks.inc();
-    //
-    //         let all_unique_values = self.signatures_by_digest.get_all_unique_values();
-    //         let local_summary = self.summary.clone();
-    //         let state = self.state.clone();
-    //         let tables = self.tables.clone();
-    //
-    //         tokio::spawn(async move {
-    //             diagnose_split_brain(all_unique_values, local_summary, state, tables).await;
-    //         });
-    //     }
-    // }
 }
-
-// /// Create data dump containing relevant data for diagnosing cause of the
-// /// split brain by querying one disagreeing validator for full checkpoint contents.
-// /// To minimize peer chatter, we only query one validator at random from each
-// /// disagreeing faction, as all honest validators that participated in this round may
-// /// inevitably run the same process.
-// async fn diagnose_split_brain(
-//     all_unique_values: BTreeMap<CheckpointDigest, (Vec<AuthorityName>, StakeUnit)>,
-//     local_summary: CheckpointSummary,
-//     state: Arc<AuthorityState>,
-//     tables: Arc<CheckpointStore>,
-// ) {
-//     debug!(
-//         checkpoint_seq = local_summary.sequence_number,
-//         "Running split brain diagnostics..."
-//     );
-//     let time = Utc::now();
-//     // collect one random disagreeing validator per differing digest
-//     let digest_to_validator = all_unique_values
-//         .iter()
-//         .filter_map(|(digest, (validators, _))| {
-//             if *digest != local_summary.digest() {
-//                 let random_validator = validators.choose(&mut OsRng).unwrap();
-//                 Some((*digest, *random_validator))
-//             } else {
-//                 None
-//             }
-//         })
-//         .collect::<HashMap<_, _>>();
-//     if digest_to_validator.is_empty() {
-//         panic!(
-//             "Given split brain condition, there should be at \
-//                 least one validator that disagrees with local signature"
-//         );
-//     }
-//
-//     let epoch_store = state.load_epoch_store_one_call_per_task();
-//     let committee = epoch_store
-//         .epoch_start_state()
-//         .get_ika_committee_with_network_metadata();
-//     let network_config = default_mysten_network_config();
-//     let network_clients =
-//         make_network_authority_clients_with_network_config(&committee, &network_config);
-//
-//     // Query all disagreeing validators
-//     let response_futures = digest_to_validator
-//         .values()
-//         .cloned()
-//         .map(|validator| {
-//             let client = network_clients
-//                 .get(&validator)
-//                 .expect("Failed to get network client");
-//             let request = CheckpointRequestV2 {
-//                 sequence_number: Some(local_summary.sequence_number),
-//                 request_content: true,
-//                 certified: false,
-//             };
-//             client.handle_checkpoint_v2(request)
-//         })
-//         .collect::<Vec<_>>();
-//
-//     let digest_name_pair = digest_to_validator.iter();
-//     let response_data = futures::future::join_all(response_futures)
-//         .await
-//         .into_iter()
-//         .zip(digest_name_pair)
-//         .filter_map(|(response, (digest, name))| match response {
-//             Ok(response) => match response {
-//                 CheckpointResponseV2 {
-//                     checkpoint: Some(CheckpointSummaryResponse::Pending(summary)),
-//                     contents: Some(contents),
-//                 } => Some((*name, *digest, summary, contents)),
-//                 CheckpointResponseV2 {
-//                     checkpoint: Some(CheckpointSummaryResponse::Certified(_)),
-//                     contents: _,
-//                 } => {
-//                     panic!("Expected pending checkpoint, but got certified checkpoint");
-//                 }
-//                 CheckpointResponseV2 {
-//                     checkpoint: None,
-//                     contents: _,
-//                 } => {
-//                     error!(
-//                         "Summary for checkpoint {:?} not found on validator {:?}",
-//                         local_summary.sequence_number, name
-//                     );
-//                     None
-//                 }
-//                 CheckpointResponseV2 {
-//                     checkpoint: _,
-//                     contents: None,
-//                 } => {
-//                     error!(
-//                         "Contents for checkpoint {:?} not found on validator {:?}",
-//                         local_summary.sequence_number, name
-//                     );
-//                     None
-//                 }
-//             },
-//             Err(e) => {
-//                 error!(
-//                     "Failed to get checkpoint contents from validator for fork diagnostics: {:?}",
-//                     e
-//                 );
-//                 None
-//             }
-//         })
-//         .collect::<Vec<_>>();
-//
-//     let local_checkpoint_contents = tables
-//         .get_checkpoint_contents(&local_summary.content_digest)
-//         .unwrap_or_else(|_| {
-//             panic!(
-//                 "Could not find checkpoint contents for digest {:?}",
-//                 local_summary.digest()
-//             )
-//         })
-//         .unwrap_or_else(|| {
-//             panic!(
-//                 "Could not find local full checkpoint contents for checkpoint {:?}, digest {:?}",
-//                 local_summary.sequence_number,
-//                 local_summary.digest()
-//             )
-//         });
-//     let local_contents_text = format!("{local_checkpoint_contents:?}");
-//
-//     let local_summary_text = format!("{local_summary:?}");
-//     let local_validator = state.name.concise();
-//     let diff_patches = response_data
-//         .iter()
-//         .map(|(name, other_digest, other_summary, contents)| {
-//             let other_contents_text = format!("{contents:?}");
-//             let other_summary_text = format!("{other_summary:?}");
-//             let (local_transactions, local_effects): (Vec<_>, Vec<_>) = local_checkpoint_contents
-//                 .enumerate_transactions(&local_summary)
-//                 .map(|(_, exec_digest)| (exec_digest.transaction, exec_digest.effects))
-//                 .unzip();
-//             let (other_transactions, other_effects): (Vec<_>, Vec<_>) = contents
-//                 .enumerate_transactions(other_summary)
-//                 .map(|(_, exec_digest)| (exec_digest.transaction, exec_digest.effects))
-//                 .unzip();
-//             let summary_patch = create_patch(&local_summary_text, &other_summary_text);
-//             let contents_patch = create_patch(&local_contents_text, &other_contents_text);
-//             let local_transactions_text = format!("{local_transactions:#?}");
-//             let other_transactions_text = format!("{other_transactions:#?}");
-//             let transactions_patch =
-//                 create_patch(&local_transactions_text, &other_transactions_text);
-//             let local_effects_text = format!("{local_effects:#?}");
-//             let other_effects_text = format!("{other_effects:#?}");
-//             let effects_patch = create_patch(&local_effects_text, &other_effects_text);
-//             let seq_number = local_summary.sequence_number;
-//             let local_digest = local_summary.digest();
-//             let other_validator = name.concise();
-//             format!(
-//                 "Checkpoint: {seq_number:?}\n\
-//                 Local validator (original): {local_validator:?}, digest: {local_digest:?}\n\
-//                 Other validator (modified): {other_validator:?}, digest: {other_digest:?}\n\n\
-//                 Summary Diff: \n{summary_patch}\n\n\
-//                 Contents Diff: \n{contents_patch}\n\n\
-//                 Transactions Diff: \n{transactions_patch}\n\n\
-//                 Effects Diff: \n{effects_patch}",
-//             )
-//         })
-//         .collect::<Vec<_>>()
-//         .join("\n\n\n");
-//
-//     let header = format!(
-//         "Checkpoint Fork Dump - Authority {local_validator:?}: \n\
-//         Datetime: {time}",
-//     );
-//     let fork_logs_text = format!("{header}\n\n{diff_patches}\n\n");
-//     let path = tempfile::tempdir()
-//         .expect("Failed to create tempdir")
-//         .into_path()
-//         .join(Path::new("checkpoint_fork_dump.txt"));
-//     let mut file = File::create(path).unwrap();
-//     write!(file, "{}", fork_logs_text).unwrap();
-//     debug!("{}", fork_logs_text);
-//
-//     fail_point!("split_brain_reached");
-// }
 
 pub trait DWalletCheckpointServiceNotify {
     fn notify_checkpoint_signature(
@@ -1638,7 +1101,8 @@ impl DWalletCheckpointService {
         previous_epoch_last_checkpoint_sequence_number: u64,
     ) -> (Arc<Self>, JoinSet<()> /* Handle to tasks */) {
         info!(
-            "Starting checkpoint service with {max_messages_per_checkpoint} max_messages_per_checkpoint and {max_checkpoint_size_bytes} max_checkpoint_size_bytes"
+            max_messages_per_checkpoint,
+            max_checkpoint_size_bytes, "Starting dwallet checkpoint service"
         );
         let notify_builder = Arc::new(Notify::new());
         let notify_aggregator = Arc::new(Notify::new());
@@ -1709,12 +1173,8 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         epoch_store: &AuthorityPerEpochStore,
         info: &DWalletCheckpointSignatureMessage,
     ) -> IkaResult {
-        let sequence = info.dwallet_checkpoint_message.sequence_number;
-        let signer = info
-            .dwallet_checkpoint_message
-            .auth_sig()
-            .authority
-            .concise();
+        let sequence = info.checkpoint_message.sequence_number;
+        let signer = info.checkpoint_message.auth_sig().authority.concise();
 
         if let Some(highest_verified_checkpoint) = self
             .tables
@@ -1724,7 +1184,7 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
             if sequence <= highest_verified_checkpoint {
                 debug!(
                     checkpoint_seq = sequence,
-                    "Ignore checkpoint signature from {} - already certified", signer,
+                    "Ignore dwallet checkpoint signature from {} - already certified", signer,
                 );
                 self.metrics
                     .last_ignored_dwallet_checkpoint_signature_received
@@ -1734,8 +1194,8 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         }
         debug!(
             checkpoint_seq = sequence,
-            "Received checkpoint signature, digest {} from {}",
-            info.dwallet_checkpoint_message.digest(),
+            "Received dwallet checkpoint signature, digest {} from {}",
+            info.checkpoint_message.digest(),
             signer,
         );
         self.metrics

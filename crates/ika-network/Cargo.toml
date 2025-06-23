@@ -35,7 +35,7 @@ tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 futures.workspace = true
 tap.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 anyhow.workspace = true
 prometheus.workspace = true
 mysten-metrics.workspace = true

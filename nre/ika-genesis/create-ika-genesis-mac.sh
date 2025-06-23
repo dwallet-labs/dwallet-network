@@ -26,12 +26,12 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=115
+export VALIDATOR_NUM=75
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 #export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta.devnet.ika-network.net"
+export SUBDOMAIN="beta.devnet2.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -349,7 +349,7 @@ request_and_generate_yaml() {
 }
 
 # Concurrency control (compatible with bash < 4.3)
-MAX_JOBS=5
+MAX_JOBS=10
 JOB_COUNT=0
 
 for entry in "${VALIDATORS_ARRAY[@]}"; do

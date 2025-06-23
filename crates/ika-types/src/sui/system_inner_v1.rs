@@ -63,12 +63,12 @@ pub struct SystemInnerV1 {
     pub validator_set: ValidatorSetV1,
     pub epoch_duration_ms: u64,
     pub stake_subsidy_start_epoch: u64,
-    pub ika_treasury: ProtocolTreasuryV1,
+    pub protocol_treasury: ProtocolTreasuryV1,
     pub epoch_start_timestamp_ms: u64,
-    pub last_processed_system_checkpoint_sequence_number: Option<u64>,
-    pub previous_epoch_last_system_checkpoint_sequence_number: u64,
+    pub last_processed_checkpoint_sequence_number: u64,
+    pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub total_messages_processed: u64,
-    pub computation_reward: Balance,
+    pub remaining_rewards: Balance,
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_network_encryption_keys: Vec<DWalletNetworkEncryptionKeyCap>,
@@ -152,7 +152,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub active_committee: BlsCommittee,
     pub previous_committee: BlsCommittee,
     pub total_messages_processed: u64,
-    pub last_processed_checkpoint_sequence_number: Option<u64>,
+    pub last_processed_checkpoint_sequence_number: u64,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub support_config: SupportConfig,
     pub extra_fields: Bag,
@@ -199,12 +199,12 @@ impl SystemInnerTrait for SystemInnerV1 {
         self.next_protocol_version
     }
 
-    fn last_processed_system_checkpoint_sequence_number(&self) -> Option<u64> {
-        self.last_processed_system_checkpoint_sequence_number
+    fn last_processed_checkpoint_sequence_number(&self) -> u64 {
+        self.last_processed_checkpoint_sequence_number
     }
 
-    fn previous_epoch_last_system_checkpoint_sequence_number(&self) -> u64 {
-        self.previous_epoch_last_system_checkpoint_sequence_number
+    fn previous_epoch_last_checkpoint_sequence_number(&self) -> u64 {
+        self.previous_epoch_last_checkpoint_sequence_number
     }
 
     fn upgrade_caps(&self) -> &Vec<UpgradeCap> {
