@@ -103,15 +103,6 @@ impl DWalletMPCService {
     async fn load_missed_events(&mut self) {
         let epoch_store = self.epoch_store.clone();
         loop {
-            // let Ok(events) = self
-            //     .sui_client
-            //     .get_dwallet_mpc_missed_events(epoch_store.epoch())
-            //     .await
-            // else {
-            //     error!("failed to fetch missed dWallet MPC events from Sui");
-            //     tokio::time::sleep(Duration::from_secs(2)).await;
-            //     continue;
-            // };
             match self
                 .sui_client
                 .get_dwallet_mpc_missed_events(epoch_store.epoch())
