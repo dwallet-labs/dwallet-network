@@ -821,7 +821,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             sui_client,
-            end_of_publish_receiver
+            end_of_publish_receiver,
         )
         .await
     }
@@ -881,7 +881,7 @@ impl IkaNode {
             new_events_receiver,
             next_epoch_committee_receiver,
             dwallet_mpc_metrics.clone(),
-            end_of_publish_receiver
+            end_of_publish_receiver,
         )
         .await;
         // This verifier is in sync with the consensus,

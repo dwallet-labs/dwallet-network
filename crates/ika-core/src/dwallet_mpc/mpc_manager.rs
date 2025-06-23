@@ -20,20 +20,20 @@ use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
     MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
+use k256::pkcs8::der::Encode;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
-use k256::pkcs8::der::Encode;
 use tokio::sync::watch;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
-use ika_types::messages_consensus::ConsensusTransaction;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -126,11 +126,11 @@ impl DWalletMPCManager {
             node_config.clone(),
             dwallet_mpc_metrics,
         )
-            .unwrap_or_else(|err| {
-                error!(?err, "Failed to create DWalletMPCManager.");
-                // We panic on purpose, this should not happen.
-                panic!("DWalletMPCManager initialization failed: {:?}", err);
-            })
+        .unwrap_or_else(|err| {
+            error!(?err, "Failed to create DWalletMPCManager.");
+            // We panic on purpose, this should not happen.
+            panic!("DWalletMPCManager initialization failed: {:?}", err);
+        })
     }
 
     pub fn try_new(
@@ -197,13 +197,19 @@ impl DWalletMPCManager {
 
     pub(crate) async fn send_end_of_publish(&self) -> DwalletMPCResult<()> {
         let end_of_publish_session_id = [0u8; 32];
-        let output = ConsensusTransaction::new_dwallet_mpc_output(self.epoch_store()?.name, "end_of_publish".to_string().into_bytes(), SessionInfo {
-            session_type: SessionType::System,
-            session_identifier: end_of_publish_session_id,
-            mpc_round: MPCProtocolInitData::EndOfPublish,
-            epoch: self.epoch_id,
-        });
-        self.consensus_adapter.submit_to_consensus(&vec![output], &self.epoch_store()?).await?;
+        let output = ConsensusTransaction::new_dwallet_mpc_output(
+            self.epoch_store()?.name,
+            "end_of_publish".to_string().into_bytes(),
+            SessionInfo {
+                session_type: SessionType::System,
+                session_identifier: end_of_publish_session_id,
+                mpc_round: MPCProtocolInitData::EndOfPublish,
+                epoch: self.epoch_id,
+            },
+        );
+        self.consensus_adapter
+            .submit_to_consensus(&vec![output], &self.epoch_store()?)
+            .await?;
         Ok(())
     }
 

@@ -219,7 +219,7 @@ impl DWalletMPCService {
                     error!(?err, "failed to send end of publish message");
                 }
             }
-            
+
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
                     authority=?self.epoch_store.name,
