@@ -208,6 +208,7 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
+            _ => None
         };
         match &signature_alg {
             None => "".to_string(),
