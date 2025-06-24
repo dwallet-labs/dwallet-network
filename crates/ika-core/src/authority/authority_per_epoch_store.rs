@@ -499,6 +499,11 @@ impl AuthorityEpochTables {
 }
 
 impl AuthorityPerEpochStore {
+    fn should_accept_tx(&self) -> bool {
+        let reconfig_state = self.reconfig_state.read();
+        !matches!(&reconfig_state.status, &ReconfigCertStatus::RejectAllTx)
+    }
+
     #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
     pub fn new(
         name: AuthorityName,
@@ -1310,8 +1315,8 @@ impl AuthorityPerEpochStore {
 
         let cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
             BTreeMap::new();
-        let mut reconfig_state = self.reconfig_state.write();
-        if !matches!(&reconfig_state.status, &ReconfigCertStatus::RejectAllTx) {
+
+        if self.should_accept_tx() {
             for tx in transactions {
                 let key = tx.0.transaction.key();
                 let mut ignored = false;
@@ -1362,6 +1367,7 @@ impl AuthorityPerEpochStore {
                         verified_certificates.push_back(DWalletMessageKind::EndOfPublish);
                         verified_system_checkpoint_certificates
                             .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                        let mut reconfig_state = self.reconfig_state.write();
                         reconfig_state.status = ReconfigCertStatus::RejectAllTx;
                     }
                 }
