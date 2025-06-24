@@ -1479,13 +1479,12 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
                 ..
             }) => {
-                self
-                    .process_dwallet_mpc_output(
-                        *certificate_author,
-                        *session_info.clone(),
-                        output.clone(),
-                    )
-                    .await
+                self.process_dwallet_mpc_output(
+                    *certificate_author,
+                    *session_info.clone(),
+                    output.clone(),
+                )
+                .await
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
