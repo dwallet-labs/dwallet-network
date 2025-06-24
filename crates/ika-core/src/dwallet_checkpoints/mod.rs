@@ -396,6 +396,7 @@ pub struct DWalletCheckpointBuilder {
     max_messages_per_dwallet_checkpoint: usize,
     max_dwallet_checkpoint_size_bytes: usize,
     previous_epoch_last_checkpoint_sequence_number: u64,
+    received_end_of_publish: bool
 }
 
 pub struct DWalletCheckpointAggregator {
@@ -448,6 +449,7 @@ impl DWalletCheckpointBuilder {
             max_messages_per_dwallet_checkpoint,
             max_dwallet_checkpoint_size_bytes,
             previous_epoch_last_checkpoint_sequence_number,
+            received_end_of_publish: false,
         }
     }
 
@@ -531,7 +533,10 @@ impl DWalletCheckpointBuilder {
     }
 
     #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
-    async fn make_checkpoint(&self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
+    async fn make_checkpoint(&mut self, pendings: Vec<PendingDWalletCheckpoint>) -> anyhow::Result<()> {
+        if self.received_end_of_publish {
+            return Ok(())
+        }
         let last_details = pendings.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
@@ -558,6 +563,14 @@ impl DWalletCheckpointBuilder {
             if message.is_flow_end_message() {
                 let message = sorted_tx_effects_included_in_checkpoint.remove(i);
                 sorted_tx_effects_included_in_checkpoint.push(message);
+            } else if matches!(message, DWalletMessageKind::EndOfPublish) {
+                self.received_end_of_publish = true;
+                let message = sorted_tx_effects_included_in_checkpoint.remove(i);
+                sorted_tx_effects_included_in_checkpoint.clear();
+                sorted_tx_effects_included_in_checkpoint.push(message);
+                // Received an end of publish message, it should be the last message in the checkpoint 
+                // and no more messages should be added to the checkpoint.
+                break;
             }
         }
 
