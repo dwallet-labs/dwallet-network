@@ -1,10 +1,12 @@
 # Parallel Performance Tests
 
-This test suite provides comprehensive parallel performance testing for dWallet MPC operations including DKG, Presign, Sign, and full flow operations.
+This test suite provides comprehensive parallel performance testing for dWallet MPC operations
+including DKG, Presign, Sign, and full flow operations.
 
 ## Overview
 
 The parallel performance tests are designed to:
+
 1. **Run DKG X Times** - Execute multiple DKG operations in parallel
 2. **Run DKG once and Presign X times** - Create one dWallet and run multiple Presign operations
 3. **Run DKG once, Presign once, Sign X times** - Setup once and run multiple Sign operations
@@ -34,43 +36,53 @@ npm test parallel-performance.test.ts
 ## Test Cases
 
 ### 1. Parallel DKG Test
+
 ```typescript
-it('should run DKG X times in parallel')
+it('should run DKG X times in parallel');
 ```
+
 - Creates X dWallets simultaneously
 - Measures individual DKG operation times
 - Reports success rate and performance metrics
 
 ### 2. Single DKG + Parallel Presign Test
+
 ```typescript
-it('should run DKG once and Presign X times in parallel')
+it('should run DKG once and Presign X times in parallel');
 ```
+
 - Creates one dWallet
 - Runs X Presign operations in parallel using the same dWallet
 - Measures Presign performance when sharing the same dWallet
 
 ### 3. Single Setup + Parallel Sign Test
+
 ```typescript
-it('should run DKG once, Presign once, and Sign X times in parallel')
+it('should run DKG once, Presign once, and Sign X times in parallel');
 ```
+
 - Creates one dWallet and one Presign
 - Runs X Sign operations in parallel using the same setup
 - Each Sign operation uses a unique message
 - Measures Sign performance with shared setup
 
 ### 4. Parallel Full Flow Test
+
 ```typescript
-it('should run full flow (DKG + Presign + Sign) X times in parallel')
+it('should run full flow (DKG + Presign + Sign) X times in parallel');
 ```
+
 - Runs complete DKG → Presign → Sign flow X times in parallel
 - Each operation is completely independent
 - Measures end-to-end performance
 - Uses double timeout due to complexity
 
 ### 5. Performance Comparison Test
+
 ```typescript
-it('should run comprehensive performance comparison')
+it('should run comprehensive performance comparison');
 ```
+
 - Runs a smaller number of each operation type
 - Provides side-by-side performance comparison
 - Useful for understanding relative performance characteristics
@@ -78,6 +90,7 @@ it('should run comprehensive performance comparison')
 ## Output Format
 
 ### Individual Operation Logging
+
 ```
 [DKG] #1: SUCCESS - 2341ms
 [DKG] #2: SUCCESS - 2156ms
@@ -85,6 +98,7 @@ it('should run comprehensive performance comparison')
 ```
 
 ### Performance Summary
+
 ```
 📊 DKG Performance Summary:
    Total Operations: 8
@@ -102,6 +116,7 @@ it('should run comprehensive performance comparison')
 ```
 
 ### Comprehensive Comparison
+
 ```
 📊 COMPREHENSIVE PERFORMANCE COMPARISON:
 =====================================
@@ -113,6 +128,7 @@ Sign    : avg=892ms, min=756ms, max=1023ms
 ## Performance Metrics
 
 Each test tracks the following metrics:
+
 - **Operation Type** - DKG, Presign, Sign, or Full Flow
 - **Individual Timing** - Start time, end time, duration for each operation
 - **Success Rate** - Percentage of successful operations
@@ -124,18 +140,21 @@ Each test tracks the following metrics:
 ## Usage Recommendations
 
 ### Development Testing
+
 ```bash
 # Quick test with fewer operations
 PARALLEL_COUNT=2 npm test parallel-performance.test.ts
 ```
 
 ### Load Testing
+
 ```bash
 # Stress test with many parallel operations
 PARALLEL_COUNT=20 TEST_TIMEOUT=1800000 npm test parallel-performance.test.ts
 ```
 
 ### CI/CD Integration
+
 ```bash
 # Moderate load for continuous integration
 PARALLEL_COUNT=4 TEST_TIMEOUT=900000 npm test parallel-performance.test.ts
@@ -144,18 +163,21 @@ PARALLEL_COUNT=4 TEST_TIMEOUT=900000 npm test parallel-performance.test.ts
 ## Interpreting Results
 
 ### Success Rate
+
 - **>95%**: Excellent - System handling load well
 - **85-95%**: Good - Some occasional failures expected
 - **70-85%**: Concerning - May indicate resource constraints
 - **<70%**: Poor - System struggling with load
 
 ### Performance Trends
+
 - **DKG**: Typically the slowest operation (2-5 seconds)
 - **Presign**: Medium duration (1-3 seconds)
 - **Sign**: Fastest operation (0.5-1.5 seconds)
 - **Full Flow**: Sum of all three plus overhead
 
 ### Throughput Analysis
+
 - Higher throughput indicates better parallel processing capability
 - Compare wall clock time vs sum of individual operations
 - Lower ratios indicate better parallelization efficiency
@@ -165,11 +187,13 @@ PARALLEL_COUNT=4 TEST_TIMEOUT=900000 npm test parallel-performance.test.ts
 ### Common Issues
 
 1. **Network Timeouts**
+
    - Increase `TEST_TIMEOUT`
    - Reduce `PARALLEL_COUNT`
    - Check network connectivity
 
 2. **Resource Exhaustion**
+
    - Reduce `PARALLEL_COUNT`
    - Monitor system resources (CPU, memory, network)
    - Check for rate limiting
@@ -182,11 +206,13 @@ PARALLEL_COUNT=4 TEST_TIMEOUT=900000 npm test parallel-performance.test.ts
 ### Performance Optimization
 
 1. **Optimal Parallel Count**
+
    - Start with 4-8 parallel operations
    - Increase gradually while monitoring success rate
    - Find the sweet spot where throughput peaks
 
 2. **Timeout Tuning**
+
    - Set timeout 2-3x expected operation time
    - Account for network variability
    - Full flow tests need longer timeouts
@@ -209,4 +235,5 @@ Add to your test pipeline:
     NODE_ENV: test
 ```
 
-The tests are designed to be robust and provide meaningful performance insights for dWallet MPC operations at scale. 
+The tests are designed to be robust and provide meaningful performance insights for dWallet MPC
+operations at scale.
