@@ -60,8 +60,10 @@ impl SuiConnectorService {
         sui_client: Arc<SuiClient<SuiSdkClient>>,
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        next_epoch_committee_sender: watch::Sender<Committee>,
+        network_keys_sender: Option<
+            watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        >,
+        next_epoch_committee_sender: Option<watch::Sender<Committee>>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(

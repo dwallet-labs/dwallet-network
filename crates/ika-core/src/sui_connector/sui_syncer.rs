@@ -56,22 +56,29 @@ where
     pub async fn run(
         self,
         query_interval: Duration,
-        next_epoch_committee_sender: Sender<Committee>,
-        network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_sender: Option<Sender<Committee>>,
+        network_keys_sender: Option<Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        tokio::spawn(Self::sync_next_committee(
-            sui_client_clone.clone(),
-            next_epoch_committee_sender,
-        ));
-        // Todo (#810): Check the usage adding the task handle to the task_handles vector.
-        tokio::spawn(Self::sync_dwallet_network_keys(
-            sui_client_clone,
-            network_keys_sender,
-        ));
+        if let Some(next_epoch_committee_sender) = next_epoch_committee_sender {
+            info!("Starting next epoch committee sync task");
+            tokio::spawn(Self::sync_next_committee(
+                sui_client_clone.clone(),
+                next_epoch_committee_sender,
+            ));
+        }
+
+        if let Some(network_keys_sender) = network_keys_sender {
+            info!("Starting network keys sync task");
+            tokio::spawn(Self::sync_dwallet_network_keys(
+                sui_client_clone.clone(),
+                network_keys_sender,
+            ));
+        }
+
         for module in self.modules {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
