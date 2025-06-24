@@ -157,6 +157,7 @@ impl DWalletMessageKind {
             DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
                 "SetGasFeeReimbursementSuiSystemCallValue"
             }
+            DWalletMessageKind::EndOfPublish => "EndOfPublish",
         }
     }
 
@@ -224,6 +225,9 @@ impl Display for DWalletMessageKind {
                     "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
                     value
                 )?;
+            }
+            DWalletMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
         write!(f, "{}", writer)
