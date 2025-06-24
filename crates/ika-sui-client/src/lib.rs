@@ -1047,7 +1047,11 @@ impl SuiClientInner for SuiSdkClient {
             || key.state
                 == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
                     is_first: true,
-                }) {
+                })
+            || (key.reconfiguration_public_outputs.size == 1
+                && key.state
+                    == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration)
+        {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
