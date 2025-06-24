@@ -1047,9 +1047,10 @@ impl SuiClientInner for SuiSdkClient {
         // until the epoch is switched, since it will be endlessly waiting for the network key.
         // Warning: If we change the Move contract in the future to delete the reconfiguration outputs,
         // this function will error again.
-        let first_reconfiguration_was_completed = key.reconfiguration_public_outputs.size == 1
-            && key.state
-                == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration;
+        let first_reconfiguration_for_next_epoch_was_completed =
+            key.reconfiguration_public_outputs.size == 1
+                && key.state
+                    == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration;
         let awaiting_first_reconfiguration_to_complete = key.state
             == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
                 is_first: true,
@@ -1061,7 +1062,7 @@ impl SuiClientInner for SuiSdkClient {
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
             || awaiting_first_reconfiguration_to_complete
-            || first_reconfiguration_was_completed
+            || first_reconfiguration_for_next_epoch_was_completed
         {
             info!(
                 key_id = ?key.id,
