@@ -571,7 +571,8 @@ impl DWalletMPCManager {
                     pending_for_computation=pending_for_computation,
                     avliable_cores=?self.cryptographic_computations_orchestrator.available_cores_for_cryptographic_computations,
                     currently_running_sessions_count=?self.cryptographic_computations_orchestrator.currently_running_sessions_count,
-                    "No available CPUs for cryptographic computations, waiting for a free CPU");
+                    "No available CPUs for cryptographic computations, waiting for a free CPU"
+                );
                 return;
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
