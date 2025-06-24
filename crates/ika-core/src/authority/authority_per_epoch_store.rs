@@ -1339,6 +1339,11 @@ impl AuthorityPerEpochStore {
                     ignored = true;
                     // filter_roots = true;
                 }
+                ConsensusCertificateResult::EndOfPublish => {
+                    verified_certificates.push_back(DWalletMessageKind::EndOfPublish);
+                    verified_system_checkpoint_certificates
+                        .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                }
             }
             if !ignored {
                 output.record_consensus_message_processed(key.clone());

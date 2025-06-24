@@ -58,6 +58,7 @@ pub enum SystemCheckpointMessageKind {
         /// if None, the upgrade approval will be deleted.
         digest: Option<Vec<u8>>,
     },
+    EndOfPublish
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
