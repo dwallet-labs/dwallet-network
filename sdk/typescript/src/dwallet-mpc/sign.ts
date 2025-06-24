@@ -151,9 +151,9 @@ export async function prepareSignTransaction(
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
+	console.time('create_sign_centralized_output');
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
@@ -209,7 +209,6 @@ export async function signWithImportedDWallet(
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
@@ -285,7 +284,6 @@ export async function createUnverifiedPartialUserSignatureCap(
 	const tx = new Transaction();
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,

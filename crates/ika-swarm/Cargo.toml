@@ -11,7 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-rand.workspace = true
+rand = "0.8" # use old version for compatability with fastcrypto
 tracing.workspace = true
 tokio = { workspace = true, features = ["full"] }
 futures.workspace = true

@@ -40,34 +40,36 @@ const PARAMS_MESSAGE_INTENT: vector<u8> = vector[2, 0, 0];
 // System checkpoint message data type constants corresponding to system parameters
 // Note: the order of these fields, and the number must correspond to the Rust code in
 // `crates/ika-types/src/messages_system_checkpoints.rs`.
-const SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u64 = 0;
-const SET_EPOCH_DURATION_MS_MESSAGE_TYPE: u64 = 1;
-const SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u64 = 2;
-const SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u64 = 3;
-const SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u64 = 4;
-const SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 5;
-const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u64 = 6;
-const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u64 = 7;
-const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u64 = 8;
-const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u64 = 9;
-const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u64 = 10;
+const SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE: u32 = 0;
+const SET_EPOCH_DURATION_MS_MESSAGE_TYPE: u32 = 1;
+const SET_STAKE_SUBSIDY_START_EPOCH_MESSAGE_TYPE: u32 = 2;
+const SET_STAKE_SUBSIDY_RATE_MESSAGE_TYPE: u32 = 3;
+const SET_STAKE_SUBSIDY_PERIOD_LENGTH_MESSAGE_TYPE: u32 = 4;
+const SET_MIN_VALIDATOR_COUNT_MESSAGE_TYPE: u32 = 5;
+const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u32 = 6;
+const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u32 = 7;
+const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u32 = 8;
+const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u32 = 9;
+const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 10;
 
 // === Errors ===
 
+/// The system has not reached the end epoch time.
 const EHaveNotReachedEndEpochTime: u64 = 0;
+/// The active BLS committee must be initialized.
 const EActiveBlsCommitteeMustInitialize: u64 = 1;
-const EIncorrectEpochInIkaSystemCheckpoint: u64 = 2;
-const EWrongIkaSystemCheckpointSequenceNumber: u64 = 3;
+/// The epoch in the system checkpoint is incorrect.
+const EIncorrectEpochInSystemCheckpoint: u64 = 2;
+/// The sequence number in the system checkpoint is incorrect.
+const EWrongSystemCheckpointSequenceNumber: u64 = 3;
+/// The approved upgrade is not found.
 const EApprovedUpgradeNotFound: u64 = 4;
-
-#[error]
-const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
-
-#[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
-
-#[error]
-const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+/// The protocol cap is unauthorized.
+const EUnauthorizedProtocolCap: u64 = 5;
+/// Too early for initialization time or already initialized.
+const ECannotInitialize: u64 = 6;
+/// The system has not reached the mid epoch time.
+const EHaveNotReachedMidEpochTime: u64 = 7;
 
 // === Structs ===
 
@@ -94,7 +96,7 @@ public struct SystemInner has store {
     /// Unix timestamp of the current epoch start.
     epoch_start_timestamp_ms: u64,
     /// The last processed checkpoint sequence number.
-    last_processed_checkpoint_sequence_number: Option<u64>,
+    last_processed_checkpoint_sequence_number: u64,
     /// The last checkpoint sequence number of the previous epoch.
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// The total messages processed.
@@ -242,7 +244,7 @@ public(package) fun create(
         stake_subsidy_start_epoch,
         protocol_treasury,
         epoch_start_timestamp_ms,
-        last_processed_checkpoint_sequence_number: option::none(),
+        last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
         total_messages_processed: 0,
         remaining_rewards: balance::zero(),
@@ -568,6 +570,8 @@ public(package) fun advance_epoch(
     self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;
 
+    self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
+
     let mut stake_subsidy = balance::zero();
 
     // during the transition from epoch N to epoch N + 1, self.epoch() will return N
@@ -826,17 +830,12 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
     let mut bcs_body = bcs::new(copy message);
 
     let epoch = bcs_body.peel_u64();
-    assert!(epoch == self.epoch, EIncorrectEpochInIkaSystemCheckpoint);
+    assert!(epoch == self.epoch, EIncorrectEpochInSystemCheckpoint);
 
     let sequence_number = bcs_body.peel_u64();
 
-    if(self.last_processed_checkpoint_sequence_number.is_none()) {
-        assert!(sequence_number == 0, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.fill(sequence_number);
-    } else {
-        assert!(sequence_number > 0 && *self.last_processed_checkpoint_sequence_number.borrow() + 1 == sequence_number, EWrongIkaSystemCheckpointSequenceNumber);
-        self.last_processed_checkpoint_sequence_number.swap(sequence_number);
-    };
+    assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongSystemCheckpointSequenceNumber);
+    self.last_processed_checkpoint_sequence_number = sequence_number;
 
     let timestamp_ms = bcs_body.peel_u64();
 
@@ -851,12 +850,12 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
     // Note: the order of these fields, and the number must correspond to the Rust code in
     // `crates/ika-types/src/messages_system_checkpoints.rs`.
     while (i < len) {
-        let message_data_type = bcs_body.peel_vec_length();
+        let message_data_enum_tag = bcs_body.peel_enum_tag();
         // Parses params message BCS bytes directly.
-        match (message_data_type) {
+        match (message_data_enum_tag) {
             SET_NEXT_PROTOCOL_VERSION_MESSAGE_TYPE => {
                 let next_protocol_version = bcs_body.peel_u64();
-                self.next_protocol_version.fill(next_protocol_version);
+                self.next_protocol_version = option::some(next_protocol_version);
                 event::emit(SetNextProtocolVersionEvent {
                     epoch: self.epoch,
                     next_protocol_version,

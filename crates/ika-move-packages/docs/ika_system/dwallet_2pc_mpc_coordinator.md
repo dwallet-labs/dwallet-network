@@ -135,6 +135,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EWrongInnerVersion"></a>
 
+The inner version is incorrect.
 
 
 <pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EWrongInnerVersion">EWrongInnerVersion</a>: u64 = 0;
@@ -144,6 +145,7 @@ title: Module `(ika_system=0x0)::dwallet_2pc_mpc_coordinator`
 
 <a name="(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration"></a>
 
+The migration is invalid.
 
 
 <pre><code><b>const</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_EInvalidMigration">EInvalidMigration</a>: u64 = 1;

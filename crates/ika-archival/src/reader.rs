@@ -15,7 +15,8 @@ use ika_types::messages_dwallet_checkpoint::{
     VerifiedDWalletCheckpointMessage,
 };
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpointMessage, SystemCheckpointSequenceNumber,
+    VerifiedSystemCheckpointMessage,
 };
 use ika_types::storage::WriteStore;
 use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
@@ -114,7 +115,7 @@ impl ArchiveReaderBalancer {
             let latest_checkpoint = reader
                 .latest_available_dwallet_checkpoint()
                 .await
-                .unwrap_or(0);
+                .unwrap_or(1);
             if latest_checkpoint >= checkpoint_range.end {
                 archives_with_complete_range.push(reader.clone());
             }
@@ -132,7 +133,7 @@ impl ArchiveReaderBalancer {
             let latest_checkpoint = reader
                 .latest_available_dwallet_checkpoint()
                 .await
-                .unwrap_or(0);
+                .unwrap_or(1);
             if latest_checkpoint >= checkpoint_range.start {
                 archives_with_partial_range.push(reader.clone());
             }
@@ -660,14 +661,15 @@ impl ArchiveReader {
 
     fn insert_certified_system_checkpoint<S>(
         store: &S,
-        certified_system_checkpoint: CertifiedSystemCheckpoint,
+        certified_system_checkpoint: CertifiedSystemCheckpointMessage,
     ) -> Result<()>
     where
         S: WriteStore + Clone,
     {
         store
             .insert_system_checkpoint(
-                VerifiedSystemCheckpoint::new_unchecked(certified_system_checkpoint).borrow(),
+                VerifiedSystemCheckpointMessage::new_unchecked(certified_system_checkpoint)
+                    .borrow(),
             )
             .map_err(|e| anyhow!("failed to insert system_checkpoint: {e}"))
     }
@@ -675,18 +677,18 @@ impl ArchiveReader {
     /// Insert a system checkpoint if it doesn't already exist (without verifying it)
     fn get_or_insert_verified_system_checkpoint<S>(
         store: &S,
-        certified_system_checkpoint: CertifiedSystemCheckpoint,
-    ) -> Result<VerifiedSystemCheckpoint>
+        certified_system_checkpoint: CertifiedSystemCheckpointMessage,
+    ) -> Result<VerifiedSystemCheckpointMessage>
     where
         S: WriteStore + Clone,
     {
         store
             .get_system_checkpoint_by_sequence_number(certified_system_checkpoint.sequence_number)
             .map_err(|e| anyhow!("Store op failed: {e}"))?
-            .map(Ok::<VerifiedSystemCheckpoint, anyhow::Error>)
+            .map(Ok::<VerifiedSystemCheckpointMessage, anyhow::Error>)
             .unwrap_or_else(|| {
                 let verified_system_checkpoint =
-                    VerifiedSystemCheckpoint::new_unchecked(certified_system_checkpoint);
+                    VerifiedSystemCheckpointMessage::new_unchecked(certified_system_checkpoint);
                 // Insert `system_checkpoint` message
                 store
                     .insert_system_checkpoint(&verified_system_checkpoint)
@@ -695,7 +697,7 @@ impl ArchiveReader {
                 store
                     .update_highest_verified_system_checkpoint(&verified_system_checkpoint)
                     .expect("store operation should not fail");
-                Ok::<VerifiedSystemCheckpoint, anyhow::Error>(verified_system_checkpoint)
+                Ok::<VerifiedSystemCheckpointMessage, anyhow::Error>(verified_system_checkpoint)
             })
             .map_err(|e| anyhow!("Failed to get a verified `system_checkpoint`: {:?}", e))
     }
@@ -857,7 +859,7 @@ impl ArchiveReader {
             .buffered(self.concurrency)
             .try_for_each(|system_checkpoint_data| {
                 let result: Result<(), anyhow::Error> =
-                    make_iterator::<CertifiedSystemCheckpoint, Reader<Bytes>>(
+                    make_iterator::<CertifiedSystemCheckpointMessage, Reader<Bytes>>(
                         SYSTEM_CHECKPOINT_FILE_MAGIC,
                         system_checkpoint_data.reader(),
                     )

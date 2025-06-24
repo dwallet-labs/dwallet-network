@@ -33,33 +33,24 @@ const ED25519_KEY_LEN: u64 = 32;
 
 // === Errors ===
 
-/// The proof of possession verification failed
-#[error]
-const EInvalidProofOfPossession: vector<u8> = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
-
-#[error]
-const EInvalidNameLength: vector<u8> = b"Validator name length exceeds maximum allowed length.";
-
-#[error]
-const EMetadataInvalidProtocolPubkey: vector<u8> = b"Invalid protocol_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidNetworkPubkey: vector<u8> = b"Invalid network_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidConsensusPubkey: vector<u8> = b"Invalid consensus_pubkey_bytes field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidNetworkAddress: vector<u8> = b"Invalid network_address field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidP2pAddress: vector<u8> = b"Invalid p2p_address field in ValidatorMetadata.";
-
-#[error]
-const EMetadataInvalidConsensusAddress: vector<u8> = b"Invalid consensus_address field in ValidatorMetadata.";
-
-#[error]
-const EValidatorMetadataExceedingLengthLimit: vector<u8> = b"Validator Metadata is too long.";
+/// Invalid proof_of_possession_bytes field in ValidatorMetadata.
+const EInvalidProofOfPossession: u64 = 0;
+/// Validator name length exceeds maximum allowed length.
+const EInvalidNameLength: u64 = 1;
+/// Invalid protocol_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidProtocolPubkey: u64 = 2;
+/// Invalid network_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidNetworkPubkey: u64 = 3;
+/// Invalid consensus_pubkey_bytes field in ValidatorMetadata.
+const EMetadataInvalidConsensusPubkey: u64 = 4;
+/// Invalid network_address field in ValidatorMetadata.
+const EMetadataInvalidNetworkAddress: u64 = 5;
+/// Invalid p2p_address field in ValidatorMetadata.
+const EMetadataInvalidP2pAddress: u64 = 6;
+/// Invalid consensus_address field in ValidatorMetadata.
+const EMetadataInvalidConsensusAddress: u64 = 7;
+/// Validator Metadata is too long.
+const EValidatorMetadataExceedingLengthLimit: u64 = 8;
 
 // === Structs ===
 

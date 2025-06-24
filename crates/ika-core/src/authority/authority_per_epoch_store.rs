@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::transaction::TransactionKey;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
@@ -29,7 +28,7 @@ use super::epoch_start_configuration::EpochStartConfigTrait;
 
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::authority::{AuthorityMetrics, AuthorityState};
-use crate::checkpoints::{
+use crate::dwallet_checkpoints::{
     BuilderDWalletCheckpointMessage, DWalletCheckpointHeight, DWalletCheckpointServiceNotify,
     PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1,
 };
@@ -59,7 +58,7 @@ use ika_types::digests::MessageDigest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletImportedKeyVerificationOutput,
-    EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput, MessageKind,
+    DWalletMessageKind, EncryptedUserShareOutput, MakeDWalletUserSecretKeySharesPublicOutput,
     NetworkKeyPublicOutputSlice, PartialSignatureVerificationOutput, PresignOutput, SignOutput,
 };
 use ika_types::messages_consensus::Round;
@@ -75,7 +74,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
-    SystemCheckpoint, SystemCheckpointKind, SystemCheckpointSequenceNumber,
+    SystemCheckpointMessage, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
@@ -106,15 +105,15 @@ pub enum ConsensusCertificateResult {
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
-    IkaTransaction(MessageKind),
+    IkaTransaction(DWalletMessageKind),
     /// An executable transaction used for large output (e.g., network DKG).
-    IkaBulkTransaction(Vec<MessageKind>),
+    IkaBulkTransaction(Vec<DWalletMessageKind>),
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
 
-    SystemTransaction(SystemCheckpointKind),
+    SystemTransaction(SystemCheckpointMessageKind),
     // /// A will-be-cancelled transaction. It'll still go through execution engine (but not be executed),
     // /// unlock any owned objects, and return corresponding cancellation error according to
     // /// `CancelConsensusCertificateReason`.
@@ -249,26 +248,6 @@ pub struct AuthorityPerEpochStore {
 
     consensus_notify_read: NotifyRead<SequencedConsensusTransactionKey, ()>,
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    // Subscribers will get notified when a transaction is executed via checkpoint execution.
-    executed_transactions_to_checkpoint_notify_read:
-        NotifyRead<MessageDigest, DWalletCheckpointSequenceNumber>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    executed_digests_notify_read: NotifyRead<TransactionKey, MessageDigest>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Get notified when a synced checkpoint has reached CheckpointExecutor.
-    synced_checkpoint_notify_read: NotifyRead<DWalletCheckpointSequenceNumber, ()>,
-
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    /// Caches the highest synced checkpoint sequence number as this has been notified from the CheckpointExecutor
-    highest_synced_checkpoint: RwLock<DWalletCheckpointSequenceNumber>,
-
     /// This is used to notify all epoch specific tasks that epoch has ended.
     epoch_alive_notify: NotifyOnce,
 
@@ -365,7 +344,7 @@ pub struct AuthorityEpochTables {
         DBMap<(DWalletCheckpointSequenceNumber, u64), DWalletCheckpointSignatureMessage>,
 
     /// Maps sequence number to checkpoint summary, used by CheckpointBuilder to build checkpoint within epoch
-    builder_dwallet_checkpoint_message_v1:
+    pub(crate) builder_dwallet_checkpoint_message_v1:
         DBMap<DWalletCheckpointSequenceNumber, BuilderDWalletCheckpointMessage>,
 
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
@@ -553,10 +532,6 @@ impl AuthorityPerEpochStore {
             user_certs_closed_notify: NotifyOnce::new(),
             epoch_alive: tokio::sync::RwLock::new(true),
             consensus_notify_read: NotifyRead::new(),
-            executed_transactions_to_checkpoint_notify_read: NotifyRead::new(),
-            executed_digests_notify_read: NotifyRead::new(),
-            synced_checkpoint_notify_read: NotifyRead::new(),
-            highest_synced_checkpoint: RwLock::new(0),
             epoch_open_time: current_time,
             epoch_close_time: Default::default(),
             metrics,
@@ -1088,12 +1063,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority()
-                    != data.dwallet_checkpoint_message.auth_sig().authority
-                {
+                if transaction.sender_authority() != data.checkpoint_message.auth_sig().authority {
                     warn!(
                         "CheckpointSignature authority {} does not match its author from consensus {}",
-                        data.dwallet_checkpoint_message.auth_sig().authority,
+                        data.checkpoint_message.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -1119,10 +1092,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),
                 ..
             }) => {
-                if transaction.sender_authority() != data.system_checkpoint.auth_sig().authority {
+                if transaction.sender_authority() != data.checkpoint_message.auth_sig().authority {
                     warn!(
                         "SystemCheckpoint authority {} does not match its author from consensus {}",
-                        data.system_checkpoint.auth_sig().authority,
+                        data.checkpoint_message.auth_sig().authority,
                         transaction.certificate_author_index
                     );
                     return None;
@@ -1155,7 +1128,7 @@ impl AuthorityPerEpochStore {
         system_checkpoint_service: &Arc<SystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
-    ) -> IkaResult<(Vec<MessageKind>, Vec<SystemCheckpointKind>)> {
+    ) -> IkaResult<(Vec<DWalletMessageKind>, Vec<SystemCheckpointMessageKind>)> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
             .into_iter()
@@ -1212,7 +1185,7 @@ impl AuthorityPerEpochStore {
             messages: verified_messages.clone(),
             details: PendingDWalletCheckpointInfo {
                 timestamp_ms: consensus_commit_info.timestamp,
-                dwallet_checkpoint_height: checkpoint_height,
+                checkpoint_height,
             },
         });
         self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
@@ -1223,14 +1196,14 @@ impl AuthorityPerEpochStore {
             messages: system_checkpoint_verified_messages.clone(),
             details: PendingSystemCheckpointInfo {
                 timestamp_ms: consensus_commit_info.timestamp,
-                system_checkpoint_height,
+                checkpoint_height: system_checkpoint_height,
             },
         });
         self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
 
         system_checkpoint_verified_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
-                SystemCheckpointKind::SetNextConfigVersion(version) => {
+                SystemCheckpointMessageKind::SetNextConfigVersion(version) => {
                     if let Ok(tables) = self.tables() {
                         if let Err(e) = tables.protocol_config_version_sent.insert(version, &()) {
                             warn!(
@@ -1243,16 +1216,16 @@ impl AuthorityPerEpochStore {
                     }
                 }
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
-                SystemCheckpointKind::SetEpochDurationMs(_)
-                | SystemCheckpointKind::SetStakeSubsidyStartEpoch(_)
-                | SystemCheckpointKind::SetStakeSubsidyRate(_)
-                | SystemCheckpointKind::SetStakeSubsidyPeriodLength(_)
-                | SystemCheckpointKind::SetMinValidatorCount(_)
-                | SystemCheckpointKind::SetMaxValidatorCount(_)
-                | SystemCheckpointKind::SetMinValidatorJoiningStake(_)
-                | SystemCheckpointKind::SetMaxValidatorChangeCount(_)
-                | SystemCheckpointKind::SetRewardSlashingRate(_)
-                | SystemCheckpointKind::SetApprovedUpgrade { .. } => {
+                SystemCheckpointMessageKind::SetEpochDurationMs(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyStartEpoch(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyRate(_)
+                | SystemCheckpointMessageKind::SetStakeSubsidyPeriodLength(_)
+                | SystemCheckpointMessageKind::SetMinValidatorCount(_)
+                | SystemCheckpointMessageKind::SetMaxValidatorCount(_)
+                | SystemCheckpointMessageKind::SetMinValidatorJoiningStake(_)
+                | SystemCheckpointMessageKind::SetMaxValidatorChangeCount(_)
+                | SystemCheckpointMessageKind::SetRewardSlashingRate(_)
+                | SystemCheckpointMessageKind::SetApprovedUpgrade { .. } => {
                     todo!(
                         "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
                     );
@@ -1276,7 +1249,7 @@ impl AuthorityPerEpochStore {
             ?consensus_commit_info.round,
             "Notifying system_checkpoint service about new pending checkpoint(s)",
         );
-        system_checkpoint_service.notify_system_checkpoint()?;
+        system_checkpoint_service.notify_checkpoint()?;
 
         self.process_notifications(&notifications);
 
@@ -1305,8 +1278,8 @@ impl AuthorityPerEpochStore {
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> IkaResult<(
-        Vec<MessageKind>, // transactions to schedule
-        Vec<SystemCheckpointKind>,
+        Vec<DWalletMessageKind>, // transactions to schedule
+        Vec<SystemCheckpointMessageKind>,
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete
     )> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transactions");
@@ -1565,7 +1538,7 @@ impl AuthorityPerEpochStore {
                             capabilities.first()
                         );
                         return Ok(ConsensusCertificateResult::SystemTransaction(
-                            SystemCheckpointKind::SetNextConfigVersion(new_version),
+                            SystemCheckpointMessageKind::SetNextConfigVersion(new_version),
                         ));
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)
@@ -1577,7 +1550,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SystemCheckpointSignature(data),
                 ..
             }) => {
-                system_checkpoint_service.notify_system_checkpoint_signature(self, data)?;
+                system_checkpoint_service.notify_checkpoint_signature(self, data)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
@@ -1623,14 +1596,14 @@ impl AuthorityPerEpochStore {
 
     fn process_consensus_system_transaction(
         &self,
-        system_transaction: &MessageKind,
+        system_transaction: &DWalletMessageKind,
     ) -> ConsensusCertificateResult {
         ConsensusCertificateResult::IkaTransaction(system_transaction.clone())
     }
 
     fn process_consensus_system_bulk_transaction(
         &self,
-        system_transaction: &[MessageKind],
+        system_transaction: &[DWalletMessageKind],
     ) -> ConsensusCertificateResult {
         ConsensusCertificateResult::IkaBulkTransaction(system_transaction.to_owned())
     }
@@ -1655,35 +1628,37 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = event_data.session_type else {
                     unreachable!("DKGFirst round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput {
-                    dwallet_id: event_data.event_data.dwallet_id.to_vec(),
-                    output,
-                    session_sequence_number: sequence_number,
-                    rejected: is_rejected,
-                });
+                let tx =
+                    DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput {
+                        dwallet_id: event_data.event_data.dwallet_id.to_vec(),
+                        output,
+                        session_sequence_number: sequence_number,
+                        rejected: is_rejected,
+                    });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::DKGSecond(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("DKGSecond round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput {
-                    output,
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                    encrypted_secret_share_id: init_event_data
-                        .event_data
-                        .encrypted_user_secret_key_share_id
-                        .to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
+                let tx =
+                    DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput {
+                        output,
+                        dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                        encrypted_secret_share_id: init_event_data
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec(),
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    });
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::Presign(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("Presign round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletPresign(PresignOutput {
+                let tx = DWalletMessageKind::RespondDWalletPresign(PresignOutput {
                     presign: output,
                     dwallet_id: init_event_data.event_data.dwallet_id.map(|id| id.to_vec()),
                     presign_id: init_event_data.event_data.presign_id.to_vec(),
@@ -1696,7 +1671,7 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event.session_type else {
                     unreachable!("Sign round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletSign(SignOutput {
+                let tx = DWalletMessageKind::RespondDWalletSign(SignOutput {
                     signature: output,
                     dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                     is_future_sign: init_event.event_data.is_future_sign,
@@ -1710,22 +1685,24 @@ impl AuthorityPerEpochStore {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("EncryptedShareVerification round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletEncryptedUserShare(EncryptedUserShareOutput {
-                    dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
-                    encrypted_user_secret_key_share_id: init_event_data
-                        .event_data
-                        .encrypted_user_secret_key_share_id
-                        .to_vec(),
-                    rejected: is_rejected,
-                    session_sequence_number: sequence_number,
-                });
+                let tx = DWalletMessageKind::RespondDWalletEncryptedUserShare(
+                    EncryptedUserShareOutput {
+                        dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
+                        encrypted_user_secret_key_share_id: init_event_data
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec(),
+                        rejected: is_rejected,
+                        session_sequence_number: sequence_number,
+                    },
+                );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
             MPCProtocolInitData::PartialSignatureVerification(init_event_data) => {
                 let SessionType::User { sequence_number } = init_event_data.session_type else {
                     unreachable!("PartialSignatureVerification round should be a user session");
                 };
-                let tx = MessageKind::RespondDWalletPartialSignatureVerificationOutput(
+                let tx = DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(
                     PartialSignatureVerificationOutput {
                         dwallet_id: init_event_data.event_data.dwallet_id.to_vec(),
                         partial_centralized_signed_message_id: init_event_data
@@ -1766,7 +1743,7 @@ impl AuthorityPerEpochStore {
 
                         let messages: Vec<_> = slices
                             .into_iter()
-                            .map(MessageKind::RespondDWalletMPCNetworkDKGOutput)
+                            .map(DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput)
                             .collect();
                         Ok(self.process_consensus_system_bulk_transaction(&messages))
                     }
@@ -1799,7 +1776,7 @@ impl AuthorityPerEpochStore {
 
                 let messages: Vec<_> = slices
                     .into_iter()
-                    .map(MessageKind::RespondDWalletMPCNetworkReconfigurationOutput)
+                    .map(DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput)
                     .collect();
                 Ok(self.process_consensus_system_bulk_transaction(&messages))
             }
@@ -1809,7 +1786,7 @@ impl AuthorityPerEpochStore {
                         "MakeDWalletUserSecretKeySharesPublic round should be a user session"
                     );
                 };
-                let tx = MessageKind::RespondMakeDWalletUserSecretKeySharesPublic(
+                let tx = DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(
                     MakeDWalletUserSecretKeySharesPublicOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec(),
                         public_user_secret_key_shares: init_event
@@ -1828,7 +1805,7 @@ impl AuthorityPerEpochStore {
                         "MakeDWalletUserSecretKeySharesPublic round should be a user session"
                     );
                 };
-                let tx = MessageKind::RespondDWalletImportedKeyVerificationOutput(
+                let tx = DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(
                     DWalletImportedKeyVerificationOutput {
                         dwallet_id: init_event.event_data.dwallet_id.to_vec().clone(),
                         public_output: output,
@@ -1921,7 +1898,7 @@ impl AuthorityPerEpochStore {
         Ok(self.tables()?.pending_dwallet_checkpoints.get(index)?)
     }
 
-    pub fn process_pending_checkpoint(
+    pub fn process_pending_dwallet_checkpoint(
         &self,
         commit_height: DWalletCheckpointHeight,
         checkpoint_messages: Vec<DWalletCheckpointMessage>,
@@ -1934,8 +1911,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderDWalletCheckpointMessage {
-                dwallet_checkpoint_message: summary,
-                dwallet_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -1978,10 +1955,10 @@ impl AuthorityPerEpochStore {
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.dwallet_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
-    pub fn get_built_checkpoint_message(
+    pub fn get_built_dwallet_checkpoint_message(
         &self,
         sequence: DWalletCheckpointSequenceNumber,
     ) -> IkaResult<Option<DWalletCheckpointMessage>> {
@@ -1989,7 +1966,7 @@ impl AuthorityPerEpochStore {
             .tables()?
             .builder_dwallet_checkpoint_message_v1
             .get(&sequence)?
-            .map(|s| s.dwallet_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_dwallet_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2000,7 +1977,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_checkpoint_signature(
@@ -2064,7 +2041,7 @@ impl AuthorityPerEpochStore {
     pub fn process_pending_system_checkpoint(
         &self,
         commit_height: SystemCheckpointHeight,
-        system_checkpoint_messages: Vec<SystemCheckpoint>,
+        system_checkpoint_messages: Vec<SystemCheckpointMessage>,
     ) -> IkaResult<()> {
         let tables = self.tables()?;
         // All created system_checkpoints are inserted in builder_system_checkpoint_summary in a single batch.
@@ -2074,8 +2051,8 @@ impl AuthorityPerEpochStore {
         for (position_in_commit, summary) in system_checkpoint_messages.into_iter().enumerate() {
             let sequence_number = summary.sequence_number;
             let summary = BuilderSystemCheckpoint {
-                system_checkpoint_message: summary,
-                system_checkpoint_height: Some(commit_height),
+                checkpoint_message: summary,
+                checkpoint_height: Some(commit_height),
                 position_in_commit,
             };
             batch.insert_batch(
@@ -2111,25 +2088,25 @@ impl AuthorityPerEpochStore {
 
     pub fn last_built_system_checkpoint_message(
         &self,
-    ) -> IkaResult<Option<(SystemCheckpointSequenceNumber, SystemCheckpoint)>> {
+    ) -> IkaResult<Option<(SystemCheckpointSequenceNumber, SystemCheckpointMessage)>> {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
             .reversed_safe_iter_with_bounds(None, None)?
             .next()
             .transpose()?
-            .map(|(seq, s)| (seq, s.system_checkpoint_message)))
+            .map(|(seq, s)| (seq, s.checkpoint_message)))
     }
 
     pub fn get_built_system_checkpoint_message(
         &self,
         sequence: SystemCheckpointSequenceNumber,
-    ) -> IkaResult<Option<SystemCheckpoint>> {
+    ) -> IkaResult<Option<SystemCheckpointMessage>> {
         Ok(self
             .tables()?
             .builder_system_checkpoint_v1
             .get(&sequence)?
-            .map(|s| s.system_checkpoint_message))
+            .map(|s| s.checkpoint_message))
     }
 
     pub fn get_last_system_checkpoint_signature_index(&self) -> IkaResult<u64> {
@@ -2140,7 +2117,7 @@ impl AuthorityPerEpochStore {
             .next()
             .transpose()?
             .map(|((_, index), _)| index)
-            .unwrap_or_default())
+            .unwrap_or(1))
     }
 
     pub fn insert_system_checkpoint_signature(

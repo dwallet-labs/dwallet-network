@@ -20,7 +20,6 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	MPCKeyScheme,
 	sessionIdentifierDigest,
 } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
@@ -85,6 +84,7 @@ export async function createDWallet(
 	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<DWallet> {
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
+	console.timeEnd('launchDKGFirstRound');
 	const secondRoundResponse = await launchDKGSecondRound(
 		conf,
 		firstRoundOutputResult,
@@ -119,7 +119,6 @@ export async function createDWalletCentralizedParty(
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
-			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(firstRoundOutputResult.output),
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);
