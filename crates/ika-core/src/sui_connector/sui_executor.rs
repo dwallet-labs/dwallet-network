@@ -203,7 +203,10 @@ where
                 epoch_switch_state.ran_lock_last_session = true;
             }
         }
-        if coordinator.received_end_of_publish && !epoch_switch_state.ran_request_advance_epoch {
+        if coordinator.received_end_of_publish
+            && system_inner_v1.received_end_of_publish
+            && !epoch_switch_state.ran_request_advance_epoch
+        {
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,

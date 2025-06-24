@@ -260,6 +260,11 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
+<code>received_end_of_publish: bool</code>
+</dt>
+<dd>
+</dd>
+<dt>
 <code>extra_fields: <a href="../sui/bag.md#sui_bag_Bag">sui::bag::Bag</a></code>
 </dt>
 <dd>
@@ -889,6 +894,15 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 
 
+<a name="(ika_system=0x0)_system_inner_END_OF_PUBLISH_MESSAGE_TYPE"></a>
+
+
+
+<pre><code><b>const</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_END_OF_PUBLISH_MESSAGE_TYPE">END_OF_PUBLISH_MESSAGE_TYPE</a>: u32 = 11;
+</code></pre>
+
+
+
 <a name="(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime"></a>
 
 The system has not reached the end epoch time.
@@ -1022,6 +1036,7 @@ This function will be called only once in init.
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
+        received_end_of_publish: <b>false</b>,
         extra_fields: bag::new(ctx),
     };
     (system_state, protocol_cap)
@@ -1850,6 +1865,7 @@ gas coins.
     <b>let</b> last_epoch_change = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>;
     <b>let</b> <b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>();
     <b>assert</b>!(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_next_epoch_active_committee">next_epoch_active_committee</a>.is_some() && now &gt;= last_epoch_change + self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
+    <b>assert</b>!(self.received_end_of_publish || self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> == 0, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
     self.epoch_start_tx_digest = *ctx.digest();
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a> = now;
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
@@ -2657,6 +2673,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
                     package_id,
                     digest,
                 });
+            },
+            <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_END_OF_PUBLISH_MESSAGE_TYPE">END_OF_PUBLISH_MESSAGE_TYPE</a> =&gt; {
+                self.received_end_of_publish = <b>true</b>;
             },
             _ =&gt; {
                 // Unknown message type - skip
