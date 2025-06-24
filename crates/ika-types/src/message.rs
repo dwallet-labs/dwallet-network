@@ -322,6 +322,9 @@ impl Debug for DWalletMessageKind {
                     value
                 )?;
             }
+            DWalletMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
+            }
         }
         write!(f, "{}", writer)
     }
