@@ -558,7 +558,6 @@ impl SystemCheckpointBuilder {
             if matches!(message, SystemCheckpointMessageKind::EndOfPublish) {
                 self.received_end_of_publish = true;
                 let message = sorted_tx_effects_included_in_checkpoint.remove(i);
-                sorted_tx_effects_included_in_checkpoint.clear();
                 sorted_tx_effects_included_in_checkpoint.push(message);
                 // Received an end of publish message, it should be the last message in the checkpoint
                 // and no more messages should be added to the checkpoint.
@@ -703,7 +702,7 @@ impl SystemCheckpointBuilder {
         }
 
         if !all_messages.is_empty() {
-            info!(
+            warn!(
                 next_sequence_number = last_checkpoint_seq + 1,
                 checkpoint_timestamp = details.timestamp_ms,
                 "Creating system checkpoint(s) for {} messages",
