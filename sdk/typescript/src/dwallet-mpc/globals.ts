@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
+import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { Transaction } from '@mysten/sui/transactions';
@@ -285,16 +286,21 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 	return new Uint8Array(data.flatMap((arr) => Array.from(arr)));
 }
 
-export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
+export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
-	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
-	if (cachedKey) {
-		return cachedKey;
+	const cachedPP = getCachedPublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedPP) {
+		return cachedPP;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
-	cacheNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch, key);
-	return key;
+	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
+	await cachePublicParameters(
+		networkDecryptionKeyPublicOutputID,
+		currentEpoch,
+		new Uint8Array(publicParameters),
+	);
+	return publicParameters;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -321,7 +327,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
+export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
@@ -334,7 +340,7 @@ export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8
 	fs.writeFileSync(filePath, networkKey);
 }
 
-export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
+export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	const filePath = `${keyDirPath}/${epoch}.key`;

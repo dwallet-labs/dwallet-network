@@ -118,6 +118,7 @@ title: Module `(ika_system=0x0)::protocol_treasury`
 
 <a name="(ika_system=0x0)_protocol_treasury_ESubsidyDecreaseRateTooLarge"></a>
 
+The stake subsidy rate is too large.
 
 
 <pre><code><b>const</b> <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ESubsidyDecreaseRateTooLarge">ESubsidyDecreaseRateTooLarge</a>: u64 = 0;

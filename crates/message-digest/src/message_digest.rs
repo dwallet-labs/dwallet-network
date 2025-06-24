@@ -1,9 +1,9 @@
+use group::secp256k1;
 use k256::ecdsa::hazmat::bits2field;
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use sha3::digest::FixedOutput;
 use sha3::Digest;
-use twopc_mpc::secp256k1;
 
 /// Supported hash functions for message digest.
 #[derive(Clone, Debug)]

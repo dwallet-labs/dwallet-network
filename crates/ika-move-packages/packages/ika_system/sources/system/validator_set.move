@@ -39,23 +39,32 @@ const MIN_STAKING_THRESHOLD: u64 = 1_000_000_000; // 1 IKA
 
 // === Errors ===
 
+/// The validator is not in the report records.
 const ENonValidatorInReportRecords: u64 = 0;
+/// The validator is already in the validator set.
 const EDuplicateValidator: u64 = 1;
+/// The validator is not a validator.
 const ENotAValidator: u64 = 2;
+/// The validator is not a candidate.
 const EValidatorNotCandidate: u64 = 3;
+/// The validator is not staking below the threshold.
 const EStakingBelowThreshold: u64 = 4;
+/// The validator is already removed.
 const EValidatorAlreadyRemoved: u64 = 5;
+/// The validator cannot report on itself.
 const ECannotReportOneself: u64 = 6;
+/// The report record is not found.
 const EReportRecordNotFound: u64 = 7;
+/// The validator cannot join the active set.
 const ECannotJoinActiveSet: u64 = 8;
+/// The bps is too large.
 const EBpsTooLarge: u64 = 9;
-const EInvalidCap: u64 = 101;
-
-#[error]
-const EProcessMidEpochOnlyAfterAdvanceEpoch: vector<u8> = b"Process mid epoch can be called only after advance epoch.";
-
-#[error]
-const EAdvanceEpochOnlyAfterProcessMidEpoch: vector<u8> = b"Advance epoch can be called only after process mid epoch.";
+/// The cap is invalid.
+const EInvalidCap: u64 = 10;
+/// Process mid epoch can be called only after advance epoch.
+const EProcessMidEpochOnlyAfterAdvanceEpoch: u64 = 11;
+/// Advance epoch can be called only after process mid epoch.
+const EAdvanceEpochOnlyAfterProcessMidEpoch: u64 = 12;
 
 // === Structs ===
 
