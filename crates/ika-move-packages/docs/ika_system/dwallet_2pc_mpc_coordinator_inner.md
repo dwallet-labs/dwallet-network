@@ -6073,7 +6073,7 @@ Combined IKA balance from fees collected during the epoch
 ): Balance&lt;IKA&gt; {
     <b>assert</b>!(self.pricing_and_fee_management.calculation_votes.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPricingCalculationVotesMustBeCompleted">EPricingCalculationVotesMustBeCompleted</a>);
     <b>assert</b>!(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
-    <b>assert</b>!(self.received_end_of_publish, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
+    <b>assert</b>!(self.received_end_of_publish || self.current_epoch == 0, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = <b>false</b>;
     self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_update_last_user_initiated_session_to_complete_in_current_epoch">update_last_user_initiated_session_to_complete_in_current_epoch</a>();
