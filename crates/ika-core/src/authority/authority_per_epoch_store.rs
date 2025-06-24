@@ -1316,8 +1316,8 @@ impl AuthorityPerEpochStore {
         let cancelled_txns: BTreeMap<MessageDigest, CancelConsensusCertificateReason> =
             BTreeMap::new();
 
-        if self.should_accept_tx() {
-            for tx in transactions {
+        for tx in transactions {
+            if self.should_accept_tx() {
                 let key = tx.0.transaction.key();
                 let mut ignored = false;
                 // let mut filter_roots = false;

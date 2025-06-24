@@ -396,7 +396,6 @@ pub struct DWalletCheckpointBuilder {
     max_messages_per_dwallet_checkpoint: usize,
     max_dwallet_checkpoint_size_bytes: usize,
     previous_epoch_last_checkpoint_sequence_number: u64,
-    received_end_of_publish: bool,
 }
 
 pub struct DWalletCheckpointAggregator {
@@ -449,7 +448,6 @@ impl DWalletCheckpointBuilder {
             max_messages_per_dwallet_checkpoint,
             max_dwallet_checkpoint_size_bytes,
             previous_epoch_last_checkpoint_sequence_number,
-            received_end_of_publish: false,
         }
     }
 
@@ -537,9 +535,6 @@ impl DWalletCheckpointBuilder {
         &mut self,
         pendings: Vec<PendingDWalletCheckpoint>,
     ) -> anyhow::Result<()> {
-        if self.received_end_of_publish {
-            return Ok(());
-        }
         let last_details = pendings.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
@@ -559,17 +554,6 @@ impl DWalletCheckpointBuilder {
             //     .resolve_checkpoint_transactions(pending.roots, &mut effects_in_current_checkpoint)
             //     .await?;
             sorted_tx_effects_included_in_checkpoint.extend(pending.messages);
-        }
-
-        for i in 0..sorted_tx_effects_included_in_checkpoint.len() {
-            let message = &sorted_tx_effects_included_in_checkpoint[i];
-            if matches!(message, DWalletMessageKind::EndOfPublish) {
-                self.received_end_of_publish = true;
-                let message = sorted_tx_effects_included_in_checkpoint.remove(i);
-                sorted_tx_effects_included_in_checkpoint.push(message);
-                // Received an end of publish message, it should be the last message in the checkpoint.
-                break;
-            }
         }
 
         let new_checkpoint = self
