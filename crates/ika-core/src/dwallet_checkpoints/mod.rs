@@ -563,10 +563,7 @@ impl DWalletCheckpointBuilder {
 
         for i in 0..sorted_tx_effects_included_in_checkpoint.len() {
             let message = &sorted_tx_effects_included_in_checkpoint[i];
-            if message.is_flow_end_message() {
-                let message = sorted_tx_effects_included_in_checkpoint.remove(i);
-                sorted_tx_effects_included_in_checkpoint.push(message);
-            } else if matches!(message, DWalletMessageKind::EndOfPublish) {
+            if matches!(message, DWalletMessageKind::EndOfPublish) {
                 self.received_end_of_publish = true;
                 let message = sorted_tx_effects_included_in_checkpoint.remove(i);
                 sorted_tx_effects_included_in_checkpoint.clear();

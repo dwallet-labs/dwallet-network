@@ -109,22 +109,6 @@ pub enum DWalletMessageKind {
 }
 
 impl DWalletMessageKind {
-    pub fn is_flow_end_message(&self) -> bool {
-        matches!(
-            self,
-            DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_)
-                | DWalletMessageKind::RespondDWalletDKGSecondRoundOutput(_)
-                | DWalletMessageKind::RespondDWalletEncryptedUserShare(_)
-                | DWalletMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(_)
-                | DWalletMessageKind::RespondDWalletImportedKeyVerificationOutput(_)
-                | DWalletMessageKind::RespondDWalletPresign(_)
-                | DWalletMessageKind::RespondDWalletSign(_)
-                | DWalletMessageKind::RespondDWalletPartialSignatureVerificationOutput(_)
-                | DWalletMessageKind::RespondDWalletMPCNetworkDKGOutput(_)
-                | DWalletMessageKind::RespondDWalletMPCNetworkReconfigurationOutput(_)
-        )
-    }
-
     pub fn name(&self) -> &'static str {
         match self {
             DWalletMessageKind::RespondDWalletDKGFirstRoundOutput(_) => {
