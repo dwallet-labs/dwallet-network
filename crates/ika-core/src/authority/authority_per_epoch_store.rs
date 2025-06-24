@@ -1485,8 +1485,7 @@ impl AuthorityPerEpochStore {
                         *session_info.clone(),
                         output.clone(),
                     )
-                    .await
-                    .unwrap();
+                    .await?;
                 Ok(result)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
