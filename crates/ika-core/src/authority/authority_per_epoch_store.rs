@@ -102,6 +102,7 @@ pub enum CancelConsensusCertificateReason {
 }
 
 pub enum ConsensusCertificateResult {
+    EndOfPublish,
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
@@ -1820,10 +1821,7 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::EndOfPublish => {
-                let tx = DWalletMessageKind::EndOfPublish;
-                Ok(ConsensusCertificateResult::IkaTransaction(tx))
-            }
+            MPCProtocolInitData::EndOfPublish => Ok(ConsensusCertificateResult::EndOfPublish),
         }
     }
 
