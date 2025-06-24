@@ -1309,8 +1309,7 @@ impl AuthorityPerEpochStore {
                     consensus_commit_info.round,
                     authority_metrics,
                 )
-                .await
-                .unwrap()
+                .await?
             {
                 ConsensusCertificateResult::IkaTransaction(cert) => {
                     notifications.push(key.clone());
