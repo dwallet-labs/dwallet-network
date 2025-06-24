@@ -536,8 +536,27 @@ mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
 ############################
 echo "Generating seed_peers.yaml..."
 
-# Use the dedicated script to generate seed_peers.yaml
-./generate_seed_peers.sh "$SUBDOMAIN"
+SEED_PEERS_FILE="seed_peers.yaml"
+: > "$SEED_PEERS_FILE"  # Empty or create file
+
+for entry in "${VALIDATORS_ARRAY[@]}"; do
+  IFS=":" read -r VALIDATOR_NAME VALIDATOR_HOSTNAME <<< "$entry"
+  VALIDATOR_DIR="${VALIDATOR_HOSTNAME}"
+
+  INFO_FILE="$VALIDATOR_DIR/validator.info"
+  NETWORK_KEY_FILE="$VALIDATOR_DIR/key-pairs/network.key"
+
+  if [[ -f "$INFO_FILE" && -f "$NETWORK_KEY_FILE" ]]; then
+    P2P_ADDR=$(yq e '.p2p_address' "$INFO_FILE")
+    PEER_ID=$(sui keytool show "$NETWORK_KEY_FILE" --json | jq -r '.peerId')
+
+    echo "- address: $P2P_ADDR" >> "$SEED_PEERS_FILE"
+    echo "  peer-id: $PEER_ID" >> "$SEED_PEERS_FILE"
+  else
+    echo "Missing $INFO_FILE or $NETWORK_KEY_FILE"
+    exit 1
+  fi
+done
 
 echo "$SEED_PEERS_FILE generated in $SUBDOMAIN/"
 
