@@ -701,7 +701,7 @@ impl SystemCheckpointBuilder {
         }
 
         if !all_messages.is_empty() {
-            warn!(
+            info!(
                 next_sequence_number = last_checkpoint_seq + 1,
                 checkpoint_timestamp = details.timestamp_ms,
                 "Creating system checkpoint(s) for {} messages",
