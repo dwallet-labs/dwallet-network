@@ -14,7 +14,9 @@ use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_aut
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCSessionPublicOutput, MPCSessionStatus, VersionedNetworkDkgOutput,
+};
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
@@ -25,7 +27,6 @@ use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
     MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
-use k256::pkcs8::der::Encode;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -199,7 +200,9 @@ impl DWalletMPCManager {
         let end_of_publish_session_id = [0u8; 32];
         let output = ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store()?.name,
-            "end_of_publish".to_string().into_bytes(),
+            bcs::to_bytes(&MPCSessionPublicOutput::CompletedSuccessfully(
+                "end_of_publish".to_string().into_bytes(),
+            ))?,
             SessionInfo {
                 session_type: SessionType::System,
                 session_identifier: end_of_publish_session_id,

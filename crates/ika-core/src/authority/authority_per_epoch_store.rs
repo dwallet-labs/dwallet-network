@@ -1307,7 +1307,8 @@ impl AuthorityPerEpochStore {
                     consensus_commit_info.round,
                     authority_metrics,
                 )
-                .await?
+                .await
+                .unwrap()
             {
                 ConsensusCertificateResult::IkaTransaction(cert) => {
                     notifications.push(key.clone());
@@ -1477,12 +1478,15 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output),
                 ..
             }) => {
-                self.process_dwallet_mpc_output(
-                    *certificate_author,
-                    *session_info.clone(),
-                    output.clone(),
-                )
-                .await
+                let result = self
+                    .process_dwallet_mpc_output(
+                        *certificate_author,
+                        *session_info.clone(),
+                        output.clone(),
+                    )
+                    .await
+                    .unwrap();
+                Ok(result)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
