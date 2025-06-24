@@ -4248,7 +4248,17 @@ Variant <code>AwaitingNextEpochToUpdateReconfiguration</code>
 <dd>
  Reconfiguration request finished, but we didn't switch an epoch yet.
  We need to wait for the next epoch to update the reconfiguration public outputs.
+ <code>is_first</code> is true if this is the first reconfiguration request, false otherwise.
 </dd>
+
+<dl>
+<dt>
+<code>is_first: bool</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
 <dt>
 Variant <code>NetworkReconfigurationCompleted</code>
 </dt>
@@ -5785,7 +5795,7 @@ with <code>is_last_chunk</code> set for the last call.
                         event::emit(<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_CompletedDWalletEncryptionKeyReconfigurationEvent">CompletedDWalletEncryptionKeyReconfigurationEvent</a> {
                             <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_dwallet_network_encryption_key_id">dwallet_network_encryption_key_id</a>,
                         });
-                        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration
+                        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: *is_first }
                     } <b>else</b> {
                         DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
                     }
@@ -5828,7 +5838,12 @@ finalizing the reconfiguration of that key, and readying it for use in the next 
     );
     // Sanity checks: check the capability is the right one, and that the key is in the right state.
     <b>assert</b>!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EIncorrectCap">EIncorrectCap</a>);
-    <b>assert</b>!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>);
+    match (dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: _ } =&gt; {
+            // If the key is in the right state, we can proceed.
+        },
+        _ =&gt; <b>abort</b> <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EWrongState">EWrongState</a>,
+    };
     // Advance the current epoch and state.
     dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;
     dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted;

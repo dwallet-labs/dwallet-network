@@ -762,7 +762,9 @@ pub enum DWalletNetworkEncryptionKeyState {
     },
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
     /// We need to wait for the next epoch to update the reconfiguration of public outputs.
-    AwaitingNextEpochToUpdateReconfiguration,
+    AwaitingNextEpochToUpdateReconfiguration {
+        is_first: bool,
+    },
     NetworkReconfigurationCompleted,
 }
 

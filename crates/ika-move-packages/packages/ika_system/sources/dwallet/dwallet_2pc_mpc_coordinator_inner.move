@@ -425,7 +425,10 @@ public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
     },
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
     /// We need to wait for the next epoch to update the reconfiguration public outputs.
-    AwaitingNextEpochToUpdateReconfiguration,
+    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
+    AwaitingNextEpochToUpdateReconfiguration {
+        is_first: bool,
+    },
     /// Network reconfiguration has completed successfully
     NetworkReconfigurationCompleted,
 }
@@ -2104,7 +2107,7 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
                         event::emit(CompletedDWalletEncryptionKeyReconfigurationEvent {
                             dwallet_network_encryption_key_id,
                         });
-                        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration
+                        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: *is_first }
                     } else {
                         DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
                     }
@@ -2128,7 +2131,12 @@ fun advance_epoch_dwallet_network_encryption_key(
 
     // Sanity checks: check the capability is the right one, and that the key is in the right state.
     assert!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
-    assert!(dwallet_network_encryption_key.state == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration, EWrongState);
+    match (dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: _ } => {
+            // If the key is in the right state, we can proceed.
+        },
+        _ => abort EWrongState,
+    };
 
     // Advance the current epoch and state.
     dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;

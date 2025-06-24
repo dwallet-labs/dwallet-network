@@ -1045,12 +1045,11 @@ impl SuiClientInner for SuiSdkClient {
         // where we only had NetworkDKG, this function will error.
         // In this case, the validator will be stuck in a loop where it can't process events
         // until the epoch is switched, since it will be endlessly waiting for the network key.
-        // Warning: If we change the Move contract in the future to delete the reconfiguration outputs,
-        // this function will error again.
-        let first_reconfiguration_for_next_epoch_was_completed =
-            key.reconfiguration_public_outputs.size == 1
-                && key.state
-                    == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration;
+
+        let first_reconfiguration_for_next_epoch_was_completed = key.state
+            == (DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration {
+                is_first: true,
+            });
         let awaiting_first_reconfiguration_to_complete = key.state
             == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
                 is_first: true,
