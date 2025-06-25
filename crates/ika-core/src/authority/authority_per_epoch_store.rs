@@ -538,12 +538,10 @@ impl AuthorityPerEpochStore {
         let protocol_version = epoch_start_configuration
             .epoch_start_state()
             .protocol_version();
-        // let protocol_config =
-        //     ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
         let protocol_config =
             ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
+        let end_of_publish =
+            StakeAggregator::from_iter(committee.clone(), tables.end_of_publish.safe_iter())?;
         let s = Arc::new(Self {
             name,
             committee: committee.clone(),
@@ -566,7 +564,7 @@ impl AuthorityPerEpochStore {
             reconfig_state: RwLock::new(ReconfigState {
                 status: ReconfigCertStatus::AcceptAllCerts,
             }),
-            end_of_publish: Mutex::new(StakeAggregator::new(committee)),
+            end_of_publish: Mutex::new(end_of_publish),
         });
 
         s.update_buffer_stake_metric();
