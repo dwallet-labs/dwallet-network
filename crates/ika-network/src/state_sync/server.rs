@@ -5,9 +5,10 @@ use super::{PeerHeights, StateSync, StateSyncMessage};
 use anemo::{rpc::Status, types::response::StatusCode, Request, Response, Result};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use ika_types::digests::{ChainIdentifier, SystemCheckpointDigest};
+use ika_types::digests::{ChainIdentifier, SystemCheckpointMessageDigest};
 use ika_types::messages_system_checkpoints::{
-    CertifiedSystemCheckpoint, SystemCheckpointSequenceNumber, VerifiedSystemCheckpoint,
+    CertifiedSystemCheckpointMessage, SystemCheckpointSequenceNumber,
+    VerifiedSystemCheckpointMessage,
 };
 use ika_types::{
     digests::DWalletCheckpointMessageDigest,
@@ -35,13 +36,13 @@ pub struct GetDWalletCheckpointAvailabilityResponse {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetSystemCheckpointRequest {
-    ByDigest(SystemCheckpointDigest),
+    ByDigest(SystemCheckpointMessageDigest),
     BySequenceNumber(SystemCheckpointSequenceNumber),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetSystemCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_system_checkpoint: Option<CertifiedSystemCheckpoint>,
+    pub(crate) highest_synced_system_checkpoint: Option<CertifiedSystemCheckpointMessage>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -135,7 +136,7 @@ where
 
     async fn push_system_checkpoint(
         &self,
-        request: Request<CertifiedSystemCheckpoint>,
+        request: Request<CertifiedSystemCheckpointMessage>,
     ) -> Result<Response<()>, Status> {
         let peer_id = request
             .peer_id()
@@ -175,7 +176,7 @@ where
     async fn get_system_checkpoint(
         &self,
         request: Request<GetSystemCheckpointRequest>,
-    ) -> Result<Response<Option<CertifiedSystemCheckpoint>>, Status> {
+    ) -> Result<Response<Option<CertifiedSystemCheckpointMessage>>, Status> {
         let system_checkpoint = match request.inner() {
             GetSystemCheckpointRequest::ByDigest(digest) => {
                 self.store.get_system_checkpoint_by_digest(digest)
@@ -185,7 +186,7 @@ where
                 .get_system_checkpoint_by_sequence_number(*sequence_number),
         }
         .map_err(|e| Status::internal(e.to_string()))?
-        .map(VerifiedSystemCheckpoint::into_inner);
+        .map(VerifiedSystemCheckpointMessage::into_inner);
 
         Ok(Response::new(system_checkpoint))
     }
@@ -198,7 +199,7 @@ where
             .store
             .get_highest_synced_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
-            .map(VerifiedSystemCheckpoint::into_inner);
+            .map(VerifiedSystemCheckpointMessage::into_inner);
 
         Ok(Response::new(GetSystemCheckpointAvailabilityResponse {
             highest_synced_system_checkpoint,
@@ -366,7 +367,7 @@ impl<S> tower::Service<Request<GetSystemCheckpointRequest>> for SystemCheckpoint
 where
     S: tower::Service<
             Request<GetSystemCheckpointRequest>,
-            Response = Response<Option<CertifiedSystemCheckpoint>>,
+            Response = Response<Option<CertifiedSystemCheckpointMessage>>,
             Error = Status,
         >
         + 'static
@@ -375,7 +376,7 @@ where
     <S as tower::Service<Request<GetSystemCheckpointRequest>>>::Future: Send,
     Request<GetSystemCheckpointRequest>: 'static + Send + Sync,
 {
-    type Response = Response<Option<CertifiedSystemCheckpoint>>;
+    type Response = Response<Option<CertifiedSystemCheckpointMessage>>;
     type Error = S::Error;
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 

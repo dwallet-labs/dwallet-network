@@ -1,15 +1,14 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { Transaction } from '@mysten/sui/transactions';
+import type { Transaction } from '@mysten/sui/transactions';
 
-import {
-	createSessionIdentifier,
-	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
-	getDWalletSecpState,
-	getObjectWithType,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+import { DWALLET_COORDINATOR_MOVE_MODULE_NAME, getObjectWithType } from './globals.js';
 import type { Config } from './globals.ts';
+import {
+	createBaseTransaction,
+	destroyEmptyIKACoin,
+	executeTransactionWithTiming,
+} from './transaction-utils.js';
 
 export interface CompletedPresign {
 	state: {
@@ -38,23 +37,9 @@ export async function preparePresignTransaction(
 	conf: Config,
 	dwallet_id: string,
 ): Promise<Transaction> {
-	const tx = new Transaction();
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const dWalletStateData = await getDWalletSecpState(conf);
-	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dWalletStateData.object_id,
-		initialSharedVersion: dWalletStateData.initial_shared_version,
-		mutable: true,
-	});
-	const sessionIdentifier = await createSessionIdentifier(
-		tx,
-		dwalletStateArg,
-		conf.ikaConfig.ika_system_package_id,
-	);
+	const { tx, emptyIKACoin, dwalletStateArg, sessionIdentifier } =
+		await createBaseTransaction(conf);
+
 	const presignCap = tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_presign`,
 		arguments: [
@@ -68,12 +53,8 @@ export async function preparePresignTransaction(
 	});
 
 	tx.transferObjects([presignCap], conf.suiClientKeypair.toSuiAddress());
+	destroyEmptyIKACoin(tx, emptyIKACoin, conf);
 
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
 	return tx;
 }
 
@@ -81,28 +62,25 @@ export async function executePresignTransaction(
 	conf: Config,
 	tx: Transaction,
 ): Promise<CompletedPresign> {
-	console.time(`Presign: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
-	const startSessionEvent = result.events?.at(1)?.parsedJson;
-	if (!isStartPresignEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
-	const completedPresign = await getObjectWithType(
+	const extractPresignResult = (result: any) => {
+		const startSessionEvent = result.events?.at(1)?.parsedJson;
+		if (!isStartPresignEvent(startSessionEvent)) {
+			throw new Error('invalid start session event');
+		}
+		return getObjectWithType(conf, startSessionEvent.event_data.presign_id, isCompletedPresign);
+	};
+
+	const completedPresign = await executeTransactionWithTiming(
 		conf,
-		startSessionEvent.event_data.presign_id,
-		isCompletedPresign,
+		tx,
+		'Presign',
+		extractPresignResult,
 	);
-	console.timeEnd(`Presign: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
+
 	console.log(
-		`Presign: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()} - ${startSessionEvent.event_data.presign_id}`,
+		`Presign: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()} - ${completedPresign.id.id}`,
 	);
+
 	return completedPresign;
 }
 

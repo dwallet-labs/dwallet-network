@@ -20,11 +20,15 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	MPCKeyScheme,
 	sessionIdentifierDigest,
-	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config, SharedObjectData } from './globals.ts';
+import {
+	createDWalletStateArg,
+	createEmptyIKACoin,
+	destroyEmptyIKACoin,
+	executeTransactionWithTiming,
+} from './transaction-utils.js';
 
 interface StartDKGFirstRoundEvent {
 	event_data: {
@@ -114,7 +118,6 @@ export async function createDWalletCentralizedParty(
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
-			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(firstRoundOutputResult.output),
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);
@@ -195,11 +198,7 @@ export async function prepareDKGSecondRoundTransaction(
 		bcs.vector(bcs.u8()).serialize(conf.suiClientKeypair.getPublicKey().toRawBytes()),
 	);
 
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	const emptyIKACoin = createEmptyIKACoin(tx, conf);
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
@@ -220,11 +219,7 @@ export async function prepareDKGSecondRoundTransaction(
 			tx.gas,
 		],
 	});
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	destroyEmptyIKACoin(tx, emptyIKACoin, conf);
 	return tx;
 }
 
@@ -233,31 +228,18 @@ export async function executeDKGSecondRoundTransaction(
 	firstRoundOutputResult: DKGFirstRoundOutputResult,
 	tx: Transaction,
 ): Promise<DKGSecondRoundMoveResponse> {
-	console.time(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
+	const result = await executeTransactionWithTiming(conf, tx, 'DKG second round', (result) => {
+		const startSessionEvent = result.events?.at(1)?.parsedJson;
+		if (!isStartDKGSecondRoundEvent(startSessionEvent)) {
+			throw new Error('invalid start session event');
+		}
+		return startSessionEvent;
 	});
-	if (result.errors !== undefined) {
-		throw new Error(`DKG second round failed with errors ${result.errors}`);
-	}
-	const startSessionEvent = result.events?.at(1)?.parsedJson;
-	if (!isStartDKGSecondRoundEvent(startSessionEvent)) {
-		throw new Error('invalid start session event');
-	}
+
 	const dwallet = await getObjectWithType(conf, firstRoundOutputResult.dwalletID, isActiveDWallet);
-	console.timeEnd(`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	console.log(
-		`DKG second round: ${conf.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startSessionEvent.session_identifier_preimage}`,
-	);
 	return {
 		dwallet,
-		encrypted_user_secret_key_share_id:
-			startSessionEvent.event_data.encrypted_user_secret_key_share_id,
+		encrypted_user_secret_key_share_id: result.event_data.encrypted_user_secret_key_share_id,
 	};
 }
 
@@ -280,11 +262,7 @@ async function launchDKGFirstRound(c: Config): Promise<DKGFirstRoundOutputResult
 
 export async function prepareDKGFirstRoundTransaction(c: Config): Promise<Transaction> {
 	const tx = new Transaction();
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	const emptyIKACoin = createEmptyIKACoin(tx, c);
 	const networkDecryptionKeyID = await getNetworkDecryptionKeyID(c);
 	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(c);
 	const dwalletStateArg = tx.sharedObjectRef({
@@ -309,11 +287,7 @@ export async function prepareDKGFirstRoundTransaction(c: Config): Promise<Transa
 		],
 	});
 	tx.transferObjects([dwalletCap], c.suiClientKeypair.toSuiAddress());
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${c.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	destroyEmptyIKACoin(tx, emptyIKACoin, c);
 	return tx;
 }
 
@@ -321,29 +295,20 @@ export async function executeDKGFirstRoundTransaction(
 	c: Config,
 	tx: Transaction,
 ): Promise<DKGFirstRoundOutputResult> {
-	console.time(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	const result = await c.client.signAndExecuteTransaction({
-		signer: c.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
+	const result = await executeTransactionWithTiming(c, tx, 'DKG first round', (result) => {
+		const startDKGEvent = result.events?.at(1)?.parsedJson;
+		if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
+			throw new Error('invalid start DKG first round event');
+		}
+		return startDKGEvent;
 	});
-	const startDKGEvent = result.events?.at(1)?.parsedJson;
-	if (!isStartDKGFirstRoundEvent(startDKGEvent)) {
-		throw new Error('invalid start DKG first round event');
-	}
-	const dwalletID = startDKGEvent.event_data.dwallet_id;
+
+	const dwalletID = result.event_data.dwallet_id;
 	const output = await waitForDKGFirstRoundOutput(c, dwalletID);
-	console.timeEnd(`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}`);
-	console.log(
-		`DKG first round: ${c.suiClientKeypair.getPublicKey().toSuiAddress()}, session ID : ${startDKGEvent.session_identifier_preimage}`,
-	);
 	return {
-		sessionIdentifier: startDKGEvent.session_identifier_preimage,
+		sessionIdentifier: result.session_identifier_preimage,
 		output: output,
-		dwalletCapID: startDKGEvent.event_data.dwallet_cap_id,
+		dwalletCapID: result.event_data.dwallet_cap_id,
 		dwalletID,
 	};
 }
@@ -388,13 +353,8 @@ export async function acceptEncryptedUserShare(
 	const signedPublicOutput = await conf.encryptedSecretShareSigningKeypair.sign(
 		new Uint8Array(dwalletOutput),
 	);
-	const dWalletStateData = await getDWalletSecpState(conf);
 	const tx = new Transaction();
-	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dWalletStateData.object_id,
-		initialSharedVersion: dWalletStateData.initial_shared_version,
-		mutable: true,
-	});
+	const dwalletStateArg = await createDWalletStateArg(tx, conf);
 	const dwalletIDArg = tx.pure.id(encryptedDWalletData.dwallet_id);
 	const encryptedUserSecretKeyShareIDArg = tx.pure.id(
 		encryptedDWalletData.encrypted_user_secret_key_share_id,
@@ -409,14 +369,10 @@ export async function acceptEncryptedUserShare(
 			userOutputSignatureArg,
 		],
 	});
-	const result = await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
+	await executeTransactionWithTiming(conf, tx, 'accept encrypted user share', (result) => {
+		if (result.events?.length === 0) {
+			throw new Error('failed to accept encrypted user share');
+		}
+		return result;
 	});
-	if (result.events?.length === 0) {
-		throw new Error('failed to accept encrypted user share');
-	}
 }

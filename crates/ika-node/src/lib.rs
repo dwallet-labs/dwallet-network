@@ -43,10 +43,6 @@ use ika_config::{ConsensusConfig, NodeConfig};
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use ika_core::authority::AuthorityState;
-use ika_core::checkpoints::{
-    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
-    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
-};
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
 };
@@ -55,6 +51,10 @@ use ika_core::consensus_throughput_calculator::{
     ConsensusThroughputCalculator, ConsensusThroughputProfiler, ThroughputProfileRanges,
 };
 use ika_core::consensus_validator::{IkaTxValidator, IkaTxValidatorMetrics};
+use ika_core::dwallet_checkpoints::{
+    DWalletCheckpointMetrics, DWalletCheckpointService, DWalletCheckpointStore,
+    SendDWalletCheckpointToStateSync, SubmitDWalletCheckpointToConsensus,
+};
 use ika_core::epoch::committee_store::CommitteeStore;
 use ika_core::epoch::consensus_store_pruner::ConsensusStorePruner;
 use ika_core::epoch::epoch_metrics::EpochMetrics;
@@ -277,12 +277,12 @@ impl IkaNode {
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
-            latest_system_state.previous_epoch_last_system_checkpoint_sequence_number();
+            latest_system_state.previous_epoch_last_checkpoint_sequence_number();
         let epoch_start_system_state = sui_client
             .must_get_epoch_start_system(&latest_system_state)
             .await;
         let dwallet_coordinator_inner = sui_client.must_get_dwallet_coordinator_inner_v1().await;
-        let previous_epoch_last_checkpoint_sequence_number =
+        let previous_epoch_last_dwallet_checkpoint_sequence_number =
             dwallet_coordinator_inner.previous_epoch_last_checkpoint_sequence_number;
 
         let committee = epoch_start_system_state.get_ika_committee();
@@ -478,7 +478,7 @@ impl IkaNode {
                 connection_monitor_status.clone(),
                 &registry_service,
                 ika_node_metrics.clone(),
-                previous_epoch_last_checkpoint_sequence_number,
+                previous_epoch_last_dwallet_checkpoint_sequence_number,
                 previous_epoch_last_system_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
                 network_keys_receiver.clone(),
@@ -835,7 +835,7 @@ impl IkaNode {
         system_checkpoint_metrics: Arc<SystemCheckpointMetrics>,
         _ika_node_metrics: Arc<IkaNodeMetrics>,
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
@@ -850,7 +850,7 @@ impl IkaNode {
             state.clone(),
             state_sync_handle.clone(),
             dwallet_checkpoint_metrics.clone(),
-            previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
         );
 
         let (system_checkpoint_service, system_checkpoint_service_tasks) =
@@ -951,7 +951,7 @@ impl IkaNode {
         state: Arc<AuthorityState>,
         state_sync_handle: state_sync::Handle,
         checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
-        previous_epoch_last_checkpoint_sequence_number: u64,
+        previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
     ) -> (Arc<DWalletCheckpointService>, JoinSet<()>) {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
@@ -985,7 +985,7 @@ impl IkaNode {
             checkpoint_metrics,
             max_tx_per_checkpoint,
             max_dwallet_checkpoint_size_bytes,
-            previous_epoch_last_checkpoint_sequence_number,
+            previous_epoch_last_dwallet_checkpoint_sequence_number,
         )
     }
 
@@ -1164,7 +1164,7 @@ impl IkaNode {
 
             let system_inner = sui_client.must_get_system_inner_object().await;
             let previous_epoch_last_system_checkpoint_sequence_number =
-                system_inner.previous_epoch_last_system_checkpoint_sequence_number();
+                system_inner.previous_epoch_last_checkpoint_sequence_number();
 
             let next_epoch_committee = epoch_start_system_state.get_ika_committee();
             let next_epoch = next_epoch_committee.epoch();

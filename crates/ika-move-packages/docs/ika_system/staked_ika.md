@@ -202,7 +202,7 @@ The amount for the split is invalid.
 Trying to mark stake as withdrawing when it is already marked as withdrawing.
 
 
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EAlreadyWithdrawing">EAlreadyWithdrawing</a>: u64 = 6;
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EAlreadyWithdrawing">EAlreadyWithdrawing</a>: u64 = 3;
 </code></pre>
 
 
@@ -212,7 +212,7 @@ Trying to mark stake as withdrawing when it is already marked as withdrawing.
 Stake is below the minimum staking threshold.
 
 
-<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EStakeBelowThreshold">EStakeBelowThreshold</a>: u64 = 7;
+<pre><code><b>const</b> <a href="../ika_system/staked_ika.md#(ika_system=0x0)_staked_ika_EStakeBelowThreshold">EStakeBelowThreshold</a>: u64 = 4;
 </code></pre>
 
 

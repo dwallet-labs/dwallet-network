@@ -1,37 +1,21 @@
 import { bcs } from '@mysten/bcs';
-import { Transaction } from '@mysten/sui/transactions';
 
 import type { Config } from './globals.js';
+import { DWALLET_COORDINATOR_MOVE_MODULE_NAME, getObjectWithType } from './globals.js';
 import {
-	createSessionIdentifier,
-	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
-	getDWalletSecpState,
-	getObjectWithType,
-	SUI_PACKAGE_ID,
-} from './globals.js';
+	createBaseTransaction,
+	destroyEmptyIKACoin,
+	executeTransactionWithTiming,
+} from './transaction-utils.js';
 
 export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 	conf: Config,
 	dwallet_id: string,
 	secret_share: Uint8Array,
 ) {
-	const tx = new Transaction();
-	const emptyIKACoin = tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::zero`,
-		arguments: [],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
-	const dWalletStateData = await getDWalletSecpState(conf);
-	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dWalletStateData.object_id,
-		initialSharedVersion: dWalletStateData.initial_shared_version,
-		mutable: true,
-	});
-	const sessionIdentifier = await createSessionIdentifier(
-		tx,
-		dwalletStateArg,
-		conf.ikaConfig.ika_system_package_id,
-	);
+	const { tx, emptyIKACoin, dwalletStateArg, sessionIdentifier } =
+		await createBaseTransaction(conf);
+
 	tx.moveCall({
 		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_make_dwallet_user_secret_key_shares_public`,
 		arguments: [
@@ -44,20 +28,9 @@ export async function makeDWalletUserSecretKeySharesPublicRequestEvent(
 		],
 	});
 
-	tx.moveCall({
-		target: `${SUI_PACKAGE_ID}::coin::destroy_zero`,
-		arguments: [emptyIKACoin],
-		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
-	});
+	destroyEmptyIKACoin(tx, emptyIKACoin, conf);
 
-	await conf.client.signAndExecuteTransaction({
-		signer: conf.suiClientKeypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-			showEvents: true,
-		},
-	});
+	await executeTransactionWithTiming(conf, tx, 'Make DWallet User Secret Key Shares Public');
 	await getObjectWithType(conf, dwallet_id, isDWalletWithPublicUserSecretKeyShares);
 }
 
