@@ -5,7 +5,7 @@ use ika_types::committee::{Committee, CommitteeTrait, StakeUnit};
 use ika_types::crypto::{
     AuthorityName, AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait,
 };
-use ika_types::error::IkaError;
+use ika_types::error::{IkaError, IkaResult};
 use ika_types::intent::Intent;
 use ika_types::message_envelope::{Envelope, Message};
 use serde::Serialize;
@@ -15,6 +15,7 @@ use std::hash::Hash;
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use tracing::warn;
+use typed_store::TypedStoreError;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.
 /// STRENGTH indicates whether we want a strong quorum (2f+1) or a weak quorum (f+1).
@@ -39,17 +40,16 @@ impl<S: Clone + Eq, const STRENGTH: bool> StakeAggregator<S, STRENGTH> {
         }
     }
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    pub fn from_iter<I: Iterator<Item = (AuthorityName, S)>>(
+    pub fn from_iter<I: Iterator<Item = Result<(AuthorityName, S), TypedStoreError>>>(
         committee: Arc<Committee>,
         data: I,
-    ) -> Self {
+    ) -> IkaResult<Self> {
         let mut this = Self::new(committee);
-        for (authority, s) in data {
+        for item in data {
+            let (authority, s) = item?;
             this.insert_generic(authority, s);
         }
-        this
+        Ok(this)
     }
 
     /// A generic version of inserting arbitrary type of V (e.g. void type).

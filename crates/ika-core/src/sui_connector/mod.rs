@@ -26,6 +26,7 @@ use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use sui_types::transaction::{ProgrammableTransaction, Transaction, TransactionData};
 use tokio::sync::watch;
+use tokio::sync::watch::Sender;
 use tokio::task::JoinHandle;
 use tracing::info;
 
@@ -63,6 +64,7 @@ impl SuiConnectorService {
         network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
+        end_of_publish_sender: Sender<Option<u64>>,
     ) -> anyhow::Result<Self> {
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
@@ -94,6 +96,7 @@ impl SuiConnectorService {
             next_epoch_committee_sender,
             network_keys_sender,
             new_events_sender,
+            end_of_publish_sender,
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;

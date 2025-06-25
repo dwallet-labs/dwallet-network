@@ -20,6 +20,7 @@ use ika_config::NodeConfig;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
     MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
@@ -191,6 +192,14 @@ impl DWalletMPCManager {
         }
         self.last_session_to_complete_in_current_epoch =
             update_last_session_to_complete_in_current_epoch;
+    }
+
+    pub(crate) async fn send_end_of_publish(&self) -> DwalletMPCResult<()> {
+        let tx = ConsensusTransaction::new_end_of_publish(self.epoch_store()?.name);
+        self.consensus_adapter
+            .submit_to_consensus(&vec![tx], &self.epoch_store()?)
+            .await?;
+        Ok(())
     }
 
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {

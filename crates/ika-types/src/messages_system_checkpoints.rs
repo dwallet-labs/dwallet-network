@@ -50,6 +50,7 @@ pub enum SystemCheckpointMessageKind {
     SetMaxValidatorChangeCount(u64),
     /// Set a new rate at which rewards are slashed in basis points (1/100th of a percent).
     SetRewardSlashingRate(u64),
+    EndOfPublish,
     /// Set an approved upgrade for a package.
     SetApprovedUpgrade {
         /// The ID of the package that is approved for upgrade.
