@@ -3,9 +3,7 @@
 use crate::config::{DynamicPeerValidationConfig, RemoteWriteConfig, StaticPeerValidationConfig};
 use crate::handlers::publish_metrics;
 use crate::histogram_relay::HistogramRelay;
-use crate::middleware::{
-    expect_content_length, expect_mysten_proxy_header, expect_valid_public_key,
-};
+use crate::middleware::{expect_content_length, expect_ika_proxy_header, expect_valid_public_key};
 use crate::peers::{AllowedPeer, SuiNodeProvider};
 use crate::var;
 use anyhow::Error;
@@ -14,6 +12,7 @@ use axum::{extract::DefaultBodyLimit, middleware, routing::post, Extension, Rout
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PublicKey};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_sui_client::SuiConnectorClient;
+use std::env;
 use std::fs;
 use std::io::BufReader;
 use std::net::SocketAddr;
@@ -27,7 +26,7 @@ use tokio::signal;
 use tower::ServiceBuilder;
 use tower_http::{
     timeout::TimeoutLayer,
-    trace::{DefaultOnFailure, DefaultOnResponse, TraceLayer},
+    trace::{DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
 use tracing::{info, Level};
@@ -100,6 +99,11 @@ pub fn app(
     allower: Option<SuiNodeProvider>,
     timeout_secs: Option<u64>,
 ) -> Router {
+    // Check if verbose HTTP logging is enabled via environment variable
+    let verbose_http_logging = env::var("IKA_PROXY_VERBOSE_HTTP")
+        .map(|val| val.to_lowercase() == "true" || val == "1")
+        .unwrap_or(false);
+
     // build our application with a route and our sender mpsc
     let mut router = Router::new()
         .route("/publish/metrics", post(publish_metrics))
@@ -107,38 +111,54 @@ pub fn app(
             "MAX_BODY_SIZE",
             1024 * 1024 * 5
         )))
-        .route_layer(middleware::from_fn(expect_mysten_proxy_header))
+        .route_layer(middleware::from_fn(expect_ika_proxy_header))
         .route_layer(middleware::from_fn(expect_content_length));
     if let Some(allower) = allower {
         router = router
             .route_layer(middleware::from_fn(expect_valid_public_key))
             .layer(Extension(Arc::new(allower)));
     }
+
+    // Configure TraceLayer based on verbose logging setting.
+    let trace_layer = if verbose_http_logging {
+        info!("Verbose HTTP logging enabled via IKA_PROXY_VERBOSE_HTTP environment variable");
+        TraceLayer::new_for_http()
+            .on_request(DefaultOnRequest::new().level(Level::INFO))
+            .on_response(
+                DefaultOnResponse::new()
+                    .level(Level::INFO)
+                    .latency_unit(LatencyUnit::Seconds),
+            )
+            .on_failure(
+                DefaultOnFailure::new()
+                    .level(Level::ERROR)
+                    .latency_unit(LatencyUnit::Seconds),
+            )
+    } else {
+        TraceLayer::new_for_http()
+            .on_response(
+                DefaultOnResponse::new()
+                    .level(Level::INFO)
+                    .latency_unit(LatencyUnit::Seconds),
+            )
+            .on_failure(
+                DefaultOnFailure::new()
+                    .level(Level::ERROR)
+                    .latency_unit(LatencyUnit::Seconds),
+            )
+    };
+
     router
         // Enforce on all routes.
-        // If the request does not complete within the specified timeout it will be aborted
-        // and a 408 Request Timeout response will be sent.
+        // If the request does not complete within the specified timeout, it will be aborted,
+        // and a 408-Request Timeout response will be sent.
         .layer(TimeoutLayer::new(Duration::from_secs(
             timeout_secs.unwrap_or(20),
         )))
         .layer(Extension(relay))
         .layer(Extension(labels))
         .layer(Extension(client))
-        .layer(
-            ServiceBuilder::new().layer(
-                TraceLayer::new_for_http()
-                    .on_response(
-                        DefaultOnResponse::new()
-                            .level(Level::INFO)
-                            .latency_unit(LatencyUnit::Seconds),
-                    )
-                    .on_failure(
-                        DefaultOnFailure::new()
-                            .level(Level::ERROR)
-                            .latency_unit(LatencyUnit::Seconds),
-                    ),
-            ),
-        )
+        .layer(ServiceBuilder::new().layer(trace_layer))
 }
 
 /// Server creates our http/https server
@@ -254,7 +274,7 @@ pub fn create_server_cert_enforce_peer(
     dynamic_peers: DynamicPeerValidationConfig,
     static_peers: Option<StaticPeerValidationConfig>,
     sui_client: SuiConnectorClient,
-) -> Result<(ServerConfig, Option<SuiNodeProvider>), sui_tls::rustls::Error> {
+) -> Result<(ServerConfig, Option<SuiNodeProvider>), rustls::Error> {
     let (Some(certificate_path), Some(private_key_path)) =
         (dynamic_peers.certificate_file, dynamic_peers.private_key)
     else {

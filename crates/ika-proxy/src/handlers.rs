@@ -9,11 +9,14 @@ use axum::{
     extract::{ConnectInfo, Extension},
     http::StatusCode,
 };
+use hex;
 use multiaddr::Multiaddr;
 use once_cell::sync::Lazy;
 use prometheus::{register_counter_vec, register_histogram_vec};
 use prometheus::{CounterVec, HistogramVec};
+use std::env;
 use std::net::SocketAddr;
+use tracing::{debug, info};
 
 static HANDLER_HITS: Lazy<CounterVec> = Lazy::new(|| {
     register_counter_vec!(
@@ -80,13 +83,33 @@ pub async fn publish_metrics(
     Extension(relay): Extension<HistogramRelay>,
     LenDelimProtobuf(data): LenDelimProtobuf,
 ) -> (StatusCode, &'static str) {
+
+    // Check if verbose HTTP logging is enabled.
+    let verbose_logging = env::var("IKA_PROXY_VERBOSE_HTTP")
+        .map(|val| val.to_lowercase() == "true" || val == "1")
+        .unwrap_or(false);
+
+    if verbose_logging {
+        info!(
+            ?name,
+            ?addr,
+            public_key = %hex::encode(&public_key),
+            metrics_count = %data.len(),
+            network = %labels.network,
+            inventory_hostname = %labels.inventory_hostname,
+            "Processing metrics request from node"
+        );
+    } else {
+        info!(?name, "received metrics from a node");
+    }
+
     HANDLER_HITS
         .with_label_values(&["publish_metrics", &name])
         .inc();
     let timer = HTTP_HANDLER_DURATION
         .with_label_values(&["publish_metrics", &name])
         .start_timer();
-    let data = populate_labels(name, labels.network, labels.inventory_hostname, data);
+    let data = populate_labels(name.clone(), labels.network, labels.inventory_hostname, data);
     relay.submit(data.clone());
     let response = convert_to_remote_write(
         client.clone(),
@@ -98,5 +121,17 @@ pub async fn publish_metrics(
     )
     .await;
     timer.observe_duration();
+
+    if verbose_logging {
+        let (status, message) = &response;
+        debug!(
+            name=?&name,
+            ?addr,
+            status_code = %status.as_u16(),
+            response_message = %message,
+            "Completed metrics request processing"
+        );
+    }
+
     response
 }
