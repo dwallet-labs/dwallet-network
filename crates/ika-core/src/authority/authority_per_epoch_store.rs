@@ -1209,7 +1209,7 @@ impl AuthorityPerEpochStore {
             .chain(sequenced_transactions)
             .collect();
 
-        let (verified_messages, system_checkpoint_verified_messages, notifications) = self
+        let (mut verified_messages, mut system_checkpoint_verified_messages, notifications) = self
             .process_consensus_transactions(
                 &mut output,
                 &consensus_transactions,
@@ -1227,6 +1227,12 @@ impl AuthorityPerEpochStore {
         let final_round = system_checkpoint_verified_messages
             .iter()
             .any(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
+        if final_round {
+            verified_messages.clear();
+            verified_messages.push(DWalletMessageKind::EndOfPublish);
+            system_checkpoint_verified_messages.clear();
+            system_checkpoint_verified_messages.push(SystemCheckpointMessageKind::EndOfPublish);
+        }
         let make_checkpoint = should_accept_tx || final_round;
         if make_checkpoint {
             let checkpoint_height = consensus_commit_info.round;
