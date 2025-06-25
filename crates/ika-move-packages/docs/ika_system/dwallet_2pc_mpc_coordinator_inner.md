@@ -5380,7 +5380,7 @@ A new DWalletCoordinatorInner instance ready for use
             paused_hash_schemes: vector[],
             signature_algorithms_allowed_global_presign: vector[],
         },
-        received_end_of_publish: <b>false</b>,
+        received_end_of_publish: <b>true</b>,
         extra_fields: bag::new(ctx),
     }
 }
@@ -6074,7 +6074,7 @@ Combined IKA balance from fees collected during the epoch
     <b>assert</b>!(self.pricing_and_fee_management.calculation_votes.is_none(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_EPricingCalculationVotesMustBeCompleted">EPricingCalculationVotesMustBeCompleted</a>);
     <b>assert</b>!(self.<a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_all_current_epoch_sessions_completed">all_current_epoch_sessions_completed</a>(), <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     // We advance the first epoch `0` immediately during initialization, the network doesn't participate in it and therefore, it did not send an `END_OF_PUBLISH`. For any other epoch, don't advance before the network sent an `END_OF_PUBLISH`.
-    <b>assert</b>!(self.received_end_of_publish || self.current_epoch == 0, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
+    <b>assert</b>!(self.received_end_of_publish, <a href="../ika_system/dwallet_2pc_mpc_coordinator_inner.md#(ika_system=0x0)_dwallet_2pc_mpc_coordinator_inner_ECannotAdvanceEpoch">ECannotAdvanceEpoch</a>);
     self.received_end_of_publish = <b>false</b>;
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = <b>false</b>;
