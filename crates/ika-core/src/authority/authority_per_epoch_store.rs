@@ -374,6 +374,8 @@ pub struct AuthorityEpochTables {
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
+    end_of_publish: DBMap<AuthorityName, ()>,
+
     /// Record the every protocol config version sent to the authority at the current epoch.
     /// This is used to check if the authority has already sent the protocol config version,
     /// so it not to be sent again.
@@ -929,6 +931,13 @@ impl AuthorityPerEpochStore {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
+    pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
+        self.tables()?
+            .end_of_publish
+            .insert(&origin_authority, &())?;
+        Ok(())
+    }
+
     pub fn record_protocol_config_version_sent(
         &self,
         protocol_version: ProtocolVersion,
@@ -1123,6 +1132,18 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::System(_) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                if &transaction.sender_authority() != authority {
+                    warn!(
+                        "EndOfPublish authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
@@ -1588,6 +1609,13 @@ impl AuthorityPerEpochStore {
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                self.record_end_of_publish_vote(authority)?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
             }
         }
     }

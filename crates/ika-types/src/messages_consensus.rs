@@ -41,6 +41,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
+    EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessageKey),
     DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
@@ -99,6 +100,9 @@ impl Debug for ConsensusTransactionKey {
                     seq
                 )
             }
+            ConsensusTransactionKey::EndOfPublish(authority) => {
+                write!(f, "EndOfPublish({:?})", authority.concise())
+            }
         }
     }
 }
@@ -122,6 +126,20 @@ pub struct AuthorityCapabilitiesV1 {
     /// A list of package id to move package digest to
     /// determine whether to do a protocol upgrade on sui.
     pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
+}
+
+/// Used to advertise the capabilities of each authority via consensus.
+/// This allows validators to negotiate the creation of the AdvanceEpoch transaction.
+#[derive(Serialize, Deserialize, Clone, Hash, Debug)]
+pub struct EndOfPublish {
+    /// Originating authority — must match transaction source authority from consensus.
+    pub authority: AuthorityName,
+}
+
+impl EndOfPublish {
+    pub fn new(authority: AuthorityName) -> Self {
+        Self { authority }
+    }
 }
 
 impl AuthorityCapabilitiesV1 {
@@ -169,6 +187,7 @@ pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
     SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
+    EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
@@ -334,6 +353,9 @@ impl ConsensusTransaction {
                     data.checkpoint_message.auth_sig().authority,
                     data.checkpoint_message.sequence_number,
                 )
+            }
+            ConsensusTransactionKind::EndOfPublish(origin_authority) => {
+                ConsensusTransactionKey::EndOfPublish(*origin_authority)
             }
         }
     }
