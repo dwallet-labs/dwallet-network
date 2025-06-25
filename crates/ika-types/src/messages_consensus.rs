@@ -128,20 +128,6 @@ pub struct AuthorityCapabilitiesV1 {
     pub available_move_packages: Vec<(ObjectID, MovePackageDigest)>,
 }
 
-/// Used to advertise the capabilities of each authority via consensus.
-/// This allows validators to negotiate the creation of the AdvanceEpoch transaction.
-#[derive(Serialize, Deserialize, Clone, Hash, Debug)]
-pub struct EndOfPublish {
-    /// Originating authority — must match transaction source authority from consensus.
-    pub authority: AuthorityName,
-}
-
-impl EndOfPublish {
-    pub fn new(authority: AuthorityName) -> Self {
-        Self { authority }
-    }
-}
-
 impl AuthorityCapabilitiesV1 {
     pub fn new(
         authority: AuthorityName,
