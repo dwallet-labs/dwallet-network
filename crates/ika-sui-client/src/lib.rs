@@ -1042,20 +1042,34 @@ impl SuiClientInner for SuiSdkClient {
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
 
-        // todo(zeev): clean this up and shut it down in the fullnode.
-        let current_reconfiguration_public_output = if key.reconfiguration_public_outputs.size == 0
+        // Note that if we try to read the reconfiguration public output during the first epoch,
+        // where we only had NetworkDKG, this function will error.
+        // In this case, the validator will be stuck in a loop where it can't process events
+        // until the epoch is switched, since it will be endlessly waiting for the network key.
+        // Warning: If we change the Move contract in the future to delete the reconfiguration outputs,
+        // this function will error again.
+        let first_reconfiguration_for_next_epoch_was_completed =
+            key.reconfiguration_public_outputs.size == 1
+                && key.state
+                    == DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration;
+        let awaiting_first_reconfiguration_to_complete = key.state
+            == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
+                is_first: true,
+            });
+        let no_reconfiguration_key_data = key.reconfiguration_public_outputs.size == 0;
+        let mut current_reconfiguration_public_output = vec![];
+
+        if no_reconfiguration_key_data
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
-            || key.state
-                == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
-                    is_first: true,
-                }) {
+            || awaiting_first_reconfiguration_to_complete
+            || first_reconfiguration_for_next_epoch_was_completed
+        {
             info!(
                 key_id = ?key.id,
                 epoch = ?key.current_epoch,
                 "Reconfiguration public output for key is not ready for epoch",
             );
-            vec![]
         } else {
             let current_reconfiguration_public_output_id = self
                 .get_current_reconfiguration_public_output(
@@ -1063,9 +1077,9 @@ impl SuiClientInner for SuiSdkClient {
                     key.reconfiguration_public_outputs.id,
                 )
                 .await?;
-
-            self.read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
-                .await?
+            current_reconfiguration_public_output = self
+                .read_table_vec_as_raw_bytes(current_reconfiguration_public_output_id)
+                .await?;
         };
 
         Ok(DWalletNetworkDecryptionKeyData {
