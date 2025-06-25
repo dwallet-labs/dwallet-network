@@ -196,6 +196,16 @@ pub enum ConsensusTransactionKind {
 }
 
 impl ConsensusTransaction {
+    pub fn new_end_of_publish(authority: AuthorityName) -> Self {
+        let mut hasher = DefaultHasher::new();
+        authority.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::EndOfPublish(authority),
+        }
+    }
+
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     pub fn new_dwallet_mpc_message(
         authority: AuthorityName,

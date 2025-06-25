@@ -197,21 +197,9 @@ impl DWalletMPCManager {
     }
 
     pub(crate) async fn send_end_of_publish(&self) -> DwalletMPCResult<()> {
-        let end_of_publish_session_id = [0u8; 32];
-        let output = ConsensusTransaction::new_dwallet_mpc_output(
-            self.epoch_store()?.name,
-            bcs::to_bytes(&MPCSessionPublicOutput::CompletedSuccessfully(
-                "end_of_publish".to_string().into_bytes(),
-            ))?,
-            SessionInfo {
-                session_type: SessionType::System,
-                session_identifier: end_of_publish_session_id,
-                mpc_round: MPCProtocolInitData::EndOfPublish,
-                epoch: self.epoch_id,
-            },
-        );
+        let tx = ConsensusTransaction::new_end_of_publish(self.epoch_store()?.name);
         self.consensus_adapter
-            .submit_to_consensus(&vec![output], &self.epoch_store()?)
+            .submit_to_consensus(&vec![tx], &self.epoch_store()?)
             .await?;
         Ok(())
     }
