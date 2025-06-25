@@ -11,7 +11,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::digests::ChainIdentifier;
 use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
@@ -45,6 +45,7 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
+use crate::stake_aggregator::StakeAggregator;
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
@@ -287,6 +288,7 @@ pub struct AuthorityPerEpochStore {
     dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::RwLock<DWalletMPCOutputsVerifier>>,
     pub(crate) packages_config: IkaPackagesConfig,
     reconfig_state: RwLock<ReconfigState>,
+    end_of_publish: Mutex<StakeAggregator<(), true>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -374,6 +376,7 @@ pub struct AuthorityEpochTables {
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
+    /// Validators that have sent EndOfPublish message in this epoch
     end_of_publish: DBMap<AuthorityName, ()>,
 
     /// Record the every protocol config version sent to the authority at the current epoch.
@@ -543,7 +546,7 @@ impl AuthorityPerEpochStore {
 
         let s = Arc::new(Self {
             name,
-            committee,
+            committee: committee.clone(),
             protocol_config,
             tables: ArcSwapOption::new(Some(Arc::new(tables))),
             parent_path: parent_path.to_path_buf(),
@@ -563,6 +566,7 @@ impl AuthorityPerEpochStore {
             reconfig_state: RwLock::new(ReconfigState {
                 status: ReconfigCertStatus::AcceptAllCerts,
             }),
+            end_of_publish: Mutex::new(StakeAggregator::new(committee)),
         });
 
         s.update_buffer_stake_metric();
