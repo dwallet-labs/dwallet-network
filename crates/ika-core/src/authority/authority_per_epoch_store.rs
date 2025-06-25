@@ -1399,9 +1399,11 @@ impl AuthorityPerEpochStore {
                     break;
                 }
             }
-            verified_system_checkpoint_certificates.push_back(
-                SystemCheckpointMessageKind::SetNextConfigVersion(ProtocolVersion::new(1)),
-            );
+            if output.consensus_round % 40 == 0 {
+                verified_system_checkpoint_certificates.push_back(
+                    SystemCheckpointMessageKind::SetNextConfigVersion(ProtocolVersion::new(1)),
+                );
+            }
             if !ignored {
                 output.record_consensus_message_processed(key.clone());
             }
