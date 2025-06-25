@@ -519,7 +519,7 @@ impl AuthorityPerEpochStore {
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
         packages_config: IkaPackagesConfig,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
 
@@ -568,7 +568,7 @@ impl AuthorityPerEpochStore {
         });
 
         s.update_buffer_stake_metric();
-        s
+        Ok(s)
     }
 
     /// Convert a given authority name (address) to it's corresponding [`PartyID`].
@@ -710,7 +710,7 @@ impl AuthorityPerEpochStore {
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         assert_eq!(self.epoch() + 1, new_committee.epoch);
         self.record_reconfig_halt_duration_metric();
         self.record_epoch_total_duration_metric();
@@ -726,7 +726,7 @@ impl AuthorityPerEpochStore {
         )
     }
 
-    pub fn new_at_next_epoch_for_testing(&self) -> Arc<Self> {
+    pub fn new_at_next_epoch_for_testing(&self) -> IkaResult<Arc<Self>> {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,

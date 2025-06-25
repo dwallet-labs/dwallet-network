@@ -328,7 +328,7 @@ impl IkaNode {
             epoch_start_configuration,
             chain_identifier,
             packages_config,
-        );
+        )?;
 
         info!("created epoch store");
 
