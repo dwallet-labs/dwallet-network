@@ -1317,63 +1317,64 @@ impl AuthorityPerEpochStore {
             BTreeMap::new();
 
         for tx in transactions {
-            if self.should_accept_tx() {
-                let key = tx.0.transaction.key();
-                let mut ignored = false;
-                // let mut filter_roots = false;
-                match self
-                    .process_consensus_transaction(
-                        output,
-                        tx,
-                        checkpoint_service,
-                        system_checkpoint_service,
-                        consensus_commit_info.round,
-                        authority_metrics,
-                    )
-                    .await?
-                {
-                    ConsensusCertificateResult::IkaTransaction(cert) => {
-                        notifications.push(key.clone());
-                        verified_certificates.push_back(cert);
-                    }
-                    ConsensusCertificateResult::SystemTransaction(cert) => {
-                        notifications.push(key.clone());
-                        verified_system_checkpoint_certificates.push_back(cert);
-                    }
-                    // This is a special transaction needed for NetworkDKG to bypass TX
-                    // size limits.
-                    ConsensusCertificateResult::IkaBulkTransaction(certs) => {
-                        notifications.push(key.clone());
-                        certs
-                            .into_iter()
-                            .for_each(|cert| verified_certificates.push_back(cert));
-                    }
-                    // ConsensusCertificateResult::Cancelled((cert, reason)) => {
-                    //     notifications.push(key.clone());
-                    //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
-                    //     verified_certificates.push_back(cert);
-                    // }
-                    ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
-                    ConsensusCertificateResult::IgnoredSystem => {
-                        // filter_roots = true;
-                    }
-                    // Note: ignored external transactions must not be recorded as processed. Otherwise
-                    // they may not get reverted after restart during epoch change.
-                    ConsensusCertificateResult::Ignored => {
-                        ignored = true;
-                        // filter_roots = true;
-                    }
-                    ConsensusCertificateResult::EndOfPublish => {
-                        verified_certificates.push_back(DWalletMessageKind::EndOfPublish);
-                        verified_system_checkpoint_certificates
-                            .push_back(SystemCheckpointMessageKind::EndOfPublish);
-                        let mut reconfig_state = self.reconfig_state.write();
-                        reconfig_state.status = ReconfigCertStatus::RejectAllTx;
-                    }
+            if !self.should_accept_tx() {
+                break;
+            }
+            let key = tx.0.transaction.key();
+            let mut ignored = false;
+            // let mut filter_roots = false;
+            match self
+                .process_consensus_transaction(
+                    output,
+                    tx,
+                    checkpoint_service,
+                    system_checkpoint_service,
+                    consensus_commit_info.round,
+                    authority_metrics,
+                )
+                .await?
+            {
+                ConsensusCertificateResult::IkaTransaction(cert) => {
+                    notifications.push(key.clone());
+                    verified_certificates.push_back(cert);
                 }
-                if !ignored {
-                    output.record_consensus_message_processed(key.clone());
+                ConsensusCertificateResult::SystemTransaction(cert) => {
+                    notifications.push(key.clone());
+                    verified_system_checkpoint_certificates.push_back(cert);
                 }
+                // This is a special transaction needed for NetworkDKG to bypass TX
+                // size limits.
+                ConsensusCertificateResult::IkaBulkTransaction(certs) => {
+                    notifications.push(key.clone());
+                    certs
+                        .into_iter()
+                        .for_each(|cert| verified_certificates.push_back(cert));
+                }
+                // ConsensusCertificateResult::Cancelled((cert, reason)) => {
+                //     notifications.push(key.clone());
+                //     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
+                //     verified_certificates.push_back(cert);
+                // }
+                ConsensusCertificateResult::ConsensusMessage => notifications.push(key.clone()),
+                ConsensusCertificateResult::IgnoredSystem => {
+                    // filter_roots = true;
+                }
+                // Note: ignored external transactions must not be recorded as processed. Otherwise
+                // they may not get reverted after restart during epoch change.
+                ConsensusCertificateResult::Ignored => {
+                    ignored = true;
+                    // filter_roots = true;
+                }
+                ConsensusCertificateResult::EndOfPublish => {
+                    verified_certificates.push_back(DWalletMessageKind::EndOfPublish);
+                    verified_system_checkpoint_certificates
+                        .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                    let mut reconfig_state = self.reconfig_state.write();
+                    reconfig_state.status = ReconfigCertStatus::RejectAllTx;
+                }
+            }
+            if !ignored {
+                output.record_consensus_message_processed(key.clone());
             }
         }
         // Save all the dWallet-MPC related DB data to the consensus commit output to
