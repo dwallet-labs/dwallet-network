@@ -1891,7 +1891,6 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCProtocolInitData::EndOfPublish => Ok(ConsensusCertificateResult::EndOfPublish),
         }
     }
 
