@@ -1347,9 +1347,6 @@ impl AuthorityPerEpochStore {
             BTreeMap::new();
 
         for tx in transactions {
-            if !self.should_accept_tx() {
-                break;
-            }
             let key = tx.0.transaction.key();
             let mut ignored = false;
             // let mut filter_roots = false;
