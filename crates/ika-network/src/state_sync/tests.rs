@@ -233,7 +233,7 @@ async fn isolated_sync_job() {
         .peer_heights
         .write()
         .unwrap()
-        .insert_checkpoint(ordered_checkpoints.last().cloned().unwrap().into_inner());
+        .insert_dwallet_checkpoint(ordered_checkpoints.last().cloned().unwrap().into_inner());
 
     // Sync the data
     event_loop_1.maybe_start_checkpoint_summary_sync_task();
@@ -698,7 +698,7 @@ async fn sync_with_checkpoints_watermark() {
         .inner_mut()
         .set_lowest_available_checkpoint(a_very_high_checkpoint_seq);
 
-    assert!(peer_heights_2.write().unwrap().update_peer_info(
+    assert!(peer_heights_2.write().unwrap().update_peer_dwallet_info(
         peer_id_1,
         checkpoint_1.clone().into(),
         Some(a_very_high_checkpoint_seq),

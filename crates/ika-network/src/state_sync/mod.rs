@@ -225,7 +225,7 @@ impl PeerHeights {
     // This will return false if the given peer doesn't have an entry or is not on the same chain
     // as us
     #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, checkpoint=?checkpoint.sequence_number()))]
-    pub fn update_peer_info(
+    pub fn update_peer_dwallet_info(
         &mut self,
         peer_id: PeerId,
         checkpoint: CertifiedDWalletCheckpointMessage,
@@ -237,8 +237,33 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.dwallet_height = std::cmp::max(Some(*checkpoint.sequence_number()), info.dwallet_height);
-        self.insert_checkpoint(checkpoint);
+        info.dwallet_height =
+            std::cmp::max(Some(*checkpoint.sequence_number()), info.dwallet_height);
+        self.insert_dwallet_checkpoint(checkpoint);
+
+        true
+    }
+
+    // Returns a bool that indicates if the update was done successfully.
+    //
+    // This will return false if the given peer doesn't have an entry or is not on the same chain
+    // as us
+    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, checkpoint=?checkpoint.sequence_number()))]
+    pub fn update_peer_system_info(
+        &mut self,
+        peer_id: PeerId,
+        checkpoint: CertifiedSystemCheckpointMessage,
+    ) -> bool {
+        debug!("Update peer info");
+
+        let info = match self.peers.get_mut(&peer_id) {
+            Some(info) if info.on_same_chain_as_us => info,
+            _ => return false,
+        };
+
+        info.system_height =
+            std::cmp::max(Some(*checkpoint.sequence_number()), info.system_height);
+        self.insert_system_checkpoint(checkpoint);
 
         true
     }
@@ -298,14 +323,14 @@ impl PeerHeights {
     }
 
     // TODO: also record who gives this checkpoint info for peer quality measurement?
-    pub fn insert_checkpoint(&mut self, checkpoint: CertifiedDWalletCheckpointMessage) {
+    pub fn insert_dwallet_checkpoint(&mut self, checkpoint: CertifiedDWalletCheckpointMessage) {
         let digest = *checkpoint.digest();
         let sequence_number = *checkpoint.sequence_number();
         self.unprocessed_checkpoints.insert(digest, checkpoint);
         self.sequence_number_to_digest
             .insert(sequence_number, digest);
     }
-
+    
     #[allow(unused)]
     pub fn remove_checkpoint(&mut self, digest: &DWalletCheckpointMessageDigest) {
         if let Some(checkpoint) = self.unprocessed_checkpoints.remove(digest) {
@@ -986,7 +1011,7 @@ async fn get_latest_from_peer(
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
                     dwallet_height: None,
-                    system_height: None
+                    system_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");
@@ -1006,20 +1031,26 @@ async fn get_latest_from_peer(
         trace!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
-    let Some(highest_checkpoint) = query_peer_for_latest_info(&mut client, timeout).await else {
-        return;
+    let result = query_peer_for_latest_info(&mut client, timeout).await;
+    if let Some(highest_dwallet_checkpoint) = result.0 {
+        peer_heights
+            .write()
+            .unwrap()
+            .update_peer_dwallet_info(peer_id, highest_dwallet_checkpoint);
     };
-    peer_heights
-        .write()
-        .unwrap()
-        .update_peer_info(peer_id, highest_checkpoint);
+    if let Some(highest_system_checkpoint) = result.1 {
+        peer_heights
+            .write()
+            .unwrap()
+            .update_peer_system_info(peer_id, highest_system_checkpoint);
+    };
 }
 
 /// Queries a peer for their highest_synced_checkpoint and low checkpoint watermark
 async fn query_peer_for_latest_info(
     client: &mut StateSyncClient<anemo::Peer>,
     timeout: Duration,
-) -> Option<CertifiedDWalletCheckpointMessage> {
+) -> (Option<CertifiedDWalletCheckpointMessage>, Option<CertifiedSystemCheckpointMessage>) {
     let request = Request::new(()).with_timeout(timeout);
     let response = client
         .get_dwallet_checkpoint_availability(request)
@@ -1027,11 +1058,12 @@ async fn query_peer_for_latest_info(
         .map(Response::into_inner);
     match response {
         Ok(GetDWalletCheckpointAvailabilityResponse {
-            highest_synced_checkpoint,
-        }) => highest_synced_checkpoint,
+            highest_synced_dwallet_checkpoint,
+            highest_synced_system_checkpoint,
+        }) => (highest_synced_dwallet_checkpoint, highest_synced_system_checkpoint),
         Err(status) => {
             trace!("get_dwallet_checkpoint_availability request failed: {status:?}");
-            None
+            (None, None)
         }
     }
 }
@@ -1060,7 +1092,7 @@ async fn query_peers_for_their_latest_checkpoint(
                     Some(highest_checkpoint) => peer_heights
                         .write()
                         .unwrap()
-                        .update_peer_info(peer_id, highest_checkpoint.clone())
+                        .update_peer_dwallet_info(peer_id, highest_checkpoint.clone())
                         .then_some(highest_checkpoint),
                     None => None,
                 }
@@ -1186,7 +1218,7 @@ where
                         peer_heights
                             .write()
                             .unwrap()
-                            .insert_checkpoint(checkpoint.clone());
+                            .insert_dwallet_checkpoint(checkpoint.clone());
                         return (Some(checkpoint), next, Some(peer.inner().peer_id()));
                     }
                 }
@@ -1329,7 +1361,7 @@ async fn get_latest_from_peer_system_checkpoint(
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
                     dwallet_height: None,
-                    system_height: None
+                    system_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");

@@ -31,7 +31,8 @@ pub enum GetCheckpointMessageRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GetDWalletCheckpointAvailabilityResponse {
-    pub(crate) highest_synced_checkpoint: Option<CertifiedDWalletCheckpointMessage>,
+    pub(crate) highest_synced_dwallet_checkpoint: Option<CertifiedDWalletCheckpointMessage>,
+    pub(crate) highest_synced_system_checkpoint: Option<CertifiedSystemCheckpointMessage>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
@@ -76,7 +77,7 @@ where
             .peer_heights
             .write()
             .unwrap()
-            .update_peer_info(peer_id, checkpoint.clone())
+            .update_peer_dwallet_info(peer_id, checkpoint.clone())
         {
             return Ok(Response::new(()));
         }
@@ -123,14 +124,21 @@ where
         &self,
         _request: Request<()>,
     ) -> Result<Response<GetDWalletCheckpointAvailabilityResponse>, Status> {
-        let highest_synced_checkpoint = self
+        let highest_synced_dwallet_checkpoint = self
             .store
             .get_highest_synced_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedDWalletCheckpointMessage::into_inner);
 
+        let highest_synced_system_checkpoint = self
+            .store
+            .get_highest_synced_system_checkpoint()
+            .map_err(|e| Status::internal(e.to_string()))?
+            .map(VerifiedSystemCheckpointMessage::into_inner);
+        
         Ok(Response::new(GetDWalletCheckpointAvailabilityResponse {
-            highest_synced_checkpoint,
+            highest_synced_dwallet_checkpoint,
+            highest_synced_system_checkpoint 
         }))
     }
 
