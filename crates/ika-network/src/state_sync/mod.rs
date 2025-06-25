@@ -797,7 +797,7 @@ where
     }
 
     fn handle_tick(&mut self, _now: std::time::Instant) {
-        let task = query_peers_for_their_latest_checkpoint(
+        let task = query_peers_for_their_latest_dwallet_checkpoint(
             self.network.clone(),
             self.peer_heights.clone(),
             self.weak_sender.clone(),
@@ -808,7 +808,6 @@ where
         if let Some(layer) = self.download_limit_layer.as_ref() {
             layer.maybe_prune_map();
         }
-
         let task = query_peers_for_their_latest_system_checkpoint(
             self.network.clone(),
             self.peer_heights.clone(),
@@ -1074,7 +1073,7 @@ async fn query_peer_for_latest_info(
 }
 
 #[instrument(level = "debug", skip_all)]
-async fn query_peers_for_their_latest_checkpoint(
+async fn query_peers_for_their_latest_dwallet_checkpoint(
     network: anemo::Network,
     peer_heights: Arc<RwLock<PeerHeights>>,
     sender: mpsc::WeakSender<StateSyncMessage>,
@@ -1098,14 +1097,6 @@ async fn query_peers_for_their_latest_checkpoint(
                         .write()
                         .unwrap()
                         .update_peer_dwallet_info(peer_id, highest_checkpoint.clone())
-                        .then_some(highest_checkpoint),
-                    None => None,
-                }
-                match response.1 {
-                    Some(highest_checkpoint) => peer_heights
-                        .write()
-                        .unwrap()
-                        .update_peer_system_info(peer_id, highest_checkpoint.clone())
                         .then_some(highest_checkpoint),
                     None => None,
                 }
