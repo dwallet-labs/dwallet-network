@@ -236,7 +236,7 @@ async fn isolated_sync_job() {
         .insert_dwallet_checkpoint(ordered_checkpoints.last().cloned().unwrap().into_inner());
 
     // Sync the data
-    event_loop_1.maybe_start_checkpoint_summary_sync_task();
+    event_loop_1.maybe_start_dwallet_checkpoint_summary_sync_task();
     event_loop_1.tasks.join_next().await.unwrap().unwrap();
     assert_eq!(
         ordered_checkpoints.last().map(|x| x.data()),

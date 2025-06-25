@@ -244,29 +244,6 @@ impl PeerHeights {
         true
     }
 
-    // Returns a bool that indicates if the update was done successfully.
-    //
-    // This will return false if the given peer doesn't have an entry or is not on the same chain
-    // as us
-    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, checkpoint=?checkpoint.sequence_number()))]
-    pub fn update_peer_system_info(
-        &mut self,
-        peer_id: PeerId,
-        checkpoint: CertifiedSystemCheckpointMessage,
-    ) -> bool {
-        debug!("Update peer info");
-
-        let info = match self.peers.get_mut(&peer_id) {
-            Some(info) if info.on_same_chain_as_us => info,
-            _ => return false,
-        };
-
-        info.system_height = std::cmp::max(Some(*checkpoint.sequence_number()), info.system_height);
-        self.insert_system_checkpoint(checkpoint);
-
-        true
-    }
-
     pub fn update_peer_info_with_system_checkpoint(
         &mut self,
         peer_id: PeerId,
@@ -279,7 +256,7 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.dwallet_height = std::cmp::max(Some(*params.sequence_number()), info.dwallet_height);
+        info.system_height = std::cmp::max(Some(*params.sequence_number()), info.system_height);
         self.insert_system_checkpoint(params);
 
         true
@@ -447,7 +424,7 @@ impl PeerBalancer {
         }
     }
 
-    pub fn with_checkpoint(mut self, checkpoint: DWalletCheckpointSequenceNumber) -> Self {
+    pub fn with_dwallet_checkpoint(mut self, checkpoint: DWalletCheckpointSequenceNumber) -> Self {
         self.requested_dwallet_checkpoint = Some(checkpoint);
         self
     }
@@ -631,7 +608,7 @@ where
                 },
             }
 
-            self.maybe_start_checkpoint_summary_sync_task();
+            self.maybe_start_dwallet_checkpoint_summary_sync_task();
             self.maybe_start_system_checkpoint_summary_sync_task();
         }
 
@@ -642,7 +619,7 @@ where
         debug!("Received message: {:?}", message);
         match message {
             StateSyncMessage::StartSyncJob => {
-                self.maybe_start_checkpoint_summary_sync_task();
+                self.maybe_start_dwallet_checkpoint_summary_sync_task();
                 self.maybe_start_system_checkpoint_summary_sync_task();
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
@@ -822,7 +799,7 @@ where
         }
     }
 
-    fn maybe_start_checkpoint_summary_sync_task(&mut self) {
+    fn maybe_start_dwallet_checkpoint_summary_sync_task(&mut self) {
         // Only run one sync task at a time
         if self.sync_checkpoint_messages_task.is_some() {
             return;
@@ -1157,7 +1134,7 @@ where
     let mut request_stream = (current_sequence_number.map(|s| s.checked_add(1).expect("exhausted u64")).unwrap_or(1)
         ..=*checkpoint.sequence_number())
         .map(|next| {
-            let peers = peer_balancer.clone().with_checkpoint(next);
+            let peers = peer_balancer.clone().with_dwallet_checkpoint(next);
             let peer_heights = peer_heights.clone();
             let pinned_checkpoints = &pinned_checkpoints;
             async move {
