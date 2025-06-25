@@ -253,7 +253,7 @@ public(package) fun create(
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        received_end_of_publish: false,
+        received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     };
     (system_state, protocol_cap)
@@ -570,7 +570,7 @@ public(package) fun advance_epoch(
     let last_epoch_change = self.epoch_start_timestamp_ms;
     let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
     assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
-    assert!(self.received_end_of_publish || self.epoch == 0, EHaveNotReachedEndEpochTime);
+    assert!(self.received_end_of_publish, EHaveNotReachedEndEpochTime);
     self.received_end_of_publish = false;
     self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;

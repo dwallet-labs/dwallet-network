@@ -1859,7 +1859,7 @@ public(package) fun create_dwallet_coordinator_inner(
             paused_hash_schemes: vector[],
             signature_algorithms_allowed_global_presign: vector[],
         },
-        received_end_of_publish: false,
+        received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     }
 }
@@ -2254,7 +2254,7 @@ public(package) fun advance_epoch(
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     // We advance the first epoch `0` immediately during initialization, the network doesn't participate in it and therefore, it did not send an `END_OF_PUBLISH`. For any other epoch, don't advance before the network sent an `END_OF_PUBLISH`.
-    assert!(self.received_end_of_publish || self.current_epoch == 0, ECannotAdvanceEpoch);
+    assert!(self.received_end_of_publish, ECannotAdvanceEpoch);
     self.received_end_of_publish = false;
 
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
