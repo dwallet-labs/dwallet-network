@@ -1222,29 +1222,36 @@ impl AuthorityPerEpochStore {
             .await?;
         //self.finish_consensus_certificate_process_with_batch(&mut output, &verified_transactions)?;
         output.record_consensus_commit_stats(consensus_stats.clone());
+        // Create pending checkpoints if we are still accepting tx.
+        let should_accept_tx = self.should_accept_tx();
+        let final_round = system_checkpoint_verified_messages
+            .iter()
+            .any(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
+        let make_checkpoint = should_accept_tx || final_round;
+        if make_checkpoint {
+            let checkpoint_height = consensus_commit_info.round;
 
-        let checkpoint_height = consensus_commit_info.round;
+            let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                messages: verified_messages.clone(),
+                details: PendingDWalletCheckpointInfo {
+                    timestamp_ms: consensus_commit_info.timestamp,
+                    checkpoint_height,
+                },
+            });
+            self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
 
-        let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-            messages: verified_messages.clone(),
-            details: PendingDWalletCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                checkpoint_height,
-            },
-        });
-        self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
+            let system_checkpoint_height = consensus_commit_info.round;
 
-        let system_checkpoint_height = consensus_commit_info.round;
-
-        let pending_system_checkpoint = PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
-            messages: system_checkpoint_verified_messages.clone(),
-            details: PendingSystemCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                checkpoint_height: system_checkpoint_height,
-            },
-        });
-        self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
-
+            let pending_system_checkpoint =
+                PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
+                    messages: system_checkpoint_verified_messages.clone(),
+                    details: PendingSystemCheckpointInfo {
+                        timestamp_ms: consensus_commit_info.timestamp,
+                        checkpoint_height: system_checkpoint_height,
+                    },
+                });
+            self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
+        }
         system_checkpoint_verified_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
                 SystemCheckpointMessageKind::SetNextConfigVersion(version) => {
