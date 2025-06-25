@@ -297,6 +297,7 @@ impl PeerHeights {
                 let entry = entry.get_mut();
                 if entry.chain_identifier == info.chain_identifier {
                     entry.dwallet_height = std::cmp::max(entry.dwallet_height, info.dwallet_height);
+                    entry.system_height = std::cmp::max(entry.system_height, info.system_height);
                 } else {
                     *entry = info;
                 }
@@ -778,7 +779,7 @@ where
 
     fn spawn_get_latest_from_peer(&mut self, peer_id: PeerId) {
         if let Some(peer) = self.network.peer(peer_id) {
-            let task = get_latest_from_peer(
+            let task = get_latest_dwallet_info_from_peer(
                 self.chain_identifier,
                 peer.clone(),
                 self.peer_heights.clone(),
@@ -983,7 +984,7 @@ async fn notify_peers_of_system_checkpoint(
     futures::future::join_all(futs).await;
 }
 
-async fn get_latest_from_peer(
+async fn get_latest_dwallet_info_from_peer(
     our_chain_identifier: ChainIdentifier,
     peer: anemo::Peer,
     peer_heights: Arc<RwLock<PeerHeights>>,
@@ -1029,29 +1030,20 @@ async fn get_latest_from_peer(
         trace!(?info, "Peer {peer_id} not on same chain as us");
         return;
     }
-    let result = query_peer_for_latest_info(&mut client, timeout).await;
-    if let Some(highest_dwallet_checkpoint) = result.0 {
+    let result = query_peer_for_latest_dwallet_info(&mut client, timeout).await;
+    if let Some(highest_dwallet_checkpoint) = result {
         peer_heights
             .write()
             .unwrap()
             .update_peer_dwallet_info(peer_id, highest_dwallet_checkpoint);
     };
-    if let Some(highest_system_checkpoint) = result.1 {
-        peer_heights
-            .write()
-            .unwrap()
-            .update_peer_system_info(peer_id, highest_system_checkpoint);
-    };
 }
 
 /// Queries a peer for their highest_synced_checkpoint and low checkpoint watermark
-async fn query_peer_for_latest_info(
+async fn query_peer_for_latest_dwallet_info(
     client: &mut StateSyncClient<anemo::Peer>,
     timeout: Duration,
-) -> (
-    Option<CertifiedDWalletCheckpointMessage>,
-    Option<CertifiedSystemCheckpointMessage>,
-) {
+) -> Option<CertifiedDWalletCheckpointMessage> {
     let request = Request::new(()).with_timeout(timeout);
     let response = client
         .get_dwallet_checkpoint_availability(request)
@@ -1060,14 +1052,11 @@ async fn query_peer_for_latest_info(
     match response {
         Ok(GetDWalletCheckpointAvailabilityResponse {
             highest_synced_dwallet_checkpoint,
-            highest_synced_system_checkpoint,
-        }) => (
-            highest_synced_dwallet_checkpoint,
-            highest_synced_system_checkpoint,
-        ),
+            ..
+        }) => highest_synced_dwallet_checkpoint,
         Err(status) => {
             trace!("get_dwallet_checkpoint_availability request failed: {status:?}");
-            (None, None)
+            None
         }
     }
 }
@@ -1091,7 +1080,7 @@ async fn query_peers_for_their_latest_dwallet_checkpoint(
             let mut client = StateSyncClient::new(peer);
 
             async move {
-                let response = query_peer_for_latest_info(&mut client, timeout).await;
+                let response = query_peer_for_latest_dwallet_info(&mut client, timeout).await;
                 match response.0 {
                     Some(highest_checkpoint) => peer_heights
                         .write()
