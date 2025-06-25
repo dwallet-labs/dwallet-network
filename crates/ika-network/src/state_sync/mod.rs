@@ -285,7 +285,7 @@ impl PeerHeights {
         true
     }
 
-    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, height = ?info.height))]
+    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, dwallet_height = ?info.dwallet_height, system_height = ?info.system_height))]
     pub fn insert_peer_info(&mut self, peer_id: PeerId, info: PeerStateSyncInfo) {
         use std::collections::hash_map::Entry;
         debug!("Insert peer info");
@@ -1093,11 +1093,19 @@ async fn query_peers_for_their_latest_checkpoint(
 
             async move {
                 let response = query_peer_for_latest_info(&mut client, timeout).await;
-                match response {
+                match response.0 {
                     Some(highest_checkpoint) => peer_heights
                         .write()
                         .unwrap()
                         .update_peer_dwallet_info(peer_id, highest_checkpoint.clone())
+                        .then_some(highest_checkpoint),
+                    None => None,
+                }
+                match response.1 {
+                    Some(highest_checkpoint) => peer_heights
+                        .write()
+                        .unwrap()
+                        .update_peer_system_info(peer_id, highest_checkpoint.clone())
                         .then_some(highest_checkpoint),
                     None => None,
                 }
