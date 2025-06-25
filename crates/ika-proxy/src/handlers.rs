@@ -83,7 +83,6 @@ pub async fn publish_metrics(
     Extension(relay): Extension<HistogramRelay>,
     LenDelimProtobuf(data): LenDelimProtobuf,
 ) -> (StatusCode, &'static str) {
-
     // Check if verbose HTTP logging is enabled.
     let verbose_logging = env::var("IKA_PROXY_VERBOSE_HTTP")
         .map(|val| val.to_lowercase() == "true" || val == "1")
@@ -109,7 +108,12 @@ pub async fn publish_metrics(
     let timer = HTTP_HANDLER_DURATION
         .with_label_values(&["publish_metrics", &name])
         .start_timer();
-    let data = populate_labels(name.clone(), labels.network, labels.inventory_hostname, data);
+    let data = populate_labels(
+        name.clone(),
+        labels.network,
+        labels.inventory_hostname,
+        data,
+    );
     relay.submit(data.clone());
     let response = convert_to_remote_write(
         client.clone(),
