@@ -13,25 +13,37 @@ ARG WORKDIR=/opt
 ENV CARGO_HOME=/usr/local/cargo
 ENV GIT_REVISION=$GIT_REVISION
 
-# Setup GitHub token for private repos
-RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
 # Install build dependencies
 RUN apt-get update && apt-get install -y cmake clang pkg-config libssl-dev
 # Set working directory
 WORKDIR ${WORKDIR}/ika
+
+# Setup GitHub token for private repos
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+RUN git clone --depth 1 https://github.com/dwallet-labs/dwallet-network.git --branch ika-main --single-branch
+RUN cp -a dwallet-network/Cargo.toml .
+RUN cp -a dwallet-network/Cargo.lock .
+RUN cp -a dwallet-network/crates .
+RUN cp -a dwallet-network/class-groups-keys-mock-files .
+
+RUN cargo fetch --locked
 
 # Copy Cargo manifests and crate folders for dependency resolution
 COPY Cargo.toml Cargo.lock ./
 COPY crates crates
 COPY class-groups-keys-mock-files class-groups-keys-mock-files
 
+#RUN #find crates -mindepth 2 -name Cargo.toml \
+#    -exec sh -c 'mkdir -p "$(dirname {})/src" && touch "$(dirname {})/src/lib.rs"' \;
 # Build dependencies first for better layer caching
 # --locked ensures you never accidentally change dependencies during a build.
 # Build dependencies first for better layer caching
-RUN cargo fetch --locked
+#RUN #cargo fetch --locked
 
 # Conditionally compile with the network DKG feature
+#RUN #cargo build --profile ${PROFILE} --locked --bin ika-node
+
+#COPY crates crates
 RUN cargo build --profile ${PROFILE} --locked --bin ika-node
 
 # ==========================

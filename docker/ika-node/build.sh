@@ -51,6 +51,14 @@ echo "Docker tag:      $DOCKER_TAG"
 echo "Build profile:   $PROFILE"
 echo
 
+pushd "$REPO_ROOT"
+find crates -name Cargo.toml | while read file; do
+  dir=$(dirname "$file")
+  mkdir -p "crates_manifests/$dir"
+  cp -a "$file" "crates_manifests/$dir/"
+done
+
+
 docker build -f "$DOCKERFILE" "$REPO_ROOT" \
   --build-arg GIT_REVISION="$GIT_REVISION" \
   --build-arg BUILD_DATE="$BUILD_DATE" \
