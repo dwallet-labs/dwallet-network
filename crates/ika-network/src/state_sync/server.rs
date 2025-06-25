@@ -135,10 +135,10 @@ where
             .get_highest_synced_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedSystemCheckpointMessage::into_inner);
-        
+
         Ok(Response::new(GetDWalletCheckpointAvailabilityResponse {
             highest_synced_dwallet_checkpoint,
-            highest_synced_system_checkpoint 
+            highest_synced_system_checkpoint,
         }))
     }
 

@@ -261,8 +261,7 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.system_height =
-            std::cmp::max(Some(*checkpoint.sequence_number()), info.system_height);
+        info.system_height = std::cmp::max(Some(*checkpoint.sequence_number()), info.system_height);
         self.insert_system_checkpoint(checkpoint);
 
         true
@@ -330,7 +329,7 @@ impl PeerHeights {
         self.sequence_number_to_digest
             .insert(sequence_number, digest);
     }
-    
+
     #[allow(unused)]
     pub fn remove_checkpoint(&mut self, digest: &DWalletCheckpointMessageDigest) {
         if let Some(checkpoint) = self.unprocessed_checkpoints.remove(digest) {
@@ -1050,7 +1049,10 @@ async fn get_latest_from_peer(
 async fn query_peer_for_latest_info(
     client: &mut StateSyncClient<anemo::Peer>,
     timeout: Duration,
-) -> (Option<CertifiedDWalletCheckpointMessage>, Option<CertifiedSystemCheckpointMessage>) {
+) -> (
+    Option<CertifiedDWalletCheckpointMessage>,
+    Option<CertifiedSystemCheckpointMessage>,
+) {
     let request = Request::new(()).with_timeout(timeout);
     let response = client
         .get_dwallet_checkpoint_availability(request)
@@ -1060,7 +1062,10 @@ async fn query_peer_for_latest_info(
         Ok(GetDWalletCheckpointAvailabilityResponse {
             highest_synced_dwallet_checkpoint,
             highest_synced_system_checkpoint,
-        }) => (highest_synced_dwallet_checkpoint, highest_synced_system_checkpoint),
+        }) => (
+            highest_synced_dwallet_checkpoint,
+            highest_synced_system_checkpoint,
+        ),
         Err(status) => {
             trace!("get_dwallet_checkpoint_availability request failed: {status:?}");
             (None, None)
