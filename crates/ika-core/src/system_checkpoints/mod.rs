@@ -526,10 +526,7 @@ impl SystemCheckpointBuilder {
     }
 
     #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
-    async fn make_checkpoint(
-        &mut self,
-        pendings: Vec<PendingSystemCheckpoint>,
-    ) -> anyhow::Result<()> {
+    async fn make_checkpoint(&self, pendings: Vec<PendingSystemCheckpoint>) -> anyhow::Result<()> {
         let last_details = pendings.last().unwrap().details().clone();
 
         // Keeps track of the effects that are already included in the current checkpoint.
