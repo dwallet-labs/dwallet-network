@@ -1619,6 +1619,14 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 self.record_end_of_publish_vote(authority)?;
+                let mut end_of_publish = self.end_of_publish.lock();
+                if !end_of_publish.has_quorum()
+                    && end_of_publish
+                        .insert_generic(*authority, ())
+                        .is_quorum_reached()
+                {
+                    return Ok(ConsensusCertificateResult::EndOfPublish);
+                }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
         }
