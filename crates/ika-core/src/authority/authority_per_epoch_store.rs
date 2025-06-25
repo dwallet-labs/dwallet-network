@@ -1266,9 +1266,7 @@ impl AuthorityPerEpochStore {
                         warn!("Failed to insert params message digest into the table");
                     }
                 }
-                SystemCheckpointMessageKind::EndOfPublish => {
-                    // Do nothing. This TX only purpose is to pause the checkpoint builder.
-                }
+                SystemCheckpointMessageKind::EndOfPublish => {}
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
                 SystemCheckpointMessageKind::SetEpochDurationMs(_)
                 | SystemCheckpointMessageKind::SetStakeSubsidyStartEpoch(_)
