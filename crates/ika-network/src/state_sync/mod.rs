@@ -211,7 +211,10 @@ impl PeerHeights {
     ) -> Option<DWalletCheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.system_checkpoint_height))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.system_checkpoint_height)
+            })
             .max()?
     }
 
@@ -256,7 +259,10 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.system_checkpoint_height = std::cmp::max(Some(*system_checkpoint.sequence_number()), info.system_checkpoint_height);
+        info.system_checkpoint_height = std::cmp::max(
+            Some(*system_checkpoint.sequence_number()),
+            info.system_checkpoint_height,
+        );
         self.insert_system_checkpoint(system_checkpoint);
 
         true
@@ -274,7 +280,10 @@ impl PeerHeights {
                 let entry = entry.get_mut();
                 if entry.chain_identifier == info.chain_identifier {
                     entry.height = std::cmp::max(entry.height, info.height);
-                    entry.system_checkpoint_height = std::cmp::max(entry.system_checkpoint_height, info.system_checkpoint_height);
+                    entry.system_checkpoint_height = std::cmp::max(
+                        entry.system_checkpoint_height,
+                        info.system_checkpoint_height,
+                    );
                 } else {
                     *entry = info;
                 }
@@ -449,7 +458,9 @@ impl Iterator for PeerBalancer {
             let (peer, info) = self.peers.remove(idx).unwrap();
             let requested_checkpoint = self.requested_dwallet_checkpoint.unwrap_or(1);
             let requested_system_checkpoint = self.requested_system_checkpoint.unwrap_or(1);
-            if info.height >= Some(requested_checkpoint) || info.system_checkpoint_height >= Some(requested_system_checkpoint) {
+            if info.height >= Some(requested_checkpoint)
+                || info.system_checkpoint_height >= Some(requested_system_checkpoint)
+            {
                 return Some(StateSyncClient::new(peer));
             }
         }
