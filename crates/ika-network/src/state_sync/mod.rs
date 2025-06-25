@@ -1081,7 +1081,7 @@ async fn query_peers_for_their_latest_dwallet_checkpoint(
 
             async move {
                 let response = query_peer_for_latest_dwallet_info(&mut client, timeout).await;
-                match response.0 {
+                match response {
                     Some(highest_checkpoint) => peer_heights
                         .write()
                         .unwrap()
