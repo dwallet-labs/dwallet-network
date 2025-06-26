@@ -193,8 +193,8 @@ impl DWalletMPCService {
     pub async fn spawn(&mut self) {
         let mut loop_index = 0;
         loop {
-            // Load events from Sui every 5 minutes.
-            if loop_index % 3_000 == 0 {
+            // Load events from Sui every minute.
+            if loop_index % 600 == 0 {
                 self.load_missed_events().await;
             }
             loop_index += 1;
