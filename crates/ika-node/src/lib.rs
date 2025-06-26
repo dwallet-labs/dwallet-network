@@ -1120,20 +1120,21 @@ impl IkaNode {
                 }
             }
 
-            let Some(components) = &*self.validator_components.lock().await else {
-                panic!("validator components must be initialized before reconfiguration");
-            };
+            let end_of_publish_sender_handle =
+                if let Some(components) = &*self.validator_components.lock().await {
+                    let end_of_publish_sender = EndOfPublishSender::new(
+                        Arc::downgrade(&cur_epoch_store),
+                        Arc::new(components.consensus_adapter.clone()),
+                        end_of_publish_receiver.clone(),
+                        cur_epoch_store.epoch(),
+                    );
 
-            let end_of_publish_sender = EndOfPublishSender::new(
-                Arc::downgrade(&cur_epoch_store),
-                Arc::new(components.consensus_adapter.clone()),
-                end_of_publish_receiver.clone(),
-                cur_epoch_store.epoch(),
-            );
-
-            let end_of_publish_sender_handle = tokio::spawn(async move {
-                end_of_publish_sender.run().await;
-            });
+                    Some(tokio::spawn(async move {
+                        end_of_publish_sender.run().await;
+                    }))
+                } else {
+                    None
+                };
 
             let stop_condition = self
                 .sui_connector_service
@@ -1152,7 +1153,7 @@ impl IkaNode {
                     return Ok(());
                 }
             };
-            end_of_publish_sender_handle.abort();
+            end_of_publish_sender_handle.and_then(|handle| Some(handle.abort()));
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self
