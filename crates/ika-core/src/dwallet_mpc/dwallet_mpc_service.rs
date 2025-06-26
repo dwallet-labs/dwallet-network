@@ -116,17 +116,13 @@ impl DWalletMPCService {
                         .into_iter()
                         .flat_map(|event| {
                         match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                            Ok(Some(mut session_info)) => {
-                                // We modify the session info to include the current epoch ID,
-                                // or else
-                                // this event will be ignored while handled.
-                                session_info.epoch = self.epoch_id;
-                                self.dwallet_mpc_manager
-                                    .handle_dwallet_db_event(DWalletMPCEvent {
-                                        event,
-                                        session_info: session_info.clone(),
-                                    })
-                                    .await;
+                            Ok(Some(session_info)) => {
+                                let event = DWalletMPCEvent {
+                                    event,
+                                    session_info: session_info.clone(),
+                                    override_epoch_check: true,
+                                };
+
                                 info!(
                                     session_identifier=?session_info.session_identifier,
                                     session_type=?session_info.session_type,
@@ -163,7 +159,6 @@ impl DWalletMPCService {
                          "Failed to load missed events from Sui"
                     );
                     if let IkaError::EpochEnded(_) = err {
-                        // TODO(Scaly): what should we do here?
                         return vec![];
                     };
                     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -280,12 +275,21 @@ impl DWalletMPCService {
             // read if the sui consensus syncs these values somehow
             for session_identifier in completed_sessions {
                 // If no session with SID `session_identifier` exist, create a new one.
-                if !self.dwallet_mpc_manager.mpc_sessions.contains_key(&session_identifier) {
-                    self.dwallet_mpc_manager.new_mpc_session(&session_identifier, None)
+                if !self
+                    .dwallet_mpc_manager
+                    .mpc_sessions
+                    .contains_key(&session_identifier)
+                {
+                    self.dwallet_mpc_manager
+                        .new_mpc_session(&session_identifier, None)
                 }
 
                 // Now this session is guaranteed to exist, so safe to `unwrap()`.
-                let session = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_identifier).unwrap();
+                let session = self
+                    .dwallet_mpc_manager
+                    .mpc_sessions
+                    .get_mut(&session_identifier)
+                    .unwrap();
 
                 // Mark the session as completed, but *don't remove it from the map* (important!)
                 session.clear_data();
