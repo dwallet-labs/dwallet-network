@@ -122,9 +122,6 @@ impl Display for MPCProtocolInitData {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
-            _ => {
-                write!(f, "Unknown MPC Protocol Init Data")
-            }
         }
     }
 }
@@ -149,7 +146,6 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
                 Some(event.event_data.curve)
             }
-            _ => None,
         };
         match &curve {
             None => "".to_string(),
@@ -177,7 +173,6 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
-            _ => None,
         };
         match &hash_scheme {
             None => "".to_string(),
@@ -207,7 +202,6 @@ impl MPCProtocolInitData {
             MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
             MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
-            _ => None,
         };
         match &signature_alg {
             None => "".to_string(),
@@ -244,9 +238,6 @@ impl Debug for MPCProtocolInitData {
             }
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
-            }
-            _ => {
-                write!(f, "Unknown MPC Protocol Init Data")
             }
         }
     }
