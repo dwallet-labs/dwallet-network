@@ -789,7 +789,6 @@ impl ConsensusAdapter {
                 .await
             {
                 Err(err) => {
-                    // TODO(Scaly): is this our reconfig? this seems patchy.
                     // This can happen during reconfig, or when consensus has full internal buffers
                     // and needs to back pressure, so retry a few times before logging warnings.
                     if retries > 30 || (retries > 3 && (is_soft_bundle)) {
