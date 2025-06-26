@@ -13,17 +13,17 @@ use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, SessionIdentifier};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::SuiEvent;
-use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::broadcast::error::TryRecvError;
 use tokio::sync::watch::Receiver;
-use tokio::sync::Notify;
+use tokio::sync::{mpsc, Notify};
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
@@ -34,13 +34,13 @@ pub struct DWalletMPCService {
     #[allow(dead_code)]
     read_messages: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
-    epoch_id: EpochId,
     #[allow(dead_code)]
     notify: Arc<Notify>,
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
 
@@ -54,6 +54,7 @@ impl DWalletMPCService {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
+        consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
@@ -69,12 +70,12 @@ impl DWalletMPCService {
             last_read_consensus_round: 0,
             read_messages: 0,
             epoch_store: epoch_store.clone(),
-            epoch_id: epoch_store.epoch(),
             notify: Arc::new(Notify::new()),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
             network_keys_receiver,
             new_events_receiver,
+            consensus_round_completed_sessions_receiver,
             exit,
         }
     }
@@ -115,39 +116,44 @@ impl DWalletMPCService {
                 continue;
             };
 
-            let events = events.into_iter().flat_map(|event|{
-                match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                    Ok(Some(mut session_info)) => {
-                        let event = DWalletMPCEvent {
-                            event,
-                            session_info: session_info.clone(),
-                            override_epoch_check: true
-                        };
+            let events = events
+                .into_iter()
+                .flat_map(|event| {
+                    match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                        Ok(Some(session_info)) => {
+                            let event = DWalletMPCEvent {
+                                event,
+                                session_info: session_info.clone(),
+                                override_epoch_check: true,
+                            };
 
-                        debug!(
-                            session_identifier=?session_info.session_identifier,
-                            session_type=?session_info.session_type,
-                            mpc_round=?session_info.mpc_round,
-                            "Fetched uncompleted event from Sui"
-                        );
+                            debug!(
+                                session_identifier=?session_info.session_identifier,
+                                session_type=?session_info.session_type,
+                                mpc_round=?session_info.mpc_round,
+                                "Fetched uncompleted event from Sui"
+                            );
 
-                        Some(event)
+                            Some(event)
+                        }
+                        Ok(None) => {
+                            warn!(
+                                "Received an event that does not trigger the start of an MPC flow"
+                            );
+
+                            None
+                        }
+                        Err(e) => {
+                            error!(
+                                erorr=?e,
+                                "error while processing a missed event"
+                            );
+
+                            None
+                        }
                     }
-                    Ok(None) => {
-                        warn!("Received an event that does not trigger the start of an MPC flow");
-
-                        None
-                    }
-                    Err(e) => {
-                        error!(
-                            erorr=?e,
-                            "error while processing a missed event"
-                        );
-
-                        None
-                    }
-                }
-            }).collect();
+                })
+                .collect();
 
             return events;
         }
@@ -233,35 +239,40 @@ impl DWalletMPCService {
                 warn!("failed to load DB tables from the epoch store");
                 continue;
             };
-            let Ok(completed_sessions) = self
-                .epoch_store
-                .load_dwallet_mpc_completed_sessions_from_round(self.last_read_consensus_round + 1)
-                .await
-            else {
-                error!("failed to load dWallet MPC completed sessions from the local DB");
-                continue;
-            };
+            let mut completed_sessions = HashSet::new();
+            loop {
+                match self.consensus_round_completed_sessions_receiver.try_recv() {
+                    Err(mpsc::error::TryRecvError::Empty) => {
+                        // No more completed sessions to report at the moment.
+                        break;
+                    }
+                    Err(e) => {
+                        error!(
+                            authority=?self.epoch_store.name,
+                            e=?e,
+                            "error in reading completed session IDs"
+                        );
 
-            // TODO(@scaly): in a session, save a map between the rounds of the consensus to the messages.
-            // save this also in the db, and when we state-sync, we don't run any computation until the last round of the consensus was synced
+                        break;
+                    }
+                    Ok(completed_session_identifier) => {
+                        // There might be more completed sessions to report, so report this one and continue receiving (don't break).
+                        completed_sessions.insert(completed_session_identifier);
+                    }
+                }
+            }
+
             // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
             // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
             // read if the sui consensus syncs these values somehow
 
-            // TODO(@scaly) save in the db a map of all sessions, and what round I am at, so when we read it we block computation until reaching there.
-
             // TODO(@scaly) here we are reading from the db the messages, so if we shutdown in the middle of the session, we read our own messages.
             // the consesnus output writes to the db, and we read from it.
-
-            // TODO(@scaly) completed_sessions_ids is unused. Shouldn't we log this?
-            let mut completed_sessions_ids = Vec::new();
             for session_id in completed_sessions {
                 if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
                     // Mark the session as completed, but *don't remove it from the map* (important!)
                     session.clear_data();
                     session.status = MPCSessionStatus::Finished;
-
-                    completed_sessions_ids.push(session.session_identifier);
                 }
             }
 
@@ -347,6 +358,7 @@ impl DWalletMPCService {
                         let event = DWalletMPCEvent {
                             event,
                             session_info,
+                            override_epoch_check: false,
                         };
                         Some(event)
                     }

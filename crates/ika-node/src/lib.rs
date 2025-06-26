@@ -27,7 +27,7 @@ use ika_types::sui::SystemInner;
 use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, watch, Mutex};
+use tokio::sync::{broadcast, mpsc, watch, Mutex};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
@@ -865,25 +865,34 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
+        let (
+            consensus_round_completed_sessions_sender,
+            consensus_round_completed_sessions_receiver,
+        ) = mpsc::unbounded_channel();
+
+        let mut dwallet_mpc_outputs_verifier = DWalletMPCOutputsVerifier::new(
+            dwallet_mpc_metrics.clone(),
+            consensus_round_completed_sessions_sender,
+        );
+
+        dwallet_mpc_outputs_verifier.bootstrap_from_storage(&epoch_store)?;
+
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
-        epoch_store.set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(
-            &epoch_store,
-            dwallet_mpc_metrics.clone(),
-        ))?;
+        epoch_store.set_dwallet_mpc_outputs_verifier(dwallet_mpc_outputs_verifier)?;
 
-        // TODO(Scaly): perform state sync here
-        // TODO(Scaly): return the finished sessions, and pass it to `start_dwallet_mpc_service()`, so then we can open these sessions already and set them to finish.
-
-
-        let dwallet_mpc_service_exit_sender = Self::start_dwallet_mpc_service(
+        let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
+            watch::channel(());
+        let mut dwallet_mpc_service = DWalletMPCService::new(
             epoch_store.clone(),
-            sui_client,
+            dwallet_mpc_service_exit_receiver,
             Arc::new(consensus_adapter.clone()),
             config.clone(),
+            sui_client,
             network_keys_receiver,
             new_events_receiver,
             next_epoch_committee_receiver,
+            consensus_round_completed_sessions_receiver,
             dwallet_mpc_metrics.clone(),
         )
         .await;
@@ -919,7 +928,6 @@ impl IkaNode {
             throughput_calculator,
         );
 
-        // TODO(@scaly): this should sync, and not return before its synced.
         consensus_manager
             .start(
                 config,
@@ -935,7 +943,8 @@ impl IkaNode {
             )
             .await;
 
-        // TODO(@Scaly): here we are synced, so spawn service.
+        // TODO(Scaly): doc
+        spawn_monitored_task!(dwallet_mpc_service.spawn());
 
         Ok(ValidatorComponents {
             consensus_manager,
@@ -1378,36 +1387,6 @@ impl IkaNode {
 
     pub fn get_config(&self) -> &NodeConfig {
         &self.config
-    }
-
-    async fn start_dwallet_mpc_service(
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        sui_client: Arc<SuiConnectorClient>,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        node_config: NodeConfig,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Receiver<Committee>,
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-    ) -> watch::Sender<()> {
-        let (exit_sender, exit_receiver) = watch::channel(());
-        let mut service = DWalletMPCService::new(
-            epoch_store.clone(),
-            exit_receiver,
-            consensus_adapter,
-            node_config,
-            sui_client,
-            network_keys_receiver,
-            new_events_receiver,
-            next_epoch_committee_receiver,
-            dwallet_mpc_metrics,
-        )
-        .await;
-
-        // TODO(Scaly): don't do this here
-        spawn_monitored_task!(service.spawn());
-
-        exit_sender
     }
 }
 
