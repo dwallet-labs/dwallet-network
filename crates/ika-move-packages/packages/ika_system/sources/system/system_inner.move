@@ -54,20 +54,22 @@ const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 10;
 
 // === Errors ===
 
+/// The system has not reached the end epoch time.
 const EHaveNotReachedEndEpochTime: u64 = 0;
+/// The active BLS committee must be initialized.
 const EActiveBlsCommitteeMustInitialize: u64 = 1;
+/// The epoch in the system checkpoint is incorrect.
 const EIncorrectEpochInSystemCheckpoint: u64 = 2;
+/// The sequence number in the system checkpoint is incorrect.
 const EWrongSystemCheckpointSequenceNumber: u64 = 3;
+/// The approved upgrade is not found.
 const EApprovedUpgradeNotFound: u64 = 4;
-
-#[error]
-const EUnauthorizedProtocolCap: vector<u8> = b"The protocol cap is unauthorized.";
-
-#[error]
-const ECannotInitialize: vector<u8> = b"Too early for initialization time or already initialized.";
-
-#[error]
-const EHaveNotReachedMidEpochTime: vector<u8> = b"The system has not reached the mid epoch time.";
+/// The protocol cap is unauthorized.
+const EUnauthorizedProtocolCap: u64 = 5;
+/// Too early for initialization time or already initialized.
+const ECannotInitialize: u64 = 6;
+/// The system has not reached the mid epoch time.
+const EHaveNotReachedMidEpochTime: u64 = 7;
 
 // === Structs ===
 

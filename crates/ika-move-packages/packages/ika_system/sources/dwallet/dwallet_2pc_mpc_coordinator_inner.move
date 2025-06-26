@@ -169,15 +169,12 @@ const ESessionIdentifierAlreadyRegistered: u64 = 34;
 const ESessionIdentifierNotExist: u64 = 35;
 /// Session identifier is invalid
 const ESessionIdentifierInvalidLength: u64 = 36;
-
-#[error]
-const EIncorrectEpochInCheckpoint: vector<u8> = b"The checkpoint epoch is incorrect.";
-
-#[error]
-const EWrongCheckpointSequenceNumber: vector<u8> = b"The checkpoint sequence number should be the expected next one.";
-
-#[error]
-const EActiveBlsCommitteeMustInitialize: vector<u8> = b"First active committee must initialize.";
+/// The checkpoint epoch is incorrect
+const EIncorrectEpochInCheckpoint: u64 = 37;
+/// The checkpoint sequence number should be the expected next one
+const EWrongCheckpointSequenceNumber: u64 = 38;
+/// First active committee must initialize
+const EActiveBlsCommitteeMustInitialize: u64 = 39;
 
 // === Structs ===
 

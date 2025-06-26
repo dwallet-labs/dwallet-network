@@ -106,56 +106,69 @@ impl DWalletMPCService {
     async fn fetch_uncompleted_events(&mut self) -> Vec<DWalletMPCEvent> {
         let epoch_store = self.epoch_store.clone();
         loop {
-            let Ok(events) = self
+            match self
                 .sui_client
                 .pull_dwallet_mpc_uncompleted_events(epoch_store.epoch())
                 .await
-            else {
-                error!("failed to fetch missed dWallet MPC events from Sui");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
+            {
+                Ok(events) => {
+                    let events = events
+                        .into_iter()
+                        .flat_map(|event| {
+                        match session_info_from_event(event.clone(), &epoch_store.packages_config) {
+                            Ok(Some(mut session_info)) => {
+                                // We modify the session info to include the current epoch ID,
+                                // or else
+                                // this event will be ignored while handled.
+                                session_info.epoch = self.epoch_id;
+                                self.dwallet_mpc_manager
+                                    .handle_dwallet_db_event(DWalletMPCEvent {
+                                        event,
+                                        session_info: session_info.clone(),
+                                    })
+                                    .await;
+                                info!(
+                                    session_identifier=?session_info.session_identifier,
+                                    session_type=?session_info.session_type,
+                                    mpc_round=?session_info.mpc_round,
+                                    current_epoch=?self.epoch_store.epoch(),
+                                    "Successfully processed a missed event from Sui"
+                                );
 
-            let events = events
-                .into_iter()
-                .flat_map(|event| {
-                    match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                        Ok(Some(session_info)) => {
-                            let event = DWalletMPCEvent {
-                                event,
-                                session_info: session_info.clone(),
-                                override_epoch_check: true,
-                            };
+                                Some(event)
+                            }
+                            Ok(None) => {
+                                warn!("Received an event that does not trigger the start of an MPC flow");
 
-                            debug!(
-                                session_identifier=?session_info.session_identifier,
-                                session_type=?session_info.session_type,
-                                mpc_round=?session_info.mpc_round,
-                                "Fetched uncompleted event from Sui"
-                            );
+                                None
+                            }
+                            Err(e) => {
+                                error!(
+                                    erorr=?e,
+                                    "error while processing a missed event"
+                                );
 
-                            Some(event)
+                                None
+                            }
                         }
-                        Ok(None) => {
-                            warn!(
-                                "Received an event that does not trigger the start of an MPC flow"
-                            );
+                    })
+                    .collect();
 
-                            None
-                        }
-                        Err(e) => {
-                            error!(
-                                erorr=?e,
-                                "error while processing a missed event"
-                            );
-
-                            None
-                        }
-                    }
-                })
-                .collect();
-
-            return events;
+                    return events;
+                }
+                Err(err) => {
+                    error!(
+                        ?err,
+                        current_epoch=?self.epoch_store.epoch(),
+                         "Failed to load missed events from Sui"
+                    );
+                    if let IkaError::EpochEnded(_) = err {
+                        // TODO(Scaly): what should we do here?
+                        return vec![];
+                    };
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+            }
         }
     }
 

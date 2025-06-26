@@ -27,7 +27,9 @@ use ika_system::{
 
 // === Errors ===
 
+/// The inner version is incorrect.
 const EWrongInnerVersion: u64 = 0;
+/// The migration is invalid.
 const EInvalidMigration: u64 = 1;
 
 // === Constants ===
