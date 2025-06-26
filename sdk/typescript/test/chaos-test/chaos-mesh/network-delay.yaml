@@ -16,4 +16,3 @@ spec:
     correlation: '0'
     jitter: 0ms
   direction: to
-  duration: 10m
