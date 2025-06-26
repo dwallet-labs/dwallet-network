@@ -34,6 +34,7 @@ use itertools::Itertools;
 use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
+use std::time::SystemTime;
 use sui_macros::fail_point_async;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -100,6 +101,7 @@ where
         sui_notifier: &SuiNotifier,
         ika_system_state_inner: &SystemInner,
         epoch_switch_state: &mut EpochSwitchState,
+        ready_to_run_epoch_switch: &mut Option<SystemTime>,
     ) {
         let Ok(clock) = self.sui_client.get_clock().await else {
             error!("failed to get clock when running epoch switch");
@@ -229,6 +231,18 @@ where
                 .calculation_votes
                 .is_none()
         {
+            if ready_to_run_epoch_switch.is_none() {
+                *ready_to_run_epoch_switch = Some(SystemTime::now());
+                return;
+            } else if let Some(ready_time) = ready_to_run_epoch_switch {
+                if ready_time.elapsed().unwrap() < Duration::from_secs(20) {
+                    info!(
+                        "Waiting for 20 seconds before calling `process_request_advance_epoch()`"
+                    );
+                    return;
+                }
+            }
+            *ready_to_run_epoch_switch = None;
             info!("Calling `process_request_advance_epoch()`");
             if let Err(e) = Self::process_request_advance_epoch(
                 self.ika_system_package_id,
@@ -294,6 +308,7 @@ where
             calculated_protocol_pricing: false,
         };
 
+        let mut ready_to_run_epoch_switch = None;
         loop {
             interval.tick().await;
             let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
@@ -332,6 +347,7 @@ where
                     sui_notifier,
                     &ika_system_state_inner,
                     &mut epoch_switch_state,
+                    &mut ready_to_run_epoch_switch,
                 )
                 .await;
                 if Some(next_dwallet_checkpoint_sequence_number) > last_submitted_dwallet_checkpoint
