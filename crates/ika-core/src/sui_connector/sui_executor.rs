@@ -441,7 +441,7 @@ where
                         )
                     {
                         counter += 1;
-                        if counter != 0  && counter % 1200 == 0{
+                        if counter != 0 && counter % 1200 == 0 {
                             self.metrics
                                 .system_checkpoint_sequence
                                 .set(next_dwallet_checkpoint_sequence_number as i64);
