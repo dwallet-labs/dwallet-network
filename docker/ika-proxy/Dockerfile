@@ -38,5 +38,8 @@ RUN cargo build --profile ${PROFILE} --locked --bin ika-proxy
 # ==========================
 FROM debian:bullseye-slim AS runtime
 
+ARG PROFILE=release
+
+
 # Copy the built binary from the builder stage.
 COPY --from=builder --chmod=755 /opt/ika/target/${PROFILE}/ika-proxy /opt/ika/bin/ika-proxy
