@@ -194,14 +194,6 @@ impl DWalletMPCManager {
             update_last_session_to_complete_in_current_epoch;
     }
 
-    pub(crate) async fn send_end_of_publish(&self) -> DwalletMPCResult<()> {
-        let tx = ConsensusTransaction::new_end_of_publish(self.epoch_store()?.name);
-        self.consensus_adapter
-            .submit_to_consensus(&vec![tx], &self.epoch_store()?)
-            .await?;
-        Ok(())
-    }
-
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         if event.session_info.epoch != self.epoch_id {
             warn!(

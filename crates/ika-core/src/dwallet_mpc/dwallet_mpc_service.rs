@@ -43,7 +43,6 @@ pub struct DWalletMPCService {
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
-    pub end_of_publish_receiver: Receiver<Option<u64>>,
 }
 
 impl DWalletMPCService {
@@ -57,7 +56,6 @@ impl DWalletMPCService {
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
@@ -77,7 +75,6 @@ impl DWalletMPCService {
             dwallet_mpc_manager,
             network_keys_receiver,
             new_events_receiver,
-            end_of_publish_receiver,
             exit,
         }
     }
@@ -213,12 +210,6 @@ impl DWalletMPCService {
                 Ok(false) => (),
             };
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
-
-            if *self.end_of_publish_receiver.borrow() == Some(self.epoch_store.epoch()) {
-                if let Err(err) = self.dwallet_mpc_manager.send_end_of_publish().await {
-                    error!(?err, "failed to send end of publish message");
-                }
-            }
 
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
