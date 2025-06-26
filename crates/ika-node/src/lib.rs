@@ -928,6 +928,7 @@ impl IkaNode {
             throughput_calculator,
         );
 
+        // Wait until all locally available commits have been processed
         consensus_manager
             .start(
                 config,

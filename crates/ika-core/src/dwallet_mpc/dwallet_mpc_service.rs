@@ -265,15 +265,18 @@ impl DWalletMPCService {
             // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
             // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
             // read if the sui consensus syncs these values somehow
-
-            // TODO(@scaly) here we are reading from the db the messages, so if we shutdown in the middle of the session, we read our own messages.
-            // the consesnus output writes to the db, and we read from it.
-            for session_id in completed_sessions {
-                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
-                    // Mark the session as completed, but *don't remove it from the map* (important!)
-                    session.clear_data();
-                    session.status = MPCSessionStatus::Finished;
+            for session_identifier in completed_sessions {
+                // If no session with SID `session_identifier` exist, create a new one.
+                if !self.dwallet_mpc_manager.mpc_sessions.contains_key(&session_identifier) {
+                    self.dwallet_mpc_manager.new_mpc_session(&session_identifier, None)
                 }
+
+                // Now this session is guaranteed to exist, so safe to `unwrap()`.
+                let session = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_identifier).unwrap();
+
+                // Mark the session as completed, but *don't remove it from the map* (important!)
+                session.clear_data();
+                session.status = MPCSessionStatus::Finished;
             }
 
             // Receive **new** dWallet MPC events and save them in the local DB.
