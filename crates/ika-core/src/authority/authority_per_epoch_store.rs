@@ -1226,7 +1226,8 @@ impl AuthorityPerEpochStore {
         let should_accept_tx = self.should_accept_tx();
         let final_round = system_checkpoint_verified_messages
             .iter()
-            .any(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
+            .last()
+            .is_some_and(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
         let make_checkpoint = should_accept_tx || final_round;
         if make_checkpoint {
             let checkpoint_height = consensus_commit_info.round;
