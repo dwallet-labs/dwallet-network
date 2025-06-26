@@ -16,7 +16,7 @@ use std::fmt;
 use std::path::PathBuf;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
@@ -28,7 +28,7 @@ use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::{broadcast, watch, Mutex};
-use tokio::task::JoinSet;
+use tokio::task::{JoinHandle, JoinSet};
 use tower::ServiceBuilder;
 use tracing::info;
 use tracing::{debug, warn};
@@ -168,6 +168,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -1124,6 +1125,21 @@ impl IkaNode {
                 }
             }
 
+            let Some(components) = &*self.validator_components.lock().await else {
+                panic!("validator components must be initialized before reconfiguration");
+            };
+
+            let end_of_publish_sender = EndOfPublishSender::new(
+                Arc::downgrade(&cur_epoch_store),
+                Arc::new(components.consensus_adapter.clone()),
+                end_of_publish_receiver.clone(),
+                cur_epoch_store.epoch(),
+            );
+
+            let end_of_publish_sender_handle = tokio::spawn(async move {
+                end_of_publish_sender.run().await;
+            });
+
             let stop_condition = self
                 .sui_connector_service
                 .run_epoch(cur_epoch_store.epoch(), run_with_range)
@@ -1141,6 +1157,7 @@ impl IkaNode {
                     return Ok(());
                 }
             };
+            end_of_publish_sender_handle.abort();
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self
