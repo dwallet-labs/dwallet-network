@@ -3,6 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use std::sync::{Arc, Weak};
+use std::time::Duration;
 use tokio::sync::watch::Receiver;
 use tracing::error;
 
@@ -29,10 +30,13 @@ impl EndOfPublishSender {
     }
 
     pub async fn run(&self) {
-        if *self.end_of_publish_receiver.borrow() == Some(self.epoch_id) {
-            if let Err(err) = self.send_end_of_publish().await {
-                error!(?err, "failed to send end of publish message");
+        loop {
+            if *self.end_of_publish_receiver.borrow() == Some(self.epoch_id) {
+                if let Err(err) = self.send_end_of_publish().await {
+                    error!(?err, "failed to send end of publish message");
+                }
             }
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 
