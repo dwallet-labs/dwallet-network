@@ -50,7 +50,8 @@ const SET_MAX_VALIDATOR_COUNT_MESSAGE_TYPE: u32 = 6;
 const SET_MIN_VALIDATOR_JOINING_STAKE_MESSAGE_TYPE: u32 = 7;
 const SET_MAX_VALIDATOR_CHANGE_COUNT_MESSAGE_TYPE: u32 = 8;
 const SET_REWARD_SLASHING_RATE_MESSAGE_TYPE: u32 = 9;
-const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 10;
+const END_OF_PUBLISH_MESSAGE_TYPE: u32 = 10;
+const SET_APPROVED_UPGRADE_MESSAGE_TYPE: u32 = 11;
 
 // === Errors ===
 
@@ -108,6 +109,7 @@ public struct SystemInner has store {
     // TODO: maybe change that later
     dwallet_2pc_mpc_coordinator_id: Option<ID>,
     dwallet_2pc_mpc_coordinator_network_encryption_keys: vector<DWalletNetworkEncryptionKeyCap>,
+    received_end_of_publish: bool,
     /// Any extra fields that's not defined statically.
     extra_fields: Bag,
 }
@@ -251,6 +253,8 @@ public(package) fun create(
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
+        // We advance epoch `0` immediately, and so the network doesn't participate in it and won't send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish` to overcome the check in `advance_epoch()`.
+        received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     };
     (system_state, protocol_cap)
@@ -567,6 +571,8 @@ public(package) fun advance_epoch(
     let last_epoch_change = self.epoch_start_timestamp_ms;
     let mut next_epoch_active_committee = self.validator_set.next_epoch_active_committee();
     assert!(next_epoch_active_committee.is_some() && now >= last_epoch_change + self.epoch_duration_ms, EHaveNotReachedEndEpochTime);
+    assert!(self.received_end_of_publish, EHaveNotReachedEndEpochTime);
+    self.received_end_of_publish = false;
     self.epoch_start_tx_digest = *ctx.digest();
     self.epoch_start_timestamp_ms = now;
 
@@ -942,6 +948,9 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
                     package_id,
                     digest,
                 });
+            },
+            END_OF_PUBLISH_MESSAGE_TYPE => {
+                self.received_end_of_publish = true;
             },
             _ => {
                 // Unknown message type - skip

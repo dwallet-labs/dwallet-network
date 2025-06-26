@@ -41,6 +41,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     DWalletCheckpointSignature(AuthorityName, DWalletCheckpointSequenceNumber),
     CapabilityNotification(AuthorityName, u64 /* generation */),
+    EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessageKey),
     DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
     DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
@@ -98,6 +99,9 @@ impl Debug for ConsensusTransactionKey {
                     name.concise(),
                     seq
                 )
+            }
+            ConsensusTransactionKey::EndOfPublish(authority) => {
+                write!(f, "EndOfPublish({:?})", authority.concise())
             }
         }
     }
@@ -169,6 +173,7 @@ pub enum ConsensusTransactionKind {
     DWalletCheckpointSignature(Box<DWalletCheckpointSignatureMessage>),
     SystemCheckpointSignature(Box<SystemCheckpointSignatureMessage>),
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
+    EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
@@ -177,6 +182,16 @@ pub enum ConsensusTransactionKind {
 }
 
 impl ConsensusTransaction {
+    pub fn new_end_of_publish(authority: AuthorityName) -> Self {
+        let mut hasher = DefaultHasher::new();
+        authority.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::EndOfPublish(authority),
+        }
+    }
+
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     pub fn new_dwallet_mpc_message(
         authority: AuthorityName,
@@ -334,6 +349,9 @@ impl ConsensusTransaction {
                     data.checkpoint_message.auth_sig().authority,
                     data.checkpoint_message.sequence_number,
                 )
+            }
+            ConsensusTransactionKind::EndOfPublish(origin_authority) => {
+                ConsensusTransactionKey::EndOfPublish(*origin_authority)
             }
         }
     }

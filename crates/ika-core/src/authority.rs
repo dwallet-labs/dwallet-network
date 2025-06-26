@@ -820,7 +820,7 @@ impl AuthorityState {
         // across epochs.
         let _guard =
             ProtocolConfig::apply_overrides_for_testing(move |_, _| protocol_config.clone());
-        let new_epoch_store = epoch_store.new_at_next_epoch_for_testing();
+        let new_epoch_store = epoch_store.new_at_next_epoch_for_testing().unwrap();
         let new_epoch = new_epoch_store.epoch();
         //self.transaction_manager.reconfigure(new_epoch);
         self.epoch_store.store(new_epoch_store);
@@ -1030,7 +1030,7 @@ impl AuthorityState {
             new_committee,
             epoch_start_configuration,
             cur_epoch_store.get_chain_identifier(),
-        );
+        )?;
         self.epoch_store.store(new_epoch_store.clone());
         Ok(new_epoch_store)
     }
