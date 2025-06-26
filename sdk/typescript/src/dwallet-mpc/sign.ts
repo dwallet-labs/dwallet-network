@@ -12,7 +12,6 @@ import {
 	isActiveDWallet,
 	isDWalletCap,
 	isPresign,
-	MPCKeyScheme,
 	SUI_PACKAGE_ID,
 } from './globals.js';
 import type { Config } from './globals.ts';
@@ -144,15 +143,17 @@ export async function sign(
 	const activeDWallet = await getObjectWithType(conf, dwalletID, isActiveDWallet);
 	const presign = await getObjectWithType(conf, presignID, isPresign);
 
+	console.time('create_sign_centralized_output');
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
 		message,
 		hash,
 	);
+	console.timeEnd('create_sign_centralized_output');
+
 	const { dWalletStateData, tx, messageApproval } = await approveMessageTX(
 		conf,
 		dwalletCapID,
@@ -205,7 +206,6 @@ export async function signWithImportedDWallet(
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,
@@ -293,7 +293,6 @@ export async function createUnverifiedPartialUserSignatureCap(
 
 	const centralizedSignedMessage = create_sign_centralized_output(
 		networkDecryptionKeyPublicOutput,
-		MPCKeyScheme.Secp256k1,
 		activeDWallet.state.fields.public_output,
 		secretKey,
 		presign.state.fields.presign,

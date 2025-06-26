@@ -21,7 +21,6 @@ import {
 	getObjectWithType,
 	isActiveDWallet,
 	isMoveObject,
-	MPCKeyScheme,
 	sessionIdentifierDigest,
 	SUI_PACKAGE_ID,
 } from './globals.js';
@@ -80,7 +79,9 @@ export async function createDWallet(
 	conf: Config,
 	networkDecryptionKeyPublicOutput: Uint8Array,
 ): Promise<DWallet> {
+	console.time('launchDKGFirstRound');
 	const firstRoundOutputResult = await launchDKGFirstRound(conf);
+	console.timeEnd('launchDKGFirstRound');
 	const classGroupsSecpKeyPair = await getOrCreateClassGroupsKeyPair(conf);
 	const secondRoundResponse = await launchDKGSecondRound(
 		conf,
@@ -111,7 +112,6 @@ export async function launchDKGSecondRound(
 	const [centralizedPublicKeyShareAndProof, centralizedPublicOutput, centralizedSecretKeyShare] =
 		create_dkg_centralized_output(
 			networkDecryptionKeyPublicOutput,
-			MPCKeyScheme.Secp256k1,
 			Uint8Array.from(firstRoundOutputResult.output),
 			sessionIdentifierDigest(firstRoundOutputResult.sessionIdentifier),
 		);

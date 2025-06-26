@@ -11,7 +11,7 @@ serde.workspace = true
 anyhow.workspace = true
 bcs.workspace = true
 fastcrypto = { workspace = true, features = ["copy_key"] }
-rand_chacha = "0.3.1"
+rand_chacha = "0.9"
 schemars.workspace = true
 serde_json.workspace = true
 serde_derive = "1.0.217"
