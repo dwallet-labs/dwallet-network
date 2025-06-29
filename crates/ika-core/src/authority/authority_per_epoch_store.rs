@@ -561,10 +561,16 @@ impl AuthorityPerEpochStore {
         let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
         for (name, _) in self.committee().voting_rights.iter() {
             let party_id = self.authority_name_to_party_id(name)?;
-            let public_key =
-                bcs::from_bytes(self.committee().class_groups_public_key_and_proof(name)?)
-                    .map_err(DwalletMPCError::BcsError)?;
-            validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
+            let public_key = self
+                .committee()
+                .class_groups_public_key_and_proof(name)
+                .ok()
+                .and_then(|class_groups_public_key_and_proof| {
+                    bcs::from_bytes(class_groups_public_key_and_proof).ok()
+                });
+            if let Some(public_key) = public_key {
+                validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
+            }
         }
         Ok(validators_class_groups_public_keys_and_proofs)
     }

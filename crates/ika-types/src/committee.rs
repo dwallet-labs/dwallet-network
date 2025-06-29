@@ -11,7 +11,6 @@ use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::KeyPair;
 use group::PartyID;
 pub use ika_protocol_config::ProtocolVersion;
-use once_cell::sync::OnceCell;
 use rand::rngs::{StdRng, ThreadRng};
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
@@ -399,56 +398,13 @@ pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProofBytes>,
 }
 
 #[derive(Clone, Debug)]
 pub struct CommitteeWithNetworkMetadata {
     epoch_id: EpochId,
     validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
-    committee: OnceCell<Committee>,
-}
-
-impl CommitteeWithNetworkMetadata {
-    pub fn new(
-        epoch_id: EpochId,
-        validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
-    ) -> Self {
-        Self {
-            epoch_id,
-            validators,
-            committee: OnceCell::new(),
-        }
-    }
-    pub fn epoch(&self) -> EpochId {
-        self.epoch_id
-    }
-
-    pub fn validators(&self) -> &Vec<(AuthorityName, (StakeUnit, NetworkMetadata))> {
-        &self.validators
-    }
-
-    pub fn committee(&self) -> &Committee {
-        let quorum_threshold = (2 * self.validators.len() as u64).div_ceil(3);
-        let validity_threshold = (self.validators.len() as u64).div_ceil(3);
-        self.committee.get_or_init(|| {
-            Committee::new(
-                self.epoch_id,
-                self.validators
-                    .iter()
-                    .map(|(name, (stake, _))| (*name, *stake))
-                    .collect(),
-                self.validators
-                    .iter()
-                    .map(|(name, (_, metadata))| {
-                        (*name, metadata.class_groups_public_key_and_proof.clone())
-                    })
-                    .collect(),
-                quorum_threshold,
-                validity_threshold,
-            )
-        })
-    }
 }
 
 impl Display for CommitteeWithNetworkMetadata {
