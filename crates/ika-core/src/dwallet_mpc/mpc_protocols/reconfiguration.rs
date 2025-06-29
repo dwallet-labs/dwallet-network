@@ -5,9 +5,9 @@ use class_groups::reconfiguration::{PublicInput, Secp256k1Party};
 use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use dwallet_mpc_types::dwallet_mpc::VersionedNetworkDkgOutput;
 use group::{secp256k1, PartyID};
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
@@ -111,7 +111,7 @@ fn extract_encryption_keys_from_committee(
         .iter()
         .map(|(name, key)| {
             let party_id = authority_name_to_party_id_from_committee(committee, name)?;
-            let key = bcs::from_bytes(key)?;
+            let key = key.clone();
             Ok((party_id, key))
         })
         .collect::<DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>>>()
