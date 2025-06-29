@@ -48,6 +48,8 @@ pub enum StopReason {
     RunWithRangeCondition,
 }
 
+const ONE_HOUR_IN_SECONDS: u64 = 60 * 60;
+
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
     dwallet_checkpoint_store: Arc<DWalletCheckpointStore>,
@@ -132,15 +134,15 @@ where
                     &self.sui_client,
                     self.notifier_tx_lock.clone(),
                 ),
-                Duration::from_secs(60 * 60 * 24)
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
             );
             if response.is_err() {
                 panic!(
-                    "failed to submit mid epoch for over 24 hours, err: {:?}",
+                    "failed to submit mid-epoch for over an hour: {:?}",
                     response.err()
                 );
             }
-            info!("Successfully processed mid epoch");
+            info!("Successfully processed mid-epoch");
             epoch_switch_state.ran_mid_epoch = true;
         }
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
@@ -159,7 +161,7 @@ where
                 .is_some()
             && !epoch_switch_state.calculated_protocol_pricing
         {
-            info!("Calculating protocols pricing");
+            info!("Calculating protocol pricing");
             let result = retry_with_max_elapsed_time!(
                 Self::calculate_protocols_pricing(
                     &self.sui_client,
@@ -168,11 +170,11 @@ where
                     dwallet_2pc_mpc_coordinator_id,
                     self.notifier_tx_lock.clone(),
                 ),
-                Duration::from_secs(60 * 60 * 24)
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
             );
             if result.is_err() {
                 panic!(
-                    "failed to calculate protocols pricing for over 24 hours, err: {:?}",
+                    "failed to calculate protocols' pricing for over an hour: {:?}",
                     result.err()
                 );
             }
@@ -199,11 +201,11 @@ where
                     &self.sui_client,
                     self.notifier_tx_lock.clone(),
                 ),
-                Duration::from_secs(60 * 60 * 24)
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
             );
             if response.is_err() {
                 panic!(
-                    "failed to submit lock last session for over 24 hours, err: {:?}",
+                    "failed to submit lock-last session for over an hour: {:?}",
                     response.err()
                 );
             }
@@ -245,11 +247,11 @@ where
                     &self.sui_client.clone(),
                     self.notifier_tx_lock.clone(),
                 ),
-                Duration::from_secs(60 * 60 * 24)
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
             );
             if response.is_err() {
                 panic!(
-                    "failed to submit request advance epoch for over 24 hours, err: {:?}",
+                    "failed to submit request advance epoch for over an hour: {:?}",
                     response.err()
                 );
             }
@@ -397,10 +399,10 @@ where
                                             &self.metrics.clone(),
                                             self.notifier_tx_lock.clone().clone(),
                                         ),
-                                        Duration::from_secs(60 * 60 * 24)
+                                        Duration::from_secs(ONE_HOUR_IN_SECONDS)
                                     );
                                     if response.is_err() {
-                                        panic!("failed to submit dwallet checkpoint for over 24 hours, err: {:?}", response.err());
+                                        panic!("failed to submit dwallet checkpoint for over an hour, err: {:?}", response.err());
                                     }
                                     info!(
                                         ?next_dwallet_checkpoint_sequence_number,
@@ -473,10 +475,10 @@ where
                                     &self.metrics.clone(),
                                     self.notifier_tx_lock.clone(),
                                 ),
-                                Duration::from_secs(60 * 60 * 24)
+                                Duration::from_secs(ONE_HOUR_IN_SECONDS)
                             );
                             if response.is_err() {
-                                panic!("failed to submit system checkpoint for over 24 hours, err: {:?}", response.err());
+                                panic!("failed to submit system checkpoint for over an hour, err: {:?}", response.err());
                             }
                             self.metrics.system_checkpoint_writes_success_total.inc();
                             self.metrics
@@ -1115,7 +1117,7 @@ where
         match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
             Ok(_) => Ok(()),
             Err(err) => {
-                error!(?err, "failed to submit system checkpoint to consensus",);
+                error!(?err, "failed to submit a system checkpoint to consensus");
                 metrics.system_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
