@@ -4,12 +4,11 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
+use crate::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_protocol_config::ProtocolVersion;
@@ -27,7 +26,6 @@ pub trait EpochStartSystemTrait {
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
     fn get_ika_committee(&self) -> Committee;
-    fn get_ika_committee_with_network_metadata(&self) -> CommitteeWithNetworkMetadata;
     fn get_consensus_committee(&self) -> ConsensusCommittee;
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
@@ -134,31 +132,6 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         self.epoch_duration_ms
     }
 
-    fn get_ika_committee_with_network_metadata(&self) -> CommitteeWithNetworkMetadata {
-        let validators = self
-            .active_validators
-            .iter()
-            .map(|validator| {
-                (
-                    validator.authority_name(),
-                    (
-                        validator.voting_power,
-                        NetworkMetadata {
-                            network_address: validator.network_address.clone(),
-                            consensus_address: validator.consensus_address.clone(),
-                            network_public_key: Some(validator.network_pubkey.clone()),
-                            class_groups_public_key_and_proof: validator
-                                .class_groups_public_key_and_proof
-                                .clone(),
-                        },
-                    ),
-                )
-            })
-            .collect();
-
-        CommitteeWithNetworkMetadata::new(self.epoch, validators)
-    }
-
     fn get_ika_committee(&self) -> Committee {
         let voting_rights = self
             .active_validators
@@ -168,10 +141,14 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         let class_groups_public_keys_and_proofs = self
             .active_validators
             .iter()
-            .map(|validator| {
-                (
-                    validator.authority_name(),
-                    validator.class_groups_public_key_and_proof.clone(),
+            .filter_map(|validator| {
+                validator.class_groups_public_key_and_proof.clone().map(
+                    |class_groups_public_key_and_proof| {
+                        (
+                            validator.authority_name(),
+                            class_groups_public_key_and_proof,
+                        )
+                    },
                 )
             })
             .collect();
@@ -275,7 +252,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsEncryptionKeyAndProof>,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,
