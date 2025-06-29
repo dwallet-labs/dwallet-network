@@ -4,10 +4,7 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use crate::committee::{
-    ClassGroupsEncryptionKeyAndProof, Committee,
-    StakeUnit,
-};
+use crate::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;

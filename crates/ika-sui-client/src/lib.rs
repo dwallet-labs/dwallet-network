@@ -5,7 +5,7 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
-use dwallet_classgroups_types::{SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS};
+use dwallet_classgroups_types::{SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEY_OBJECTS};
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
@@ -952,12 +952,12 @@ impl SuiClientInner for SuiSdkClient {
                 )
                 .await?;
             let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
-                NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
-            if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEYS {
+                NUM_OF_CLASS_GROUPS_KEY_OBJECTS] = Default::default();
+            if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEY_OBJECTS {
                 warn!(
                     validator_id=?validator.id,
                     "Validator class groups public key and proof length should be {} but got {}",
-                    NUM_OF_CLASS_GROUPS_KEYS,
+                    NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
                     dynamic_fields.data.len(),
                 );
                 continue;
