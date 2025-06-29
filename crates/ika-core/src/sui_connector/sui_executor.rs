@@ -239,8 +239,8 @@ where
             info!("Calling `process_request_advance_epoch()`");
             let response = retry_with_max_elapsed_time!(
                 Self::process_request_advance_epoch(
-                    self.ika_system_package_id.clone(),
-                    dwallet_2pc_mpc_coordinator_id.clone(),
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
                     sui_notifier,
                     &self.sui_client.clone(),
                     self.notifier_tx_lock.clone(),
@@ -387,8 +387,8 @@ where
 
                                     let response = retry_with_max_elapsed_time!(
                                         Self::handle_dwallet_checkpoint_execution_task(
-                                            self.ika_system_package_id.clone(),
-                                            dwallet_2pc_mpc_coordinator_id.clone(),
+                                            self.ika_system_package_id,
+                                            dwallet_2pc_mpc_coordinator_id,
                                             signature.clone(),
                                             signers_bitmap.clone(),
                                             message.clone(),
@@ -464,7 +464,7 @@ where
                             self.metrics.system_checkpoint_write_requests_total.inc();
                             let response = retry_with_max_elapsed_time!(
                                 Self::handle_system_checkpoint_execution_task(
-                                    self.ika_system_package_id.clone(),
+                                    self.ika_system_package_id,
                                     signature.clone(),
                                     signers_bitmap.clone(),
                                     message.clone(),
