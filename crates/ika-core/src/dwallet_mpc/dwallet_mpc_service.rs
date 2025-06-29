@@ -203,6 +203,7 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
+        println!("dwallet_mpc_service/spawn(): spawned with sessions {:?}", self.dwallet_mpc_manager.mpc_sessions.iter().map(|(session_id, session)| (format!("{:?}", session_id), session.status.clone())).collect::<HashMap<_, _>>());
         let mut loop_index = 0;
         loop {
             let mut events = vec![];

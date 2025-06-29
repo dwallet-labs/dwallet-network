@@ -1542,7 +1542,7 @@ impl AuthorityPerEpochStore {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
         let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
         let output_verification_result = dwallet_mpc_verifier
-                .try_verify_output(&output, &session_info, origin_authority, &self)
+                .try_verify_output(&output, &session_info, origin_authority, &self, false)
                 .unwrap_or_else(|e| {
                     error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
                     OutputVerificationResult {

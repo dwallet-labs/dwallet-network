@@ -40,6 +40,11 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 
     logger.write_logs_to_disk(session_id, party_id, access_threshold, &serialized_messages);
 
+    // So we can time the messages somehow
+    std::thread::sleep(std::time::Duration::from_secs(2));
+
+    println!("advancing party {party_id}");
+
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.
     let res = match P::advance_with_guaranteed_output(
@@ -68,6 +73,11 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
             };
         }
     };
+
+    println!("advanced party {party_id}");
+    // So we can time the messages somehow
+    std::thread::sleep(std::time::Duration::from_secs(4));
+    println!("advanced and slept party {party_id}");
 
     Ok(match res {
         mpc::AsynchronousRoundResult::Advance {

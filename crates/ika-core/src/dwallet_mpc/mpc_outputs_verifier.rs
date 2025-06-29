@@ -94,6 +94,7 @@ impl DWalletMPCOutputsVerifier {
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
         epoch_store: &AuthorityPerEpochStore,
+        bootstrapping: bool
     ) -> DwalletMPCResult<OutputVerificationResult> {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
@@ -153,6 +154,9 @@ impl DWalletMPCOutputsVerifier {
                     "error in sending completed session ID"
                 );
             };
+
+            println!("try_verify_output({}) verified session {:?}", if bootstrapping {"bootstrapping"} else {"output"}, session_info.session_identifier);
+
             let mpc_event_data = session_info.mpc_round.clone();
             self.dwallet_mpc_metrics.add_completion(&mpc_event_data);
             return Ok(OutputVerificationResult {
@@ -171,6 +175,7 @@ impl DWalletMPCOutputsVerifier {
     pub fn bootstrap_from_storage(&mut self, epoch_store: &AuthorityPerEpochStore) -> IkaResult {
         info!("Bootstrapping MPC Outputs Verifier from Storage");
         for output in epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
+            println!("bootstrapping output for session {:?}", output.session_info.session_identifier);
             let party_to_authority_map = epoch_store.committee().party_to_authority_map();
             let mpc_protocol_name = output.session_info.mpc_round.to_string();
 
@@ -192,13 +197,18 @@ impl DWalletMPCOutputsVerifier {
                 &output.session_info,
                 output.authority,
                 epoch_store,
+                true
             ) {
                 error!(
                     "failed to verify output from session {:?} and party {:?}: {:?}",
                     output.session_info.session_identifier, output.authority, err
                 );
             }
+
+            println!("bootstrapped output for session {:?}", output.session_info.session_identifier);
         }
+
+        println!("done bootstrapping");
 
         Ok(())
     }

@@ -875,7 +875,9 @@ impl IkaNode {
             consensus_round_completed_sessions_sender,
         );
 
+        println!("calling bootstrap_from_storage()");
         dwallet_mpc_outputs_verifier.bootstrap_from_storage(&epoch_store)?;
+        println!("called bootstrap_from_storage()");
 
         // This verifier is in sync with the consensus,
         // used to verify outputs before sending a system TX to store them.
@@ -928,6 +930,7 @@ impl IkaNode {
             throughput_calculator,
         );
 
+        println!("calling consensus_manager.start()");
         // Wait until all locally available commits have been processed
         consensus_manager
             .start(
@@ -944,8 +947,11 @@ impl IkaNode {
             )
             .await;
 
+        println!("called consensus_manager.start()");
+        println!("spawning dwallet_mpc_service");
         // Spawn the dWallet MPC Service now that we are done with bootstrapping both from storage and from the consensus.
         spawn_monitored_task!(dwallet_mpc_service.spawn());
+        println!("spawned dwallet_mpc_service");
 
         Ok(ValidatorComponents {
             consensus_manager,

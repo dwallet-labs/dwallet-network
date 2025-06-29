@@ -305,8 +305,8 @@ async fn start(
     info!("Cluster started");
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
+    let mut tick_cnt = 0;
     let mut unhealthy_cnt = 0;
-    let mut once = false;
     let mut that_node_name = Default::default();
     loop {
         for node in swarm.validator_nodes() {
@@ -315,60 +315,39 @@ async fn start(
             }
 
             if let Err(err) = node.health_check(true).await {
-                unhealthy_cnt += 1;
-                if unhealthy_cnt > 3 {
-                    // The network could temporarily go down during a reconfiguration.
-                    // If we detect a failed validator 3 times in a row, give up.
-                    return Err(err.into());
-                }
-                // Break the inner loop so that we could retry the latter.
-                break;
+                // unhealthy_cnt += 1;
+                // if unhealthy_cnt > 3 {
+                //     // The network could temporarily go down during a reconfiguration.
+                //     // If we detect a failed validator 3 times in a row, give up.
+                //     return Err(err.into());
+                // }
+                // // Break the inner loop so that we could retry the latter.
+                // break;
             } else {
                 unhealthy_cnt = 0;
             }
         }
 
-        if !once {
-            println!("found it, stopping");
-
+        if tick_cnt == 20 * 4 {
             let node = swarm.node_mut(&that_node_name);
-            println!("got node {}", node.is_some());
-
             let node = node.unwrap();
 
-            println!("got node");
-
+            println!("stopping {:?}", node.name());
             node.stop();
+            println!("stopped {:?}", node.name());
+        }
 
-            // let mut container = node.container.lock().unwrap();
-            // println!("got container option {}", container.is_some());
-            //
-            // let mut container = container.as_mut().unwrap();
-            //
-            // println!("got container");
-            //
-            // let thread = container.join_handle.take().unwrap();
-            // println!("got thread");
-            // let cancel_handle = container.cancel_sender.take().unwrap();
-            // println!("got cancel_handle");
-            //
-            // // Notify the thread to shutdown
-            // let _ = cancel_handle.send(());
-            // println!("Notified the thread to shutdown");
-            //
-            // // Wait for the thread to join
-            // thread.join().unwrap();
-            // println!("Waited for the thread to join");
+        if tick_cnt == 20 * 7 {
+            let node = swarm.node_mut(&that_node_name);
+            let node = node.unwrap();
 
-            println!("stopped");
-
+            println!("restarting {:?}", node.name());
             node.start().await.unwrap();
-            println!("restarted");
-
-            once = true;
+            println!("restarted {:?}", node.name());
         }
 
         interval.tick().await;
+        tick_cnt+=1;
     }
 }
 
