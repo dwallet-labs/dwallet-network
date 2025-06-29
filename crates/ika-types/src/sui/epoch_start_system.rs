@@ -12,7 +12,6 @@ use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_protocol_config::ProtocolVersion;

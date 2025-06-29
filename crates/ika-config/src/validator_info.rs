@@ -1,5 +1,4 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::crypto::{AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use serde::{Deserialize, Serialize};

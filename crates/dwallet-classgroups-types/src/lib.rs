@@ -1,13 +1,12 @@
 use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
-    generate_knowledge_of_decryption_key_proofs_per_crt_prime, KnowledgeOfDiscreteLogUCProof,
+    generate_knowledge_of_decryption_key_proofs_per_crt_prime,
     CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use class_groups::{CompactIbqf, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use crypto_bigint::rand_core::RngCore;
 use crypto_bigint::Uint;
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, ClassGroupsProof};
