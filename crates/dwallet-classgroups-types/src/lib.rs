@@ -27,7 +27,10 @@ pub type SingleEncryptionKeyAndProof = (
     CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
     ClassGroupsProof,
 );
-pub const NUM_OF_CLASS_GROUPS_KEYS: usize = MAX_PRIMES;
+/// The number of primes used in the class groups key,
+/// each prime corresponds to a dynamic object.
+pub const NUM_OF_CLASS_GROUPS_KEY_OBJECTS: usize = MAX_PRIMES;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
     #[serde(with = "group::helpers::const_generic_array_serialization")]
