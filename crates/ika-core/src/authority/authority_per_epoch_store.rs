@@ -384,7 +384,7 @@ pub struct AuthorityEpochTables {
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
 
-    /// Validators that have sent EndOfPublish message in this epoch
+    /// Validators that sent a EndOfPublish message in this epoch.
     end_of_publish: DBMap<AuthorityName, ()>,
 
     /// Record the every protocol config version sent to the authority at the current epoch.
