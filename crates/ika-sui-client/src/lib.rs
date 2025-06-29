@@ -382,10 +382,7 @@ where
                             class_groups_public_key_and_proof:
                                 validators_class_groups_public_key_and_proof
                                     .get(&validator.id)
-                                    .and_then(|validators_class_groups_public_key_and_proof| {
-                                        bcs::to_bytes(&validators_class_groups_public_key_and_proof)
-                                            .ok()
-                                    }),
+                                    .cloned(),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),

@@ -111,7 +111,7 @@ fn extract_encryption_keys_from_committee(
         .iter()
         .map(|(name, key)| {
             let party_id = authority_name_to_party_id_from_committee(committee, name)?;
-            let key = bcs::from_bytes(key)?;
+            let key = key.clone();
             Ok((party_id, key))
         })
         .collect::<DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>>>()

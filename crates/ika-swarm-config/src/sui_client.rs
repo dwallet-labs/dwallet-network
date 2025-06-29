@@ -1208,7 +1208,7 @@ async fn create_class_groups_public_key_and_proof_object(
     context: &mut WalletContext,
     client: &SuiClient,
     ika_system_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
 ) -> anyhow::Result<ObjectRef> {
     let builder_object_ref = create_class_groups_public_key_and_proof_builder_object(
         publisher_address,
@@ -1219,7 +1219,7 @@ async fn create_class_groups_public_key_and_proof_object(
     .await?;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
+        Box::new(class_groups_public_key_and_proof_bytes);
 
     add_public_keys_and_proofs_with_rng(
         publisher_address,
