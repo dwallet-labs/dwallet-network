@@ -306,8 +306,14 @@ async fn start(
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
     let mut unhealthy_cnt = 0;
+    let mut once = false;
+    let mut that_node_name = Default::default();
     loop {
         for node in swarm.validator_nodes() {
+            if node.name().to_string() == "k#942073a24093d2bbf711872ea1270a997bd3ba5ad5942aef03daaf5e573a01b553a00254ee2a25f8cd683005b0edc89e" {
+                that_node_name = node.name().clone();
+            }
+
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
                 if unhealthy_cnt > 3 {
@@ -320,6 +326,46 @@ async fn start(
             } else {
                 unhealthy_cnt = 0;
             }
+        }
+
+        if !once {
+            println!("found it, stopping");
+
+            let node = swarm.node_mut(&that_node_name);
+            println!("got node {}", node.is_some());
+
+            let node = node.unwrap();
+
+            println!("got node");
+
+            node.stop();
+
+            // let mut container = node.container.lock().unwrap();
+            // println!("got container option {}", container.is_some());
+            //
+            // let mut container = container.as_mut().unwrap();
+            //
+            // println!("got container");
+            //
+            // let thread = container.join_handle.take().unwrap();
+            // println!("got thread");
+            // let cancel_handle = container.cancel_sender.take().unwrap();
+            // println!("got cancel_handle");
+            //
+            // // Notify the thread to shutdown
+            // let _ = cancel_handle.send(());
+            // println!("Notified the thread to shutdown");
+            //
+            // // Wait for the thread to join
+            // thread.join().unwrap();
+            // println!("Waited for the thread to join");
+
+            println!("stopped");
+
+            node.start().await.unwrap();
+            println!("restarted");
+
+            once = true;
         }
 
         interval.tick().await;
