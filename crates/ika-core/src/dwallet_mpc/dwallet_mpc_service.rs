@@ -203,6 +203,9 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
+        println!("dwallet_mpc_service/spawn(): spawning, receiving outputs");
+        // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
+        self.receive_mpc_sessions_output();
         println!("dwallet_mpc_service/spawn(): spawned with sessions {:?}", self.dwallet_mpc_manager.mpc_sessions.iter().map(|(session_id, session)| (format!("{:?}", session_id), session.status.clone())).collect::<HashMap<_, _>>());
         let mut loop_index = 0;
         loop {
@@ -248,54 +251,8 @@ impl DWalletMPCService {
                 warn!("failed to load DB tables from the epoch store");
                 continue;
             };
-            let mut completed_sessions = HashSet::new();
-            loop {
-                match self.consensus_round_completed_sessions_receiver.try_recv() {
-                    Err(mpsc::error::TryRecvError::Empty) => {
-                        // No more completed sessions to report at the moment.
-                        break;
-                    }
-                    Err(e) => {
-                        error!(
-                            authority=?self.epoch_store.name,
-                            e=?e,
-                            "error in reading completed session IDs"
-                        );
 
-                        break;
-                    }
-                    Ok(completed_session_identifier) => {
-                        // There might be more completed sessions to report, so report this one and continue receiving (don't break).
-                        completed_sessions.insert(completed_session_identifier);
-                    }
-                }
-            }
-
-            // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
-            // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
-            // read if the sui consensus syncs these values somehow
-            for session_identifier in completed_sessions {
-                // If no session with SID `session_identifier` exist, create a new one.
-                if !self
-                    .dwallet_mpc_manager
-                    .mpc_sessions
-                    .contains_key(&session_identifier)
-                {
-                    self.dwallet_mpc_manager
-                        .new_mpc_session(&session_identifier, None)
-                }
-
-                // Now this session is guaranteed to exist, so safe to `unwrap()`.
-                let session = self
-                    .dwallet_mpc_manager
-                    .mpc_sessions
-                    .get_mut(&session_identifier)
-                    .unwrap();
-
-                // Mark the session as completed, but *don't remove it from the map* (important!)
-                session.clear_data();
-                session.status = MPCSessionStatus::Finished;
-            }
+            self.receive_mpc_sessions_output();
 
             // Receive **new** dWallet MPC events and save them in the local DB.
             match self.receive_new_sui_events() {
@@ -342,6 +299,69 @@ impl DWalletMPCService {
             self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
+        }
+    }
+
+    /// Receive all completed MPC sessions from the MPC Output Verifier over the `consensus_round_completed_sessions` channel.
+    /// If the session exists, mark is as `MPCSessionStatus::Finished`.
+    /// Otherwise, create a new session with that status, in order to avoid re-running the computation for it.
+    fn receive_mpc_sessions_output(&mut self) {
+        let mut completed_sessions = HashSet::new();
+        loop {
+            match self.consensus_round_completed_sessions_receiver.try_recv() {
+                Err(mpsc::error::TryRecvError::Empty) => {
+                    // No more completed sessions to report at the moment.
+                    break;
+                }
+                Err(e) => {
+                    error!(
+                            authority=?self.epoch_store.name,
+                            e=?e,
+                            "error in reading completed session IDs"
+                        );
+
+                    break;
+                }
+                Ok(completed_session_identifier) => {
+                    println!("receive_mpc_sessions_output(): received {:?}", completed_session_identifier);
+                    // There might be more completed sessions to report, so report this one and continue receiving (don't break).
+                    completed_sessions.insert(completed_session_identifier);
+                }
+            }
+        }
+
+        println!("receive_mpc_sessions_output(): completed_sessions {:?}", completed_sessions);
+
+        // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
+        // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
+        // read if the sui consensus syncs these values somehow
+        for session_identifier in completed_sessions {
+            // If no session with SID `session_identifier` exist, create a new one.
+            if !self
+                .dwallet_mpc_manager
+                .mpc_sessions
+                .contains_key(&session_identifier)
+            {
+                println!("receive_mpc_sessions_output(): no session for {:?}, creating a new one", session_identifier);
+
+                self.dwallet_mpc_manager
+                    .new_mpc_session(&session_identifier, None)
+            }
+
+            // Now this session is guaranteed to exist, so safe to `unwrap()`.
+            let session = self
+                .dwallet_mpc_manager
+                .mpc_sessions
+                .get_mut(&session_identifier)
+                .unwrap();
+
+            println!("receive_mpc_sessions_output(): setting session {:?} status from {:?} to {:?}", session_identifier, session.status, MPCSessionStatus::Finished);
+
+            // Mark the session as completed, but *don't remove it from the map* (important!)
+            session.clear_data();
+            session.status = MPCSessionStatus::Finished;
+
+            println!("receive_mpc_sessions_output(): set session {:?} status from {:?} to {:?}", session_identifier, session.status, MPCSessionStatus::Finished);
         }
     }
 

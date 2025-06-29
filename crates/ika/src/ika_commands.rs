@@ -309,8 +309,8 @@ async fn start(
     let mut unhealthy_cnt = 0;
     let mut that_node_name = Default::default();
     loop {
-        for node in swarm.validator_nodes() {
-            if node.name().to_string() == "k#942073a24093d2bbf711872ea1270a997bd3ba5ad5942aef03daaf5e573a01b553a00254ee2a25f8cd683005b0edc89e" {
+        for (node_idx, node) in swarm.validator_nodes().enumerate() {
+            if node_idx == 1 {
                 that_node_name = node.name().clone();
             }
 
@@ -328,7 +328,7 @@ async fn start(
             }
         }
 
-        if tick_cnt == 20 * 4 {
+        if tick_cnt == 20 * 2 {
             let node = swarm.node_mut(&that_node_name);
             let node = node.unwrap();
 
@@ -337,7 +337,7 @@ async fn start(
             println!("stopped {:?}", node.name());
         }
 
-        if tick_cnt == 20 * 7 {
+        if tick_cnt == 20 * 3 {
             let node = swarm.node_mut(&that_node_name);
             let node = node.unwrap();
 

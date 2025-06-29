@@ -1487,7 +1487,7 @@ impl AuthorityPerEpochStore {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
 
         let output_verification_result = dwallet_mpc_outputs_verifier
-                .try_verify_output(&output, &session_info, origin_authority, &self)
+                .try_verify_output(&output, &session_info, origin_authority, &self, false)
                 .unwrap_or_else(|e| {
                     error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
                     OutputVerificationResult {
@@ -2129,6 +2129,9 @@ impl ConsensusCommitOutput {
         &mut self,
         new_value: Vec<DWalletMPCOutputMessage>,
     ) {
+        if !new_value.is_empty() {
+            println!("set_dwallet_mpc_round_outputs(): at {} setting to {:?}", self.consensus_round, new_value);
+        }
         self.dwallet_mpc_round_outputs = new_value;
     }
 
