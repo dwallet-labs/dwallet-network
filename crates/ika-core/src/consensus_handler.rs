@@ -428,6 +428,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .await;
 
         for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
+            warn!(?output.session_info.session_identifier, ?output.authority, "processing dwallet mpc output");
             let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
             let mpc_protocol_name = output.session_info.mpc_round.to_string();
 

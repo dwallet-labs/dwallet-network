@@ -20,7 +20,7 @@ use ika_swarm_config::network_config::NetworkConfig;
 use ika_swarm_config::validator_initialization_config::DEFAULT_NUMBER_OF_AUTHORITIES;
 use sui_sdk::wallet_context::WalletContext;
 use tokio::runtime::Runtime;
-use tracing::info;
+use tracing::{info, warn};
 
 const DEFAULT_EPOCH_DURATION_MS: u64 = 1000 * 60 * 60 * 24;
 
@@ -306,20 +306,28 @@ async fn start(
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
     let mut unhealthy_cnt = 0;
+    let mut i = 0;
     loop {
-        for node in swarm.validator_nodes() {
-            if let Err(err) = node.health_check(true).await {
-                unhealthy_cnt += 1;
-                if unhealthy_cnt > 3 {
-                    // The network could temporarily go down during a reconfiguration.
-                    // If we detect a failed validator 3 times in a row, give up.
-                    return Err(err.into());
-                }
-                // Break the inner loop so that we could retry the latter.
-                break;
-            } else {
-                unhealthy_cnt = 0;
+        for (node_index, node) in swarm.validator_nodes().enumerate() {
+            if i == 20 && node_index == 0 {
+                warn!("Stopping node {node_index} for testing purposes");
+                node.stop();
+            } else if i == 23 && node_index == 0 {
+                warn!("Restarting node {node_index} for testing purposes");
+                let _ = node.start().await;
             }
+            // if let Err(err) = node.health_check(true).await {
+            //     unhealthy_cnt += 1;
+            //     if unhealthy_cnt > 3 {
+            //         // The network could temporarily go down during a reconfiguration.
+            //         // If we detect a failed validator 3 times in a row, give up.
+            //         return Err(err.into());
+            //     }
+            //     // Break the inner loop so that we could retry the latter.
+            //     break;
+            // } else {
+            //     unhealthy_cnt = 0;
+            // }
         }
 
         interval.tick().await;
