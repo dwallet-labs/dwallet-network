@@ -277,7 +277,9 @@ where
                         continue 'sync_network_keys;
                     }
                     Err(err) => {
-                        warn!(
+                        // DO NOT CHANGE THIS TO WARNING!
+                        // THIS IS A CRITICAL ERROR IN SOME CASES!
+                        error!(
                             key=?key_id,
                             err=?err,
                             "failed to get network decryption key data, retrying...",
