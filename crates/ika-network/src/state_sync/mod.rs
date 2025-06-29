@@ -178,8 +178,10 @@ struct PeerStateSyncInfo {
     chain_identifier: ChainIdentifier,
     /// Indicates if this Peer is on the same chain as us.
     on_same_chain_as_us: bool,
-    /// Highest checkpoint sequence number we know of for this Peer.
-    height: Option<DWalletCheckpointSequenceNumber>,
+    /// Highest dwallet checkpoint sequence number we know of for this Peer.
+    dwallet_checkpoint_height: Option<DWalletCheckpointSequenceNumber>,
+    /// Highest system checkpoint sequence number we know of for this Peer.
+    system_checkpoint_height: Option<SystemCheckpointSequenceNumber>,
 }
 
 impl PeerHeights {
@@ -194,7 +196,10 @@ impl PeerHeights {
     ) -> Option<DWalletCheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.dwallet_checkpoint_height)
+            })
             .max()?
     }
 
@@ -209,7 +214,10 @@ impl PeerHeights {
     ) -> Option<DWalletCheckpointSequenceNumber> {
         self.peers
             .values()
-            .filter_map(|info| info.on_same_chain_as_us.then_some(info.height))
+            .filter_map(|info| {
+                info.on_same_chain_as_us
+                    .then_some(info.system_checkpoint_height)
+            })
             .max()?
     }
 
@@ -236,7 +244,10 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.height = std::cmp::max(Some(*checkpoint.sequence_number()), info.height);
+        info.dwallet_checkpoint_height = std::cmp::max(
+            Some(*checkpoint.sequence_number()),
+            info.dwallet_checkpoint_height,
+        );
         self.insert_checkpoint(checkpoint);
 
         true
@@ -245,7 +256,7 @@ impl PeerHeights {
     pub fn update_peer_info_with_system_checkpoint(
         &mut self,
         peer_id: PeerId,
-        params: CertifiedSystemCheckpointMessage,
+        system_checkpoint: CertifiedSystemCheckpointMessage,
     ) -> bool {
         debug!("Update peer info with params message");
 
@@ -254,13 +265,19 @@ impl PeerHeights {
             _ => return false,
         };
 
-        info.height = std::cmp::max(Some(*params.sequence_number()), info.height);
-        self.insert_system_checkpoint(params);
+        info.system_checkpoint_height = std::cmp::max(
+            Some(*system_checkpoint.sequence_number()),
+            info.system_checkpoint_height,
+        );
+        self.insert_system_checkpoint(system_checkpoint);
 
         true
     }
 
-    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, height = ?info.height))]
+    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id,
+        dwallet_checkpoint_height = ?info.dwallet_checkpoint_height,
+        system_checkpoint_height = ?info.system_checkpoint_height))
+    ]
     pub fn insert_peer_info(&mut self, peer_id: PeerId, info: PeerStateSyncInfo) {
         use std::collections::hash_map::Entry;
         debug!("Insert peer info");
@@ -271,7 +288,14 @@ impl PeerHeights {
                 // the maximum height. Otherwise we'll use the more recent one
                 let entry = entry.get_mut();
                 if entry.chain_identifier == info.chain_identifier {
-                    entry.height = std::cmp::max(entry.height, info.height);
+                    entry.dwallet_checkpoint_height = std::cmp::max(
+                        entry.dwallet_checkpoint_height,
+                        info.dwallet_checkpoint_height,
+                    );
+                    entry.system_checkpoint_height = std::cmp::max(
+                        entry.system_checkpoint_height,
+                        info.system_checkpoint_height,
+                    );
                 } else {
                     *entry = info;
                 }
@@ -445,7 +469,10 @@ impl Iterator for PeerBalancer {
                 rand::thread_rng().gen_range(0..std::cmp::min(SELECTION_WINDOW, self.peers.len()));
             let (peer, info) = self.peers.remove(idx).unwrap();
             let requested_checkpoint = self.requested_dwallet_checkpoint.unwrap_or(1);
-            if info.height >= Some(requested_checkpoint) {
+            let requested_system_checkpoint = self.requested_system_checkpoint.unwrap_or(1);
+            if info.dwallet_checkpoint_height >= Some(requested_checkpoint)
+                || info.system_checkpoint_height >= Some(requested_system_checkpoint)
+            {
                 return Some(StateSyncClient::new(peer));
             }
         }
@@ -984,7 +1011,8 @@ async fn get_latest_from_peer(
                 Ok(GetChainIdentifierResponse { chain_identifier }) => PeerStateSyncInfo {
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
-                    height: None,
+                    dwallet_checkpoint_height: None,
+                    system_checkpoint_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");
@@ -1326,7 +1354,8 @@ async fn get_latest_from_peer_system_checkpoint(
                 Ok(GetChainIdentifierResponse { chain_identifier }) => PeerStateSyncInfo {
                     chain_identifier,
                     on_same_chain_as_us: our_chain_identifier == chain_identifier,
-                    height: None,
+                    dwallet_checkpoint_height: None,
+                    system_checkpoint_height: None,
                 },
                 Err(status) => {
                     trace!("get_chain_identifier request failed: {status:?}");

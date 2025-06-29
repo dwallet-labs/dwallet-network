@@ -11,7 +11,7 @@ use class_groups::{
     DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_classgroups_types::{ClassGroupsDecryptionKey, ClassGroupsEncryptionKeyAndProof};
+use dwallet_classgroups_types::ClassGroupsDecryptionKey;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateInput, MPCPrivateOutput,
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
@@ -19,6 +19,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::{secp256k1, OsCsRng, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use ika_types::messages_dwallet_mpc::{

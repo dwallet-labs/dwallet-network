@@ -57,6 +57,7 @@ sui-types.workspace = true
 serde_repr.workspace = true
 rand_chacha = "0.3" # use old version for compatability with fastcrypto
 base64.workspace = true
+hex.workspace = true
 
 [dev-dependencies]
 

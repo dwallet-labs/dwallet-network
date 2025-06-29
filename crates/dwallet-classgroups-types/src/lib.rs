@@ -1,25 +1,20 @@
 use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
-    generate_knowledge_of_decryption_key_proofs_per_crt_prime, KnowledgeOfDiscreteLogUCProof,
-    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+    generate_knowledge_of_decryption_key_proofs_per_crt_prime, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use class_groups::{CompactIbqf, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use crypto_bigint::rand_core::RngCore;
 use crypto_bigint::Uint;
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, ClassGroupsProof};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
-pub type ClassGroupsEncryptionKeyAndProof = [(
-    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
-    ClassGroupsProof,
-); MAX_PRIMES];
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
@@ -27,7 +22,10 @@ pub type SingleEncryptionKeyAndProof = (
     CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
     ClassGroupsProof,
 );
-pub const NUM_OF_CLASS_GROUPS_KEYS: usize = MAX_PRIMES;
+/// The number of primes used in the class groups key,
+/// each prime corresponds to a dynamic object.
+pub const NUM_OF_CLASS_GROUPS_KEY_OBJECTS: usize = MAX_PRIMES;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
     #[serde(with = "group::helpers::const_generic_array_serialization")]
@@ -57,12 +55,8 @@ impl ClassGroupsKeyPairAndProof {
         }
     }
 
-    pub fn public_bytes(&self) -> ClassGroupsPublicKeyAndProofBytes {
+    pub fn encryption_key_and_proof(&self) -> ClassGroupsEncryptionKeyAndProof {
         // Safe to unwrap because the serialization should never fail.
-        bcs::to_bytes(&self.public()).unwrap()
-    }
-
-    pub fn public(&self) -> ClassGroupsEncryptionKeyAndProof {
         self.encryption_key_and_proof.clone()
     }
 
@@ -114,7 +108,9 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     let contents = Base64::encode(serialized);
     std::fs::write(path.clone(), contents)
         .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
-    Ok(Base64::encode(keypair.public_bytes()))
+    Ok(Base64::encode(bcs::to_bytes(
+        &keypair.encryption_key_and_proof(),
+    )?))
 }
 
 /// A wrapper around `ClassGroupsKeyPairAndProof` that ensures the deserialized value
