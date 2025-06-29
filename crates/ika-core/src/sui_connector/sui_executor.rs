@@ -1021,11 +1021,14 @@ where
         )
         .await;
 
-        let result = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await;
-        if result.is_err() {
-            metrics.dwallet_checkpoint_writes_failure_total.inc();
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(result) => Ok(result),
+            Err(err) => {
+                error!(?err, "failed to submit dwallet checkpoint to consensus",);
+                metrics.dwallet_checkpoint_writes_failure_total.inc();
+                Err(err.into())
+            }
         }
-        Ok(result?)
     }
 
     async fn handle_system_checkpoint_execution_task(
