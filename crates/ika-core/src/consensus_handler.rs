@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::MPCSessionLogger;
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -44,6 +44,7 @@ use crate::{
 use ika_types::error::IkaResult;
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, instrument, trace_span, warn};
+use typed_store::Map;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -182,7 +183,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let round = consensus_commit.leader_round();
         let dwallet_mpc_verifier = self
             .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
+            .get_dwallet_mpc_outputs_verifier_read()
             .await;
         if !dwallet_mpc_verifier.has_performed_state_sync {
             drop(dwallet_mpc_verifier);
@@ -405,6 +406,21 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     /// chain will be prevented.
     /// Fails only if the epoch switched in the middle of the state sync.
     async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
+        for item in self
+            .epoch_store
+            .tables()?
+            .builder_dwallet_checkpoint_message_v1
+            .safe_iter()
+        {
+            let item = item?;
+            info!(
+                sequence_number=?item.0,
+                batch_sequence_number=?item.1.checkpoint_height,
+                validator=?self.epoch_store.name,
+                "Checkpoint sequence number"
+            )
+        }
+
         info!("Performing a state sync for the dWallet MPC node");
         let mut dwallet_mpc_verifier = self
             .epoch_store

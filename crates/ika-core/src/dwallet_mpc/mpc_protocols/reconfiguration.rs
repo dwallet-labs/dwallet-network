@@ -17,16 +17,16 @@ use ika_types::messages_dwallet_mpc::{
 use mpc::Party;
 use std::collections::HashMap;
 
-pub(super) type ReshareSecp256k1Party = Secp256k1Party;
+pub(crate) type ReconfigurationSecp256k1Party = Secp256k1Party;
 
-pub(super) trait ResharePartyPublicInputGenerator: Party {
-    /// Generates the public input required for the reshare protocol.
+pub(crate) trait ReconfigurationPartyPublicInputGenerator: Party {
+    /// Generates the public input required for the reconfiguration protocol.
     fn generate_public_input(
         committee: &Committee,
         new_committee: Committee,
         decryption_key_share_public_parameters: Secp256k1DecryptionKeySharePublicParameters,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput>;
+    ) -> DwalletMPCResult<<ReconfigurationSecp256k1Party as mpc::Party>::PublicInput>;
 }
 
 fn current_tangible_party_id_to_upcoming(
@@ -48,13 +48,13 @@ fn current_tangible_party_id_to_upcoming(
         .collect()
 }
 
-impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
+impl ReconfigurationPartyPublicInputGenerator for ReconfigurationSecp256k1Party {
     fn generate_public_input(
         current_committee: &Committee,
         upcoming_committee: Committee,
         decryption_key_share_public_parameters: Secp256k1DecryptionKeySharePublicParameters,
         network_dkg_public_output: VersionedNetworkDkgOutput,
-    ) -> DwalletMPCResult<<ReshareSecp256k1Party as mpc::Party>::PublicInput> {
+    ) -> DwalletMPCResult<<ReconfigurationSecp256k1Party as mpc::Party>::PublicInput> {
         let VersionedNetworkDkgOutput::V1(network_dkg_public_output) = network_dkg_public_output;
         let current_committee = current_committee.clone();
 
@@ -71,28 +71,28 @@ impl ResharePartyPublicInputGenerator for ReshareSecp256k1Party {
         let upcoming_encryption_keys_per_crt_prime_and_proofs =
             extract_encryption_keys_from_committee(&upcoming_committee)?;
 
-        let public_input: <ReshareSecp256k1Party as Party>::PublicInput = PublicInput::new::<
-            secp256k1::GroupElement,
-        >(
-            &current_access_structure,
-            upcoming_access_structure,
-            plaintext_space_public_parameters.clone(),
-            current_encryption_keys_per_crt_prime_and_proofs.clone(),
-            upcoming_encryption_keys_per_crt_prime_and_proofs.clone(),
-            decryption_key_share_public_parameters,
-            DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-            current_tangible_party_id_to_upcoming(current_committee, upcoming_committee).clone(),
-            bcs::from_bytes(&network_dkg_public_output)?,
-        )
-        .map_err(|e| {
-            DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
-        })?;
+        let public_input: <ReconfigurationSecp256k1Party as Party>::PublicInput =
+            PublicInput::new::<secp256k1::GroupElement>(
+                &current_access_structure,
+                upcoming_access_structure,
+                plaintext_space_public_parameters.clone(),
+                current_encryption_keys_per_crt_prime_and_proofs.clone(),
+                upcoming_encryption_keys_per_crt_prime_and_proofs.clone(),
+                decryption_key_share_public_parameters,
+                DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+                current_tangible_party_id_to_upcoming(current_committee, upcoming_committee)
+                    .clone(),
+                bcs::from_bytes(&network_dkg_public_output)?,
+            )
+            .map_err(|e| {
+                DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
+            })?;
 
         Ok(public_input)
     }
 }
 
-pub(super) fn network_decryption_key_reshare_session_info_from_event(
+pub(crate) fn network_decryption_key_reconfiguration_session_info_from_event(
     deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> SessionInfo {
     SessionInfo {

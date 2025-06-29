@@ -2,9 +2,9 @@
 //! The network DKG protocol handles generating the network Decryption-Key shares.
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
-use crate::dwallet_mpc::advance_and_serialize;
+use crate::dwallet_mpc::mpc_session::{advance_and_serialize, MPCSessionLogger};
 use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
-use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
+use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 use class_groups::{
     Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
@@ -17,7 +17,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     NetworkDecryptionKeyPublicData, NetworkDecryptionKeyPublicOutputType,
     SerializedWrappedMPCPublicOutput, VersionedNetworkDkgOutput,
 };
-use group::{secp256k1, PartyID};
+use group::{secp256k1, OsCsRng, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
@@ -26,7 +26,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCProtocolInitData, SessionInfo,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use rand_core::OsRng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::warn;
@@ -84,9 +83,10 @@ fn get_decryption_key_shares_from_public_output(
                 Ok(secret_shares)
             }
         },
-        NetworkDecryptionKeyPublicOutputType::Reshare => match &shares.latest_public_output {
+        NetworkDecryptionKeyPublicOutputType::Reconfiguration => match &shares.latest_public_output
+        {
             VersionedNetworkDkgOutput::V1(public_output) => {
-                let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
+                let public_output: <ReconfigurationSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
                 let secret_shares = public_output
                     .decrypt_decryption_key_shares::<secp256k1::GroupElement>(
@@ -140,7 +140,7 @@ impl ValidatorPrivateDecryptionKeyData {
                     party_id,
                     secret_key_share,
                     public_parameters,
-                    &mut OsRng,
+                    &mut OsCsRng,
                 )
                 .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
 
@@ -156,14 +156,6 @@ impl DwalletMPCNetworkKeys {
             network_encryption_keys: Default::default(),
             validator_private_dec_key_data: node_context,
         }
-    }
-
-    pub fn validator_decryption_keys_shares(
-        &self,
-    ) -> HashMap<ObjectID, HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.validator_private_dec_key_data
-            .validator_decryption_key_shares
-            .clone()
     }
 
     pub fn update_network_key(
@@ -230,7 +222,7 @@ pub(crate) fn advance_network_dkg(
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
-    logger: &crate::dwallet_mpc::MPCSessionLogger,
+    logger: &MPCSessionLogger,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -277,7 +269,7 @@ pub(crate) fn advance_network_dkg(
     Ok(res)
 }
 
-pub(super) fn network_dkg_public_input(
+pub(crate) fn network_dkg_public_input(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     key_scheme: DWalletMPCNetworkKeyScheme,
@@ -291,7 +283,7 @@ pub(super) fn network_dkg_public_input(
     }
 }
 
-pub(super) fn network_dkg_session_info(
+pub(crate) fn network_dkg_session_info(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<SessionInfo> {
@@ -333,7 +325,7 @@ fn network_dkg_ristretto_session_info(
     }
 }
 
-fn generate_secp256k1_dkg_party_public_input(
+pub(crate) fn generate_secp256k1_dkg_party_public_input(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
@@ -364,7 +356,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
             &key_data.network_dkg_public_output,
         )
     } else {
-        instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
+        instantiate_dwallet_mpc_network_decryption_key_shares_from_reconfiguration_public_output(
             epoch,
             weighted_threshold_access_structure,
             &key_data.current_reconfiguration_public_output,
@@ -373,7 +365,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     }
 }
 
-fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_output(
+fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reconfiguration_public_output(
     epoch: u64,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     public_output_bytes: &SerializedWrappedMPCPublicOutput,
@@ -383,7 +375,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
         bcs::from_bytes(public_output_bytes).map_err(DwalletMPCError::BcsError)?;
     match &mpc_public_output {
         VersionedNetworkDkgOutput::V1(public_output_bytes) => {
-            let public_output: <ReshareSecp256k1Party as mpc::Party>::PublicOutput =
+            let public_output: <ReconfigurationSecp256k1Party as mpc::Party>::PublicOutput =
                 bcs::from_bytes(public_output_bytes)?;
             let decryption_key_share_public_parameters = public_output
                 .default_decryption_key_share_public_parameters::<secp256k1::GroupElement>(
@@ -402,7 +394,7 @@ fn instantiate_dwallet_mpc_network_decryption_key_shares_from_reshare_public_out
             );
             Ok(NetworkDecryptionKeyPublicData {
                 epoch,
-                state: NetworkDecryptionKeyPublicOutputType::Reshare,
+                state: NetworkDecryptionKeyPublicOutputType::Reconfiguration,
                 latest_public_output: mpc_public_output,
                 decryption_key_share_public_parameters,
                 protocol_public_parameters,

@@ -1,9 +1,14 @@
+mod advance_and_serialize;
+mod input;
+mod logger;
+mod session_info;
+
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCSessionPublicOutput, MPCSessionStatus,
     SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput,
-    VersionedDecryptionKeyReshareOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
     VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use group::helpers::DeduplicateAndSort;
@@ -18,15 +23,17 @@ use twopc_mpc::sign::Protocol;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty, DWalletImportedKeyVerificationParty};
+use crate::dwallet_mpc::dwallet_dkg::{
+    DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,
+};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
-use crate::dwallet_mpc::reshare::ReshareSecp256k1Party;
+use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names, MPCSessionLogger};
+use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
@@ -36,6 +43,11 @@ use ika_types::messages_dwallet_mpc::{
     NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
+
+pub(crate) use advance_and_serialize::advance_and_serialize;
+pub(crate) use input::session_input_from_event;
+pub(crate) use logger::MPCSessionLogger;
+pub(crate) use session_info::session_info_from_event;
 
 /// Represents the result of checking whether the session is ready to advance.
 ///
@@ -51,14 +63,14 @@ pub enum PublicInput {
     DWalletImportedKeyVerificationRequest(
         <DWalletImportedKeyVerificationParty as mpc::Party>::PublicInput,
     ),
-    DKGFirst(<DKGFirstParty as mpc::Party>::PublicInput),
-    DKGSecond(<DKGSecondParty as mpc::Party>::PublicInput),
+    DKGFirst(<DWalletDKGFirstParty as mpc::Party>::PublicInput),
+    DKGSecond(<DWalletDKGSecondParty as mpc::Party>::PublicInput),
     Presign(<PresignParty as mpc::Party>::PublicInput),
     Sign(<SignFirstParty as mpc::Party>::PublicInput),
     NetworkEncryptionKeyDkg(<Secp256k1Party as mpc::Party>::PublicInput),
     EncryptedShareVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     PartialSignatureVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
-    NetworkEncryptionKeyReconfiguration(<ReshareSecp256k1Party as mpc::Party>::PublicInput),
+    NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as mpc::Party>::PublicInput),
     MakeDWalletUserSecretKeySharesPublicPublicInput(
         twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
     ),
@@ -119,8 +131,8 @@ impl DWalletMPCSession {
     /// The round number where NetworkDkg protocol applies consensus delay.
     const NETWORK_DKG_DELAY_ROUND: usize = 3;
 
-    /// The round number where DecryptionKeyReshare protocol applies consensus delay.
-    const DECRYPTION_KEY_RESHARE_DELAY_ROUND: usize = 3;
+    /// The round number where DecryptionKey protocol applies consensus delay.
+    const DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND: usize = 3;
 
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -443,9 +455,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<
-                    DWalletImportedKeyVerificationParty,
-                >(
+                let result = advance_and_serialize::<DWalletImportedKeyVerificationParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -519,7 +529,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<DKGFirstParty>(
+                let result = advance_and_serialize::<DWalletDKGFirstParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -561,7 +571,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<DKGSecondParty>(
+                let result = advance_and_serialize::<DWalletDKGSecondParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -630,7 +640,7 @@ impl DWalletMPCSession {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<PresignParty>(
+                let result = advance_and_serialize::<PresignParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -678,7 +688,7 @@ impl DWalletMPCSession {
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
-                let result = crate::dwallet_mpc::advance_and_serialize::<SignFirstParty>(
+                let result = advance_and_serialize::<SignFirstParty>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -805,10 +815,10 @@ impl DWalletMPCSession {
                     .map(|(party_id, share)| (*party_id, share.decryption_key_share))
                     .collect::<HashMap<_, _>>();
 
-                // Extend base logger with decryption key shares for Reshare protocol
+                // Extend base logger with decryption key shares for Reconfiguration protocol
                 let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
 
-                let result = crate::dwallet_mpc::advance_and_serialize::<ReshareSecp256k1Party>(
+                let result = advance_and_serialize::<ReconfigurationSecp256k1Party>(
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
@@ -823,8 +833,9 @@ impl DWalletMPCSession {
                         malicious_parties,
                         private_output,
                     }) => {
-                        let public_output =
-                            bcs::to_bytes(&VersionedDecryptionKeyReshareOutput::V1(public_output))?;
+                        let public_output = bcs::to_bytes(
+                            &VersionedDecryptionKeyReconfigurationOutput::V1(public_output),
+                        )?;
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
@@ -1008,15 +1019,15 @@ impl DWalletMPCSession {
 
     /// Checks if the session should wait for additional consensus rounds before advancing.
     ///
-    /// This method implements protocol-specific delays for certain MPC rounds
-    /// (Sign, NetworkDkg, DecryptionKeyReshare).
+    /// This method implements protocol-specific delays for certain MPC rounds in specific protocols
+    /// (Sign, NetworkDkg, DecryptionKeyReconfiguration).
     ///
     /// - **Sign protocol**: Applies delay in round 2 (SIGN_DELAY_ROUND)
     ///   using `sign_second_round_delay` config
     /// - **NetworkDkg protocol**: Applies delay in round 3 (NETWORK_DKG_DELAY_ROUND)
     ///   using `network_dkg_third_round_delay` config
-    /// - **DecryptionKeyReshare protocol**: Applies delay in round 3
-    ///   (DECRYPTION_KEY_RESHARE_DELAY_ROUND) using `decryption_key_reshare_third_round_delay` config
+    /// - **DecryptionKeyReconfiguration protocol**: Applies delay in round 3
+    ///   (DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND) using `decryption_key_reconfiguration_third_round_delay` config
     /// - **Other protocols**: No delay applied, always ready to advance
     ///
     /// When a delay is required, the method tracks `consensus_rounds_since_quorum_reached`
@@ -1052,9 +1063,9 @@ impl DWalletMPCSession {
                     let delay = self
                         .epoch_store()?
                         .protocol_config()
-                        .decryption_key_reshare_third_round_delay()
+                        .decryption_key_reconfiguration_third_round_delay()
                         as usize;
-                    self.check_round_delay(Self::DECRYPTION_KEY_RESHARE_DELAY_ROUND, delay)
+                    self.check_round_delay(Self::DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND, delay)
                 }
                 _ => Ok(ReadyToAdvanceCheckResult {
                     is_ready: true,

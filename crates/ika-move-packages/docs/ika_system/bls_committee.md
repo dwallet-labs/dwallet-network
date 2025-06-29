@@ -166,6 +166,7 @@ Event emitted after verifying quorum of signature
 
 <a name="(ika_system=0x0)_bls_committee_EInvalidBitmap"></a>
 
+The signers bitmap is invalid.
 
 
 <pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidBitmap">EInvalidBitmap</a>: u64 = 0;
@@ -175,30 +176,30 @@ Event emitted after verifying quorum of signature
 
 <a name="(ika_system=0x0)_bls_committee_EInvalidSignatureLength"></a>
 
+The length of the provided bls signature is incorrect.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignatureLength">EInvalidSignatureLength</a>: vector&lt;u8&gt; = b"The length of the provided bls signature is incorrect.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignatureLength">EInvalidSignatureLength</a>: u64 = 1;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_bls_committee_EInvalidSignature"></a>
 
+Invalid certificate signature.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: vector&lt;u8&gt; = b"Invalid certificate signature.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_EInvalidSignature">EInvalidSignature</a>: u64 = 2;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_bls_committee_ENotEnoughStake"></a>
 
+Not enough stake of signers for the bls signature.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_ENotEnoughStake">ENotEnoughStake</a>: vector&lt;u8&gt; = b"Not enough stake of signers <b>for</b> the bls signature.";
+<pre><code><b>const</b> <a href="../ika_system/bls_committee.md#(ika_system=0x0)_bls_committee_ENotEnoughStake">ENotEnoughStake</a>: u64 = 3;
 </code></pre>
 
 

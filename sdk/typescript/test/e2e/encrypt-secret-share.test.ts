@@ -15,7 +15,7 @@ import {
 	checkpointCreationTime,
 	Config,
 	delay,
-	getNetworkDecryptionKeyPublicOutput,
+	getNetworkPublicParameters,
 } from '../../src/dwallet-mpc/globals';
 
 const fiveMinutes = 5 * 60 * 1000;
@@ -31,7 +31,7 @@ describe('Test dWallet MPC', () => {
 	});
 
 	it('encrypt a secret share for a given Sui address, decrypt it, verify it & publish signed dWallet output on chain ', async () => {
-		const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(sourceConf);
+		const networkDecryptionKeyPublicOutput = await getNetworkPublicParameters(sourceConf);
 		const sourceDwallet = await createDWallet(sourceConf, networkDecryptionKeyPublicOutput);
 		// Create Destination Class Groups Keypair & Store it on the chain.
 		await getOrCreateClassGroupsKeyPair(destConf);

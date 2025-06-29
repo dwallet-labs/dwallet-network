@@ -267,91 +267,90 @@ Expected length of Ed25519 public keys in bytes
 
 <a name="(ika_system=0x0)_validator_info_EInvalidProofOfPossession"></a>
 
-The proof of possession verification failed
+Invalid proof_of_possession_bytes field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidProofOfPossession">EInvalidProofOfPossession</a>: vector&lt;u8&gt; = b"Invalid proof_of_possession_bytes field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidProofOfPossession">EInvalidProofOfPossession</a>: u64 = 0;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EInvalidNameLength"></a>
 
+Validator name length exceeds maximum allowed length.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidNameLength">EInvalidNameLength</a>: vector&lt;u8&gt; = b"Validator name length exceeds maximum allowed length.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EInvalidNameLength">EInvalidNameLength</a>: u64 = 1;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey"></a>
 
+Invalid protocol_pubkey_bytes field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey">EMetadataInvalidProtocolPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_protocol_pubkey_bytes">protocol_pubkey_bytes</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidProtocolPubkey">EMetadataInvalidProtocolPubkey</a>: u64 = 2;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey"></a>
 
+Invalid network_pubkey_bytes field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey">EMetadataInvalidNetworkPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey">EMetadataInvalidNetworkPubkey</a>: u64 = 3;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidConsensusPubkey"></a>
 
+Invalid consensus_pubkey_bytes field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusPubkey">EMetadataInvalidConsensusPubkey</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_pubkey_bytes">consensus_pubkey_bytes</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusPubkey">EMetadataInvalidConsensusPubkey</a>: u64 = 4;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress"></a>
 
+Invalid network_address field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_address">network_address</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>: u64 = 5;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress"></a>
 
+Invalid p2p_address field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_p2p_address">p2p_address</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>: u64 = 6;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress"></a>
 
+Invalid consensus_address field in ValidatorMetadata.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>: vector&lt;u8&gt; = b"Invalid <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a> field in ValidatorMetadata.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>: u64 = 7;
 </code></pre>
 
 
 
 <a name="(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit"></a>
 
+Validator Metadata is too long.
 
 
-<pre><code>#[error]
-<b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>: vector&lt;u8&gt; = b"Validator Metadata is too long.";
+<pre><code><b>const</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>: u64 = 8;
 </code></pre>
 
 
