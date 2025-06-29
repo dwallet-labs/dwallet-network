@@ -1042,10 +1042,9 @@ impl SuiClientInner for SuiSdkClient {
             .await?;
 
         // Note that if we try to read the reconfiguration public output during the first epoch,
-        // where we only had NetworkDKG, this function will error.
+        // where we only had NetworkDKG, `get_current_reconfiguration_public_output()` function will error.
         // In this case, the validator will be stuck in a loop where it can't process events
         // until the epoch is switched, since it will be endlessly waiting for the network key.
-
         let first_reconfiguration_for_next_epoch_was_completed = key.state
             == (DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration {
                 is_first: true,
