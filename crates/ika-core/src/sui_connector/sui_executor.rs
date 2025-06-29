@@ -1112,17 +1112,13 @@ where
         )
         .await;
 
-        let result = Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await;
-        if result.is_err() {
-            metrics.system_checkpoint_writes_failure_total.inc();
-            let err = result.err();
-            error!(
-                ?err,
-                "failed to submit system checkpoint to consensus",
-            );
-            return Err(err.unwrap().into());
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                error!(?err, "failed to submit system checkpoint to consensus",);
+                Err(err.into())
+            }
         }
-        Ok(())
     }
 }
 
