@@ -5,10 +5,9 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
-use dwallet_classgroups_types::{
-    ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
-};
+use dwallet_classgroups_types::{SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEY_OBJECTS};
 use ika_move_packages::BuiltInIkaMovePackages;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
@@ -388,10 +387,7 @@ where
                             class_groups_public_key_and_proof:
                                 validators_class_groups_public_key_and_proof
                                     .get(&validator.id)
-                                    .and_then(|validators_class_groups_public_key_and_proof| {
-                                        bcs::to_bytes(&validators_class_groups_public_key_and_proof)
-                                            .ok()
-                                    }),
+                                    .cloned(),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),

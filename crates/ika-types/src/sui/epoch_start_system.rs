@@ -4,12 +4,11 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use crate::committee::{Committee, StakeUnit};
+use crate::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
 use consensus_config::{Authority, Committee as ConsensusCommittee};
-use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_protocol_config::ProtocolVersion;
@@ -253,7 +252,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
-    pub class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProofBytes>,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsEncryptionKeyAndProof>,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,

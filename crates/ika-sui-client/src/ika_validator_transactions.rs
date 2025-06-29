@@ -1,7 +1,7 @@
 use anyhow::bail;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
@@ -83,7 +83,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     ika_system_package_id: ObjectID,
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let client = context.get_client().await?;
@@ -97,7 +97,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
     .await?;
 
     let class_groups_public_key_and_proof: Box<ClassGroupsEncryptionKeyAndProof> =
-        Box::new(bcs::from_bytes(&class_groups_public_key_and_proof_bytes)?);
+        Box::new(class_groups_public_key_and_proof_bytes);
     for pubkey_and_proof in class_groups_public_key_and_proof.iter() {
         let mut ptb = ProgrammableTransactionBuilder::new();
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
