@@ -364,45 +364,6 @@ impl IkaNode {
             system_checkpoint_store.clone(),
         );
 
-        let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-
-        let (
-            (network_keys_sender, network_keys_receiver),
-            (next_epoch_committee_sender, next_epoch_committee_receiver),
-        ) = if epoch_store
-            .committee()
-            .authority_exists(&config.protocol_public_key())
-        {
-            // If the node is a validator, we need to send the network keys to the sui connector service.
-            let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
-            let (next_epoch_committee_sender, next_epoch_committee_receiver) =
-                watch::channel::<Committee>(committee);
-            (
-                (Some(network_keys_sender), Some(network_keys_receiver)),
-                (
-                    Some(next_epoch_committee_sender),
-                    Some(next_epoch_committee_receiver),
-                ),
-            )
-        } else {
-            ((None, None), (None, None))
-        };
-
-        let (new_events_sender, new_events_receiver) = tokio::sync::broadcast::channel(10000);
-        let sui_connector_service = Arc::new(
-            SuiConnectorService::new(
-                dwallet_checkpoint_store.clone(),
-                system_checkpoint_store.clone(),
-                sui_client.clone(),
-                config.sui_connector_config.clone(),
-                sui_connector_metrics,
-                network_keys_sender,
-                next_epoch_committee_sender,
-                new_events_sender,
-            )
-            .await?,
-        );
-
         info!("creating archive reader");
         // Create network
         // TODO only configure validators as seed/preferred peers for validators and not for
@@ -454,8 +415,27 @@ impl IkaNode {
             config.clone(),
         )
         .await;
-
         info!("created authority state");
+
+        let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
+        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+        let (next_epoch_committee_sender, next_epoch_committee_receiver) =
+            watch::channel::<Committee>(committee);
+        let (new_events_sender, new_events_receiver) = broadcast::channel(10000);
+        let sui_connector_service = Arc::new(
+            SuiConnectorService::new(
+                dwallet_checkpoint_store.clone(),
+                system_checkpoint_store.clone(),
+                sui_client.clone(),
+                config.sui_connector_config.clone(),
+                sui_connector_metrics,
+                state.is_validator(&epoch_store),
+                network_keys_sender,
+                next_epoch_committee_sender,
+                new_events_sender,
+            )
+            .await?,
+        );
 
         let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
@@ -500,13 +480,9 @@ impl IkaNode {
                 previous_epoch_last_dwallet_checkpoint_sequence_number,
                 previous_epoch_last_system_checkpoint_sequence_number,
                 // Safe to unwrap() because the node is a Validator.
-                network_keys_receiver
-                    .clone()
-                    .expect("validator must have network keys receiver"),
+                network_keys_receiver.clone(),
                 new_events_receiver.resubscribe(),
-                next_epoch_committee_receiver
-                    .clone()
-                    .expect("validator must have next epoch committee receiver"),
+                next_epoch_committee_receiver.clone(),
                 sui_client.clone(),
                 dwallet_mpc_metrics.clone(),
             )
@@ -1104,11 +1080,9 @@ impl IkaNode {
     /// after which it initiates reconfiguration of the entire system.
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
-        network_keys_receiver: Option<
-            Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-        >,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: broadcast::Receiver<Vec<SuiEvent>>,
-        next_epoch_committee_receiver: Option<Receiver<Committee>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Result<()> {
@@ -1301,13 +1275,9 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             previous_epoch_last_system_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
-                            network_keys_receiver
-                                .clone()
-                                .expect("validator must have network keys receiver"),
+                            network_keys_receiver.clone(),
                             new_events_receiver.resubscribe(),
-                            next_epoch_committee_receiver
-                                .clone()
-                                .expect("validator must have next epoch committee receiver"),
+                            next_epoch_committee_receiver.clone(),
                             sui_client_clone2.clone(),
                         )
                         .await?,
@@ -1343,13 +1313,9 @@ impl IkaNode {
                             previous_epoch_last_checkpoint_sequence_number,
                             previous_epoch_last_system_checkpoint_sequence_number,
                             // safe to unwrap because we are a validator
-                            network_keys_receiver
-                                .clone()
-                                .expect("validator must have network keys receiver"),
+                            network_keys_receiver.clone(),
                             new_events_receiver.resubscribe(),
-                            next_epoch_committee_receiver
-                                .clone()
-                                .expect("validator must have next epoch committee receiver"),
+                            next_epoch_committee_receiver.clone(),
                             sui_client.clone(),
                             dwallet_mpc_metrics.clone(),
                         )
