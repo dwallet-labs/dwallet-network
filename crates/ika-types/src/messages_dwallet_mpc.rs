@@ -380,47 +380,6 @@ impl SessionIdentifier {
         Self(buf)
     }
 
-    /// Return a canonical string representation of the address
-    /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
-    /// e.g., 0000000000000000000000000000000a, *not* 0x0000000000000000000000000000000a, 0xa, or 0xA
-    /// Note: this function is guaranteed to be stable, and this is suitable for use inside
-    /// Move native functions or the VM.
-    /// However, one can pass with_prefix=true to get its representation with the 0x prefix.
-    pub fn to_canonical_string(&self, with_prefix: bool) -> String {
-        self.to_canonical_display(with_prefix).to_string()
-    }
-
-    /// Implements Display for the address, with the prefix 0x if with_prefix is true.
-    pub fn to_canonical_display(&self, with_prefix: bool) -> impl fmt::Display + '_ {
-        struct HexDisplay<'a> {
-            data: &'a [u8],
-            with_prefix: bool,
-        }
-
-        impl fmt::Display for HexDisplay<'_> {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                if self.with_prefix {
-                    write!(f, "0x{}", hex::encode(self.data))
-                } else {
-                    write!(f, "{}", hex::encode(self.data))
-                }
-            }
-        }
-        HexDisplay {
-            data: &self.0,
-            with_prefix,
-        }
-    }
-
-    pub fn short_str_lossless(&self) -> String {
-        let hex_str = hex::encode(self.0).trim_start_matches('0').to_string();
-        if hex_str.is_empty() {
-            "0".to_string()
-        } else {
-            hex_str
-        }
-    }
-
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
@@ -449,10 +408,6 @@ impl SessionIdentifier {
         }
     }
 
-    pub fn to_hex_literal(&self) -> String {
-        format!("0x{}", self.short_str_lossless())
-    }
-
     pub fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<Self, SessionIdentifierParseError> {
         <[u8; Self::LENGTH]>::from_hex(hex)
             .map_err(|_| SessionIdentifierParseError)
@@ -468,11 +423,6 @@ impl SessionIdentifier {
             .map_err(|_| SessionIdentifierParseError)
             .map(Self)
     }
-
-    // /// TODO (ade): use macro to enfornce determinism
-    // pub fn abstract_size_for_gas_metering(&self) -> AbstractMemorySize {
-    //     AbstractMemorySize::new(Self::LENGTH as u64)
-    // }
 }
 
 impl AsRef<[u8]> for SessionIdentifier {
@@ -491,13 +441,13 @@ impl std::ops::Deref for SessionIdentifier {
 
 impl fmt::Display for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "0x{:x}", self)
+        write!(f, "{:#x}", self)
     }
 }
 
 impl fmt::Debug for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "0x{:x}", self)
+        write!(f, "{:#x}", self)
     }
 }
 
@@ -617,7 +567,7 @@ impl<'de> Deserialize<'de> for SessionIdentifier {
             // make sure to wrap our value in a container with the same name
             // as the original type.
             #[derive(::serde::Deserialize)]
-            #[serde(rename = "AccountAddress")]
+            #[serde(rename = "SessionIdentifier")]
             struct Value([u8; SessionIdentifier::LENGTH]);
 
             let value = Value::deserialize(deserializer)?;
@@ -635,7 +585,7 @@ impl Serialize for SessionIdentifier {
             self.to_hex().serialize(serializer)
         } else {
             // See comment in deserialize.
-            serializer.serialize_newtype_struct("AccountAddress", &self.0)
+            serializer.serialize_newtype_struct("SessionIdentifier", &self.0)
         }
     }
 }
@@ -647,7 +597,7 @@ impl fmt::Display for SessionIdentifierParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Unable to parse AccountAddress (must be hex string of length {})",
+            "Unable to parse SessionIdentifier (must be hex string of length {})",
             SessionIdentifier::LENGTH
         )
     }
