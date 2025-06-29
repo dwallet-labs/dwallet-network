@@ -487,7 +487,6 @@ impl ConsensusAdapter {
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> IkaResult<JoinHandle<()>> {
-        // TODO(Scaly): clean up this code.
         // if transactions.len() > 1 {
         //     // In soft bundle, we need to check if all transactions are of CertifiedTransaction
         //     // kind. The check is required because we assume this in submit_and_wait_inner.

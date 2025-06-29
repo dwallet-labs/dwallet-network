@@ -294,7 +294,6 @@ impl DWalletMPCService {
                         .handle_dwallet_db_message(message)
                         .await;
                 }
-                // TODO(Scaly): why is there a message `EndOfDelivery` and `PerformCryptographicComputations` ? why not call function?
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_message(DWalletMPCDBMessage::EndOfDelivery)
                     .await;
