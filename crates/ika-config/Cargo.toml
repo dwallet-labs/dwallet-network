@@ -22,6 +22,7 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_with.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
+bcs.workspace = true
 
 consensus-config.workspace = true
 sui-keys.workspace = true

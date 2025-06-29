@@ -161,7 +161,7 @@ impl IkaValidatorCommand {
                 let validator_info = ValidatorInfo {
                     name,
                     class_groups_public_key_and_proof: class_groups_public_key_and_proof
-                        .public_bytes(),
+                        .encryption_key_and_proof(),
                     account_address: sender_sui_address,
                     protocol_public_key: keypair.public().into(),
                     consensus_public_key: consensus_keypair.public().clone(),

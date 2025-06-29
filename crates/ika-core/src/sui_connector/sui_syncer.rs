@@ -57,21 +57,27 @@ where
         self,
         query_interval: Duration,
         next_epoch_committee_sender: Sender<Committee>,
+        is_validator: bool,
         network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
-        tokio::spawn(Self::sync_next_committee(
-            sui_client_clone.clone(),
-            next_epoch_committee_sender,
-        ));
-        // Todo (#810): Check the usage adding the task handle to the task_handles vector.
-        tokio::spawn(Self::sync_dwallet_network_keys(
-            sui_client_clone,
-            network_keys_sender,
-        ));
+        if is_validator {
+            info!("Starting next epoch committee sync task");
+            tokio::spawn(Self::sync_next_committee(
+                sui_client_clone.clone(),
+                next_epoch_committee_sender,
+            ));
+
+            info!("Starting network keys sync task");
+            tokio::spawn(Self::sync_dwallet_network_keys(
+                sui_client_clone.clone(),
+                network_keys_sender,
+            ));
+        }
+
         for module in self.modules {
             let metrics = self.metrics.clone();
             let sui_client_clone = self.sui_client.clone();
@@ -151,17 +157,19 @@ where
 
         let class_group_encryption_keys_and_proofs = committee
             .iter()
-            .map(|(id, (name, _))| {
+            .filter_map(|(id, (name, _))| {
                 let validator_class_groups_public_key_and_proof =
-                    class_group_encryption_keys_and_proofs
-                        .get(id)
-                        .ok_or(DwalletMPCError::ValidatorIDNotFound(*id))?;
+                    class_group_encryption_keys_and_proofs.get(id);
 
                 let validator_class_groups_public_key_and_proof =
-                    bcs::to_bytes(&validator_class_groups_public_key_and_proof)?;
-                Ok((*name, validator_class_groups_public_key_and_proof))
+                    validator_class_groups_public_key_and_proof.cloned();
+                validator_class_groups_public_key_and_proof.map(
+                    |validator_class_groups_public_key_and_proof| {
+                        (*name, validator_class_groups_public_key_and_proof)
+                    },
+                )
             })
-            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+            .collect::<HashMap<_, _>>();
 
         Ok(Committee::new(
             epoch,

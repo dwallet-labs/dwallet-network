@@ -5,10 +5,9 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
-use dwallet_classgroups_types::{
-    ClassGroupsEncryptionKeyAndProof, SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEYS,
-};
+use dwallet_classgroups_types::{SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEY_OBJECTS};
 use ika_move_packages::BuiltInIkaMovePackages;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
@@ -373,33 +372,30 @@ where
                     .members
                     .iter()
                     .map(|m| {
-                        let validator = validators
-                            .iter()
-                            .find(|v| v.id == m.validator_id)
-                            .unwrap();
+                        let validator = validators.iter().find(|v| v.id == m.validator_id).ok_or(
+                            IkaError::InvalidCommittee(format!(
+                                "Validator with ID {} not found in the active committee",
+                                m.validator_id
+                            )),
+                        )?;
                         let info = validator.verified_validator_info();
-                        EpochStartValidatorInfoV1 {
+                        Ok(EpochStartValidatorInfoV1 {
                             validator_id: validator.id,
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
                             consensus_pubkey: info.consensus_pubkey.clone(),
-                            class_groups_public_key_and_proof: bcs::to_bytes(
-                                &validators_class_groups_public_key_and_proof
+                            class_groups_public_key_and_proof:
+                                validators_class_groups_public_key_and_proof
                                     .get(&validator.id)
-                                    // Okay to `unwrap`
-                                    // because we can't start the chain without the system state data.
-                                    .expect("failed to get the validator class groups public key from Sui")
-                                    .clone(),
-                            )
-                                .unwrap(),
+                                    .cloned(),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),
                             voting_power: 1,
                             hostname: info.name.clone(),
-                        }
+                        })
                     })
-                    .collect::<Vec<_>>();
+                    .collect::<IkaResult<Vec<_>>>()?;
 
                 let epoch_start_system_state = EpochStartSystem::new_v1(
                     ika_system_state_inner.epoch,
@@ -956,7 +952,16 @@ impl SuiClientInner for SuiSdkClient {
                 )
                 .await?;
             let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
-                NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
+                NUM_OF_CLASS_GROUPS_KEY_OBJECTS] = Default::default();
+            if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEY_OBJECTS {
+                warn!(
+                    validator_id=?validator.id,
+                    expected_num_of_class_groups_keys=NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
+                    dynamic_fields_count=dynamic_fields.data.len(),
+                    "Validator class groups public key and proof length mismatch",
+                );
+                continue;
+            }
             for df in dynamic_fields.data.iter() {
                 let object_id = df.object_id;
                 let dynamic_field_response = self
@@ -986,16 +991,29 @@ impl SuiClientInner for SuiSdkClient {
                 .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
                 .collect();
 
-            class_groups_public_keys_and_proofs.insert(
-                validator.id,
-                validator_class_groups_public_key_and_proof?
-                    .try_into()
-                    .map_err(|_| {
-                        Error::DataError(
-                            "class groups key from Sui has an invalid length".to_string(),
-                        )
-                    })?,
-            );
+            match validator_class_groups_public_key_and_proof {
+                Ok(validator_class_groups_public_key_and_proof) => {
+                    class_groups_public_keys_and_proofs.insert(
+                        validator.id,
+                        validator_class_groups_public_key_and_proof
+                            .try_into()
+                            .map_err(|e| {
+                                Error::DataError(format!(
+                                    "class groups key from Sui is invalid: {:?}",
+                                    e
+                                ))
+                            })?,
+                    );
+                }
+                Err(e) => {
+                    warn!(
+                        validator_id=?validator.id,
+                        error=?e,
+                        "Failed to deserialize class groups public key and proof for a validator"
+                    );
+                    continue;
+                }
+            }
         }
         Ok(class_groups_public_keys_and_proofs)
     }
