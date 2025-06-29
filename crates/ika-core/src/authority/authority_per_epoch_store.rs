@@ -106,7 +106,7 @@ pub enum ConsensusCertificateResult {
     /// The last checkpoint message of the epoch.
     /// After the Sui smart contract receives this message, it knows that no more system checkpoints will get created
     /// in this epoch, and it allows external calls to advance the epoch.
-    /// 
+    ///
     /// This is a certificate result, so both the system & dwallet checkpointing mechanisms will create
     /// separate checkpoint messages, to update both the DWallet Coordinator & Ika System Sui objects.
     EndOfPublish,
@@ -297,11 +297,13 @@ pub struct AuthorityPerEpochStore {
     end_of_publish: Mutex<StakeAggregator<(), true>>,
 }
 
+/// The reconfiguration state of the authority.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReconfigState {
     status: ReconfigCertStatus,
 }
 
+/// The possible reconfiguration states of the authority.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ReconfigCertStatus {
     AcceptAllCerts,
