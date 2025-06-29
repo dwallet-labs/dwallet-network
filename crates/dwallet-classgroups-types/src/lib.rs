@@ -10,16 +10,12 @@ use crypto_bigint::Uint;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, ClassGroupsProof};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
 pub type ClassGroupsDecryptionKey = [Uint<{ CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS }>; MAX_PRIMES];
-pub type ClassGroupsEncryptionKeyAndProof = [(
-    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
-    ClassGroupsProof,
-); MAX_PRIMES];
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGDecentralizedOutput =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::DecentralizedPartyDKGOutput;
@@ -57,9 +53,9 @@ impl ClassGroupsKeyPairAndProof {
         }
     }
 
-    pub fn public_bytes(&self) -> ClassGroupsPublicKeyAndProofBytes {
+    pub fn public_bytes(&self) -> ClassGroupsEncryptionKeyAndProof {
         // Safe to unwrap because the serialization should never fail.
-        bcs::to_bytes(&self.public()).unwrap()
+        self.public()
     }
 
     pub fn public(&self) -> ClassGroupsEncryptionKeyAndProof {
@@ -114,7 +110,7 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     let contents = Base64::encode(serialized);
     std::fs::write(path.clone(), contents)
         .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
-    Ok(Base64::encode(keypair.public_bytes()))
+    Ok(Base64::encode(bcs::to_bytes(&keypair.public_bytes())?))
 }
 
 /// A wrapper around `ClassGroupsKeyPairAndProof` that ensures the deserialized value

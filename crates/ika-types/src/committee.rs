@@ -7,6 +7,10 @@ use crate::crypto::{
     NetworkPublicKey,
 };
 use crate::error::{IkaError, IkaResult};
+use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
+    KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+};
+use class_groups::CompactIbqf;
 use dwallet_mpc_types::dwallet_mpc::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::KeyPair;
 use group::PartyID;
@@ -39,7 +43,8 @@ pub type CommitteeDigest = [u8; 32];
 pub struct Committee {
     pub epoch: EpochId,
     pub voting_rights: Vec<(AuthorityName, StakeUnit)>,
-    pub class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+    pub class_groups_public_keys_and_proofs:
+        HashMap<AuthorityName, ClassGroupsEncryptionKeyAndProof>,
     pub quorum_threshold: u64,
     pub validity_threshold: u64,
     expanded_keys: HashMap<AuthorityName, AuthorityPublicKey>,
@@ -51,7 +56,10 @@ impl Committee {
     pub fn new(
         epoch: EpochId,
         voting_rights: Vec<(AuthorityName, StakeUnit)>,
-        class_groups_public_keys_and_proofs: HashMap<AuthorityName, Vec<u8>>,
+        class_groups_public_keys_and_proofs: HashMap<
+            AuthorityName,
+            ClassGroupsEncryptionKeyAndProof,
+        >,
         quorum_threshold: u64,
         validity_threshold: u64,
     ) -> Self {
@@ -177,9 +185,9 @@ impl Committee {
     pub fn class_groups_public_key_and_proof(
         &self,
         authority: &AuthorityName,
-    ) -> IkaResult<&Vec<u8>> {
+    ) -> IkaResult<ClassGroupsEncryptionKeyAndProof> {
         match self.class_groups_public_keys_and_proofs.get(authority) {
-            Some(v) => Ok(v),
+            Some(v) => Ok(v.clone()),
             None => Err(IkaError::InvalidCommittee(format!(
                 "Authority #{} not found, committee size {}",
                 authority,
@@ -399,7 +407,7 @@ pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
-    pub class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProofBytes>,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsEncryptionKeyAndProof>,
 }
 
 #[derive(Clone, Debug)]
@@ -520,3 +528,9 @@ mod test {
         assert_eq!(0, res.len());
     }
 }
+
+pub type ClassGroupsProof = KnowledgeOfDiscreteLogUCProof;
+pub type ClassGroupsEncryptionKeyAndProof = [(
+    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+    ClassGroupsProof,
+); MAX_PRIMES];

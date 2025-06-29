@@ -1,7 +1,7 @@
 use anyhow::bail;
-use dwallet_classgroups_types::ClassGroupsEncryptionKeyAndProof;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::validator_info::ValidatorInfo;
+use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
     ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
