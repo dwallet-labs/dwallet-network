@@ -19,7 +19,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
@@ -83,7 +82,6 @@ use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
-use std::time::Duration;
 use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
@@ -280,10 +278,6 @@ pub struct AuthorityPerEpochStore {
     /// Chain identifier
     chain_identifier: ChainIdentifier,
 
-    /// State machine managing dWallet MPC outputs.
-    /// This state machine is used to store outputs and emit ones
-    /// where the quorum of votes is valid.
-    dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::RwLock<DWalletMPCOutputsVerifier>>,
     pub(crate) packages_config: IkaPackagesConfig,
 }
 
@@ -537,7 +531,6 @@ impl AuthorityPerEpochStore {
             epoch_start_configuration,
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
-            dwallet_mpc_outputs_verifier: OnceCell::new(),
             packages_config,
         });
 
@@ -568,65 +561,10 @@ impl AuthorityPerEpochStore {
         Ok(validators_class_groups_public_keys_and_proofs)
     }
 
-    /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
-    /// This outputs verifier handles storing all the outputs of dWallet MPC session,
-    /// and writes them to the chain once all the outputs are ready and verified.
-    pub fn set_dwallet_mpc_outputs_verifier(
-        &self,
-        verifier: DWalletMPCOutputsVerifier,
-    ) -> IkaResult<()> {
-        if self
-            .dwallet_mpc_outputs_verifier
-            .set(tokio::sync::RwLock::new(verifier))
-            .is_err()
-        {
-            error!(
-                "AuthorityPerEpochStore: `set_dwallet_mpc_outputs_verifier` called more than once; this should never happen"
-            );
-        }
-        Ok(())
-    }
-
     pub fn get_weighted_threshold_access_structure(
         &self,
     ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
         generate_access_structure_from_committee(self.committee().as_ref())
-    }
-
-    /// Return the [`DWalletMPCOutputsVerifier`].
-    /// Uses a Mutex because the instance is initialized from a different thread.
-    pub async fn get_dwallet_mpc_outputs_verifier_write(
-        &self,
-    ) -> tokio::sync::RwLockWriteGuard<DWalletMPCOutputsVerifier> {
-        loop {
-            match self.dwallet_mpc_outputs_verifier.get() {
-                Some(dwallet_mpc_outputs_verifier) => {
-                    return dwallet_mpc_outputs_verifier.write().await
-                }
-                None => {
-                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
-    }
-
-    /// Return the [`DWalletMPCOutputsVerifier`].
-    /// Uses a Mutex because the instance is initialized from a different thread.
-    pub async fn get_dwallet_mpc_outputs_verifier_read(
-        &self,
-    ) -> tokio::sync::RwLockReadGuard<DWalletMPCOutputsVerifier> {
-        loop {
-            match self.dwallet_mpc_outputs_verifier.get() {
-                Some(dwallet_mpc_outputs_verifier) => {
-                    return dwallet_mpc_outputs_verifier.read().await
-                }
-                None => {
-                    error!("failed to get the DWalletMPCOutputsVerifier, retrying...");
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
-        }
     }
 
     pub fn tables(&self) -> IkaResult<Arc<AuthorityEpochTables>> {
@@ -1112,6 +1050,7 @@ impl AuthorityPerEpochStore {
         system_checkpoint_service: &Arc<SystemCheckpointService>,
         consensus_commit_info: &ConsensusCommitInfo,
         authority_metrics: &Arc<AuthorityMetrics>,
+        dwallet_mpc_outputs_verifier: &mut DWalletMPCOutputsVerifier,
     ) -> IkaResult<(Vec<DWalletMessageKind>, Vec<SystemCheckpointMessageKind>)> {
         // Split transactions into different types for processing.
         let verified_transactions: Vec<_> = transactions
@@ -1158,6 +1097,7 @@ impl AuthorityPerEpochStore {
                 consensus_commit_info,
                 //&mut roots,
                 authority_metrics,
+                dwallet_mpc_outputs_verifier,
             )
             .await?;
         //self.finish_consensus_certificate_process_with_batch(&mut output, &verified_transactions)?;
@@ -1261,6 +1201,7 @@ impl AuthorityPerEpochStore {
         consensus_commit_info: &ConsensusCommitInfo,
         //roots: &mut BTreeSet<MessageDigest>,
         authority_metrics: &Arc<AuthorityMetrics>,
+        dwallet_mpc_outputs_verifier: &mut DWalletMPCOutputsVerifier,
     ) -> IkaResult<(
         Vec<DWalletMessageKind>, // transactions to schedule
         Vec<SystemCheckpointMessageKind>,
@@ -1288,6 +1229,7 @@ impl AuthorityPerEpochStore {
                     system_checkpoint_service,
                     consensus_commit_info.round,
                     authority_metrics,
+                    dwallet_mpc_outputs_verifier,
                 )
                 .await?
             {
@@ -1428,6 +1370,7 @@ impl AuthorityPerEpochStore {
         system_checkpoint_service: &Arc<SystemCheckpointService>, // should i do this generic as the checkpoint service?
         _commit_round: Round,
         _authority_metrics: &Arc<AuthorityMetrics>,
+        dwallet_mpc_outputs_verifier: &mut DWalletMPCOutputsVerifier,
     ) -> IkaResult<ConsensusCertificateResult> {
         let _scope = monitored_scope("ConsensusCommitHandler::process_consensus_transaction");
 
@@ -1446,6 +1389,7 @@ impl AuthorityPerEpochStore {
             }) => {
                 self.process_dwallet_mpc_output(
                     *certificate_author,
+                    dwallet_mpc_outputs_verifier,
                     *session_info.clone(),
                     output.clone(),
                 )
@@ -1536,12 +1480,13 @@ impl AuthorityPerEpochStore {
     async fn process_dwallet_mpc_output(
         &self,
         origin_authority: AuthorityName,
+        dwallet_mpc_outputs_verifier: &mut DWalletMPCOutputsVerifier,
         session_info: SessionInfo,
         output: Vec<u8>,
     ) -> IkaResult<ConsensusCertificateResult> {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
-        let mut dwallet_mpc_verifier = self.get_dwallet_mpc_outputs_verifier_write().await;
-        let output_verification_result = dwallet_mpc_verifier
+
+        let output_verification_result = dwallet_mpc_outputs_verifier
                 .try_verify_output(&output, &session_info, origin_authority, &self)
                 .unwrap_or_else(|e| {
                     error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
