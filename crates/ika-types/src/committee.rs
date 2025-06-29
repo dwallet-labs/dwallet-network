@@ -399,7 +399,7 @@ pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
     pub network_public_key: Option<NetworkPublicKey>,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProofBytes>,
 }
 
 #[derive(Clone, Debug)]
@@ -440,8 +440,12 @@ impl CommitteeWithNetworkMetadata {
                     .collect(),
                 self.validators
                     .iter()
-                    .map(|(name, (_, metadata))| {
-                        (*name, metadata.class_groups_public_key_and_proof.clone())
+                    .filter_map(|(name, (_, metadata))| {
+                        metadata.class_groups_public_key_and_proof.clone().map(
+                            |class_groups_public_key_and_proof| {
+                                (*name, class_groups_public_key_and_proof)
+                            },
+                        )
                     })
                     .collect(),
                 quorum_threshold,

@@ -373,25 +373,20 @@ where
                     .members
                     .iter()
                     .map(|m| {
-                        let validator = validators
-                            .iter()
-                            .find(|v| v.id == m.validator_id)
-                            .unwrap();
+                        let validator = validators.iter().find(|v| v.id == m.validator_id).unwrap();
                         let info = validator.verified_validator_info();
                         EpochStartValidatorInfoV1 {
                             validator_id: validator.id,
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
                             consensus_pubkey: info.consensus_pubkey.clone(),
-                            class_groups_public_key_and_proof: bcs::to_bytes(
-                                &validators_class_groups_public_key_and_proof
+                            class_groups_public_key_and_proof:
+                                validators_class_groups_public_key_and_proof
                                     .get(&validator.id)
-                                    // Okay to `unwrap`
-                                    // because we can't start the chain without the system state data.
-                                    .expect("failed to get the validator class groups public key from Sui")
-                                    .clone(),
-                            )
-                                .unwrap(),
+                                    .and_then(|validators_class_groups_public_key_and_proof| {
+                                        bcs::to_bytes(&validators_class_groups_public_key_and_proof)
+                                            .ok()
+                                    }),
                             network_address: info.network_address.clone(),
                             p2p_address: info.p2p_address.clone(),
                             consensus_address: info.consensus_address.clone(),
@@ -957,6 +952,15 @@ impl SuiClientInner for SuiSdkClient {
                 .await?;
             let mut validator_class_groups_public_key_and_proof_bytes: [Vec<u8>;
                 NUM_OF_CLASS_GROUPS_KEYS] = Default::default();
+            if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEYS {
+                warn!(
+                    validator_id=?validator.id,
+                    "Validator class groups public key and proof length should be {} but got {}",
+                    NUM_OF_CLASS_GROUPS_KEYS,
+                    dynamic_fields.data.len(),
+                );
+                continue;
+            }
             for df in dynamic_fields.data.iter() {
                 let object_id = df.object_id;
                 let dynamic_field_response = self
@@ -986,16 +990,27 @@ impl SuiClientInner for SuiSdkClient {
                 .map(|v| bcs::from_bytes::<SingleEncryptionKeyAndProof>(&v))
                 .collect();
 
-            class_groups_public_keys_and_proofs.insert(
-                validator.id,
-                validator_class_groups_public_key_and_proof?
-                    .try_into()
-                    .map_err(|_| {
-                        Error::DataError(
-                            "class groups key from Sui has an invalid length".to_string(),
-                        )
-                    })?,
-            );
+            match validator_class_groups_public_key_and_proof {
+                Ok(validator_class_groups_public_key_and_proof) => {
+                    class_groups_public_keys_and_proofs.insert(
+                        validator.id,
+                        validator_class_groups_public_key_and_proof
+                            .try_into()
+                            .map_err(|_| {
+                                Error::DataError(
+                                    "class groups key from Sui has an invalid length".to_string(),
+                                )
+                            })?,
+                    );
+                }
+                Err(_) => {
+                    warn!(
+                        validator_id=?validator.id,
+                        "Failed to deserialize class groups public key and proof for a validator"
+                    );
+                    continue;
+                }
+            }
         }
         Ok(class_groups_public_keys_and_proofs)
     }

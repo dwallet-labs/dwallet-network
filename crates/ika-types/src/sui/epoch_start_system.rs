@@ -168,10 +168,14 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         let class_groups_public_keys_and_proofs = self
             .active_validators
             .iter()
-            .map(|validator| {
-                (
-                    validator.authority_name(),
-                    validator.class_groups_public_key_and_proof.clone(),
+            .filter_map(|validator| {
+                validator.class_groups_public_key_and_proof.clone().map(
+                    |class_groups_public_key_and_proof| {
+                        (
+                            validator.authority_name(),
+                            class_groups_public_key_and_proof,
+                        )
+                    },
                 )
             })
             .collect();
@@ -275,7 +279,7 @@ pub struct EpochStartValidatorInfoV1 {
     pub protocol_pubkey: AuthorityPublicKey,
     pub network_pubkey: NetworkPublicKey,
     pub consensus_pubkey: NetworkPublicKey,
-    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
+    pub class_groups_public_key_and_proof: Option<ClassGroupsPublicKeyAndProofBytes>,
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
     pub consensus_address: Multiaddr,
