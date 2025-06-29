@@ -50,6 +50,9 @@ pub enum SystemCheckpointMessageKind {
     SetMaxValidatorChangeCount(u64),
     /// Set a new rate at which rewards are slashed in basis points (1/100th of a percent).
     SetRewardSlashingRate(u64),
+    /// The last checkpoint message of the epoch.
+    /// After the Sui smart contract receives this message, it knows that no more system checkpoints will get created
+    /// in this epoch, and it allows external calls to advance the epoch.
     EndOfPublish,
     /// Set an approved upgrade for a package.
     SetApprovedUpgrade {
