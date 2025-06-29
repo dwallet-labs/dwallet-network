@@ -1116,6 +1116,7 @@ where
             Ok(_) => Ok(()),
             Err(err) => {
                 error!(?err, "failed to submit system checkpoint to consensus",);
+                metrics.system_checkpoint_writes_failure_total.inc();
                 Err(err.into())
             }
         }

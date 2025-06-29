@@ -52,7 +52,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
