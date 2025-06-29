@@ -313,7 +313,9 @@ public struct DWalletCoordinatorInner has store {
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// Cryptographic algorithm support configuration
     support_config: SupportConfig,
-        // We advance epoch `0` immediately, and so the network doesn't participate in it and won't send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish` to overcome the check in `advance_epoch()`.
+    // We advance epoch `0` immediately, and so the network doesn't participate in it and won't
+    // send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish`
+    // to overcome the check in `advance_epoch()`.
     received_end_of_publish: bool,
     /// Any extra fields that's not defined statically
     extra_fields: Bag,

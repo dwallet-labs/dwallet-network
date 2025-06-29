@@ -253,7 +253,9 @@ public(package) fun create(
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        // We advance epoch `0` immediately, and so the network doesn't participate in it and won't send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish` to overcome the check in `advance_epoch()`.
+        // We advance epoch `0` immediately, and so the network doesn't participate in it and won't
+        // send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish`
+        // to overcome the check in `advance_epoch()`.
         received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     };
