@@ -9,7 +9,7 @@ use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_sui_client::{SuiClient, SuiClientInner};
+use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
@@ -34,6 +34,7 @@ use itertools::Itertools;
 use move_core_types::ident_str;
 use roaring::RoaringBitmap;
 use std::sync::Arc;
+use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
 use sui_types::base_types::{ObjectID, TransactionDigest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -46,6 +47,8 @@ pub enum StopReason {
     EpochComplete(Box<SystemInner>, EpochStartSystem),
     RunWithRangeCondition,
 }
+
+const ONE_HOUR_IN_SECONDS: u64 = 60 * 60;
 
 pub struct SuiExecutor<C> {
     ika_system_package_id: ObjectID,
@@ -123,20 +126,24 @@ where
             && !epoch_switch_state.ran_mid_epoch
         {
             info!("Calling `process_mid_epoch()`");
-            if let Err(e) = Self::process_mid_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("`process_mid_epoch()` failed: {:?}", e);
-            } else {
-                info!("`process_mid_epoch()` successful");
-                epoch_switch_state.ran_mid_epoch = true;
+            let response = retry_with_max_elapsed_time!(
+                Self::process_mid_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit mid-epoch for over an hour: {:?}",
+                    response.err()
+                );
             }
+            info!("Successfully processed mid-epoch");
+            epoch_switch_state.ran_mid_epoch = true;
         }
         let Ok(DWalletCoordinatorInner::V1(coordinator)) = self
             .sui_client
@@ -154,24 +161,25 @@ where
                 .is_some()
             && !epoch_switch_state.calculated_protocol_pricing
         {
-            info!("Calculating protocols pricing");
-            match Self::calculate_protocols_pricing(
-                &self.sui_client,
-                self.ika_system_package_id,
-                sui_notifier,
-                dwallet_2pc_mpc_coordinator_id,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                Ok(..) => {
-                    info!("Successfully calculated protocols pricing");
-                    epoch_switch_state.calculated_protocol_pricing = true;
-                }
-                Err(err) => {
-                    error!(?err, "failed to calculate protocols pricing");
-                }
+            info!("Calculating protocol pricing");
+            let result = retry_with_max_elapsed_time!(
+                Self::calculate_protocols_pricing(
+                    &self.sui_client,
+                    self.ika_system_package_id,
+                    sui_notifier,
+                    dwallet_2pc_mpc_coordinator_id,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if result.is_err() {
+                panic!(
+                    "failed to calculate protocols' pricing for over an hour: {:?}",
+                    result.err()
+                );
             }
+            info!("Successfully calculated protocols pricing");
+            epoch_switch_state.calculated_protocol_pricing = true;
         }
 
         // The Epoch was finished.
@@ -185,23 +193,24 @@ where
             && !epoch_switch_state.ran_lock_last_session
         {
             info!("Calling `lock_last_active_session_sequence_number()`");
-            if let Err(e) = Self::lock_last_session_to_complete_in_current_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!(
-                    "failed to lock last active session sequence number: {:?}",
-                    e
+            let response = retry_with_max_elapsed_time!(
+                Self::lock_last_session_to_complete_in_current_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
+                    sui_notifier,
+                    &self.sui_client,
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit lock-last session for over an hour: {:?}",
+                    response.err()
                 );
-            } else {
-                info!("Successfully locked last active session sequence number");
-                epoch_switch_state.ran_lock_last_session = true;
             }
+            epoch_switch_state.ran_lock_last_session = true;
+            info!("Successfully locked last session in current epoch");
         }
 
         // Check if we can advance the epoch.
@@ -230,20 +239,24 @@ where
                 .is_none()
         {
             info!("Calling `process_request_advance_epoch()`");
-            if let Err(e) = Self::process_request_advance_epoch(
-                self.ika_system_package_id,
-                dwallet_2pc_mpc_coordinator_id,
-                sui_notifier,
-                &self.sui_client,
-                self.notifier_tx_lock.clone(),
-            )
-            .await
-            {
-                error!("failed to process request advance epoch: {:?}", e);
-            } else {
-                info!("Successfully processed request advance epoch");
-                epoch_switch_state.ran_request_advance_epoch = true;
+            let response = retry_with_max_elapsed_time!(
+                Self::process_request_advance_epoch(
+                    self.ika_system_package_id,
+                    dwallet_2pc_mpc_coordinator_id,
+                    sui_notifier,
+                    &self.sui_client.clone(),
+                    self.notifier_tx_lock.clone(),
+                ),
+                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+            );
+            if response.is_err() {
+                panic!(
+                    "failed to submit request advance epoch for over an hour: {:?}",
+                    response.err()
+                );
             }
+            info!("Successfully requested advance epoch");
+            epoch_switch_state.ran_request_advance_epoch = true;
         }
     }
 
@@ -374,46 +387,33 @@ where
                                         "Processing checkpoint with signers"
                                     );
 
-                                    let task = Self::handle_dwallet_checkpoint_execution_task(
-                                        self.ika_system_package_id,
-                                        dwallet_2pc_mpc_coordinator_id,
-                                        signature,
-                                        signers_bitmap,
-                                        message,
-                                        sui_notifier,
-                                        &self.sui_client,
-                                        &self.metrics,
-                                        self.notifier_tx_lock.clone(),
-                                    )
-                                    .await;
-                                    match task {
-                                        Ok(_) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_success_total
-                                                .inc();
-                                            self.metrics
-                                                .last_written_dwallet_checkpoint_sequence
-                                                .set(
-                                                    next_dwallet_checkpoint_sequence_number as i64,
-                                                );
-                                            last_submitted_dwallet_checkpoint =
-                                                Some(next_dwallet_checkpoint_sequence_number);
-                                            info!(
-                                                ?next_dwallet_checkpoint_sequence_number,
-                                                "Sui transaction successfully executed for checkpoint sequence number"
-                                            );
-                                        }
-                                        Err(err) => {
-                                            self.metrics
-                                                .dwallet_checkpoint_writes_failure_total
-                                                .inc();
-                                            error!(
-                                            ?next_dwallet_checkpoint_sequence_number,
-                                            ?err,
-                                            "Sui transaction execution failed for checkpoint sequence number"
-                                        );
-                                        }
-                                    };
+                                    let response = retry_with_max_elapsed_time!(
+                                        Self::handle_dwallet_checkpoint_execution_task(
+                                            self.ika_system_package_id,
+                                            dwallet_2pc_mpc_coordinator_id,
+                                            signature.clone(),
+                                            signers_bitmap.clone(),
+                                            message.clone(),
+                                            sui_notifier,
+                                            &self.sui_client.clone(),
+                                            &self.metrics.clone(),
+                                            self.notifier_tx_lock.clone().clone(),
+                                        ),
+                                        Duration::from_secs(ONE_HOUR_IN_SECONDS)
+                                    );
+                                    if response.is_err() {
+                                        panic!("failed to submit dwallet checkpoint for over an hour, err: {:?}", response.err());
+                                    }
+                                    info!(
+                                        ?next_dwallet_checkpoint_sequence_number,
+                                        "Successfully submitted dwallet checkpoint"
+                                    );
+                                    self.metrics.dwallet_checkpoint_writes_success_total.inc();
+                                    self.metrics
+                                        .last_written_dwallet_checkpoint_sequence
+                                        .set(next_dwallet_checkpoint_sequence_number as i64);
+                                    last_submitted_dwallet_checkpoint =
+                                        Some(next_dwallet_checkpoint_sequence_number);
                                 }
                                 None => {
                                     info!(
@@ -464,32 +464,29 @@ where
 
                             info!("Signers_bitmap: {:?}", signers_bitmap);
                             self.metrics.system_checkpoint_write_requests_total.inc();
-                            let task = Self::handle_system_checkpoint_execution_task(
-                                self.ika_system_package_id,
-                                signature,
-                                signers_bitmap,
-                                message,
-                                sui_notifier,
-                                &self.sui_client,
-                                &self.metrics,
-                                self.notifier_tx_lock.clone(),
-                            )
-                            .await;
-                            match task {
-                                Ok(_) => {
-                                    self.metrics.system_checkpoint_writes_success_total.inc();
-                                    self.metrics
-                                        .last_written_system_checkpoint_sequence
-                                        .set(next_dwallet_checkpoint_sequence_number as i64);
-                                    last_submitted_system_checkpoint =
-                                        Some(next_system_checkpoint_sequence_number);
-                                    info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
-                                }
-                                Err(err) => {
-                                    self.metrics.system_checkpoint_writes_failure_total.inc();
-                                    error!("Sui transaction execution failed for system_checkpoint sequence number: {}, error: {}", next_system_checkpoint_sequence_number, err);
-                                }
-                            };
+                            let response = retry_with_max_elapsed_time!(
+                                Self::handle_system_checkpoint_execution_task(
+                                    self.ika_system_package_id,
+                                    signature.clone(),
+                                    signers_bitmap.clone(),
+                                    message.clone(),
+                                    sui_notifier,
+                                    &self.sui_client.clone(),
+                                    &self.metrics.clone(),
+                                    self.notifier_tx_lock.clone(),
+                                ),
+                                Duration::from_secs(ONE_HOUR_IN_SECONDS)
+                            );
+                            if response.is_err() {
+                                panic!("failed to submit system checkpoint for over an hour, err: {:?}", response.err());
+                            }
+                            self.metrics.system_checkpoint_writes_success_total.inc();
+                            self.metrics
+                                .last_written_system_checkpoint_sequence
+                                .set(next_dwallet_checkpoint_sequence_number as i64);
+                            last_submitted_system_checkpoint =
+                                Some(next_system_checkpoint_sequence_number);
+                            info!("Sui transaction successfully executed for system_checkpoint sequence number: {}", next_system_checkpoint_sequence_number);
                         }
                     }
                 }
@@ -534,7 +531,7 @@ where
         sui_notifier: &SuiNotifier,
         dwallet_coordinator_id: ObjectID,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<SuiTransactionBlockResponse> {
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
             .first()
@@ -703,7 +700,7 @@ where
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
         transaction: Transaction,
         sui_client: &Arc<SuiClient<C>>,
-    ) -> DwalletMPCResult<()> {
+    ) -> DwalletMPCResult<SuiTransactionBlockResponse> {
         loop {
             // Small delay to avoid spamming the node.
             tokio::time::sleep(Duration::from_millis(500)).await;
@@ -721,8 +718,15 @@ where
                     let result = sui_client
                         .execute_transaction_block_with_effects(transaction)
                         .await?;
+                    if !result.errors.is_empty() {
+                        return Err(IkaError::SuiClientTxFailureGeneric(format!(
+                            "{:?}",
+                            result.errors
+                        ))
+                        .into());
+                    }
                     *digest_guard = Some(result.digest);
-                    return Ok(());
+                    return Ok(result);
                 }
 
                 // ──────────────── Previous transaction exists → check its status ────────────────
@@ -747,7 +751,7 @@ where
                                 .execute_transaction_block_with_effects(transaction)
                                 .await?;
                             *digest_guard = Some(result.digest);
-                            return Ok(());
+                            return Ok(result);
                         }
                     }
                 }
@@ -761,7 +765,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_mid_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -815,7 +819,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Process `lock_last_active_session_sequence_number()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -870,7 +874,7 @@ where
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         info!("Running `process_request_advance_epoch()`");
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
         let gas_coin = gas_coins
@@ -927,9 +931,9 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
-    ) -> IkaResult<()> {
+    ) -> IkaResult<SuiTransactionBlockResponse> {
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
@@ -1017,7 +1021,14 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(result) => Ok(result),
+            Err(err) => {
+                error!(?err, "failed to submit dwallet checkpoint to consensus",);
+                metrics.dwallet_checkpoint_writes_failure_total.inc();
+                Err(err.into())
+            }
+        }
     }
 
     async fn handle_system_checkpoint_execution_task(
@@ -1027,7 +1038,7 @@ where
         message: Vec<u8>,
         sui_notifier: &SuiNotifier,
         sui_client: &Arc<SuiClient<C>>,
-        _metrics: &Arc<SuiConnectorMetrics>,
+        metrics: &Arc<SuiConnectorMetrics>,
         notifier_tx_lock: Arc<tokio::sync::Mutex<Option<TransactionDigest>>>,
     ) -> IkaResult<()> {
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -1106,7 +1117,14 @@ where
         )
         .await;
 
-        Ok(Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await?)
+        match Self::submit_tx_to_sui(notifier_tx_lock, transaction, sui_client).await {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                error!(?err, "failed to submit a system checkpoint to consensus");
+                metrics.system_checkpoint_writes_failure_total.inc();
+                Err(err.into())
+            }
+        }
     }
 }
 
