@@ -7,6 +7,7 @@ use std::time::Duration;
 use tokio::sync::watch::Receiver;
 use tracing::error;
 
+/// `EndOfPublishSender` is responsible for sending the end of publish message to the consensus adapter
 pub struct EndOfPublishSender {
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: u64,
@@ -15,6 +16,7 @@ pub struct EndOfPublishSender {
 }
 
 impl EndOfPublishSender {
+    /// Creates a new instance of `EndOfPublishSender`.
     pub fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -29,6 +31,8 @@ impl EndOfPublishSender {
         }
     }
 
+    /// Runs the end of publish sender, which checks if the end of publish signal has been received
+    /// and sends the end of publish message to the consensus adapter if it has.
     pub async fn run(&self) {
         loop {
             if *self.end_of_publish_receiver.borrow() == Some(self.epoch_id) {
