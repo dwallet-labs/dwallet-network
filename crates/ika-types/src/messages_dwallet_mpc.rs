@@ -753,6 +753,7 @@ pub struct DWalletNetworkDecryptionKeyData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DWalletNetworkEncryptionKeyState {
     AwaitingNetworkDKG,
+    // Network DKG is completed, but we didn't do Reconfiguration yet.
     NetworkDKGCompleted,
     /// Reconfiguration request was sent to the network, but didn't finish yet.
     /// `is_first` is true if this is the first reconfiguration request, false otherwise.
@@ -761,7 +762,9 @@ pub enum DWalletNetworkEncryptionKeyState {
     },
     /// Reconfiguration request finished, but we didn't switch an epoch yet.
     /// We need to wait for the next epoch to update the reconfiguration of public outputs.
-    AwaitingNextEpochToUpdateReconfiguration,
+    AwaitingNextEpochToUpdateReconfiguration {
+        is_first: bool,
+    },
     NetworkReconfigurationCompleted,
 }
 
