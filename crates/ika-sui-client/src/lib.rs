@@ -149,7 +149,6 @@ where
         loop {
             let dwallet_coordinator_inner = self.must_get_dwallet_coordinator_inner_v1().await;
 
-            // TODO(@Scaly): understand this - when is `current_epoch` updated, and in general what is this
             // Make sure we are synced with Sui to fetch the missed events.
             // If Sui's epoch number matches ours,
             // all the necessary missed events must be synced as well.

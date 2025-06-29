@@ -410,10 +410,6 @@ impl DWalletMPCManager {
                 }
             }
         } else {
-            // TODO(@Scaly) in state-sync, we get the event even if we already executed it (if we crashed during this epoch).
-            // We will end up running this twice, and even trying to send the message twice, but because it has the same key - it won't be sent, or actually it might.
-            // check in db if we already did it, and also check in sui if its completed. Also don't start before loading all the
-            // TODO: just remove the emitted event logic, only query. But this might add latency.
             let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
             self.dwallet_mpc_metrics
                 .add_received_event_start(&mpc_event_data.init_protocol_data);
