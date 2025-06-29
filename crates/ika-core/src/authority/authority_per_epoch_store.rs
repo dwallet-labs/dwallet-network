@@ -103,6 +103,12 @@ pub enum CancelConsensusCertificateReason {
 }
 
 pub enum ConsensusCertificateResult {
+    /// The last checkpoint message of the epoch.
+    /// After the Sui smart contract receives this message, it knows that no more system checkpoints will get created
+    /// in this epoch, and it allows external calls to advance the epoch.
+    /// 
+    /// This is a certificate result, so both the system & dwallet checkpointing mechanisms will create
+    /// separate checkpoint messages, to update both the DWallet Coordinator & Ika System Sui objects.
     EndOfPublish,
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
