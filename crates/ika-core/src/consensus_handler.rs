@@ -435,8 +435,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             let base_logger = MPCSessionLogger::new()
                 .with_protocol_name(mpc_protocol_name.clone())
                 .with_party_to_authority_map(party_to_authority_map.clone());
-            let session_identifier =
-                CommitmentSizedNumber::from_le_slice(&output.session_info.session_identifier.0);
+            let session_identifier = CommitmentSizedNumber::from_le_slice(
+                &output.session_info.session_identifier.into_bytes(),
+            );
             base_logger.write_output_to_disk(
                 session_identifier,
                 self.epoch_store
