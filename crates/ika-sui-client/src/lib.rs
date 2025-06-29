@@ -373,9 +373,14 @@ where
                     .members
                     .iter()
                     .map(|m| {
-                        let validator = validators.iter().find(|v| v.id == m.validator_id).unwrap();
+                        let validator = validators.iter().find(|v| v.id == m.validator_id).ok_or(
+                            IkaError::InvalidCommittee(format!(
+                                "Validator with ID {} not found in the active committee",
+                                m.validator_id
+                            )),
+                        )?;
                         let info = validator.verified_validator_info();
-                        EpochStartValidatorInfoV1 {
+                        Ok(EpochStartValidatorInfoV1 {
                             validator_id: validator.id,
                             protocol_pubkey: info.protocol_pubkey.clone(),
                             network_pubkey: info.network_pubkey.clone(),
@@ -392,9 +397,9 @@ where
                             consensus_address: info.consensus_address.clone(),
                             voting_power: 1,
                             hostname: info.name.clone(),
-                        }
+                        })
                     })
-                    .collect::<Vec<_>>();
+                    .collect::<IkaResult<Vec<_>>>()?;
 
                 let epoch_start_system_state = EpochStartSystem::new_v1(
                     ika_system_state_inner.epoch,
