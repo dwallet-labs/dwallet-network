@@ -16,7 +16,7 @@ use std::fmt;
 use std::path::PathBuf;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
@@ -28,7 +28,7 @@ use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::{broadcast, watch, Mutex};
-use tokio::task::{JoinHandle, JoinSet};
+use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
 use tracing::{debug, warn};
@@ -1153,7 +1153,10 @@ impl IkaNode {
                     return Ok(());
                 }
             };
-            end_of_publish_sender_handle.and_then(|handle| Some(handle.abort()));
+            end_of_publish_sender_handle.map(|handle| {
+                handle.abort();
+                Some(())
+            });
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self

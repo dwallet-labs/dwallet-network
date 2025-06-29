@@ -49,7 +49,7 @@ impl EndOfPublishSender {
     async fn send_end_of_publish(&self) -> DwalletMPCResult<()> {
         let tx = ConsensusTransaction::new_end_of_publish(self.epoch_store()?.name);
         self.consensus_adapter
-            .submit_to_consensus(&vec![tx], &self.epoch_store()?)
+            .submit_to_consensus(&[tx], &self.epoch_store()?)
             .await?;
         Ok(())
     }

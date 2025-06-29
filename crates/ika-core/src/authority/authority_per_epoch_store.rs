@@ -935,7 +935,7 @@ impl AuthorityPerEpochStore {
     pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
         self.tables()?
             .end_of_publish
-            .insert(&origin_authority, &())?;
+            .insert(origin_authority, &())?;
         Ok(())
     }
 
