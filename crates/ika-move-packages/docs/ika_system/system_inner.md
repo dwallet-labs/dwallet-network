@@ -1036,7 +1036,9 @@ This function will be called only once in init.
         authorized_protocol_cap_ids,
         dwallet_2pc_mpc_coordinator_id: option::none(),
         dwallet_2pc_mpc_coordinator_network_encryption_keys: vector[],
-        // We advance <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> `0` immediately, and so the network doesn't participate in it and won't send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish` to overcome the check in `<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>()`.
+        // We advance <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> `0` immediately, and so the network doesn't participate in it and won't
+        // send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish`
+        // to overcome the check in `<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>()`.
         received_end_of_publish: <b>true</b>,
         extra_fields: bag::new(ctx),
     };
