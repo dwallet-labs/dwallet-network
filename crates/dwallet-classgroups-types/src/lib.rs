@@ -1,8 +1,8 @@
 use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
     construct_knowledge_of_decryption_key_public_parameters_per_crt_prime,
     construct_setup_parameters_per_crt_prime, generate_keypairs_per_crt_prime,
-    generate_knowledge_of_decryption_key_proofs_per_crt_prime,
-    CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
+    generate_knowledge_of_decryption_key_proofs_per_crt_prime, CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
 };
 use class_groups::{CompactIbqf, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER};
 use crypto_bigint::rand_core::RngCore;
@@ -52,12 +52,8 @@ impl ClassGroupsKeyPairAndProof {
         }
     }
 
-    pub fn public_bytes(&self) -> ClassGroupsEncryptionKeyAndProof {
+    pub fn encryption_key_and_proof(&self) -> ClassGroupsEncryptionKeyAndProof {
         // Safe to unwrap because the serialization should never fail.
-        self.public()
-    }
-
-    pub fn public(&self) -> ClassGroupsEncryptionKeyAndProof {
         self.encryption_key_and_proof.clone()
     }
 
@@ -109,7 +105,9 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     let contents = Base64::encode(serialized);
     std::fs::write(path.clone(), contents)
         .map_err(|e| DwalletMPCError::FailedToWriteCGKey(e.to_string()))?;
-    Ok(Base64::encode(bcs::to_bytes(&keypair.public_bytes())?))
+    Ok(Base64::encode(bcs::to_bytes(
+        &keypair.encryption_key_and_proof(),
+    )?))
 }
 
 /// A wrapper around `ClassGroupsKeyPairAndProof` that ensures the deserialized value
