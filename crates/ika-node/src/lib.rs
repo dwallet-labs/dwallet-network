@@ -879,10 +879,6 @@ impl IkaNode {
         dwallet_mpc_outputs_verifier.bootstrap_from_storage(&epoch_store)?;
         println!("called bootstrap_from_storage()");
 
-        // This verifier is in sync with the consensus,
-        // used to verify outputs before sending a system TX to store them.
-        epoch_store.set_dwallet_mpc_outputs_verifier(dwallet_mpc_outputs_verifier)?;
-
         let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
             watch::channel(());
         let mut dwallet_mpc_service = DWalletMPCService::new(
@@ -928,6 +924,7 @@ impl IkaNode {
             epoch_store.clone(),
             low_scoring_authorities,
             throughput_calculator,
+            dwallet_mpc_outputs_verifier,
         );
 
         println!("calling consensus_manager.start()");
