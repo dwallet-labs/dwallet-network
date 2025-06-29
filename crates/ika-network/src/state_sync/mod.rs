@@ -274,7 +274,10 @@ impl PeerHeights {
         true
     }
 
-    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id, dwallet_checkpoint_height = ?info.dwallet_checkpoint_height, system_checkpoint_height = ?info.system_checkpoint_height))]
+    #[instrument(level = "debug", skip_all, fields(peer_id=?peer_id,
+        dwallet_checkpoint_height = ?info.dwallet_checkpoint_height,
+        system_checkpoint_height = ?info.system_checkpoint_height))
+    ]
     pub fn insert_peer_info(&mut self, peer_id: PeerId, info: PeerStateSyncInfo) {
         use std::collections::hash_map::Entry;
         debug!("Insert peer info");
