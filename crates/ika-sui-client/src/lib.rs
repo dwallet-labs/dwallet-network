@@ -956,9 +956,9 @@ impl SuiClientInner for SuiSdkClient {
             if dynamic_fields.data.len() != NUM_OF_CLASS_GROUPS_KEY_OBJECTS {
                 warn!(
                     validator_id=?validator.id,
-                    "Validator class groups public key and proof length should be {} but got {}",
-                    NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
-                    dynamic_fields.data.len(),
+                    expected_num_of_class_groups_keys=NUM_OF_CLASS_GROUPS_KEY_OBJECTS,
+                    dynamic_fields_count=dynamic_fields.data.len(),
+                    "Validator class groups public key and proof length mismatch",
                 );
                 continue;
             }
