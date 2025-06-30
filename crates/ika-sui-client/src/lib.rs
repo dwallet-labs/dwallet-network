@@ -23,7 +23,6 @@ use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
 use itertools::Itertools;
-use move_core_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
