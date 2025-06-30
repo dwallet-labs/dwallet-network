@@ -8,10 +8,14 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_session::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
+};
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
+use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
@@ -160,29 +164,47 @@ impl DWalletMPCService {
         }
     }
 
-    // async fn update_network_keys(&mut self) {
-    //     match self.network_keys_receiver.has_changed() {
-    //         Ok(has_changed) => {
-    //             if has_changed {
-    //                 let new_keys = self.network_keys_receiver.borrow_and_update();
-    //                 for (key_id, key_data) in new_keys.iter() {
-    //                     info!("Updating network key for key_id: {:?}", key_id);
-    //                     self.dwallet_mpc_manager
-    //                         .network_keys
-    //                         .update_network_key(
-    //                             *key_id,
-    //                             key_data,
-    //                             &self.dwallet_mpc_manager.weighted_threshold_access_structure,
-    //                         )
-    //                         .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
-    //                 }
-    //             }
-    //         }
-    //         Err(err) => {
-    //             error!(?err, "failed to check network keys receiver");
-    //         }
-    //     }
-    // }
+    async fn update_network_keys(&mut self) {
+        match self.network_keys_receiver.has_changed() {
+            Ok(has_changed) => {
+                let access_structure =
+                    &self.dwallet_mpc_manager.weighted_threshold_access_structure;
+                if has_changed {
+                    let new_keys = self.network_keys_receiver.borrow_and_update();
+                    for (key_id, key_data) in new_keys.iter() {
+                        match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
+                            key_data.current_epoch,
+                            DWalletMPCNetworkKeyScheme::Secp256k1,
+                            access_structure,
+                            key_data.clone(),
+                        ) {
+                            Ok(key) => {
+                                info!("Updating network key for key_id: {:?}", key_id);
+                                self.dwallet_mpc_manager
+                                    .network_keys
+                                    .update_network_key(
+                                        *key_id,
+                                        &key,
+                                        &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+                                    )
+                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));        
+                            }
+                            Err(err) => {
+                                error!(
+                                    ?err,
+                                    key_id=?key_id,
+                                    "failed to instantiate network decryption key shares from public output for"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Err(err) => {
+                error!(?err, "failed to check network keys receiver");
+            }
+        }
+    }
 
     /// Starts the DWallet MPC service.
     ///

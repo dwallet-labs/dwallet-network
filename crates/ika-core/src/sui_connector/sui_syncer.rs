@@ -56,7 +56,6 @@ where
         }
     }
 
-    
     pub async fn run(
         self,
         query_interval: Duration,
