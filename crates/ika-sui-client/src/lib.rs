@@ -334,7 +334,7 @@ where
 
                 let validators = self
                     .inner
-                    .get_validators_from_object_table(validator_ids)
+                    .get_validators(validator_ids)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
@@ -421,7 +421,7 @@ where
     ) -> Result<Vec<StakingPool>, IkaError> {
         let validators = self
             .inner
-            .get_validators_from_object_table(validator_ids)
+            .get_validators(validator_ids)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
@@ -784,7 +784,7 @@ pub trait SuiClientInner: Send + Sync {
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
@@ -1301,7 +1301,7 @@ impl SuiClientInner for SuiSdkClient {
         )))
     }
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error> {
