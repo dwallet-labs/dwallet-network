@@ -243,7 +243,7 @@ impl DWalletMPCService {
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
             }
-            // self.update_network_keys().await;
+            self.update_network_keys().await;
 
             debug!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager
