@@ -189,7 +189,7 @@ where
         sui_client: Arc<SuiClient<C>>,
         network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
     ) {
-        // (Key Obj ID, Epoch)
+        // Cache for network keys by (ObjectID, Epoch) to avoid redundant fetching.
         let mut network_keys_cache: HashMap<(ObjectID, u64), DWalletNetworkDecryptionKeyData> =
             HashMap::new();
         'sync_network_keys: loop {
@@ -222,12 +222,10 @@ where
                 continue;
             }
             let should_fetch_keys = network_encryption_keys.values().any(|key| {
-                !network_keys_cache.contains_key(&(key.id, system_inner.epoch()))
-                    || network_keys_cache
-                        .get(&(key.id, system_inner.epoch()))
-                        .unwrap()
-                        .state
-                        != key.state
+                match network_keys_cache.get(&(key.id, system_inner.epoch())) {
+                    Some(cached_key) => cached_key.state != key.state,
+                    None => true,
+                }
             });
             if !should_fetch_keys {
                 info!("No new network keys to fetch");
