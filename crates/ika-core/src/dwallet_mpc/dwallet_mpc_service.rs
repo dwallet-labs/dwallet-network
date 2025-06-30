@@ -13,7 +13,9 @@ use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent};
+use ika_types::messages_dwallet_mpc::{
+    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
+};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -41,7 +43,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
 
@@ -52,7 +54,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -158,29 +160,29 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_network_keys(&mut self) {
-        match self.network_keys_receiver.has_changed() {
-            Ok(has_changed) => {
-                if has_changed {
-                    let new_keys = self.network_keys_receiver.borrow_and_update();
-                    for (key_id, key_data) in new_keys.iter() {
-                        info!("Updating network key for key_id: {:?}", key_id);
-                        self.dwallet_mpc_manager
-                            .network_keys
-                            .update_network_key(
-                                *key_id,
-                                key_data,
-                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
-                            )
-                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
-                    }
-                }
-            }
-            Err(err) => {
-                error!(?err, "failed to check network keys receiver");
-            }
-        }
-    }
+    // async fn update_network_keys(&mut self) {
+    //     match self.network_keys_receiver.has_changed() {
+    //         Ok(has_changed) => {
+    //             if has_changed {
+    //                 let new_keys = self.network_keys_receiver.borrow_and_update();
+    //                 for (key_id, key_data) in new_keys.iter() {
+    //                     info!("Updating network key for key_id: {:?}", key_id);
+    //                     self.dwallet_mpc_manager
+    //                         .network_keys
+    //                         .update_network_key(
+    //                             *key_id,
+    //                             key_data,
+    //                             &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+    //                         )
+    //                         .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+    //                 }
+    //             }
+    //         }
+    //         Err(err) => {
+    //             error!(?err, "failed to check network keys receiver");
+    //         }
+    //     }
+    // }
 
     /// Starts the DWallet MPC service.
     ///
@@ -219,7 +221,7 @@ impl DWalletMPCService {
                 tokio::time::sleep(Duration::from_secs(120)).await;
                 continue;
             }
-            self.update_network_keys().await;
+            // self.update_network_keys().await;
 
             debug!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager

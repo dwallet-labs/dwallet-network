@@ -12,6 +12,7 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use shared_crypto::intent::{Intent, IntentMessage};
@@ -63,7 +64,7 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         is_validator: bool,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
