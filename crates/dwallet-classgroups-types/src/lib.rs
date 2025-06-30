@@ -28,6 +28,7 @@ pub const NUM_OF_CLASS_GROUPS_KEY_OBJECTS: usize = MAX_PRIMES;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
+    seed: [u8; RNG_SEED_SIZE],
     #[serde(with = "group::helpers::const_generic_array_serialization")]
     decryption_key_per_crt_prime: ClassGroupsDecryptionKey,
     #[serde(with = "group::helpers::const_generic_array_serialization")]
@@ -46,10 +47,12 @@ pub const RNG_SEED_SIZE: usize = 32;
 
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
+        seed: [u8; RNG_SEED_SIZE],
         decryption_key: ClassGroupsDecryptionKey,
         encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
     ) -> Self {
         Self {
+            seed,
             decryption_key_per_crt_prime: decryption_key,
             encryption_key_and_proof,
         }
@@ -88,7 +91,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     )
     .unwrap();
 
-    ClassGroupsKeyPairAndProof::new(decryption_key, encryption_key_and_proof)
+    ClassGroupsKeyPairAndProof::new(seed, decryption_key, encryption_key_and_proof)
 }
 
 /// Generates a cryptographically secure random seed for class groups key generation.
