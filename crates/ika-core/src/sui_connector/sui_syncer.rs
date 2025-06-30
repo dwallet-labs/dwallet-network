@@ -9,9 +9,7 @@ use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKeyData,
-};
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerInit, SystemInnerTrait};
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
@@ -307,7 +305,7 @@ where
             }
         }
     }
-    
+
     async fn run_event_listening_task(
         // The module where interested events are defined.
         // Module is always of ika system package.

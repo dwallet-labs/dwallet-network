@@ -177,9 +177,7 @@ use ika_core::system_checkpoints::{
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
-use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKeyData, IkaPackagesConfig,
-};
+use ika_types::messages_dwallet_mpc::{DWalletNetworkDecryptionKeyData, IkaPackagesConfig};
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
