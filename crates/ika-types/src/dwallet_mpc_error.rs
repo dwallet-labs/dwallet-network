@@ -100,7 +100,7 @@ pub enum DwalletMPCError {
     #[error("failed to read Class Groups key: {0}")]
     FailedToReadCGKey(String),
 
-    #[error("failed to write Class Groups key: {0}")]
+    #[error("failed to write seed to file: {0}")]
     FailedToWriteSeed(String),
 
     #[error("missing MPC private session input")]
