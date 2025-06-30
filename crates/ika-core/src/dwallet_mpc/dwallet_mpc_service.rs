@@ -22,8 +22,8 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::broadcast::error::TryRecvError;
+use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
-use tokio::sync::{mpsc, Notify};
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
@@ -64,9 +64,7 @@ impl DWalletMPCService {
 
         Self {
             last_read_consensus_round: 0,
-            read_messages: 0,
             epoch_store: epoch_store.clone(),
-            notify: Arc::new(Notify::new()),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
             network_keys_receiver,
