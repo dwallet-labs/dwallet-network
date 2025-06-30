@@ -101,13 +101,11 @@ pub(crate) async fn session_input_from_event(
                 packages_config,
             ) =>
         {
-            let class_groups_key_pair_and_proof = dwallet_mpc_manager
-                .node_config
-                .class_groups_key_pair_and_proof
+            let class_groups_decryption_key = dwallet_mpc_manager
+                .network_keys
+                .validator_private_dec_key_data
+                .class_groups_decryption_key
                 .clone();
-
-            let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
-                .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
 
             Ok((
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
@@ -119,11 +117,7 @@ pub(crate) async fn session_input_from_event(
                         .clone(),
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?),
-                Some(bcs::to_bytes(
-                    &class_groups_key_pair_and_proof
-                        .class_groups_keypair()
-                        .decryption_key(),
-                )?),
+                Some(bcs::to_bytes(&class_groups_decryption_key)?),
             ))
         }
         t if t
@@ -135,13 +129,11 @@ pub(crate) async fn session_input_from_event(
                 DWalletEncryptionKeyReconfigurationRequestEvent,
             > = deserialize_event_or_dynamic_field(&event.contents)?;
 
-            let class_groups_key_pair_and_proof = dwallet_mpc_manager
-                .node_config
-                .class_groups_key_pair_and_proof
+            let class_groups_decryption_key = dwallet_mpc_manager
+                .network_keys
+                .validator_private_dec_key_data
+                .class_groups_decryption_key
                 .clone();
-
-            let class_groups_key_pair_and_proof = class_groups_key_pair_and_proof
-                .ok_or(DwalletMPCError::ClassGroupsKeyPairNotFound)?;
 
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(
@@ -161,9 +153,7 @@ pub(crate) async fn session_input_from_event(
                             .await?,
                     )?),
                     Some(bcs::to_bytes(
-                        &class_groups_key_pair_and_proof
-                            .class_groups_keypair()
-                            .decryption_key(),
+                        &class_groups_decryption_key
                     )?),
                 ))
         }

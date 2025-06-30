@@ -13,6 +13,7 @@ use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_authority_names};
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -47,7 +48,6 @@ pub(crate) struct DWalletMPCManager {
     /// MPC sessions that where created.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
@@ -144,14 +144,16 @@ impl DWalletMPCManager {
         let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
-            class_groups_decryption_key: node_config
-                .class_groups_key_pair_and_proof
-                .clone()
-                // Since this is a validator, we can unwrap
-                // the `class_groups_key_pair_and_proof`.
-                .expect("Class groups key pair and proof must be present")
-                .class_groups_keypair()
-                .decryption_key(),
+            class_groups_decryption_key: ClassGroupsKeyPairAndProof::from_seed(
+                node_config
+                    .root_seed
+                    .clone()
+                    // Since only a validator executes the DWalletMPCManager, we can unwrap
+                    // the `class_groups_key_pair_and_proof`.
+                    .expect("Class groups key pair and proof must be present")
+                    .root_seed(),
+            )
+            .decryption_key(),
             validator_decryption_key_shares: HashMap::new(),
         };
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
@@ -161,7 +163,6 @@ impl DWalletMPCManager {
             party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id: epoch_store.epoch(),
-            node_config,
             weighted_threshold_access_structure,
             validators_class_groups_public_keys_and_proofs: epoch_store
                 .get_validators_class_groups_public_keys_and_proofs()
