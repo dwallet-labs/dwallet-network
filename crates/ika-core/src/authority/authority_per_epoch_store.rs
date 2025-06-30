@@ -1629,9 +1629,12 @@ impl AuthorityPerEpochStore {
             }) => {
                 self.record_end_of_publish_vote(authority)?;
                 let mut end_of_publish = self.end_of_publish.lock();
-                // Note that we don't check here that the sender didn't already vote, but that would OK for two reasons:
-                // The first, its transaction would be denied because its key is the same (so the second wouldn't reach this flow).
-                // The second, the stake aggregator is implemented by a HashMap, and duplicate votes cannot be registered.
+                // Note that we don't check here that the sender didn't already vote,
+                // but that would be OK for two reasons:
+                // The first, its transaction would be denied because its key is the same
+                // (so the second wouldn't reach this flow).
+                // The second, the stake aggregator is implemented by a HashMap,
+                // and duplicate votes cannot be registered.
                 if !end_of_publish.has_quorum()
                     && end_of_publish
                         .insert_generic(*authority, ())
