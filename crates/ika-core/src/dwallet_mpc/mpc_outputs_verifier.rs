@@ -18,7 +18,7 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -169,8 +169,9 @@ impl DWalletMPCOutputsVerifier {
     /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
     /// Fails only if the epoch switched in the middle of the state sync (in which case the process is exited and this struct would be re-initialized).
     pub fn bootstrap_from_storage(&mut self, epoch_store: &AuthorityPerEpochStore) -> IkaResult {
-        info!("Bootstrapping MPC Outputs Verifier from Storage");
+        warn!("Bootstrapping MPC Outputs Verifier from Storage");
         for output in epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
+            warn!(?output.session_info.session_identifier, ?output.authority, "Restoring MPC output from storage");
             let party_to_authority_map = epoch_store.committee().party_to_authority_map();
             let mpc_protocol_name = output.session_info.mpc_round.to_string();
 
