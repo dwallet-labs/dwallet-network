@@ -54,7 +54,7 @@ pub(crate) async fn session_input_from_event(
 
             let session_id = CommitmentSizedNumber::from_le_slice(
                 deserialized_event
-                    .session_identifier_preimage
+                    .session_identifier_digest()
                     .to_vec()
                     .as_slice(),
             );

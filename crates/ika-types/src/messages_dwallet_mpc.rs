@@ -613,7 +613,8 @@ pub struct DWalletSessionEvent<E: DWalletSessionEventTrait> {
     pub epoch: u64,
     pub session_object_id: ObjectID,
     pub session_type: SessionType,
-    pub session_identifier_preimage: Vec<u8>,
+    // DO NOT MAKE THIS PUBLIC! ONLY CALL `session_identifier_digest`
+    session_identifier_preimage: Vec<u8>,
     pub event_data: E,
 }
 
