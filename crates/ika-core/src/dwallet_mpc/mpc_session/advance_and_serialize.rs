@@ -3,9 +3,10 @@ use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
 };
-use group::{OsCsRng, PartyID};
+use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use rand_chacha::ChaCha20Rng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
@@ -27,9 +28,12 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
     logger: &MPCSessionLogger,
+    rng: ChaCha20Rng,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
+    let mut rng = rng;
+
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties,
@@ -49,7 +53,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         messages.clone(),
         Some(private_input),
         public_input,
-        &mut OsCsRng,
+        &mut rng,
     ) {
         Ok(res) => res,
         Err(e) => {

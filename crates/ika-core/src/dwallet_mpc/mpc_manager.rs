@@ -26,6 +26,8 @@ use ika_types::messages_dwallet_mpc::{
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
+use sha3::digest::FixedOutput;
+use sha3::Digest;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
@@ -78,6 +80,11 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     pub(crate) threshold_not_reached_reports:
         HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
+
+    /// The private part of the per-round deterministic seed.
+    /// Derived from a one-way hash on the private decryption key of the validator.
+    /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
+    private_seed: [u8; 32],
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -143,19 +150,31 @@ impl DWalletMPCManager {
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
         let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
+        let class_groups_decryption_key = node_config
+            .class_groups_key_pair_and_proof
+            .clone()
+            // Since this is a validator, we can unwrap
+            // the `class_groups_key_pair_and_proof`.
+            .expect("Class groups key pair and proof must be present")
+            .class_groups_keypair()
+            .decryption_key();
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
-            class_groups_decryption_key: node_config
-                .class_groups_key_pair_and_proof
-                .clone()
-                // Since this is a validator, we can unwrap
-                // the `class_groups_key_pair_and_proof`.
-                .expect("Class groups key pair and proof must be present")
-                .class_groups_keypair()
-                .decryption_key(),
+            class_groups_decryption_key,
             validator_decryption_key_shares: HashMap::new(),
         };
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
+
+        // Derive the private part of the deterministic seed for this session from the class-groups decryption key of the validator.
+        // This seed is derived using Keccak256, a one-way hash function, which means the key can never be recovered from that value.
+        //
+        // However, this seed is the secret material from which the randomness in all MPC protocols will be generated. As such,
+        // it *must be kept private*, otherwise all of this validator's secrets in the MPC protocol will be leaked!
+        let serialized_decryption_key = bcs::to_bytes(&class_groups_decryption_key)?;
+        let private_seed = sha3::Keccak256::new_with_prefix(&serialized_decryption_key)
+            .finalize_fixed()
+            .into();
+
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
@@ -178,6 +197,7 @@ impl DWalletMPCManager {
             events_pending_for_network_key: vec![],
             dwallet_mpc_metrics,
             threshold_not_reached_reports: Default::default(),
+            private_seed,
         })
     }
 
@@ -747,6 +767,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
             self.dwallet_mpc_metrics.clone(),
+            self.private_seed,
         );
         info!(
             // todo(zeev): add metadata.

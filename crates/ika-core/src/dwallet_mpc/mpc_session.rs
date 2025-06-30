@@ -14,7 +14,11 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
+use merlin::Transcript;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use proof::TranscriptProtocol;
+use rand_chacha::{ChaCha20Core, ChaCha20Rng};
+use rand_core::SeedableRng;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -125,6 +129,11 @@ pub(crate) struct DWalletMPCSession {
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+
+    /// The private part of the per-round deterministic seed.
+    /// Derived from a one-way hash on the private decryption key of the validator.
+    /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
+    private_seed: [u8; 32],
 }
 
 impl DWalletMPCSession {
@@ -144,6 +153,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        private_seed: [u8; 32],
     ) -> Self {
         Self {
             status,
@@ -162,6 +172,7 @@ impl DWalletMPCSession {
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
             dwallet_mpc_metrics,
+            private_seed,
         }
     }
 
@@ -438,6 +449,23 @@ impl DWalletMPCSession {
             .with_protocol_name(mpc_protocol_name.clone())
             .with_party_to_authority_map(party_to_authority_map.clone());
 
+        // Derive a one-time use, MPC protocol and round specific, deterministic random generator
+        // from the private seed. This should only be used to `advance()` this specific round,
+        // and is guaranteed to be deterministic - if we attempt to run the round twice, the same message will be generated.
+        // SECURITY NOTICE: don't use for anything else other than `advance()`, and keep private!
+        let mut transcript = Transcript::new(b"Ika MPC Advance Rng");
+        transcript.append_message(b"$ private seed $", &self.private_seed);
+        transcript.append_u64(b"$ pid $", self.party_id as u64);
+        transcript.append_uint(b"$ sid $", &session_identifier);
+        transcript.append_u64(b"$ current round $", self.current_round as u64);
+        transcript.append_u64(b"$ attempts count $", self.attempts_count as u64);
+        transcript.append_u64(b"$ epoch $", self.epoch_id as u64);
+
+        let mut seed: [u8; 32] = [0; 32];
+        transcript.challenge_bytes(b"seed", &mut seed);
+
+        let rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
+
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
@@ -464,6 +492,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     &base_logger,
+                    rng,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -538,6 +567,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     &base_logger,
+                    rng,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -580,6 +610,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     &base_logger,
+                    rng,
                 )?;
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
                     verify_encrypted_share(
@@ -649,6 +680,7 @@ impl DWalletMPCSession {
                     public_input,
                     (),
                     &base_logger,
+                    rng,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
@@ -697,6 +729,7 @@ impl DWalletMPCSession {
                     public_input,
                     mpc_event_data.decryption_shares.clone(),
                     &logger,
+                    rng,
                 );
                 self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
                 match result.clone() {
@@ -730,6 +763,7 @@ impl DWalletMPCSession {
                             .ok_or(DwalletMPCError::MissingMPCPrivateInput)?,
                     )?,
                     &base_logger,
+                    rng,
                 )
             }
             MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
@@ -827,6 +861,7 @@ impl DWalletMPCSession {
                     public_input,
                     decryption_key_shares.clone(),
                     &logger,
+                    rng,
                 );
                 match result.clone() {
                     Ok(AsynchronousRoundResult::Finalize {
