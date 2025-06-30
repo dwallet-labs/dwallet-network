@@ -435,7 +435,7 @@ impl IkaNode {
                 network_keys_sender,
                 next_epoch_committee_sender,
                 new_events_sender,
-                end_of_publish_receiver.clone(),
+                end_of_publish_sender.clone(),
             )
             .await?,
         );
