@@ -45,7 +45,8 @@ pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,
     /// A map of all MPC sessions that start execution in this epoch.
-    /// These include completed sessions, and they are never to be removed from this mapping until the epoch advances.
+    /// These include completed sessions, and they are never to be removed from this
+    /// mapping until the epoch advances.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
@@ -196,12 +197,14 @@ impl DWalletMPCManager {
 
     /// Handle an MPC event.
     ///
-    /// This function might be called more than once for a given session, as we periodically check for uncompleted events.
+    /// This function might be called more than once for a given session, 
+    /// as we periodically check for uncompleted events.
     /// A new MPC session is only created once, the first time the event was received.
-    /// If the event already exists in `self.mpc_sessions`, we do not add it. If there is no session info, and we've got it in this call, we update that field in the open session.
+    /// If the event already exists in `self.mpc_sessions`, we do not add it. 
+    /// If there is no session info, and we've got it in this call, we update that field 
+    /// in the open session.
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         // Avoid instantiation of completed events by checking they belong to the current epoch.
-        //
         if !event.override_epoch_check && event.session_info.epoch != self.epoch_id {
             warn!(
                 session_identifier=?event.session_info.session_identifier,
@@ -392,9 +395,12 @@ impl DWalletMPCManager {
 
     /// Handle an MPC event.
     ///
-    /// This function might be called more than once for a given session, as we periodically check for uncompleted events.
+    /// This function might be called more than once for a given session, as we periodically
+    /// check for uncompleted events.
     /// A new MPC session is only created once, the first time the event was received.
-    /// If the event already exists in `self.mpc_sessions`, we do not add it. If there is no session info, and we've got it in this call, we update that field in the open session.
+    /// If the event already exists in `self.mpc_sessions`, we do not add it.
+    /// If there is no session info, and we've got it in this call,
+    /// we update that field in the open session.
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
@@ -726,7 +732,8 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Creates a new session with SID `session_identifier`, and insert it into the MPC session map `self.mpc_sessions`.
+    /// Creates a new session with SID `session_identifier`, 
+    /// and insert it into the MPC session map `self.mpc_sessions`.
     pub(super) fn new_mpc_session(
         &mut self,
         session_identifier: &SessionIdentifier,

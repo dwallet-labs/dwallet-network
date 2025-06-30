@@ -149,7 +149,7 @@ impl DWalletMPCOutputsVerifier {
                 .send(session_info.session_identifier)
             {
                 error!(
-                    e=?e,
+                    error=?e,
                     "error in sending completed session ID"
                 );
             };

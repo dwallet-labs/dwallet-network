@@ -940,7 +940,8 @@ impl IkaNode {
             )
             .await;
 
-        // Spawn the dWallet MPC Service now that we are done with bootstrapping both from storage and from the consensus.
+        // Spawn the dWallet MPC Service now that we are done with bootstrapping both 
+        // from storage and from the consensus.
         spawn_monitored_task!(dwallet_mpc_service.spawn());
 
         Ok(ValidatorComponents {
