@@ -162,7 +162,6 @@ mod simulator {
     }
 }
 
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
@@ -179,7 +178,7 @@ use ika_core::system_checkpoints::{
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData, IkaPackagesConfig,
+    DWalletNetworkDecryptionKeyData, IkaPackagesConfig,
 };
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
