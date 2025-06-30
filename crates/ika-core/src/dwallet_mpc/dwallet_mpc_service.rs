@@ -10,15 +10,14 @@ use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_session::session_info_from_event;
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
+    DWalletMPCNetworkKeyScheme, MPCSessionStatus
 };
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
+    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData,
 };
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::HashMap;

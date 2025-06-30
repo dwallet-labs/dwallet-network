@@ -3,7 +3,6 @@
 
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
-use crate::dwallet_mpc::generate_access_structure_from_committee;
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, NetworkDecryptionKeyPublicData};
@@ -16,8 +15,6 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
 };
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerInit, SystemInnerTrait};
-use im::HashSet;
-use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
@@ -313,25 +310,7 @@ where
             }
         }
     }
-
-    async fn fetch_and_init_network_key(
-        sui_client: &SuiClient<C>,
-        network_dec_key_shares: &DWalletNetworkDecryptionKey,
-        access_structure: &WeightedThresholdAccessStructure,
-    ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
-        let output = sui_client
-            .get_network_decryption_key_with_full_data(network_dec_key_shares)
-            .await
-            .map_err(|e| DwalletMPCError::MissingDwalletMPCDecryptionKeyShares(e.to_string()))?;
-
-        instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
-            output.current_epoch,
-            DWalletMPCNetworkKeyScheme::Secp256k1,
-            access_structure,
-            output,
-        )
-    }
-
+    
     async fn run_event_listening_task(
         // The module where interested events are defined.
         // Module is always of ika system package.

@@ -5,7 +5,6 @@ use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::{SuiClient, SuiClientInner};
