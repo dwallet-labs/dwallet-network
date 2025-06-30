@@ -203,7 +203,6 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        println!("dwallet_mpc_service/spawn(): spawning, receiving outputs");
         // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
         self.receive_mpc_sessions_output(true);
         info!(
@@ -331,10 +330,6 @@ impl DWalletMPCService {
                         completed_session_identifier=?completed_session_identifier,
                         bootstrap=bootstrap,
                         "Received completed session identifier"
-                    );
-                    println!(
-                        "receive_mpc_sessions_output(): received {:?}",
-                        completed_session_identifier
                     );
                     // There might be more completed sessions to report, so report this one and continue receiving (don't break).
                     completed_sessions.insert(completed_session_identifier);
