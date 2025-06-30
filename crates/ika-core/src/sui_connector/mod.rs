@@ -30,6 +30,7 @@ use tokio::sync::watch::Sender;
 use tokio::task::JoinHandle;
 use tracing::info;
 
+mod common_sui_objects_syncer;
 pub mod end_of_publish_sender;
 pub mod metrics;
 pub mod sui_executor;
