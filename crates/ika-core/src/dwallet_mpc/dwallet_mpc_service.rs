@@ -204,7 +204,7 @@ impl DWalletMPCService {
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
         // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
-        self.receive_mpc_sessions_output(true);
+        self.receive_completed_mpc_session_identifiers(true);
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
@@ -255,7 +255,7 @@ impl DWalletMPCService {
                 continue;
             };
 
-            self.receive_mpc_sessions_output(false);
+            self.receive_completed_mpc_session_identifiers(false);
 
             // Receive **new** dWallet MPC events and save them in the local DB.
             match self.receive_new_sui_events() {
@@ -307,7 +307,7 @@ impl DWalletMPCService {
     /// Receive all completed MPC sessions from the MPC Output Verifier over the `consensus_round_completed_sessions` channel.
     /// If the session exists, mark is as `MPCSessionStatus::Finished`.
     /// Otherwise, create a new session with that status, in order to avoid re-running the computation for it.
-    fn receive_mpc_sessions_output(&mut self, bootstrap: bool) {
+    fn receive_completed_mpc_session_identifiers(&mut self, bootstrap: bool) {
         let mut completed_sessions = HashSet::new();
         loop {
             match self.consensus_round_completed_sessions_receiver.try_recv() {
