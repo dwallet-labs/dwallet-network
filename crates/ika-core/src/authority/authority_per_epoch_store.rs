@@ -1488,7 +1488,7 @@ impl AuthorityPerEpochStore {
         let output_verification_result = dwallet_mpc_outputs_verifier
                 .try_verify_output(&output, &session_info, origin_authority, self)
                 .unwrap_or_else(|e| {
-                    error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
+                    error!("error verifying DWalletMPCOutput output", session_id=?session_info.session_identifier, authority_index=?authority_index, error=?e);
                     OutputVerificationResult {
                         result: OutputVerificationStatus::Malicious,
                         malicious_actors: vec![origin_authority],

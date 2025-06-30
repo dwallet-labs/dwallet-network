@@ -197,11 +197,11 @@ impl DWalletMPCManager {
 
     /// Handle an MPC event.
     ///
-    /// This function might be called more than once for a given session, 
+    /// This function might be called more than once for a given session,
     /// as we periodically check for uncompleted events.
     /// A new MPC session is only created once, the first time the event was received.
-    /// If the event already exists in `self.mpc_sessions`, we do not add it. 
-    /// If there is no session info, and we've got it in this call, we update that field 
+    /// If the event already exists in `self.mpc_sessions`, we do not add it.
+    /// If there is no session info, and we've got it in this call, we update that field
     /// in the open session.
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         // Avoid instantiation of completed events by checking they belong to the current epoch.
@@ -732,7 +732,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Creates a new session with SID `session_identifier`, 
+    /// Creates a new session with SID `session_identifier`,
     /// and insert it into the MPC session map `self.mpc_sessions`.
     pub(super) fn new_mpc_session(
         &mut self,

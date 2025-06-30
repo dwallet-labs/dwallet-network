@@ -341,9 +341,6 @@ impl DWalletMPCService {
             "Received completed session identifiers"
         );
 
-        // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
-        // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
-        // read if the sui consensus syncs these values somehow
         for session_identifier in completed_sessions {
             // If no session with SID `session_identifier` exist, create a new one.
             if !self
