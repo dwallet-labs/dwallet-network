@@ -176,7 +176,7 @@ impl DWalletMPCService {
                             key_data.clone(),
                         ) {
                             Ok(key) => {
-                                info!("Updating network key for key_id: {:?}", key_id);
+                                info!(key_id=?key_id, "Updating the network key for key_id");
                                 self.dwallet_mpc_manager
                                     .network_keys
                                     .update_network_key(
@@ -184,7 +184,7 @@ impl DWalletMPCService {
                                         &key,
                                         &self.dwallet_mpc_manager.weighted_threshold_access_structure,
                                     )
-                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));        
+                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
                             }
                             Err(err) => {
                                 error!(
