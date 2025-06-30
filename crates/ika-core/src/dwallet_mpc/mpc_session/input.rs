@@ -53,8 +53,8 @@ pub(crate) async fn session_input_from_event(
             )?;
 
             // TODO(@Scaly): This should be the session id!
-            let dwallet_id = CommitmentSizedNumber::from_le_slice(
-                deserialized_event.event_data.dwallet_id.to_vec().as_slice(),
+            let session_id = CommitmentSizedNumber::from_le_slice(
+                deserialized_event.session_object_id.to_vec().as_slice(),
             );
 
             let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
@@ -62,7 +62,7 @@ pub(crate) async fn session_input_from_event(
 
             let public_input = (
                 protocol_public_parameters,
-                dwallet_id,
+                session_id,
                 bcs::from_bytes(&centralized_party_message)?,
             )
                 .into();
