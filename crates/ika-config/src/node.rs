@@ -26,7 +26,7 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 
-use dwallet_classgroups_types::{read_class_groups_seed_from_file, RootSeed};
+use dwallet_classgroups_types::RootSeed;
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
@@ -545,7 +545,7 @@ pub fn read_authority_keypair_from_file(path: &PathBuf) -> AuthorityKeyPair {
         .unwrap_or_else(|_| panic!("Invalid authority keypair file at path {:?}", &path))
 }
 
-/// Wrapper struct for ClassGroupsKeyPair that can be deserialized from a file path.
+/// Wrapper struct for RootSeed that can be deserialized from a file path.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct RootSeedWithPath {
     #[serde(flatten)]
@@ -565,7 +565,7 @@ enum RootSeedLocation {
 impl RootSeedWithPath {
     pub fn new(seed: RootSeed) -> Self {
         let cell: OnceCell<RootSeed> = OnceCell::new();
-        // OK to unwrap panic because class_groups should not start without all keypairs loaded.
+        // OK to unwrap panic because validator should not start without root seed loaded.
         cell.set(seed.clone()).expect("Failed to set root seed");
         Self {
             location: RootSeedLocation::InPlace { value: seed },
@@ -576,7 +576,7 @@ impl RootSeedWithPath {
     pub fn new_from_path(path: PathBuf) -> Self {
         let cell: OnceCell<RootSeed> = OnceCell::new();
         // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-        cell.set(read_class_groups_seed_from_file(path.clone()).unwrap())
+        cell.set(RootSeed::from_file(path.clone()).unwrap())
             .expect("Failed to set class_groups keypair");
         Self {
             location: RootSeedLocation::File { path },
@@ -588,9 +588,9 @@ impl RootSeedWithPath {
         self.seed.get_or_init(|| match &self.location {
             RootSeedLocation::InPlace { value } => value.clone(),
             RootSeedLocation::File { path } => {
-                // OK to unwrap panic because `class_groups`
-                // should not start without all keypairs loaded.
-                read_class_groups_seed_from_file(path.clone()).unwrap()
+                // OK to unwrap panic because validator
+                // should not start without seed loaded.
+                RootSeed::from_file(path.clone()).unwrap()
             }
         })
     }

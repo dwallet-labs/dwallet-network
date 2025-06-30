@@ -265,12 +265,6 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                         if let Some(rgp) = self.computation_price_per_unit_size {
                             builder = builder.with_computation_price(rgp);
                         }
-                        // #[cfg(feature = "mock-class-groups")]
-                        // {
-                        //     builder = builder.with_root_seed(
-                        //         crate::class_groups_mock_builder::create_full_class_groups_mock(),
-                        //     );
-                        // }
 
                         builder.build(&mut rng)
                     })

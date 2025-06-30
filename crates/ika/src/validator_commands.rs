@@ -9,10 +9,7 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;
-use dwallet_classgroups_types::{
-    read_class_groups_seed_from_file, write_class_groups_seed_to_file, ClassGroupsKeyPairAndProof,
-    RootSeed,
-};
+use dwallet_classgroups_types::{ClassGroupsKeyPairAndProof, RootSeed};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
@@ -422,7 +419,7 @@ fn read_or_generate_seed_and_class_groups_key(
     seed_path: PathBuf,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
     println!("Generating class groups key pair file",);
-    let seed = match read_class_groups_seed_from_file(seed_path.clone()) {
+    let seed = match RootSeed::from_file(seed_path.clone()) {
         Ok(seed) => {
             println!("Use existing seed: {:?}.", seed_path,);
             seed
@@ -430,7 +427,7 @@ fn read_or_generate_seed_and_class_groups_key(
         Err(err) => {
             println!("error reading class groups key from file: {err:?}, generating...");
             let seed = RootSeed::random_seed();
-            write_class_groups_seed_to_file(seed.seed(), seed_path.clone())?;
+            seed.save_to_file(seed_path.clone())?;
             println!(
                 "Generated class groups key pair info file: {:?}.",
                 seed_path,
