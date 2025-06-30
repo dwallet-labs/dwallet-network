@@ -52,9 +52,11 @@ pub(crate) async fn session_input_from_event(
                     .dwallet_network_encryption_key_id,
             )?;
 
-            // TODO(@Scaly): This should be the session id!
             let session_id = CommitmentSizedNumber::from_le_slice(
-                deserialized_event.session_object_id.to_vec().as_slice(),
+                deserialized_event
+                    .session_identifier_preimage
+                    .to_vec()
+                    .as_slice(),
             );
 
             let VersionedImportedDWalletPublicOutput::V1(centralized_party_message) =
