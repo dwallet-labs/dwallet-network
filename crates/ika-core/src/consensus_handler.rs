@@ -509,6 +509,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
             "dwallet_mpc_threshold_not_reached"
         }
         ConsensusTransactionKind::SystemCheckpointSignature(_) => "system_checkpoint_signature",
+        ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
     }
 }
 

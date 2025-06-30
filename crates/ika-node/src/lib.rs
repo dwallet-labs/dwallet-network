@@ -168,6 +168,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
 use ika_core::sui_connector::SuiConnectorService;
@@ -328,7 +329,7 @@ impl IkaNode {
             epoch_start_configuration,
             chain_identifier,
             packages_config,
-        );
+        )?;
 
         info!("created epoch store");
 
@@ -422,6 +423,7 @@ impl IkaNode {
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
         let (new_events_sender, new_events_receiver) = broadcast::channel(10000);
+        let (end_of_publish_sender, end_of_publish_receiver) = watch::channel::<Option<u64>>(None);
         let sui_connector_service = Arc::new(
             SuiConnectorService::new(
                 dwallet_checkpoint_store.clone(),
@@ -433,6 +435,7 @@ impl IkaNode {
                 network_keys_sender,
                 next_epoch_committee_sender,
                 new_events_sender,
+                end_of_publish_sender.clone(),
             )
             .await?,
         );
@@ -535,6 +538,7 @@ impl IkaNode {
                 next_epoch_committee_receiver.clone(),
                 sui_client_clone,
                 dwallet_mpc_metrics,
+                end_of_publish_receiver.clone(),
             )
             .await;
             if let Err(error) = result {
@@ -1085,6 +1089,7 @@ impl IkaNode {
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+        end_of_publish_receiver: Receiver<Option<u64>>,
     ) -> Result<()> {
         let sui_client_clone2 = sui_client.clone();
         loop {
@@ -1114,6 +1119,22 @@ impl IkaNode {
                 }
             }
 
+            let end_of_publish_sender_handle =
+                if let Some(components) = &*self.validator_components.lock().await {
+                    let end_of_publish_sender = EndOfPublishSender::new(
+                        Arc::downgrade(&cur_epoch_store),
+                        Arc::new(components.consensus_adapter.clone()),
+                        end_of_publish_receiver.clone(),
+                        cur_epoch_store.epoch(),
+                    );
+
+                    Some(tokio::spawn(async move {
+                        end_of_publish_sender.run().await;
+                    }))
+                } else {
+                    None
+                };
+
             let stop_condition = self
                 .sui_connector_service
                 .run_epoch(cur_epoch_store.epoch(), run_with_range)
@@ -1131,6 +1152,10 @@ impl IkaNode {
                     return Ok(());
                 }
             };
+            end_of_publish_sender_handle.map(|handle| {
+                handle.abort();
+                Some(())
+            });
 
             // // Safe to call because we are in the middle of reconfiguration.
             // let latest_system_state = self

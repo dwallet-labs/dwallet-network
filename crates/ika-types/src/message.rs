@@ -105,6 +105,7 @@ pub enum DWalletMessageKind {
     RespondDWalletMPCNetworkReconfigurationOutput(NetworkKeyPublicOutputSlice),
     SetMaxActiveSessionsBuffer(u64),
     SetGasFeeReimbursementSuiSystemCallValue(u64),
+    EndOfPublish,
 }
 
 impl DWalletMessageKind {
@@ -140,6 +141,7 @@ impl DWalletMessageKind {
             DWalletMessageKind::SetGasFeeReimbursementSuiSystemCallValue(_) => {
                 "SetGasFeeReimbursementSuiSystemCallValue"
             }
+            DWalletMessageKind::EndOfPublish => "EndOfPublish",
         }
     }
 
@@ -207,6 +209,9 @@ impl Display for DWalletMessageKind {
                     "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
                     value
                 )?;
+            }
+            DWalletMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
         write!(f, "{}", writer)
@@ -300,6 +305,9 @@ impl Debug for DWalletMessageKind {
                     "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
                     value
                 )?;
+            }
+            DWalletMessageKind::EndOfPublish => {
+                writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
         write!(f, "{}", writer)
