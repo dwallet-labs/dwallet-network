@@ -167,6 +167,7 @@ use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
 use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use ika_core::sui_connector::common_sui_objects_syncer::CommonSuiObjectsSyncer;
 use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
@@ -274,6 +275,8 @@ impl IkaNode {
             )
             .await?,
         );
+
+        let common_sui_objects_syncer = CommonSuiObjectsSyncer::new();
 
         let latest_system_state = sui_client.must_get_system_inner_object().await;
         let previous_epoch_last_system_checkpoint_sequence_number =
