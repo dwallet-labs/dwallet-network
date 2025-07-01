@@ -28,7 +28,7 @@ use tracing::{error, info};
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
     mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
-    consensus_round_completed_sessions_sender: mpsc::UnboundedSender<SessionIdentifier>,
+    consensus_round_completed_sessions_sender: mpsc::Sender<SessionIdentifier>,
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
@@ -73,7 +73,7 @@ pub struct OutputVerificationResult {
 impl DWalletMPCOutputsVerifier {
     pub fn new(
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        consensus_round_completed_sessions_sender: mpsc::UnboundedSender<SessionIdentifier>,
+        consensus_round_completed_sessions_sender: mpsc::Sender<SessionIdentifier>,
     ) -> Self {
         DWalletMPCOutputsVerifier {
             mpc_sessions_outputs: HashMap::new(),
@@ -146,7 +146,7 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.clear_data();
             if let Err(e) = self
                 .consensus_round_completed_sessions_sender
-                .send(session_info.session_identifier)
+                .try_send(session_info.session_identifier)
             {
                 error!(
                     error=?e,
