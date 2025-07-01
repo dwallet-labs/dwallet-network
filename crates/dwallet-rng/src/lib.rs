@@ -84,6 +84,11 @@ impl RootSeed {
         // Add a distinct descriptive label, and the root seed itself.
         let mut transcript = Transcript::new(b"Ika MPC Advance Rng");
         transcript.append_message(b"root seed", &self.0);
+
+        // Add public fields that uniquely-describes an attempt to `advance()`
+        // a particular MPC session of a particular round and attempt number.
+        // This guarantees that the seed - and subsequently all random generation within that round - would be deterministic and unique.
+        // If we attempt to run the round of a given session twice, the same message will be generated.
         transcript.append_u64(b"$ pid $", party_id);
         transcript.append_uint(b"$ sid $", &session_identifier);
         transcript.append_u64(b"$ current round $", current_round);
