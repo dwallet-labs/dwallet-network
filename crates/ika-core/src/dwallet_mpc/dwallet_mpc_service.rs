@@ -208,7 +208,7 @@ impl DWalletMPCService {
         loop {
             let mut events = vec![];
 
-            // Load events from Sui every 5 minutes (3000 * 100ms = 300,000ms = 300s = 5m).
+            // Load events from Sui every 30 seconds (300 * READ_INTERVAL_MS=100ms = 30,000ms = 30s).
             // Note: when we spawn, `loop_index == 0`, so we fetch uncompleted events on spawn.
             if loop_index % 300 == 0 {
                 events = self.fetch_uncompleted_events().await;
