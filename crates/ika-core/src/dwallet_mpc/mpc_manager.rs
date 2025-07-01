@@ -239,8 +239,9 @@ impl DWalletMPCManager {
         }
     }
 
-    /// TODO DOC
-    pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
+    /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
+    /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
+    pub(crate) async fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
@@ -254,6 +255,8 @@ impl DWalletMPCManager {
             }
             DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
                 error!(session_id=?session_id, "dwallet MPC session failed");
+                // TODO(@scaly) this is the wrong issue, also create a new one.
+                // Also this doesn't get sent or handled, so what?
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {

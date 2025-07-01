@@ -296,7 +296,9 @@ impl DWalletMPCService {
                 }
             }
 
-            self.dwallet_mpc_manager.perform_cryptographic_computation().await;
+            self.dwallet_mpc_manager
+                .perform_cryptographic_computation()
+                .await;
         }
     }
 
