@@ -9,7 +9,8 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;
-use dwallet_classgroups_types::{ClassGroupsKeyPairAndProof, RootSeed};
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
+use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;

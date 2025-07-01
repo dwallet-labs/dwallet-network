@@ -3,7 +3,8 @@
 
 use std::net::{IpAddr, SocketAddr};
 
-use dwallet_classgroups_types::{ClassGroupsKeyPairAndProof, RootSeed};
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
+use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
 use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_INKU;
 use ika_config::local_ip_utils;

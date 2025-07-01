@@ -18,6 +18,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use sui_types::base_types::{ObjectID, SuiAddress};
 
+use dwallet_rng::RootSeed;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::KeypairTraits;
 use ika_types::crypto::NetworkKeyPair;
@@ -26,7 +27,6 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 
-use dwallet_classgroups_types::RootSeed;
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
