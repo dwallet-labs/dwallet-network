@@ -28,12 +28,10 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
     logger: &MPCSessionLogger,
-    rng: ChaCha20Rng,
+    mut rng: ChaCha20Rng,
 ) -> DwalletMPCResult<
     mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
-    let mut rng = rng;
-
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties,
