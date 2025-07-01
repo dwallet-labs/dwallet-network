@@ -18,6 +18,7 @@ proof.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption.workspace = true
 class_groups = { workspace = true, features = ["threshold", "parallel"]}
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
 commitment.workspace = true

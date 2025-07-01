@@ -1,11 +1,17 @@
+use commitment::CommitmentSizedNumber;
 use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use merlin::Transcript;
+use proof::TranscriptProtocol;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 
+/// The Root Seed for this validator, used to deterministically derive purpose-specific child seeds
+/// for all cryptographically-secure random generation operations.
+///
+/// SECURITY NOTICE: *MUST KEEP PRIVATE*.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RootSeed([u8; RootSeed::SEED_LENGTH]);
 
@@ -49,9 +55,8 @@ impl RootSeed {
     /// Derive a seed for deterministically generating
     /// this validator's class-groups decryption key and proof [`ClassGroupsKeyPairAndProof`].
     ///
-    /// We don't use the root seed directly, as it would be used for other purposes
-    /// (such as for generating randomness during an MPC session). Instead, we derive a seed
-    /// from it using a distinct hard-coded label.
+    /// We don't use the root seed directly, as it would be used for other purposes.
+    /// Instead, we derive a seed from it using a distinct hard-coded label.
     fn class_groups_decryption_key_seed(&self) -> [u8; Self::SEED_LENGTH] {
         // Add a distinct descriptive label, and the root seed itself.
         let mut transcript = Transcript::new(b"Class Groups Decryption Key Seed");
@@ -64,10 +69,59 @@ impl RootSeed {
         seed
     }
 
+    /// Derive a seed deterministically for advancing an MPC round.
+    ///
+    /// We don't use the root seed directly, as it would be used for other purposes.
+    /// Instead, we derive a seed from it using a distinct hard-coded label.
+    fn mpc_round_seed(
+        &self,
+        session_identifier: CommitmentSizedNumber,
+        party_id: u64,
+        current_round: u64,
+        attempts_count: u64,
+        epoch_id: u64,
+    ) -> [u8; Self::SEED_LENGTH] {
+        // Add a distinct descriptive label, and the root seed itself.
+        let mut transcript = Transcript::new(b"Ika MPC Advance Rng");
+        transcript.append_message(b"root seed", &self.0);
+        transcript.append_u64(b"$ pid $", party_id);
+        transcript.append_uint(b"$ sid $", &session_identifier);
+        transcript.append_u64(b"$ current round $", current_round);
+        transcript.append_u64(b"$ attempts count $", attempts_count);
+        transcript.append_u64(b"$ epoch $", epoch_id);
+
+        // Generate a new seed from it (internally, it uses a hash function to pseudo-randomly generate it).
+        let mut seed: [u8; 32] = [0; 32];
+        transcript.challenge_bytes(b"seed", &mut seed);
+
+        seed
+    }
+
     /// Instantiates a deterministic secure pseudo-random generator (using the ChaCha20 algorithm)
     /// with which to generate this validator's class-groups decryption key and proof [`ClassGroupsKeyPairAndProof`].
     pub fn class_groups_decryption_key_rng(&self) -> ChaCha20Rng {
         let seed = self.class_groups_decryption_key_seed();
+
+        ChaCha20Rng::from_seed(seed)
+    }
+
+    /// Instantiates a deterministic secure pseudo-random generator (using the ChaCha20 algorithm)
+    /// with which to advance an MPC round.
+    pub fn mpc_round_rng(
+        &self,
+        session_identifier: CommitmentSizedNumber,
+        party_id: u64,
+        current_round: u64,
+        attempts_count: u64,
+        epoch_id: u64,
+    ) -> ChaCha20Rng {
+        let seed = self.mpc_round_seed(
+            session_identifier,
+            party_id,
+            current_round,
+            attempts_count,
+            epoch_id,
+        );
 
         ChaCha20Rng::from_seed(seed)
     }

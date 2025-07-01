@@ -14,11 +14,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use itertools::Itertools;
-use merlin::Transcript;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use proof::TranscriptProtocol;
-use rand_chacha::{ChaCha20Core, ChaCha20Rng};
-use rand_core::SeedableRng;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Handle;
@@ -49,6 +45,7 @@ use ika_types::messages_dwallet_mpc::{
 use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) use advance_and_serialize::advance_and_serialize;
+use dwallet_rng::RootSeed;
 pub(crate) use input::session_input_from_event;
 pub(crate) use logger::MPCSessionLogger;
 pub(crate) use session_info::session_info_from_event;
@@ -130,10 +127,9 @@ pub(crate) struct DWalletMPCSession {
     consensus_rounds_since_quorum_reached: usize,
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 
-    /// The private part of the per-round deterministic seed.
-    /// Derived from a one-way hash on the private decryption key of the validator.
+    /// The root seed of this validator, used for deriving the per-round seed for advancing this session.
     /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
-    private_seed: [u8; 32],
+    root_seed: RootSeed,
 }
 
 impl DWalletMPCSession {
@@ -153,7 +149,7 @@ impl DWalletMPCSession {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        private_seed: [u8; 32],
+        root_seed: RootSeed,
     ) -> Self {
         Self {
             status,
@@ -172,7 +168,7 @@ impl DWalletMPCSession {
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
             dwallet_mpc_metrics,
-            private_seed,
+            root_seed,
         }
     }
 
@@ -452,19 +448,14 @@ impl DWalletMPCSession {
         // Derive a one-time use, MPC protocol and round specific, deterministic random generator
         // from the private seed. This should only be used to `advance()` this specific round,
         // and is guaranteed to be deterministic - if we attempt to run the round twice, the same message will be generated.
-        // SECURITY NOTICE: don't use for anything else other than `advance()`, and keep private!
-        let mut transcript = Transcript::new(b"Ika MPC Advance Rng");
-        transcript.append_message(b"$ private seed $", &self.private_seed);
-        transcript.append_u64(b"$ pid $", self.party_id as u64);
-        transcript.append_uint(b"$ sid $", &session_identifier);
-        transcript.append_u64(b"$ current round $", self.current_round as u64);
-        transcript.append_u64(b"$ attempts count $", self.attempts_count as u64);
-        transcript.append_u64(b"$ epoch $", self.epoch_id as u64);
-
-        let mut seed: [u8; 32] = [0; 32];
-        transcript.challenge_bytes(b"seed", &mut seed);
-
-        let rng = ChaCha20Rng::from(ChaCha20Core::from_seed(seed));
+        // SECURITY NOTICE: don't use for anything else other than (this particular) `advance()`, and keep private!
+        let rng = self.root_seed.mpc_round_rng(
+            session_identifier,
+            self.party_id as u64,
+            self.current_round as u64,
+            self.attempts_count as u64,
+            self.epoch_id as u64,
+        );
 
         match &mpc_event_data.init_protocol_data {
             MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {

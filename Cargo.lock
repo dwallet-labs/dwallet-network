@@ -3613,6 +3613,7 @@ name = "dwallet-rng"
 version = "1.0.0"
 dependencies = [
  "base64 0.21.7",
+ "commitment",
  "fastcrypto",
  "group 0.1.0",
  "ika-types",
@@ -5727,6 +5728,7 @@ dependencies = [
  "diffy",
  "dwallet-classgroups-types",
  "dwallet-mpc-types",
+ "dwallet-rng",
  "either",
  "enum_dispatch",
  "expect-test",
