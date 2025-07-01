@@ -72,6 +72,7 @@ pub struct SystemInnerV1 {
     pub authorized_protocol_cap_ids: Vec<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_id: Option<ObjectID>,
     pub dwallet_2pc_mpc_coordinator_network_encryption_keys: Vec<DWalletNetworkEncryptionKeyCap>,
+    pub received_end_of_publish: bool,
     pub extra_fields: Bag,
     // TODO: Use getters instead of all pub.
 }
@@ -155,6 +156,7 @@ pub struct DWalletCoordinatorInnerV1 {
     pub last_processed_checkpoint_sequence_number: u64,
     pub previous_epoch_last_checkpoint_sequence_number: u64,
     pub support_config: SupportConfig,
+    pub received_end_of_publish: bool,
     pub extra_fields: Bag,
 }
 
