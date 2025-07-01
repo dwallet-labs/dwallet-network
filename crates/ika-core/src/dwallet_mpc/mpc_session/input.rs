@@ -104,8 +104,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_decryption_key = dwallet_mpc_manager
                 .network_keys
                 .validator_private_dec_key_data
-                .class_groups_decryption_key
-                .clone();
+                .class_groups_decryption_key;
 
             Ok((
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
@@ -132,8 +131,7 @@ pub(crate) async fn session_input_from_event(
             let class_groups_decryption_key = dwallet_mpc_manager
                 .network_keys
                 .validator_private_dec_key_data
-                .class_groups_decryption_key
-                .clone();
+                .class_groups_decryption_key;
 
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(

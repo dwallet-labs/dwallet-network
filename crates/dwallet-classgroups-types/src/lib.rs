@@ -80,6 +80,13 @@ pub struct ClassGroupsKeyPairAndProof {
 }
 
 impl ClassGroupsKeyPairAndProof {
+/// Generates a ClassGroupsKeyPairAndProof from a root seed.
+/// 
+/// This method deterministically generates class group keys using ChaCha20Rng
+/// seeded with the provided root seed. The same seed will always produce
+/// the same key pair.
+/// 
+/// The seed should be cryptographically secure and kept confidential.
     pub fn from_seed(seed: &RootSeed) -> Self {
         let setup_parameters_per_crt_prime =
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)

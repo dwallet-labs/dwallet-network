@@ -577,7 +577,7 @@ impl RootSeedWithPath {
         let cell: OnceCell<RootSeed> = OnceCell::new();
         // OK to unwrap panic because class_groups should not start without all keypairs loaded.
         cell.set(RootSeed::from_file(path.clone()).unwrap())
-            .expect("Failed to set class_groups keypair");
+            .expect("Failed to set root seed");
         Self {
             location: RootSeedLocation::File { path },
             seed: cell,
