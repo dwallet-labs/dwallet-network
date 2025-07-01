@@ -91,16 +91,9 @@ pub(crate) struct DWalletMPCManager {
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
-    /// Signal delivery of messages has ended,
-    /// now the sessions that received a quorum of messages can advance.
-    EndOfDelivery,
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
-    /// A message to start processing the cryptographic computations.
-    /// This message is being sent every five seconds by the dWallet MPC Service,
-    /// to skip redundant advancements that have already been completed by other validators.
-    PerformCryptographicComputations,
 
     /// A message that continas a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
@@ -246,13 +239,9 @@ impl DWalletMPCManager {
         }
     }
 
-    // TODO(Scaly): what is the `db` here?
+    /// TODO DOC
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
-        // TODO: unpack this enum into functions, for sure PerformCryptographicComputations and EndOfDelivery.
         match message {
-            DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation().await;
-            }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
                     error!(
@@ -261,11 +250,6 @@ impl DWalletMPCManager {
                         from_authority=?message.authority,
                         "failed to handle an MPC message with error"
                     );
-                }
-            }
-            DWalletMPCDBMessage::EndOfDelivery => {
-                if let Err(err) = self.handle_end_of_delivery().await {
-                    error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
             DWalletMPCDBMessage::MPCSessionFailed(session_id) => {

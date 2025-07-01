@@ -6,7 +6,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::session_info_from_event;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
 use ika_config::NodeConfig;
@@ -262,7 +262,7 @@ impl DWalletMPCService {
                 }
             };
 
-            // If session is already exists with event information, it will be ignored.
+            // If session already exists with event information, it will be ignored.
             for event in events {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
@@ -272,7 +272,7 @@ impl DWalletMPCService {
                 .dwallet_mpc_messages
                 .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
                 .collect::<Result<Vec<_>, _>>();
-            let mpc_msgs_iter = match mpc_msgs_iter {
+            let mut mpc_messages = match mpc_msgs_iter {
                 Ok(iter) => iter,
                 Err(e) => {
                     error!(err=?e, "failed to load DWallet MPC messages from the local DB");
@@ -280,22 +280,23 @@ impl DWalletMPCService {
                 }
             };
 
-            for (round, messages) in mpc_msgs_iter {
+            // Sort the MPC messages by round in ascending order.
+            mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
+            for (round, messages) in mpc_messages {
+                // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
                 for message in messages {
                     self.dwallet_mpc_manager
                         .handle_dwallet_db_message(message)
                         .await;
                 }
-                // TODO(Scaly): why is there a message `EndOfDelivery` and `PerformCryptographicComputations` ? why not call function?
-                self.dwallet_mpc_manager
-                    .handle_dwallet_db_message(DWalletMPCDBMessage::EndOfDelivery)
-                    .await;
+
+                if let Err(err) = self.dwallet_mpc_manager.handle_end_of_delivery().await {
+                    error!("failed to handle the end of delivery with error: {:?}", err);
+                }
             }
 
-            self.dwallet_mpc_manager
-                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
-                .await;
+            self.dwallet_mpc_manager.perform_cryptographic_computation().await;
         }
     }
 
