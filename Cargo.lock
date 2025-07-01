@@ -3553,17 +3553,17 @@ name = "dwallet-classgroups-types"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "base64 0.21.7",
  "bcs",
  "class_groups",
  "crypto-bigint 0.7.0-pre.5",
  "dwallet-mpc-types",
- "fastcrypto",
+ "dwallet-rng",
  "flate2",
  "group 0.1.0",
  "ika-types",
+ "merlin",
+ "proof",
  "rand 0.9.0",
- "rand_chacha 0.9.0",
  "schemars",
  "serde",
  "serde_derive",
@@ -3606,6 +3606,20 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "twopc_mpc",
+]
+
+[[package]]
+name = "dwallet-rng"
+version = "1.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "fastcrypto",
+ "group 0.1.0",
+ "ika-types",
+ "merlin",
+ "proof",
+ "rand_chacha 0.9.0",
+ "serde",
 ]
 
 [[package]]
@@ -5600,6 +5614,7 @@ dependencies = [
  "colored",
  "datatest-stable",
  "dwallet-classgroups-types",
+ "dwallet-rng",
  "expect-test",
  "fastcrypto",
  "fs_extra",
@@ -5672,6 +5687,7 @@ dependencies = [
  "dirs 4.0.0",
  "dwallet-classgroups-types",
  "dwallet-mpc-types",
+ "dwallet-rng",
  "fastcrypto",
  "ika-types",
  "once_cell",
@@ -6085,6 +6101,7 @@ dependencies = [
  "bcs",
  "clap",
  "dwallet-classgroups-types",
+ "dwallet-rng",
  "fastcrypto",
  "flate2",
  "futures",

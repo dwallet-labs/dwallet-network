@@ -84,13 +84,6 @@ use typed_store::DBMetrics;
 
 use crate::metrics::IkaNodeMetrics;
 
-/// Buffer size for the consensus round completed sessions channel.
-/// This channel carries session completion notifications from the consensus
-/// to the dWallet MPC outputs verifier. The buffer size of 100K allows
-/// for high throughput scenarios where many sessions complete rapidly
-/// without blocking the consensus flow.
-const CONSENSUS_ROUND_COMPLETED_SESSIONS_CHANNEL_BUFFER_SIZE: usize = 100_000;
-
 pub mod admin;
 mod handle;
 pub mod metrics;
@@ -878,7 +871,7 @@ impl IkaNode {
         let (
             consensus_round_completed_sessions_sender,
             consensus_round_completed_sessions_receiver,
-        ) = mpsc::channel(CONSENSUS_ROUND_COMPLETED_SESSIONS_CHANNEL_BUFFER_SIZE);
+        ) = mpsc::unbounded_channel();
 
         let mut dwallet_mpc_outputs_verifier = DWalletMPCOutputsVerifier::new(
             dwallet_mpc_metrics.clone(),

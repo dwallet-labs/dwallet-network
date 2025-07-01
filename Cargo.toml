@@ -528,6 +528,7 @@ consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
 
 ### Workspace Members ###
+dwallet-rng = { path = "crates/dwallet-rng" }
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
 dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
 dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}
