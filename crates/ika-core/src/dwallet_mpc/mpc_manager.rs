@@ -152,9 +152,7 @@ impl DWalletMPCManager {
         let root_seed = node_config
             .root_seed
             .clone()
-            // Since only a validator executes the DWalletMPCManager, we can unwrap
-            // the `root_seed`.
-            .expect("Root seed must be present")
+            .ok_or(DwalletMPCError::MissingRootSeed)?
             .root_seed()
             .clone();
         let class_groups_decryption_key =

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// The Root Seed for this validator, used to deterministically derive purpose-specific child seeds
 /// for all cryptographically-secure random generation operations.
 ///
-/// SECURITY NOTICE: *MUST KEEP PRIVATE*.
+/// SECURITY NOTICE: *MUST BE KEPT PRIVATE*.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RootSeed([u8; RootSeed::SEED_LENGTH]);
 
@@ -71,7 +71,7 @@ impl RootSeed {
 
     /// Derive a seed deterministically for advancing an MPC round.
     ///
-    /// We don't use the root seed directly, as it would be used for other purposes.
+    /// We don't use the root seed directly, as it may be used for other purposes.
     /// Instead, we derive a seed from it using a distinct hard-coded label.
     fn mpc_round_seed(
         &self,
