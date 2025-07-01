@@ -225,7 +225,6 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
 
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
@@ -299,6 +298,8 @@ impl DWalletMPCService {
             self.dwallet_mpc_manager
                 .perform_cryptographic_computation()
                 .await;
+
+            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
         }
     }
 
