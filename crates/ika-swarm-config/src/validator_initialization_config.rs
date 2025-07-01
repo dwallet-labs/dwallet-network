@@ -3,9 +3,8 @@
 
 use std::net::{IpAddr, SocketAddr};
 
-use dwallet_classgroups_types::{
-    generate_class_groups_keypair_and_proof_from_seed, sample_seed, ClassGroupsKeyPairAndProof,
-};
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
+use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
 use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_INKU;
 use ika_config::local_ip_utils;
@@ -26,7 +25,7 @@ pub const DEFAULT_NUMBER_OF_AUTHORITIES: usize = 4;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidatorInitializationConfig {
     pub name: Option<String>,
-    pub class_groups_key_pair_and_proof: Box<ClassGroupsKeyPairAndProof>,
+    pub root_seed: RootSeed,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -51,9 +50,13 @@ pub struct ValidatorInitializationConfig {
 impl ValidatorInitializationConfig {
     pub fn to_validator_info(&self) -> ValidatorInfo {
         let name = self.name.clone().unwrap_or("".to_string());
-        let class_groups_public_key_and_proof = self
-            .class_groups_key_pair_and_proof
-            .encryption_key_and_proof();
+
+        let class_groups_public_key_and_proof = if cfg!(feature = "mock-class-groups") {
+            crate::class_groups_mock_builder::create_full_class_groups_mock()
+                .encryption_key_and_proof()
+        } else {
+            ClassGroupsKeyPairAndProof::from_seed(&self.root_seed).encryption_key_and_proof()
+        };
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();
@@ -89,7 +92,7 @@ impl ValidatorInitializationConfig {
 pub struct ValidatorInitializationConfigBuilder {
     protocol_key_pair: Option<AuthorityKeyPair>,
     account_key_pair: Option<AccountKeyPair>,
-    class_groups_key_pair_and_proof: Option<Box<ClassGroupsKeyPairAndProof>>,
+    root_seed: Option<RootSeed>,
     ip: Option<String>,
     computation_price: Option<u64>,
     /// If set, the validator will use deterministic addresses based on the port offset.
@@ -114,11 +117,8 @@ impl ValidatorInitializationConfigBuilder {
         self
     }
 
-    pub fn with_class_groups_key_pair_and_proof(
-        mut self,
-        key_pair: Box<ClassGroupsKeyPairAndProof>,
-    ) -> Self {
-        self.class_groups_key_pair_and_proof = Some(key_pair);
+    pub fn with_root_seed(mut self, root_seed: RootSeed) -> Self {
+        self.root_seed = Some(root_seed);
         self
     }
 
@@ -158,13 +158,7 @@ impl ValidatorInitializationConfigBuilder {
         let computation_price = self
             .computation_price
             .unwrap_or(DEFAULT_VALIDATOR_COMPUTATION_PRICE);
-        let class_groups_key_pair_and_proof = self
-            .class_groups_key_pair_and_proof
-            .clone()
-            .unwrap_or_else(|| {
-                let seed = sample_seed();
-                Box::new(generate_class_groups_keypair_and_proof_from_seed(seed))
-            });
+        let root_seed = self.root_seed.clone().unwrap_or_else(RootSeed::random_seed);
 
         let (consensus_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
@@ -200,7 +194,7 @@ impl ValidatorInitializationConfigBuilder {
 
         ValidatorInitializationConfig {
             key_pair: protocol_key_pair,
-            class_groups_key_pair_and_proof,
+            root_seed,
             consensus_key_pair,
             account_key_pair: account_key_pair.into(),
             network_key_pair,
