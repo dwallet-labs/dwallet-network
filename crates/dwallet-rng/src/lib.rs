@@ -95,7 +95,7 @@ impl RootSeed {
         transcript.append_u64(b"$ attempts count $", attempts_count);
         transcript.append_u64(b"$ epoch $", epoch_id);
 
-        // Generate a new seed from it (internally, it uses a hash function to pseudo-randomly generate it).
+        // Generate a new seed (internally, it uses a hash function on all of these values and labels to pseudo-randomly generate it).
         let mut seed: [u8; 32] = [0; 32];
         transcript.challenge_bytes(b"seed", &mut seed);
 
