@@ -157,10 +157,7 @@ impl ValidatorInitializationConfigBuilder {
         let computation_price = self
             .computation_price
             .unwrap_or(DEFAULT_VALIDATOR_COMPUTATION_PRICE);
-        let root_seed = self
-            .root_seed
-            .clone()
-            .unwrap_or_else(RootSeed::random_seed);
+        let root_seed = self.root_seed.clone().unwrap_or_else(RootSeed::random_seed);
 
         let (consensus_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);

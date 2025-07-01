@@ -13,9 +13,9 @@ fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
 ) -> DwalletMPCResult<Box<ClassGroupsKeyPairAndProof>> {
     let contents = std::fs::read_to_string(path)
-        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
     let decoded = Base64::decode(contents.as_str())
-        .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
     let keypair: ClassGroupsKeyPairAndProofWrapper = bcs::from_bytes(&decoded)?;
     Ok(keypair.inner)
 }

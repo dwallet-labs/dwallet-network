@@ -46,11 +46,11 @@ impl RootSeed {
     /// Reads a class group seed (encoded in Base64) from a file.
     pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> DwalletMPCResult<Self> {
         let contents = std::fs::read_to_string(path)
-            .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+            .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
         let decoded = Base64::decode(contents.as_str())
-            .map_err(|e| DwalletMPCError::FailedToReadCGKey(e.to_string()))?;
+            .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
         Ok(RootSeed::new(decoded.try_into().map_err(|e| {
-            DwalletMPCError::FailedToReadCGKey(format!("failed to read class group seed: {:?}", e))
+            DwalletMPCError::FailedToReadSeed(format!("failed to read class group seed: {:?}", e))
         })?))
     }
 
@@ -80,13 +80,13 @@ pub struct ClassGroupsKeyPairAndProof {
 }
 
 impl ClassGroupsKeyPairAndProof {
-/// Generates a ClassGroupsKeyPairAndProof from a root seed.
-/// 
-/// This method deterministically generates class group keys using ChaCha20Rng
-/// seeded with the provided root seed. The same seed will always produce
-/// the same key pair.
-/// 
-/// The seed should be cryptographically secure and kept confidential.
+    /// Generates a ClassGroupsKeyPairAndProof from a root seed.
+    ///
+    /// This method deterministically generates class group keys using ChaCha20Rng
+    /// seeded with the provided root seed. The same seed will always produce
+    /// the same key pair.
+    ///
+    /// The seed should be cryptographically secure and kept confidential.
     pub fn from_seed(seed: &RootSeed) -> Self {
         let setup_parameters_per_crt_prime =
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)

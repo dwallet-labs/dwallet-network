@@ -149,8 +149,8 @@ impl DWalletMPCManager {
                     .root_seed
                     .clone()
                     // Since only a validator executes the DWalletMPCManager, we can unwrap
-                    // the `class_groups_key_pair_and_proof`.
-                    .expect("Class groups key pair and proof must be present")
+                    // the `root_seed`.
+                    .expect("Root seed must be present")
                     .root_seed(),
             )
             .decryption_key(),

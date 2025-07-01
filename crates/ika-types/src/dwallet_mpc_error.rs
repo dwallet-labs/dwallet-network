@@ -97,8 +97,8 @@ pub enum DwalletMPCError {
     #[error("error in Class Groups: {0}")]
     ClassGroupsError(String),
 
-    #[error("failed to read Class Groups key: {0}")]
-    FailedToReadCGKey(String),
+    #[error("failed to read seed from file: {0}")]
+    FailedToReadSeed(String),
 
     #[error("failed to write seed to file: {0}")]
     FailedToWriteSeed(String),
