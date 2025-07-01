@@ -36,7 +36,7 @@ pub struct DWalletMPCService {
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-    consensus_round_completed_sessions_receiver: mpsc::Receiver<SessionIdentifier>,
+    consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
 
@@ -50,7 +50,7 @@ impl DWalletMPCService {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        consensus_round_completed_sessions_receiver: mpsc::Receiver<SessionIdentifier>,
+        consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
