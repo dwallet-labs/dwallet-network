@@ -94,6 +94,7 @@ const RESPOND_DWALLET_MPC_NETWORK_DKG_OUTPUT_MESSAGE_TYPE: u32 = 8;
 const RESPOND_DWALLET_MPC_NETWORK_RECONFIGURATION_OUTPUT_MESSAGE_TYPE: u32 = 9;
 const SET_MAX_ACTIVE_SESSIONS_BUFFER_MESSAGE_TYPE: u32 = 10;
 const SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE: u32 = 11;
+const END_OF_EPOCH_MESSAGE_TYPE: u32 = 12;
 
 // === Errors ===
 
@@ -312,6 +313,10 @@ public struct DWalletCoordinatorInner has store {
     previous_epoch_last_checkpoint_sequence_number: u64,
     /// Cryptographic algorithm support configuration
     support_config: SupportConfig,
+    // We advance epoch `0` immediately, and so the network doesn't participate in it and won't
+    // send `END_OF_PUBLISH` - so we shouldn't expect one, and we set `received_end_of_publish`
+    // to overcome the check in `advance_epoch()`.
+    received_end_of_publish: bool,
     /// Any extra fields that's not defined statically
     extra_fields: Bag,
 }
@@ -1860,6 +1865,7 @@ public(package) fun create_dwallet_coordinator_inner(
             paused_hash_schemes: vector[],
             signature_algorithms_allowed_global_presign: vector[],
         },
+        received_end_of_publish: true,
         extra_fields: bag::new(ctx),
     }
 }
@@ -2258,6 +2264,8 @@ public(package) fun advance_epoch(
 ): Balance<IKA> {
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
+    assert!(self.received_end_of_publish, ECannotAdvanceEpoch);
+    self.received_end_of_publish = false;
 
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
 
@@ -4838,6 +4846,9 @@ fun process_checkpoint_message(
             SET_GAS_FEE_REIMBURSEMENT_SUI_SYSTEM_CALL_VALUE_MESSAGE_TYPE => {
                 let gas_fee_reimbursement_sui_system_call_value = bcs_body.peel_u64();
                 self.set_gas_fee_reimbursement_sui_system_call_value(gas_fee_reimbursement_sui_system_call_value);
+            },
+            END_OF_EPOCH_MESSAGE_TYPE => {
+                self.received_end_of_publish = true;
             },
             _ => {},
         };

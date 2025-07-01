@@ -22,8 +22,8 @@ use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
 use tokio::sync::broadcast::error::TryRecvError;
+use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
-use tokio::sync::{mpsc, Notify};
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
 
@@ -31,16 +31,12 @@ const READ_INTERVAL_MS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Round,
-    #[allow(dead_code)]
-    read_messages: usize,
     epoch_store: Arc<AuthorityPerEpochStore>,
-    #[allow(dead_code)]
-    notify: Arc<Notify>,
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
-    consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
+    consensus_round_completed_sessions_receiver: mpsc::Receiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
 
@@ -54,7 +50,7 @@ impl DWalletMPCService {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
+        consensus_round_completed_sessions_receiver: mpsc::Receiver<SessionIdentifier>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
@@ -68,9 +64,7 @@ impl DWalletMPCService {
 
         Self {
             last_read_consensus_round: 0,
-            read_messages: 0,
             epoch_store: epoch_store.clone(),
-            notify: Arc::new(Notify::new()),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
             network_keys_receiver,
@@ -140,7 +134,7 @@ impl DWalletMPCService {
                             }
                             Err(e) => {
                                 error!(
-                                    erorr=?e,
+                                    error=?e,
                                     "error while processing a missed event"
                                 );
 
@@ -203,9 +197,8 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        println!("dwallet_mpc_service/spawn(): spawning, receiving outputs");
         // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
-        self.receive_mpc_sessions_output(true);
+        self.receive_completed_mpc_session_identifiers(true);
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
@@ -215,9 +208,9 @@ impl DWalletMPCService {
         loop {
             let mut events = vec![];
 
-            // Load events from Sui every 5 minutes (3000*100ms = 300,000ms = 300s = 5m).
-            // Note: when we spawn, `loop_index == 0` so we fetch uncompleted events on spawn.
-            if loop_index % 3_000 == 0 {
+            // Load events from Sui every 30 seconds (300 * READ_INTERVAL_MS=100ms = 30,000ms = 30s).
+            // Note: when we spawn, `loop_index == 0`, so we fetch uncompleted events on spawn.
+            if loop_index % 300 == 0 {
                 events = self.fetch_uncompleted_events().await;
             }
             loop_index += 1;
@@ -256,7 +249,7 @@ impl DWalletMPCService {
                 continue;
             };
 
-            self.receive_mpc_sessions_output(false);
+            self.receive_completed_mpc_session_identifiers(false);
 
             // Receive **new** dWallet MPC events and save them in the local DB.
             match self.receive_new_sui_events() {
@@ -305,10 +298,11 @@ impl DWalletMPCService {
         }
     }
 
-    /// Receive all completed MPC sessions from the MPC Output Verifier over the `consensus_round_completed_sessions` channel.
-    /// If the session exists, mark is as `MPCSessionStatus::Finished`.
-    /// Otherwise, create a new session with that status, in order to avoid re-running the computation for it.
-    fn receive_mpc_sessions_output(&mut self, bootstrap: bool) {
+    /// Receive all completed MPC sessions from the MPC Output Verifier over the
+    /// `consensus_round_completed_sessions` channel.
+    /// If the session exists, mark is as [`MPCSessionStatus::Finished`].
+    /// Otherwise, create a new session with that status, to avoid re-running the computation for it.
+    fn receive_completed_mpc_session_identifiers(&mut self, bootstrap: bool) {
         let mut completed_sessions = HashSet::new();
         loop {
             match self.consensus_round_completed_sessions_receiver.try_recv() {
@@ -332,10 +326,6 @@ impl DWalletMPCService {
                         bootstrap=bootstrap,
                         "Received completed session identifier"
                     );
-                    println!(
-                        "receive_mpc_sessions_output(): received {:?}",
-                        completed_session_identifier
-                    );
                     // There might be more completed sessions to report, so report this one and continue receiving (don't break).
                     completed_sessions.insert(completed_session_identifier);
                 }
@@ -349,9 +339,6 @@ impl DWalletMPCService {
             "Received completed session identifiers"
         );
 
-        // self.last_read_consensus_round is the current reading consesnus round, also add self.last_db_consesnus_round that before it we don't compute.
-        // maybe we can get this last_db_consesnus_round from the dag from the db. highest_known_commit_at_startup maybe its not the consensus round tho
-        // read if the sui consensus syncs these values somehow
         for session_identifier in completed_sessions {
             // If no session with SID `session_identifier` exist, create a new one.
             if !self

@@ -1,1 +1,1 @@
-RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 18000000
+RUST_LOG="off,sui_node=info" sui start --with-faucet --force-regenesis --epoch-duration-ms 180000000000

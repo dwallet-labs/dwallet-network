@@ -11,7 +11,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::digests::ChainIdentifier;
 use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::future::Future;
@@ -44,6 +44,7 @@ use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
 };
 use crate::epoch::epoch_metrics::EpochMetrics;
+use crate::stake_aggregator::StakeAggregator;
 use crate::system_checkpoints::{
     BuilderSystemCheckpoint, PendingSystemCheckpoint, PendingSystemCheckpointInfo,
     PendingSystemCheckpointV1, SystemCheckpointHeight, SystemCheckpointService,
@@ -100,6 +101,13 @@ pub enum CancelConsensusCertificateReason {
 }
 
 pub enum ConsensusCertificateResult {
+    /// The last checkpoint message of the epoch.
+    /// After the Sui smart contract receives this message, it knows that no more system checkpoints will get created
+    /// in this epoch, and it allows external calls to advance the epoch.
+    ///
+    /// This is a certificate result, so both the system & dwallet checkpointing mechanisms will create
+    /// separate checkpoint messages, to update both the DWallet Coordinator & Ika System Sui objects.
+    EndOfPublish,
     /// The consensus message was ignored (e.g. because it has already been processed).
     Ignored,
     /// An executable transaction (can be a user tx or a system tx)
@@ -279,6 +287,21 @@ pub struct AuthorityPerEpochStore {
     chain_identifier: ChainIdentifier,
 
     pub(crate) packages_config: IkaPackagesConfig,
+    reconfig_state: RwLock<ReconfigState>,
+    end_of_publish: Mutex<StakeAggregator<(), true>>,
+}
+
+/// The reconfiguration state of the authority.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReconfigState {
+    status: ReconfigCertStatus,
+}
+
+/// The possible reconfiguration states of the authority.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ReconfigCertStatus {
+    AcceptAllCerts,
+    RejectAllTx,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -354,6 +377,9 @@ pub struct AuthorityEpochTables {
 
     /// Record of the capabilities advertised by each authority.
     authority_capabilities_v1: DBMap<AuthorityName, AuthorityCapabilitiesV1>,
+
+    /// Validators that sent a EndOfPublish message in this epoch.
+    end_of_publish: DBMap<AuthorityName, ()>,
 
     /// Record the every protocol config version sent to the authority at the current epoch.
     /// This is used to check if the authority has already sent the protocol config version,
@@ -479,6 +505,11 @@ impl AuthorityEpochTables {
 }
 
 impl AuthorityPerEpochStore {
+    fn should_accept_tx(&self) -> bool {
+        let reconfig_state = self.reconfig_state.read();
+        !matches!(&reconfig_state.status, &ReconfigCertStatus::RejectAllTx)
+    }
+
     #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
     pub fn new(
         name: AuthorityName,
@@ -489,7 +520,7 @@ impl AuthorityPerEpochStore {
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
         packages_config: IkaPackagesConfig,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         let current_time = Instant::now();
         let epoch_id = committee.epoch;
 
@@ -508,15 +539,13 @@ impl AuthorityPerEpochStore {
         let protocol_version = epoch_start_configuration
             .epoch_start_state()
             .protocol_version();
-        // let protocol_config =
-        //     ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
         let protocol_config =
             ProtocolConfig::get_for_version(protocol_version, chain_identifier.chain());
-
+        let end_of_publish =
+            StakeAggregator::from_iter(committee.clone(), tables.end_of_publish.safe_iter())?;
         let s = Arc::new(Self {
             name,
-            committee,
+            committee: committee.clone(),
             protocol_config,
             tables: ArcSwapOption::new(Some(Arc::new(tables))),
             parent_path: parent_path.to_path_buf(),
@@ -532,10 +561,14 @@ impl AuthorityPerEpochStore {
             executed_in_epoch_table_enabled: once_cell::sync::OnceCell::new(),
             chain_identifier,
             packages_config,
+            reconfig_state: RwLock::new(ReconfigState {
+                status: ReconfigCertStatus::AcceptAllCerts,
+            }),
+            end_of_publish: Mutex::new(end_of_publish),
         });
 
         s.update_buffer_stake_metric();
-        s
+        Ok(s)
     }
 
     /// Convert a given authority name (address) to it's corresponding [`PartyID`].
@@ -606,7 +639,7 @@ impl AuthorityPerEpochStore {
         new_committee: Committee,
         epoch_start_configuration: EpochStartConfiguration,
         chain_identifier: ChainIdentifier,
-    ) -> Arc<Self> {
+    ) -> IkaResult<Arc<Self>> {
         assert_eq!(self.epoch() + 1, new_committee.epoch);
         self.record_reconfig_halt_duration_metric();
         self.record_epoch_total_duration_metric();
@@ -622,7 +655,7 @@ impl AuthorityPerEpochStore {
         )
     }
 
-    pub fn new_at_next_epoch_for_testing(&self) -> Arc<Self> {
+    pub fn new_at_next_epoch_for_testing(&self) -> IkaResult<Arc<Self>> {
         let next_epoch = self.epoch() + 1;
         let next_committee = Committee::new(
             next_epoch,
@@ -829,6 +862,13 @@ impl AuthorityPerEpochStore {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
+    pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
+        self.tables()?
+            .end_of_publish
+            .insert(origin_authority, &())?;
+        Ok(())
+    }
+
     pub fn record_protocol_config_version_sent(
         &self,
         protocol_version: ProtocolVersion,
@@ -1023,6 +1063,18 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::System(_) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                if &transaction.sender_authority() != authority {
+                    warn!(
+                        "EndOfPublish authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
@@ -1101,29 +1153,37 @@ impl AuthorityPerEpochStore {
             .await?;
         //self.finish_consensus_certificate_process_with_batch(&mut output, &verified_transactions)?;
         output.record_consensus_commit_stats(consensus_stats.clone());
+        // Create pending checkpoints if we are still accepting tx.
+        let should_accept_tx = self.should_accept_tx();
+        let final_round = system_checkpoint_verified_messages
+            .iter()
+            .last()
+            .is_some_and(|msg| matches!(msg, SystemCheckpointMessageKind::EndOfPublish));
+        let make_checkpoint = should_accept_tx || final_round;
+        if make_checkpoint {
+            let checkpoint_height = consensus_commit_info.round;
 
-        let checkpoint_height = consensus_commit_info.round;
+            let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                messages: verified_messages.clone(),
+                details: PendingDWalletCheckpointInfo {
+                    timestamp_ms: consensus_commit_info.timestamp,
+                    checkpoint_height,
+                },
+            });
+            self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
 
-        let pending_checkpoint = PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
-            messages: verified_messages.clone(),
-            details: PendingDWalletCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                checkpoint_height,
-            },
-        });
-        self.write_pending_checkpoint(&mut output, &pending_checkpoint)?;
+            let system_checkpoint_height = consensus_commit_info.round;
 
-        let system_checkpoint_height = consensus_commit_info.round;
-
-        let pending_system_checkpoint = PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
-            messages: system_checkpoint_verified_messages.clone(),
-            details: PendingSystemCheckpointInfo {
-                timestamp_ms: consensus_commit_info.timestamp,
-                checkpoint_height: system_checkpoint_height,
-            },
-        });
-        self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
-
+            let pending_system_checkpoint =
+                PendingSystemCheckpoint::V1(PendingSystemCheckpointV1 {
+                    messages: system_checkpoint_verified_messages.clone(),
+                    details: PendingSystemCheckpointInfo {
+                        timestamp_ms: consensus_commit_info.timestamp,
+                        checkpoint_height: system_checkpoint_height,
+                    },
+                });
+            self.write_pending_system_checkpoint(&mut output, &pending_system_checkpoint)?;
+        }
         system_checkpoint_verified_messages.iter().for_each(
             |system_checkpoint_kind| match system_checkpoint_kind {
                 SystemCheckpointMessageKind::SetNextConfigVersion(version) => {
@@ -1138,6 +1198,7 @@ impl AuthorityPerEpochStore {
                         warn!("Failed to insert params message digest into the table");
                     }
                 }
+                SystemCheckpointMessageKind::EndOfPublish => {}
                 // For now, we only handle NextConfigVersion. Other variants are ignored.
                 SystemCheckpointMessageKind::SetEpochDurationMs(_)
                 | SystemCheckpointMessageKind::SetStakeSubsidyStartEpoch(_)
@@ -1263,12 +1324,19 @@ impl AuthorityPerEpochStore {
                     ignored = true;
                     // filter_roots = true;
                 }
+                ConsensusCertificateResult::EndOfPublish => {
+                    verified_certificates.push_back(DWalletMessageKind::EndOfPublish);
+                    verified_system_checkpoint_certificates
+                        .push_back(SystemCheckpointMessageKind::EndOfPublish);
+                    let mut reconfig_state = self.reconfig_state.write();
+                    reconfig_state.status = ReconfigCertStatus::RejectAllTx;
+                    break;
+                }
             }
             if !ignored {
                 output.record_consensus_message_processed(key.clone());
             }
         }
-
         // Save all the dWallet-MPC related DB data to the consensus commit output to
         // write it to the local DB. After saving the data, clear the data from the epoch store.
         let new_dwallet_mpc_round_messages = Self::filter_dwallet_mpc_messages(transactions);
@@ -1473,6 +1541,27 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::System(system_transaction) => {
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::EndOfPublish(authority),
+                ..
+            }) => {
+                self.record_end_of_publish_vote(authority)?;
+                let mut end_of_publish = self.end_of_publish.lock();
+                // Note that we don't check here that the sender didn't already vote,
+                // but that would be OK for two reasons:
+                // The first, its transaction would be denied because its key is the same
+                // (so the second wouldn't reach this flow).
+                // The second, the stake aggregator is implemented by a HashMap,
+                // and duplicate votes cannot be registered.
+                if !end_of_publish.has_quorum()
+                    && end_of_publish
+                        .insert_generic(*authority, ())
+                        .is_quorum_reached()
+                {
+                    return Ok(ConsensusCertificateResult::EndOfPublish);
+                }
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
         }
     }
 
@@ -1486,9 +1575,9 @@ impl AuthorityPerEpochStore {
         let authority_index = self.authority_name_to_party_id(&origin_authority);
 
         let output_verification_result = dwallet_mpc_outputs_verifier
-                .try_verify_output(&output, &session_info, origin_authority, &self)
+                .try_verify_output(&output, &session_info, origin_authority, self)
                 .unwrap_or_else(|e| {
-                    error!("error verifying DWalletMPCOutput output from session identifier {:?} and party {:?}: {:?}",session_info.session_identifier, authority_index, e);
+                    error!(session_id=?session_info.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
                     OutputVerificationResult {
                         result: OutputVerificationStatus::Malicious,
                         malicious_actors: vec![origin_authority],

@@ -75,6 +75,7 @@ impl IkaTxValidator {
                     ckpt_batch.push(&signature.checkpoint_message);
                 }
                 ConsensusTransactionKind::CapabilityNotificationV1(_)
+                | ConsensusTransactionKind::EndOfPublish(_)
                 | ConsensusTransactionKind::DWalletMPCMessage(..)
                 | ConsensusTransactionKind::DWalletMPCOutput(..)
                 | ConsensusTransactionKind::DWalletMPCMaliciousReport(..)

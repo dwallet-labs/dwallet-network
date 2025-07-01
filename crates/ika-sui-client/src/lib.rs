@@ -888,7 +888,7 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
-    /// Ge the missed events from the dWallet coordinator object dynamic field.
+    /// Fetch events for which no output was received (weren't completed.)
     async fn get_uncompleted_events(
         &self,
         coordinator_events_bag_id: ObjectID,

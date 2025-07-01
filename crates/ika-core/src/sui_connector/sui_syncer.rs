@@ -13,7 +13,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKey;
-use ika_types::sui::{SystemInner, SystemInnerInit, SystemInnerTrait};
+use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerInit, SystemInnerTrait};
 use im::HashSet;
 use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::spawn_logged_monitored_task;
@@ -60,6 +60,7 @@ where
         is_validator: bool,
         network_keys_sender: Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
+        end_of_publish_sender: Sender<Option<u64>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
@@ -75,6 +76,11 @@ where
             tokio::spawn(Self::sync_dwallet_network_keys(
                 sui_client_clone.clone(),
                 network_keys_sender,
+            ));
+            info!("Starting end of publish sync task");
+            tokio::spawn(Self::sync_dwallet_end_of_publish(
+                sui_client_clone,
+                end_of_publish_sender,
             ));
         }
 
@@ -291,6 +297,53 @@ where
             }
             if let Err(err) = network_keys_sender.send(Arc::new(all_network_keys_data)) {
                 error!(?err, "failed to send network keys data to the channel",);
+            }
+        }
+    }
+
+    async fn sync_dwallet_end_of_publish(
+        sui_client: Arc<SuiClient<C>>,
+        end_of_publish_sender: Sender<Option<u64>>,
+    ) {
+        loop {
+            time::sleep(Duration::from_secs(10)).await;
+
+            let system_inner = sui_client.must_get_system_inner_object().await;
+            let SystemInner::V1(system_inner_v1) = system_inner;
+            let Some(coordinator_id) = system_inner_v1.dwallet_2pc_mpc_coordinator_id else {
+                continue;
+            };
+            let coordinator_inner = sui_client
+                .must_get_dwallet_coordinator_inner(coordinator_id)
+                .await;
+            let DWalletCoordinatorInner::V1(coordinator) = coordinator_inner;
+            // Check if we can advance the epoch.
+            let all_epoch_sessions_finished =
+                coordinator.session_management.number_of_completed_sessions
+                    == coordinator
+                        .session_management
+                        .last_session_to_complete_in_current_epoch;
+            let all_immediate_sessions_completed =
+                coordinator.session_management.started_system_sessions_count
+                    == coordinator
+                        .session_management
+                        .completed_system_sessions_count;
+            let next_epoch_committee_exists =
+                system_inner_v1.validator_set.next_epoch_committee.is_some();
+            if coordinator
+                .session_management
+                .locked_last_session_to_complete_in_current_epoch
+                && all_epoch_sessions_finished
+                && all_immediate_sessions_completed
+                && next_epoch_committee_exists
+                && coordinator
+                    .pricing_and_fee_management
+                    .calculation_votes
+                    .is_none()
+            {
+                if let Err(err) = end_of_publish_sender.send(Some(system_inner_v1.epoch)) {
+                    error!(?err, "failed to send end of publish epoch to the channel");
+                }
             }
         }
     }
