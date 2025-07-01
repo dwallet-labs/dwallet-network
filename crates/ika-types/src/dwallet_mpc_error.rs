@@ -56,6 +56,9 @@ pub enum DwalletMPCError {
     #[error("missing dWallet MPC Sender")]
     MissingDWalletMPCSender,
 
+    #[error("missing Root Seed")]
+    MissingRootSeed,
+
     #[error("dwallet MPC Sender failed: {0}")]
     DWalletMPCSenderSendFailed(String),
 
