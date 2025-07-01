@@ -454,7 +454,7 @@ impl DWalletMPCSession {
             self.party_id as u64,
             self.current_round as u64,
             self.attempts_count as u64,
-            self.epoch_id as u64,
+            self.epoch_id,
         );
 
         match &mpc_event_data.init_protocol_data {
