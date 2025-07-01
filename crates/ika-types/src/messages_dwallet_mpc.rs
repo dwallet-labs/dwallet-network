@@ -262,6 +262,7 @@ pub struct DWalletMPCEvent {
     // TODO: remove event - do all parsing beforehand.
     pub event: DBSuiEvent,
     pub session_info: SessionInfo,
+    pub override_epoch_check: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

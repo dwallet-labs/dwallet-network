@@ -66,7 +66,7 @@ pub struct ValidatorPrivateDecryptionKeyData {
 fn get_decryption_key_shares_from_public_output(
     shares: &NetworkDecryptionKeyPublicData,
     party_id: PartyID,
-    decryption_key: ClassGroupsDecryptionKey,
+    personal_decryption_key: ClassGroupsDecryptionKey,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
 ) -> DwalletMPCResult<HashMap<PartyID, SecretKeyShareSizedInteger>> {
     match shares.state {
@@ -74,13 +74,15 @@ fn get_decryption_key_shares_from_public_output(
             VersionedNetworkDkgOutput::V1(public_output) => {
                 let dkg_public_output: <Secp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
+
                 let secret_shares = dkg_public_output
                     .default_decryption_key_shares::<secp256k1::GroupElement>(
                         party_id,
                         weighted_threshold_access_structure,
-                        decryption_key,
+                        personal_decryption_key,
                     )
                     .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
+
                 Ok(secret_shares)
             }
         },
@@ -89,13 +91,15 @@ fn get_decryption_key_shares_from_public_output(
             VersionedNetworkDkgOutput::V1(public_output) => {
                 let public_output: <ReconfigurationSecp256k1Party as mpc::Party>::PublicOutput =
                     bcs::from_bytes(public_output)?;
+
                 let secret_shares = public_output
                     .decrypt_decryption_key_shares::<secp256k1::GroupElement>(
                         party_id,
                         weighted_threshold_access_structure,
-                        decryption_key,
+                        personal_decryption_key,
                     )
                     .map_err(|err| DwalletMPCError::ClassGroupsError(err.to_string()))?;
+
                 Ok(secret_shares)
             }
         },

@@ -104,7 +104,6 @@ pub(crate) fn session_info_from_event(
 
             Ok(Some(network_dkg_session_info(
                 deserialized_event,
-                // TODO(@Scaly): this information should come from the Move
                 DWalletMPCNetworkKeyScheme::Secp256k1,
             )?))
         }

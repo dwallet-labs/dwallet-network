@@ -44,7 +44,9 @@ use twopc_mpc::sign::Protocol;
 pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
     party_id: PartyID,
-    /// MPC sessions that where created.
+    /// A map of all MPC sessions that start execution in this epoch.
+    /// These include completed sessions, and they are never to be removed from this
+    /// mapping until the epoch advances.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
@@ -193,8 +195,17 @@ impl DWalletMPCManager {
             update_last_session_to_complete_in_current_epoch;
     }
 
+    /// Handle an MPC event.
+    ///
+    /// This function might be called more than once for a given session,
+    /// as we periodically check for uncompleted events.
+    /// A new MPC session is only created once, the first time the event was received.
+    /// If the event already exists in `self.mpc_sessions`, we do not add it.
+    /// If there is no session info, and we've got it in this call, we update that field
+    /// in the open session.
     pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
-        if event.session_info.epoch != self.epoch_id {
+        // Avoid instantiation of completed events by checking they belong to the current epoch.
+        if !event.override_epoch_check && event.session_info.epoch != self.epoch_id {
             warn!(
                 session_identifier=?event.session_info.session_identifier,
                 event_type=?event.event,
@@ -203,6 +214,7 @@ impl DWalletMPCManager {
             );
             return;
         }
+
         if let Err(err) = self
             .handle_event(event.event.clone(), event.session_info.clone())
             .await
@@ -381,6 +393,14 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    /// Handle an MPC event.
+    ///
+    /// This function might be called more than once for a given session, as we periodically
+    /// check for uncompleted events.
+    /// A new MPC session is only created once, the first time the event was received.
+    /// If the event already exists in `self.mpc_sessions`, we do not add it.
+    /// If there is no session info, and we've got it in this call,
+    /// we update that field in the open session.
     async fn handle_event(
         &mut self,
         event: DBSuiEvent,
@@ -399,7 +419,7 @@ impl DWalletMPCManager {
             let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
             self.dwallet_mpc_metrics
                 .add_received_event_start(&mpc_event_data.init_protocol_data);
-            self.push_new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
+            self.new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
         }
         Ok(())
     }
@@ -671,7 +691,7 @@ impl DWalletMPCManager {
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.push_new_mpc_session(&message.session_identifier, None);
+                self.new_mpc_session(&message.session_identifier, None);
                 self.mpc_sessions
                     .get_mut(&message.session_identifier)
                     .unwrap()
@@ -712,9 +732,9 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Spawns a new MPC session if the number of active sessions is below the limit.
-    /// Otherwise, add the session to the pending queue.
-    pub(super) fn push_new_mpc_session(
+    /// Creates a new session with SID `session_identifier`,
+    /// and insert it into the MPC session map `self.mpc_sessions`.
+    pub(super) fn new_mpc_session(
         &mut self,
         session_identifier: &SessionIdentifier,
         mpc_event_data: Option<MPCEventData>,

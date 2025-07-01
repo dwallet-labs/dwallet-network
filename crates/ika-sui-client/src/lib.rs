@@ -142,7 +142,7 @@ where
     }
 
     /// Remaining sessions not processed during previous Epochs.
-    pub async fn get_dwallet_mpc_missed_events(
+    pub async fn pull_dwallet_mpc_uncompleted_events(
         &self,
         epoch_id: EpochId,
     ) -> IkaResult<Vec<DBSuiEvent>> {
@@ -166,9 +166,10 @@ where
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 continue;
             }
+
             let missed_events = self
                 .inner
-                .get_missed_events(
+                .get_uncompleted_events(
                     dwallet_coordinator_inner
                         .session_management
                         .user_requested_sessions_events
@@ -824,8 +825,10 @@ pub trait SuiClientInner: Send + Sync {
 
     async fn get_gas_objects(&self, address: SuiAddress) -> Vec<ObjectRef>;
 
-    /// Missed events are events that were started, but the MPC flow wasn't completed.
-    async fn get_missed_events(
+    /// Fetch events for which no output was received (weren't completed.)
+    /// Completed events are removed from the SessionManagement in Move,
+    /// so querying all the values assures we query uncompleted events exclusively.
+    async fn get_uncompleted_events(
         &self,
         events_bag_id: ObjectID,
     ) -> Result<Vec<DBSuiEvent>, self::Error>;
@@ -885,8 +888,8 @@ impl SuiClientInner for SuiSdkClient {
             .await
     }
 
-    /// Ge the missed events from the dWallet coordinator object dynamic field.
-    async fn get_missed_events(
+    /// Fetch events for which no output was received (weren't completed.)
+    async fn get_uncompleted_events(
         &self,
         coordinator_events_bag_id: ObjectID,
     ) -> Result<Vec<DBSuiEvent>, self::Error> {
