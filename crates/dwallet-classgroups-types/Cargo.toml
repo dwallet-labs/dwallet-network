@@ -4,8 +4,10 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
+merlin.workspace = true
 class_groups.workspace = true
 group.workspace = true
+proof.workspace = true
 crypto-bigint.workspace = true
 serde.workspace = true
 anyhow.workspace = true

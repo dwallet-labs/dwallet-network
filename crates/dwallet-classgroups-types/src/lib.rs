@@ -11,6 +11,7 @@ use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, ClassGroupsProof};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use merlin::Transcript;
 use rand_chacha::rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
 
@@ -66,16 +67,28 @@ impl RootSeed {
         Ok(contents)
     }
 
-    pub fn seed(&self) -> [u8; Self::SEED_LENGTH] {
-        self.0
+    /// Derive a seed for deterministically generating
+    /// this validator's class-groups decryption key and proof [`ClassGroupsKeyPairAndProof`].
+    ///
+    /// We don't use the root seed directly, as it would be used for other purposes
+    /// (such as for generating randomness during an MPC session). Instead, we derive a seed
+    /// from it using a distinct hard-coded label.
+    fn class_groups_decryption_key_seed(&self) -> [u8; Self::SEED_LENGTH] {
+        // Add a distinct descriptive label, and the root seed itself.
+        let mut transcript = Transcript::new(b"Class Groups Decryption Key Seed");
+        transcript.append_message(b"root seed", &self.0);
+
+        // Generate a new seed from it (internally, it uses a hash function to pseudo-randomly generate it).
+        let mut seed: [u8; 32] = [0; 32];
+        transcript.challenge_bytes(b"seed", &mut seed);
+
+        seed
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClassGroupsKeyPairAndProof {
-    #[serde(with = "group::helpers::const_generic_array_serialization")]
     decryption_key_per_crt_prime: ClassGroupsDecryptionKey,
-    #[serde(with = "group::helpers::const_generic_array_serialization")]
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
@@ -83,11 +96,11 @@ impl ClassGroupsKeyPairAndProof {
     /// Generates a ClassGroupsKeyPairAndProof from a root seed.
     ///
     /// This method deterministically generates class group keys using ChaCha20Rng
-    /// seeded with the provided root seed. The same seed will always produce
+    /// seeded with its dedicated seed, that is derived from the provided root seed. The same seed will always produce
     /// the same key pair.
     ///
     /// The seed should be cryptographically secure and kept confidential.
-    pub fn from_seed(seed: &RootSeed) -> Self {
+    pub fn from_seed(root_seed: &RootSeed) -> Self {
         let setup_parameters_per_crt_prime =
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)
                 .unwrap();
@@ -97,7 +110,8 @@ impl ClassGroupsKeyPairAndProof {
             )
             .unwrap();
 
-        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed.seed());
+        let seed = root_seed.class_groups_decryption_key_seed();
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
         let decryption_key =
             generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut rng)
                 .unwrap();

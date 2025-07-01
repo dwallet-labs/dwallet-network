@@ -3562,6 +3562,8 @@ dependencies = [
  "flate2",
  "group 0.1.0",
  "ika-types",
+ "merlin",
+ "proof",
  "rand 0.9.0",
  "rand_chacha 0.9.0",
  "schemars",
