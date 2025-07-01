@@ -246,7 +246,9 @@ impl DWalletMPCManager {
         }
     }
 
+    // TODO(Scaly): what is the `db` here?
     pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
+        // TODO: unpack this enum into functions, for sure PerformCryptographicComputations and EndOfDelivery.
         match message {
             DWalletMPCDBMessage::PerformCryptographicComputations => {
                 self.perform_cryptographic_computation().await;

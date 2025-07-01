@@ -121,6 +121,7 @@ pub(crate) fn party_ids_to_authority_names(
 fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletSessionEventTrait>(
     event_contents: &[u8],
 ) -> Result<DWalletSessionEvent<T>, bcs::Error> {
+    // TODO(Scaly): this is a really bad idea, we should know how we fetched it and deserialize accordingly.
     bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents).or_else(|_| {
         bcs::from_bytes::<Field<ID, DWalletSessionEvent<T>>>(event_contents)
             .map(|field| field.value)

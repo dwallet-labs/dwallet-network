@@ -47,6 +47,7 @@ fn generate_expected_decrypters(
         access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
 
     let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier.into_bytes());
+    // TODO(Scaly): use direct error here
     let expected_decrypters = access_structure
         .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
         .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
