@@ -286,7 +286,7 @@ impl DWalletMPCService {
                 self.last_read_consensus_round = round;
                 for message in messages {
                     self.dwallet_mpc_manager
-                        .handle_dwallet_db_message(message)
+                        .handle_dwallet_message(message)
                         .await;
                 }
 
