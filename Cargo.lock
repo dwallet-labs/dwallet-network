@@ -3613,6 +3613,7 @@ name = "dwallet-rng"
 version = "1.0.0"
 dependencies = [
  "base64 0.21.7",
+ "commitment",
  "fastcrypto",
  "group 0.1.0",
  "ika-types",
@@ -5727,6 +5728,7 @@ dependencies = [
  "diffy",
  "dwallet-classgroups-types",
  "dwallet-mpc-types",
+ "dwallet-rng",
  "either",
  "enum_dispatch",
  "expect-test",
@@ -5751,6 +5753,7 @@ dependencies = [
  "jsonrpsee",
  "k256 0.14.0-pre.7",
  "lru 0.10.1",
+ "merlin",
  "message-digest",
  "mockall",
  "moka",
@@ -5774,6 +5777,7 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "prometheus",
+ "proof",
  "rand 0.9.0",
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
