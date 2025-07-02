@@ -171,7 +171,7 @@ impl ValidatorConfigBuilder {
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
     ) -> NodeConfig {
-        let validator_initialization_config =
+        let mut validator_initialization_config =
             ValidatorInitializationConfigBuilder::new().build(rng);
         self.build(
             &validator_initialization_config,
@@ -276,13 +276,6 @@ impl FullnodeConfigBuilder {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
         let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
-
-        #[cfg(feature = "mock-class-groups")]
-        {
-            validator_config_builder = validator_config_builder.with_root_seed(
-                    crate::class_groups_mock_builder::read_mock_root_seed().root_seed().clone(),
-                );
-        }
 
         let validator_config = validator_config_builder.build(rng);
 
