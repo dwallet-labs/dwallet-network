@@ -110,6 +110,8 @@ impl CryptographicComputationsOrchestrator {
                             "Started cryptographic computation, increasing count"
                         );
                         self.currently_running_sessions_count += 1;
+
+                        // THE BUG TO FIX:
                         assert!(self.currently_running_sessions_count
                             <= self.available_cores_for_cryptographic_computations,
                             "Currently running sessions count exceeded available cores"
@@ -139,7 +141,7 @@ impl CryptographicComputationsOrchestrator {
 
     /// Checks if a new session can be spawned based on available CPU cores.
     pub(crate) fn can_spawn_session(&self) -> bool {
-        self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
+        self.computation_update_channel_receiver.is_empty() && self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
     pub(super) async fn spawn_session(
@@ -150,10 +152,9 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
-        let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
 
-        dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
-        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let init_protocol_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        dwallet_mpc_metrics.add_advance_call(&init_protocol_data, &session.current_round.to_string());
         if let Err(err) = self
             .computation_update_channel_sender
             .send(ComputationUpdate::Started)
@@ -162,7 +163,7 @@ impl CryptographicComputationsOrchestrator {
             // This should not happen, but error just in case.
             error!(
                 session_id=?session.session_identifier,
-                mpc_protocol=?mpc_protocol,
+                mpc_protocol=?init_protocol_data,
                 error=?err,
                 "failed to send a `started` computation message",
             );
@@ -173,14 +174,14 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=%mpc_protocol,
+                    mpc_protocol=%init_protocol_data,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
-                    mpc_protocol=%mpc_protocol,
+                    mpc_protocol=%init_protocol_data,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
@@ -191,9 +192,9 @@ impl CryptographicComputationsOrchestrator {
             }
             let elapsed = start_advance.elapsed();
             dwallet_mpc_metrics
-                .add_advance_completion(&mpc_event_data, &session.current_round.to_string());
+                .add_advance_completion(&init_protocol_data, &session.current_round.to_string());
             dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data,
+                &init_protocol_data,
                 &session.current_round.to_string(),
                 elapsed.as_millis() as i64,
             );
@@ -212,7 +213,7 @@ impl CryptographicComputationsOrchestrator {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
                         duration_ms = elapsed_ms,
-                        mpc_protocol=?mpc_protocol,
+                        mpc_protocol=?init_protocol_data,
                         duration_seconds = elapsed_ms / 1000,
                         "Computation update message sent"
                     );

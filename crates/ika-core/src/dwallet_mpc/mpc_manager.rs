@@ -585,6 +585,7 @@ impl DWalletMPCManager {
             }
         }
         let pending_for_computation = self.pending_for_computation_order.len();
+
         for _ in 0..pending_for_computation {
             if !self
                 .cryptographic_computations_orchestrator
