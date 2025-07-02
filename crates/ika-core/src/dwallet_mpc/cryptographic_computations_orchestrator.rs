@@ -110,6 +110,10 @@ impl CryptographicComputationsOrchestrator {
                             "Started cryptographic computation, increasing count"
                         );
                         self.currently_running_sessions_count += 1;
+                        assert!(self.currently_running_sessions_count
+                            <= self.available_cores_for_cryptographic_computations,
+                            "Currently running sessions count exceeded available cores"
+                        );
                     }
                     ComputationUpdate::Completed => {
                         // todo(#1081): metadata.

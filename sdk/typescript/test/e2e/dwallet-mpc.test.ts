@@ -98,8 +98,8 @@ describe('Test dWallet MPC', () => {
 	it(
 		'run multiple full flows simultaneously',
 		async () => {
-			const iterations = 2;
-			const maxDelayBeforeMPCRequestSec = 1000 * 5;
+			const iterations = 50;
+			const maxDelayBeforeMPCRequestSec = 1000 * 0; // 5;
 			const networkDecryptionKeyPublicOutput = await getNetworkDecryptionKeyPublicOutput(conf);
 
 			// Create a new configuration for each iteration
