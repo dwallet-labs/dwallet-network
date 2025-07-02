@@ -9,9 +9,9 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;
-use fastcrypto::encoding::{Base64, Encoding};
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_rng::RootSeed;
+use fastcrypto::encoding::{Base64, Encoding};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
@@ -438,10 +438,7 @@ fn read_or_generate_seed_and_class_groups_key(
         }
     };
     let c = ClassGroupsKeyPairAndProof::from_seed(&seed);
-    write_class_groups_keypair_and_proof_to_file(
-        &c,
-        "class-groups.key",
-    );
+    write_class_groups_keypair_and_proof_to_file(&c, "class-groups.key");
 
     let class_groups_public_key_and_proof = Box::new(c);
 
@@ -465,7 +462,5 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     let serialized = bcs::to_bytes(&wrapper).unwrap();
     let contents = Base64::encode(serialized);
     std::fs::write(path.clone(), contents).unwrap();
-    Base64::encode(bcs::to_bytes(
-        &keypair.encryption_key_and_proof(),
-    ).unwrap());
+    Base64::encode(bcs::to_bytes(&keypair.encryption_key_and_proof()).unwrap());
 }

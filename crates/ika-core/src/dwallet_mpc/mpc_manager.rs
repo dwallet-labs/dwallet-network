@@ -156,8 +156,7 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::MissingRootSeed)?
             .root_seed()
             .clone();
-        let class_groups_key_pair =
-            ClassGroupsKeyPairAndProof::from_seed(&root_seed);
+        let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
 
         // verify that the validators local class-groups key is the same as stored in the system state object onchain.
         if epoch_store

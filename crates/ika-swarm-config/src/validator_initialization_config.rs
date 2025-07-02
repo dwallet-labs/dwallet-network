@@ -51,7 +51,8 @@ impl ValidatorInitializationConfig {
     pub fn to_validator_info(&self) -> ValidatorInfo {
         let name = self.name.clone().unwrap_or("".to_string());
 
-        let class_groups_public_key_and_proof = ClassGroupsKeyPairAndProof::from_seed(&self.root_seed).encryption_key_and_proof();
+        let class_groups_public_key_and_proof =
+            ClassGroupsKeyPairAndProof::from_seed(&self.root_seed).encryption_key_and_proof();
         let protocol_public_key: AuthorityPublicKeyBytes = self.key_pair.public().into();
         let account_key: PublicKey = self.account_key_pair.public();
         let network_public_key: NetworkPublicKey = self.network_key_pair.public().clone();

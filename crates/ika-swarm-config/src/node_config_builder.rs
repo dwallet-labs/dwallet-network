@@ -171,7 +171,7 @@ impl ValidatorConfigBuilder {
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
     ) -> NodeConfig {
-        let mut validator_initialization_config =
+        let validator_initialization_config =
             ValidatorInitializationConfigBuilder::new().build(rng);
         self.build(
             &validator_initialization_config,
@@ -275,7 +275,7 @@ impl FullnodeConfigBuilder {
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
-        let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
+        let validator_config_builder = ValidatorInitializationConfigBuilder::new();
 
         let validator_config = validator_config_builder.build(rng);
 
