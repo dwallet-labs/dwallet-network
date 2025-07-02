@@ -93,6 +93,7 @@ impl CryptographicComputationsOrchestrator {
         );
 
         Ok(CryptographicComputationsOrchestrator {
+            // TODO (@scaly): don't we want it to be lower?
             available_cores_for_cryptographic_computations: available_cores_for_computations,
             computation_update_channel_sender,
             computation_update_channel_receiver,
@@ -105,19 +106,19 @@ impl CryptographicComputationsOrchestrator {
             match self.computation_update_channel_receiver.try_recv() {
                 Ok(computation_update) => match computation_update {
                     ComputationUpdate::Started => {
+                        self.currently_running_sessions_count += 1;
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
-                            "Started cryptographic computation, increasing count"
+                            "Started cryptographic computation"
                         );
-                        self.currently_running_sessions_count += 1;
                     }
                     ComputationUpdate::Completed => {
                         // todo(#1081): metadata.
+                        self.currently_running_sessions_count -= 1;
                         info!(
                             currently_running_sessions_count =? self.currently_running_sessions_count,
-                            "Completed cryptographic computation, decreasing count"
+                            "Completed cryptographic computation"
                         );
-                        self.currently_running_sessions_count -= 1;
                     }
                 },
                 Err(err) => match err {
@@ -145,11 +146,11 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let mut session = session.clone();
-        // Safe to unwrap here (event must exist before this).
-        let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let init_mpc_protocol_data = session.mpc_event_data.ok_or(DwalletMPCError::MissingEventData)?.init_protocol_data.clone();
 
-        dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
-        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        dwallet_mpc_metrics.add_advance_call(&init_mpc_protocol_data, &session.current_round.to_string());
+
+        // TODO (@Scaly): should be called from inside the rayon too?
         if let Err(err) = self
             .computation_update_channel_sender
             .send(ComputationUpdate::Started)
@@ -158,25 +159,30 @@ impl CryptographicComputationsOrchestrator {
             // This should not happen, but error just in case.
             error!(
                 session_id=?session.session_identifier,
-                mpc_protocol=?mpc_protocol,
+                mpc_protocol=?init_mpc_protocol_data,
                 error=?err,
                 "failed to send a `started` computation message",
             );
+
+            return Err(DwalletMPCError::ClosedChannel);
         }
         let computation_channel_sender = self.computation_update_channel_sender.clone();
         rayon::spawn_fifo(move || {
-            let start_advance = Instant::now();
+            let advance_start_time = Instant::now();
+            // TODO(@scaly): what is this handle?
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=%mpc_protocol,
+                    mpc_protocol=%init_mpc_protocol_data,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
-                let elapsed_ms = start_advance.elapsed().as_millis();
+                let elapsed = advance_start_time.elapsed();
+                let elapsed_ms = elapsed.as_millis();
+
                 info!(
-                    mpc_protocol=%mpc_protocol,
+                    mpc_protocol=%init_mpc_protocol_data,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
@@ -184,18 +190,20 @@ impl CryptographicComputationsOrchestrator {
                     current_round = session.current_round,
                     "MPC session advanced successfully"
                 );
-            }
-            let elapsed = start_advance.elapsed();
-            dwallet_mpc_metrics
-                .add_advance_completion(&mpc_event_data, &session.current_round.to_string());
-            dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data,
-                &session.current_round.to_string(),
-                elapsed.as_millis() as i64,
-            );
 
+                dwallet_mpc_metrics
+                    .add_advance_completion(&init_mpc_protocol_data, &session.current_round.to_string());
+                dwallet_mpc_metrics.set_last_completion_duration(
+                    &init_mpc_protocol_data,
+                    &session.current_round.to_string(),
+                    elapsed.as_millis() as i64,
+                );
+            }
+
+            // TODO(Scaly): why from handle?
             handle.spawn(async move {
                 let start_send = Instant::now();
+                // TODO(scaly): why not from outside this rayon fifo?
                 if let Err(err) = computation_channel_sender
                     .send(ComputationUpdate::Completed)
                     .await
@@ -208,7 +216,7 @@ impl CryptographicComputationsOrchestrator {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
                         duration_ms = elapsed_ms,
-                        mpc_protocol=?mpc_protocol,
+                        mpc_protocol=?init_mpc_protocol_data,
                         duration_seconds = elapsed_ms / 1000,
                         "Computation update message sent"
                     );

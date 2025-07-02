@@ -136,6 +136,9 @@ pub enum DwalletMPCError {
     #[error("the first MPC step should not not receive any messages from the other parties")]
     MessageForFirstMPCStep,
 
+    #[error("no event data when spawning session: BUG")]
+    MissingEventData,
+
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
 
@@ -167,6 +170,9 @@ pub enum DwalletMPCError {
     },
     #[error("invalid session public input")]
     InvalidSessionPublicInput,
+
+    #[error("channel closed prematurely - BUG")]
+    ClosedChannel,
 }
 
 /// A wrapper type for the result of a runtime operation.
