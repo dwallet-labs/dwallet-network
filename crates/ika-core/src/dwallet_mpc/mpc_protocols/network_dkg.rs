@@ -179,7 +179,7 @@ impl DwalletMPCNetworkKeys {
             )
     }
 
-    pub fn get_decryption_public_parameters(
+    pub fn get_decryption_key_share_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
@@ -189,6 +189,18 @@ impl DwalletMPCNetworkKeys {
             .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))?
             .decryption_key_share_public_parameters
             .clone())
+    }
+
+    /// Retrieves the decryption key shares for the current authority.
+    pub(crate) fn get_decryption_key_shares(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        self.validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(key_id)
+            .cloned()
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
     }
 
     /// Retrieves the protocol public parameters for the specified key ID.
@@ -206,7 +218,7 @@ impl DwalletMPCNetworkKeys {
         Ok(result.protocol_public_parameters.clone())
     }
 
-    pub async fn get_network_dkg_public_output(
+    pub fn get_network_dkg_public_output(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<VersionedNetworkDkgOutput> {

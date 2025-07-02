@@ -29,7 +29,7 @@ use crate::dwallet_mpc::dwallet_dkg::{
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
-use crate::dwallet_mpc::network_dkg::advance_network_dkg;
+use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
@@ -38,14 +38,16 @@ use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DWalletMPCMessage, EncryptedShareVerificationRequestEvent, MPCProtocolInitData,
-    MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
-    NETWORK_ENCRYPTION_KEY_DKG_STR_KEY, NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
+    AsyncProtocol, DBSuiEvent, DWalletMPCMessage, EncryptedShareVerificationRequestEvent,
+    MPCProtocolInitData, MaliciousReport, SessionIdentifier, SessionInfo, SessionType,
+    ThresholdNotReachedReport, NETWORK_ENCRYPTION_KEY_DKG_STR_KEY,
+    NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
 };
 use sui_types::base_types::{EpochId, ObjectID};
 
 pub(crate) use advance_and_serialize::advance_and_serialize;
 use dwallet_rng::RootSeed;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 pub(crate) use input::session_input_from_event;
 pub(crate) use logger::MPCSessionLogger;
 pub(crate) use session_info::session_info_from_event;
@@ -85,6 +87,48 @@ pub struct MPCEventData {
     pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
     pub(crate) session_type: SessionType,
     pub(crate) public_input: PublicInput,
+}
+
+impl MPCEventData {
+    pub(crate) fn try_new(
+        event: DBSuiEvent,
+        session_info: &SessionInfo,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        network_keys: &Box<DwalletMPCNetworkKeys>,
+        next_active_committee: Committee,
+        validators_class_groups_public_keys_and_proofs: HashMap<
+            PartyID,
+            ClassGroupsEncryptionKeyAndProof,
+        >,
+    ) -> Result<Self, DwalletMPCError> {
+        let (public_input, private_input) = session_input_from_event(
+            event,
+            epoch_store,
+            network_keys,
+            next_active_committee,
+            validators_class_groups_public_keys_and_proofs,
+        )?;
+
+        let mpc_event_data = Self {
+            session_type: session_info.session_type.clone(),
+            init_protocol_data: session_info.mpc_round.clone(),
+            private_input,
+            decryption_shares: match session_info.mpc_round.clone() {
+                MPCProtocolInitData::Sign(init_event) => network_keys.get_decryption_key_shares(
+                    &init_event.event_data.dwallet_network_decryption_key_id,
+                )?,
+                MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
+                    network_keys.get_decryption_key_shares(
+                        &init_event.event_data.dwallet_network_decryption_key_id,
+                    )?
+                }
+                _ => HashMap::new(),
+            },
+            public_input,
+        };
+
+        Ok(mpc_event_data)
+    }
 }
 
 /// A dWallet MPC session.

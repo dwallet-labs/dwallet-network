@@ -146,11 +146,17 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let mut session = session.clone();
-        let init_mpc_protocol_data = session.mpc_event_data.clone().ok_or(DwalletMPCError::MissingEventData)?.init_protocol_data;
+        let init_mpc_protocol_data = session
+            .mpc_event_data
+            .clone()
+            .ok_or(DwalletMPCError::MissingEventData)?
+            .init_protocol_data;
 
-        dwallet_mpc_metrics.add_advance_call(&init_mpc_protocol_data, &session.current_round.to_string());
+        dwallet_mpc_metrics
+            .add_advance_call(&init_mpc_protocol_data, &session.current_round.to_string());
 
-        // TODO (@Scaly): should be called from inside the rayon too?
+        // TODO(Scaly) I think this is a bug.
+        // Updating the `Started` outside the `spawn` call, since we want to guarantee
         if let Err(err) = self
             .computation_update_channel_sender
             .send(ComputationUpdate::Started)
@@ -191,8 +197,10 @@ impl CryptographicComputationsOrchestrator {
                     "MPC session advanced successfully"
                 );
 
-                dwallet_mpc_metrics
-                    .add_advance_completion(&init_mpc_protocol_data, &session.current_round.to_string());
+                dwallet_mpc_metrics.add_advance_completion(
+                    &init_mpc_protocol_data,
+                    &session.current_round.to_string(),
+                );
                 dwallet_mpc_metrics.set_last_completion_duration(
                     &init_mpc_protocol_data,
                     &session.current_round.to_string(),
@@ -223,6 +231,7 @@ impl CryptographicComputationsOrchestrator {
                 }
             });
         });
+
         Ok(())
     }
 }
