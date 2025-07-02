@@ -23,7 +23,6 @@ use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
 use itertools::Itertools;
-use move_core_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -336,10 +335,7 @@ where
 
                 let validators = self
                     .inner
-                    .get_validators_from_object_table(
-                        ika_system_state_inner.validator_set.validators.id,
-                        validator_ids,
-                    )
+                    .get_validators(validator_ids)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
@@ -422,15 +418,11 @@ where
     /// Get the validators' info by their IDs.
     pub async fn get_validators_info_by_ids(
         &self,
-        ika_system_state_inner: &SystemInnerV1,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<StakingPool>, IkaError> {
         let validators = self
             .inner
-            .get_validators_from_object_table(
-                ika_system_state_inner.validator_set.validators.id,
-                validator_ids,
-            )
+            .get_validators(validator_ids)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
@@ -793,9 +785,8 @@ pub trait SuiClientInner: Send + Sync {
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
-        validators_object_table_id: ObjectID,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
@@ -1313,51 +1304,13 @@ impl SuiClientInner for SuiSdkClient {
         )))
     }
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
-        validators_object_table_id: ObjectID,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error> {
-        let mut validator_dynamic_ids = Vec::new();
-        let mut cursor = None;
-        loop {
-            let dynamic_fields = self
-                .read_api()
-                .get_dynamic_fields(validators_object_table_id, cursor, None)
-                .await?;
-
-            for dynamic_field in &dynamic_fields.data {
-                let name = &dynamic_field.name.value;
-
-                let bytes = name.as_str().unwrap();
-
-                let validator_id: ObjectID =
-                    AccountAddress::from_hex_literal(bytes).unwrap().into();
-
-                if validator_ids.contains(&validator_id) {
-                    let result = self
-                        .read_api()
-                        .get_dynamic_field_object(
-                            validators_object_table_id,
-                            dynamic_field.name.clone(),
-                        )
-                        .await?;
-
-                    if let Some(dynamic_field) = result.data {
-                        validator_dynamic_ids.push(dynamic_field.object_id);
-                    }
-                }
-            }
-
-            cursor = dynamic_fields.next_cursor;
-            if !dynamic_fields.has_next_page {
-                break;
-            }
-        }
-
         let mut dynamic_fields_agg = Vec::new();
         // There is a limit in sui called "DEFAULT_RPC_QUERY_MAX_RESULT_LIMIT" which is set to 50.
-        for chunk in validator_dynamic_ids.chunks(50) {
+        for chunk in validator_ids.chunks(50) {
             let objects = self
                 .read_api()
                 .multi_get_object_with_options(chunk.to_vec(), SuiObjectDataOptions::bcs_lossless())
@@ -1367,9 +1320,7 @@ impl SuiClientInner for SuiSdkClient {
         }
 
         let mut validators = Vec::new();
-        for (dynamic_field, object_id) in
-            dynamic_fields_agg.iter().zip(validator_dynamic_ids.iter())
-        {
+        for (dynamic_field, object_id) in dynamic_fields_agg.iter().zip(validator_ids.iter()) {
             let resp = dynamic_field.object().map_err(|e| {
                 Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
             })?;
