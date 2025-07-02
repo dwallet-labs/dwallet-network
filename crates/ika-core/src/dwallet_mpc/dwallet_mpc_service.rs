@@ -15,7 +15,7 @@ use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData, SessionIdentifier
+    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData, SessionIdentifier,
 };
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::{HashMap, HashSet};

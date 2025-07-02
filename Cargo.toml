@@ -541,7 +541,7 @@ ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
 #ika-sdk = { path = "crates/ika-sdk" }
 ika-swarm = { path = "crates/ika-swarm" }
-ika-swarm-config = { path = "crates/ika-swarm-config", features = ["mock-class-groups"] }
+ika-swarm-config = { path = "crates/ika-swarm-config" }
 ika-telemetry = { path = "crates/ika-telemetry" }
 ika-types = { path = "crates/ika-types" }
 ika-move-packages = { path = "crates/ika-move-packages" }
