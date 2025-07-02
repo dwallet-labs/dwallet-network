@@ -15,6 +15,7 @@ use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
+use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -80,6 +81,10 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     pub(crate) threshold_not_reached_reports:
         HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
+
+    /// The root seed of this validator, used for deriving the session and round-specific seed for advancing MPC sessions.
+    /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
+    root_seed: RootSeed,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
@@ -145,15 +150,14 @@ impl DWalletMPCManager {
             epoch_store.get_weighted_threshold_access_structure()?;
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
         let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
-        let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(
-            node_config
-                .root_seed
-                .clone()
-                // Since only a validator executes the DWalletMPCManager, we can unwrap
-                // the `root_seed`.
-                .expect("Root seed must be present")
-                .root_seed(),
-        );
+        let root_seed = node_config
+            .root_seed
+            .clone()
+            .ok_or(DwalletMPCError::MissingRootSeed)?
+            .root_seed()
+            .clone();
+        let class_groups_key_pair =
+            ClassGroupsKeyPairAndProof::from_seed(&root_seed);
 
         // verify that the validators local class-groups key is the same as stored in the system state object onchain.
         if epoch_store
@@ -166,12 +170,14 @@ impl DWalletMPCManager {
                 "Validator's class-groups key does not match the one stored in the system state object".to_string(),
             ));
         }
+
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
             class_groups_decryption_key: class_groups_key_pair.decryption_key(),
             validator_decryption_key_shares: HashMap::new(),
         };
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
+
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
@@ -193,6 +199,7 @@ impl DWalletMPCManager {
             events_pending_for_network_key: vec![],
             dwallet_mpc_metrics,
             threshold_not_reached_reports: Default::default(),
+            root_seed,
         })
     }
 
@@ -768,6 +775,7 @@ impl DWalletMPCManager {
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
             self.dwallet_mpc_metrics.clone(),
+            self.root_seed.clone(),
         );
         info!(
             // todo(zeev): add metadata.

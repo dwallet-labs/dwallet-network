@@ -10,12 +10,15 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+merlin.workspace = true
 k256.workspace = true
 group.workspace = true
 mpc.workspace = true
+proof.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption.workspace = true
 class_groups = { workspace = true, features = ["threshold", "parallel"]}
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 schemars.workspace = true
 commitment.workspace = true

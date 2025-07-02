@@ -27,6 +27,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCProtocolInitData, SessionInfo,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::warn;
@@ -228,6 +229,7 @@ pub(crate) fn advance_network_dkg(
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
     logger: &MPCSessionLogger,
+    rng: ChaCha20Rng,
 ) -> DwalletMPCResult<
     AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
 > {
@@ -251,6 +253,7 @@ pub(crate) fn advance_network_dkg(
                 public_input,
                 class_groups_decryption_key,
                 &logger,
+                rng,
             );
             match result.clone() {
                 Ok(AsynchronousRoundResult::Finalize {
