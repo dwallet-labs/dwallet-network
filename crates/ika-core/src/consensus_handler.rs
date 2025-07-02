@@ -9,7 +9,6 @@ use std::{
 };
 
 use arc_swap::ArcSwap;
-use commitment::CommitmentSizedNumber;
 use consensus_config::Committee as ConsensusCommittee;
 use consensus_core::CommitConsumerMonitor;
 use ika_protocol_config::ProtocolConfig;
@@ -26,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -41,10 +40,8 @@ use crate::{
     dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     scoring_decision::update_low_scoring_authorities,
 };
-use ika_types::error::IkaResult;
 use tokio::task::JoinSet;
-use tracing::{debug, error, info, instrument, trace_span, warn};
-use typed_store::Map;
+use tracing::{debug, error, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -53,6 +50,7 @@ pub struct ConsensusHandlerInitializer {
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
+    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 impl ConsensusHandlerInitializer {
@@ -63,6 +61,7 @@ impl ConsensusHandlerInitializer {
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
+        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         Self {
             state,
@@ -71,6 +70,7 @@ impl ConsensusHandlerInitializer {
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
+            dwallet_mpc_outputs_verifier,
         }
     }
 
@@ -91,18 +91,19 @@ impl ConsensusHandlerInitializer {
         }
     }
 
-    pub(crate) fn new_consensus_handler(&self) -> ConsensusHandler<DWalletCheckpointService> {
+    pub(crate) fn new_consensus_handler(self) -> ConsensusHandler<DWalletCheckpointService> {
         let new_epoch_start_state = self.epoch_store.epoch_start_state();
         let consensus_committee = new_epoch_start_state.get_consensus_committee();
 
         ConsensusHandler::new(
-            self.epoch_store.clone(),
-            self.checkpoint_service.clone(),
-            self.system_checkpoint_service.clone(),
-            self.low_scoring_authorities.clone(),
+            self.epoch_store,
+            self.checkpoint_service,
+            self.system_checkpoint_service,
+            self.low_scoring_authorities,
             consensus_committee,
             self.state.metrics.clone(),
-            self.throughput_calculator.clone(),
+            self.throughput_calculator,
+            self.dwallet_mpc_outputs_verifier,
         )
     }
 
@@ -134,6 +135,10 @@ pub struct ConsensusHandler<C> {
     processed_cache: LruCache<SequencedConsensusTransactionKey, ()>,
     /// Using the throughput calculator to record the current consensus throughput
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
+    /// State machine managing dWallet MPC outputs.
+    /// This state machine is used to store outputs and emit ones
+    /// where the quorum of votes is valid.
+    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 const PROCESSED_CACHE_CAP: usize = 1024 * 1024;
@@ -147,6 +152,7 @@ impl<C> ConsensusHandler<C> {
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
+        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         // Recover last_consensus_stats so it is consistent across validators.
         let mut last_consensus_stats = epoch_store
@@ -167,6 +173,7 @@ impl<C> ConsensusHandler<C> {
             metrics,
             processed_cache: LruCache::new(NonZeroUsize::new(PROCESSED_CACHE_CAP).unwrap()),
             throughput_calculator,
+            dwallet_mpc_outputs_verifier,
         }
     }
 
@@ -181,28 +188,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
     async fn handle_consensus_commit(&mut self, consensus_commit: impl ConsensusCommitAPI) {
         let _scope = monitored_scope("ConsensusCommitHandler::handle_consensus_commit");
         let round = consensus_commit.leader_round();
-        let dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_read()
-            .await;
-        if !dwallet_mpc_verifier.has_performed_state_sync {
-            drop(dwallet_mpc_verifier);
-            if let Err(err) = self.perform_dwallet_mpc_state_sync().await {
-                error!(
-                    "epoch switched while performing dwallet mpc state sync: {:?}",
-                    err
-                );
-                return;
-            }
-            let mut dwallet_mpc_verifier = self
-                .epoch_store
-                .get_dwallet_mpc_outputs_verifier_write()
-                .await;
-            dwallet_mpc_verifier.has_performed_state_sync = true;
-            drop(dwallet_mpc_verifier);
-        } else {
-            drop(dwallet_mpc_verifier);
-        }
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
@@ -376,6 +361,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 &self.system_checkpoint_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
+                &mut self.dwallet_mpc_outputs_verifier,
             )
             .await
             .expect("Unrecoverable error in consensus handler");
@@ -398,66 +384,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     //
                                     // self.transaction_manager_sender
                                     //     .send(executable_transactions);
-    }
-
-    /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
-    /// Needs to be performed here,
-    /// so system transactions will get created when they should, and a fork in the
-    /// chain will be prevented.
-    /// Fails only if the epoch switched in the middle of the state sync.
-    async fn perform_dwallet_mpc_state_sync(&self) -> IkaResult {
-        for item in self
-            .epoch_store
-            .tables()?
-            .builder_dwallet_checkpoint_message_v1
-            .safe_iter()
-        {
-            let item = item?;
-            info!(
-                sequence_number=?item.0,
-                batch_sequence_number=?item.1.checkpoint_height,
-                validator=?self.epoch_store.name,
-                "Checkpoint sequence number"
-            )
-        }
-
-        info!("Performing a state sync for the dWallet MPC node");
-        let mut dwallet_mpc_verifier = self
-            .epoch_store
-            .get_dwallet_mpc_outputs_verifier_write()
-            .await;
-
-        for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
-            let party_to_authority_map = self.epoch_store.committee().party_to_authority_map();
-            let mpc_protocol_name = output.session_info.mpc_round.to_string();
-
-            // Create a base logger with common parameters.
-            let base_logger = MPCSessionLogger::new()
-                .with_protocol_name(mpc_protocol_name.clone())
-                .with_party_to_authority_map(party_to_authority_map.clone());
-            let session_identifier = CommitmentSizedNumber::from_le_slice(
-                &output.session_info.session_identifier.into_bytes(),
-            );
-            base_logger.write_output_to_disk(
-                session_identifier,
-                self.epoch_store
-                    .authority_name_to_party_id(&self.epoch_store.name)?,
-                self.epoch_store
-                    .authority_name_to_party_id(&output.authority)?,
-                &output.output,
-                &output.session_info,
-            );
-            if let Err(err) = dwallet_mpc_verifier
-                .try_verify_output(&output.output, &output.session_info, output.authority)
-                .await
-            {
-                error!(
-                    "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_identifier, output.authority, err
-                );
-            }
-        }
-        Ok(())
     }
 }
 

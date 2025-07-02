@@ -75,12 +75,13 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76", features = ["threshold"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "7dd2b76"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "7dd2b76"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30", features = ["threshold"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "1a1ee30"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "1a1ee30"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -211,6 +212,7 @@ json_to_table = { git = "https://github.com/zhiburt/tabled/", rev = "e449317a1c0
 leb128 = "0.2.5"
 lru = "0.10"
 match_opt = "0.1.2"
+merlin = { version = "3", default-features = false }
 miette = { version = "7", features = ["fancy"] }
 mime = "0.3"
 mockall = "0.11.4"
@@ -526,6 +528,7 @@ consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
 
 ### Workspace Members ###
+dwallet-rng = { path = "crates/dwallet-rng" }
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
 dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
 dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}

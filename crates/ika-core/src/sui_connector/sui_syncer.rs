@@ -12,7 +12,7 @@ use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{
     DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState,
 };
-use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerInit, SystemInnerTrait};
+use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerTrait};
 use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
@@ -115,7 +115,6 @@ where
 
             let committee = match Self::new_committee(
                 sui_client.clone(),
-                &system_inner,
                 new_next_committee.clone(),
                 system_inner.epoch() + 1,
                 new_next_bls_committee.quorum_threshold,
@@ -140,7 +139,6 @@ where
 
     async fn new_committee(
         sui_client: Arc<SuiClient<C>>,
-        system_inner: &SystemInnerInit,
         committee: Vec<(ObjectID, (AuthorityName, StakeUnit))>,
         epoch: u64,
         quorum_threshold: u64,
@@ -149,7 +147,7 @@ where
         let validator_ids: Vec<_> = committee.iter().map(|(id, _)| *id).collect();
 
         let validators = sui_client
-            .get_validators_info_by_ids(system_inner, validator_ids)
+            .get_validators_info_by_ids(validator_ids)
             .await
             .map_err(DwalletMPCError::IkaError)?;
 

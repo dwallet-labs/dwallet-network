@@ -56,6 +56,9 @@ pub enum DwalletMPCError {
     #[error("missing dWallet MPC Sender")]
     MissingDWalletMPCSender,
 
+    #[error("missing Root Seed")]
+    MissingRootSeed,
+
     #[error("dwallet MPC Sender failed: {0}")]
     DWalletMPCSenderSendFailed(String),
 
@@ -97,11 +100,11 @@ pub enum DwalletMPCError {
     #[error("error in Class Groups: {0}")]
     ClassGroupsError(String),
 
-    #[error("failed to read Class Groups key: {0}")]
-    FailedToReadCGKey(String),
+    #[error("failed to read seed from file: {0}")]
+    FailedToReadSeed(String),
 
-    #[error("failed to write Class Groups key: {0}")]
-    FailedToWriteCGKey(String),
+    #[error("failed to write seed to file: {0}")]
+    FailedToWriteSeed(String),
 
     #[error("missing MPC private session input")]
     MissingMPCPrivateInput,

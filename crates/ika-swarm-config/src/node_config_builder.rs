@@ -10,8 +10,8 @@ use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::{
     default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath,
-    AuthorityOverloadConfig, ClassGroupsKeyPairWithPath, KeyPairWithPath, RunWithRange,
-    StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
+    AuthorityOverloadConfig, KeyPairWithPath, RootSeedWithPath, RunWithRange, StateArchiveConfig,
+    SuiChainIdentifier, SuiConnectorConfig,
 };
 use std::path::PathBuf;
 use sui_types::base_types::ObjectID;
@@ -124,9 +124,7 @@ impl ValidatorConfigBuilder {
             ..Default::default()
         };
         NodeConfig {
-            class_groups_key_pair_and_proof: Some(ClassGroupsKeyPairWithPath::new(
-                validator.class_groups_key_pair_and_proof.clone(),
-            )),
+            root_seed: Some(RootSeedWithPath::new(validator.root_seed.clone())),
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair.copy()),
             network_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(
                 validator.network_key_pair.copy(),
@@ -277,15 +275,7 @@ impl FullnodeConfigBuilder {
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
         // even though this is a fullnode.
-        let mut validator_config_builder = ValidatorInitializationConfigBuilder::new();
-
-        #[cfg(feature = "mock-class-groups")]
-        {
-            validator_config_builder = validator_config_builder
-                .with_class_groups_key_pair_and_proof(
-                    crate::class_groups_mock_builder::create_full_class_groups_mock(),
-                );
-        }
+        let validator_config_builder = ValidatorInitializationConfigBuilder::new();
 
         let validator_config = validator_config_builder.build(rng);
 
@@ -332,7 +322,7 @@ impl FullnodeConfigBuilder {
         let notifier_client_key_pair = notifier_client_key_pair.map(KeyPairWithPath::new);
 
         NodeConfig {
-            class_groups_key_pair_and_proof: None,
+            root_seed: None,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
             consensus_key_pair: KeyPairWithPath::new(SuiKeyPair::Ed25519(

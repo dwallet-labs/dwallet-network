@@ -2296,7 +2296,7 @@ checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -2459,7 +2459,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "group 0.1.0",
@@ -3553,17 +3553,17 @@ name = "dwallet-classgroups-types"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "base64 0.21.7",
  "bcs",
  "class_groups",
  "crypto-bigint 0.7.0-pre.5",
  "dwallet-mpc-types",
- "fastcrypto",
+ "dwallet-rng",
  "flate2",
  "group 0.1.0",
  "ika-types",
+ "merlin",
+ "proof",
  "rand 0.9.0",
- "rand_chacha 0.9.0",
  "schemars",
  "serde",
  "serde_derive",
@@ -3606,6 +3606,21 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "twopc_mpc",
+]
+
+[[package]]
+name = "dwallet-rng"
+version = "1.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "commitment",
+ "fastcrypto",
+ "group 0.1.0",
+ "ika-types",
+ "merlin",
+ "proof",
+ "rand_chacha 0.9.0",
+ "serde",
 ]
 
 [[package]]
@@ -4906,7 +4921,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "curve25519-dalek",
@@ -5190,7 +5205,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "crypto-bigint 0.7.0-pre.5",
  "group 0.1.0",
@@ -5600,6 +5615,7 @@ dependencies = [
  "colored",
  "datatest-stable",
  "dwallet-classgroups-types",
+ "dwallet-rng",
  "expect-test",
  "fastcrypto",
  "fs_extra",
@@ -5672,6 +5688,7 @@ dependencies = [
  "dirs 4.0.0",
  "dwallet-classgroups-types",
  "dwallet-mpc-types",
+ "dwallet-rng",
  "fastcrypto",
  "ika-types",
  "once_cell",
@@ -5711,6 +5728,7 @@ dependencies = [
  "diffy",
  "dwallet-classgroups-types",
  "dwallet-mpc-types",
+ "dwallet-rng",
  "either",
  "enum_dispatch",
  "expect-test",
@@ -5735,6 +5753,7 @@ dependencies = [
  "jsonrpsee",
  "k256 0.14.0-pre.7",
  "lru 0.10.1",
+ "merlin",
  "message-digest",
  "mockall",
  "moka",
@@ -5758,6 +5777,7 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "prometheus",
+ "proof",
  "rand 0.9.0",
  "rand_chacha 0.9.0",
  "rand_core 0.9.3",
@@ -6083,6 +6103,7 @@ dependencies = [
  "bcs",
  "clap",
  "dwallet-classgroups-types",
+ "dwallet-rng",
  "fastcrypto",
  "flate2",
  "futures",
@@ -7191,7 +7212,7 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -8241,7 +8262,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -8249,6 +8270,7 @@ dependencies = [
  "group 0.1.0",
  "itertools 0.14.0",
  "rand 0.9.0",
+ "rand_chacha 0.9.0",
  "rayon",
  "serde",
  "serde_json",
@@ -9880,7 +9902,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "commitment",
  "crypto-bigint 0.7.0-pre.5",
@@ -15428,7 +15450,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=7dd2b76#7dd2b760ba06379048059b02721868704cba9566"
+source = "git+https://github.com/dwallet-labs/cryptography-private?rev=1a1ee30#1a1ee30081c94bc41d6a35e5ab3e3421d5d79ecf"
 dependencies = [
  "class_groups",
  "commitment",
