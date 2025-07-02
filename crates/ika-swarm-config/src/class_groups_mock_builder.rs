@@ -1,10 +1,10 @@
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use fastcrypto::encoding::{Base64, Encoding};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use ika_config::node::RootSeedWithPath;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct ClassGroupsKeyPairAndProofWrapper {
     inner: Box<ClassGroupsKeyPairAndProof>,
 }
@@ -14,11 +14,28 @@ fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
 ) -> DwalletMPCResult<Box<ClassGroupsKeyPairAndProof>> {
     let contents = std::fs::read_to_string(path)
-        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
+        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string())).unwrap();
     let decoded = Base64::decode(contents.as_str())
-        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string()))?;
-    let keypair: ClassGroupsKeyPairAndProofWrapper = bcs::from_bytes(&decoded)?;
+        .map_err(|e| DwalletMPCError::FailedToReadSeed(e.to_string())).unwrap();
+    let keypair: ClassGroupsKeyPairAndProofWrapper = bcs::from_bytes(&decoded).unwrap();
     Ok(keypair.inner)
+}
+
+/// Writes a class group key pair and proof, encoded in Base64,
+/// to a file and returns the public key.
+pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + Clone>(
+    keypair: &ClassGroupsKeyPairAndProof,
+    path: P,
+) -> DwalletMPCResult<String> {
+    let wrapper = ClassGroupsKeyPairAndProofWrapper {
+        inner: Box::new(keypair.clone()),
+    };
+    let serialized = bcs::to_bytes(&wrapper)?;
+    let contents = Base64::encode(serialized);
+    std::fs::write(path.clone(), contents).unwrap();
+    Ok(Base64::encode(bcs::to_bytes(
+        &keypair.encryption_key_and_proof(),
+    )?))
 }
 
 pub fn create_full_class_groups_mock() -> Box<ClassGroupsKeyPairAndProof> {

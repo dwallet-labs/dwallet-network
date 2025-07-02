@@ -9,6 +9,7 @@ use sui_types::{base_types::SuiAddress, multiaddr::Multiaddr};
 
 use clap::*;
 use colored::Colorize;
+use fastcrypto::encoding::{Base64, Encoding};
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
@@ -21,7 +22,7 @@ use ika_sui_client::ika_validator_transactions::{
 use ika_types::crypto::generate_proof_of_possession;
 use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::sui::DEFAULT_COMMISSION_RATE;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sui::validator_commands::write_transaction_response;
 use sui_config::PersistedConfig;
 use sui_keys::{
@@ -436,8 +437,35 @@ fn read_or_generate_seed_and_class_groups_key(
             seed
         }
     };
+    let c = ClassGroupsKeyPairAndProof::from_seed(&seed);
+    write_class_groups_keypair_and_proof_to_file(
+        &c,
+        "class-groups.key",
+    );
 
-    let class_groups_public_key_and_proof = Box::new(ClassGroupsKeyPairAndProof::from_seed(&seed));
+    let class_groups_public_key_and_proof = Box::new(c);
 
     Ok(class_groups_public_key_and_proof)
+}
+
+#[derive(Deserialize, Serialize)]
+struct ClassGroupsKeyPairAndProofWrapper {
+    inner: Box<ClassGroupsKeyPairAndProof>,
+}
+
+/// Writes a class group key pair and proof, encoded in Base64,
+/// to a file and returns the public key.
+pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + Clone>(
+    keypair: &ClassGroupsKeyPairAndProof,
+    path: P,
+) {
+    let wrapper = ClassGroupsKeyPairAndProofWrapper {
+        inner: Box::new(keypair.clone()),
+    };
+    let serialized = bcs::to_bytes(&wrapper).unwrap();
+    let contents = Base64::encode(serialized);
+    std::fs::write(path.clone(), contents).unwrap();
+    Base64::encode(bcs::to_bytes(
+        &keypair.encryption_key_and_proof(),
+    ).unwrap());
 }
