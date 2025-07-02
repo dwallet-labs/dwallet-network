@@ -8,12 +8,15 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
 use crate::dwallet_mpc::mpc_session::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::{
+    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData, SessionIdentifier,
+};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -35,7 +38,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
     consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
@@ -47,7 +50,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -164,21 +167,36 @@ impl DWalletMPCService {
     async fn update_network_keys(&mut self) {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
+                let access_structure =
+                    &self.dwallet_mpc_manager.weighted_threshold_access_structure;
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
                     for (key_id, key_data) in new_keys.iter() {
-                        info!(
-                            "Updating (decrypting new shares) network key for key_id: {:?}",
-                            key_id
-                        );
-                        self.dwallet_mpc_manager
-                            .network_keys
-                            .update_network_key(
-                                *key_id,
-                                key_data,
-                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
-                            )
-                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                        match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
+                            key_data.current_epoch,
+                            DWalletMPCNetworkKeyScheme::Secp256k1,
+                            access_structure,
+                            key_data.clone(),
+                        ) {
+                            Ok(key) => {
+                                info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
+                                self.dwallet_mpc_manager
+                                    .network_keys
+                                    .update_network_key(
+                                        *key_id,
+                                        &key,
+                                        &self.dwallet_mpc_manager.weighted_threshold_access_structure,
+                                    )
+                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                            }
+                            Err(err) => {
+                                error!(
+                                    ?err,
+                                    key_id=?key_id,
+                                    "failed to instantiate network decryption key shares from public output for"
+                                )
+                            }
+                        }
                     }
                 }
             }
