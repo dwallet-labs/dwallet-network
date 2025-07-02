@@ -146,7 +146,7 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let mut session = session.clone();
-        let init_mpc_protocol_data = session.mpc_event_data.ok_or(DwalletMPCError::MissingEventData)?.init_protocol_data.clone();
+        let init_mpc_protocol_data = session.mpc_event_data.clone().ok_or(DwalletMPCError::MissingEventData)?.init_protocol_data;
 
         dwallet_mpc_metrics.add_advance_call(&init_mpc_protocol_data, &session.current_round.to_string());
 
