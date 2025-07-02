@@ -5,13 +5,13 @@ use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyPublicData;
 use futures::{future, StreamExt};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
+use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use shared_crypto::intent::{Intent, IntentMessage};
@@ -63,7 +63,7 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         is_validator: bool,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
