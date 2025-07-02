@@ -636,16 +636,17 @@ where
             })
     }
 
-    pub async fn get_network_decryption_key_with_full_data(
+    pub async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> IkaResult<DWalletNetworkDecryptionKeyData> {
         self.inner
-            .get_network_decryption_key_with_full_data(network_decryption_key)
+            .get_network_decryption_key_with_full_data_by_epoch(network_decryption_key, epoch)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_network_decryption_key_with_full_data: {e}"
+                    "Can't get_network_decryption_key_with_full_data_by_epoch: {e}"
                 ))
             })
     }
@@ -766,9 +767,10 @@ pub trait SuiClientInner: Send + Sync {
         network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
 
-    async fn get_network_decryption_key_with_full_data(
+    async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> Result<DWalletNetworkDecryptionKeyData, self::Error>;
 
     async fn get_current_reconfiguration_public_output(
@@ -1051,9 +1053,10 @@ impl SuiClientInner for SuiSdkClient {
         Ok(network_encryption_keys)
     }
 
-    async fn get_network_decryption_key_with_full_data(
+    async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> Result<DWalletNetworkDecryptionKeyData, self::Error> {
         let network_dkg_public_output = self
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
@@ -1082,13 +1085,13 @@ impl SuiClientInner for SuiSdkClient {
         {
             info!(
                 key_id = ?key.id,
-                epoch = ?key.current_epoch,
+                ?epoch,
                 "Reconfiguration public output for key not is not ready for epoch",
             );
         } else {
             let current_reconfiguration_public_output_id = self
                 .get_current_reconfiguration_public_output(
-                    key.current_epoch,
+                    epoch,
                     key.reconfiguration_public_outputs.id,
                 )
                 .await?;
@@ -1100,7 +1103,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(DWalletNetworkDecryptionKeyData {
             id: key.id,
             dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
-            current_epoch: key.current_epoch,
+            current_epoch: epoch,
             current_reconfiguration_public_output,
             network_dkg_public_output,
             state: key.state.clone(),
