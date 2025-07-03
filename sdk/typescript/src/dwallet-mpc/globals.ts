@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import * as fs from 'node:fs';
-import { network_dkg_public_output_to_protocol_pp } from '@dwallet-network/dwallet-mpc-wasm';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import type { Transaction } from '@mysten/sui/transactions';
@@ -163,17 +162,36 @@ export function isDWalletNetworkDecryptionKey(obj: any): obj is DWalletNetworkDe
 }
 
 export async function getDwalletSecp256k1ObjID(c: Config): Promise<string> {
-	const dynamicFields = await c.client.getDynamicFields({
-		parentId: c.ikaConfig.ika_system_object_id,
-	});
-	const innerSystemState = await c.client.getDynamicFieldObject({
-		parentId: c.ikaConfig.ika_system_object_id,
-		name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
-	});
-	if (!isIKASystemStateInner(innerSystemState.data?.content)) {
-		throw new Error('Invalid inner system state');
+	const startTime = Date.now();
+	let result: string | undefined;
+
+	while (!result && Date.now() - startTime <= c.timeout) {
+		try {
+			const dynamicFields = await c.client.getDynamicFields({
+				parentId: c.ikaConfig.ika_system_object_id,
+			});
+			const innerSystemState = await c.client.getDynamicFieldObject({
+				parentId: c.ikaConfig.ika_system_object_id,
+				name: dynamicFields.data[DWALLET_NETWORK_VERSION].name,
+			});
+			if (isIKASystemStateInner(innerSystemState.data?.content)) {
+				result = innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
+				return result;
+			}
+		} catch (error) {
+			// If we're still within timeout, wait a bit and retry
+			if (Date.now() - startTime <= c.timeout) {
+				await delay(5_000); // Wait 5 seconds before retrying
+				continue;
+			}
+			throw error; // If we've exceeded timeout, throw the error
+		}
 	}
-	return innerSystemState.data?.content?.fields.value.fields.dwallet_2pc_mpc_coordinator_id;
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to get dwallet secp256k1 object ID within ${c.timeout / (60 * 1000)} minutes (${seconds} seconds passed).`,
+	);
 }
 
 export function isSharedObjectOwner(obj: any): obj is SharedObjectOwner {
@@ -286,22 +304,17 @@ async function readTableVecAsRawBytes(c: Config, table_id: string): Promise<Uint
 	return new Uint8Array(data.flatMap((arr) => Array.from(arr)));
 }
 
-export async function getNetworkPublicParameters(c: Config): Promise<Uint8Array> {
+export async function getNetworkDecryptionKeyPublicOutput(c: Config): Promise<Uint8Array> {
 	const networkDecryptionKeyPublicOutputID = await getNetworkDecryptionKeyPublicOutputID(c, null);
 	const currentEpoch = await getNetworkCurrentEpochNumber(c);
-	const cachedPP = getCachedPublicParameters(networkDecryptionKeyPublicOutputID, currentEpoch);
-	if (cachedPP) {
+	const cachedKey = getCachedNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch);
+	if (cachedKey) {
 		console.log(`Using a cached network decryption key public output for epoch ${currentEpoch}`);
-		return cachedPP;
+		return cachedKey;
 	}
 	const key = await readTableVecAsRawBytes(c, networkDecryptionKeyPublicOutputID);
-	const publicParameters = network_dkg_public_output_to_protocol_pp(key);
-	await cachePublicParameters(
-		networkDecryptionKeyPublicOutputID,
-		currentEpoch,
-		new Uint8Array(publicParameters),
-	);
-	return publicParameters;
+	cacheNetworkKey(networkDecryptionKeyPublicOutputID, currentEpoch, key);
+	return key;
 }
 
 export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
@@ -328,7 +341,7 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	return decryptionKeyID;
 }
 
-export async function cachePublicParameters(key_id: string, epoch: number, networkKey: Uint8Array) {
+export function cacheNetworkKey(key_id: string, epoch: number, networkKey: Uint8Array) {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	if (!fs.existsSync(keyDirPath)) {
@@ -341,7 +354,7 @@ export async function cachePublicParameters(key_id: string, epoch: number, netwo
 	fs.writeFileSync(filePath, networkKey);
 }
 
-export function getCachedPublicParameters(key_id: string, epoch: number): Uint8Array | null {
+export function getCachedNetworkKey(key_id: string, epoch: number): Uint8Array | null {
 	const configDirPath = `${process.env.HOME}/.ika`;
 	const keyDirPath = `${configDirPath}/${key_id}`;
 	const filePath = `${keyDirPath}/${epoch}.key`;
