@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
+use group::helpers::DeduplicateAndSort;
 use tokio::sync::watch;
 use tracing::{error, info, warn};
 
@@ -456,38 +457,39 @@ impl DWalletMPCManager {
     /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
-        let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
+        let (ready_to_advance_sessions, malicious_parties) : (Vec<DWalletMPCSession>, Vec<Vec<PartyID>>) = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round().ok()?;
                 if quorum_check_result.is_ready {
-                    session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
                     let session_clone = session.clone();
+
+                    // Mutate the session stored in `mpc_sessions` to reflect the fact we have called `advance()` on this round,
+                    // and prepare for the next round.
                     session.current_round += 1;
+                    session.received_more_messages_since_last_advance = false;
+
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
             })
-            .collect();
+            .unzip();
 
-        let malicious_parties: Vec<PartyID> = quorum_check_results
-            .clone()
+        let malicious_parties: Vec<PartyID> = malicious_parties
             .into_iter()
-            .flat_map(|(_, malicious_parties)| malicious_parties)
-            .collect();
-        let ready_to_advance_sessions: Vec<DWalletMPCSession> = quorum_check_results
-            .into_iter()
-            .map(|(session, _)| session)
-            .collect();
+            .flatten()
+            .deduplicate_and_sort();
+
         let (ready_sessions, pending_for_event_sessions): (Vec<_>, Vec<_>) =
             ready_to_advance_sessions
                 .into_iter()
                 .partition(|s| s.mpc_event_data.is_some());
+
         Ok(ReadySessionsResponse {
             ready_sessions,
             pending_for_event_sessions,
@@ -498,6 +500,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
+        // TODO(Scaly): What is this?
         for event in self
             .events_pending_for_network_key
             .drain(..)
@@ -506,6 +509,7 @@ impl DWalletMPCManager {
         {
             self.handle_dwallet_db_event(event.clone()).await;
         }
+
         for (index, pending_for_event_session) in
             self.pending_for_events_order.clone().iter().enumerate()
         {
@@ -516,17 +520,21 @@ impl DWalletMPCManager {
                 // This should never happen
                 continue;
             };
+
             if live_session.mpc_event_data.is_some() {
                 let mpc_protocol = live_session
                     .mpc_event_data
                     .clone()
                     .unwrap()
                     .init_protocol_data;
+
                 info!(
                     session_identifier=?pending_for_event_session.session_identifier,
                     mpc_protocol=?mpc_protocol,
                     "Received event data for a known session"
                 );
+
+                // TODO(Scaly): what is this code? I don't understand this logic at all. And no documentation.....
                 let mut ready_to_advance_session = pending_for_event_session.clone();
                 ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
                 self.pending_for_computation_order
