@@ -202,30 +202,13 @@ async function registerEncryptionKey(
 			),
 		],
 	});
-	let res;
-	const startTime = Date.now();
-	while (!res && Date.now() - startTime <= conf.timeout) {
-		try {
-			res = await conf.client.signAndExecuteTransaction({
-				signer: conf.suiClientKeypair,
-				transaction: tx,
-				options: {
-					showEvents: true,
-				},
-			});
-		} catch (error) {
-			// If we're still within timeout, wait a bit and retry
-			if (Date.now() - startTime <= conf.timeout) {
-				await delay(5_000); // Wait 5 seconds before retrying
-				continue;
-			}
-			throw error; // If we've exceeded timeout, throw the error
-		}
-	}
-
-	if (!res) {
-		throw new Error(`Failed to get transaction response within ${conf.timeout / (60 * 1000)} minutes`);
-	}
+	const res = await conf.client.signAndExecuteTransaction({
+		signer: conf.suiClientKeypair,
+		transaction: tx,
+		options: {
+			showEvents: true,
+		},
+	});
 	const createdEncryptionKeyEvent = res.events?.find((event) =>
 		isCreatedEncryptionKeyEvent(event.parsedJson),
 	);
