@@ -93,13 +93,14 @@ impl CryptographicComputationsOrchestrator {
         })
     }
 
+    /// Check for completed computations,  and then check if we currently have enough available cores.
     pub(crate) fn has_available_cores_to_preform_computation(&mut self) -> bool {
         while let Ok(completed_session) = self.report_computation_completed_receiver.try_recv() {
             info!(
                 session_identifier=?completed_session.session_identifier,
                 round=?completed_session.round,
                 currently_running_sessions_count =? self.currently_running_sessions_count,
-                "Completed cryptographic computation, decreasing count"
+                "Completed cryptographic computation"
             );
             self.currently_running_sessions_count -= 1;
         }
