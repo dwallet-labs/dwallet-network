@@ -262,7 +262,7 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCDBMessage::EndOfDelivery => {
-                if let Err(err) = self.handle_end_of_delivery().await {
+                if let Err(err) = self.handle_end_of_delivery() {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
@@ -361,7 +361,7 @@ impl DWalletMPCManager {
     /// Advance all the MPC sessions that either received enough messages
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+    pub fn handle_end_of_delivery(&mut self) -> IkaResult {
         let ready_sessions_response = self.get_ready_to_advance_sessions()?;
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
@@ -370,6 +370,7 @@ impl DWalletMPCManager {
             .extend(ready_sessions_response.ready_sessions);
         self.pending_for_events_order
             .extend(ready_sessions_response.pending_for_event_sessions);
+
         Ok(())
     }
 
@@ -584,16 +585,9 @@ impl DWalletMPCManager {
                 self.pending_for_events_order.remove(index);
             }
         }
-        let pending_for_computation = self.pending_for_computation_order.len();
 
+        let pending_for_computation = self.pending_for_computation_order.len();
         for _ in 0..pending_for_computation {
-            if !self
-                .cryptographic_computations_orchestrator
-                .can_spawn_session()
-            {
-                warn!("No available CPUs for cryptographic computations, waiting for a free CPU");
-                return;
-            }
             // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
             // Safe to unwarp since the session was ready to compute.
@@ -636,9 +630,12 @@ impl DWalletMPCManager {
             }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
-                .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
+                .try_spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
                 .await
             {
+                self.pending_for_computation_order
+                    .push_front(oldest_pending_session.clone());
+
                 error!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
@@ -646,6 +643,8 @@ impl DWalletMPCManager {
                     error=?err,
                     "failed to spawn a cryptographic session"
                 );
+
+                return;
             }
         }
     }
