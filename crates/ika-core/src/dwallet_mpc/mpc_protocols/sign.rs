@@ -66,7 +66,7 @@ pub(crate) fn sign_session_public_input(
         // Todo (#473): Support generic network key scheme
         &deserialized_event
             .event_data
-            .dwallet_network_decryption_key_id,
+            .dwallet_network_encryption_key_id,
     )?;
 
     let expected_decrypters =

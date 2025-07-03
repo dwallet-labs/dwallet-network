@@ -95,7 +95,7 @@ impl MPCEventData {
         session_info: &SessionInfo,
         epoch_store: Arc<AuthorityPerEpochStore>,
         network_keys: &Box<DwalletMPCNetworkKeys>,
-        next_active_committee: Committee,
+        next_active_committee: Option<Committee>,
         validators_class_groups_public_keys_and_proofs: HashMap<
             PartyID,
             ClassGroupsEncryptionKeyAndProof,
@@ -115,11 +115,11 @@ impl MPCEventData {
             private_input,
             decryption_shares: match session_info.mpc_round.clone() {
                 MPCProtocolInitData::Sign(init_event) => network_keys.get_decryption_key_shares(
-                    &init_event.event_data.dwallet_network_decryption_key_id,
+                    &init_event.event_data.dwallet_network_encryption_key_id,
                 )?,
                 MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
                     network_keys.get_decryption_key_shares(
-                        &init_event.event_data.dwallet_network_decryption_key_id,
+                        &init_event.event_data.dwallet_network_encryption_key_id,
                     )?
                 }
                 _ => HashMap::new(),
@@ -548,7 +548,7 @@ impl DWalletMPCSession {
                                     .clone(),
                                 encryption_key: event_data.event_data.encryption_key.clone(),
                                 encryption_key_id: event_data.event_data.encryption_key_id,
-                                dwallet_network_decryption_key_id: event_data
+                                dwallet_network_encryption_key_id: event_data
                                     .event_data
                                     .dwallet_network_encryption_key_id,
                                 curve: event_data.event_data.curve,
@@ -661,9 +661,9 @@ impl DWalletMPCSession {
                                 .clone(),
                             encryption_key: event_data.event_data.encryption_key.clone(),
                             encryption_key_id: event_data.event_data.encryption_key_id,
-                            dwallet_network_decryption_key_id: event_data
+                            dwallet_network_encryption_key_id: event_data
                                 .event_data
-                                .dwallet_network_decryption_key_id,
+                                .dwallet_network_encryption_key_id,
                             curve: event_data.event_data.curve,
 
                             // Fields not relevant for verification; passing empty values.

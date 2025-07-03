@@ -323,6 +323,12 @@ pub struct SessionInfo {
 
 pub trait DWalletSessionEventTrait {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag;
+
+    /// Returns the Network Encryption Key ID, if it exists, for this event.
+    fn network_encryption_key_id(&self) -> Option<ObjectID>;
+
+    /// Returns `true` if this event requires the next active epoch to be known before being sequenced, `false` otherwise.
+    fn requires_next_active_committee(&self) -> bool;
 }
 
 /// The DWallet MPC session type
@@ -630,6 +636,14 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
             type_params: vec![<E as DWalletSessionEventTrait>::type_(packages_config).into()],
         }
     }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        self.event_data.network_encryption_key_id()
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        self.event_data.requires_next_active_committee()
+    }
 }
 
 impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
@@ -677,7 +691,7 @@ pub struct EncryptedShareVerificationRequestEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -689,6 +703,14 @@ impl DWalletSessionEventTrait for EncryptedShareVerificationRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -704,7 +726,7 @@ pub struct FutureSignRequestEvent {
     pub signature_algorithm: u32,
     pub hash_scheme: u32,
     pub message_centralized_signature: Vec<u8>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for FutureSignRequestEvent {
@@ -715,6 +737,14 @@ impl DWalletSessionEventTrait for FutureSignRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -740,7 +770,7 @@ pub struct DWalletDKGSecondRoundRequestEvent {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -755,6 +785,14 @@ impl DWalletSessionEventTrait for DWalletDKGSecondRoundRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -805,7 +843,7 @@ pub struct PresignRequestEvent {
     pub presign_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dwallet_public_output: Option<Vec<u8>>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
     pub signature_algorithm: u32,
 }
@@ -821,6 +859,14 @@ impl DWalletSessionEventTrait for PresignRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -842,7 +888,7 @@ pub struct DWalletDKGFirstRoundRequestEvent {
     pub dwallet_id: ObjectID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -856,6 +902,14 @@ impl DWalletSessionEventTrait for DWalletDKGFirstRoundRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -907,7 +961,7 @@ pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
     pub public_output: Vec<u8>,
     pub curve: u32,
     pub dwallet_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
@@ -921,6 +975,14 @@ impl DWalletSessionEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEve
             type_params: vec![],
         }
     }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
+    }
 }
 
 impl DWalletSessionEventTrait for DWalletImportedKeyVerificationRequestEvent {
@@ -933,6 +995,14 @@ impl DWalletSessionEventTrait for DWalletImportedKeyVerificationRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -951,7 +1021,7 @@ pub struct SignRequestEvent {
     /// Hashed messages to Sign.
     pub message: Vec<u8>,
     /// The dWallet mpc network key version
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub presign_id: ObjectID,
 
     /// The presign protocol output as bytes.
@@ -976,13 +1046,21 @@ impl DWalletSessionEventTrait for SignRequestEvent {
             type_params: vec![],
         }
     }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
+    }
 }
 
 /// Rust version of the Move [`ika_system::dwallet_2pc_mpc_coordinator_inner::StartNetworkDKGEvent`] type.
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletNetworkDKGEncryptionKeyRequestEvent {
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub params_for_network: Vec<u8>,
 }
 
@@ -997,6 +1075,14 @@ impl DWalletSessionEventTrait for DWalletNetworkDKGEncryptionKeyRequestEvent {
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        false
     }
 }
 
@@ -1047,7 +1133,7 @@ pub enum DWalletNetworkEncryptionKeyState {
 
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletEncryptionKeyReconfigurationRequestEvent {
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {
@@ -1058,5 +1144,13 @@ impl DWalletSessionEventTrait for DWalletEncryptionKeyReconfigurationRequestEven
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
+    }
+
+    fn network_encryption_key_id(&self) -> Option<ObjectID> {
+        Some(self.dwallet_network_encryption_key_id)
+    }
+
+    fn requires_next_active_committee(&self) -> bool {
+        true
     }
 }

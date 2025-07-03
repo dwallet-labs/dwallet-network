@@ -14,7 +14,7 @@ use crate::dwallet_mpc::party_ids_to_authority_names;
 use crate::stake_aggregator::StakeAggregator;
 use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, VersionedNetworkDkgOutput};
+use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput};
 use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -32,8 +32,10 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use group::helpers::DeduplicateAndSort;
+use itertools::Itertools;
 use tokio::sync::watch;
-use tracing::{error, info, warn};
+use tokio::sync::watch::Receiver;
+use tracing::{debug, error, info, warn};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -66,17 +68,20 @@ pub(crate) struct DWalletMPCManager {
     /// is part of the [`AuthorityPerEpochStore`].
     pub(crate) malicious_handler: MaliciousHandler,
     /// The order of the sessions that are ready to get computed.
-    pub(crate) pending_for_computation_order: VecDeque<DWalletMPCSession>,
+    pub(crate) ordered_sessions_pending_for_computation: VecDeque<DWalletMPCSession>,
     /// The order of the sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
-    pub(crate) pending_for_events_order: VecDeque<DWalletMPCSession>,
+    pub(crate) sessions_pending_for_events: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
+    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     /// Events that wait for the network key to update.
     /// Once we get the network key, these events will continue.
-    pub(crate) events_pending_for_network_key: Vec<DWalletMPCEvent>,
+    pub(crate) events_pending_for_network_key: HashMap<ObjectID, Vec<DWalletMPCEvent>>,
+    pub(crate) events_pending_for_next_active_committee: Vec<DWalletMPCEvent>,
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
+    pub(crate) next_active_committee: Option<Committee>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     pub(crate) threshold_not_reached_reports:
         HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
@@ -113,13 +118,15 @@ impl DWalletMPCManager {
     pub(crate) async fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        next_epoch_committee_receiver: watch::Receiver<Committee>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self::try_new(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            network_keys_receiver,
             next_epoch_committee_receiver,
             node_config.clone(),
             dwallet_mpc_metrics,
@@ -134,6 +141,7 @@ impl DWalletMPCManager {
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -175,15 +183,18 @@ impl DWalletMPCManager {
                 .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler,
-            pending_for_computation_order: VecDeque::new(),
-            pending_for_events_order: Default::default(),
+            ordered_sessions_pending_for_computation: VecDeque::new(),
+            sessions_pending_for_events: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
             network_keys: Box::new(dwallet_network_keys),
+            network_keys_receiver,
             next_epoch_committee_receiver,
-            events_pending_for_network_key: vec![],
+            events_pending_for_next_active_committee: Vec::new(),
+            events_pending_for_network_key: HashMap::new(),
             dwallet_mpc_metrics,
             threshold_not_reached_reports: Default::default(),
+            next_active_committee: None,
             root_seed,
         })
     }
@@ -201,15 +212,44 @@ impl DWalletMPCManager {
             update_last_session_to_complete_in_current_epoch;
     }
 
+
+    /// Handle a batch of MPC events.
+    ///
+    /// This function might be called more than once for a given session, as we periodically
+    /// check for uncompleted events - in which case the event will be ignored.
+    ///
+    /// A new MPC session is only created once at the first time the event was received
+    /// (per-epoch, if it was uncompleted in the previous epoch it will be created again for the next one.)
+    ///
+    /// If the event already exists in `self.mpc_sessions`, we do not add it.
+    ///
+    /// If there is no session info, and we've got it in this call,
+    /// we update that field in the open session.
+    pub(crate) fn handle_dwallet_db_events(&mut self, events: Vec<DWalletMPCEvent>) {
+        // First try to update the network keys, and then attend to events one by one.
+        self.update_network_keys();
+
+        for event in events {
+            self
+                .handle_dwallet_db_event(event);
+        }
+    }
+
+    // TODO(Scaly) separate to files
+
     /// Handle an MPC event.
     ///
-    /// This function might be called more than once for a given session,
-    /// as we periodically check for uncompleted events.
-    /// A new MPC session is only created once, the first time the event was received.
+    /// This function might be called more than once for a given session, as we periodically
+    /// check for uncompleted events.
+    ///
+    /// A new MPC session is only created once at the first time the event was received
+    /// (per-epoch, if it was uncompleted in the previous epoch it will be created again for the next one.)
+    ///
     /// If the event already exists in `self.mpc_sessions`, we do not add it.
-    /// If there is no session info, and we've got it in this call, we update that field
-    /// in the open session.
-    pub(crate) async fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+    ///
+    /// If there is no session info, and we've got it in this call,
+    /// we update that field in the open session.
+    fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
         // Avoid instantiation of completed events by checking they belong to the current epoch.
         if !event.override_epoch_check && event.session_info.epoch != self.epoch_id {
             warn!(
@@ -221,32 +261,88 @@ impl DWalletMPCManager {
             return;
         }
 
-        if let Err(err) = self
-            .handle_event(event.event.clone(), event.session_info.clone())
-            .await
-        {
-            match err {
-                DwalletMPCError::WaitingForNetworkKey(key_id) => {
-                    // This is not an error, we are waiting for the network key to be updated.
-                    info!(
-                        ?err,
+        // TODO: deserialize here first into an enum - but then we might deserialize for no good reason.
+
+        if let Some(network_encryption_key_id) = event.network_encryption_key_id() {
+            if !self.network_keys.key_public_data_exists(network_encryption_key_id) {
+                // We don't yet have the data for this network encryption key, so we add it to the queue.
+                debug!(
                         session_info=?event.session_info,
                         type=?event.event.type_,
-                        key_id=?key_id,
+                        network_encryption_key_id=?network_encryption_key_id,
                         "Adding event to pending for the network key"
                     );
-                    self.events_pending_for_network_key.push(event);
-                }
-                _ => {
-                    error!(?err, "failed to handle dWallet MPC event with error");
-                }
+
+                // TODO: need to check it doesn't exist first
+                self.events_pending_for_network_key.entry(network_encryption_key_id).or_insert(vec![]).push(event);
+
+                return;
             }
         }
+
+        if event.requires_next_active_committee() && self.next_active_committee.is_none() {
+            // We don't have the next active committee yet, so we have to add this event to the pending queue until it arrives.
+            debug!(
+                        session_info=?event.session_info,
+                        type=?event.event.type_,
+                        "Adding event to pending for the next epoch active committee"
+                    );
+
+            // TODO: need to check it doesn't exist first
+            self.events_pending_for_next_active_committee.push(event);
+
+            return;
+        }
+
+        let session_info = event.session_info;
+        let event = event.event.clone();
+
+        if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
+            if session.mpc_event_data.is_some() {
+                // The corresponding session already has its event data set, nothing to do.
+                return;
+            }
+        }
+
+        let mpc_event_data = match self.new_mpc_event_data(event, &session_info, self.next_active_committee.clone()) {
+            Ok(mpc_event_data) => mpc_event_data,
+            Err(e) => {
+                error!(e=?e, event=?event, "failed to handle dWallet MPC event with error");
+
+                return;
+            }
+        };
+
+        self.dwallet_mpc_metrics
+            .add_received_event_start(&mpc_event_data.init_protocol_data);
+
+        if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
+            if session.mpc_event_data.is_none() {
+                if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_identifier) {
+                    session.mpc_event_data = Some(mpc_event_data.clone());
+                }
+
+                // It could be that this session was pending for computation, but was missing the event.
+                // In that case, move it to the right queue.
+                if let(index) = self.sessions_pending_for_events.iter().position(|session_pending_for_event| session_pending_for_event.session_identifier == session.session_identifier) {
+                    // Safe to `unwrap()`, we just got this index.
+                    let mut ready_to_advance_session_copy = self.sessions_pending_for_events.remove(index).unwrap();
+
+                    ready_to_advance_session_copy.mpc_event_data = mpc_event_data;
+
+                    self.insert_session_into_ordered_pending_for_computation_queue(ready_to_advance_session_copy);
+                }
+            }
+        } else {
+            self.new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
+        }
+
+        Ok(())
     }
 
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
     /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
-    pub(crate) async fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
+    pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
@@ -351,20 +447,52 @@ impl DWalletMPCManager {
             // Decrement the current round, as we are going to retry the previous round.
             session.current_round -= 1;
         }
+
         Ok(())
     }
 
-    /// Handle the end of delivery by going through all sessions that are ready to advance and adding them to the queue.
-    pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+    /// Handle the messages of a given consensus round.
+    pub fn handle_consensus_round_messages(&mut self, messages: Vec<DWalletMPCDBMessage>) -> IkaResult {
+        // We only update `next_active_committee` here, so once we update it there is no longer going to be any pending events for it in this epoch.
+        if self.next_active_committee.is_none() {
+            let got_next_active_committee = self.try_receiving_next_active_committee();
+            if got_next_active_committee {
+                // `..` stands for `RangeFull`, and calling `drain(..)` will drain (i.e. mutate) the vector thus removing all events from it.
+                self.events_pending_for_next_active_committee.drain(..)
+                    .for_each(|event| {
+                    self.handle_dwallet_db_event(event);
+                });
+            }
+        }
+
+        // Check if we just got the public data for some network keys, and handle those events if so.
+        self.events_pending_for_network_key.keys().filter(|key_id| self.network_keys.key_public_data_exists(key_id))
+            .flat_map(|key_id| self.events_pending_for_network_key.remove(key_id)).flatten().for_each(|event| {
+            self.handle_dwallet_db_event(event);
+        });
+
+        for message in messages {
+            self.handle_dwallet_message(message);
+        }
+
+        // Check for ready to advance sessions, and clone and place their copy in an ordered queue waiting for computation.
         let ready_sessions_response = self.get_ready_to_advance_sessions()?;
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
 
-        self.pending_for_computation_order
-            .extend(ready_sessions_response.ready_sessions);
-        self.pending_for_events_order
+        // Note that because the Ika consensus isn't in sync with the Sui consensus, it might be that a session has gotten quorum of messages whilst
+        // the current validator haven't received the event from which its public input can be generated (and therefore cannot advance it yet).
+        //
+        // Because of this reason, we place these on two separate queues. Note that in either cases, we must use the copy at this point in time,
+        // so that we will advance it with exactly the same messages as those who already have their event data ready.
+        self.sessions_pending_for_events
             .extend(ready_sessions_response.pending_for_event_sessions);
+
+        // Extend the pending for computation queue while keeping order.
+        for ready_to_advance_session_copy in ready_sessions_response.ready_sessions {
+            self.insert_session_into_ordered_pending_for_computation_queue(ready_to_advance_session_copy);
+        }
 
         Ok(())
     }
@@ -395,53 +523,13 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Handle an MPC event.
-    ///
-    /// This function might be called more than once for a given session, as we periodically
-    /// check for uncompleted events.
-    ///
-    /// A new MPC session is only created once at the first time the event was received
-    /// (per-epoch, if it was uncompleted in the previous epoch it will be created again for the next one.)
-    ///
-    /// If the event already exists in `self.mpc_sessions`, we do not add it.
-    ///
-    /// If there is no session info, and we've got it in this call,
-    /// we update that field in the open session.
-    async fn handle_event(
-        &mut self,
-        event: DBSuiEvent,
-        session_info: SessionInfo,
-    ) -> DwalletMPCResult<()> {
-        if let Some(session) = self.mpc_sessions.get(&session_info.session_identifier) {
-            if session.mpc_event_data.is_none() {
-                let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
-
-                self.dwallet_mpc_metrics
-                    .add_received_event_start(&mpc_event_data.init_protocol_data);
-
-                if let Some(session) = self.mpc_sessions.get_mut(&session_info.session_identifier) {
-                    session.mpc_event_data = Some(mpc_event_data);
-                }
-            }
-        } else {
-            let mpc_event_data = self.new_mpc_event_data(event, &session_info).await?;
-
-            self.dwallet_mpc_metrics
-                .add_received_event_start(&mpc_event_data.init_protocol_data);
-
-            self.new_mpc_session(&session_info.session_identifier, Some(mpc_event_data));
-        }
-
-        Ok(())
-    }
-
-    async fn new_mpc_event_data(
+    fn new_mpc_event_data(
         &self,
         event: DBSuiEvent,
         session_info: &SessionInfo,
+        next_active_committee: Option<Committee>
     ) -> Result<MPCEventData, DwalletMPCError> {
         let epoch_store = self.epoch_store()?;
-        let next_active_committee = self.must_get_next_active_committee().await;
 
         MPCEventData::try_new(
             event,
@@ -500,49 +588,7 @@ impl DWalletMPCManager {
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        // TODO(Scaly): What is this?
-        for event in self
-            .events_pending_for_network_key
-            .drain(..)
-            .collect::<Vec<_>>()
-            .into_iter()
-        {
-            self.handle_dwallet_db_event(event.clone()).await;
-        }
-
-        for (index, pending_for_event_session) in
-            self.pending_for_events_order.clone().iter().enumerate()
-        {
-            let Some(live_session) = self
-                .mpc_sessions
-                .get(&pending_for_event_session.session_identifier)
-            else {
-                // This should never happen
-                continue;
-            };
-
-            if live_session.mpc_event_data.is_some() {
-                let mpc_protocol = live_session
-                    .mpc_event_data
-                    .clone()
-                    .unwrap()
-                    .init_protocol_data;
-
-                info!(
-                    session_identifier=?pending_for_event_session.session_identifier,
-                    mpc_protocol=?mpc_protocol,
-                    "Received event data for a known session"
-                );
-
-                // TODO(Scaly): what is this code? I don't understand this logic at all. And no documentation.....
-                let mut ready_to_advance_session = pending_for_event_session.clone();
-                ready_to_advance_session.mpc_event_data = live_session.mpc_event_data.clone();
-                self.pending_for_computation_order
-                    .push_back(ready_to_advance_session);
-                self.pending_for_events_order.remove(index);
-            }
-        }
-        let pending_for_computation = self.pending_for_computation_order.len();
+        let pending_for_computation = self.ordered_sessions_pending_for_computation.len();
         for _ in 0..pending_for_computation {
             if !self
                 .cryptographic_computations_orchestrator
@@ -552,12 +598,15 @@ impl DWalletMPCManager {
                 return;
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
-            let oldest_pending_session = self.pending_for_computation_order.pop_front().unwrap();
+            let oldest_pending_session = self.ordered_sessions_pending_for_computation.pop_front().unwrap();
             // Safe to unwarp since the session was ready to compute.
             let live_session = self
                 .mpc_sessions
                 .get(&oldest_pending_session.session_identifier)
                 .unwrap();
+
+            // TODO(Scaly): What does it even mean for a session to be non-active, if its already ready for advance?
+            // TODO - if its finished, it shouldn't be here, and also failed what??
             if live_session.status != MPCSessionStatus::Active {
                 info!(
                     session_identifier=?oldest_pending_session.session_identifier,
@@ -587,7 +636,7 @@ impl DWalletMPCManager {
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "Session should not be computed yet, skipping"
                 );
-                self.pending_for_computation_order
+                self.ordered_sessions_pending_for_computation
                     .push_back(oldest_pending_session.clone());
                 continue;
             }
@@ -730,12 +779,88 @@ impl DWalletMPCManager {
         self.mpc_sessions.insert(*session_identifier, new_session);
     }
 
-    pub(super) async fn must_get_next_active_committee(&self) -> Committee {
-        self.next_epoch_committee_receiver
-            .clone()
-            .wait_for(|committee| committee.epoch == self.epoch_id + 1)
-            .await
-            .expect("next epoch committee channel got closed unexpectedly")
-            .clone()
+    fn try_receiving_next_active_committee(&mut self) -> bool {
+        match self.next_epoch_committee_receiver.has_changed() {
+            Ok(has_changed) => {
+                if has_changed {
+                    let committee = self.next_epoch_committee_receiver.borrow_and_update().clone();
+
+                    if committee.epoch == self.epoch_id + 1 {
+                        self.next_active_committee = Some(committee);
+
+                        return true;
+                    }
+                }
+                }
+            Err(err) => {
+                error!(?err, "failed to check next epoch committee receiver");
+            }
+        }
+
+        false
+    }
+
+    fn update_network_keys(&mut self) {
+        match self.network_keys_receiver.has_changed() {
+            Ok(has_changed) => {
+                if has_changed {
+                    let new_keys = self.network_keys_receiver.borrow_and_update();
+                    for (key_id, key_data) in new_keys.iter() {
+                        info!(
+                            "Updating (decrypting new shares) network key for key_id: {:?}",
+                            key_id
+                        );
+                        self
+                            .network_keys
+                            .update_network_key(
+                                *key_id,
+                                key_data,
+                                &self.weighted_threshold_access_structure,
+                            )
+                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                    }
+                }
+            }
+            Err(err) => {
+                error!(?err, "failed to check network keys receiver");
+            }
+        }
+    }
+
+    /// Insert `session` into `self.ordered_sessions_pending_for_computation`, keeping order:
+    /// System sessions come first, and user sessions are sorted by their sequence number.
+    ///
+    /// Note: at this point, `mpc_event_data` must be set!
+    fn insert_session_into_ordered_pending_for_computation_queue(&mut self, session: DWalletMPCSession) {
+        let sequence_number = match session.mpc_event_data.as_ref().unwrap().session_type {
+            SessionType::User { sequence_number } => {
+                Some(sequence_number)
+            }
+            SessionType::System => None,
+        };
+
+        if let Some(index) = self.ordered_sessions_pending_for_computation.iter().position(|session_pending_for_computation| {
+            match session_pending_for_computation.mpc_event_data.as_ref().unwrap().session_type {
+                SessionType::User { sequence_number: pending_session_sequence_number } => {
+                    if let Some(sequence_number) = sequence_number {
+                        // Find the first pending session with a sequence number greater than the new session,
+                        // so we can insert the new session right before it.
+                        pending_session_sequence_number > sequence_number
+                    } else {
+                        // System session takes precedence over user sessions.
+                        true
+                    }
+                }
+                SessionType::System => {
+                    // Existing system sessions take precedence over both new system sessions and user sessions.
+                    false
+                },
+            }
+        }) {
+            self.ordered_sessions_pending_for_computation.insert(index, session);
+        } else {
+            // All existing pending sessions take precedence over the new one, so push it back.
+            self.ordered_sessions_pending_for_computation.push_back(session);
+        }
     }
 }

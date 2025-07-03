@@ -1027,7 +1027,7 @@ impl SuiClientInner for SuiSdkClient {
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
         let mut network_encryption_keys = HashMap::new();
         for cap in network_decryption_caps {
-            let key_id = cap.dwallet_network_decryption_key_id;
+            let key_id = cap.dwallet_network_encryption_key_id;
             let dynamic_field_response = self
                 .read_api()
                 .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())

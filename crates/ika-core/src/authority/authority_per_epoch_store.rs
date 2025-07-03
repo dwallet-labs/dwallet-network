@@ -1727,9 +1727,9 @@ impl AuthorityPerEpochStore {
                         let slices = if is_rejected {
                             vec![NetworkKeyPublicOutputSlice {
                                 session_id: init_event.session_object_id.to_vec(),
-                                dwallet_network_decryption_key_id: init_event
+                                dwallet_network_encryption_key_id: init_event
                                     .event_data
-                                    .dwallet_network_decryption_key_id
+                                    .dwallet_network_encryption_key_id
                                     .clone()
                                     .to_vec(),
                                 public_output: vec![],
@@ -1741,7 +1741,7 @@ impl AuthorityPerEpochStore {
                             }]
                         } else {
                             Self::slice_network_dkg_public_output_into_messages(
-                                &init_event.event_data.dwallet_network_decryption_key_id,
+                                &init_event.event_data.dwallet_network_encryption_key_id,
                                 output,
                                 init_event.session_object_id.to_vec(),
                             )
@@ -1762,9 +1762,9 @@ impl AuthorityPerEpochStore {
                 let slices = if is_rejected {
                     vec![NetworkKeyPublicOutputSlice {
                         session_id: init_event.session_object_id.to_vec(),
-                        dwallet_network_decryption_key_id: init_event
+                        dwallet_network_encryption_key_id: init_event
                             .event_data
-                            .dwallet_network_decryption_key_id
+                            .dwallet_network_encryption_key_id
                             .clone()
                             .to_vec(),
                         public_output: vec![],
@@ -1774,7 +1774,7 @@ impl AuthorityPerEpochStore {
                     }]
                 } else {
                     Self::slice_network_dkg_public_output_into_messages(
-                        &init_event.event_data.dwallet_network_decryption_key_id,
+                        &init_event.event_data.dwallet_network_encryption_key_id,
                         output,
                         init_event.session_object_id.to_vec(),
                     )
@@ -1832,7 +1832,7 @@ impl AuthorityPerEpochStore {
     /// Break down the key to slices because of chain transaction size limits.
     /// Limit 16 KB per Tx `pure` argument.
     fn slice_network_dkg_public_output_into_messages(
-        dwallet_network_decryption_key_id: &ObjectID,
+        dwallet_network_encryption_key_id: &ObjectID,
         public_output: Vec<u8>,
         session_id: Vec<u8>,
     ) -> Vec<NetworkKeyPublicOutputSlice> {
@@ -1847,7 +1847,7 @@ impl AuthorityPerEpochStore {
             let public_chunk = public_chunks.get(i).unwrap_or(&empty);
             slices.push(NetworkKeyPublicOutputSlice {
                 session_id: session_id.clone(),
-                dwallet_network_decryption_key_id: dwallet_network_decryption_key_id
+                dwallet_network_encryption_key_id: dwallet_network_encryption_key_id
                     .clone()
                     .to_vec(),
                 public_output: (*public_chunk).to_vec(),

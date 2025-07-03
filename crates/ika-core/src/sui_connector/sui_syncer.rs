@@ -230,7 +230,7 @@ where
             let current_keys = system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys();
             let should_fetch_keys = current_keys.iter().any(|key| {
                 !network_keys_cache
-                    .contains(&(key.dwallet_network_decryption_key_id, system_inner.epoch()))
+                    .contains(&(key.dwallet_network_encryption_key_id, system_inner.epoch()))
             });
             if !should_fetch_keys {
                 info!("No new network keys to fetch");

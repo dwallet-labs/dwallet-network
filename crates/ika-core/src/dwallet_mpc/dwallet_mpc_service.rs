@@ -35,7 +35,6 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
     consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
@@ -56,6 +55,7 @@ impl DWalletMPCService {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
             epoch_store.clone(),
+            network_keys_receiver,
             next_epoch_committee_receiver,
             node_config,
             dwallet_mpc_metrics,
@@ -67,7 +67,6 @@ impl DWalletMPCService {
             epoch_store: epoch_store.clone(),
             sui_client: sui_client.clone(),
             dwallet_mpc_manager,
-            network_keys_receiver,
             new_events_receiver,
             consensus_round_completed_sessions_receiver,
             exit,
@@ -161,33 +160,6 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_network_keys(&mut self) {
-        match self.network_keys_receiver.has_changed() {
-            Ok(has_changed) => {
-                if has_changed {
-                    let new_keys = self.network_keys_receiver.borrow_and_update();
-                    for (key_id, key_data) in new_keys.iter() {
-                        info!(
-                            "Updating (decrypting new shares) network key for key_id: {:?}",
-                            key_id
-                        );
-                        self.dwallet_mpc_manager
-                            .network_keys
-                            .update_network_key(
-                                *key_id,
-                                key_data,
-                                &self.dwallet_mpc_manager.weighted_threshold_access_structure,
-                            )
-                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
-                    }
-                }
-            }
-            Err(err) => {
-                error!(?err, "failed to check network keys receiver");
-            }
-        }
-    }
-
     /// Starts the DWallet MPC service.
     ///
     /// This service periodically reads DWallet MPC messages from the local database
@@ -235,7 +207,6 @@ impl DWalletMPCService {
                 // This signifies a bug, we can't proceed before we fix it.
                 break;
             }
-            self.update_network_keys().await;
 
             debug!("Running DWalletMPCService loop");
             self.dwallet_mpc_manager
@@ -261,12 +232,8 @@ impl DWalletMPCService {
                 }
             };
 
-            // If session already exists with event information, it will be ignored.
-            for event in events {
-                self.dwallet_mpc_manager
-                    .handle_dwallet_db_event(event)
-                    .await;
-            }
+            self.dwallet_mpc_manager.handle_dwallet_db_events(events);
+
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
                 .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
@@ -281,16 +248,12 @@ impl DWalletMPCService {
 
             // Sort the MPC messages by round in ascending order.
             mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
+
             for (round, messages) in mpc_messages {
                 // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
-                for message in messages {
-                    self.dwallet_mpc_manager
-                        .handle_dwallet_message(message)
-                        .await;
-                }
 
-                if let Err(err) = self.dwallet_mpc_manager.handle_end_of_delivery().await {
+                if let Err(err) = self.dwallet_mpc_manager.handle_consensus_round_messages(messages) {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }

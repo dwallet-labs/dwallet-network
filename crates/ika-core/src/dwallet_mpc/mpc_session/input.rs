@@ -37,7 +37,7 @@ pub(crate) fn session_input_from_event(
     event: DBSuiEvent,
     epoch_store: Arc<AuthorityPerEpochStore>,
     network_keys: &Box<DwalletMPCNetworkKeys>,
-    next_active_committee: Committee,
+    next_active_committee: Option<Committee>,
     validators_class_groups_public_keys_and_proofs: HashMap<
         PartyID,
         ClassGroupsEncryptionKeyAndProof,
@@ -96,7 +96,7 @@ pub(crate) fn session_input_from_event(
             let protocol_public_parameters = network_keys.get_protocol_public_parameters(
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -137,6 +137,8 @@ pub(crate) fn session_input_from_event(
                 .validator_private_dec_key_data
                 .class_groups_decryption_key;
 
+            let next_active_committee = next_active_committee.ok_or(DwalletMPCError::MissingNextActiveCommittee)?;
+
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(
                         epoch_store.committee().as_ref(),
@@ -144,13 +146,13 @@ pub(crate) fn session_input_from_event(
                         network_keys.get_decryption_key_share_public_parameters(
                             &deserialized_event
                                 .event_data
-                                .dwallet_network_decryption_key_id,
+                                .dwallet_network_encryption_key_id,
                         )?,
                         network_keys
                             .get_network_dkg_public_output(
                                 &deserialized_event
                                     .event_data
-                                    .dwallet_network_decryption_key_id,
+                                    .dwallet_network_encryption_key_id,
                             )?,
                     )?),
                     Some(bcs::to_bytes(
@@ -169,7 +171,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme - take curve from event
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -190,7 +192,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -210,7 +212,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -231,7 +233,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -257,7 +259,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((
@@ -274,7 +276,7 @@ pub(crate) fn session_input_from_event(
                 // Todo (#473): Support generic network key scheme
                 &deserialized_event
                     .event_data
-                    .dwallet_network_decryption_key_id,
+                    .dwallet_network_encryption_key_id,
             )?;
 
             Ok((

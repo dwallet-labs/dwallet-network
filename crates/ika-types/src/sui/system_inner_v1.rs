@@ -285,5 +285,5 @@ pub struct ValidatorOperationCapV1 {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletNetworkEncryptionKeyCap {
     pub id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
