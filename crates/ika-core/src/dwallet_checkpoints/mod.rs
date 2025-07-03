@@ -954,12 +954,12 @@ impl DWalletCheckpointAggregator {
                     return Ok(result);
                 }
                 debug!(
-                    checkpoint_seq = current.checkpoint_message.sequence_number,
-                    digest=?current.checkpoint_message.digest(),
-                    timestamp=?current.checkpoint_message.timestamp_ms,
-                    messages=?current.checkpoint_message.messages,
-                    sequence_number=?current.checkpoint_message.sequence_number,
-                    epoch=?current.checkpoint_message.epoch,
+                    checkpoint_seq = data.checkpoint_message.sequence_number,
+                    digest=?data.checkpoint_message.digest(),
+                    timestamp=?data.checkpoint_message.timestamp_ms,
+                    messages=?data.checkpoint_message.messages,
+                    sequence_number=?data.checkpoint_message.sequence_number,
+                    epoch=?data.checkpoint_message.epoch,
                     from=?data.checkpoint_message.auth_sig().authority.concise(),
                     "Processing signature for dwallet checkpoint.",
                 );

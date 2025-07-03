@@ -153,16 +153,19 @@ where
             .iter()
             .filter_map(|(id, (name, _))| {
                 let validator_class_groups_public_key_and_proof =
-                    class_group_encryption_keys_and_proofs
-                        .get(id);
+                    class_group_encryption_keys_and_proofs.get(id);
 
                 let validator_class_groups_public_key_and_proof =
-                    validator_class_groups_public_key_and_proof.and_then(|validator_class_groups_public_key_and_proof| {
-                        bcs::to_bytes(&validator_class_groups_public_key_and_proof).ok()
-                    });
-                validator_class_groups_public_key_and_proof.map(|validator_class_groups_public_key_and_proof| {
-                    (*name, validator_class_groups_public_key_and_proof)
-                })
+                    validator_class_groups_public_key_and_proof.and_then(
+                        |validator_class_groups_public_key_and_proof| {
+                            bcs::to_bytes(&validator_class_groups_public_key_and_proof).ok()
+                        },
+                    );
+                validator_class_groups_public_key_and_proof.map(
+                    |validator_class_groups_public_key_and_proof| {
+                        (*name, validator_class_groups_public_key_and_proof)
+                    },
+                )
             })
             .collect::<HashMap<_, _>>();
 
