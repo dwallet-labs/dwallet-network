@@ -636,7 +636,7 @@ impl DWalletMPCManager {
                 self.pending_for_computation_order
                     .push_front(oldest_pending_session.clone());
 
-                error!(
+                warn!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     mpc_protocol=?mpc_event_data.init_protocol_data,
