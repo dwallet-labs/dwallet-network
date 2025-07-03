@@ -36,6 +36,7 @@ const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 pub(crate) struct CompletedComputationReport {
     session_identifier: SessionIdentifier,
     round: usize,
+    attempts_count: usize,
 }
 
 /// The orchestrator for DWallet MPC cryptographic computations.
@@ -57,8 +58,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 
     /// A channel sender to notify the manager about completed computations,
     /// allowing proper resource management.
-    report_computation_completed_sender: Sender<CompletedComputationReport>,
-    report_computation_completed_receiver: Receiver<CompletedComputationReport>,
+    completed_computation_sender: Sender<CompletedComputationReport>,
+    completed_computation_receiver: Receiver<CompletedComputationReport>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -87,22 +88,23 @@ impl CryptographicComputationsOrchestrator {
 
         Ok(CryptographicComputationsOrchestrator {
             available_cores_for_cryptographic_computations: available_cores_for_computations,
-            report_computation_completed_sender,
-            report_computation_completed_receiver,
+            completed_computation_sender: report_computation_completed_sender,
+            completed_computation_receiver: report_computation_completed_receiver,
             currently_running_sessions_count: 0,
         })
     }
 
     /// Check for completed computations,  and then check if we currently have enough available cores.
     pub(crate) fn has_available_cores_to_preform_computation(&mut self) -> bool {
-        while let Ok(completed_session) = self.report_computation_completed_receiver.try_recv() {
+        while let Ok(completed_session) = self.completed_computation_receiver.try_recv() {
+            self.currently_running_sessions_count -= 1;
             info!(
                 session_identifier=?completed_session.session_identifier,
                 round=?completed_session.round,
+                attempts_count=?completed_session.attempts_count,
                 currently_running_sessions_count =? self.currently_running_sessions_count,
                 "Completed cryptographic computation"
             );
-            self.currently_running_sessions_count -= 1;
         }
 
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
@@ -121,7 +123,6 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
-        self.currently_running_sessions_count += 1;
 
         let handle = Handle::current();
         let mut session = session.clone();
@@ -131,7 +132,7 @@ impl CryptographicComputationsOrchestrator {
         dwallet_mpc_metrics
             .add_advance_call(&init_protocol_data, &session.current_round.to_string());
 
-        let computation_channel_sender = self.report_computation_completed_sender.clone();
+        let computation_channel_sender = self.completed_computation_sender.clone();
         rayon::spawn_fifo(move || {
             let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
@@ -168,6 +169,7 @@ impl CryptographicComputationsOrchestrator {
                     .send(CompletedComputationReport {
                         session_identifier: session.session_identifier,
                         round: session.current_round,
+                        attempts_count: session.attempts_count,
                     })
                     .await
                 {
@@ -186,6 +188,9 @@ impl CryptographicComputationsOrchestrator {
                 }
             });
         });
+
+        self.currently_running_sessions_count += 1;
+
         Ok(())
     }
 }
