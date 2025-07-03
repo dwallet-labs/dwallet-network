@@ -3,7 +3,6 @@ use fastcrypto::encoding::{Base64, Encoding};
 use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use merlin::Transcript;
-use proof::TranscriptProtocol;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
@@ -63,7 +62,7 @@ impl RootSeed {
         transcript.append_message(b"root seed", &self.0);
 
         // Generate a new seed from it (internally, it uses a hash function to pseudo-randomly generate it).
-        let mut seed: [u8; 32] = [0; 32];
+        let mut seed: [u8; Self::SEED_LENGTH] = [0; Self::SEED_LENGTH];
         transcript.challenge_bytes(b"seed", &mut seed);
 
         seed
@@ -76,30 +75,10 @@ impl RootSeed {
     fn mpc_round_seed(
         &self,
         session_identifier: CommitmentSizedNumber,
-        party_id: u64,
         current_round: u64,
         attempts_count: u64,
-        epoch_id: u64,
     ) -> [u8; Self::SEED_LENGTH] {
-        // Add a distinct descriptive label, and the root seed itself.
-        let mut transcript = Transcript::new(b"Ika MPC Advance Rng");
-        transcript.append_message(b"root seed", &self.0);
-
-        // Add public fields that uniquely-describes an attempt to `advance()`
-        // a particular MPC session of a particular round and attempt number.
-        // This guarantees that the seed - and subsequently all random generation within that round - would be deterministic and unique.
-        // If we attempt to run the round of a given session twice, the same message will be generated.
-        transcript.append_u64(b"$ pid $", party_id);
-        transcript.append_uint(b"$ sid $", &session_identifier);
-        transcript.append_u64(b"$ current round $", current_round);
-        transcript.append_u64(b"$ attempts count $", attempts_count);
-        transcript.append_u64(b"$ epoch $", epoch_id);
-
-        // Generate a new seed (internally, it uses a hash function on all of these values and labels to pseudo-randomly generate it).
-        let mut seed: [u8; 32] = [0; 32];
-        transcript.challenge_bytes(b"seed", &mut seed);
-
-        seed
+        mpc::derive_seed_for_round(&self.0, session_identifier, current_round, attempts_count)
     }
 
     /// Instantiates a deterministic secure pseudo-random generator (using the ChaCha20 algorithm)
@@ -115,18 +94,10 @@ impl RootSeed {
     pub fn mpc_round_rng(
         &self,
         session_identifier: CommitmentSizedNumber,
-        party_id: u64,
         current_round: u64,
         attempts_count: u64,
-        epoch_id: u64,
     ) -> ChaCha20Rng {
-        let seed = self.mpc_round_seed(
-            session_identifier,
-            party_id,
-            current_round,
-            attempts_count,
-            epoch_id,
-        );
+        let seed = self.mpc_round_seed(session_identifier, current_round, attempts_count);
 
         ChaCha20Rng::from_seed(seed)
     }
