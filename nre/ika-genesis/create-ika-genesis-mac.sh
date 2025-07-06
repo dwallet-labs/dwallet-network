@@ -26,12 +26,12 @@ fi
 # The prefix for the validator names (e.g. val1.devnet.ika.cloud, val2.devnet.ika.cloud, etc...).
 export VALIDATOR_PREFIX="val"
 # The number of validators to create.
-export VALIDATOR_NUM=4
+export VALIDATOR_NUM=12
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
 #export SUBDOMAIN="localhost"
-export SUBDOMAIN="beta.devnet.ika-network.net"
+export SUBDOMAIN="beta.devnet2.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -44,22 +44,22 @@ export VALIDATORS_FILE=""
 # Validator Docker image name.
 export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.7-arm64"
 # SUI fullnode URL.
-#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
 export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
 #export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-export SUI_FAUCET_URL="http://localhost:9123/gas"
+export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+#export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
 # Day
 #export EPOCH_DURATION_TIME_MS=86400000
 # 40 minutes
 #export EPOCH_DURATION_TIME_MS=2400000
-# 1 hour
-export EPOCH_DURATION_TIME_MS=$((1000*60*45*1))
+# 30 hour
+export EPOCH_DURATION_TIME_MS=$((1000*60*30*1))
 # Sui chain identifier.
 export SUI_CHAIN_IDENTIFIER="custom"
 
