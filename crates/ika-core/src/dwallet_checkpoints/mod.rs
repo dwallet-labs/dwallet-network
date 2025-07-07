@@ -14,6 +14,7 @@ pub use crate::dwallet_checkpoints::dwallet_checkpoint_output::{
     SubmitDWalletCheckpointToConsensus,
 };
 use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
+use base64;
 use mysten_metrics::{monitored_future, monitored_scope};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,7 @@ use sui_types::base_types::ConciseableName;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
 use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
+use base64::Engine;
 use ika_types::crypto::AuthorityStrongQuorumSignInfo;
 use ika_types::digests::DWalletCheckpointMessageDigest;
 use ika_types::error::{IkaError, IkaResult};
@@ -32,6 +34,7 @@ use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointSignatureMessage, DWalletCheckpointTimestamp, SignedDWalletCheckpointMessage,
     TrustedDWalletCheckpointMessage, VerifiedDWalletCheckpointMessage,
 };
+use im::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -406,6 +409,8 @@ pub struct DWalletCheckpointAggregator {
     output: Box<dyn CertifiedDWalletCheckpointMessageOutput>,
     state: Arc<AuthorityState>,
     metrics: Arc<DWalletCheckpointMetrics>,
+    /// Track printed checkpoints to avoid duplicates
+    printed_checkpoints: HashSet<u64>,
 }
 
 // This holds information to aggregate signatures for one dwallet_checkpoint.
@@ -863,6 +868,7 @@ impl DWalletCheckpointAggregator {
             output,
             state,
             metrics,
+            printed_checkpoints: HashSet::new(),
         }
     }
 
@@ -953,8 +959,7 @@ impl DWalletCheckpointAggregator {
                     // No more signatures (yet) for this checkpoint
                     return Ok(result);
                 }
-                debug!(
-                    checkpoint_seq = data.checkpoint_message.sequence_number,
+                info!(
                     digest=?data.checkpoint_message.digest(),
                     timestamp=?data.checkpoint_message.timestamp_ms,
                     messages=?data.checkpoint_message.messages,
@@ -963,6 +968,29 @@ impl DWalletCheckpointAggregator {
                     from=?data.checkpoint_message.auth_sig().authority.concise(),
                     "Processing signature for dwallet checkpoint.",
                 );
+
+                // Print Checkpoint Base64.
+                let sequence_number = data.checkpoint_message.sequence_number;
+                let checkpoint_message = data.checkpoint_message.data();
+                if !self.printed_checkpoints.contains(&sequence_number) {
+                    self.printed_checkpoints.insert(sequence_number);
+
+                    if let Ok(serialized) = bcs::to_bytes(checkpoint_message) {
+                        let base64_encoded =
+                            base64::engine::general_purpose::STANDARD.encode(serialized);
+                        info!(
+                            sequnce_number=?sequence_number,
+                            base64_checkpoint=?base64_encoded,
+                            "CHECKPOINT_BASE64",
+                        );
+                    } else {
+                        warn!(
+                            sequence_number=?sequence_number,
+                            "Failed to serialize a checkpoint message to base64",
+                        );
+                    }
+                }
+
                 self.metrics
                     .dwallet_checkpoint_participation
                     .with_label_values(&[&format!(
