@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::task::{Context, Poll};
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
+use tracing::info;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, Copy)]
 pub enum GetCheckpointMessageRequest {
@@ -128,6 +129,17 @@ where
             .get_highest_synced_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedDWalletCheckpointMessage::into_inner);
+
+        if let Some(checkpoint) = &highest_synced_checkpoint {
+            // Log the highest synced checkpoint for debugging purposes
+            info!(
+                digest=?checkpoint.digest(),
+                sequence_number=?checkpoint.sequence_number,
+                "Rerunning Highest synced dWallet checkpoint to Peer",
+            );
+        } else {
+            info!("No dWallet checkpoints synced yet, returning None to Peer");
+        }
 
         Ok(Response::new(GetDWalletCheckpointAvailabilityResponse {
             highest_synced_checkpoint,

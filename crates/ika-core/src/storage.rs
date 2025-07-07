@@ -91,6 +91,7 @@ impl ReadStore for RocksDbStore {
     fn get_highest_synced_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, StorageError> {
+        // todo(zeev): forkbug
         self.dwallet_checkpoint_store
             .get_highest_synced_dwallet_checkpoint()
             .map_err(Into::into)

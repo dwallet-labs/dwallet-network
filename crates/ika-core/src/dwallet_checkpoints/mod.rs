@@ -164,12 +164,37 @@ impl DWalletCheckpointStore {
         &self,
         digest: &DWalletCheckpointMessageDigest,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
+        // todo(zeev): forkbug, called by get_highest_synced_dwallet_checkpoint()
+        info!(
+            ?digest,
+            fork_bug = true,
+            "Getting dwallet checkpoint by digest",
+        );
         let sequence = self.checkpoint_message_sequence_by_digest.get(digest)?;
+        info!(
+            ?sequence,
+            fork_bug = true,
+            ?digest,
+            "Getting dwallet checkpoint by digest",
+        );
         if let Some(sequence) = sequence {
+            info!(
+                ?sequence,
+                ?digest,
+                fork_bug=true,
+                certified_checkpoints=?self.certified_checkpoints,
+                "Found dwallet checkpoint by digest",
+            );
             self.certified_checkpoints
                 .get(&sequence)
                 .map(|maybe_checkpoint| maybe_checkpoint.map(|c| c.into()))
         } else {
+            info!(
+                ?digest,
+                ?sequence,
+                fork_bug = true,
+                "No dwallet checkpoint found for digest",
+            );
             Ok(None)
         }
     }
@@ -243,12 +268,28 @@ impl DWalletCheckpointStore {
     pub fn get_highest_synced_dwallet_checkpoint(
         &self,
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
+        // todo(zeev): forkbug
+        // Print all watermarks for debugging purposes.
+        info!(
+            watermarks=?self.watermarks,
+            fork_bug = true,
+            "All Checkpoint Watermarks",
+        );
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
             .get(&DWalletCheckpointWatermark::HighestSynced)?
         {
+            info!(
+                ?highest_synced,
+                fork_bug = true,
+                "Returning highest synced dwallet checkpoint",
+            );
             highest_synced
         } else {
+            info!(
+                fork_bug = true,
+                "No highest synced watermark dwallet checkpoint found, returning None",
+            );
             return Ok(None);
         };
         self.get_dwallet_checkpoint_by_digest(&highest_synced.1)
@@ -300,7 +341,7 @@ impl DWalletCheckpointStore {
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        debug!(
+        info!(
             checkpoint_seq = checkpoint.sequence_number(),
             "Inserting certified dwallet checkpoint",
         );
@@ -338,7 +379,7 @@ impl DWalletCheckpointStore {
                 .get_highest_verified_dwallet_checkpoint()?
                 .map(|x| *x.sequence_number())
         {
-            debug!(
+            info!(
                 checkpoint_seq = checkpoint.sequence_number(),
                 "Updating highest verified dwallet checkpoint",
             );

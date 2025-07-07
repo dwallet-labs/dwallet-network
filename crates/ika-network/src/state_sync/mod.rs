@@ -1103,8 +1103,8 @@ async fn query_peers_for_their_latest_checkpoint(
         .highest_known_checkpoint()
         .cloned();
 
-    debug!(
-        "Our highest checkpoint {:?}, peers highest checkpoint {:?}",
+    info!(
+        "Our highest dWallet checkpoint {:?}, peers highest dWallet checkpoint {:?}",
         our_highest_checkpoint.as_ref().map(|c| c.sequence_number()),
         highest_checkpoint.as_ref().map(|c| c.sequence_number())
     );
@@ -1453,7 +1453,7 @@ async fn query_peers_for_their_latest_system_checkpoint(
         .highest_known_system_checkpoint()
         .cloned();
 
-    debug!(
+    info!(
         "Our highest system_checkpoint {:?}, peers highest system_checkpoint {:?}",
         our_highest_system_checkpoint
             .as_ref()

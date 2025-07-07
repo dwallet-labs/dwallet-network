@@ -1004,8 +1004,9 @@ impl SuiClientInner for SuiSdkClient {
                             })?,
                     );
                 }
-                Err(_) => {
+                Err(err) => {
                     warn!(
+                        error=?err,
                         validator_id=?validator.id,
                         "Failed to deserialize class groups public key and proof for a validator"
                     );
