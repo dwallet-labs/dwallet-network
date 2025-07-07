@@ -396,7 +396,7 @@ impl DWalletCheckpointStore {
         &self,
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<(), TypedStoreError> {
-        debug!(
+        info!(
             checkpoint_seq = checkpoint.sequence_number(),
             "Updating highest synced dwallet checkpoint",
         );

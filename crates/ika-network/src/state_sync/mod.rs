@@ -1239,6 +1239,8 @@ where
             checkpoint.report_dwallet_checkpoint_age(checkpoint_summary_age_metric);
         }
 
+        // todo(zeev): forkbug
+
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
         // verified checkpoint watermark as well.
