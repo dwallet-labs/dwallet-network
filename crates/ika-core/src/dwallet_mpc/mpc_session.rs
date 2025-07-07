@@ -451,10 +451,8 @@ impl DWalletMPCSession {
         // SECURITY NOTICE: don't use for anything else other than (this particular) `advance()`, and keep private!
         let rng = self.root_seed.mpc_round_rng(
             session_identifier,
-            self.party_id as u64,
             self.current_round as u64,
             self.attempts_count as u64,
-            self.epoch_id,
         );
 
         match &mpc_event_data.init_protocol_data {
