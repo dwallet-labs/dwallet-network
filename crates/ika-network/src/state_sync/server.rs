@@ -124,9 +124,11 @@ where
         &self,
         _request: Request<()>,
     ) -> Result<Response<GetDWalletCheckpointAvailabilityResponse>, Status> {
+        // todo(zeev): this is wrong, we should return highest synced checkpoint, not highest verified.
+        // todo(zeev): this is only a temp fix to continue our testnet.
         let highest_synced_checkpoint = self
             .store
-            .get_highest_synced_dwallet_checkpoint()
+            .get_highest_verified_dwallet_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedDWalletCheckpointMessage::into_inner);
 
@@ -207,9 +209,11 @@ where
         &self,
         _request: Request<()>,
     ) -> Result<Response<GetSystemCheckpointAvailabilityResponse>, Status> {
+        // todo(zeev): this is wrong, we should return highest synced checkpoint, not highest verified.
+        // todo(zeev): this is only a temp fix to continue our testnet.
         let highest_synced_system_checkpoint = self
             .store
-            .get_highest_synced_system_checkpoint()
+            .get_highest_verified_system_checkpoint()
             .map_err(|e| Status::internal(e.to_string()))?
             .map(VerifiedSystemCheckpointMessage::into_inner);
 
