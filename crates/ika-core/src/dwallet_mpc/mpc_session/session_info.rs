@@ -21,6 +21,9 @@ use ika_types::messages_dwallet_mpc::{
     SignRequestEvent,
 };
 
+// TODO(Scaly): move to event handling
+// TODO(Scaly): Rename `mpc_session_request_from_event()`
+
 /// Parses the session info from the event that was emitted in Sui from the Move code, and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
 pub(crate) fn session_info_from_event(

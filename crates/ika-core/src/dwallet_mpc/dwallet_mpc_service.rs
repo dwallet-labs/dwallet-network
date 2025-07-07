@@ -108,6 +108,7 @@ impl DWalletMPCService {
                     let events = events
                         .into_iter()
                         .flat_map(|event| {
+                            // TODO(Scaly): don't put this here, instead in handle event!
                         match session_info_from_event(event.clone(), &epoch_store.packages_config) {
                             Ok(Some(session_info)) => {
                                 let event = DWalletMPCEvent {

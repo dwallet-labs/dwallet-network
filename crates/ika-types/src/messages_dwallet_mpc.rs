@@ -59,6 +59,7 @@ pub const NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY: &str =
 pub const NETWORK_ENCRYPTION_KEY_DKG_STR_KEY: &str = "NetworkEncryptionKeyDkg";
 pub const SIGN_STR_KEY: &str = "Sign";
 
+// TODO(Scaly): Rename `MPCRequestInput`
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
     /// Make the dWallet user secret key shares public, so the network can control it.
@@ -310,6 +311,7 @@ pub struct DWalletMPCMessageKey {
 }
 
 /// Holds information about the current MPC session.
+// TODO(Scaly): Rename `MPCSessionRequest`
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
     pub session_type: SessionType,
@@ -317,6 +319,7 @@ pub struct SessionInfo {
     pub session_identifier: SessionIdentifier,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
+    // TODO(Scaly): Rename `request_input`
     pub mpc_round: MPCProtocolInitData,
     pub epoch: u64,
 }

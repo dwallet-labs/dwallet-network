@@ -38,6 +38,12 @@ impl DWalletMPCManager {
     /// If there is no session info, and we've got it in this call,
     /// we update that field in the open session.
     fn handle_dwallet_db_event(&mut self, event: DWalletMPCEvent) {
+        // TODO: take `DBSuiEvent`.
+        // TODO: reject events coming not from our module:
+        // address: *packages_config.ika_system_package_id,
+        // module: DWALLET_MODULE_NAME.to_owned(),
+
+
         // Avoid instantiation of completed events by checking they belong to the current epoch.
         if !event.override_epoch_check && event.session_info.epoch != self.epoch_id {
             warn!(
@@ -62,6 +68,8 @@ impl DWalletMPCManager {
                     );
 
                 // TODO: need to check it doesn't exist first
+                // event.session_info.session_identifier
+
                 self.events_pending_for_network_key.entry(network_encryption_key_id).or_insert(vec![]).push(event);
 
                 return;
