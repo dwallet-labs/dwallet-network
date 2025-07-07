@@ -7,8 +7,8 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DWalletSessionEvent, MPCProtocolInitData, PresignRequestEvent,
-    SessionIdentifier, SessionInfo,
+    AsyncProtocol, DWalletSessionEvent, MPCRequestInput, MPCSessionRequest, PresignRequestEvent,
+    SessionIdentifier,
 };
 
 pub(crate) type PresignParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::PresignParty;
@@ -31,14 +31,14 @@ pub(crate) fn presign_public_input(
     )
 }
 
-pub(crate) fn presign_party_session_info(
+pub(crate) fn presign_party_session_request(
     deserialized_event: DWalletSessionEvent<PresignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::Presign(deserialized_event),
+        request_input: MPCRequestInput::Presign(deserialized_event),
     }
 }
 

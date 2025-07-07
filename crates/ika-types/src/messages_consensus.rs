@@ -6,7 +6,7 @@ use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MaliciousReport, SessionIdentifier, SessionInfo,
+    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, MaliciousReport, SessionIdentifier,
     ThresholdNotReachedReport,
 };
 use crate::messages_system_checkpoints::{
@@ -175,7 +175,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, Box<SessionInfo>, Vec<u8>),
+    DWalletMPCOutput(AuthorityName, Box<MPCSessionRequest>, Vec<u8>),
     /// Sending Authority and its MaliciousReport.
     DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
     DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
@@ -199,10 +199,10 @@ impl ConsensusTransaction {
         session_identifier: SessionIdentifier,
         round_number: usize,
         mpc_protocol: String,
-        session_info: SessionInfo,
+        session_request: MPCSessionRequest,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        session_info.hash(&mut hasher);
+        session_request.hash(&mut hasher);
         authority.hash(&mut hasher);
         round_number.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
@@ -222,18 +222,18 @@ impl ConsensusTransaction {
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
         output: Vec<u8>,
-        session_info: SessionInfo,
+        session_request: MPCSessionRequest,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
-        session_info.hash(&mut hasher);
+        session_request.hash(&mut hasher);
         authority.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::DWalletMPCOutput(
                 authority,
-                Box::new(session_info),
+                Box::new(session_request),
                 output,
             ),
         }
@@ -328,10 +328,10 @@ impl ConsensusTransaction {
                     round_number: message.round_number,
                 })
             }
-            ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
+            ConsensusTransactionKind::DWalletMPCOutput(authority, session_request, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
                     *authority,
-                    session_info.session_identifier,
+                    session_request.session_identifier,
                     output.clone(),
                 )
             }

@@ -11,8 +11,8 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCProtocolInitData,
-    SessionIdentifier, SessionInfo, SignRequestEvent,
+    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCRequestInput, MPCSessionRequest,
+    SessionIdentifier, SignRequestEvent,
 };
 use message_digest::message_digest::{message_digest, Hash};
 use mpc::{Party, Weight};
@@ -64,7 +64,7 @@ pub(crate) fn sign_session_public_input(
         // Todo (#473): Support generic network key scheme
         &deserialized_event
             .event_data
-            .dwallet_network_decryption_key_id,
+            .dwallet_network_encryption_key_id,
     )?;
 
     let expected_decrypters = generate_expected_decrypters(
@@ -96,25 +96,25 @@ pub(crate) fn sign_session_public_input(
     )
 }
 
-pub(crate) fn sign_party_session_info(
+pub(crate) fn sign_party_session_request(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
+        request_input: MPCRequestInput::Sign(deserialized_event.clone()),
     }
 }
 
-pub(crate) fn get_verify_partial_signatures_session_info(
+pub(crate) fn get_verify_partial_signatures_session_request(
     deserialized_event: &DWalletSessionEvent<FutureSignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+        request_input: MPCRequestInput::PartialSignatureVerification(deserialized_event.clone()),
     }
 }
 

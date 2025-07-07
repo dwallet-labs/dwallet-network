@@ -11,8 +11,8 @@ use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletSessionEvent, MPCProtocolInitData,
-    SessionInfo,
+    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletSessionEvent, MPCRequestInput,
+    MPCSessionRequest,
 };
 use mpc::Party;
 use std::collections::HashMap;
@@ -92,14 +92,14 @@ impl ReconfigurationPartyPublicInputGenerator for ReconfigurationSecp256k1Party 
     }
 }
 
-pub(crate) fn network_decryption_key_reconfiguration_session_info_from_event(
+pub(crate) fn network_decryption_key_reconfiguration_session_request_from_event(
     deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(deserialized_event),
+        request_input: MPCRequestInput::NetworkEncryptionKeyReconfiguration(deserialized_event),
     }
 }
 

@@ -146,10 +146,18 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
-        let mpc_event_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let mpc_event_data = session
+            .mpc_event_data
+            .clone()
+            .unwrap()
+            .mpc_session_request_input;
 
         dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
-        let mpc_protocol = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let mpc_protocol = session
+            .mpc_event_data
+            .clone()
+            .unwrap()
+            .mpc_session_request_input;
         if let Err(err) = self
             .computation_update_channel_sender
             .send(ComputationUpdate::Started)

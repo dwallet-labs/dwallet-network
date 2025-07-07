@@ -23,6 +23,7 @@ pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 
 pub mod dwallet_mpc_metrics;
+mod mpc_event;
 mod mpc_protocols;
 mod native_computations;
 
@@ -116,15 +117,17 @@ pub(crate) fn party_ids_to_authority_names(
 
 /// The type of the event is different when we receive an emitted event and when we
 /// fetch the event's the dynamic field directly from Sui.
-/// This function first tried to deserialize the event as a [`DWalletSessionEvent`], and if it fails,
-/// it tries to deserialize it as a [`Field<ID, DWalletSessionEvent<T>>`].
-fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletSessionEventTrait>(
+fn deserialize_event_contents<T: DeserializeOwned + DWalletSessionEventTrait>(
     event_contents: &[u8],
+    pulled: bool,
 ) -> Result<DWalletSessionEvent<T>, bcs::Error> {
-    bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents).or_else(|_| {
+    // TODO(Scaly): unit test
+    if pulled {
         bcs::from_bytes::<Field<ID, DWalletSessionEvent<T>>>(event_contents)
             .map(|field| field.value)
-    })
+    } else {
+        bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents)
+    }
 }
 
 // TODO (#683): Parse the network key version from the network key object ID
