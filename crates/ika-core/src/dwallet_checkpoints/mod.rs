@@ -902,6 +902,10 @@ impl DWalletCheckpointAggregator {
     fn run_inner(&mut self) -> IkaResult<Vec<CertifiedDWalletCheckpointMessage>> {
         let _scope = monitored_scope("DWalletCheckpointAggregator");
         let mut result = vec![];
+        info!(
+            fork_bug = true,
+            "Running run_inner() in DWalletCheckpointAggregator"
+        );
         'outer: loop {
             let next_to_certify = self.next_checkpoint_to_certify()?;
             let current = if let Some(current) = &mut self.current {
@@ -910,18 +914,44 @@ impl DWalletCheckpointAggregator {
                 // certified checkpoint via StateSync. In this case, we reset
                 // the current signature aggregator to the next checkpoint to
                 // be certified.
+                info!(
+                    fork_bug=true,
+                    current=?current.checkpoint_message,
+                    "Running loop in run_inner() where current is Some",
+                );
                 if current.checkpoint_message.sequence_number < next_to_certify {
+                    info!(
+                        fork_bug=true,
+                        checkpoint_seq=current.checkpoint_message.sequence_number,
+                        next_to_certify=?next_to_certify,
+                        "Checkpoint already certified, moving to the next checkpoint",
+                    );
                     self.current = None;
                     continue;
                 }
                 current
             } else {
+                info!(
+                    fork_bug = true,
+                    "Running loop in run_inner() where current is None",
+                );
                 let Some(checkpoint_message) = self
                     .epoch_store
                     .get_built_dwallet_checkpoint_message(next_to_certify)?
                 else {
+                    // No checkpoint to certify, return an empty result.
+                    info!(
+                        checkpoint_seq=?next_to_certify,
+                        fork_bug=true,
+                        "No dwallet checkpoint to certify, get_built_dwallet_checkpoint_message() is None",
+                    );
                     return Ok(result);
                 };
+                info!(
+                    checkpoint_seq=?checkpoint_message.sequence_number,
+                    fork_bug=true,
+                    "Creating new DWalletCheckpointSignatureAggregator for checkpoint",
+                );
                 self.current = Some(DWalletCheckpointSignatureAggregator {
                     next_index: 0,
                     digest: checkpoint_message.digest(),
@@ -949,6 +979,14 @@ impl DWalletCheckpointAggregator {
                     )),
                     None,
                 );
+
+            info!(
+                fork_bug = true,
+                checkpoint_seq = current.checkpoint_message.sequence_number,
+                next_index = current.next_index,
+                "Processing signatures for dwallet checkpoint",
+            );
+
             for item in iter {
                 let ((seq, index), data) = item?;
                 if seq != current.checkpoint_message.sequence_number {
