@@ -75,13 +75,13 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30", features = ["threshold"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "1a1ee30"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "1a1ee30"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1a1ee30"}
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d60e6829"}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d60e6829"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d60e6829", features = ["threshold"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d60e6829" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "d60e6829"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "d60e6829"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d60e6829"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -394,6 +394,9 @@ versions = "4.1.0"
 linked-hash-map = "0.5.6"
 shlex = "1.3.0"
 
+#sha3 = "0.11.0-rc.0"
+#sha2 = "0.11.0-rc.0"
+
 # Move dependencies
 move-binary-format = { git = "https://github.com/MystenLabs/sui", rev = "597b04d84a64a88ecbc9c2984d61d436ff4ec693" }
 move-bytecode-utils = { git = "https://github.com/MystenLabs/sui", rev = "597b04d84a64a88ecbc9c2984d61d436ff4ec693" }
@@ -526,7 +529,7 @@ sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "597b04d84a64
 consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "597b04d84a64a88ecbc9c2984d61d436ff4ec693" }
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "597b04d84a64a88ecbc9c2984d61d436ff4ec693" }
 
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
+crypto-bigint = { version = "0.7.0-pre.5", default-features = false, features = ["serde"] }
 
 ### Workspace Members ###
 dwallet-rng = { path = "crates/dwallet-rng" }
@@ -561,5 +564,9 @@ spinners = "4.1.0"
 include_dir = "0.7.3"
 
 [patch.crates-io]
+sha2 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha2-v0.11.0-rc.0" }
+sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-rc.0" }
+digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
+signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
 curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
