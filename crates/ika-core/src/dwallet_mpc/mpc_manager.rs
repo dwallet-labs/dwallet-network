@@ -10,13 +10,11 @@ use crate::dwallet_mpc::mpc_protocols::network_dkg::{
     DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
 };
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
-use crate::dwallet_mpc::{mpc_session::session_input_from_event, party_ids_to_authority_names};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
+use crate::dwallet_mpc::party_ids_to_authority_names;
 use crate::stake_aggregator::StakeAggregator;
-use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -25,8 +23,8 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCRequestInput,
-    MPCSessionRequest, MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport,
+    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData,
+    MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
@@ -36,7 +34,6 @@ use std::sync::{Arc, Weak};
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
 use tracing::{error, info, warn};
-use twopc_mpc::sign::Protocol;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -76,7 +73,7 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
-    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
     /// Events that wait for the network key to update.
     /// Once we get the network key, these events will be executed.
     pub(crate) events_pending_for_network_key: HashMap<ObjectID, Vec<DWalletMPCEvent>>,
@@ -126,7 +123,7 @@ impl DWalletMPCManager {
     pub(crate) async fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -149,7 +146,7 @@ impl DWalletMPCManager {
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -372,35 +369,6 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub(super) fn get_decryption_key_share_public_parameters(
-        &self,
-        key_id: &ObjectID,
-    ) -> DwalletMPCResult<Secp256k1DecryptionKeySharePublicParameters> {
-        self.network_keys.get_decryption_public_parameters(key_id)
-    }
-
-    /// Retrieves the decryption share for the current authority.
-    ///
-    /// This function accesses the current epoch's store and determines the party ID for the
-    /// authority using its name.
-    /// It then retrieves the corresponding decryption share from
-    /// the node configuration.
-    /// The decryption share is combined with the public parameters
-    /// to build a [`DecryptionKeyShare`].
-    /// If any required data is missing or invalid, an
-    /// appropriate error is returned.
-    fn get_decryption_key_shares(
-        &self,
-        key_id: &ObjectID,
-    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
-        self.network_keys
-            .validator_private_dec_key_data
-            .validator_decryption_key_shares
-            .get(key_id)
-            .cloned()
-            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
-    }
-
     /// Returns the sessions that can perform the next cryptographic round,
     /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
@@ -511,6 +479,7 @@ impl DWalletMPCManager {
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     session_type=?mpc_event_data.session_type,
+                    mpc_protocol=?mpc_event_data.request_input,
                     error=?err,
                     "failed to spawn a cryptographic session"
                 );
@@ -641,7 +610,7 @@ impl DWalletMPCManager {
         self.mpc_sessions.insert(*session_identifier, new_session);
     }
 
-    fn try_receiving_next_active_committee(&mut self) -> bool {
+    pub(crate) fn try_receiving_next_active_committee(&mut self) -> bool {
         match self.next_epoch_committee_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
@@ -668,23 +637,42 @@ impl DWalletMPCManager {
     pub(crate) fn update_network_keys(&mut self) -> Vec<ObjectID> {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
+                let access_structure = &self.weighted_threshold_access_structure;
                 if has_changed {
                     let new_keys = self.network_keys_receiver.borrow_and_update();
+
+                    let mut new_key_ids = vec![];
                     for (key_id, key_data) in new_keys.iter() {
-                        info!(
-                            "Updating (decrypting new shares) network key for key_id: {:?}",
-                            key_id
-                        );
-                        self.network_keys
-                            .update_network_key(
-                                *key_id,
-                                key_data,
-                                &self.weighted_threshold_access_structure,
-                            )
-                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                        match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
+                            key_data.current_epoch,
+                            DWalletMPCNetworkKeyScheme::Secp256k1,
+                            access_structure,
+                            key_data.clone(),
+                        ) {
+                            Ok(key) => {
+                                info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
+                                self
+                                    .network_keys
+                                    .update_network_key(
+                                        *key_id,
+                                        &key,
+                                        &self.weighted_threshold_access_structure,
+                                    )
+                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+
+                                new_key_ids.push(*key_id);
+                            }
+                            Err(err) => {
+                                error!(
+                                    ?err,
+                                    key_id=?key_id,
+                                    "failed to instantiate network decryption key shares from public output for"
+                                );
+                            }
+                        }
                     }
 
-                    new_keys.keys().copied().collect()
+                    new_key_ids
                 } else {
                     vec![]
                 }
@@ -694,6 +682,57 @@ impl DWalletMPCManager {
 
                 vec![]
             }
+        }
+    }
+
+    /// Insert `session` into `self.ordered_sessions_pending_for_computation`, keeping order:
+    /// System sessions come first, and user sessions are sorted by their sequence number.
+    ///
+    /// Note: at this point, `mpc_event_data` must be set!
+    pub(crate) fn insert_session_into_ordered_pending_for_computation_queue(
+        &mut self,
+        session: DWalletMPCSession,
+    ) {
+        let sequence_number = match session.mpc_event_data.as_ref().unwrap().session_type {
+            SessionType::User { sequence_number } => Some(sequence_number),
+            SessionType::System => None,
+        };
+
+        if let Some(index) = self
+            .ordered_sessions_pending_for_computation
+            .iter()
+            .position(|session_pending_for_computation| {
+                match session_pending_for_computation
+                    .mpc_event_data
+                    .as_ref()
+                    .unwrap()
+                    .session_type
+                {
+                    SessionType::User {
+                        sequence_number: pending_session_sequence_number,
+                    } => {
+                        if let Some(sequence_number) = sequence_number {
+                            // Find the first pending session with a sequence number greater than the new session,
+                            // so we can insert the new session right before it.
+                            pending_session_sequence_number > sequence_number
+                        } else {
+                            // System session takes precedence over user sessions.
+                            true
+                        }
+                    }
+                    SessionType::System => {
+                        // Existing system sessions take precedence over both new system sessions and user sessions.
+                        false
+                    }
+                }
+            })
+        {
+            self.ordered_sessions_pending_for_computation
+                .insert(index, session);
+        } else {
+            // All existing pending sessions take precedence over the new one, so push it back.
+            self.ordered_sessions_pending_for_computation
+                .push_back(session);
         }
     }
 }

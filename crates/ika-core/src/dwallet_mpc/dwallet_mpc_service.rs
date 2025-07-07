@@ -7,17 +7,11 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
-use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCSessionStatus, NetworkDecryptionKeyPublicData,
-};
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData, SessionIdentifier,
-};
+use ika_types::messages_dwallet_mpc::{DWalletNetworkDecryptionKeyData, SessionIdentifier};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -25,7 +19,6 @@ use std::time::Duration;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
-use tokio::sync::broadcast::error::TryRecvError;
 use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
@@ -50,7 +43,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -170,7 +163,8 @@ impl DWalletMPCService {
                 }
             };
 
-            self.dwallet_mpc_manager.handle_dwallet_db_events(events);
+            self.dwallet_mpc_manager
+                .handle_dwallet_db_events(events, &self.epoch_store);
 
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages

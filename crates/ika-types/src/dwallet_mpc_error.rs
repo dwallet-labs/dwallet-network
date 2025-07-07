@@ -20,9 +20,6 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event {0}")]
-    UnsupportedEvent(String),
-
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(crate::crypto::AuthorityName),
 
@@ -138,6 +135,9 @@ pub enum DwalletMPCError {
 
     #[error("no event data when spawning session: BUG")]
     MissingEventData,
+
+    #[error("no next active committee for an event that required it: BUG")]
+    MissingNextActiveCommittee,
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,

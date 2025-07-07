@@ -18,6 +18,7 @@ pub(crate) fn make_dwallet_user_secret_key_shares_public_request_event_session_r
         request_input: MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(
             deserialized_event,
         ),
+        requires_next_active_committee: false,
     }
 }
 

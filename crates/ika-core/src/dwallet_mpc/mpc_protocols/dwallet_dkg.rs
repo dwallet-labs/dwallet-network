@@ -49,6 +49,7 @@ pub(crate) fn dwallet_imported_key_verification_request_event_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::DWalletImportedKeyVerificationRequest(deserialized_event),
+        requires_next_active_committee: false,
     }
 }
 

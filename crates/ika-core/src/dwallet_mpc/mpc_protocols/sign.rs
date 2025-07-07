@@ -3,7 +3,7 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
     VersionedPresignOutput, VersionedUserSignedMessage,
@@ -56,10 +56,11 @@ fn generate_expected_decrypters(
 
 pub(crate) fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-    dwallet_mpc_manager: &DWalletMPCManager,
+    epoch_store: Arc<AuthorityPerEpochStore>,
+    network_keys: &Box<DwalletMPCNetworkKeys>,
     protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
 ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
-    let decryption_pp = dwallet_mpc_manager.get_decryption_key_share_public_parameters(
+    let decryption_pp = network_keys.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
         // Todo (#473): Support generic network key scheme
         &deserialized_event
@@ -67,10 +68,8 @@ pub(crate) fn sign_session_public_input(
             .dwallet_network_encryption_key_id,
     )?;
 
-    let expected_decrypters = generate_expected_decrypters(
-        dwallet_mpc_manager.epoch_store()?,
-        deserialized_event.session_identifier_digest(),
-    )?;
+    let expected_decrypters =
+        generate_expected_decrypters(epoch_store, deserialized_event.session_identifier_digest())?;
 
     <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
@@ -104,6 +103,7 @@ pub(crate) fn sign_party_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::Sign(deserialized_event.clone()),
+        requires_next_active_committee: false,
     }
 }
 
@@ -115,6 +115,7 @@ pub(crate) fn get_verify_partial_signatures_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::PartialSignatureVerification(deserialized_event.clone()),
+        requires_next_active_committee: false,
     }
 }
 

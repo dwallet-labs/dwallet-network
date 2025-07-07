@@ -146,18 +146,10 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
-        let mpc_event_data = session
-            .mpc_event_data
-            .clone()
-            .unwrap()
-            .mpc_session_request_input;
+        let mpc_event_data = session.mpc_event_data.clone().unwrap().request_input;
 
         dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
-        let mpc_protocol = session
-            .mpc_event_data
-            .clone()
-            .unwrap()
-            .mpc_session_request_input;
+        let request_input = session.mpc_event_data.clone().unwrap().request_input;
         if let Err(err) = self
             .computation_update_channel_sender
             .send(ComputationUpdate::Started)
@@ -166,7 +158,7 @@ impl CryptographicComputationsOrchestrator {
             // This should not happen, but error just in case.
             error!(
                 session_id=?session.session_identifier,
-                mpc_protocol=?mpc_protocol,
+                mpc_protocol=?request_input,
                 error=?err,
                 "failed to send a `started` computation message",
             );
@@ -177,14 +169,14 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=%mpc_protocol,
+                    request_input=%request_input,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
-                    mpc_protocol=%mpc_protocol,
+                    request_input=%request_input,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
@@ -216,7 +208,7 @@ impl CryptographicComputationsOrchestrator {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
                         duration_ms = elapsed_ms,
-                        mpc_protocol=?mpc_protocol,
+                        mpc_protocol=?request_input,
                         duration_seconds = elapsed_ms / 1000,
                         "Computation update message sent"
                     );

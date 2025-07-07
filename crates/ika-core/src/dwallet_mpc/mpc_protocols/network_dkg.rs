@@ -30,7 +30,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tracing::warn;
+use tracing::debug;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -191,13 +191,29 @@ impl DwalletMPCNetworkKeys {
             .clone())
     }
 
+    /// Retrieves the decryption key shares for the current authority.
+    pub(crate) fn get_decryption_key_shares(
+        &self,
+        key_id: &ObjectID,
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        self.validator_private_dec_key_data
+            .validator_decryption_key_shares
+            .get(key_id)
+            .cloned()
+            .ok_or(DwalletMPCError::WaitingForNetworkKey(*key_id))
+    }
+
+    pub fn key_public_data_exists(&self, key_id: &ObjectID) -> bool {
+        self.network_encryption_keys.contains_key(key_id)
+    }
+
     /// Retrieves the protocol public parameters for the specified key ID.
     pub fn get_protocol_public_parameters(
         &self,
         key_id: &ObjectID,
     ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
-            warn!(
+            debug!(
                 ?key_id,
                 "failed to fetch the network decryption key shares for key ID"
             );
@@ -316,6 +332,7 @@ fn network_dkg_secp256k1_session_request(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
+        requires_next_active_committee: false,
     }
 }
 
@@ -330,6 +347,7 @@ fn network_dkg_ristretto_session_request(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),
+        requires_next_active_committee: false,
     }
 }
 

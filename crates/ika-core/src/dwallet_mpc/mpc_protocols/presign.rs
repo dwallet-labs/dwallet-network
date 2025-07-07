@@ -39,6 +39,7 @@ pub(crate) fn presign_party_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::Presign(deserialized_event),
+        requires_next_active_committee: false,
     }
 }
 

@@ -1,9 +1,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::deserialize_event_contents;
 use crate::dwallet_mpc::dwallet_dkg::{
     dwallet_dkg_first_public_input, dwallet_dkg_second_public_input,
 };
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::network_dkg::{network_dkg_public_input, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::presign_public_input;
@@ -18,14 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
-    DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent,
-    DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent,
-    MPCRequestInput, MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent,
-    SignRequestEvent,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -35,7 +26,7 @@ use std::sync::Arc;
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub(crate) async fn session_input_from_event(
+pub(crate) fn session_input_from_event(
     event: DWalletMPCEvent,
     epoch_store: Arc<AuthorityPerEpochStore>,
     network_keys: &Box<DwalletMPCNetworkKeys>,
@@ -45,7 +36,6 @@ pub(crate) async fn session_input_from_event(
         ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<(PublicInput, MPCPrivateInput)> {
-    let packages_config = &epoch_store.packages_config;
     let session_id = CommitmentSizedNumber::from_le_slice(
         event.session_request.session_identifier.to_vec().as_slice(),
     );
@@ -212,8 +202,5 @@ pub(crate) async fn session_input_from_event(
                 None,
             ))
         }
-        _ => Err(DwalletMPCError::UnsupportedEvent(
-            event.session_request.session_type.to_string(),
-        )),
     }
 }
