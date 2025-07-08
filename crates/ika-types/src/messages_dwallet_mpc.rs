@@ -288,14 +288,16 @@ impl Debug for MPCRequestInput {
 pub struct DBSuiEvent {
     pub type_: StructTag,
     pub contents: Vec<u8>,
-    // Set when the event was pulled from the state of the object, and unset when it was pushed as an event.
+    // True when the event was pulled from the state of the object,
+    // and False when it was pushed as an event.
     pub pulled: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
     pub session_request: MPCSessionRequest,
-    // Set when the event was pulled from the state of the object, and unset when it was pushed as an event.
+    // True when the event was pulled from the state of the object,
+    // and False when it was pushed as an event.
     pub pulled: bool,
 }
 

@@ -172,7 +172,7 @@ impl DWalletMPCManager {
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
 
         // Re-initialize the malicious handler every epoch. This is done intentionally:
-        // we want to "forget" the malicious actors from the previous epoch and start from scratch.
+        // We want to "forget" the malicious actors from the previous epoch and start from scratch.
         let malicious_handler = MaliciousHandler::new(epoch_store.committee().clone());
         Ok(Self {
             mpc_sessions: HashMap::new(),
@@ -335,11 +335,12 @@ impl DWalletMPCManager {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
 
-        // Note that because the Ika consensus isn't in sync with the Sui consensus, it might be that a session has gotten quorum of messages whilst
-        // the current validator haven't received the event from which its public input can be generated (and therefore cannot advance it yet).
-        //
-        // Because of this reason, we place these on two separate queues. Note that in either cases, we must use the copy at this point in time,
-        // so that we will advance it with exactly the same messages as those who already have their event data ready.
+        // Since the Ika and Sui consensuses are not in sync,
+        // a session might reach quorum before a validator has received
+        // the event needed to generate its public input (and therefore cannot advance it yet).
+        // To handle this, we use two separate queues. We also snapshot
+        // the current messages so that when we do advance,
+        // we use exactly the same inputs as peers who already have the data.
         self.sessions_pending_for_events
             .extend(ready_sessions_response.pending_for_event_sessions);
 
@@ -649,8 +650,8 @@ impl DWalletMPCManager {
     pub(crate) fn update_network_keys(&mut self) -> Vec<ObjectID> {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
-                let access_structure = &self.weighted_threshold_access_structure;
                 if has_changed {
+                    let access_structure = &self.weighted_threshold_access_structure;
                     let new_keys = self.network_keys_receiver.borrow_and_update();
 
                     let mut new_key_ids = vec![];
@@ -670,7 +671,7 @@ impl DWalletMPCManager {
                                         &key,
                                         &self.weighted_threshold_access_structure,
                                     ) {
-                                    error!(?e, key_id=?key_id, "failed to update network key");
+                                    error!(error=?e, key_id=?key_id, "failed to update the network key");
                                 } else {
                                     new_key_ids.push(*key_id);
                                 }

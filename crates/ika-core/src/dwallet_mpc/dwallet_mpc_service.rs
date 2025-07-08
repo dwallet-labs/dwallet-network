@@ -181,7 +181,8 @@ impl DWalletMPCService {
             mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
 
             for (round, messages) in mpc_messages {
-                // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
+                // Since we sorted, this assures this variable will be the 
+                // last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
                 for message in messages {
                     self.dwallet_mpc_manager

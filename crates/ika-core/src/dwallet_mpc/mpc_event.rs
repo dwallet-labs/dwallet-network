@@ -38,18 +38,20 @@ impl DWalletMPCManager {
     /// check for uncompleted events - in which case the event will be ignored.
     ///
     /// A new MPC session is only created once at the first time the event was received
-    /// (per-epoch, if it was uncompleted in the previous epoch it will be created again for the next one.)
+    /// (per-epoch, if it was uncompleted in the previous epoch,
+    /// it will be created again for the next one.)
     ///
     /// If the event already exists in `self.mpc_sessions`, we do not add it.
     ///
-    /// If there is no session info, and we've got it in this call,
+    /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
     pub(crate) fn handle_dwallet_db_events(
         &mut self,
         events: Vec<DBSuiEvent>,
         epoch_store: &AuthorityPerEpochStore,
     ) {
-        // We only update `next_active_committee` here, so once we update it there is no longer going to be any pending events for it in this epoch.
+        // We only update `next_active_committee` in this block. Once it's set,
+        // there will no longer be any pending events targeting it for this epoch.
         if self.next_active_committee.is_none() {
             let got_next_active_committee = self.try_receiving_next_active_committee();
             if got_next_active_committee {
@@ -65,13 +67,13 @@ impl DWalletMPCManager {
             }
         }
 
-        // First try to update the network keys.
+        // First, try to update the network keys.
         let newly_updated_network_keys_ids = self.update_network_keys();
 
-        // Then handle events for which we just received the public data for.
-        // Since events are only added to the `events_pending_for_network_key` queue in this function,
-        // we know once we got the network key data no more will be pending for that key,
-        // so its safe to only handle these at the time of update, as it will remain an empty queue afterward.
+	// Now handle events for which we've just received the corresponding public data.
+	// Since events are only queued in `events_pending_for_network_key` within this function,
+	// receiving the network key ensures no further events will be pending for that key.
+	// Therefore, it's safe to process them now, as the queue will remain empty afterward.
         for key_id in newly_updated_network_keys_ids {
             let events_pending_for_newly_updated_network_key = self
                 .events_pending_for_network_key
@@ -79,7 +81,9 @@ impl DWalletMPCManager {
                 .unwrap_or_default();
 
             for event in events_pending_for_newly_updated_network_key {
-                // We know this won't fail on missing network key, but it could be waiting for the next committee,
+                // We know this won't fail on a missing network key,
+                // but it could be waiting for the next committee,
+                // in which case it would be added to that queue.
                 // in which case it would be added to that queue.
                 self.handle_mpc_event(event, epoch_store);
             }
@@ -136,17 +140,18 @@ impl DWalletMPCManager {
     /// check for uncompleted events.
     ///
     /// A new MPC session is only created once at the first time the event was received
-    /// (per-epoch, if it was uncompleted in the previous epoch it will be created again for the next one.)
+    /// (per-epoch, if it was uncompleted in the previous epoch, it will be created again for the next one.)
     ///
     /// If the event already exists in `self.mpc_sessions`, we do not add it.
     ///
-    /// If there is no session info, and we've got it in this call,
+    /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
     fn handle_mpc_event(&mut self, event: DWalletMPCEvent, epoch_store: &AuthorityPerEpochStore) {
         let session_identifier = event.session_request.session_identifier;
 
         // Avoid instantiation of completed events by checking they belong to the current epoch.
-        // We only pull uncompleted events, so we skip the check for those, but pushed events might be completed.
+        // We only pull uncompleted events, so we skip the check for those,
+        // but pushed events might be completed.
         if !event.pulled && event.session_request.epoch != self.epoch_id {
             warn!(
                 session_identifier=?session_identifier,
@@ -168,7 +173,8 @@ impl DWalletMPCManager {
                     .network_keys
                     .key_public_data_exists(&network_encryption_key_id)
                 {
-                    // We don't yet have the data for this network encryption key, so we add it to the queue.
+                    // We don't yet have the data for this network encryption key, 
+                    // so we add it to the queue.
                     debug!(
                         session_request=?event.session_request,
                         session_type=?event.session_request.session_type,
@@ -197,7 +203,8 @@ impl DWalletMPCManager {
         if event.session_request.requires_next_active_committee
             && self.next_active_committee.is_none()
         {
-            // We don't have the next active committee yet, so we have to add this event to the pending queue until it arrives.
+            // We don't have the next active committee yet, 
+            // so we have to add this event to the pending queue until it arrives.
             debug!(
                 session_request=?event.session_request,
                 session_type=?event.session_request.session_type,
@@ -232,7 +239,7 @@ impl DWalletMPCManager {
         ) {
             Ok(mpc_event_data) => mpc_event_data,
             Err(e) => {
-                error!(e=?e, event=?event, "failed to handle dWallet MPC event with error");
+                error!(error=?e, event=?event, "failed to handle dWallet MPC event with error");
 
                 return;
             }
@@ -245,7 +252,9 @@ impl DWalletMPCManager {
             if session.mpc_event_data.is_none() {
                 session.mpc_event_data = Some(mpc_event_data.clone());
 
-                // It could be that this session was pending for computation, but was missing the event.
+                // It could be that this session was pending
+                // for computation but was missing the event.
+                // In that case, move it to the right queue.
                 // In that case, move it to the right queue.
                 if let Some(index) =
                     self.sessions_pending_for_events
@@ -271,7 +280,7 @@ impl DWalletMPCManager {
         }
     }
 
-    /// Parses a SUI event into a dWallet MPC event.
+    /// Parses a Sui event into a dWallet MPC event.
     pub(crate) fn parse_sui_event(
         &self,
         event: DBSuiEvent,
@@ -372,8 +381,8 @@ impl DWalletMPCManager {
 
 impl DWalletMPCService {
     /// Proactively pull uncompleted events from the Sui network.
-    /// We do that to assure we don't miss any events.
-    /// These events might be from a different Epoch, not necessarily the current one.
+    /// We do that to ensure we don't miss any events.
+    /// These events might be from a different Epoch, not necessarily the current one
     pub(crate) async fn fetch_uncompleted_events(&mut self) -> Vec<DBSuiEvent> {
         let epoch_store = self.epoch_store.clone();
         loop {
@@ -395,9 +404,9 @@ impl DWalletMPCService {
                 }
                 Err(err) => {
                     error!(
-                        ?err,
+                        error=?err,
                         current_epoch=?self.epoch_store.epoch(),
-                         "Failed to load missed events from Sui"
+                         "failed to load missed events from Sui"
                     );
                     if let IkaError::EpochEnded(_) = err {
                         return vec![];
