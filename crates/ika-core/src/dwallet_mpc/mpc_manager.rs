@@ -23,8 +23,8 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData,
-    MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport,
+    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData, MaliciousReport,
+    SessionIdentifier, SessionType, ThresholdNotReachedReport,
 };
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};

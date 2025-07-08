@@ -54,11 +54,12 @@ impl DWalletMPCManager {
             let got_next_active_committee = self.try_receiving_next_active_committee();
             if got_next_active_committee {
                 // `..` stands for `RangeFull`, and calling `drain(..)` will drain (i.e. mutate) the vector thus removing all events from it.
-                for event in self
+                let events_pending_for_next_active_committee: Vec<_> = self
                     .events_pending_for_next_active_committee
                     .drain(..)
-                    .collect::<Vec<_>>()
-                {
+                    .collect();
+
+                for event in events_pending_for_next_active_committee {
                     self.handle_mpc_event(event);
                 }
             }
@@ -67,7 +68,10 @@ impl DWalletMPCManager {
         // First try to update the network keys.
         let newly_updated_network_keys_ids = self.update_network_keys();
 
-        // Then check if we just got the public data for some network keys, and handle those events if so.
+        // Then handle events for which we just received the public data for.
+        // Since events are only added to the `events_pending_for_network_key` queue in this function,
+        // we know once we got the network key data no more will be pending for that key,
+        // so its safe to only handle these at the time of update, as it will remain an empty queue afterward.
         for key_id in newly_updated_network_keys_ids {
             for event in self
                 .events_pending_for_network_key
@@ -98,7 +102,7 @@ impl DWalletMPCManager {
 
         let event = match self.parse_sui_event(event.clone(), epoch_store) {
             Ok(event) => {
-                info!(
+                debug!(
                     session_identifier=?event.session_request.session_identifier,
                     session_type=?event.session_request.session_type,
                     mpc_protocol=?event.session_request.request_input,
@@ -137,6 +141,7 @@ impl DWalletMPCManager {
     /// we update that field in the open session.
     fn handle_mpc_event(&mut self, event: DWalletMPCEvent) {
         // Avoid instantiation of completed events by checking they belong to the current epoch.
+        // We only pull uncompleted events, so we skip the check for those, but pushed events might be completed.
         if !event.pulled && event.session_request.epoch != self.epoch_id {
             warn!(
                 session_identifier=?event.session_request.session_identifier,
@@ -147,8 +152,6 @@ impl DWalletMPCManager {
 
             return;
         }
-
-        // TODO: deserialize here first into an enum - but then we might deserialize for no good reason.
 
         if let Some(network_encryption_key_id) = event
             .session_request
