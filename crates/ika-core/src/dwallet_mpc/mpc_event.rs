@@ -109,7 +109,7 @@ impl DWalletMPCManager {
                     mpc_protocol=?event.session_request.request_input,
                     mpc_round=?event.session_request.request_input,
                     current_epoch=?epoch_store.epoch(),
-                    "Successfully processed a missed event from Sui"
+                    "Successfully parsed a Sui event"
                 );
 
                 event
@@ -156,38 +156,40 @@ impl DWalletMPCManager {
             return;
         }
 
-        if let Some(network_encryption_key_id) = event
-            .session_request
-            .request_input
-            .get_network_encryption_key_id()
-        {
-            if !self
-                .network_keys
-                .key_public_data_exists(&network_encryption_key_id)
+        if event.session_request.requires_network_key_data {
+            if let Some(network_encryption_key_id) = event
+                .session_request
+                .request_input
+                .get_network_encryption_key_id()
             {
-                // We don't yet have the data for this network encryption key, so we add it to the queue.
-                debug!(
-                    session_request=?event.session_request,
-                    session_type=?event.session_request.session_type,
-                    network_encryption_key_id=?network_encryption_key_id,
-                    "Adding event to pending for the network key"
-                );
-
-                let events_pending_for_this_network_key = self
-                    .events_pending_for_network_key
-                    .entry(network_encryption_key_id)
-                    .or_insert(vec![]);
-
-                if events_pending_for_this_network_key
-                    .iter()
-                    .find(|e| e.session_request.session_identifier == session_identifier)
-                    .is_none()
+                if !self
+                    .network_keys
+                    .key_public_data_exists(&network_encryption_key_id)
                 {
-                    // Add an event with this session ID only if it doesn't exist.
-                    events_pending_for_this_network_key.push(event);
-                }
+                    // We don't yet have the data for this network encryption key, so we add it to the queue.
+                    debug!(
+                        session_request=?event.session_request,
+                        session_type=?event.session_request.session_type,
+                        network_encryption_key_id=?network_encryption_key_id,
+                        "Adding event to pending for the network key"
+                    );
 
-                return;
+                    let events_pending_for_this_network_key = self
+                        .events_pending_for_network_key
+                        .entry(network_encryption_key_id)
+                        .or_insert(vec![]);
+
+                    if events_pending_for_this_network_key
+                        .iter()
+                        .find(|e| e.session_request.session_identifier == session_identifier)
+                        .is_none()
+                    {
+                        // Add an event with this session ID only if it doesn't exist.
+                        events_pending_for_this_network_key.push(event);
+                    }
+
+                    return;
+                }
             }
         }
 
@@ -381,6 +383,13 @@ impl DWalletMPCService {
                 .await
             {
                 Ok(events) => {
+                    for event in &events {
+                        debug!(
+                            event_type=?event.type_,
+                            current_epoch=?epoch_store.epoch(),
+                            "Successfully fetched an uncompleted event from Sui"
+                        );
+                    }
                     return events;
                 }
                 Err(err) => {
@@ -401,7 +410,16 @@ impl DWalletMPCService {
     /// Read events from perpetual tables, remove them, and store in the current epoch tables.
     pub(crate) fn receive_new_sui_events(&mut self) -> IkaResult<Vec<DBSuiEvent>> {
         let pending_events = match self.new_events_receiver.try_recv() {
-            Ok(events) => events,
+            Ok(events) => {
+                for event in &events {
+                    debug!(
+                        event_type=?event.type_,
+                        current_epoch=?self.epoch_store.epoch(),
+                        "Received an event from Sui"
+                    );
+                }
+                events
+            }
             Err(broadcast::error::TryRecvError::Empty) => {
                 debug!("No new Sui events to process");
                 return Ok(vec![]);

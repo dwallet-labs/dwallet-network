@@ -332,6 +332,7 @@ fn network_dkg_secp256k1_session_request(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
+        requires_network_key_data: false,
         requires_next_active_committee: false,
     }
 }
@@ -347,6 +348,7 @@ fn network_dkg_ristretto_session_request(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),
+        requires_network_key_data: false,
         requires_next_active_committee: false,
     }
 }

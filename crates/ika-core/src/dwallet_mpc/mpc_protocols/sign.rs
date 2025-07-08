@@ -102,6 +102,7 @@ pub(crate) fn sign_party_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::Sign(deserialized_event.clone()),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
     }
 }
@@ -114,6 +115,7 @@ pub(crate) fn get_verify_partial_signatures_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::PartialSignatureVerification(deserialized_event.clone()),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
     }
 }

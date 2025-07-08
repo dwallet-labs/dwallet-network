@@ -49,6 +49,7 @@ pub(crate) fn dwallet_imported_key_verification_request_event_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::DWalletImportedKeyVerificationRequest(deserialized_event),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
     }
 }
@@ -61,6 +62,7 @@ pub(crate) fn dwallet_dkg_first_party_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::DKGFirst(deserialized_event),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
     })
 }
@@ -72,6 +74,7 @@ pub(crate) fn dwallet_dkg_second_party_session_request(
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         request_input: MPCRequestInput::DKGSecond(deserialized_event.clone()),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
         epoch: deserialized_event.epoch,
     }

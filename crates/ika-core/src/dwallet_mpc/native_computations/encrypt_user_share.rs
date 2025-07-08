@@ -18,6 +18,7 @@ pub(crate) fn start_encrypted_share_verification_session_request(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::EncryptedShareVerification(deserialized_event),
+        requires_network_key_data: true,
         requires_next_active_committee: false,
     }
 }

@@ -86,6 +86,7 @@ pub struct MPCEventData {
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     pub(crate) session_type: SessionType,
     pub(crate) public_input: PublicInput,
+    pub(crate) requires_network_key_data: bool,
     pub(crate) requires_next_active_committee: bool,
 }
 
@@ -140,6 +141,7 @@ impl MPCEventData {
             private_input,
             decryption_key_shares,
             public_input,
+            requires_network_key_data: event.session_request.requires_network_key_data,
             requires_next_active_committee: event.session_request.requires_next_active_committee,
         };
 
@@ -410,6 +412,7 @@ impl DWalletMPCSession {
                 session_identifier: self.session_identifier,
                 request_input: mpc_event_data.request_input.clone(),
                 epoch: self.epoch_id,
+                requires_network_key_data: mpc_event_data.requires_network_key_data,
                 requires_next_active_committee: mpc_event_data.requires_next_active_committee,
             },
         ))
@@ -1021,6 +1024,7 @@ impl DWalletMPCSession {
             request_input: mpc_event_data.request_input.clone(),
             epoch: self.epoch_id,
             session_identifier: self.session_identifier,
+            requires_network_key_data: mpc_event_data.requires_network_key_data,
             requires_next_active_committee: mpc_event_data.requires_next_active_committee,
         };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(

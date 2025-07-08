@@ -100,6 +100,7 @@ pub(crate) fn network_decryption_key_reconfiguration_session_request_from_event(
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::NetworkEncryptionKeyReconfiguration(deserialized_event),
+        requires_network_key_data: true,
         requires_next_active_committee: true,
     }
 }

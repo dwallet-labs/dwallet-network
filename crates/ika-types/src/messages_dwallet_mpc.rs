@@ -352,6 +352,7 @@ pub struct MPCSessionRequest {
     /// The input to the request MPC session.
     pub request_input: MPCRequestInput,
     pub epoch: u64,
+    pub requires_network_key_data: bool,
     pub requires_next_active_committee: bool,
 }
 
