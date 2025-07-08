@@ -37,7 +37,7 @@ pub struct DWalletMPCService {
 }
 
 impl DWalletMPCService {
-    pub async fn new(
+    pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: Receiver<()>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -56,8 +56,7 @@ impl DWalletMPCService {
             next_epoch_committee_receiver,
             node_config,
             dwallet_mpc_metrics,
-        )
-        .await;
+        );
 
         Self {
             last_read_consensus_round: 0,

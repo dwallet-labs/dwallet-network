@@ -120,7 +120,7 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub(crate) async fn must_create_dwallet_mpc_manager(
+    pub(crate) fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
@@ -231,7 +231,7 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCDBMessage::EndOfDelivery => {
-                if let Err(err) = self.handle_end_of_delivery().await {
+                if let Err(err) = self.handle_end_of_delivery() {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
@@ -329,7 +329,7 @@ impl DWalletMPCManager {
     /// Advance all the MPC sessions that either received enough messages
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> IkaResult {
+    pub fn handle_end_of_delivery(&mut self) -> IkaResult {
         let ready_sessions_response = self.get_ready_to_advance_sessions()?;
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
