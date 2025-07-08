@@ -158,7 +158,8 @@ impl DWalletMPCManager {
             .clone();
         let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
 
-        // verify that the validators local class-groups key is the same as stored in the system state object onchain.
+        // Verify that the validators local class-groups key is the
+        // same as stored in the system state object onchain.
         if epoch_store
             .epoch_start_state()
             .get_ika_committee()
@@ -166,7 +167,7 @@ impl DWalletMPCManager {
             != class_groups_key_pair.encryption_key_and_proof()
         {
             return Err(DwalletMPCError::MPCManagerError(
-                "Validator's class-groups key does not match the one stored in the system state object".to_string(),
+                "validator's class-groups key does not match the one stored in the system state object".to_string(),
             ));
         }
 
