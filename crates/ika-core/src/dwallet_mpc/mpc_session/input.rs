@@ -93,8 +93,9 @@ pub(crate) fn session_input_from_event(
                 .validator_private_dec_key_data
                 .class_groups_decryption_key;
 
-            let next_active_committee =
-                next_active_committee.ok_or(DwalletMPCError::MissingNextActiveCommittee)?;
+            let next_active_committee = next_active_committee.ok_or(
+                DwalletMPCError::MissingNextActiveCommittee(session_id.to_be_bytes().to_vec()),
+            )?;
 
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(

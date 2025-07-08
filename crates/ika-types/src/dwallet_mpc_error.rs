@@ -133,11 +133,8 @@ pub enum DwalletMPCError {
     #[error("the first MPC step should not not receive any messages from the other parties")]
     MessageForFirstMPCStep,
 
-    #[error("no event data when spawning session: BUG")]
-    MissingEventData,
-
-    #[error("no next active committee for an event that required it: BUG")]
-    MissingNextActiveCommittee,
+    #[error("no next active committee for an event (SID ({0:?})) that required it: BUG")]
+    MissingNextActiveCommittee(Vec<u8>),
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
