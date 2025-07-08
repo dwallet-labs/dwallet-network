@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
+use include_directory::{include_directory, Dir, DirEntry};
 use move_binary_format::file_format::AddressIdentifierIndex;
 use move_binary_format::CompiledModule;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
-use std::path::{Path};
-use include_directory::{include_directory, Dir, DirEntry};
+use std::path::Path;
 use sui_types::{base_types::ObjectID, MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
 use tempfile::TempDir;
 
@@ -205,16 +205,14 @@ pub const DEFAULT_IKA_MOVE_PACKAGES_PATH: &str = env!("CARGO_MANIFEST_DIR");
 static CONTRACTS_DIR: Dir<'_> = include_directory!("$CARGO_MANIFEST_DIR/packages");
 
 pub fn save_contracts_to_temp_dir() -> anyhow::Result<TempDir> {
-    let temp_dir = tempfile::tempdir().map_err(|e| anyhow::anyhow!("Failed to create temp dir: {}", e))?;
+    let temp_dir =
+        tempfile::tempdir().map_err(|e| anyhow::anyhow!("Failed to create temp dir: {}", e))?;
     let path = temp_dir.path();
     save_dir_entries(path, CONTRACTS_DIR.entries())?;
     Ok(temp_dir)
 }
 
-fn save_dir_entries<'a>(
-    path: &Path,
-    dir_entries: &'a [DirEntry<'a>]
-) -> anyhow::Result<()> {
+fn save_dir_entries<'a>(path: &Path, dir_entries: &'a [DirEntry<'a>]) -> anyhow::Result<()> {
     for dir_entry in dir_entries {
         match dir_entry {
             DirEntry::Dir(dir) => {
@@ -222,8 +220,10 @@ fn save_dir_entries<'a>(
             }
             DirEntry::File(file) => {
                 let file_path = path.join(file.path());
-                std::fs::create_dir_all(Path::new(&file_path).parent().unwrap()).map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
-                std::fs::write(file_path, file.contents()).map_err(|e| anyhow::anyhow!("Failed to write file: {}", e))?;
+                std::fs::create_dir_all(Path::new(&file_path).parent().unwrap())
+                    .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+                std::fs::write(file_path, file.contents())
+                    .map_err(|e| anyhow::anyhow!("Failed to write file: {}", e))?;
             }
         }
     }

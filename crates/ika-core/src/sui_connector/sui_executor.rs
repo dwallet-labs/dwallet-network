@@ -4,7 +4,6 @@
 //! The SuiExecutor module handles executing transactions
 //! on Sui blockchain for `ika_system` package.
 
-use std::collections::HashMap;
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::SuiNotifier;
@@ -16,14 +15,29 @@ use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
-use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG, MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG, RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG, SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG};
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyData, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
+    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
+    RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
+    SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
+};
 use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
-use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerTrait, PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, ADVANCE_EPOCH_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME, CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME};
+use ika_types::sui::{
+    DWalletCoordinatorInner, SystemInner, SystemInnerTrait, ADVANCE_EPOCH_FUNCTION_NAME,
+    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
+    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
+    SYSTEM_MODULE_NAME,
+};
 use itertools::Itertools;
 use move_core_types::ident_str;
 use roaring::RoaringBitmap;
+use std::collections::HashMap;
 use std::sync::Arc;
 use sui_json_rpc_types::SuiTransactionBlockResponse;
 use sui_macros::fail_point_async;
@@ -234,7 +248,9 @@ where
         &self,
         epoch: EpochId,
         run_with_range: Option<RunWithRange>,
-        mut network_keys_receiver: watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+        mut network_keys_receiver: watch::Receiver<
+            Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>,
+        >,
     ) -> StopReason {
         info!(?epoch, "Starting sui connector SuiExecutor run_epoch");
         // Check if we want to run this epoch based on RunWithRange condition value
@@ -295,7 +311,12 @@ where
 
             if let Some(sui_notifier) = self.sui_notifier.as_ref() {
                 let network_encryption_key_ids = {
-                    network_keys_receiver.borrow_and_update().clone().keys().cloned().collect_vec()
+                    network_keys_receiver
+                        .borrow_and_update()
+                        .clone()
+                        .keys()
+                        .cloned()
+                        .collect_vec()
                 };
                 self.run_epoch_switch(
                     sui_notifier,
@@ -522,10 +543,7 @@ where
                 DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
                 NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
                 vec![],
-                vec![
-                    dwallet_coordinator_ptb_arg,
-                    network_encryption_key_id_arg,
-                ],
+                vec![dwallet_coordinator_ptb_arg, network_encryption_key_id_arg],
             );
         }
         ptb.programmable_move_call(
@@ -732,24 +750,20 @@ where
             .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let system_arg = ptb.input(CallArg::Object(ika_system_state_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on system_arg: {e}"
-            ))
-        })?;
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        let coordinator_arg = ptb.input(CallArg::Object(
-            dwallet_2pc_mpc_coordinator_arg,
-        )).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on coordinator_arg: {e}"
-            ))
-        })?;
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
 
         let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on clock_arg: {e}"
-            ))
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
         })?;
 
         ptb.programmable_move_call(
@@ -757,21 +771,15 @@ where
             SYSTEM_MODULE_NAME.into(),
             INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                system_arg,
-                clock_arg
-            ],
+            vec![system_arg, clock_arg],
         );
 
-        let system_current_status_info= ptb.programmable_move_call(
+        let system_current_status_info = ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                system_arg,
-                clock_arg
-            ],
+            vec![system_arg, clock_arg],
         );
 
         ptb.programmable_move_call(
@@ -779,10 +787,7 @@ where
             DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                coordinator_arg,
-                system_current_status_info
-            ],
+            vec![coordinator_arg, system_current_status_info],
         );
 
         let transaction = super::build_sui_transaction(
@@ -819,35 +824,28 @@ where
             .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let system_arg = ptb.input(CallArg::Object(ika_system_state_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on system_arg: {e}"
-            ))
-        })?;
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        let coordinator_arg = ptb.input(CallArg::Object(
-            dwallet_2pc_mpc_coordinator_arg,
-        )).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on coordinator_arg: {e}"
-            ))
-        })?;
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
 
         let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on clock_arg: {e}"
-            ))
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
         })?;
 
-        let system_current_status_info= ptb.programmable_move_call(
+        let system_current_status_info = ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                system_arg,
-                clock_arg
-            ],
+            vec![system_arg, clock_arg],
         );
 
         ptb.programmable_move_call(
@@ -892,36 +890,28 @@ where
             .get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed()
             .await;
 
-        let system_arg = ptb.input(CallArg::Object(ika_system_state_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on system_arg: {e}"
-            ))
-        })?;
+        let system_arg = ptb
+            .input(CallArg::Object(ika_system_state_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on system_arg: {e}"))
+            })?;
 
-        let coordinator_arg = ptb.input(CallArg::Object(
-            dwallet_2pc_mpc_coordinator_arg,
-        )).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on coordinator_arg: {e}"
-            ))
-        })?;
+        let coordinator_arg = ptb
+            .input(CallArg::Object(dwallet_2pc_mpc_coordinator_arg))
+            .map_err(|e| {
+                IkaError::SuiConnectorInternalError(format!("failed on coordinator_arg: {e}"))
+            })?;
 
         let clock_arg = ptb.input(CallArg::Object(clock_arg)).map_err(|e| {
-            IkaError::SuiConnectorInternalError(format!(
-                "failed on clock_arg: {e}"
-            ))
+            IkaError::SuiConnectorInternalError(format!("failed on clock_arg: {e}"))
         })?;
-
 
         let advance_epoch_approver = ptb.programmable_move_call(
             ika_system_package_id,
             SYSTEM_MODULE_NAME.into(),
             INITIATE_ADVANCE_EPOCH_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                system_arg,
-                clock_arg
-            ],
+            vec![system_arg, clock_arg],
         );
 
         ptb.programmable_move_call(
@@ -929,10 +919,7 @@ where
             DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
             ADVANCE_EPOCH_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                coordinator_arg,
-                advance_epoch_approver
-            ],
+            vec![coordinator_arg, advance_epoch_approver],
         );
 
         ptb.programmable_move_call(
@@ -940,11 +927,7 @@ where
             SYSTEM_MODULE_NAME.into(),
             ADVANCE_EPOCH_FUNCTION_NAME.into(),
             vec![],
-            vec![
-                system_arg,
-                advance_epoch_approver,
-                clock_arg
-            ],
+            vec![system_arg, advance_epoch_approver, clock_arg],
         );
 
         let transaction = super::build_sui_transaction(

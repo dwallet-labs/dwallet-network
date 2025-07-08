@@ -277,7 +277,9 @@ where
                         .completed_system_sessions_count;
             let next_epoch_committee_exists =
                 system_inner_v1.validator_set.next_epoch_committee.is_some();
-            let all_network_encryption_keys_reconfiguration_completed= coordinator.dwallet_network_encryption_keys.size == coordinator.epoch_dwallet_network_encryption_keys_reconfiguration_completed;
+            let all_network_encryption_keys_reconfiguration_completed =
+                coordinator.dwallet_network_encryption_keys.size
+                    == coordinator.epoch_dwallet_network_encryption_keys_reconfiguration_completed;
             if coordinator
                 .session_management
                 .locked_last_session_to_complete_in_current_epoch

@@ -17,7 +17,7 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletMPCEvent, DWalletNetworkEncryptionKeyData, SessionIdentifier,
 };
-use ika_types::sui::{DWalletCoordinatorInner};
+use ika_types::sui::DWalletCoordinatorInner;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
@@ -162,9 +162,7 @@ impl DWalletMPCService {
                 let access_structure =
                     &self.dwallet_mpc_manager.weighted_threshold_access_structure;
                 if has_changed {
-                    let new_keys = {
-                        self.network_keys_receiver.borrow_and_update().clone()
-                    };
+                    let new_keys = { self.network_keys_receiver.borrow_and_update().clone() };
                     for (key_id, key_data) in new_keys.iter() {
                         match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
                             key_data.current_epoch,

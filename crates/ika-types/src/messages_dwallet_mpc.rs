@@ -18,10 +18,10 @@ use sui_types::collection_types::{Table, TableVec};
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
-pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr =
-    ident_str!("coordinator");
+pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr = ident_str!("coordinator");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
-pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr = ident_str!("coordinator_inner");
+pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
+    ident_str!("coordinator_inner");
 pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGFirstRoundRequestEvent");
 pub const DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT: &IdentStr =
@@ -644,12 +644,18 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
         // in the two different options will yield a different output, thus guaranteeing
         // user-initiated sessions can never block or reuse session IDs for system sessions.
         let session_type = match self.session_type {
-            SessionType::User { .. } => {
-                [version.to_be_bytes().as_slice(), b"USER", self.session_identifier_preimage.as_slice()].concat()
-            }
-            SessionType::System => {
-                [version.to_be_bytes().as_slice(), b"SYSTEM", self.session_identifier_preimage.as_slice()].concat()
-            }
+            SessionType::User { .. } => [
+                version.to_be_bytes().as_slice(),
+                b"USER",
+                self.session_identifier_preimage.as_slice(),
+            ]
+            .concat(),
+            SessionType::System => [
+                version.to_be_bytes().as_slice(),
+                b"SYSTEM",
+                self.session_identifier_preimage.as_slice(),
+            ]
+            .concat(),
         };
         SessionIdentifier(keccak256_digest(&session_type))
     }

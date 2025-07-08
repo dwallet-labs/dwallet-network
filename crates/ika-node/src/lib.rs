@@ -434,7 +434,8 @@ impl IkaNode {
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
-        let (new_events_sender, new_events_receiver) = broadcast::channel(EVENTS_CHANNEL_BUFFER_SIZE);
+        let (new_events_sender, new_events_receiver) =
+            broadcast::channel(EVENTS_CHANNEL_BUFFER_SIZE);
         let (end_of_publish_sender, end_of_publish_receiver) = watch::channel::<Option<u64>>(None);
         let (sui_connector_service, network_keys_receiver) = SuiConnectorService::new(
             dwallet_checkpoint_store.clone(),
@@ -447,7 +448,7 @@ impl IkaNode {
             new_events_sender,
             end_of_publish_sender.clone(),
         )
-            .await?;
+        .await?;
 
         let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
@@ -1130,11 +1131,10 @@ impl IkaNode {
                         self.state.name,
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
-                        vec![]
-                        // sui_client
-                        //     .get_available_move_packages()
-                        //     .await
-                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                        vec![], // sui_client
+                                //     .get_available_move_packages()
+                                //     .await
+                                //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
                     ),
                 );
 

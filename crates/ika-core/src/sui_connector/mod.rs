@@ -11,7 +11,9 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
-use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME};
+use ika_types::messages_dwallet_mpc::{
+    DWalletNetworkEncryptionKeyData, DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME,
+};
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -61,7 +63,10 @@ impl SuiConnectorService {
         next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
-    ) -> anyhow::Result<(Arc<Self>, watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>)> {
+    ) -> anyhow::Result<(
+        Arc<Self>,
+        watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+    )> {
         let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
 
         let sui_notifier = Self::prepare_for_sui(
@@ -81,9 +86,7 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
         );
 
-        let sui_modules_to_watch = vec![
-            DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
-        ];
+        let sui_modules_to_watch = vec![DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned()];
         let task_handles = SuiSyncer::new(
             sui_client.clone(),
             sui_modules_to_watch,
@@ -99,14 +102,17 @@ impl SuiConnectorService {
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
-        Ok((Arc::new(Self {
-            sui_client,
-            sui_executor,
-            network_keys_receiver: network_keys_receiver.clone(),
-            task_handles,
-            sui_connector_config,
-            metrics: sui_connector_metrics,
-        }), network_keys_receiver))
+        Ok((
+            Arc::new(Self {
+                sui_client,
+                sui_executor,
+                network_keys_receiver: network_keys_receiver.clone(),
+                task_handles,
+                sui_connector_config,
+                metrics: sui_connector_metrics,
+            }),
+            network_keys_receiver,
+        ))
     }
 
     pub async fn run_epoch(
@@ -114,7 +120,9 @@ impl SuiConnectorService {
         epoch_id: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        self.sui_executor.run_epoch(epoch_id, run_with_range, self.network_keys_receiver.clone()).await
+        self.sui_executor
+            .run_epoch(epoch_id, run_with_range, self.network_keys_receiver.clone())
+            .await
     }
 
     async fn prepare_for_sui(

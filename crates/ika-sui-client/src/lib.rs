@@ -1023,12 +1023,12 @@ impl SuiClientInner for SuiSdkClient {
                         dwallet_coordinator_inner.dwallet_network_encryption_keys.id, e
                     ))
                 })?;
-            let object_ids: Vec<ObjectID> = dynamic_fields
-                .data
-                .iter()
-                .map(|df| df.object_id)
-                .collect();
-            let objects = self.read_api().multi_get_object_with_options(object_ids, SuiObjectDataOptions::bcs_lossless()).await?;
+            let object_ids: Vec<ObjectID> =
+                dynamic_fields.data.iter().map(|df| df.object_id).collect();
+            let objects = self
+                .read_api()
+                .multi_get_object_with_options(object_ids, SuiObjectDataOptions::bcs_lossless())
+                .await?;
 
             for resp in objects {
                 if let Some(data) = resp.data {
@@ -1037,13 +1037,11 @@ impl SuiClientInner for SuiSdkClient {
                         "object {:?} has no bcs data",
                         object_id
                     )))?;
-                    let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
-                        "object {:?} is not a MoveObject",
-                        object_id
-                    )))?;
-                    let value = bcs::from_bytes::<DWalletNetworkEncryptionKey>(
-                        &raw_move_obj.bcs_bytes,
-                    )?;
+                    let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(
+                        format!("object {:?} is not a MoveObject", object_id),
+                    ))?;
+                    let value =
+                        bcs::from_bytes::<DWalletNetworkEncryptionKey>(&raw_move_obj.bcs_bytes)?;
                     network_encryption_keys.insert(object_id, value);
                 }
             }
