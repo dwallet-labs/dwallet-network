@@ -174,9 +174,6 @@ impl DWalletMPCManager {
                     "Adding event to pending for the network key"
                 );
 
-                // TODO: need to check it doesn't exist first
-                // event.session_request.session_identifier
-
                 let events_pending_for_this_network_key = self
                     .events_pending_for_network_key
                     .entry(network_encryption_key_id)
