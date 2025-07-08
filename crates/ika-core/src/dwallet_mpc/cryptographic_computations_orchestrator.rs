@@ -155,8 +155,8 @@ impl CryptographicComputationsOrchestrator {
             .send(ComputationUpdate::Started)
             .await
         {
-            // This should not happen, but error just in case.
             error!(
+                should_never_happen =? true,
                 session_id=?session.session_identifier,
                 mpc_protocol=?request_input,
                 error=?err,
