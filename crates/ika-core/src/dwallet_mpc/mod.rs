@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::vec::Vec;
-use sui_types::base_types::{EpochId, ObjectID};
+use sui_types::base_types::EpochId;
 
 mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;
@@ -109,10 +109,4 @@ pub(crate) fn party_ids_to_authority_names(
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
-}
-
-// TODO (#683): Parse the network key version from the network key object ID
-#[allow(unused)]
-pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
-    0
 }

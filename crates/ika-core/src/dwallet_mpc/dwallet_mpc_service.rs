@@ -163,7 +163,7 @@ impl DWalletMPCService {
             };
 
             self.dwallet_mpc_manager
-                .handle_dwallet_db_events(events, &self.epoch_store);
+                .handle_sui_db_event_batch(events, &self.epoch_store);
 
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
@@ -181,7 +181,7 @@ impl DWalletMPCService {
             mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
 
             for (round, messages) in mpc_messages {
-                // Since we sorted, this assures this variable will be the 
+                // Since we sorted, this assures this variable will be the
                 // last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
                 for message in messages {

@@ -45,7 +45,7 @@ impl DWalletMPCManager {
     ///
     /// If there is no `session_request`, and we've got it in this call,
     /// we update that field in the open session.
-    pub(crate) fn handle_dwallet_db_events(
+    pub(crate) fn handle_sui_db_event_batch(
         &mut self,
         events: Vec<DBSuiEvent>,
         epoch_store: &AuthorityPerEpochStore,
@@ -68,12 +68,12 @@ impl DWalletMPCManager {
         }
 
         // First, try to update the network keys.
-        let newly_updated_network_keys_ids = self.update_network_keys();
+        let newly_updated_network_keys_ids = self.maybe_update_network_keys();
 
-	// Now handle events for which we've just received the corresponding public data.
-	// Since events are only queued in `events_pending_for_network_key` within this function,
-	// receiving the network key ensures no further events will be pending for that key.
-	// Therefore, it's safe to process them now, as the queue will remain empty afterward.
+        // Now handle events for which we've just received the corresponding public data.
+        // Since events are only queued in `events_pending_for_network_key` within this function,
+        // receiving the network key ensures no further events will be pending for that key.
+        // Therefore, it's safe to process them now, as the queue will remain empty afterward.
         for key_id in newly_updated_network_keys_ids {
             let events_pending_for_newly_updated_network_key = self
                 .events_pending_for_network_key
@@ -173,7 +173,7 @@ impl DWalletMPCManager {
                     .network_keys
                     .key_public_data_exists(&network_encryption_key_id)
                 {
-                    // We don't yet have the data for this network encryption key, 
+                    // We don't yet have the data for this network encryption key,
                     // so we add it to the queue.
                     debug!(
                         session_request=?event.session_request,
@@ -203,7 +203,7 @@ impl DWalletMPCManager {
         if event.session_request.requires_next_active_committee
             && self.next_active_committee.is_none()
         {
-            // We don't have the next active committee yet, 
+            // We don't have the next active committee yet,
             // so we have to add this event to the pending queue until it arrives.
             debug!(
                 session_request=?event.session_request,
@@ -249,31 +249,28 @@ impl DWalletMPCManager {
             .add_received_event_start(&mpc_event_data.request_input);
 
         if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
-            if session.mpc_event_data.is_none() {
-                session.mpc_event_data = Some(mpc_event_data.clone());
+            session.mpc_event_data = Some(mpc_event_data.clone());
 
-                // It could be that this session was pending
-                // for computation but was missing the event.
-                // In that case, move it to the right queue.
-                // In that case, move it to the right queue.
-                if let Some(index) =
-                    self.sessions_pending_for_events
-                        .iter()
-                        .position(|session_pending_for_event| {
-                            session_pending_for_event.session_identifier
-                                == session.session_identifier
-                        })
-                {
-                    // Safe to `unwrap()`, we just got this index.
-                    let mut ready_to_advance_session_copy =
-                        self.sessions_pending_for_events.remove(index).unwrap();
+            // It could be that this session was pending
+            // for computation but was missing the event.
+            // In that case, move it to the right queue.
+            // In that case, move it to the right queue.
+            if let Some(index) =
+                self.sessions_pending_for_events
+                    .iter()
+                    .position(|session_pending_for_event| {
+                        session_pending_for_event.session_identifier == session.session_identifier
+                    })
+            {
+                // Safe to `unwrap()`, we just got this index.
+                let mut ready_to_advance_session_copy =
+                    self.sessions_pending_for_events.remove(index).unwrap();
 
-                    ready_to_advance_session_copy.mpc_event_data = Some(mpc_event_data);
+                ready_to_advance_session_copy.mpc_event_data = Some(mpc_event_data);
 
-                    self.insert_session_into_ordered_pending_for_computation_queue(
-                        ready_to_advance_session_copy,
-                    );
-                }
+                self.insert_session_into_ordered_pending_for_computation_queue(
+                    ready_to_advance_session_copy,
+                );
             }
         } else {
             self.new_mpc_session(&session_identifier, Some(mpc_event_data));

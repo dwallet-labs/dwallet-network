@@ -65,9 +65,12 @@ pub(crate) struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     pub(crate) malicious_handler: MaliciousHandler,
-    /// The order of the sessions that are ready to get computed.
+    /// The ordered queue of sessions that are ready to advance.
+    /// The order is as such:
+    /// - System events first, and FIFO between the system events.
+    /// - User events are after all system events, and the order between them is by the (lowest) sequence number.
     pub(crate) ordered_sessions_pending_for_computation: VecDeque<DWalletMPCSession>,
-    /// The order of the sessions that have received quorum for their current round, but we have not
+    /// The queue of sessions that have received quorum for their current round, but we have not
     /// yet received an event for from Sui.
     pub(crate) sessions_pending_for_events: VecDeque<DWalletMPCSession>,
     pub(crate) last_session_to_complete_in_current_epoch: u64,
@@ -647,7 +650,7 @@ impl DWalletMPCManager {
         false
     }
 
-    pub(crate) fn update_network_keys(&mut self) -> Vec<ObjectID> {
+    pub(crate) fn maybe_update_network_keys(&mut self) -> Vec<ObjectID> {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
