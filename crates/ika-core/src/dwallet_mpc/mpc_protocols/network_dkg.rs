@@ -30,7 +30,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tracing::debug;
+use tracing::{debug, error};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -213,7 +213,7 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
-            debug!(
+            error!(
                 ?key_id,
                 "failed to fetch the network decryption key shares for key ID"
             );
