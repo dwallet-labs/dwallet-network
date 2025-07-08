@@ -540,8 +540,8 @@ impl DWalletCheckpointBuilder {
         // or in earlier pending checkpoints.
         //let mut effects_in_current_checkpoint = BTreeSet::new();
 
-        // Stores the transactions that should be included in the checkpoint. Transactions will be recorded in the checkpoint
-        // in this order.
+        // Stores the transactions that should be included in the checkpoint.
+        // Transactions will be recorded in the checkpoint in this order.
         let mut sorted_tx_effects_included_in_checkpoint = Vec::new();
         for pending_checkpoint in pendings.into_iter() {
             let logger = MPCSessionLogger::new();
@@ -941,7 +941,7 @@ impl DWalletCheckpointAggregator {
                     None,
                 );
             for item in iter {
-                let ((seq, index), data) = item?;
+                let ((seq, index), received_data) = item?;
                 if seq != current.checkpoint_message.sequence_number {
                     debug!(
                         checkpoint_seq =? current.checkpoint_message.sequence_number,
@@ -951,23 +951,28 @@ impl DWalletCheckpointAggregator {
                     return Ok(result);
                 }
                 debug!(
-                    checkpoint_seq = current.checkpoint_message.sequence_number,
-                    digest=?current.checkpoint_message.digest(),
-                    timestamp=?current.checkpoint_message.timestamp_ms,
-                    messages=?current.checkpoint_message.messages,
-                    sequence_number=?current.checkpoint_message.sequence_number,
-                    epoch=?current.checkpoint_message.epoch,
-                    from=?data.checkpoint_message.auth_sig().authority.concise(),
+                    current_sequnce_number = current.checkpoint_message.sequence_number,
+                    received_sequence_number=?received_data.checkpoint_message.sequence_number,
+                    current_digest=?current.checkpoint_message.digest(),
+                    received_digest=?received_data.checkpoint_message.digest(),
+                    received_timestamp=?received_data.checkpoint_message.timestamp_ms,
+                    received_messages=?received_data.checkpoint_message.messages,
+                    received_epoch=?received_data.checkpoint_message.epoch,
+                    received_from=?received_data.checkpoint_message.auth_sig().authority.concise(),
                     "Processing signature for dwallet checkpoint.",
                 );
                 self.metrics
                     .dwallet_checkpoint_participation
                     .with_label_values(&[&format!(
                         "{:?}",
-                        data.checkpoint_message.auth_sig().authority.concise()
+                        received_data
+                            .checkpoint_message
+                            .auth_sig()
+                            .authority
+                            .concise()
                     )])
                     .inc();
-                if let Ok(auth_signature) = current.try_aggregate(data) {
+                if let Ok(auth_signature) = current.try_aggregate(received_data) {
                     let checkpoint_message = VerifiedDWalletCheckpointMessage::new_unchecked(
                         CertifiedDWalletCheckpointMessage::new_from_data_and_sig(
                             current.checkpoint_message.clone(),
