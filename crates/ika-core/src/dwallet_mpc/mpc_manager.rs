@@ -663,16 +663,17 @@ impl DWalletMPCManager {
                         ) {
                             Ok(key) => {
                                 info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
-                                self
+                                if let Err(e) = self
                                     .network_keys
                                     .update_network_key(
                                         *key_id,
                                         &key,
                                         &self.weighted_threshold_access_structure,
-                                    )
-                                    .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
-
-                                new_key_ids.push(*key_id);
+                                    ) {
+                                    error!(?e, key_id=?key_id, "failed to update network key");
+                                } else {
+                                    new_key_ids.push(*key_id);
+                                }
                             }
                             Err(err) => {
                                 error!(
