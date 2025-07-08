@@ -18,7 +18,6 @@ use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
@@ -28,7 +27,7 @@ use std::sync::Arc;
 /// or if deserialization fails.
 pub(crate) fn session_input_from_event(
     event: DWalletMPCEvent,
-    epoch_store: Arc<AuthorityPerEpochStore>,
+    epoch_store: &AuthorityPerEpochStore,
     network_keys: &Box<DwalletMPCNetworkKeys>,
     next_active_committee: Option<Committee>,
     validators_class_groups_public_keys_and_proofs: HashMap<

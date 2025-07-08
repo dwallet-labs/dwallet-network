@@ -18,7 +18,6 @@ use message_digest::message_digest::{message_digest, Hash};
 use mpc::{Party, Weight};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
-use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -38,7 +37,7 @@ pub(crate) type SignPublicInput =
 ///
 /// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
 fn generate_expected_decrypters(
-    epoch_store: Arc<AuthorityPerEpochStore>,
+    epoch_store: &AuthorityPerEpochStore,
     session_identifier: SessionIdentifier,
 ) -> DwalletMPCResult<HashSet<PartyID>> {
     let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
@@ -56,9 +55,9 @@ fn generate_expected_decrypters(
 
 pub(crate) fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-    epoch_store: Arc<AuthorityPerEpochStore>,
+    epoch_store: &AuthorityPerEpochStore,
     network_keys: &Box<DwalletMPCNetworkKeys>,
-    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+    protocol_public_parameters: ProtocolPublicParameters,
 ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
     let decryption_pp = network_keys.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.

@@ -16,8 +16,6 @@ use crate::dwallet_mpc::sign::{
     get_verify_partial_signatures_session_request, sign_party_session_request,
 };
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
-use ika_types::committee::Committee;
-use ika_types::dwallet_mpc_error::DwalletMPCError;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
@@ -29,7 +27,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use std::time::Duration;
 use tokio::sync::broadcast;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 
 impl DWalletMPCManager {
     /// Handle a batch of MPC events.
@@ -60,7 +58,7 @@ impl DWalletMPCManager {
                     .collect();
 
                 for event in events_pending_for_next_active_committee {
-                    self.handle_mpc_event(event);
+                    self.handle_mpc_event(event, epoch_store);
                 }
             }
         }
@@ -73,14 +71,15 @@ impl DWalletMPCManager {
         // we know once we got the network key data no more will be pending for that key,
         // so its safe to only handle these at the time of update, as it will remain an empty queue afterward.
         for key_id in newly_updated_network_keys_ids {
-            for event in self
+            let events_pending_for_newly_updated_network_key = self
                 .events_pending_for_network_key
                 .remove(&key_id)
-                .unwrap_or_default()
-            {
+                .unwrap_or_default();
+
+            for event in events_pending_for_newly_updated_network_key {
                 // We know this won't fail on missing network key, but it could be waiting for the next committee,
                 // in which case it would be added to that queue.
-                self.handle_mpc_event(event);
+                self.handle_mpc_event(event, epoch_store);
             }
         }
 
@@ -126,7 +125,7 @@ impl DWalletMPCManager {
             }
         };
 
-        self.handle_mpc_event(event)
+        self.handle_mpc_event(event, epoch_store)
     }
 
     /// Handle an MPC event.
@@ -141,7 +140,7 @@ impl DWalletMPCManager {
     ///
     /// If there is no session info, and we've got it in this call,
     /// we update that field in the open session.
-    fn handle_mpc_event(&mut self, event: DWalletMPCEvent) {
+    fn handle_mpc_event(&mut self, event: DWalletMPCEvent, epoch_store: &AuthorityPerEpochStore) {
         let session_identifier = event.session_request.session_identifier;
 
         // Avoid instantiation of completed events by checking they belong to the current epoch.
@@ -222,15 +221,20 @@ impl DWalletMPCManager {
             }
         }
 
-        let mpc_event_data =
-            match self.new_mpc_event_data(event.clone(), self.next_active_committee.clone()) {
-                Ok(mpc_event_data) => mpc_event_data,
-                Err(e) => {
-                    error!(e=?e, event=?event, "failed to handle dWallet MPC event with error");
+        let mpc_event_data = match MPCEventData::try_new(
+            event.clone(),
+            epoch_store,
+            &self.network_keys,
+            self.next_active_committee.clone(),
+            self.validators_class_groups_public_keys_and_proofs.clone(),
+        ) {
+            Ok(mpc_event_data) => mpc_event_data,
+            Err(e) => {
+                error!(e=?e, event=?event, "failed to handle dWallet MPC event with error");
 
-                    return;
-                }
-            };
+                return;
+            }
+        };
 
         self.dwallet_mpc_metrics
             .add_received_event_start(&mpc_event_data.request_input);
@@ -361,22 +365,6 @@ impl DWalletMPCManager {
         };
 
         Ok(event)
-    }
-
-    fn new_mpc_event_data(
-        &self,
-        event: DWalletMPCEvent,
-        next_active_committee: Option<Committee>,
-    ) -> Result<MPCEventData, DwalletMPCError> {
-        let epoch_store = self.epoch_store()?;
-
-        MPCEventData::try_new(
-            event,
-            epoch_store,
-            &self.network_keys,
-            next_active_committee,
-            self.validators_class_groups_public_keys_and_proofs.clone(),
-        )
     }
 }
 
