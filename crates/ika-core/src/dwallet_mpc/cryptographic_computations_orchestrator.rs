@@ -146,9 +146,9 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
-        let mpc_event_data = session.mpc_event_data.clone().unwrap().request_input;
+        let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
-        dwallet_mpc_metrics.add_advance_call(&mpc_event_data, &session.current_round.to_string());
+        dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_round.to_string());
         let request_input = session.mpc_event_data.clone().unwrap().request_input;
         if let Err(err) = self
             .computation_update_channel_sender
@@ -187,9 +187,9 @@ impl CryptographicComputationsOrchestrator {
             }
             let elapsed = start_advance.elapsed();
             dwallet_mpc_metrics
-                .add_advance_completion(&mpc_event_data, &session.current_round.to_string());
+                .add_advance_completion(&request_input, &session.current_round.to_string());
             dwallet_mpc_metrics.set_last_completion_duration(
-                &mpc_event_data,
+                &request_input,
                 &session.current_round.to_string(),
                 elapsed.as_millis() as i64,
             );

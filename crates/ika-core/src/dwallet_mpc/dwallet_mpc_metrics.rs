@@ -204,14 +204,14 @@ impl DWalletMPCMetrics {
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
-    pub fn add_advance_call(&self, mpc_event_data: &MPCRequestInput, mpc_round: &str) {
+    pub fn add_advance_call(&self, request_input: &MPCRequestInput, mpc_round: &str) {
         self.advance_calls
             .with_label_values(&[
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
+                &request_input.to_string(),
+                &request_input.get_curve(),
                 mpc_round,
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
+                &request_input.get_hash_scheme(),
+                &request_input.get_signature_algorithm(),
             ])
             .inc();
     }
