@@ -109,11 +109,10 @@ impl MPCEventData {
             validators_class_groups_public_keys_and_proofs,
         )?;
 
-        let needs_decryption_key_shares = match event.session_request.request_input.clone() {
-            MPCRequestInput::Sign(_) => true,
-            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) => true,
-            _ => false,
-        };
+        let needs_decryption_key_shares = matches!(
+            event.session_request.request_input.clone(),
+            MPCRequestInput::Sign(_) | MPCRequestInput::NetworkEncryptionKeyReconfiguration(_)
+        );
 
         let decryption_key_shares = if needs_decryption_key_shares {
             if let Some(network_encryption_key_id) = event
@@ -814,7 +813,7 @@ impl DWalletMPCSession {
                         "no decryption key shares for a session that requires them (sign)"
                     );
 
-                    return Err(DwalletMPCError::InvalidSessionPublicInput);
+                    Err(DwalletMPCError::InvalidSessionPublicInput)
                 }
             }
             MPCRequestInput::NetworkEncryptionKeyDkg(key_scheme, _init_event) => {
@@ -964,7 +963,7 @@ impl DWalletMPCSession {
                     "no decryption key shares for a session that requires them (reconfiguration)"
                     );
 
-                    return Err(DwalletMPCError::InvalidSessionPublicInput);
+                    Err(DwalletMPCError::InvalidSessionPublicInput)
                 }
             }
             MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {

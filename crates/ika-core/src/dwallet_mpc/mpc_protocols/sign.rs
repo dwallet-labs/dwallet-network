@@ -56,7 +56,7 @@ fn generate_expected_decrypters(
 pub(crate) fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
     epoch_store: &AuthorityPerEpochStore,
-    network_keys: &Box<DwalletMPCNetworkKeys>,
+    network_keys: &DwalletMPCNetworkKeys,
     protocol_public_parameters: ProtocolPublicParameters,
 ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
     let decryption_pp = network_keys.get_decryption_key_share_public_parameters(

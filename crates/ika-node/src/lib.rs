@@ -867,6 +867,7 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
+        #[allow(clippy::disallowed_methods)]
         let (
             consensus_round_completed_sessions_sender,
             consensus_round_completed_sessions_receiver,

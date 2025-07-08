@@ -3,17 +3,13 @@ use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletSessionEvent, DWalletSessionEventTrait};
 use message_digest::message_digest::message_digest;
 use mpc::{Weight, WeightedThresholdAccessStructure};
-use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::vec::Vec;
 use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::dynamic_field::Field;
-use sui_types::id::ID;
 
 mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;

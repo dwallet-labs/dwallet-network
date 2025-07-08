@@ -179,12 +179,11 @@ impl DWalletMPCManager {
                     let events_pending_for_this_network_key = self
                         .events_pending_for_network_key
                         .entry(network_encryption_key_id)
-                        .or_insert(vec![]);
+                        .or_default();
 
                     if events_pending_for_this_network_key
                         .iter()
-                        .find(|e| e.session_request.session_identifier == session_identifier)
-                        .is_none()
+                        .all(|e| e.session_request.session_identifier != session_identifier)
                     {
                         // Add an event with this session ID only if it doesn't exist.
                         events_pending_for_this_network_key.push(event);
@@ -208,8 +207,7 @@ impl DWalletMPCManager {
             if self
                 .events_pending_for_next_active_committee
                 .iter()
-                .find(|e| e.session_request.session_identifier == session_identifier)
-                .is_none()
+                .all(|e| e.session_request.session_identifier != session_identifier)
             {
                 // Add an event with this session ID only if it doesn't exist.
                 self.events_pending_for_next_active_committee.push(event);
