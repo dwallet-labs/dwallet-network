@@ -115,21 +115,6 @@ pub(crate) fn party_ids_to_authority_names(
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
 }
 
-/// The type of the event is different when we receive an emitted event and when we
-/// fetch the event's the dynamic field directly from Sui.
-fn deserialize_event_contents<T: DeserializeOwned + DWalletSessionEventTrait>(
-    event_contents: &[u8],
-    pulled: bool,
-) -> Result<DWalletSessionEvent<T>, bcs::Error> {
-    // TODO(Scaly): unit test
-    if pulled {
-        bcs::from_bytes::<Field<ID, DWalletSessionEvent<T>>>(event_contents)
-            .map(|field| field.value)
-    } else {
-        bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents)
-    }
-}
-
 // TODO (#683): Parse the network key version from the network key object ID
 #[allow(unused)]
 pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
