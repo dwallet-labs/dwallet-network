@@ -169,14 +169,14 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    request_input=%request_input,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
-                    request_input=%request_input,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
