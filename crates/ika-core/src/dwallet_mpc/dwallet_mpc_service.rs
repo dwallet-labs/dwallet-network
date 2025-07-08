@@ -15,9 +15,9 @@ use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletNetworkDecryptionKeyData, SessionIdentifier,
+    DBSuiEvent, DWalletMPCEvent, DWalletNetworkEncryptionKeyData, SessionIdentifier,
 };
-use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
+use ika_types::sui::{DWalletCoordinatorInner};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
@@ -38,7 +38,7 @@ pub struct DWalletMPCService {
     sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+    pub network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
     consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
 }
@@ -50,7 +50,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -78,23 +78,15 @@ impl DWalletMPCService {
     }
 
     async fn update_last_session_to_complete_in_current_epoch(&mut self) {
-        let system_inner = self.sui_client.must_get_system_inner_object().await;
-        let SystemInner::V1(system_inner) = system_inner;
+        let coordinator_state = self.sui_client.must_get_dwallet_coordinator_inner().await;
 
-        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
-            let coordinator_state = self
-                .sui_client
-                .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
-                .await;
-
-            let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
-            self.dwallet_mpc_manager
-                .update_last_session_to_complete_in_current_epoch(
-                    inner_state
-                        .session_management
-                        .last_session_to_complete_in_current_epoch,
-                );
-        }
+        let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
+        self.dwallet_mpc_manager
+            .update_last_session_to_complete_in_current_epoch(
+                inner_state
+                    .session_management
+                    .last_session_to_complete_in_current_epoch,
+            );
     }
 
     /// Proactively pull uncompleted events from the Sui network.
@@ -170,7 +162,9 @@ impl DWalletMPCService {
                 let access_structure =
                     &self.dwallet_mpc_manager.weighted_threshold_access_structure;
                 if has_changed {
-                    let new_keys = self.network_keys_receiver.borrow_and_update();
+                    let new_keys = {
+                        self.network_keys_receiver.borrow_and_update().clone()
+                    };
                     for (key_id, key_data) in new_keys.iter() {
                         match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
                             key_data.current_epoch,

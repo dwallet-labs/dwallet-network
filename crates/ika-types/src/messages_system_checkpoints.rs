@@ -63,6 +63,13 @@ pub enum SystemCheckpointMessageKind {
         /// if None, the upgrade approval will be deleted.
         digest: Option<Vec<u8>>,
     },
+    /// Set or remove a witness approving advance epoch.
+    SetOrRemoveWitnessApprovingAdvanceEpochMessageType {
+        /// The type of the witness that is being set or removed.
+        witness_type: String,
+        /// If false, the witness is being set, if true, the witness is being removed.
+        remove: bool,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

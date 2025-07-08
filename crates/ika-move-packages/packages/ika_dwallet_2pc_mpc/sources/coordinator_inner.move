@@ -26,7 +26,7 @@
 /// - Cryptographic algorithm support and emergency controls
 /// - Economic incentives through pricing and fee collection
 
-module ika_system::dwallet_2pc_mpc_coordinator_inner;
+module ika_dwallet_2pc_mpc::coordinator_inner;
 
 // === Imports ===
 
@@ -45,11 +45,16 @@ use sui::{
 };
 
 use ika::ika::IKA;
-
-use ika_system::{
+use ika_common::{
     address,
     bls_committee::{Self, BlsCommittee},
-    dwallet_pricing::{Self, DWalletPricing, DWalletPricingValue, DWalletPricingCalculationVotes},
+};
+use ika_dwallet_2pc_mpc::dwallet_pricing::{Self, DWalletPricing, DWalletPricingValue, DWalletPricingCalculationVotes};
+use ika_system::{
+    system_current_status_info::SystemCurrentStatusInfo,
+    validator_cap::VerifiedValidatorOperationCap,
+    advance_epoch_approver::AdvanceEpochApprover,
+    protocol_cap::VerifiedProtocolCap,
 };
 
 // === Constants ===
@@ -176,8 +181,20 @@ const EIncorrectEpochInCheckpoint: u64 = 37;
 const EWrongCheckpointSequenceNumber: u64 = 38;
 /// First active committee must initialize
 const EActiveBlsCommitteeMustInitialize: u64 = 39;
+/// Have not reached mid epoch time
+const EHaveNotReachedMidEpochTime: u64 = 40;
+/// Have not reached end epoch time
+const EHaveNotReachedEndEpochTime: u64 = 41;
+/// Already initiated mid epoch reconfiguration
+const EAlreadyInitiatedMidEpochReconfiguration: u64 = 42;
+/// Have not initiated mid epoch reconfiguration
+const EHaveNotInitiatedMidEpochReconfiguration: u64 = 43;
+/// Not all network encryption keys reconfiguration have been completed
+const ENotAllNetworkEncryptionKeysReconfigurationCompleted: u64 = 44;
 
 // === Structs ===
+
+public struct DWalletCoordinatorWitness has drop {}
 
 /// Session management data for the dWallet coordinator.
 public struct SessionManagement has store {
@@ -243,7 +260,7 @@ public struct PricingAndFeeManagement has store {
     /// SUI balance for gas fee reimbursement to fund network tx responses
     gas_fee_reimbursement_sui: Balance<SUI>,
     /// IKA fees charged for consensus validation
-    consensus_validation_fee_charged_ika: Balance<IKA>,
+    fee_charged_ika: Balance<IKA>,
 }
 
 /// Core coordinator for dWallet 2PC-MPC operations.
@@ -292,6 +309,8 @@ public struct DWalletCoordinatorInner has store {
     // TODO: change to versioned
     /// Network encryption keys (Network encryption key ID -> DWalletNetworkEncryptionKey)
     dwallet_network_encryption_keys: ObjectTable<ID, DWalletNetworkEncryptionKey>,
+    /// Number of network encryption keys reconfiguration have been completed for the current epoch
+    epoch_dwallet_network_encryption_keys_reconfiguration_completed: u64,
     // TODO: change to versioned
     /// User encryption keys (User encryption key address -> EncryptionKey)
     encryption_keys: ObjectTable<address, EncryptionKey>,
@@ -303,8 +322,8 @@ public struct DWalletCoordinatorInner has store {
     pricing_and_fee_management: PricingAndFeeManagement,
     /// Current active validator committee
     active_committee: BlsCommittee,
-    /// Previous validator committee
-    previous_committee: BlsCommittee,
+    /// Next epoch active validator committee
+    next_epoch_active_committee: Option<BlsCommittee>,
     /// Total number of messages processed
     total_messages_processed: u64,
     /// Last processed checkpoint sequence number
@@ -333,10 +352,8 @@ public struct DWalletSession has key, store {
     session_sequence_number: u64,
     /// Associated network encryption key
     dwallet_network_encryption_key_id: ID,
-    /// IKA fees for consensus validation
-    consensus_validation_fee_charged_ika: Balance<IKA>,
-    /// IKA fees for computation
-    computation_fee_charged_ika: Balance<IKA>,
+    /// IKA fees for the session
+    fee_charged_ika: Balance<IKA>,
     /// SUI balance for gas reimbursement
     gas_fee_reimbursement_sui: Balance<SUI>,
 }
@@ -359,16 +376,6 @@ public struct ImportedKeyDWalletCap has key, store {
     id: UID,
     /// ID of the controlled imported key dWallet
     dwallet_id: ID,
-}
-
-/// Capability granting control over a specific dWallet network encryption key.
-/// 
-/// This capability allows management of network-level encryption keys used
-/// for threshold encryption in the MPC protocols.
-public struct DWalletNetworkEncryptionKeyCap has key, store {
-    id: UID,
-    /// ID of the controlled network encryption key
-    dwallet_network_encryption_key_id: ID,
 }
 
 /// Network-owned threshold encryption key for dWallet MPC protocols.
@@ -399,16 +406,10 @@ public struct DWalletNetworkEncryptionKeyCap has key, store {
 /// - Cryptographic proofs ensure data integrity
 public struct DWalletNetworkEncryptionKey has key, store {
     id: UID,
-    /// ID of the capability that controls this encryption key
-    dwallet_network_encryption_key_cap_id: ID,
-    /// Current epoch for this encryption key
-    current_epoch: u64,
     /// Reconfiguration outputs indexed by epoch (Epoch -> Chunked Output)
-    reconfiguration_public_outputs: sui::table::Table<u64, TableVec<vector<u8>>>,
+    reconfiguration_public_outputs: Table<u64, TableVec<vector<u8>>>,
     /// Initial network DKG output (chunked for storage efficiency)
     network_dkg_public_output: TableVec<vector<u8>>,
-    /// IKA fees accumulated for computation services
-    computation_fee_charged_ika: Balance<IKA>,
     /// Parameters for network dkg
     dkg_params_for_network: vector<u8>,
     /// Curves supported by this network encryption key
@@ -426,12 +427,6 @@ public enum DWalletNetworkEncryptionKeyState has copy, drop, store {
     /// Reconfiguration request was sent to the network, but didn't finish yet.
     /// `is_first` is true if this is the first reconfiguration request, false otherwise.
     AwaitingNetworkReconfiguration {
-        is_first: bool,
-    },
-    /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    /// We need to wait for the next epoch to update the reconfiguration public outputs.
-    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
-    AwaitingNextEpochToUpdateReconfiguration {
         is_first: bool,
     },
     /// Network reconfiguration has completed successfully
@@ -1801,6 +1796,11 @@ public struct SetGasFeeReimbursementSuiSystemCallValueEvent has copy, drop {
     gas_fee_reimbursement_sui_system_call_value: u64,
 }
 
+/// Event emitted when the epoch ends.
+public struct EndOfEpochEvent has copy, drop {
+    epoch: u64,
+}
+
 // === Package Functions ===
 
 /// Creates a new DWalletCoordinatorInner instance with initial configuration.
@@ -1817,16 +1817,16 @@ public struct SetGasFeeReimbursementSuiSystemCallValueEvent has copy, drop {
 /// 
 /// ### Returns
 /// A new DWalletCoordinatorInner instance ready for use
-public(package) fun create_dwallet_coordinator_inner(
-    current_epoch: u64,
-    active_committee: BlsCommittee,
+public(package) fun create(
+    advance_epoch_approver: &mut AdvanceEpochApprover,
+    system_current_status_info: &SystemCurrentStatusInfo,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
 ): DWalletCoordinatorInner {
     verify_pricing_exists_for_all_protocols(&supported_curves_to_signature_algorithms_to_hash_schemes, &pricing);
-    DWalletCoordinatorInner {
-        current_epoch,
+    let mut inner = DWalletCoordinatorInner {
+        current_epoch: 0,
         session_management: SessionManagement {
             registered_session_identifiers: table::new(ctx),
             sessions: object_table::new(ctx),
@@ -1841,6 +1841,7 @@ public(package) fun create_dwallet_coordinator_inner(
         },
         dwallets: object_table::new(ctx),
         dwallet_network_encryption_keys: object_table::new(ctx),
+        epoch_dwallet_network_encryption_keys_reconfiguration_completed: 0,
         encryption_keys: object_table::new(ctx),
         presign_sessions: object_table::new(ctx),
         partial_centralized_signed_messages: object_table::new(ctx),
@@ -1851,10 +1852,10 @@ public(package) fun create_dwallet_coordinator_inner(
             calculation_votes: option::none(),
             gas_fee_reimbursement_sui_system_call_value: 0,
             gas_fee_reimbursement_sui: balance::zero(),
-            consensus_validation_fee_charged_ika: balance::zero(),
+            fee_charged_ika: balance::zero(),
         },
-        active_committee,
-        previous_committee: bls_committee::empty(),
+        active_committee: bls_committee::empty(),
+        next_epoch_active_committee: system_current_status_info.next_epoch_active_committee(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
@@ -1867,7 +1868,9 @@ public(package) fun create_dwallet_coordinator_inner(
         },
         received_end_of_publish: true,
         extra_fields: bag::new(ctx),
-    }
+    };
+    inner.advance_epoch(advance_epoch_approver);
+    inner
 }
 
 /// Locks the last active session sequence number to prevent further updates.
@@ -1881,7 +1884,11 @@ public(package) fun create_dwallet_coordinator_inner(
 /// ### Effects
 /// - Prevents further updates to `last_user_initiated_session_to_complete_in_current_epoch`
 /// - Ensures session completion targets remain stable during epoch transitions
-public(package) fun lock_last_active_session_sequence_number(self: &mut DWalletCoordinatorInner) {
+public(package) fun request_lock_epoch_sessions(
+    self: &mut DWalletCoordinatorInner,
+    system_current_status_info: &SystemCurrentStatusInfo,
+) {
+    assert!(system_current_status_info.is_end_epoch_time(), EHaveNotReachedEndEpochTime);
     self.session_management.locked_last_user_initiated_session_to_complete_in_current_epoch = true;
 }
 
@@ -1924,30 +1931,23 @@ public(package) fun register_session_identifier(
 /// ### Parameters
 /// - `self`: Mutable reference to the coordinator
 /// - `ctx`: Transaction context for object creation
-/// 
-/// ### Returns
-/// A capability granting control over the new network encryption key
 public(package) fun request_dwallet_network_encryption_key_dkg(
     self: &mut DWalletCoordinatorInner,
     params_for_network: vector<u8>,
+    _: &VerifiedProtocolCap,
     ctx: &mut TxContext
-): DWalletNetworkEncryptionKeyCap {
+) {
+    // we limit dkg only for the first half of the epoch.
+    // the second half of the epoch is used for reconfiguration.
+    assert!(self.next_epoch_active_committee.is_none(), EAlreadyInitiatedMidEpochReconfiguration);
     // Create a new capability to control this encryption key.
     let id = object::new(ctx);
     let dwallet_network_encryption_key_id = id.to_inner();
-    let cap = DWalletNetworkEncryptionKeyCap {
-        id: object::new(ctx),
-        dwallet_network_encryption_key_id,
-    };
-
     // Create a new network encryption key and add it to the shared state.
     self.dwallet_network_encryption_keys.add(dwallet_network_encryption_key_id, DWalletNetworkEncryptionKey {
         id,
-        dwallet_network_encryption_key_cap_id: object::id(&cap),
-        current_epoch: self.current_epoch,
         reconfiguration_public_outputs: sui::table::new(ctx),
         network_dkg_public_output: table_vec::empty(ctx),
-        computation_fee_charged_ika: balance::zero(),
         dkg_params_for_network: params_for_network,
         supported_curves: vector::empty(),
         state: DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG,
@@ -1960,9 +1960,6 @@ public(package) fun request_dwallet_network_encryption_key_dkg(
         },
         ctx,
     );
-
-    // Return the capability.
-    cap
 }
 
 /// Charges gas fee reimbursement for system-initiated operations.
@@ -2104,7 +2101,8 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
             ctx,
         );
     } else {
-        let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(dwallet_network_encryption_key.current_epoch + 1);
+        let next_epoch = self.current_epoch + 1;
+        let next_reconfiguration_public_output = dwallet_network_encryption_key.reconfiguration_public_outputs.borrow_mut(next_epoch);
         // Change state to complete and emit an event to signify that only if it is the last chunk.
         next_reconfiguration_public_output.push_back(public_output);
         dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
@@ -2113,7 +2111,7 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
                         event::emit(CompletedDWalletEncryptionKeyReconfigurationEvent {
                             dwallet_network_encryption_key_id,
                         });
-                        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: *is_first }
+                        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted
                     } else {
                         DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: *is_first }
                     }
@@ -2124,45 +2122,54 @@ public(package) fun respond_dwallet_network_encryption_key_reconfiguration(
     self.charge_gas_fee_reimbursement_sui_for_system_calls()
 }
 
-/// Advance the `current_epoch` and `state` of the network encryption key corresponding to `cap`,
-/// finalizing the reconfiguration of that key, and readying it for use in the next epoch.
-fun advance_epoch_dwallet_network_encryption_key(
+public(package) fun initiate_mid_epoch_reconfiguration(
     self: &mut DWalletCoordinatorInner,
-    cap: &DWalletNetworkEncryptionKeyCap,
-): Balance<IKA> {
-    // Get the corresponding network encryption key.
-    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(
-        cap.dwallet_network_encryption_key_id
-    );
+    system_current_status_info: &SystemCurrentStatusInfo,
+) {
+    let next_epoch_active_committee = system_current_status_info.next_epoch_active_committee();
+    // Check if system completed the mid epoch reconfiguration.
+    assert!(next_epoch_active_committee.is_some(), EHaveNotReachedMidEpochTime);
+    // Check if coordinator already initiated the mid epoch reconfiguration.
+    assert!(self.next_epoch_active_committee.is_none(), EAlreadyInitiatedMidEpochReconfiguration);
 
-    // Sanity checks: check the capability is the right one, and that the key is in the right state.
-    assert!(dwallet_network_encryption_key.dwallet_network_encryption_key_cap_id == cap.id.to_inner(), EIncorrectCap);
-    match (dwallet_network_encryption_key.state) {
-        DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration { is_first: _ } => {
-            // If the key is in the right state, we can proceed.
+    self.next_epoch_active_committee = next_epoch_active_committee;
+    let pricing_calculation_votes = dwallet_pricing::new_pricing_calculation(*self.next_epoch_active_committee.borrow(), self.pricing_and_fee_management.default);
+    self.pricing_and_fee_management.calculation_votes = option::some(pricing_calculation_votes);
+}
+
+public(package) fun network_encryption_key_mid_epoch_reconfiguration(
+    self: &mut DWalletCoordinatorInner,
+    dwallet_network_encryption_key_id: ID,
+    ctx: &mut TxContext,
+) {
+    assert!(self.next_epoch_active_committee.is_some(), EHaveNotInitiatedMidEpochReconfiguration);
+    assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
+    
+    let next_epoch = self.current_epoch + 1;
+
+    self.epoch_dwallet_network_encryption_keys_reconfiguration_completed = self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
+
+    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(dwallet_network_encryption_key_id);
+
+    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
+        DWalletNetworkEncryptionKeyState::NetworkDKGCompleted => {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: true }
+        },
+        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted => {
+            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: false }
         },
         _ => abort EWrongState,
     };
 
-    // Advance the current epoch and state.
-    dwallet_network_encryption_key.current_epoch = dwallet_network_encryption_key.current_epoch + 1;
-    dwallet_network_encryption_key.state = DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted;
+    // Initialize the chunks vector corresponding to the upcoming's epoch in the public outputs map.
+    dwallet_network_encryption_key.reconfiguration_public_outputs.add(next_epoch, table_vec::empty(ctx));
 
-    // Return the fees.
-    let mut epoch_computation_fee_charged_ika = sui::balance::zero<IKA>();
-    epoch_computation_fee_charged_ika.join(dwallet_network_encryption_key.computation_fee_charged_ika.withdraw_all());
-    return epoch_computation_fee_charged_ika
-}
-
-public(package) fun mid_epoch_reconfiguration(
-    self: &mut DWalletCoordinatorInner,
-    next_epoch_active_committee: BlsCommittee,
-    dwallet_network_encryption_key_caps: &vector<DWalletNetworkEncryptionKeyCap>,
-    ctx: &mut TxContext,
-) {
-    let pricing_calculation_votes = dwallet_pricing::new_pricing_calculation(next_epoch_active_committee, self.pricing_and_fee_management.default);
-    self.pricing_and_fee_management.calculation_votes = option::some(pricing_calculation_votes);
-    dwallet_network_encryption_key_caps.do_ref!(|cap| self.emit_start_reconfiguration_event(cap, ctx));
+    self.initiate_system_dwallet_session(
+        DWalletEncryptionKeyReconfigurationRequestEvent {
+            dwallet_network_encryption_key_id,
+        },
+        ctx,
+    );
 }
 
 public(package) fun calculate_pricing_votes(
@@ -2186,37 +2193,6 @@ public(package) fun calculate_pricing_votes(
         pricing_and_fee_management.current = pricing_calculation_votes.calculated_pricing();
         pricing_and_fee_management.calculation_votes = option::none();
     }
-}
-
-/// Emit an event to the Ika network to request a reconfiguration session for the network encryption key corresponding to `cap`.
-fun emit_start_reconfiguration_event(
-    self: &mut DWalletCoordinatorInner,
-    cap: &DWalletNetworkEncryptionKeyCap,
-    ctx: &mut TxContext
-) {
-    assert!(self.dwallet_network_encryption_keys.contains(cap.dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
-
-    let dwallet_network_encryption_key = self.get_active_dwallet_network_encryption_key(cap.dwallet_network_encryption_key_id);
-
-    dwallet_network_encryption_key.state = match (&dwallet_network_encryption_key.state) {
-        DWalletNetworkEncryptionKeyState::NetworkDKGCompleted => {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: true }
-        },
-        DWalletNetworkEncryptionKeyState::NetworkReconfigurationCompleted => {
-            DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration { is_first: false }
-        },
-        _ => return, // TODO(@scaly): should not happen, what do you think?
-    };
-
-    // Initialize the chunks vector corresponding to the upcoming's epoch in the public outputs map.
-    dwallet_network_encryption_key.reconfiguration_public_outputs.add(dwallet_network_encryption_key.current_epoch + 1, table_vec::empty(ctx));
-
-    self.initiate_system_dwallet_session(
-        DWalletEncryptionKeyReconfigurationRequestEvent {
-            dwallet_network_encryption_key_id: cap.dwallet_network_encryption_key_id,
-        },
-        ctx,
-    );
 }
 
 fun get_active_dwallet_network_encryption_key(
@@ -2259,13 +2235,14 @@ fun get_active_dwallet_network_encryption_key(
 /// - Various network encryption key related errors from capability validation
 public(package) fun advance_epoch(
     self: &mut DWalletCoordinatorInner,
-    next_committee: BlsCommittee,
-    dwallet_network_encryption_key_caps: &vector<DWalletNetworkEncryptionKeyCap>,
-): Balance<IKA> {
+    advance_epoch_approver: &mut AdvanceEpochApprover,
+) {
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), EPricingCalculationVotesMustBeCompleted);
     assert!(self.all_current_epoch_sessions_completed(), ECannotAdvanceEpoch);
     assert!(self.received_end_of_publish, ECannotAdvanceEpoch);
+    assert!(self.epoch_dwallet_network_encryption_keys_reconfiguration_completed == self.dwallet_network_encryption_keys.length(), ENotAllNetworkEncryptionKeysReconfigurationCompleted);
     self.received_end_of_publish = false;
+    self.epoch_dwallet_network_encryption_keys_reconfiguration_completed = 0;
 
     self.previous_epoch_last_checkpoint_sequence_number = self.last_processed_checkpoint_sequence_number;
 
@@ -2274,15 +2251,10 @@ public(package) fun advance_epoch(
 
     self.current_epoch = self.current_epoch + 1;
 
-    self.previous_committee = self.active_committee;
-    self.active_committee = next_committee;
+    self.active_committee = self.next_epoch_active_committee.extract();
 
-    let mut balance = balance::zero<IKA>();
-    dwallet_network_encryption_key_caps.do_ref!(|cap| {
-        balance.join(self.advance_epoch_dwallet_network_encryption_key(cap));
-    });
-    balance.join(self.pricing_and_fee_management.consensus_validation_fee_charged_ika.withdraw_all());
-    balance
+    let balance = self.pricing_and_fee_management.fee_charged_ika.withdraw_all();
+    advance_epoch_approver.approve_advance_epoch_by_witness(DWalletCoordinatorWitness {}, balance);
 }
 
 /// Gets an immutable reference to a dWallet by ID.
@@ -2404,11 +2376,10 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
     assert!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), EDWalletNetworkEncryptionKeyNotExist);
 
     
-    assert!(payment_ika.value() >= pricing_value.computation_ika() + pricing_value.consensus_validation_ika(), EInsufficientIKAPayment);
+    assert!(payment_ika.value() >= pricing_value.fee_ika(), EInsufficientIKAPayment);
     assert!(payment_sui.value() >= pricing_value.gas_fee_reimbursement_sui() + pricing_value.gas_fee_reimbursement_sui_for_system_calls(), EInsufficientSUIPayment);
 
-    let computation_fee_charged_ika = payment_ika.split(pricing_value.computation_ika(), ctx).into_balance();
-    let consensus_validation_fee_charged_ika = payment_ika.split(pricing_value.consensus_validation_ika(), ctx).into_balance();
+    let fee_charged_ika = payment_ika.split(pricing_value.fee_ika(), ctx).into_balance();
     let gas_fee_reimbursement_sui = payment_sui.split(pricing_value.gas_fee_reimbursement_sui(), ctx).into_balance();
     self.pricing_and_fee_management.gas_fee_reimbursement_sui.join(payment_sui.split(pricing_value.gas_fee_reimbursement_sui_for_system_calls(), ctx).into_balance());
 
@@ -2422,8 +2393,7 @@ fun charge_and_create_current_epoch_dwallet_event<E: copy + drop + store>(
         session_identifier,
         session_sequence_number,
         dwallet_network_encryption_key_id,
-        consensus_validation_fee_charged_ika,
-        computation_fee_charged_ika,
+        fee_charged_ika,
         gas_fee_reimbursement_sui,
     };
 
@@ -2940,16 +2910,13 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
     // Unpack and delete the `DWalletSession` object.
     let DWalletSession {
         session_identifier,
-        computation_fee_charged_ika,
         gas_fee_reimbursement_sui,
-        consensus_validation_fee_charged_ika,
-        dwallet_network_encryption_key_id,
+        fee_charged_ika,
         id,
         ..
     } = session;
 
     // Remove the corresponding event.
-    let dwallet_network_encryption_key = self.dwallet_network_encryption_keys.borrow_mut(dwallet_network_encryption_key_id);
     let _: DWalletSessionEvent<E> = self.session_management.session_events.remove(id.to_inner());
 
     id.delete();
@@ -2963,8 +2930,7 @@ fun remove_user_initiated_session_and_charge<E: copy + drop + store, Success: co
 
     id.delete();
 
-    dwallet_network_encryption_key.computation_fee_charged_ika.join(computation_fee_charged_ika);
-    self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(consensus_validation_fee_charged_ika);
+    self.pricing_and_fee_management.fee_charged_ika.join(fee_charged_ika);
 
     event::emit(DWalletSessionResultEvent {
         session_identifier_preimage,
@@ -4849,6 +4815,9 @@ fun process_checkpoint_message(
             },
             END_OF_EPOCH_MESSAGE_TYPE => {
                 self.received_end_of_publish = true;
+                event::emit(EndOfEpochEvent {
+                    epoch: self.current_epoch,
+                });
             },
             _ => {},
         };
@@ -4894,6 +4863,7 @@ public(package) fun set_supported_and_pricing(
     self: &mut DWalletCoordinatorInner,
     default_pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    _: &VerifiedProtocolCap,
 ) {
     verify_pricing_exists_for_all_protocols(&supported_curves_to_signature_algorithms_to_hash_schemes, &default_pricing);
     self.pricing_and_fee_management.default = default_pricing;
@@ -4946,6 +4916,7 @@ public(package) fun set_paused_curves_and_signature_algorithms(
     paused_curves: vector<u32>,
     paused_signature_algorithms: vector<u32>,
     paused_hash_schemes: vector<u32>,
+    _: &VerifiedProtocolCap,
 ) {
     self.support_config.paused_curves = paused_curves;
     self.support_config.paused_signature_algorithms = paused_signature_algorithms;
@@ -4965,9 +4936,10 @@ public(package) fun set_paused_curves_and_signature_algorithms(
 /// - **`ECannotSetDuringVotesCalculation`**: If the pricing vote is set during the votes calculation.
 public(package) fun set_pricing_vote(
     self: &mut DWalletCoordinatorInner,
-    validator_id: ID,
     pricing_vote: DWalletPricing,
+    cap: &VerifiedValidatorOperationCap,
 ) {
+    let validator_id = cap.validator_id();
     assert!(self.pricing_and_fee_management.calculation_votes.is_none(), ECannotSetDuringVotesCalculation);
     if(self.pricing_and_fee_management.validator_votes.contains(validator_id)) {
         let vote = self.pricing_and_fee_management.validator_votes.borrow_mut(validator_id);
@@ -4988,11 +4960,7 @@ public(package) fun subsidize_coordinator_with_ika(
     self: &mut DWalletCoordinatorInner,
     ika: Coin<IKA>,
 ) {
-    self.pricing_and_fee_management.consensus_validation_fee_charged_ika.join(ika.into_balance());
-}
-
-public(package) fun dwallet_network_encryption_key_id(self: &DWalletNetworkEncryptionKeyCap): ID {
-    self.dwallet_network_encryption_key_id
+    self.pricing_and_fee_management.fee_charged_ika.join(ika.into_balance());
 }
 
 public(package) fun current_pricing(self: &DWalletCoordinatorInner): DWalletPricing {
@@ -5034,7 +5002,7 @@ public fun imported_key_dwallet_id(self: &ImportedKeyDWalletCap): ID {
 #[test_only]
 public fun last_processed_checkpoint_sequence_number(
     self: &DWalletCoordinatorInner,
-): Option<u64> {
+): u64 {
     self.last_processed_checkpoint_sequence_number
 }
 

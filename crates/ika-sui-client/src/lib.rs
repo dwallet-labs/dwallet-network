@@ -11,14 +11,12 @@ use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData,
+    DBSuiEvent, DWalletNetworkEncryptionKey, DWalletNetworkEncryptionKeyData,
     DWalletNetworkEncryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
-use ika_types::sui::system_inner_v1::{
-    DWalletCoordinatorInnerV1, DWalletNetworkEncryptionKeyCap, SystemInnerV1,
-};
+use ika_types::sui::system_inner_v1::{DWalletCoordinatorInnerV1, SystemInnerV1};
 use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
@@ -93,8 +91,12 @@ pub struct SuiClient<P> {
     inner: P,
     sui_client_metrics: Arc<SuiClientMetrics>,
     ika_package_id: ObjectID,
+    #[allow(dead_code)]
+    ika_common_package_id: ObjectID,
+    ika_dwallet_2pc_mpc_package_id: ObjectID,
     ika_system_package_id: ObjectID,
     ika_system_object_id: ObjectID,
+    ika_dwallet_coordinator_object_id: ObjectID,
 }
 
 pub type SuiConnectorClient = SuiClient<SuiSdkClient>;
@@ -104,8 +106,11 @@ impl SuiConnectorClient {
         rpc_url: &str,
         sui_client_metrics: Arc<SuiClientMetrics>,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
     ) -> anyhow::Result<Self> {
         let inner = SuiClientBuilder::default()
             .build(rpc_url)
@@ -117,8 +122,11 @@ impl SuiConnectorClient {
             inner,
             sui_client_metrics,
             ika_package_id,
+            ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id,
             ika_system_object_id,
+            ika_dwallet_coordinator_object_id,
         };
         self_.describe().await?;
         Ok(self_)
@@ -192,8 +200,11 @@ where
             sui_client_metrics: SuiClientMetrics::new_for_testing(),
             // TODO(omersadika) fix that random
             ika_package_id: ObjectID::random(),
+            ika_common_package_id: ObjectID::random(),
+            ika_dwallet_2pc_mpc_package_id: ObjectID::random(),
             ika_system_package_id: ObjectID::random(),
             ika_system_object_id: ObjectID::random(),
+            ika_dwallet_coordinator_object_id: ObjectID::random(),
         }
     }
 
@@ -207,13 +218,10 @@ where
         Ok(())
     }
 
-    pub async fn get_dwallet_coordinator_inner(
-        &self,
-        dwallet_coordinator_id: ObjectID,
-    ) -> IkaResult<DWalletCoordinatorInner> {
+    pub async fn get_dwallet_coordinator_inner(&self) -> IkaResult<DWalletCoordinatorInner> {
         let result = self
             .inner
-            .get_dwallet_coordinator(dwallet_coordinator_id)
+            .get_dwallet_coordinator(self.ika_dwallet_coordinator_object_id)
             .await
             .map_err(|e| IkaError::SuiClientInternalError(format!("Can't get Coordinator: {e}")))?;
         let wrapper = bcs::from_bytes::<DWalletCoordinator>(&result).map_err(|e| {
@@ -224,7 +232,10 @@ where
             1 => {
                 let result = self
                     .inner
-                    .get_dwallet_coordinator_inner(dwallet_coordinator_id, wrapper.version)
+                    .get_dwallet_coordinator_inner(
+                        self.ika_dwallet_coordinator_object_id,
+                        wrapper.version,
+                    )
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
@@ -475,15 +486,12 @@ where
     }
 
     /// Retrieves the dwallet_2pc_mpc_coordinator_id object arg from the Sui chain.
-    pub async fn get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(
-        &self,
-        dwallet_2pc_mpc_coordinator_id: ObjectID,
-    ) -> ObjectArg {
+    pub async fn get_mutable_dwallet_2pc_mpc_coordinator_arg_must_succeed(&self) -> ObjectArg {
         static ARG: OnceCell<ObjectArg> = OnceCell::const_new();
         *ARG.get_or_init(|| async move {
             let Ok(Ok(system_arg)) = retry_with_max_elapsed_time!(
                 self.inner
-                    .get_mutable_shared_arg(dwallet_2pc_mpc_coordinator_id),
+                    .get_mutable_shared_arg(self.ika_dwallet_coordinator_object_id),
                 Duration::from_secs(30)
             ) else {
                 panic!("Failed to get dwallet_2pc_mpc_coordinator_id object arg after retries");
@@ -512,7 +520,7 @@ where
         cursor: Option<EventID>,
     ) -> IkaResult<Page<SuiEvent, EventID>> {
         let filter = EventFilter::MoveEventModule {
-            package: self.ika_system_package_id,
+            package: self.ika_dwallet_2pc_mpc_package_id,
             module: module.clone(),
         };
         let events = self
@@ -523,7 +531,7 @@ where
 
         // Safeguard check that all events are emitted from requested package and module
         assert!(events.data.iter().all(|event| event.type_.address.as_ref()
-            == self.ika_system_package_id.as_ref()
+            == self.ika_dwallet_2pc_mpc_package_id.as_ref()
             && event.type_.module == module));
         Ok(events)
     }
@@ -599,30 +607,16 @@ where
     }
 
     pub async fn must_get_dwallet_coordinator_inner_v1(&self) -> DWalletCoordinatorInnerV1 {
-        loop {
-            let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
-            let Some(dwallet_2pc_mpc_coordinator_id) =
-                system_inner.dwallet_2pc_mpc_coordinator_id()
-            else {
-                error!("failed to get `dwallet_2pc_mpc_coordinator_id` when fetching dwallet coordinator inner");
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                continue;
-            };
-            let DWalletCoordinatorInner::V1(inner_v1) = self
-                .must_get_dwallet_coordinator_inner(dwallet_2pc_mpc_coordinator_id)
-                .await;
-            return inner_v1;
-        }
+        let DWalletCoordinatorInner::V1(inner_v1) = self.must_get_dwallet_coordinator_inner().await;
+        inner_v1
     }
 
     pub async fn get_dwallet_mpc_network_keys(
         &self,
-    ) -> IkaResult<HashMap<ObjectID, DWalletNetworkDecryptionKey>> {
-        let SystemInner::V1(system_inner) = self.must_get_system_inner_object().await;
+    ) -> IkaResult<HashMap<ObjectID, DWalletNetworkEncryptionKey>> {
+        let dwallet_coordinator_inner = self.must_get_dwallet_coordinator_inner_v1().await;
         self.inner
-            .get_network_encryption_keys(
-                system_inner.dwallet_2pc_mpc_coordinator_network_encryption_keys(),
-            )
+            .get_network_encryption_keys(&dwallet_coordinator_inner)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!("can't get_network_encryption_keys: {e}"))
@@ -631,9 +625,9 @@ where
 
     pub async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
-        network_decryption_key: &DWalletNetworkDecryptionKey,
+        network_decryption_key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
-    ) -> IkaResult<DWalletNetworkDecryptionKeyData> {
+    ) -> IkaResult<DWalletNetworkEncryptionKeyData> {
         self.inner
             .get_network_decryption_key_with_full_data_by_epoch(network_decryption_key, epoch)
             .await
@@ -644,13 +638,10 @@ where
             })
     }
 
-    pub async fn must_get_dwallet_coordinator_inner(
-        &self,
-        dwallet_state_id: ObjectID,
-    ) -> DWalletCoordinatorInner {
+    pub async fn must_get_dwallet_coordinator_inner(&self) -> DWalletCoordinatorInner {
         loop {
             match retry_with_max_elapsed_time!(
-                self.get_dwallet_coordinator_inner(dwallet_state_id),
+                self.get_dwallet_coordinator_inner(),
                 Duration::from_secs(30)
             ) {
                 Ok(Ok(ika_system_state)) => return ika_system_state,
@@ -757,14 +748,14 @@ pub trait SuiClientInner: Send + Sync {
     #[allow(clippy::ptr_arg)]
     async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
+        dwallet_coordinator_inner: &DWalletCoordinatorInnerV1,
+    ) -> Result<HashMap<ObjectID, DWalletNetworkEncryptionKey>, self::Error>;
 
     async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
-        network_decryption_key: &DWalletNetworkDecryptionKey,
+        network_decryption_key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
-    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error>;
+    ) -> Result<DWalletNetworkEncryptionKeyData, self::Error>;
 
     async fn get_current_reconfiguration_public_output(
         &self,
@@ -1016,42 +1007,60 @@ impl SuiClientInner for SuiSdkClient {
 
     async fn get_network_encryption_keys(
         &self,
-        network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
-    ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error> {
+        dwallet_coordinator_inner: &DWalletCoordinatorInnerV1,
+    ) -> Result<HashMap<ObjectID, DWalletNetworkEncryptionKey>, self::Error> {
         let mut network_encryption_keys = HashMap::new();
-        for cap in network_decryption_caps {
-            let key_id = cap.dwallet_network_decryption_key_id;
-            let dynamic_field_response = self
-                .read_api()
-                .get_object_with_options(key_id, SuiObjectDataOptions::bcs_lossless())
-                .await?;
-            let resp = dynamic_field_response.into_object().map_err(|e| {
-                Error::DataError(format!("can't get bcs of object {:?}: {:?}", key_id, e))
-            })?;
-            let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                "object {:?} has no bcs data",
-                key_id
-            )))?;
-            let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                "object {:?} is not a MoveObject",
-                key_id
-            )))?;
 
-            network_encryption_keys.insert(
-                key_id,
-                bcs::from_bytes::<DWalletNetworkDecryptionKey>(&raw_move_obj.bcs_bytes).map_err(
-                    |e| Error::DataError(format!("can't deserialize object {:?}: {:?}", key_id, e)),
-                )?,
-            );
+        let mut cursor = None;
+        loop {
+            let dynamic_fields = self
+                .read_api()
+                .get_dynamic_fields(dwallet_coordinator_inner.dwallet_network_encryption_keys.id, cursor, None)
+                .await
+                .map_err(|e| {
+                    Error::DataError(format!(
+                        "can't get dynamic fields of `dwallet_coordinator_inner.dwallet_network_encryption_keys` table {:?}: {:?}",
+                        dwallet_coordinator_inner.dwallet_network_encryption_keys.id, e
+                    ))
+                })?;
+            let object_ids: Vec<ObjectID> = dynamic_fields
+                .data
+                .iter()
+                .map(|df| df.object_id)
+                .collect();
+            let objects = self.read_api().multi_get_object_with_options(object_ids, SuiObjectDataOptions::bcs_lossless()).await?;
+
+            for resp in objects {
+                if let Some(data) = resp.data {
+                    let object_id = data.object_id;
+                    let raw_data = data.bcs.ok_or(Error::DataError(format!(
+                        "object {:?} has no bcs data",
+                        object_id
+                    )))?;
+                    let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
+                        "object {:?} is not a MoveObject",
+                        object_id
+                    )))?;
+                    let value = bcs::from_bytes::<DWalletNetworkEncryptionKey>(
+                        &raw_move_obj.bcs_bytes,
+                    )?;
+                    network_encryption_keys.insert(object_id, value);
+                }
+            }
+
+            cursor = dynamic_fields.next_cursor;
+            if !dynamic_fields.has_next_page {
+                break;
+            }
         }
         Ok(network_encryption_keys)
     }
 
     async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
-        key: &DWalletNetworkDecryptionKey,
+        key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
-    ) -> Result<DWalletNetworkDecryptionKeyData, self::Error> {
+    ) -> Result<DWalletNetworkEncryptionKeyData, self::Error> {
         let network_dkg_public_output = self
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
@@ -1060,10 +1069,6 @@ impl SuiClientInner for SuiSdkClient {
         // where we only had NetworkDKG, `get_current_reconfiguration_public_output()` function will error.
         // In this case, the validator will be stuck in a loop where it can't process events
         // until the epoch is switched, since it will be endlessly waiting for the network key.
-        let first_reconfiguration_for_next_epoch_was_completed = key.state
-            == (DWalletNetworkEncryptionKeyState::AwaitingNextEpochToUpdateReconfiguration {
-                is_first: true,
-            });
         let awaiting_first_reconfiguration_to_complete = key.state
             == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
                 is_first: true,
@@ -1075,7 +1080,6 @@ impl SuiClientInner for SuiSdkClient {
             || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
             || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
             || awaiting_first_reconfiguration_to_complete
-            || first_reconfiguration_for_next_epoch_was_completed
         {
             info!(
                 key_id = ?key.id,
@@ -1094,9 +1098,8 @@ impl SuiClientInner for SuiSdkClient {
                 .await?;
         };
 
-        Ok(DWalletNetworkDecryptionKeyData {
+        Ok(DWalletNetworkEncryptionKeyData {
             id: key.id,
-            dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
             current_epoch: epoch,
             current_reconfiguration_public_output,
             network_dkg_public_output,

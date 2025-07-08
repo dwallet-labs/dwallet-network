@@ -8,7 +8,7 @@
 /// - IPv6 addresses with TCP/UDP
 /// - DNS hostnames with TCP/UDP
 /// - HTTP protocol
-module ika_system::multiaddr;
+module ika_common::multiaddr;
 
 // === Imports ===
 
@@ -29,7 +29,7 @@ use std::string::{Self, String};
 /// let valid_addr = string::utf8(b"/ip4/192.168.1.1/tcp/8080");
 /// assert!(validate_tcp(&valid_addr));
 /// ```
-public(package) fun validate_tcp(addr: &String): bool {
+public fun validate_tcp(addr: &String): bool {
     validate_with_transport(addr, string::utf8(b"tcp"))
 }
 
@@ -46,7 +46,7 @@ public(package) fun validate_tcp(addr: &String): bool {
 /// let valid_addr = string::utf8(b"/ip4/192.168.1.1/udp/8080");
 /// assert!(validate_udp(&valid_addr));
 /// ```
-public(package) fun validate_udp(addr: &String): bool {
+public fun validate_udp(addr: &String): bool {
     validate_with_transport(addr, string::utf8(b"udp"))
 }
 

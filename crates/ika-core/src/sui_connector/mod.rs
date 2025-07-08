@@ -11,9 +11,7 @@ use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
-use ika_types::messages_dwallet_mpc::DWalletNetworkDecryptionKeyData;
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
+use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME};
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -35,10 +33,6 @@ pub mod metrics;
 pub mod sui_executor;
 pub mod sui_syncer;
 
-pub const TEST_MODULE_NAME: &IdentStr = ident_str!("test");
-pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_coordinator_inner");
-
 pub struct SuiNotifier {
     sui_key: SuiKeyPair,
     sui_address: SuiAddress,
@@ -47,6 +41,7 @@ pub struct SuiNotifier {
 pub struct SuiConnectorService {
     sui_client: Arc<SuiClient<SuiSdkClient>>,
     sui_executor: SuiExecutor<SuiSdkClient>,
+    network_keys_receiver: watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
     #[allow(dead_code)]
     task_handles: Vec<JoinHandle<()>>,
     #[allow(dead_code)]
@@ -63,11 +58,12 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         is_validator: bool,
-        network_keys_sender: watch::Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_sender: watch::Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<(Arc<Self>, watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>)> {
+        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
+
         let sui_notifier = Self::prepare_for_sui(
             sui_connector_config.clone(),
             sui_client.clone(),
@@ -77,6 +73,7 @@ impl SuiConnectorService {
 
         let sui_executor = SuiExecutor::new(
             sui_connector_config.ika_system_package_id,
+            sui_connector_config.ika_dwallet_2pc_mpc_package_id,
             checkpoint_store.clone(),
             system_checkpoint_store.clone(),
             sui_notifier,
@@ -85,7 +82,6 @@ impl SuiConnectorService {
         );
 
         let sui_modules_to_watch = vec![
-            TEST_MODULE_NAME.to_owned(),
             DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
         ];
         let task_handles = SuiSyncer::new(
@@ -103,13 +99,14 @@ impl SuiConnectorService {
         )
         .await
         .map_err(|e| anyhow::anyhow!("Failed to start sui syncer: {e}"))?;
-        Ok(Self {
+        Ok((Arc::new(Self {
             sui_client,
             sui_executor,
+            network_keys_receiver: network_keys_receiver.clone(),
             task_handles,
             sui_connector_config,
             metrics: sui_connector_metrics,
-        })
+        }), network_keys_receiver))
     }
 
     pub async fn run_epoch(
@@ -117,7 +114,7 @@ impl SuiConnectorService {
         epoch_id: EpochId,
         run_with_range: Option<RunWithRange>,
     ) -> StopReason {
-        self.sui_executor.run_epoch(epoch_id, run_with_range).await
+        self.sui_executor.run_epoch(epoch_id, run_with_range, self.network_keys_receiver.clone()).await
     }
 
     async fn prepare_for_sui(

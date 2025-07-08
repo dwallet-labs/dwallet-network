@@ -4,19 +4,19 @@
 /// This module provides structures and functions for managing pricing information for a dWallet.
 /// Each operation (e.g., DKG, re-encrypt user share, ECDSA presign, etc.) has its own pricing data,
 /// represented by a `PricingPerOperation`. Each `PricingPerOperation` holds three values:
-///   - **consensus_validation_ika**: The consensus validation IKA price.
-///   - **computation_ika**: The computation_ika IKA price.
+///   - **fee_ika**: The IKA fee for the operation.
 ///   - **gas_fee_reimbursement_sui**: The SUI reimbursement.
+///   - **gas_fee_reimbursement_sui_for_system_calls**: The SUI reimbursement for system calls.
 ///
 /// The main struct, `DWalletPricing`, now holds one `PricingPerOperation` per operation.
 /// The DKG operation is split into two separate rounds:
 ///   - `dkg_first_round`
 ///   - `dkg_second_round`
-module ika_system::dwallet_pricing;
+module ika_dwallet_2pc_mpc::dwallet_pricing;
 
 // === Imports ===
 use sui::{priority_queue::{Self, PriorityQueue}, vec_map::{Self, VecMap}};
-use ika_system::bls_committee::BlsCommittee;
+use ika_common::bls_committee::BlsCommittee;
 
 // === Structs ===
 
@@ -37,8 +37,7 @@ public struct DWalletPricingKey has copy, drop, store {
 /// Holds pricing information for a single operation.
 /// The fields are ordered so that the consensus validation price is first.
 public struct DWalletPricingValue has copy, drop, store {
-    consensus_validation_ika: u64,
-    computation_ika: u64,
+    fee_ika: u64,
     gas_fee_reimbursement_sui: u64,
     gas_fee_reimbursement_sui_for_system_calls: u64,
 }
@@ -79,10 +78,9 @@ public fun empty(): DWalletPricing {
 /// # Returns
 ///
 /// The [`DWalletPricing`] object.
-public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, consensus_validation_ika: u64, computation_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
+public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, fee_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
     self.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, DWalletPricingValue {
-        consensus_validation_ika,
-        computation_ika,
+        fee_ika,
         gas_fee_reimbursement_sui,
         gas_fee_reimbursement_sui_for_system_calls,
     })
@@ -107,14 +105,9 @@ public(package) fun try_get_dwallet_pricing_value(self: &DWalletPricing, curve: 
     self.pricing_map.try_get(&key)
 }
 
-/// Getter for the consensus_validation_ika field of a DWalletPricingValue.
-public fun consensus_validation_ika(self: &DWalletPricingValue): u64 {
-    self.consensus_validation_ika
-}
-
-/// Getter for the computation_ika field of a DWalletPricingValue.
-public fun computation_ika(self: &DWalletPricingValue): u64 {
-    self.computation_ika
+/// Getter for the fee_ika field of a DWalletPricingValue.
+public fun fee_ika(self: &DWalletPricingValue): u64 {
+    self.fee_ika
 }
 
 /// Getter for the gas_fee_reimbursement_sui field of a DWalletPricingValue.
@@ -152,23 +145,19 @@ public(package) fun calculate_pricing_quorum_below(calculation: &mut DWalletPric
 }
 
 public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, values: vector<DWalletPricingValue>): DWalletPricingValue {
-    let mut consensus_validation_ika = priority_queue::new(vector[]);
-    let mut computation_ika = priority_queue::new(vector[]);
+    let mut fee_ika = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui_for_system_calls = priority_queue::new(vector[]);
     values.do_ref!(|value| {
-        consensus_validation_ika.insert(value.consensus_validation_ika(), 1);
-        computation_ika.insert(value.computation_ika(), 1);
+        fee_ika.insert(value.fee_ika(), 1);
         gas_fee_reimbursement_sui.insert(value.gas_fee_reimbursement_sui(), 1);
         gas_fee_reimbursement_sui_for_system_calls.insert(value.gas_fee_reimbursement_sui_for_system_calls(), 1);
     });
-    let consensus_validation_ika_quorum_below = quorum_below(bls_committee, &mut consensus_validation_ika);
-    let computation_ika_quorum_below = quorum_below(bls_committee, &mut computation_ika);
+    let fee_ika_quorum_below = quorum_below(bls_committee, &mut fee_ika);
     let gas_fee_reimbursement_sui_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui);
     let gas_fee_reimbursement_sui_for_system_calls_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui_for_system_calls);
     DWalletPricingValue {
-        consensus_validation_ika: consensus_validation_ika_quorum_below,
-        computation_ika: computation_ika_quorum_below,
+        fee_ika: fee_ika_quorum_below,
         gas_fee_reimbursement_sui: gas_fee_reimbursement_sui_quorum_below,
         gas_fee_reimbursement_sui_for_system_calls: gas_fee_reimbursement_sui_for_system_calls_quorum_below,
     }

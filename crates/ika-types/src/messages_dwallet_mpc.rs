@@ -13,18 +13,15 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
-use sui_types::balance::Balance;
 use sui_types::base_types::{ObjectID, SuiAddress};
 use sui_types::collection_types::{Table, TableVec};
 
 // TODO (#650): Rename Move structs
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr =
-    ident_str!("dwallet_2pc_mpc_coordinator");
+pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr =
+    ident_str!("coordinator");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
-/// There's a wrapper and inner struct to support Move upgradable contracts. Read this doc for further explanations:
-/// https://docs.sui.io/concepts/sui-move-concepts/packages/upgrade.
-pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_coordinator_inner");
+pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr = ident_str!("coordinator_inner");
 pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletDKGFirstRoundRequestEvent");
 pub const DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT: &IdentStr =
@@ -43,6 +40,10 @@ pub const VALIDATOR_DATA_FOR_SECRET_SHARE_STRUCT_NAME: &IdentStr =
     ident_str!("ValidatorDataForDWalletSecretShare");
 pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("DWalletNetworkDKGEncryptionKeyRequestEvent");
+pub const NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY: &str =
+    "NetworkEncryptionKeyReconfiguration";
+pub const NETWORK_ENCRYPTION_KEY_DKG_STR_KEY: &str = "NetworkEncryptionKeyDkg";
+pub const SIGN_STR_KEY: &str = "Sign";
 
 pub const DKG_FIRST_ROUND_PROTOCOL_FLAG: u32 = 0;
 pub const DKG_SECOND_ROUND_PROTOCOL_FLAG: u32 = 1;
@@ -53,11 +54,6 @@ pub const PRESIGN_PROTOCOL_FLAG: u32 = 5;
 pub const SIGN_PROTOCOL_FLAG: u32 = 6;
 pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
-
-pub const NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY: &str =
-    "NetworkEncryptionKeyReconfiguration";
-pub const NETWORK_ENCRYPTION_KEY_DKG_STR_KEY: &str = "NetworkEncryptionKeyDkg";
-pub const SIGN_STR_KEY: &str = "Sign";
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCProtocolInitData {
@@ -624,9 +620,9 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
     /// It is used to detect [`DWalletSessionEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![<E as DWalletSessionEventTrait>::type_(packages_config).into()],
         }
     }
@@ -636,22 +632,23 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
     pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
         event.address == package_id
             && event.name == DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned()
-            && event.module == DWALLET_MODULE_NAME.to_owned()
+            && event.module == DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned()
     }
 
     /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
     /// Guarantees same values of `self.session_identifier_preimage` yield different output for `User` and `System`
     pub fn session_identifier_digest(&self) -> SessionIdentifier {
+        let version = 0u64;
         // We are adding a string distinguisher between
         // the `User` and `System` sessions, so that when it is hashed, the same inner value
         // in the two different options will yield a different output, thus guaranteeing
         // user-initiated sessions can never block or reuse session IDs for system sessions.
         let session_type = match self.session_type {
             SessionType::User { .. } => {
-                [b"USER", self.session_identifier_preimage.as_slice()].concat()
+                [version.to_be_bytes().as_slice(), b"USER", self.session_identifier_preimage.as_slice()].concat()
             }
             SessionType::System => {
-                [b"SYSTEM", self.session_identifier_preimage.as_slice()].concat()
+                [version.to_be_bytes().as_slice(), b"SYSTEM", self.session_identifier_preimage.as_slice()].concat()
             }
         };
         SessionIdentifier(keccak256_digest(&session_type))
@@ -684,9 +681,9 @@ pub struct EncryptedShareVerificationRequestEvent {
 impl DWalletSessionEventTrait for EncryptedShareVerificationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: ident_str!("EncryptedShareVerificationRequestEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -710,9 +707,9 @@ pub struct FutureSignRequestEvent {
 impl DWalletSessionEventTrait for FutureSignRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: ident_str!("FutureSignRequestEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -750,9 +747,9 @@ impl DWalletSessionEventTrait for DWalletDKGSecondRoundRequestEvent {
     /// and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_DKG_SECOND_ROUND_REQUEST_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -816,9 +813,9 @@ impl DWalletSessionEventTrait for PresignRequestEvent {
     /// from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: PRESIGN_REQUEST_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -826,12 +823,18 @@ impl DWalletSessionEventTrait for PresignRequestEvent {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct IkaPackagesConfig {
-    /// The move package ID of ika (IKA) on sui.
+    /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
-    /// The move package ID of `ika_system` on sui.
+    /// The move package id of ika_common on sui.
+    pub ika_common_package_id: ObjectID,
+    /// The move package id of ika_dwallet_2pc_mpc on sui.
+    pub ika_dwallet_2pc_mpc_package_id: ObjectID,
+    /// The move package id of ika_system on sui.
     pub ika_system_package_id: ObjectID,
-    /// The object ID of ika_system_state on sui.
+    /// The object id of system on sui.
     pub ika_system_object_id: ObjectID,
+    /// The object id of ika_dwallet_coordinator on sui.
+    pub ika_dwallet_coordinator_object_id: ObjectID,
 }
 
 impl sui_config::Config for IkaPackagesConfig {}
@@ -851,9 +854,9 @@ impl DWalletSessionEventTrait for DWalletDKGFirstRoundRequestEvent {
     /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -915,9 +918,9 @@ impl DWalletSessionEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEve
     /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_MAKE_DWALLET_USER_SECRET_KEY_SHARES_PUBLIC_REQUEST_EVENT.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -928,9 +931,9 @@ impl DWalletSessionEventTrait for DWalletImportedKeyVerificationRequestEvent {
     /// It is used to detect [`DWalletDKGFirstRoundRequestEvent`] events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_IMPORTED_KEY_VERIFICATION_REQUEST_EVENT.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -970,9 +973,9 @@ impl DWalletSessionEventTrait for SignRequestEvent {
     /// events from the chain and initiate the MPC session.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: SIGN_REQUEST_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -992,34 +995,29 @@ impl DWalletSessionEventTrait for DWalletNetworkDKGEncryptionKeyRequestEvent {
     /// It is used to trigger the start of the network DKG process.
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: START_NETWORK_DKG_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
 }
 
-/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkDecryptionKey`.
+/// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::DWalletNetworkEncryptionKey`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DWalletNetworkDecryptionKey {
+pub struct DWalletNetworkEncryptionKey {
     pub id: ObjectID,
-    pub dwallet_network_decryption_key_cap_id: ObjectID,
-    pub current_epoch: u64,
     /// key -> epoch, value -> reconfiguration public output (TableVec).
     pub reconfiguration_public_outputs: Table,
     pub network_dkg_public_output: TableVec,
-    /// The fees paid for computation in IKA.
-    pub computation_fee_charged_ika: Balance,
     pub dkg_params_for_network: Vec<u8>,
     pub supported_curves: Vec<u32>,
     pub state: DWalletNetworkEncryptionKeyState,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DWalletNetworkDecryptionKeyData {
+pub struct DWalletNetworkEncryptionKeyData {
     pub id: ObjectID,
-    pub dwallet_network_decryption_key_cap_id: ObjectID,
     pub current_epoch: u64,
     pub current_reconfiguration_public_output: Vec<u8>,
     pub network_dkg_public_output: Vec<u8>,
@@ -1037,11 +1035,6 @@ pub enum DWalletNetworkEncryptionKeyState {
     AwaitingNetworkReconfiguration {
         is_first: bool,
     },
-    /// Reconfiguration request finished, but we didn't switch an epoch yet.
-    /// We need to wait for the next epoch to update the reconfiguration of public outputs.
-    AwaitingNextEpochToUpdateReconfiguration {
-        is_first: bool,
-    },
     NetworkReconfigurationCompleted,
 }
 
@@ -1053,9 +1046,9 @@ pub struct DWalletEncryptionKeyReconfigurationRequestEvent {
 impl DWalletSessionEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {
     fn type_(packages_config: &IkaPackagesConfig) -> StructTag {
         StructTag {
-            address: *packages_config.ika_system_package_id,
+            address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: ident_str!("DWalletEncryptionKeyReconfigurationRequestEvent").to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

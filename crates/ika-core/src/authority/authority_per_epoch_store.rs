@@ -1209,7 +1209,8 @@ impl AuthorityPerEpochStore {
                 | SystemCheckpointMessageKind::SetMinValidatorJoiningStake(_)
                 | SystemCheckpointMessageKind::SetMaxValidatorChangeCount(_)
                 | SystemCheckpointMessageKind::SetRewardSlashingRate(_)
-                | SystemCheckpointMessageKind::SetApprovedUpgrade { .. } => {
+                | SystemCheckpointMessageKind::SetApprovedUpgrade { .. }
+                | SystemCheckpointMessageKind::SetOrRemoveWitnessApprovingAdvanceEpochMessageType { .. } => {
                     todo!(
                         "Handle other SystemCheckpointKind variants in process_consensus_transactions_and_commit_boundary"
                     );
