@@ -82,10 +82,13 @@ impl CryptographicComputationsOrchestrator {
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
         // Note: Change this for development purposes if needed.
-        assert!(
-            available_cores_for_computations >= 16,
-            "Validator must have more than 16 CPU cores for cryptographic computations"
-        );
+        #[cfg(feature = "avoid-insufficient-cpu-cores")]
+        {
+            assert!(
+                available_cores_for_computations >= 16,
+                "Validator must have more than 16 CPU cores for cryptographic computations"
+            );
+        }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
             "Available CPU cores for Rayon cryptographic computations"

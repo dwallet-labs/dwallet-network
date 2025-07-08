@@ -167,3 +167,4 @@ harness = false
 
 [features]
 test-utils = []
+avoid-insufficient-cpu-cores = []
