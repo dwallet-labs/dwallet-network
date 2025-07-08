@@ -115,7 +115,7 @@ pub enum DWalletMPCDBMessage {
 
 struct ReadySessionsResponse {
     ready_sessions: Vec<DWalletMPCSession>,
-    sessions_pending_for_events: Vec<DWalletMPCSession>,
+    pending_for_event_sessions: Vec<DWalletMPCSession>,
     malicious_actors: Vec<PartyID>,
 }
 
@@ -334,10 +334,22 @@ impl DWalletMPCManager {
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
-        self.ordered_sessions_pending_for_computation
-            .extend(ready_sessions_response.ready_sessions);
+
+        // Note that because the Ika consensus isn't in sync with the Sui consensus, it might be that a session has gotten quorum of messages whilst
+        // the current validator haven't received the event from which its public input can be generated (and therefore cannot advance it yet).
+        //
+        // Because of this reason, we place these on two separate queues. Note that in either cases, we must use the copy at this point in time,
+        // so that we will advance it with exactly the same messages as those who already have their event data ready.
         self.sessions_pending_for_events
-            .extend(ready_sessions_response.sessions_pending_for_events);
+            .extend(ready_sessions_response.pending_for_event_sessions);
+
+        // Extend the pending for computation queue while keeping order.
+        for ready_to_advance_session_copy in ready_sessions_response.ready_sessions {
+            self.insert_session_into_ordered_pending_for_computation_queue(
+                ready_to_advance_session_copy,
+            );
+        }
+
         Ok(())
     }
 
@@ -407,7 +419,7 @@ impl DWalletMPCManager {
                 .partition(|s| s.mpc_event_data.is_some());
         Ok(ReadySessionsResponse {
             ready_sessions,
-            sessions_pending_for_events: pending_for_event_sessions,
+            pending_for_event_sessions,
             malicious_actors: malicious_parties,
         })
     }
