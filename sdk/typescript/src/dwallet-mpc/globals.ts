@@ -312,7 +312,8 @@ export async function getNetworkDecryptionKeyID(c: Config): Promise<string> {
 	}
 	const keysDynamicFields = await c.client.getDynamicFields({
 		parentId:
-			coordinatorInner.data?.content.fields.value.fields.dwallet_network_encryption_keys.fields.id.id,
+			coordinatorInner.data?.content.fields.value.fields.dwallet_network_encryption_keys.fields.id
+				.id,
 	});
 
 	const decryptionKeyID = keysDynamicFields.data[keysDynamicFields.data.length - 1].name
