@@ -82,7 +82,7 @@ pub(crate) fn session_input_from_event(
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
                     &epoch_store.get_weighted_threshold_access_structure()?,
                     validators_class_groups_public_keys_and_proofs,
-                    // TODO: make generic
+                    // Todo (#473): Support generic network key scheme
                     DWalletMPCNetworkKeyScheme::Secp256k1,
                 )?),
                 Some(bcs::to_bytes(&class_groups_decryption_key)?),
