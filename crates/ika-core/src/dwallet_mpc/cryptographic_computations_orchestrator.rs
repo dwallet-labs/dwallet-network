@@ -81,7 +81,7 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
-        // Note: Change this for development purposes if needed.
+        // Note: Enable the feature to enforce a minimum of CPU cores.
         #[cfg(feature = "enforce-minimum-cpu")]
         {
             assert!(
@@ -102,8 +102,8 @@ impl CryptographicComputationsOrchestrator {
         })
     }
 
-    /// Check for completed computations,  and then check if we currently have enough available cores.
-    pub(crate) fn has_available_cores_to_preform_computation(&mut self) -> bool {
+    /// Check for completed computations, and sufficient CPU cores.
+    pub(crate) fn has_available_cores_to_perform_computation(&mut self) -> bool {
         while let Ok(completed_session) = self.completed_computation_receiver.try_recv() {
             self.currently_running_sessions_count -= 1;
             info!(
@@ -124,7 +124,7 @@ impl CryptographicComputationsOrchestrator {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<()> {
         if !self.has_available_cores_to_preform_computation() {
-            debug!(
+            warn!(
                 session_id=?session.session_identifier,
                 mpc_protocol=?session.mpc_event_data.as_ref().unwrap().init_protocol_data,
                 "No available CPU cores to perform cryptographic computation"

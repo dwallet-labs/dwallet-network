@@ -62,4 +62,5 @@ sui-simulator.workspace = true
 
 
 [features]
+# Set this feature to enforce a minimum of 16 CPU cores for cryptographic computations.
 enforce-minimum-cpu = ["ika-core/enforce-minimum-cpu"]
