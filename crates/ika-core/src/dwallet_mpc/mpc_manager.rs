@@ -458,21 +458,7 @@ impl DWalletMPCManager {
                 .ordered_sessions_pending_for_computation
                 .pop_front()
                 .unwrap();
-            // Safe to unwarp since the session was ready to compute.
-            let live_session = self
-                .mpc_sessions
-                .get(&oldest_pending_session.session_identifier)
-                .unwrap();
 
-            // TODO(Scaly): What does it even mean for a session to be non-active, if its already ready for advance?
-            // TODO - if its finished, it shouldn't be here, and also failed what??
-            if live_session.status != MPCSessionStatus::Active {
-                info!(
-                    session_identifier=?oldest_pending_session.session_identifier,
-                    "Session is not active, skipping"
-                );
-                continue;
-            }
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
                 // This should never happen.
                 error!(
