@@ -78,6 +78,8 @@ impl DWalletMPCManager {
                 .remove(&key_id)
                 .unwrap_or_default()
             {
+                // We know this won't fail on missing network key, but it could be waiting for the next committee,
+                // in which case it would be added to that queue.
                 self.handle_mpc_event(event);
             }
         }
@@ -140,11 +142,13 @@ impl DWalletMPCManager {
     /// If there is no session info, and we've got it in this call,
     /// we update that field in the open session.
     fn handle_mpc_event(&mut self, event: DWalletMPCEvent) {
+        let session_identifier = event.session_request.session_identifier;
+
         // Avoid instantiation of completed events by checking they belong to the current epoch.
         // We only pull uncompleted events, so we skip the check for those, but pushed events might be completed.
         if !event.pulled && event.session_request.epoch != self.epoch_id {
             warn!(
-                session_identifier=?event.session_request.session_identifier,
+                session_identifier=?session_identifier,
                 session_type=?event.session_request.session_type,
                 event_epoch=?event.session_request.epoch,
                 "received an event for a different epoch, skipping"
@@ -173,10 +177,19 @@ impl DWalletMPCManager {
                 // TODO: need to check it doesn't exist first
                 // event.session_request.session_identifier
 
-                self.events_pending_for_network_key
+                let events_pending_for_this_network_key = self
+                    .events_pending_for_network_key
                     .entry(network_encryption_key_id)
-                    .or_insert(vec![])
-                    .push(event);
+                    .or_insert(vec![]);
+
+                if events_pending_for_this_network_key
+                    .iter()
+                    .find(|e| e.session_request.session_identifier == session_identifier)
+                    .is_none()
+                {
+                    // Add an event with this session ID only if it doesn't exist.
+                    events_pending_for_this_network_key.push(event);
+                }
 
                 return;
             }
@@ -192,13 +205,19 @@ impl DWalletMPCManager {
                 "Adding event to pending for the next epoch active committee"
             );
 
-            // TODO: need to check it doesn't exist first
-            self.events_pending_for_next_active_committee.push(event);
+            if self
+                .events_pending_for_next_active_committee
+                .iter()
+                .find(|e| e.session_request.session_identifier == session_identifier)
+                .is_none()
+            {
+                // Add an event with this session ID only if it doesn't exist.
+                self.events_pending_for_next_active_committee.push(event);
+            }
 
             return;
         }
 
-        let session_identifier = event.session_request.session_identifier;
         if let Some(session) = self.mpc_sessions.get(&session_identifier) {
             if session.mpc_event_data.is_some() {
                 // The corresponding session already has its event data set, nothing to do.
