@@ -94,7 +94,7 @@ impl MPCEventData {
     pub(crate) fn try_new(
         event: DWalletMPCEvent,
         epoch_store: &AuthorityPerEpochStore,
-        network_keys: &Box<DwalletMPCNetworkKeys>,
+        network_keys: &DwalletMPCNetworkKeys,
         next_active_committee: Option<Committee>,
         validators_class_groups_public_keys_and_proofs: HashMap<
             PartyID,

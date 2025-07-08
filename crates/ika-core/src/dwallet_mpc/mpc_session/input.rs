@@ -28,7 +28,7 @@ use std::collections::HashMap;
 pub(crate) fn session_input_from_event(
     event: DWalletMPCEvent,
     epoch_store: &AuthorityPerEpochStore,
-    network_keys: &Box<DwalletMPCNetworkKeys>,
+    network_keys: &DwalletMPCNetworkKeys,
     next_active_committee: Option<Committee>,
     validators_class_groups_public_keys_and_proofs: HashMap<
         PartyID,
