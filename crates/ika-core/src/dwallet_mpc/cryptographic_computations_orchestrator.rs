@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{debug, error, info};
+use tracing::{error, info, warn};
 
 /// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.
@@ -123,7 +123,7 @@ impl CryptographicComputationsOrchestrator {
         session: &DWalletMPCSession,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<()> {
-        if !self.has_available_cores_to_preform_computation() {
+        if !self.has_available_cores_to_perform_computation() {
             warn!(
                 session_id=?session.session_identifier,
                 mpc_protocol=?session.mpc_event_data.as_ref().unwrap().init_protocol_data,

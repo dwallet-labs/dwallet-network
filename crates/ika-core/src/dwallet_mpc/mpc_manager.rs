@@ -203,17 +203,17 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) fn update_last_session_to_complete_in_current_epoch(
+    pub(crate) fn sync_last_session_to_complete_in_current_epoch(
         &mut self,
-        update_last_session_to_complete_in_current_epoch: u64,
+        previous_value_for_last_session_to_complete_in_current_epoch: u64,
     ) {
-        if update_last_session_to_complete_in_current_epoch
+        if previous_value_for_last_session_to_complete_in_current_epoch
             <= self.last_session_to_complete_in_current_epoch
         {
             return;
         }
         self.last_session_to_complete_in_current_epoch =
-            update_last_session_to_complete_in_current_epoch;
+            previous_value_for_last_session_to_complete_in_current_epoch;
     }
 
     /// Handle an MPC event.
