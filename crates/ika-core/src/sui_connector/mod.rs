@@ -44,6 +44,7 @@ pub struct SuiConnectorService {
     sui_client: Arc<SuiClient<SuiSdkClient>>,
     sui_executor: SuiExecutor<SuiSdkClient>,
     network_keys_receiver: watch::Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
+    // todo(zeev): check these 3
     #[allow(dead_code)]
     task_handles: Vec<JoinHandle<()>>,
     #[allow(dead_code)]
@@ -60,7 +61,7 @@ impl SuiConnectorService {
         sui_connector_config: SuiConnectorConfig,
         sui_connector_metrics: Arc<SuiConnectorMetrics>,
         is_validator: bool,
-        next_epoch_committee_sender: watch::Sender<Committee>,
+        next_epoch_committee_sender: Sender<Committee>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
     ) -> anyhow::Result<(
@@ -136,7 +137,7 @@ impl SuiConnectorService {
 
         let sui_key = sui_key_path.keypair().copy();
 
-        // If sui chain id is  Mainent or Testnet, we expect to see chain
+        // If sui chain id is Mainnet or Testnet, we expect to see chain
         // identifier to match accordingly.
         let sui_identifier = sui_client
             .get_chain_identifier()
@@ -147,7 +148,7 @@ impl SuiConnectorService {
             && sui_identifier != get_mainnet_chain_identifier().to_string()
         {
             anyhow::bail!(
-                "Expected sui chain {}, but connected to {}",
+                "Expected the sui chain {}, but connected to {}",
                 sui_connector_config.sui_chain_identifier,
                 sui_identifier
             );
@@ -156,7 +157,7 @@ impl SuiConnectorService {
             && sui_identifier != get_testnet_chain_identifier().to_string()
         {
             anyhow::bail!(
-                "Expected sui chain {}, but connected to {}",
+                "Expected the sui chain {}, but connected to {}",
                 sui_connector_config.sui_chain_identifier,
                 sui_identifier
             );
@@ -277,14 +278,14 @@ mod tests {
     #[tokio::test]
     async fn test_retry_with_max_elapsed_time() {
         telemetry_subscribers::init_for_testing();
-        // no retry is needed, should return immediately. We give it a very small
+        // No retry is needed, should return immediately. We give it a very small
         // max_elapsed_time and it should still finish in time.
         let max_elapsed_time = Duration::from_millis(20);
         retry_with_max_elapsed_time!(example_func_ok(), max_elapsed_time)
             .unwrap()
             .unwrap();
 
-        // now call a function that always errors and expect it to return before max_elapsed_time runs out
+        // Now call a function that always errors and expect it to return before max_elapsed_time runs out.
         let max_elapsed_time = Duration::from_secs(10);
         let instant = std::time::Instant::now();
         retry_with_max_elapsed_time!(example_func_err(), max_elapsed_time).unwrap_err();
