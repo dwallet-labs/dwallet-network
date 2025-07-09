@@ -77,13 +77,13 @@ impl DWalletMPCService {
         }
     }
 
-    async fn update_last_session_to_complete_in_current_epoch(&mut self) {
+    async fn sync_last_session_to_complete_in_current_epoch(&mut self) {
         let coordinator_state = self.sui_client.must_get_dwallet_coordinator_inner().await;
 
-        let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
+        let DWalletCoordinatorInner::V1(inner) = coordinator_state;
         self.dwallet_mpc_manager
-            .update_last_session_to_complete_in_current_epoch(
-                inner_state
+            .sync_last_session_to_complete_in_current_epoch(
+                inner
                     .session_management
                     .last_session_to_complete_in_current_epoch,
             );
@@ -250,11 +250,7 @@ impl DWalletMPCService {
             self.update_network_keys().await;
 
             debug!("Running DWalletMPCService loop");
-            self.dwallet_mpc_manager
-                .cryptographic_computations_orchestrator
-                .check_for_completed_computations();
-            self.update_last_session_to_complete_in_current_epoch()
-                .await;
+            self.sync_last_session_to_complete_in_current_epoch().await;
             let Ok(tables) = self.epoch_store.tables() else {
                 warn!("failed to load DB tables from the epoch store");
                 continue;
