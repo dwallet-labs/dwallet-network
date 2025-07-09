@@ -8,7 +8,6 @@
 use crate::stake_aggregator::StakeAggregator;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::messages_dwallet_mpc::MaliciousReport;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -22,24 +21,18 @@ use std::sync::Arc;
 /// This happens automatically because the `MaliciousHandler` is part of the `
 pub(crate) struct MaliciousHandler {
     committee: Arc<Committee>,
-    /// The set of malicious actors that are reported by the validators.
+    /// The set of malicious actors that were agreed upon by a quorum of validators.
+    /// This agreement is done synchronically, and thus is it safe to filter malicious actors.
     malicious_actors: HashSet<AuthorityName>,
     /// The reports of the malicious actors that are disrupting the MPC process.
     /// Maps the [`MaliciousReport`] to the set of authorities
     /// that reported the malicious actor.
-    reports: HashMap<MaliciousReport, StakeAggregator<(), true>>,
+    reports: HashMap<MaliciousReport, ReportStatus>,
 }
 
-/// The status of the report after it is reported by the validators.
-pub(crate) enum ReportStatus {
-    /// The report is waiting for a quorum of validators to report the same actors.
-    WaitingForQuorum,
-    /// Quorum has been reached, the actor is considered malicious,
-    /// handles the report.
+enum ReportStatus {
+    Tally(StakeAggregator<(), true>),
     QuorumReached,
-    /// The case where a Quorum has been reached before,
-    /// prevent duplicate reports.
-    OverQuorum,
 }
 
 impl MaliciousHandler {
@@ -52,29 +45,36 @@ impl MaliciousHandler {
     }
 
     /// Reports malicious actors in the MPC process.
-    /// If a quorum of validators reports the same actor, it is considered malicious.
-    /// Returns [`ReportStatus`] the status of the report after
-    /// it is reported by the validators.
+    /// If a quorum of validators reports the same actor, it is considered malicious
+    /// and inserted into the `self.malicious_actors` set.
     pub(crate) fn report_malicious_actor(
         &mut self,
         report: MaliciousReport,
-        authority: AuthorityName,
-    ) -> DwalletMPCResult<ReportStatus> {
-        let report_votes = self
+        reporting_authority: AuthorityName,
+    ) {
+        if self.is_malicious_actor(&reporting_authority) {
+            // Ignore malicious actors' votes.
+            return;
+        }
+
+        let entry = self
             .reports
             .entry(report.clone())
-            .or_insert(StakeAggregator::new(self.committee.clone()));
-        if report_votes.has_quorum() {
-            return Ok(ReportStatus::OverQuorum);
+            .or_insert(ReportStatus::Tally(StakeAggregator::new(
+                self.committee.clone(),
+            )));
+
+        if let ReportStatus::Tally(stake_aggregator) = entry {
+            if stake_aggregator
+                .insert_generic(reporting_authority, ())
+                .is_quorum_reached()
+            {
+                self.malicious_actors.extend(&report.malicious_actors);
+
+                // Mark it as quorum reached so that future votes for this report would be ignored, and the data would be cleared.
+                self.reports.insert(report, ReportStatus::QuorumReached);
+            }
         }
-        if report_votes
-            .insert_generic(authority, ())
-            .is_quorum_reached()
-        {
-            self.malicious_actors.extend(report.malicious_actors);
-            return Ok(ReportStatus::QuorumReached);
-        }
-        Ok(ReportStatus::WaitingForQuorum)
     }
 
     pub(crate) fn is_malicious_actor(&self, authority: &AuthorityName) -> bool {

@@ -6,7 +6,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
@@ -126,7 +126,6 @@ impl DWalletMPCService {
                 }
                 Ok(false) => (),
             };
-            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
 
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
@@ -177,22 +176,22 @@ impl DWalletMPCService {
             mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
 
             for (round, messages) in mpc_messages {
-                // Since we sorted, this assures this variable will be the
-                // last read in this batch when we are done iterating.
+                // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
-                for message in messages {
-                    self.dwallet_mpc_manager
-                        .handle_dwallet_db_message(message)
-                        .await;
+
+                if let Err(err) = self
+                    .dwallet_mpc_manager
+                    .handle_consensus_round_messages(messages)
+                {
+                    error!("failed to handle the end of delivery with error: {:?}", err);
                 }
-                self.dwallet_mpc_manager
-                    .handle_dwallet_db_message(DWalletMPCDBMessage::EndOfDelivery)
-                    .await;
             }
 
             self.dwallet_mpc_manager
-                .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
+                .perform_cryptographic_computation()
                 .await;
+
+            tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
         }
     }
 

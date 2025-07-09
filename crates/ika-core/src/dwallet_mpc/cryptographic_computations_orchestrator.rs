@@ -141,7 +141,7 @@ impl CryptographicComputationsOrchestrator {
 
         let computation_channel_sender = self.completed_computation_sender.clone();
         rayon::spawn_fifo(move || {
-            let start_advance = Instant::now();
+            let advance_start_time = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
@@ -150,7 +150,8 @@ impl CryptographicComputationsOrchestrator {
                     "failed to advance an MPC session"
                 );
             } else {
-                let elapsed_ms = start_advance.elapsed().as_millis();
+                let elapsed = advance_start_time.elapsed();
+                let elapsed_ms = elapsed.as_millis();
                 info!(
                     mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
@@ -160,15 +161,15 @@ impl CryptographicComputationsOrchestrator {
                     current_round = session.current_round,
                     "MPC session advanced successfully"
                 );
+
+                dwallet_mpc_metrics
+                    .add_advance_completion(&request_input, &session.current_round.to_string());
+                dwallet_mpc_metrics.set_last_completion_duration(
+                    &request_input,
+                    &session.current_round.to_string(),
+                    elapsed.as_millis() as i64,
+                );
             }
-            let elapsed = start_advance.elapsed();
-            dwallet_mpc_metrics
-                .add_advance_completion(&request_input, &session.current_round.to_string());
-            dwallet_mpc_metrics.set_last_completion_duration(
-                &request_input,
-                &session.current_round.to_string(),
-                elapsed.as_millis() as i64,
-            );
 
             handle.spawn(async move {
                 let start_send = Instant::now();

@@ -1,8 +1,5 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use ika_types::error::IkaResult;
-use sui_types::base_types::ObjectID;
-
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
@@ -16,12 +13,14 @@ use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use dwallet_rng::RootSeed;
+use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData, MaliciousReport,
     SessionIdentifier, SessionType, ThresholdNotReachedReport,
@@ -32,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
+use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
 use tracing::{error, info, warn};
@@ -98,16 +98,9 @@ pub(crate) struct DWalletMPCManager {
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
-    /// Signal delivery of messages has ended,
-    /// now the sessions that received a quorum of messages can advance.
-    EndOfDelivery,
     /// A message indicating that an MPC session has failed.
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
-    /// A message to start processing the cryptographic computations.
-    /// This message is being sent every five seconds by the dWallet MPC Service,
-    /// to skip redundant advancements that have already been completed by other validators.
-    PerformCryptographicComputations,
 
     /// A message that contains a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
@@ -231,11 +224,10 @@ impl DWalletMPCManager {
             update_last_session_to_complete_in_current_epoch;
     }
 
-    pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
+    /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
+    /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
+    pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
-            DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation().await;
-            }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
                     error!(
@@ -246,14 +238,10 @@ impl DWalletMPCManager {
                     );
                 }
             }
-            DWalletMPCDBMessage::EndOfDelivery => {
-                if let Err(err) = self.handle_end_of_delivery() {
-                    error!("failed to handle the end of delivery with error: {:?}", err);
-                }
-            }
             DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
                 error!(session_id=?session_id, "dwallet MPC session failed");
-                // TODO (#524): Handle failed MPC sessions
+                // TODO(@scaly) this is the wrong issue, also create a new one.
+                // Also this doesn't get sent or handled, so what?
             }
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
                 if let Err(err) = self.handle_malicious_report(authority_name, report) {
@@ -322,35 +310,46 @@ impl DWalletMPCManager {
             // since we received the quorum for `ThresholdNotReached`
             // on the previous round,
             // but no messages were sent for the current round.
-            self.malicious_handler
-                .report_malicious_actors(&party_ids_to_authority_names(
-                    &session
-                        .serialized_full_messages
-                        .get(&(session.current_round - 1))
-                        .unwrap_or(&HashMap::new())
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<PartyID>>(),
-                    &epoch_store,
-                )?);
-            session
+
+            if let Some(unreached_round_messages) = session
                 .serialized_full_messages
-                .remove(&(session.current_round - 1));
+                .remove(&(session.current_round - 1))
+            {
+                let malicious_parties = unreached_round_messages
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<PartyID>>();
+
+                let malicious_authorities =
+                    party_ids_to_authority_names(&malicious_parties, &epoch_store)?;
+
+                self.malicious_handler
+                    .report_malicious_actors(&malicious_authorities);
+            }
+
             // Decrement the current round, as we are going to retry the previous round.
             session.current_round -= 1;
         }
+
         Ok(())
     }
 
-    /// Advance all the MPC sessions that either received enough messages
-    /// or perform the first step of the flow.
-    /// We parallelize the advances with `Rayon` to speed up the process.
-    pub fn handle_end_of_delivery(&mut self) -> IkaResult {
+    /// Handle the messages of a given consensus round.
+    pub fn handle_consensus_round_messages(
+        &mut self,
+        messages: Vec<DWalletMPCDBMessage>,
+    ) -> IkaResult {
+        for message in messages {
+            self.handle_dwallet_message(message);
+        }
+
+        // Check for ready to advance sessions, and clone and place their copy in an ordered queue waiting for computation.
         let ready_sessions_response = self.get_ready_to_advance_sessions()?;
         if !ready_sessions_response.malicious_actors.is_empty() {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
 
+        // TODO(scaly): update comment after we remove session copy
         // Since the Ika and Sui consensuses are not in sync,
         // a session might reach quorum before a validator has received
         // the event needed to generate its public input (and therefore cannot advance it yet).
@@ -370,23 +369,20 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    /// Handle an incoming malicious `report` from `reporting_authority`,
+    /// and recognize ourselves as malicious in the case of a bug.
     fn handle_malicious_report(
         &mut self,
         reporting_authority: AuthorityName,
         report: MaliciousReport,
     ) -> DwalletMPCResult<()> {
-        if self
-            .malicious_handler
-            .get_malicious_actors_names()
-            .contains(&reporting_authority)
-        {
-            return Ok(());
-        }
         self.malicious_handler
-            .report_malicious_actor(report.clone(), reporting_authority)?;
+            .report_malicious_actor(report.clone(), reporting_authority);
+
         let epoch_store = self.epoch_store()?;
         if self.malicious_handler.is_malicious_actor(&epoch_store.name) {
             self.recognized_self_as_malicious = true;
+
             error!(
                 authority=?epoch_store.name,
                 reporting_authority=?reporting_authority,
@@ -395,6 +391,7 @@ impl DWalletMPCManager {
                 "node recognized itself as malicious"
             );
         }
+
         Ok(())
     }
 
@@ -402,38 +399,42 @@ impl DWalletMPCManager {
     /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
-        let quorum_check_results: Vec<(DWalletMPCSession, Vec<PartyID>)> = self
+        let (ready_to_advance_sessions, malicious_parties): (
+            Vec<DWalletMPCSession>,
+            Vec<Vec<PartyID>>,
+        ) = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
                 let quorum_check_result = session.check_quorum_for_next_crypto_round().ok()?;
                 if quorum_check_result.is_ready {
-                    session.received_more_messages_since_last_advance = false;
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
                     let session_clone = session.clone();
+
+                    // Mutate the session stored in `mpc_sessions` to reflect the fact we have called `advance()` on this round,
+                    // and prepare for the next round.
                     session.current_round += 1;
+                    session.received_more_messages_since_last_advance = false;
+
                     Some((session_clone, quorum_check_result.malicious_parties))
                 } else {
                     None
                 }
             })
-            .collect();
+            .unzip();
 
-        let malicious_parties: Vec<PartyID> = quorum_check_results
-            .clone()
+        let malicious_parties: Vec<PartyID> = malicious_parties
             .into_iter()
-            .flat_map(|(_, malicious_parties)| malicious_parties)
-            .collect();
-        let ready_to_advance_sessions: Vec<DWalletMPCSession> = quorum_check_results
-            .into_iter()
-            .map(|(session, _)| session)
-            .collect();
+            .flatten()
+            .deduplicate_and_sort();
+
         let (ready_sessions, pending_for_event_sessions): (Vec<_>, Vec<_>) =
             ready_to_advance_sessions
                 .into_iter()
                 .partition(|s| s.mpc_event_data.is_some());
+
         Ok(ReadySessionsResponse {
             ready_sessions,
             pending_for_event_sessions,
