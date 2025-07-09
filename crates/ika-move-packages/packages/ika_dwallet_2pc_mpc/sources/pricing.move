@@ -8,11 +8,11 @@
 ///   - **gas_fee_reimbursement_sui**: The SUI reimbursement.
 ///   - **gas_fee_reimbursement_sui_for_system_calls**: The SUI reimbursement for system calls.
 ///
-/// The main struct, `DWalletPricing`, now holds one `PricingPerOperation` per operation.
+/// The main struct, `PricingInfo`, now holds one `PricingPerOperation` per operation.
 /// The DKG operation is split into two separate rounds:
 ///   - `dkg_first_round`
 ///   - `dkg_second_round`
-module ika_dwallet_2pc_mpc::dwallet_pricing;
+module ika_dwallet_2pc_mpc::pricing;
 
 // === Imports ===
 use sui::{priority_queue::{Self, PriorityQueue}, vec_map::{Self, VecMap}};
@@ -22,13 +22,13 @@ use ika_common::bls_committee::BlsCommittee;
 
 /// Holds pricing information for a dWallet.
 /// The vector is indexed by the curve and signature algorithm and protocol.
-public struct DWalletPricing has copy, drop, store {
+public struct PricingInfo has copy, drop, store {
     /// The pricing for each curve and signature algorithm and protocol.
     /// The first key is the curve, the second is the signature algorithm, the third is the protocol.
-    pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+    pricing_map: VecMap<PricingInfoKey, PricingInfoValue>,
 }
 
-public struct DWalletPricingKey has copy, drop, store {
+public struct PricingInfoKey has copy, drop, store {
     curve: u32,
     signature_algorithm: Option<u32>,
     protocol: u32,
@@ -36,21 +36,21 @@ public struct DWalletPricingKey has copy, drop, store {
 
 /// Holds pricing information for a single operation.
 /// The fields are ordered so that the consensus validation price is first.
-public struct DWalletPricingValue has copy, drop, store {
+public struct PricingInfoValue has copy, drop, store {
     fee_ika: u64,
     gas_fee_reimbursement_sui: u64,
     gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
-public struct DWalletPricingCalculationVotes has copy, drop, store {
+public struct PricingInfoCalculationVotes has copy, drop, store {
     bls_committee: BlsCommittee,
-    default_pricing: DWalletPricing,
-    working_pricing: DWalletPricing,
+    default_pricing: PricingInfo,
+    working_pricing: PricingInfo,
 }
 
 // === Public Functions ===
 
-/// Creates a new [`DWalletPricing`] object.
+/// Creates a new [`PricingInfo`] object.
 ///
 /// Initializes the table with the given pricing values for each operation.
 ///
@@ -60,44 +60,44 @@ public struct DWalletPricingCalculationVotes has copy, drop, store {
 ///
 /// # Returns
 ///
-/// A newly created instance of `DWalletPricing`.
-public fun empty(): DWalletPricing {
-    DWalletPricing {
+/// A newly created instance of `PricingInfo`.
+public fun empty(): PricingInfo {
+    PricingInfo {
         pricing_map: vec_map::empty(),
     }
 }
 
-/// Inserts pricing information for a specific operation into the [`DWalletPricing`] table.
+/// Inserts pricing information for a specific operation into the [`PricingInfo`] table.
 ///
 /// # Parameters
 ///
-/// - `self`: The [`DWalletPricing`] object.
+/// - `self`: The [`PricingInfo`] object.
 /// - `key`: The key for the operation.
 /// - `value`: The pricing information for the operation.
 ///
 /// # Returns
 ///
-/// The [`DWalletPricing`] object.
-public fun insert_or_update_dwallet_pricing(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, fee_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
-    self.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, DWalletPricingValue {
+/// The [`PricingInfo`] object.
+public fun insert_or_update_pricing(self: &mut PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32, fee_ika: u64, gas_fee_reimbursement_sui: u64, gas_fee_reimbursement_sui_for_system_calls: u64) {
+    self.insert_or_update_pricing_value(curve, signature_algorithm, protocol, PricingInfoValue {
         fee_ika,
         gas_fee_reimbursement_sui,
         gas_fee_reimbursement_sui_for_system_calls,
     })
 }
 
-/// Returns the pricing information for a specific operation from the [`DWalletPricing`] table.
+/// Returns the pricing information for a specific operation from the [`PricingInfo`] table.
 ///
 /// # Parameters
 ///
-/// - `self`: The [`DWalletPricing`] object.
+/// - `self`: The [`PricingInfo`] object.
 /// - `key`: The key for the operation.
 ///
 /// # Returns
 ///
 /// The pricing information for the operation.
-public(package) fun try_get_dwallet_pricing_value(self: &DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32): Option<DWalletPricingValue> {
-    let key = DWalletPricingKey {
+public(package) fun try_get_pricing_value(self: &PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32): Option<PricingInfoValue> {
+    let key = PricingInfoKey {
         curve,
         signature_algorithm,
         protocol,
@@ -105,46 +105,46 @@ public(package) fun try_get_dwallet_pricing_value(self: &DWalletPricing, curve: 
     self.pricing_map.try_get(&key)
 }
 
-/// Getter for the fee_ika field of a DWalletPricingValue.
-public fun fee_ika(self: &DWalletPricingValue): u64 {
+/// Getter for the fee_ika field of a PricingInfoValue.
+public fun fee_ika(self: &PricingInfoValue): u64 {
     self.fee_ika
 }
 
-/// Getter for the gas_fee_reimbursement_sui field of a DWalletPricingValue.
-public fun gas_fee_reimbursement_sui(self: &DWalletPricingValue): u64 {
+/// Getter for the gas_fee_reimbursement_sui field of a PricingInfoValue.
+public fun gas_fee_reimbursement_sui(self: &PricingInfoValue): u64 {
     self.gas_fee_reimbursement_sui
 }
 
-/// Getter for the gas_fee_reimbursement_sui_for_system_calls field of a DWalletPricingValue.
-public fun gas_fee_reimbursement_sui_for_system_calls(self: &DWalletPricingValue): u64 {
+/// Getter for the gas_fee_reimbursement_sui_for_system_calls field of a PricingInfoValue.
+public fun gas_fee_reimbursement_sui_for_system_calls(self: &PricingInfoValue): u64 {
     self.gas_fee_reimbursement_sui_for_system_calls
 }
 
-public(package) fun new_pricing_calculation(bls_committee: BlsCommittee, default_pricing: DWalletPricing): DWalletPricingCalculationVotes {
-    DWalletPricingCalculationVotes {
+public(package) fun new_pricing_calculation(bls_committee: BlsCommittee, default_pricing: PricingInfo): PricingInfoCalculationVotes {
+    PricingInfoCalculationVotes {
         bls_committee,
         default_pricing,
         working_pricing: empty(),
     }
 }
 
-public(package) fun committee_members_for_pricing_calculation_votes(calculation: &DWalletPricingCalculationVotes): vector<ID> {
+public(package) fun committee_members_for_pricing_calculation_votes(calculation: &PricingInfoCalculationVotes): vector<ID> {
     calculation.bls_committee.members().map_ref!(|member| {
         member.validator_id()
     })
 }
 
-public(package) fun calculate_pricing_quorum_below(calculation: &mut DWalletPricingCalculationVotes, pricing: vector<DWalletPricing>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
+public(package) fun calculate_pricing_quorum_below(calculation: &mut PricingInfoCalculationVotes, pricing: vector<PricingInfo>, curve: u32, signature_algorithm: Option<u32>, protocol: u32) {
     let mut values = vector[];
     pricing.do_ref!(|pricing| {
-        let value = pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol);
-        values.push_back(value.get_with_default(calculation.default_pricing.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol).extract()));
+        let value = pricing.try_get_pricing_value(curve, signature_algorithm, protocol);
+        values.push_back(value.get_with_default(calculation.default_pricing.try_get_pricing_value(curve, signature_algorithm, protocol).extract()));
     });
     let value = pricing_value_quorum_below(calculation.bls_committee, values);
-    calculation.working_pricing.insert_or_update_dwallet_pricing_value(curve, signature_algorithm, protocol, value);
+    calculation.working_pricing.insert_or_update_pricing_value(curve, signature_algorithm, protocol, value);
 }
 
-public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, values: vector<DWalletPricingValue>): DWalletPricingValue {
+public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, values: vector<PricingInfoValue>): PricingInfoValue {
     let mut fee_ika = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui = priority_queue::new(vector[]);
     let mut gas_fee_reimbursement_sui_for_system_calls = priority_queue::new(vector[]);
@@ -156,14 +156,14 @@ public(package) fun pricing_value_quorum_below(bls_committee: BlsCommittee, valu
     let fee_ika_quorum_below = quorum_below(bls_committee, &mut fee_ika);
     let gas_fee_reimbursement_sui_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui);
     let gas_fee_reimbursement_sui_for_system_calls_quorum_below = quorum_below(bls_committee, &mut gas_fee_reimbursement_sui_for_system_calls);
-    DWalletPricingValue {
+    PricingInfoValue {
         fee_ika: fee_ika_quorum_below,
         gas_fee_reimbursement_sui: gas_fee_reimbursement_sui_quorum_below,
         gas_fee_reimbursement_sui_for_system_calls: gas_fee_reimbursement_sui_for_system_calls_quorum_below,
     }
 }
 
-public(package) fun is_calculation_completed(calculation: &DWalletPricingCalculationVotes): bool {
+public(package) fun is_calculation_completed(calculation: &PricingInfoCalculationVotes): bool {
     let mut i = 0;
     let (keys, _) = calculation.default_pricing.pricing_map.into_keys_values();
     while (i < keys.length()) {
@@ -176,14 +176,14 @@ public(package) fun is_calculation_completed(calculation: &DWalletPricingCalcula
     true
 }
 
-public(package) fun calculated_pricing(calculation: &DWalletPricingCalculationVotes): DWalletPricing {
+public(package) fun calculated_pricing(calculation: &PricingInfoCalculationVotes): PricingInfo {
     calculation.working_pricing
 }
 
 // === Private Functions ===
 
-fun insert_or_update_dwallet_pricing_value(self: &mut DWalletPricing, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: DWalletPricingValue) {
-    let key = DWalletPricingKey {
+fun insert_or_update_pricing_value(self: &mut PricingInfo, curve: u32, signature_algorithm: Option<u32>, protocol: u32, value: PricingInfoValue) {
+    let key = PricingInfoKey {
         curve,
         signature_algorithm,
         protocol,

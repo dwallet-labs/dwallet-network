@@ -50,7 +50,7 @@ use ika_common::{
     bls_committee::{Self, BlsCommittee},
 };
 use ika_dwallet_2pc_mpc::{
-    dwallet_pricing::{DWalletPricing, DWalletPricingValue},
+    pricing::{PricingInfo, PricingInfoValue},
     sessions_manager::{Self, SessionsManager, SessionIdentifier},
     pricing_and_fee_manager::{Self, PricingAndFeeManager},
     support_config::{Self, SupportConfig},
@@ -1642,7 +1642,7 @@ public struct EndOfEpochEvent has copy, drop {
 public(package) fun create(
     advance_epoch_approver: &mut AdvanceEpochApprover,
     system_current_status_info: &SystemCurrentStatusInfo,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
 ): DWalletCoordinatorInner {
@@ -2393,7 +2393,7 @@ public(package) fun request_dwallet_dkg_first_round(
 ): DWalletCap {
     self.support_config.validate_curve(curve);
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG);
 
     // TODO(@Omer): check the state of the dWallet (i.e., not waiting for dkg.)
     // TODO(@Omer): I believe the best thing would be to always use the latest key. I'm not sure why the user should even supply the id.
@@ -2618,7 +2618,7 @@ public(package) fun request_dwallet_dkg_second_round(
     };
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -2745,7 +2745,7 @@ public(package) fun request_re_encrypt_user_share_for(
     let encrypted_user_secret_key_share_id = object::id(&encrypted_user_share);
     dwallet.encrypted_user_secret_key_shares.add(encrypted_user_secret_key_share_id, encrypted_user_share);
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -2947,7 +2947,7 @@ public(package) fun request_imported_key_dwallet_verification(
         state: DWalletState::AwaitingNetworkImportedKeyVerification,
     });
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -3052,7 +3052,7 @@ public(package) fun request_make_dwallet_user_secret_key_share_public(
     let curve = dwallet.curve;
     assert!(dwallet.public_user_secret_key_share.is_none(), EDWalletUserSecretKeySharesAlreadyPublic);
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -3176,7 +3176,7 @@ public(package) fun request_presign(
         state: PresignState::Requested,
     });
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -3267,7 +3267,7 @@ public(package) fun request_global_presign(
         state: PresignState::Requested,
     });
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), PRESIGN_PROTOCOL_FLAG);
 
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
@@ -3440,7 +3440,7 @@ public(package) fun verify_presign_cap(
 /// Finally it emits the sign event.
 fun validate_and_initiate_sign(
     self: &mut DWalletCoordinatorInner,
-    pricing_value: DWalletPricingValue,
+    pricing_value: PricingInfoValue,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     session_identifier: SessionIdentifier,
@@ -3566,7 +3566,7 @@ public(package) fun request_sign(
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
 
     let curve = dwallet.curve;
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
 
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing_value,
@@ -3607,7 +3607,7 @@ public(package) fun request_imported_key_sign(
 
     let (dwallet, _) = self.get_active_dwallet_and_public_output(dwallet_id);
     let curve = dwallet.curve;
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_PROTOCOL_FLAG);
 
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
         pricing_value,
@@ -3683,7 +3683,7 @@ public(package) fun request_future_sign(
     self.support_config.validate_curve_and_signature_algorithm_and_hash_scheme(curve, signature_algorithm, hash_scheme);
     self.validate_network_encryption_key_supports_curve(dwallet_network_encryption_key_id, curve);
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG);
     let gas_fee_reimbursement_sui_for_system_calls = self.sessions_manager.initiate_user_session(
         self.current_epoch,
         session_identifier,
@@ -3855,7 +3855,7 @@ public(package) fun request_sign_with_partial_user_signature(
         message
     } = message_approval;
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
 
     // Emit signing events to finalize the signing process.
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
@@ -3919,7 +3919,7 @@ public(package) fun request_imported_key_sign_with_partial_user_signature(
         message
     } = message_approval;
 
-    let pricing_value = self.pricing_and_fee_manager.get_dwallet_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
+    let pricing_value = self.pricing_and_fee_manager.get_pricing_value_for_protocol(curve, option::some(signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG);
 
     // Emit signing events to finalize the signing process.
     let is_imported_key_dwallet = self.validate_and_initiate_sign(
@@ -4268,7 +4268,7 @@ fun set_gas_fee_reimbursement_sui_system_call_value(
 /// - **`EMissingProtocolPricing`**: If pricing is missing for any protocol or curve.
 public(package) fun set_supported_and_pricing(
     self: &mut DWalletCoordinatorInner,
-    default_pricing: DWalletPricing,
+    default_pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     _: &VerifiedProtocolCap,
 ) {
@@ -4287,23 +4287,23 @@ public(package) fun set_supported_and_pricing(
 ///
 /// ### Errors
 /// - **`EMissingProtocolPricing`**: If pricing is missing for any protocol or curve.
-fun verify_pricing_exists_for_all_protocols(supported_curves_to_signature_algorithms_to_hash_schemes: &VecMap<u32, VecMap<u32, vector<u32>>>, default_pricing: &DWalletPricing) {
+fun verify_pricing_exists_for_all_protocols(supported_curves_to_signature_algorithms_to_hash_schemes: &VecMap<u32, VecMap<u32, vector<u32>>>, default_pricing: &PricingInfo) {
     let curves = supported_curves_to_signature_algorithms_to_hash_schemes.keys();
     curves.do_ref!(|curve| {
         let mut is_missing_pricing = false;
         let signature_algorithms = &supported_curves_to_signature_algorithms_to_hash_schemes[curve];
         let signature_algorithms = signature_algorithms.keys();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
-        is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_FIRST_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), DKG_SECOND_ROUND_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG).is_none();
+        is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::none(), IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG).is_none();
         // Add here pricing validation for new protocols per curve.
         signature_algorithms.do_ref!(|signature_algorithm| {
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
-            is_missing_pricing = is_missing_pricing || default_pricing.try_get_dwallet_pricing_value(*curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), PRESIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), FUTURE_SIGN_PROTOCOL_FLAG).is_none();
+            is_missing_pricing = is_missing_pricing || default_pricing.try_get_pricing_value(*curve, option::some(*signature_algorithm), SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG).is_none();
             // Add here pricing validation for new protocols per curve per signature algorithm.
         });
         assert!(!is_missing_pricing, EMissingProtocolPricing);
@@ -4341,7 +4341,7 @@ public(package) fun set_paused_curves_and_signature_algorithms(
 /// - **`ECannotSetDuringVotesCalculation`**: If the pricing vote is set during the votes calculation.
 public(package) fun set_pricing_vote(
     self: &mut DWalletCoordinatorInner,
-    pricing_vote: DWalletPricing,
+    pricing_vote: PricingInfo,
     cap: &VerifiedValidatorOperationCap,
 ) {
     self.pricing_and_fee_manager.set_pricing_vote(pricing_vote, cap);
@@ -4361,7 +4361,7 @@ public(package) fun subsidize_coordinator_with_ika(
     self.pricing_and_fee_manager.join_fee_charged_ika(ika.into_balance());
 }
 
-public(package) fun current_pricing(self: &DWalletCoordinatorInner): DWalletPricing {
+public(package) fun current_pricing(self: &DWalletCoordinatorInner): PricingInfo {
     self.pricing_and_fee_manager.current_pricing()
 }
 

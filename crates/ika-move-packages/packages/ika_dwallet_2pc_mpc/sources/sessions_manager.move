@@ -16,7 +16,7 @@ use sui::{
 };
 
 use ika::ika::IKA;
-use ika_dwallet_2pc_mpc::dwallet_pricing::{DWalletPricingValue};
+use ika_dwallet_2pc_mpc::pricing::{PricingInfoValue};
 
 // === Constants ===
 
@@ -302,7 +302,7 @@ public(package) fun initiate_user_session<E: copy + drop + store>(
     epoch: u64,
     session_identifier: SessionIdentifier,
     dwallet_network_encryption_key_id: ID,
-    pricing_value: DWalletPricingValue,
+    pricing_value: PricingInfoValue,
     payment_ika: &mut Coin<IKA>,
     payment_sui: &mut Coin<SUI>,
     event_data: E,

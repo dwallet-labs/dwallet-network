@@ -16,7 +16,7 @@ use ika_common::{
     bls_committee::{BlsCommittee},
 };
 use ika_dwallet_2pc_mpc::{
-    dwallet_pricing::{Self, DWalletPricing, DWalletPricingValue, DWalletPricingCalculationVotes},
+    pricing::{Self, PricingInfo, PricingInfoValue, PricingInfoCalculationVotes},
 };
 use ika_system::{
     validator_cap::VerifiedValidatorOperationCap,
@@ -38,13 +38,13 @@ const ECannotSetDuringVotesCalculation: u64 = 4;
 /// Pricing and fee management data for the dWallet coordinator.
 public struct PricingAndFeeManager has store {
     /// Pricing for the current epoch
-    current: DWalletPricing,
+    current: PricingInfo,
     /// Default pricing configuration
-    default: DWalletPricing,
+    default: PricingInfo,
     /// Validator votes for pricing (validator ID -> pricing vote)
-    validator_votes: Table<ID, DWalletPricing>,
+    validator_votes: Table<ID, PricingInfo>,
     /// Pricing calculation votes - if set, must complete before epoch advance
-    pricing_calculation_votes: Option<DWalletPricingCalculationVotes>,
+    pricing_calculation_votes: Option<PricingInfoCalculationVotes>,
     /// Gas fee reimbursement value for system calls
     gas_fee_reimbursement_sui_system_call_value: u64,
     /// SUI balance for gas fee reimbursement to fund network tx responses
@@ -64,7 +64,7 @@ public struct PricingAndFeeManager has store {
 /// ### Returns
 /// A new PricingAndFeeManager instance ready for use
 public(package) fun create(
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     ctx: &mut TxContext
 ): PricingAndFeeManager {
     PricingAndFeeManager {
@@ -113,7 +113,7 @@ public(package) fun initiate_pricing_calculation(
     self: &mut PricingAndFeeManager,
     next_epoch_active_committee: BlsCommittee,
 ) {
-    let pricing_calculation_votes = dwallet_pricing::new_pricing_calculation(next_epoch_active_committee, self.default);
+    let pricing_calculation_votes = pricing::new_pricing_calculation(next_epoch_active_committee, self.default);
     self.pricing_calculation_votes = option::some(pricing_calculation_votes);
 }
 
@@ -174,13 +174,13 @@ public(package) fun advance_epoch(
 ///
 /// ### Returns
 /// The pricing value for the given curve, signature algorithm and protocol
-public(package) fun get_dwallet_pricing_value_for_protocol(
+public(package) fun get_pricing_value_for_protocol(
     self: &PricingAndFeeManager,
     curve: u32,
     signature_algorithm: Option<u32>,
     protocol: u32,
-): DWalletPricingValue {
-    let mut pricing_value = self.default.try_get_dwallet_pricing_value(curve, signature_algorithm, protocol);
+): PricingInfoValue {
+    let mut pricing_value = self.default.try_get_pricing_value(curve, signature_algorithm, protocol);
     assert!(pricing_value.is_some(), EMissingProtocolPricing);
     pricing_value.extract()
 }
@@ -228,7 +228,7 @@ public(package) fun set_gas_fee_reimbursement_sui_system_call_value(
 /// - **`default_pricing`**: The default pricing to use if pricing is missing for a protocol or curve.
 public(package) fun set_default_pricing(
     self: &mut PricingAndFeeManager,
-    default_pricing: DWalletPricing,
+    default_pricing: PricingInfo,
 ) {
     self.default = default_pricing;
 }
@@ -246,7 +246,7 @@ public(package) fun set_default_pricing(
 /// - **`ECannotSetDuringVotesCalculation`**: If the pricing vote is set during the votes calculation.
 public(package) fun set_pricing_vote(
     self: &mut PricingAndFeeManager,
-    pricing_vote: DWalletPricing,
+    pricing_vote: PricingInfo,
     cap: &VerifiedValidatorOperationCap,
 ) {
     let validator_id = cap.validator_id();
@@ -266,6 +266,6 @@ public(package) fun set_pricing_vote(
 ///
 /// ### Returns
 /// The current pricing
-public(package) fun current_pricing(self: &PricingAndFeeManager): DWalletPricing {
+public(package) fun current_pricing(self: &PricingAndFeeManager): PricingInfo {
     self.current
 }

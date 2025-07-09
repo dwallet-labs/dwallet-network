@@ -21,7 +21,7 @@ use ika_dwallet_2pc_mpc::{
         VerifiedPresignCap,
     },
     sessions_manager::SessionIdentifier,
-    dwallet_pricing::DWalletPricing
+    pricing::PricingInfo
 };
 use ika_system::{
     advance_epoch_approver::AdvanceEpochApprover,
@@ -58,7 +58,7 @@ public(package) fun create(
     package_id: ID,
     advance_epoch_approver: &mut AdvanceEpochApprover,
     system_current_status_info: &SystemCurrentStatusInfo,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
 ) {
@@ -132,7 +132,7 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
 
 public fun set_supported_and_pricing(
     self: &mut DWalletCoordinator,
-    default_pricing: DWalletPricing,
+    default_pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     cap: &VerifiedProtocolCap,
 ) {
@@ -158,7 +158,7 @@ public fun request_lock_epoch_sessions(
 
 public fun set_pricing_vote(
     self: &mut DWalletCoordinator,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     cap: &VerifiedValidatorOperationCap,
 ) {
     self.inner_mut().set_pricing_vote(pricing, cap);
@@ -569,7 +569,7 @@ public fun match_partial_user_signature_with_imported_key_message_approval(
     )
 }
 
-public fun current_pricing(self: &DWalletCoordinator): DWalletPricing {
+public fun current_pricing(self: &DWalletCoordinator): PricingInfo {
     self.inner().current_pricing()
 }
 

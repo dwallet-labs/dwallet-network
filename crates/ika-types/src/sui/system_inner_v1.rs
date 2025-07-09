@@ -77,29 +77,29 @@ pub struct SystemInnerV1 {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricing {
-    pub pricing_map: VecMap<DWalletPricingKey, DWalletPricingValue>,
+pub struct PricingInfo {
+    pub pricing_map: VecMap<PricingInfoKey, PricingInfoValue>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingKey {
+pub struct PricingInfoKey {
     pub curve: u32,
     pub signature_algorithm: Option<u32>,
     pub protocol: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingValue {
+pub struct PricingInfoValue {
     pub fee_ika: u64,
     pub gas_fee_reimbursement_sui: u64,
     pub gas_fee_reimbursement_sui_for_system_calls: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct DWalletPricingCalculationVotes {
+pub struct PricingInfoCalculationVotes {
     pub bls_committee: BlsCommittee,
-    pub default_pricing: DWalletPricing,
-    pub working_pricing: DWalletPricing,
+    pub default_pricing: PricingInfo,
+    pub working_pricing: PricingInfo,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -133,10 +133,10 @@ pub struct SupportConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct PricingAndFeeManagement {
-    pub current: DWalletPricing,
-    pub default: DWalletPricing,
+    pub current: PricingInfo,
+    pub default: PricingInfo,
     pub validator_votes: Table,
-    pub calculation_votes: Option<DWalletPricingCalculationVotes>,
+    pub calculation_votes: Option<PricingInfoCalculationVotes>,
     pub gas_fee_reimbursement_sui_system_call_value: u64,
     pub gas_fee_reimbursement_sui_system_call_balance: Balance,
     pub fee_charged_ika: Balance,
