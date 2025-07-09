@@ -11,7 +11,7 @@ use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::messages_dwallet_mpc::{DWalletNetworkDecryptionKeyData, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, SessionIdentifier};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -43,7 +43,7 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -70,23 +70,15 @@ impl DWalletMPCService {
     }
 
     async fn sync_last_session_to_complete_in_current_epoch(&mut self) {
-        let system_inner = self.sui_client.must_get_system_inner_object().await;
-        let SystemInner::V1(system_inner) = system_inner;
+        let coordinator_state = self.sui_client.must_get_dwallet_coordinator_inner().await;
 
-        if let Some(dwallet_coordinator_id) = system_inner.dwallet_2pc_mpc_coordinator_id {
-            let coordinator_state = self
-                .sui_client
-                .must_get_dwallet_coordinator_inner(dwallet_coordinator_id)
-                .await;
-
-            let DWalletCoordinatorInner::V1(inner_state) = coordinator_state;
-            self.dwallet_mpc_manager
-                .update_last_session_to_complete_in_current_epoch(
-                    inner_state
-                        .session_management
-                        .last_session_to_complete_in_current_epoch,
-                );
-        }
+        let DWalletCoordinatorInner::V1(inner) = coordinator_state;
+        self.dwallet_mpc_manager
+            .sync_last_session_to_complete_in_current_epoch(
+                inner
+                    .session_management
+                    .last_session_to_complete_in_current_epoch,
+            );
     }
 
     /// Starts the DWallet MPC service.
@@ -98,7 +90,8 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
+        // Receive all MPC session outputs we bootstrapped from storage and
+        // consensus before starting execution, to avoid their computation.
         self.receive_completed_mpc_session_identifiers(true);
         info!(
             validator=?self.epoch_store.name,

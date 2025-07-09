@@ -15,9 +15,18 @@ pub struct NetworkConfig {
     pub validator_configs: Vec<NodeConfig>,
     pub fullnode_configs: Vec<NodeConfig>,
     pub validator_initialization_configs: Vec<ValidatorInitializationConfig>,
+    /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
+    /// The move package id of ika_common on sui.
+    pub ika_common_package_id: ObjectID,
+    /// The move package id of ika_dwallet_2pc_mpc on sui.
+    pub ika_dwallet_2pc_mpc_package_id: ObjectID,
+    /// The move package id of ika_system on sui.
     pub ika_system_package_id: ObjectID,
+    /// The object id of system on sui.
     pub ika_system_object_id: ObjectID,
+    /// The object id of ika_dwallet_coordinator on sui.
+    pub ika_dwallet_coordinator_object_id: ObjectID,
 }
 
 impl Config for NetworkConfig {}

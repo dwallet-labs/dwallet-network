@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::bls_committee;
+module ika_common::bls_committee;
 
 // === Imports ===
 
@@ -68,10 +68,8 @@ public fun validity_threshold(self: &BlsCommittee): u64 {
     self.validity_threshold
 }
 
-// === Package Functions ===
-
 /// Creates a new BLS committee member with the given validator ID and protocol public key
-public(package) fun new_bls_committee_member(
+public fun new_bls_committee_member(
     validator_id: ID,
     protocol_pubkey: Element<UncompressedG1>
 ): BlsCommitteeMember {
@@ -82,14 +80,14 @@ public(package) fun new_bls_committee_member(
 }
 
 /// Returns the validator ID of the committee member
-public(package) fun validator_id(member: &BlsCommitteeMember): ID {
+public fun validator_id(member: &BlsCommitteeMember): ID {
     member.validator_id
 }
 
 /// Creates a new BLS committee from a vector of members
 /// Each member has equal voting power of 1, total voting power equals number of members
 /// Calculates quorum threshold (2n/3 + 1) and validity threshold (n/3 + 1)
-public(package) fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsCommittee {
+public fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsCommittee {
     // Compute the total aggregated key, e.g. the sum of all public keys in the committee
     let aggregated_protocol_pubkey = bls12381::uncompressed_g1_to_g1(
         &bls12381::uncompressed_g1_sum(
@@ -110,7 +108,7 @@ public(package) fun new_bls_committee(members: vector<BlsCommitteeMember>): BlsC
 
 /// Creates an empty committee with zero thresholds
 /// Only relevant for initialization phase
-public(package) fun empty(): BlsCommittee {
+public fun empty(): BlsCommittee {
     BlsCommittee {
         members: vector[],
         aggregated_protocol_pubkey: bls12381::g1_identity(),
@@ -120,24 +118,24 @@ public(package) fun empty(): BlsCommittee {
 }
 
 /// Returns an immutable reference to committee members
-public(package) fun members(self: &BlsCommittee): &vector<BlsCommitteeMember> {
+public fun members(self: &BlsCommittee): &vector<BlsCommitteeMember> {
     &self.members
 }
 
 /// Returns a vector of all validator IDs in the committee
-public(package) fun validator_ids(self: &BlsCommittee): vector<ID> {
+public fun validator_ids(self: &BlsCommittee): vector<ID> {
     self.members().map_ref!(|m| m.validator_id())
 }
 
 /// Checks if the committee contains a specific validator ID
-public(package) fun contains(self: &BlsCommittee, validator_id: &ID): bool {
+public fun contains(self: &BlsCommittee, validator_id: &ID): bool {
     self.members().any!(|m| m.validator_id() == validator_id)
 }
 
 /// Verifies an aggregate BLS signature is a certificate in the epoch
 /// The `signers_bitmap` represents which validators signed the certificate
 /// Returns successfully if signature is valid and meets quorum threshold, otherwise aborts
-public(package) fun verify_certificate(
+public fun verify_certificate(
     self: &BlsCommittee,
     epoch: u64,
     signature: &vector<u8>,
@@ -221,11 +219,11 @@ public(package) fun verify_certificate(
 }
 
 /// Returns true if the voting power meets or exceeds the quorum threshold
-public(package) fun is_quorum_threshold(self: &BlsCommittee, signer_count: u64): bool {
+public fun is_quorum_threshold(self: &BlsCommittee, signer_count: u64): bool {
     signer_count >= self.quorum_threshold
 }
 
 /// Returns true if the voting power meets or exceeds the validity threshold
-public(package) fun is_validity_threshold(self: &BlsCommittee, signer_count: u64): bool {
+public fun is_validity_threshold(self: &BlsCommittee, signer_count: u64): bool {
     signer_count >= self.validity_threshold
 }

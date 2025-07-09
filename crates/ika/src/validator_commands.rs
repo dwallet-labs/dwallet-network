@@ -55,10 +55,16 @@ pub enum IkaValidatorCommand {
     ConfigEnv {
         #[clap(name = "ika-package-id", long)]
         ika_package_id: ObjectID,
+        #[clap(name = "ika-common-package-id", long)]
+        ika_common_package_id: ObjectID,
+        #[clap(name = "ika-dwallet-2pc-mpc-package-id", long)]
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         #[clap(name = "ika-system-package-id", long)]
         ika_system_package_id: ObjectID,
         #[clap(name = "ika-system-object-id", long)]
         ika_system_object_id: ObjectID,
+        #[clap(name = "ika-dwallet-coordinator-object-id", long)]
+        ika_dwallet_coordinator_object_id: ObjectID,
     },
     #[clap(name = "become-candidate")]
     BecomeCandidate {
@@ -186,13 +192,19 @@ impl IkaValidatorCommand {
             }
             IkaValidatorCommand::ConfigEnv {
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
             } => {
                 let config = IkaPackagesConfig {
                     ika_package_id,
+                    ika_common_package_id,
+                    ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    ika_dwallet_coordinator_object_id,
                 };
 
                 let config_path = ika_config_dir()?.join(IKA_SUI_CONFIG);
