@@ -83,13 +83,16 @@ impl ValidatorConfigBuilder {
         validator: &ValidatorInitializationConfig,
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
     ) -> NodeConfig {
         let key_path = get_key_path(&validator.key_pair);
         let config_directory = self
             .config_directory
-            .unwrap_or_else(|| tempfile::tempdir().unwrap().into_path());
+            .unwrap_or_else(|| tempfile::tempdir().unwrap().keep());
         let db_path = config_directory
             .join(AUTHORITIES_DB_NAME)
             .join(key_path.clone());
@@ -137,8 +140,11 @@ impl ValidatorConfigBuilder {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
                 notifier_client_key_pair: None,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },
@@ -168,8 +174,11 @@ impl ValidatorConfigBuilder {
         rng: &mut R,
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
     ) -> NodeConfig {
         let validator_initialization_config =
             ValidatorInitializationConfigBuilder::new().build(rng);
@@ -177,8 +186,11 @@ impl ValidatorConfigBuilder {
             &validator_initialization_config,
             sui_rpc_url,
             ika_package_id,
+            ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id,
             ika_system_object_id,
+            ika_dwallet_coordinator_object_id,
         )
     }
 }
@@ -269,8 +281,11 @@ impl FullnodeConfigBuilder {
         validators: &[ValidatorInitializationConfig],
         sui_rpc_url: String,
         ika_package_id: ObjectID,
+        ika_common_package_id: ObjectID,
+        ika_dwallet_2pc_mpc_package_id: ObjectID,
         ika_system_package_id: ObjectID,
         ika_system_object_id: ObjectID,
+        ika_dwallet_coordinator_object_id: ObjectID,
         notifier_client_key_pair: Option<SuiKeyPair>,
     ) -> NodeConfig {
         // Take advantage of ValidatorGenesisConfigBuilder to build the keypairs and addresses,
@@ -282,7 +297,7 @@ impl FullnodeConfigBuilder {
         let key_path = get_key_path(&validator_config.key_pair);
         let config_directory = self
             .config_directory
-            .unwrap_or_else(|| tempfile::tempdir().unwrap().into_path());
+            .unwrap_or_else(|| tempfile::tempdir().unwrap().keep());
 
         let p2p_config = {
             let seed_peers = validators
@@ -341,8 +356,11 @@ impl FullnodeConfigBuilder {
                 sui_rpc_url: sui_rpc_url.to_string(),
                 sui_chain_identifier: SuiChainIdentifier::Custom,
                 ika_package_id,
+                ika_common_package_id,
+                ika_dwallet_2pc_mpc_package_id,
                 ika_system_package_id,
                 ika_system_object_id,
+                ika_dwallet_coordinator_object_id,
                 notifier_client_key_pair,
                 sui_ika_system_module_last_processed_event_id_override: None,
             },

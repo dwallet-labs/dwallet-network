@@ -177,7 +177,7 @@ use ika_core::system_checkpoints::{
 };
 use ika_sui_client::metrics::SuiClientMetrics;
 use ika_sui_client::{SuiClient, SuiConnectorClient};
-use ika_types::messages_dwallet_mpc::{DWalletNetworkDecryptionKeyData, IkaPackagesConfig};
+use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, IkaPackagesConfig};
 #[cfg(msim)]
 pub use simulator::set_jwk_injector;
 #[cfg(msim)]
@@ -222,6 +222,8 @@ impl fmt::Debug for IkaNode {
             .finish()
     }
 }
+
+const EVENTS_CHANNEL_BUFFER_SIZE: usize = 10_000;
 
 impl IkaNode {
     pub async fn start(
@@ -269,8 +271,13 @@ impl IkaNode {
                 &config.sui_connector_config.sui_rpc_url,
                 sui_client_metrics,
                 config.sui_connector_config.ika_package_id,
+                config.sui_connector_config.ika_common_package_id,
+                config.sui_connector_config.ika_dwallet_2pc_mpc_package_id,
                 config.sui_connector_config.ika_system_package_id,
                 config.sui_connector_config.ika_system_object_id,
+                config
+                    .sui_connector_config
+                    .ika_dwallet_coordinator_object_id,
             )
             .await?,
         );
@@ -313,8 +320,15 @@ impl IkaNode {
         let epoch_options = default_db_options().optimize_db_for_write_throughput(4);
         let packages_config = IkaPackagesConfig {
             ika_package_id: config.sui_connector_config.ika_package_id,
+            ika_common_package_id: config.sui_connector_config.ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id: config
+                .sui_connector_config
+                .ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id: config.sui_connector_config.ika_system_package_id,
             ika_system_object_id: config.sui_connector_config.ika_system_object_id,
+            ika_dwallet_coordinator_object_id: config
+                .sui_connector_config
+                .ika_dwallet_coordinator_object_id,
         };
 
         let dwallet_mpc_metrics = DWalletMPCMetrics::new(&registry_service.default_registry());
@@ -418,26 +432,23 @@ impl IkaNode {
         info!("created authority state");
 
         let sui_connector_metrics = SuiConnectorMetrics::new(&registry_service.default_registry());
-        let (network_keys_sender, network_keys_receiver) = watch::channel(Default::default());
         let (next_epoch_committee_sender, next_epoch_committee_receiver) =
             watch::channel::<Committee>(committee);
-        let (new_events_sender, new_events_receiver) = broadcast::channel(10000);
+        let (new_events_sender, new_events_receiver) =
+            broadcast::channel(EVENTS_CHANNEL_BUFFER_SIZE);
         let (end_of_publish_sender, end_of_publish_receiver) = watch::channel::<Option<u64>>(None);
-        let sui_connector_service = Arc::new(
-            SuiConnectorService::new(
-                dwallet_checkpoint_store.clone(),
-                system_checkpoint_store.clone(),
-                sui_client.clone(),
-                config.sui_connector_config.clone(),
-                sui_connector_metrics,
-                state.is_validator(&epoch_store),
-                network_keys_sender,
-                next_epoch_committee_sender,
-                new_events_sender,
-                end_of_publish_sender.clone(),
-            )
-            .await?,
-        );
+        let (sui_connector_service, network_keys_receiver) = SuiConnectorService::new(
+            dwallet_checkpoint_store.clone(),
+            system_checkpoint_store.clone(),
+            sui_client.clone(),
+            config.sui_connector_config.clone(),
+            sui_connector_metrics,
+            state.is_validator(&epoch_store),
+            next_epoch_committee_sender,
+            new_events_sender,
+            end_of_publish_sender.clone(),
+        )
+        .await?;
 
         let (end_of_epoch_channel, _end_of_epoch_receiver) =
             broadcast::channel(config.end_of_epoch_broadcast_channel_capacity);
@@ -758,7 +769,7 @@ impl IkaNode {
         ika_node_metrics: Arc<IkaNodeMetrics>,
         previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -839,7 +850,7 @@ impl IkaNode {
         ika_tx_validator_metrics: Arc<IkaTxValidatorMetrics>,
         previous_epoch_last_dwallet_checkpoint_sequence_number: u64,
         previous_epoch_last_system_checkpoint_sequence_number: u64,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -867,6 +878,8 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
+        // We need to ensure we can send all outputs during bootstrapping
+        #[allow(clippy::disallowed_methods)]
         let (
             consensus_round_completed_sessions_sender,
             consensus_round_completed_sessions_receiver,
@@ -1099,7 +1112,7 @@ impl IkaNode {
     /// after which it initiates reconfiguration of the entire system.
     pub async fn monitor_reconfiguration(
         self: Arc<Self>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         sui_client: Arc<SuiConnectorClient>,
@@ -1118,10 +1131,12 @@ impl IkaNode {
                         self.state.name,
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
-                        sui_client
-                            .get_available_move_packages()
-                            .await
-                            .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
+                        vec![],
+                        // Note: this is a temp fix, we will handle package upgrades later.
+                        // sui_client
+                        // .get_available_move_packages()
+                        //     .await
+                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
                     ),
                 );
 

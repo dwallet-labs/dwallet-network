@@ -1,5 +1,5 @@
 ---
-title: Module `(ika_system=0x0)::multiaddr`
+title: Module `ika_common::multiaddr`
 ---
 
 This module provides utilities for validating multiaddr strings in Sui Move.
@@ -11,24 +11,24 @@ This implementation supports validation for:
 - HTTP protocol
 
 
--  [Function `validate_tcp`](#(ika_system=0x0)_multiaddr_validate_tcp)
+-  [Function `validate_tcp`](#ika_common_multiaddr_validate_tcp)
     -  [Arguments](#@Arguments_0)
     -  [Returns](#@Returns_1)
     -  [Examples](#@Examples_2)
--  [Function `validate_udp`](#(ika_system=0x0)_multiaddr_validate_udp)
+-  [Function `validate_udp`](#ika_common_multiaddr_validate_udp)
     -  [Arguments](#@Arguments_3)
     -  [Returns](#@Returns_4)
     -  [Examples](#@Examples_5)
--  [Function `validate_with_transport`](#(ika_system=0x0)_multiaddr_validate_with_transport)
+-  [Function `validate_with_transport`](#ika_common_multiaddr_validate_with_transport)
     -  [Arguments](#@Arguments_6)
     -  [Returns](#@Returns_7)
--  [Function `is_valid_ipv4`](#(ika_system=0x0)_multiaddr_is_valid_ipv4)
+-  [Function `is_valid_ipv4`](#ika_common_multiaddr_is_valid_ipv4)
     -  [Arguments](#@Arguments_8)
     -  [Returns](#@Returns_9)
--  [Function `is_valid_ipv6`](#(ika_system=0x0)_multiaddr_is_valid_ipv6)
+-  [Function `is_valid_ipv6`](#ika_common_multiaddr_is_valid_ipv6)
     -  [Arguments](#@Arguments_10)
     -  [Returns](#@Returns_11)
--  [Function `is_valid_dns`](#(ika_system=0x0)_multiaddr_is_valid_dns)
+-  [Function `is_valid_dns`](#ika_common_multiaddr_is_valid_dns)
     -  [Arguments](#@Arguments_12)
     -  [Returns](#@Returns_13)
 
@@ -41,7 +41,7 @@ This implementation supports validation for:
 
 
 
-<a name="(ika_system=0x0)_multiaddr_validate_tcp"></a>
+<a name="ika_common_multiaddr_validate_tcp"></a>
 
 ## Function `validate_tcp`
 
@@ -72,7 +72,7 @@ assert!(validate_tcp(&valid_addr));
 ```
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_tcp">validate_tcp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -81,8 +81,8 @@ assert!(validate_tcp(&valid_addr));
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">validate_tcp</a>(addr: &String): bool {
-    <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"tcp"))
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_tcp">validate_tcp</a>(addr: &String): bool {
+    <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"tcp"))
 }
 </code></pre>
 
@@ -90,7 +90,7 @@ assert!(validate_tcp(&valid_addr));
 
 </details>
 
-<a name="(ika_system=0x0)_multiaddr_validate_udp"></a>
+<a name="ika_common_multiaddr_validate_udp"></a>
 
 ## Function `validate_udp`
 
@@ -121,7 +121,7 @@ assert!(validate_udp(&valid_addr));
 ```
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_udp">validate_udp</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -130,8 +130,8 @@ assert!(validate_udp(&valid_addr));
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">validate_udp</a>(addr: &String): bool {
-    <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"udp"))
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_udp">validate_udp</a>(addr: &String): bool {
+    <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_with_transport">validate_with_transport</a>(addr, string::utf8(b"udp"))
 }
 </code></pre>
 
@@ -139,7 +139,7 @@ assert!(validate_udp(&valid_addr));
 
 </details>
 
-<a name="(ika_system=0x0)_multiaddr_validate_with_transport"></a>
+<a name="ika_common_multiaddr_validate_with_transport"></a>
 
 ## Function `validate_with_transport`
 
@@ -161,7 +161,7 @@ Internal helper function to validate multiaddr with a specific transport protoco
 * <code><b>true</b></code> if the multiaddr is valid for the given transport, <code><b>false</b></code> otherwise
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>, transport: <a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_with_transport">validate_with_transport</a>(addr: &<a href="../std/string.md#std_string_String">std::string::String</a>, transport: <a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -170,7 +170,7 @@ Internal helper function to validate multiaddr with a specific transport protoco
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_with_transport">validate_with_transport</a>(addr: &String, transport: String): bool {
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_validate_with_transport">validate_with_transport</a>(addr: &String, transport: String): bool {
     <b>let</b> bytes = string::as_bytes(addr);
     <b>let</b> len = vector::length(bytes);
     <b>if</b> (len &lt; 1) <b>return</b> <b>false</b>;
@@ -236,11 +236,11 @@ Internal helper function to validate multiaddr with a specific transport protoco
         protocol != dns) <b>return</b> <b>false</b>;
     // Validate <b>address</b> based on protocol
     <b>if</b> (protocol == ip4) {
-        <b>if</b> (!<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
+        <b>if</b> (!<a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
     } <b>else</b> <b>if</b> (protocol == ip6) {
-        <b>if</b> (!<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
+        <b>if</b> (!<a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
     } <b>else</b> <b>if</b> (protocol == dns4 || protocol == dns6 || protocol == dns) {
-        <b>if</b> (!<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_dns">is_valid_dns</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
+        <b>if</b> (!<a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_dns">is_valid_dns</a>(&<b>address</b>)) <b>return</b> <b>false</b>;
     };
     // Validate transport
     <b>if</b> (actual_transport != transport) <b>return</b> <b>false</b>;
@@ -266,7 +266,7 @@ Internal helper function to validate multiaddr with a specific transport protoco
 
 </details>
 
-<a name="(ika_system=0x0)_multiaddr_is_valid_ipv4"></a>
+<a name="ika_common_multiaddr_is_valid_ipv4"></a>
 
 ## Function `is_valid_ipv4`
 
@@ -287,7 +287,7 @@ Validates an IPv4 address format.
 * <code><b>true</b></code> if the IPv4 address is valid, <code><b>false</b></code> otherwise
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(ip: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(ip: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -296,7 +296,7 @@ Validates an IPv4 address format.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(ip: &String): bool {
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv4">is_valid_ipv4</a>(ip: &String): bool {
     <b>let</b> len = ip.length();
     <b>let</b> <b>mut</b> parts: vector&lt;String&gt; = vector::empty();
     <b>let</b> <b>mut</b> start = 0;
@@ -354,7 +354,7 @@ Validates an IPv4 address format.
 
 </details>
 
-<a name="(ika_system=0x0)_multiaddr_is_valid_ipv6"></a>
+<a name="ika_common_multiaddr_is_valid_ipv6"></a>
 
 ## Function `is_valid_ipv6`
 
@@ -375,7 +375,7 @@ Validates an IPv6 address format.
 * <code><b>true</b></code> if the IPv6 address is valid, <code><b>false</b></code> otherwise
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(ip: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(ip: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -384,7 +384,7 @@ Validates an IPv6 address format.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(ip: &String): bool {
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_ipv6">is_valid_ipv6</a>(ip: &String): bool {
     <b>let</b> len = ip.length();
     <b>let</b> <b>mut</b> parts: vector&lt;String&gt; = vector::empty();
     <b>let</b> <b>mut</b> start = 0;
@@ -445,7 +445,7 @@ Validates an IPv6 address format.
 
 </details>
 
-<a name="(ika_system=0x0)_multiaddr_is_valid_dns"></a>
+<a name="ika_common_multiaddr_is_valid_dns"></a>
 
 ## Function `is_valid_dns`
 
@@ -466,7 +466,7 @@ Validates a DNS hostname format.
 * <code><b>true</b></code> if the DNS hostname is valid, <code><b>false</b></code> otherwise
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_dns">is_valid_dns</a>(hostname: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_dns">is_valid_dns</a>(hostname: &<a href="../std/string.md#std_string_String">std::string::String</a>): bool
 </code></pre>
 
 
@@ -475,7 +475,7 @@ Validates a DNS hostname format.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_is_valid_dns">is_valid_dns</a>(hostname: &String): bool {
+<pre><code><b>fun</b> <a href="../ika_common/multiaddr.md#ika_common_multiaddr_is_valid_dns">is_valid_dns</a>(hostname: &String): bool {
     <b>let</b> len = hostname.length();
     <b>if</b> (len &lt; 1 || len &gt; 253) <b>return</b> <b>false</b>;
     <b>let</b> <b>mut</b> parts: vector&lt;String&gt; = vector::empty();

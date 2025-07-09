@@ -26,6 +26,7 @@ use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MPCProtocolInitData,
     MaliciousReport, SessionIdentifier, SessionInfo, SessionType, ThresholdNotReachedReport,
 };
+use ika_types::sui::EpochStartSystemTrait;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -155,12 +156,24 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::MissingRootSeed)?
             .root_seed()
             .clone();
-        let class_groups_decryption_key =
-            ClassGroupsKeyPairAndProof::from_seed(&root_seed).decryption_key();
+        let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
+
+        // Verify that the validators local class-groups key is the
+        // same as stored in the system state object onchain.
+        if epoch_store
+            .epoch_start_state()
+            .get_ika_committee()
+            .class_groups_public_key_and_proof(&epoch_store.name)?
+            != class_groups_key_pair.encryption_key_and_proof()
+        {
+            return Err(DwalletMPCError::MPCManagerError(
+                "validator's class-groups key does not match the one stored in the system state object".to_string(),
+            ));
+        }
 
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
-            class_groups_decryption_key,
+            class_groups_decryption_key: class_groups_key_pair.decryption_key(),
             validator_decryption_key_shares: HashMap::new(),
         };
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);

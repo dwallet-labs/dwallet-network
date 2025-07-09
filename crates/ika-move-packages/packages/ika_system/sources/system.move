@@ -114,17 +114,20 @@ module ika_system::system;
 use std::string::String;
 use ika::ika::IKA;
 use ika_system::{
-    bls_committee::BlsCommittee,
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
-    dwallet_2pc_mpc_coordinator::DWalletCoordinator,
-    dwallet_pricing::DWalletPricing,
     protocol_treasury::ProtocolTreasury,
     staked_ika::StakedIka,
-    system_inner::{Self, SystemInner, ProtocolCap},
+    system_inner::{Self, SystemInner},
     token_exchange_rate::TokenExchangeRate,
-    validator_cap::{ValidatorCap, ValidatorCommissionCap, ValidatorOperationCap},
+    validator_cap::{ValidatorCap, ValidatorCommissionCap, ValidatorOperationCap, VerifiedValidatorCap, VerifiedValidatorCommissionCap, VerifiedValidatorOperationCap},
     validator_metadata::ValidatorMetadata,
-    validator_set::ValidatorSet
+    validator_set::ValidatorSet,
+    protocol_cap::{VerifiedProtocolCap, ProtocolCap},
+    system_current_status_info::SystemCurrentStatusInfo,
+    advance_epoch_approver::AdvanceEpochApprover,
+};
+use ika_common::{
+    bls_committee::BlsCommittee,
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
 };
 use sui::{
     clock::Clock,
@@ -132,7 +135,6 @@ use sui::{
     dynamic_field,
     package::{UpgradeCap, UpgradeReceipt, UpgradeTicket},
     table::Table,
-    vec_map::VecMap
 };
 
 // === Errors ===
@@ -225,23 +227,15 @@ public(package) fun create(
 
 public fun initialize(
     self: &mut System,
-    pricing: DWalletPricing,
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     max_validator_change_count: u64,
     cap: &ProtocolCap,
     clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    let package_id = self.package_id;
+): AdvanceEpochApprover {
     self.inner_mut().initialize(
-        pricing,
-        supported_curves_to_signature_algorithms_to_hash_schemes,
         max_validator_change_count,
-        package_id,
         cap,
         clock,
-        ctx,
-    );
+    )
 }
 
 /// Can be called by anyone who wishes to become a validator candidate and starts accruing delegated
@@ -495,17 +489,6 @@ public fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.inner_mut().set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof, cap)
 }
 
-/// Sets a validator's pricing vote.
-/// The change will only take effects starting from the next epoch.
-public fun set_pricing_vote(
-    self: &mut System,
-    dwallet_coordinator: &mut DWalletCoordinator,
-    pricing: DWalletPricing,
-    cap: &ValidatorOperationCap,
-) {
-    self.inner_mut().set_pricing_vote(dwallet_coordinator.inner_mut(), pricing, cap)
-}
-
 /// Get the pool token exchange rate of a validator. Works for both active and inactive pools.
 public fun token_exchange_rates(
     self: &System,
@@ -525,75 +508,49 @@ public fun next_epoch_active_committee(self: &System): Option<BlsCommittee> {
 }
 
 /// Locks the committee of the next epoch to allow starting the reconfiguration process.
-public fun request_reconfig_mid_epoch(
-    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext
+public fun initiate_mid_epoch_reconfiguration(
+    self: &mut System,
+    clock: &Clock,
 ) {
-    self.inner_mut().process_mid_epoch(clock, dwallet_coordinator.inner_mut(), ctx);
+    self.inner_mut().initiate_mid_epoch_reconfiguration(clock);
 }
 
-/// Locks the MPC sessions that should get completed as part of the current epoch.
-public fun request_lock_epoch_sessions(
-    self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock
-) {
-    self.inner_mut().request_lock_epoch_sessions(dwallet_coordinator.inner_mut(), clock);
+/// Create the system current status info.
+public fun create_system_current_status_info(self: &System, clock: &Clock): SystemCurrentStatusInfo {
+    self.inner().create_system_current_status_info(clock)
+}
+
+/// Initiates the advance epoch process.
+public fun initiate_advance_epoch(self: &System, clock: &Clock): AdvanceEpochApprover {
+    self.inner().initiate_advance_epoch(clock)
 }
 
 /// Advances the epoch to the next epoch.
-public fun request_advance_epoch(self: &mut System, dwallet_coordinator: &mut DWalletCoordinator, clock: &Clock, ctx: &mut TxContext) {
+/// Can only be called after all the witnesses have approved the advance epoch.
+public fun advance_epoch(self: &mut System, advance_epoch_approver: AdvanceEpochApprover, clock: &Clock, ctx: &mut TxContext) {
     let inner_system = self.inner_mut();
-    let inner_dwallet = dwallet_coordinator.inner_mut();
-    inner_system.advance_epoch(inner_dwallet, clock, ctx);
+    inner_system.advance_epoch(advance_epoch_approver, clock, ctx);
 }
 
-public fun request_dwallet_network_encryption_key_dkg_by_cap(
-    self: &mut System,
-    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
-    cap: &ProtocolCap,
-    params_for_network: vector<u8>,
-    ctx: &mut TxContext,
-) {
-    self.inner_mut().request_dwallet_network_encryption_key_dkg_by_cap(dwallet_2pc_mpc_coordinator.inner_mut(), cap, params_for_network, ctx);
+public fun verify_validator_cap(self: &System, cap: &ValidatorCap): VerifiedValidatorCap {
+    self.inner().verify_validator_cap(cap)
 }
 
-public fun set_supported_and_pricing(
-    self: &mut System,
-    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
-    default_pricing: DWalletPricing,
-    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
-    protocol_cap: &ProtocolCap,
-) {
-    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    self.inner_mut().set_supported_and_pricing(dwallet_2pc_mpc_coordinator_inner, default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, protocol_cap);
+public fun verify_operation_cap(self: &System, cap: &ValidatorOperationCap): VerifiedValidatorOperationCap {
+    self.inner().verify_operation_cap(cap)
 }
 
-public fun set_paused_curves_and_signature_algorithms(
-    self: &mut System,
-    dwallet_2pc_mpc_coordinator: &mut DWalletCoordinator,
-    paused_curves: vector<u32>,
-    paused_signature_algorithms: vector<u32>,
-    paused_hash_schemes: vector<u32>,
-    protocol_cap: &ProtocolCap,
-) {
-    let dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    self.inner_mut().set_paused_curves_and_signature_algorithms(dwallet_2pc_mpc_coordinator_inner, paused_curves, paused_signature_algorithms, paused_hash_schemes, protocol_cap);
+public fun verify_commission_cap(self: &System, cap: &ValidatorCommissionCap): VerifiedValidatorCommissionCap {
+    self.inner().verify_commission_cap(cap)
 }
 
 // === Upgrades ===
 
-public fun authorize_upgrade_by_cap(
-    self: &mut System,
-    cap: &ProtocolCap,
-    package_id: ID,
-    digest: vector<u8>,
-): UpgradeTicket {
-    self.inner_mut().authorize_upgrade_by_cap(cap, package_id, digest)
-}
-
-public fun authorize_upgrade_by_approval(
+public fun authorize_upgrade(
     self: &mut System,
     package_id: ID,
 ): UpgradeTicket {
-    self.inner_mut().authorize_upgrade_by_approval(package_id)
+    self.inner_mut().authorize_upgrade(package_id)
 }
 
 public fun commit_upgrade(
@@ -607,6 +564,30 @@ public fun commit_upgrade(
     }
 }
 
+public fun process_checkpoint_message_by_quorum(
+    self: &mut System,
+    signature: vector<u8>,
+    signers_bitmap: vector<u8>,
+    message: vector<u8>,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+}
+
+// === Protocol Cap Functions ===
+
+public fun add_upgrade_cap_by_cap(
+    self: &mut System,
+    cap: &ProtocolCap,
+    upgrade_cap: UpgradeCap,
+) {
+    self.inner_mut().add_upgrade_cap_by_cap(cap, upgrade_cap);
+}
+
+public fun verify_protocol_cap(self: &System, cap: &ProtocolCap): VerifiedProtocolCap {
+    self.inner().verify_protocol_cap(cap)
+}
+
 public fun process_checkpoint_message_by_cap(
     self: &mut System,
     cap: &ProtocolCap,
@@ -616,14 +597,22 @@ public fun process_checkpoint_message_by_cap(
     self.inner_mut().process_checkpoint_message_by_cap(cap, message, ctx);
 }
 
-public fun process_checkpoint_message_by_quorum(
+public fun set_approved_upgrade_by_cap(
     self: &mut System,
-    signature: vector<u8>,
-    signers_bitmap: vector<u8>,
-    message: vector<u8>,
-    ctx: &mut TxContext,
+    cap: &ProtocolCap,
+    package_id: ID,
+    digest: Option<vector<u8>>,
 ) {
-    self.inner_mut().process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx);
+    self.inner_mut().set_approved_upgrade_by_cap(cap, package_id, digest);
+}
+
+public fun set_or_remove_witness_approving_advance_epoch_by_cap(
+    self: &mut System,
+    cap: &ProtocolCap,
+    witness_type: String,
+    remove: bool,
+) {
+    self.inner_mut().set_or_remove_witness_approving_advance_epoch_by_cap(cap, witness_type, remove);
 }
 
 /// Migrate the staking object to the new package id.
@@ -665,10 +654,6 @@ public fun calculate_rewards(
 /// Call `staked_ika::can_withdraw_early` to allow calling this method in applications.
 public fun can_withdraw_staked_ika_early(self: &System, staked_ika: &StakedIka): bool {
     self.inner().can_withdraw_staked_ika_early(staked_ika)
-}
-
-public fun dwallet_2pc_mpc_coordinator_network_encryption_key_ids(self: &System): vector<ID> {
-    self.inner().dwallet_2pc_mpc_coordinator_network_encryption_key_ids()
 }
 
 // === Internals ===

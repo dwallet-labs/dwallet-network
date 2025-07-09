@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-module ika_system::extended_field;
+module ika_common::extended_field;
 
 // === Imports ===
 
