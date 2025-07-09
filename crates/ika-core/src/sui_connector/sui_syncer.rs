@@ -227,7 +227,7 @@ where
             let mut all_fetched_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in keys_to_fetch.into_iter() {
                 match sui_client
-                    .get_network_decryption_key_with_full_data_by_epoch(
+                    .get_network_encryption_key_with_full_data_by_epoch(
                         &network_dec_key_shares,
                         current_epoch,
                     )

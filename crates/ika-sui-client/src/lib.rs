@@ -623,17 +623,17 @@ where
             })
     }
 
-    pub async fn get_network_decryption_key_with_full_data_by_epoch(
+    pub async fn get_network_encryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
     ) -> IkaResult<DWalletNetworkEncryptionKeyData> {
         self.inner
-            .get_network_decryption_key_with_full_data_by_epoch(network_decryption_key, epoch)
+            .get_network_encryption_key_with_full_data_by_epoch(network_decryption_key, epoch)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_network_decryption_key_with_full_data_by_epoch: {e}"
+                    "Can't get_network_encryption_key_with_full_data_by_epoch: {e}"
                 ))
             })
     }
@@ -751,7 +751,7 @@ pub trait SuiClientInner: Send + Sync {
         dwallet_coordinator_inner: &DWalletCoordinatorInnerV1,
     ) -> Result<HashMap<ObjectID, DWalletNetworkEncryptionKey>, self::Error>;
 
-    async fn get_network_decryption_key_with_full_data_by_epoch(
+    async fn get_network_encryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
@@ -1054,7 +1054,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(network_encryption_keys)
     }
 
-    async fn get_network_decryption_key_with_full_data_by_epoch(
+    async fn get_network_encryption_key_with_full_data_by_epoch(
         &self,
         key: &DWalletNetworkEncryptionKey,
         epoch: EpochId,
