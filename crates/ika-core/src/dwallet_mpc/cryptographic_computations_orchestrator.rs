@@ -86,7 +86,7 @@ impl CryptographicComputationsOrchestrator {
         {
             assert!(
                 available_cores_for_computations >= 16,
-                "Validator must have more at least 16 CPU cores for cryptographic computations"
+                "Validator must have at least 16 CPU cores"
             );
         }
         info!(
