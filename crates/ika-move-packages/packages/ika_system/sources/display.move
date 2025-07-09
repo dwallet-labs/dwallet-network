@@ -15,7 +15,7 @@
 /// - creator
 module ika_system::display;
 
-use ika_system::staked_ika::StakedIka;
+use ika_staking::staked_ika::StakedIka;
 use std::{string::String, type_name};
 use sui::{display::{Self, Display}, object_bag::{Self, ObjectBag}, package::Publisher};
 
