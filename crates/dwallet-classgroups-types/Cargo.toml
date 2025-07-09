@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 dwallet-rng.workspace = true
 merlin.workspace = true
-class_groups.workspace = true
+class_groups = { workspace = true, features = ["parallel"] }
 group.workspace = true
 proof.workspace = true
 crypto-bigint.workspace = true

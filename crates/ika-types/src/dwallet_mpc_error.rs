@@ -20,9 +20,6 @@ pub enum DwalletMPCError {
     #[error("Operations for the epoch {0} have ended")]
     EpochEnded(EpochId),
 
-    #[error("non MPC event {0}")]
-    NonMPCEvent(String),
-
     #[error("authority with a name: `{0}` not found")]
     AuthorityNameNotFound(crate::crypto::AuthorityName),
 
@@ -136,8 +133,8 @@ pub enum DwalletMPCError {
     #[error("the first MPC step should not not receive any messages from the other parties")]
     MessageForFirstMPCStep,
 
-    #[error("no event data when spawning session: BUG")]
-    MissingEventData,
+    #[error("no next active committee for an event (SID ({0:?})) that required it: BUG")]
+    MissingNextActiveCommittee(Vec<u8>),
 
     #[error("failed to find the event driven data")]
     MissingEventDrivenData,
@@ -170,9 +167,6 @@ pub enum DwalletMPCError {
     },
     #[error("invalid session public input")]
     InvalidSessionPublicInput,
-
-    #[error("channel closed prematurely - BUG")]
-    ClosedChannel,
 }
 
 /// A wrapper type for the result of a runtime operation.

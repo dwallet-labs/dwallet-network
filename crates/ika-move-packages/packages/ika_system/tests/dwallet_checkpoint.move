@@ -58,7 +58,7 @@ public struct PartialSignatureVerificationOutput has drop, copy {
 }
 
 public struct NetworkKeyPublicOutputSlice has drop, copy {
-    dwallet_network_encryption_key_id: vector<u8>,
+    dwallet_network_decryption_key_id: vector<u8>,
     public_output: vector<u8>,
     supported_curves: vector<u32>,
     is_last: bool,
@@ -236,14 +236,14 @@ public fun dwallet_partial_signature_verification_output(
 }
 
 public fun dwallet_mpc_network_dkg_output(
-    dwallet_network_encryption_key_id: vector<u8>,
+    dwallet_network_decryption_key_id: vector<u8>,
     public_output: vector<u8>,
     is_last: bool,
     supported_curves: vector<u32>,
     rejected: bool,
 ): MessageKind {
     MessageKind::RespondDWalletMPCNetworkDKGOutput(NetworkKeyPublicOutputSlice {
-        dwallet_network_encryption_key_id,
+        dwallet_network_decryption_key_id,
         public_output,
         supported_curves,
         is_last,
@@ -252,14 +252,14 @@ public fun dwallet_mpc_network_dkg_output(
 }
 
 public fun dwallet_mpc_network_reconfiguration_output(
-    dwallet_network_encryption_key_id: vector<u8>,
+    dwallet_network_decryption_key_id: vector<u8>,
     public_output: vector<u8>,
     is_last: bool,
     supported_curves: vector<u32>,
     rejected: bool,
 ): MessageKind {
     MessageKind::RespondDWalletMPCNetworkReconfigurationOutput(NetworkKeyPublicOutputSlice {
-        dwallet_network_encryption_key_id,
+        dwallet_network_decryption_key_id,
         public_output,
         supported_curves,
         is_last,

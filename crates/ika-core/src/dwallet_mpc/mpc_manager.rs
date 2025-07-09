@@ -102,11 +102,11 @@ pub enum DWalletMPCDBMessage {
     /// The advance failed, and the session needs to be restarted or marked as failed.
     MPCSessionFailed(ObjectID),
 
-    /// A message that continas a [`MaliciousReport`] after an advance/finalize.
+    /// A message that contains a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     MaliciousReport(AuthorityName, MaliciousReport),
-    /// A meesage indicating that some of the parteis were malicous,
-    /// but we can still retry once we recieve more messages.
+    /// A message indicating that some of the parties were malicous,
+    /// but we can still retry once we receive more messages.
     ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
@@ -158,20 +158,32 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::MissingRootSeed)?
             .root_seed()
             .clone();
-        let class_groups_decryption_key =
-            ClassGroupsKeyPairAndProof::from_seed(&root_seed).decryption_key();
+        let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
+
+        // Verify that the validators local class-groups key is the
+        // same as stored in the system state object onchain.
+        if epoch_store
+            .epoch_start_state()
+            .get_ika_committee()
+            .class_groups_public_key_and_proof(&epoch_store.name)?
+            != class_groups_key_pair.encryption_key_and_proof()
+        {
+            return Err(DwalletMPCError::MPCManagerError(
+                "validator's class-groups key does not match the one stored in the system state object".to_string(),
+            ));
+        }
 
         // TODO(Scaly): It's weird that `validator_decryption_key_shares` is a hash-map that can be empty.
         // It should never be empty, and we should use an Option and None to describe a state where it doesn't exist yet.
         let validator_private_data = ValidatorPrivateDecryptionKeyData {
             party_id,
-            class_groups_decryption_key,
+            class_groups_decryption_key: class_groups_key_pair.decryption_key(),
             validator_decryption_key_shares: HashMap::new(),
         };
         let dwallet_network_keys = DwalletMPCNetworkKeys::new(validator_private_data);
 
         // Re-initialize the malicious handler every epoch. This is done intentionally:
-        // we want to "forget" the malicious actors from the previous epoch and start from scratch.
+        // We want to "forget" the malicious actors from the previous epoch and start from scratch.
         let malicious_handler = MaliciousHandler::new(epoch_store.committee().clone());
         Ok(Self {
             mpc_sessions: HashMap::new(),
@@ -327,24 +339,6 @@ impl DWalletMPCManager {
 
     /// Handle the messages of a given consensus round.
     pub fn handle_consensus_round_messages(&mut self, messages: Vec<DWalletMPCDBMessage>) -> IkaResult {
-        // We only update `next_active_committee` here, so once we update it there is no longer going to be any pending events for it in this epoch.
-        if self.next_active_committee.is_none() {
-            let got_next_active_committee = self.try_receiving_next_active_committee();
-            if got_next_active_committee {
-                // `..` stands for `RangeFull`, and calling `drain(..)` will drain (i.e. mutate) the vector thus removing all events from it.
-                self.events_pending_for_next_active_committee.drain(..)
-                    .for_each(|event| {
-                    self.handle_dwallet_db_event(event);
-                });
-            }
-        }
-
-        // Check if we just got the public data for some network keys, and handle those events if so.
-        self.events_pending_for_network_key.keys().filter(|key_id| self.network_keys.key_public_data_exists(key_id))
-            .flat_map(|key_id| self.events_pending_for_network_key.remove(key_id)).flatten().for_each(|event| {
-            self.handle_dwallet_db_event(event);
-        });
-
         for message in messages {
             self.handle_dwallet_message(message);
         }
@@ -355,17 +349,21 @@ impl DWalletMPCManager {
             self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
         }
 
-        // Note that because the Ika consensus isn't in sync with the Sui consensus, it might be that a session has gotten quorum of messages whilst
-        // the current validator haven't received the event from which its public input can be generated (and therefore cannot advance it yet).
-        //
-        // Because of this reason, we place these on two separate queues. Note that in either cases, we must use the copy at this point in time,
-        // so that we will advance it with exactly the same messages as those who already have their event data ready.
+        // TODO(scaly): update comment after we remove session copy
+        // Since the Ika and Sui consensuses are not in sync,
+        // a session might reach quorum before a validator has received
+        // the event needed to generate its public input (and therefore cannot advance it yet).
+        // To handle this, we use two separate queues. We also snapshot
+        // the current messages so that when we do advance,
+        // we use exactly the same inputs as peers who already have the data.
         self.sessions_pending_for_events
             .extend(ready_sessions_response.pending_for_event_sessions);
 
         // Extend the pending for computation queue while keeping order.
         for ready_to_advance_session_copy in ready_sessions_response.ready_sessions {
-            self.insert_session_into_ordered_pending_for_computation_queue(ready_to_advance_session_copy);
+            self.insert_session_into_ordered_pending_for_computation_queue(
+                ready_to_advance_session_copy,
+            );
         }
 
         Ok(())
@@ -395,24 +393,6 @@ impl DWalletMPCManager {
         }
 
         Ok(())
-    }
-
-    fn new_mpc_event_data(
-        &self,
-        event: DBSuiEvent,
-        session_info: &SessionInfo,
-        next_active_committee: Option<Committee>
-    ) -> Result<MPCEventData, DwalletMPCError> {
-        let epoch_store = self.epoch_store()?;
-
-        MPCEventData::try_new(
-            event,
-            session_info,
-            epoch_store,
-            &self.network_keys,
-            next_active_committee,
-            self.validators_class_groups_public_keys_and_proofs.clone(),
-        )
     }
 
     /// Returns the sessions that can perform the next cryptographic round,
@@ -472,22 +452,11 @@ impl DWalletMPCManager {
                 return;
             }
             // Safe to unwrap, as we just checked that the queue is not empty.
-            let oldest_pending_session = self.ordered_sessions_pending_for_computation.pop_front().unwrap();
-            // Safe to unwarp since the session was ready to compute.
-            let live_session = self
-                .mpc_sessions
-                .get(&oldest_pending_session.session_identifier)
+            let oldest_pending_session = self
+                .ordered_sessions_pending_for_computation
+                .pop_front()
                 .unwrap();
 
-            // TODO(Scaly): What does it even mean for a session to be non-active, if its already ready for advance?
-            // TODO - if its finished, it shouldn't be here, and also failed what??
-            if live_session.status != MPCSessionStatus::Active {
-                info!(
-                    session_identifier=?oldest_pending_session.session_identifier,
-                    "Session is not active, skipping"
-                );
-                continue;
-            }
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
                 // This should never happen.
                 error!(
@@ -522,7 +491,8 @@ impl DWalletMPCManager {
                 error!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                    mpc_protocol=?mpc_event_data.init_protocol_data,
+                    session_type=?mpc_event_data.session_type,
+                    mpc_protocol=?mpc_event_data.request_input,
                     error=?err,
                     "failed to spawn a cryptographic session"
                 );
@@ -653,11 +623,14 @@ impl DWalletMPCManager {
         self.mpc_sessions.insert(*session_identifier, new_session);
     }
 
-    fn try_receiving_next_active_committee(&mut self) -> bool {
+    pub(crate) fn try_receiving_next_active_committee(&mut self) -> bool {
         match self.next_epoch_committee_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
-                    let committee = self.next_epoch_committee_receiver.borrow_and_update().clone();
+                    let committee = self
+                        .next_epoch_committee_receiver
+                        .borrow_and_update()
+                        .clone();
 
                     if committee.epoch == self.epoch_id + 1 {
                         self.next_active_committee = Some(committee);
@@ -665,7 +638,7 @@ impl DWalletMPCManager {
                         return true;
                     }
                 }
-                }
+            }
             Err(err) => {
                 error!(?err, "failed to check next epoch committee receiver");
             }
@@ -674,29 +647,54 @@ impl DWalletMPCManager {
         false
     }
 
-    fn update_network_keys(&mut self) {
+    pub(crate) fn maybe_update_network_keys(&mut self) -> Vec<ObjectID> {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
+                    let access_structure = &self.weighted_threshold_access_structure;
                     let new_keys = self.network_keys_receiver.borrow_and_update();
+
+                    let mut new_key_ids = vec![];
                     for (key_id, key_data) in new_keys.iter() {
-                        info!(
-                            "Updating (decrypting new shares) network key for key_id: {:?}",
-                            key_id
-                        );
-                        self
-                            .network_keys
-                            .update_network_key(
-                                *key_id,
-                                key_data,
-                                &self.weighted_threshold_access_structure,
-                            )
-                            .unwrap_or_else(|err| error!(?err, "failed to store network keys"));
+                        match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
+                            key_data.current_epoch,
+                            DWalletMPCNetworkKeyScheme::Secp256k1,
+                            access_structure,
+                            key_data.clone(),
+                        ) {
+                            Ok(key) => {
+                                info!(key_id=?key_id, "Updating (decrypting new shares) network key for key_id");
+                                if let Err(e) = self
+                                    .network_keys
+                                    .update_network_key(
+                                        *key_id,
+                                        &key,
+                                        &self.weighted_threshold_access_structure,
+                                    ) {
+                                    error!(error=?e, key_id=?key_id, "failed to update the network key");
+                                } else {
+                                    new_key_ids.push(*key_id);
+                                }
+                            }
+                            Err(err) => {
+                                error!(
+                                    ?err,
+                                    key_id=?key_id,
+                                    "failed to instantiate network decryption key shares from public output for"
+                                );
+                            }
+                        }
                     }
+
+                    new_key_ids
+                } else {
+                    vec![]
                 }
             }
             Err(err) => {
                 error!(?err, "failed to check network keys receiver");
+
+                vec![]
             }
         }
     }
@@ -705,36 +703,50 @@ impl DWalletMPCManager {
     /// System sessions come first, and user sessions are sorted by their sequence number.
     ///
     /// Note: at this point, `mpc_event_data` must be set!
-    fn insert_session_into_ordered_pending_for_computation_queue(&mut self, session: DWalletMPCSession) {
+    pub(crate) fn insert_session_into_ordered_pending_for_computation_queue(
+        &mut self,
+        session: DWalletMPCSession,
+    ) {
         let sequence_number = match session.mpc_event_data.as_ref().unwrap().session_type {
-            SessionType::User { sequence_number } => {
-                Some(sequence_number)
-            }
+            SessionType::User { sequence_number } => Some(sequence_number),
             SessionType::System => None,
         };
 
-        if let Some(index) = self.ordered_sessions_pending_for_computation.iter().position(|session_pending_for_computation| {
-            match session_pending_for_computation.mpc_event_data.as_ref().unwrap().session_type {
-                SessionType::User { sequence_number: pending_session_sequence_number } => {
-                    if let Some(sequence_number) = sequence_number {
-                        // Find the first pending session with a sequence number greater than the new session,
-                        // so we can insert the new session right before it.
-                        pending_session_sequence_number > sequence_number
-                    } else {
-                        // System session takes precedence over user sessions.
-                        true
+        if let Some(index) = self
+            .ordered_sessions_pending_for_computation
+            .iter()
+            .position(|session_pending_for_computation| {
+                match session_pending_for_computation
+                    .mpc_event_data
+                    .as_ref()
+                    .unwrap()
+                    .session_type
+                {
+                    SessionType::User {
+                        sequence_number: pending_session_sequence_number,
+                    } => {
+                        if let Some(sequence_number) = sequence_number {
+                            // Find the first pending session with a sequence number greater than the new session,
+                            // so we can insert the new session right before it.
+                            pending_session_sequence_number > sequence_number
+                        } else {
+                            // System session takes precedence over user sessions.
+                            true
+                        }
+                    }
+                    SessionType::System => {
+                        // Existing system sessions take precedence over both new system sessions and user sessions.
+                        false
                     }
                 }
-                SessionType::System => {
-                    // Existing system sessions take precedence over both new system sessions and user sessions.
-                    false
-                },
-            }
-        }) {
-            self.ordered_sessions_pending_for_computation.insert(index, session);
+            })
+        {
+            self.ordered_sessions_pending_for_computation
+                .insert(index, session);
         } else {
             // All existing pending sessions take precedence over the new one, so push it back.
-            self.ordered_sessions_pending_for_computation.push_back(session);
+            self.ordered_sessions_pending_for_computation
+                .push_back(session);
         }
     }
 }

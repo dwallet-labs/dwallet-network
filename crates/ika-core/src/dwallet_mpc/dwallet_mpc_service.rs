@@ -93,74 +93,6 @@ impl DWalletMPCService {
         }
     }
 
-    /// Proactively pull uncompleted events from the Sui network.
-    /// We do that to assure we don't miss any events.
-    /// These events might be from a different Epoch, not necessarily the current one.
-    async fn fetch_uncompleted_events(&mut self) -> Vec<DWalletMPCEvent> {
-        let epoch_store = self.epoch_store.clone();
-        loop {
-            match self
-                .sui_client
-                .pull_dwallet_mpc_uncompleted_events(epoch_store.epoch())
-                .await
-            {
-                Ok(events) => {
-                    let events = events
-                        .into_iter()
-                        .flat_map(|event| {
-                            // TODO(Scaly): don't put this here, instead in handle event!
-                        match session_info_from_event(event.clone(), &epoch_store.packages_config) {
-                            Ok(Some(session_info)) => {
-                                let event = DWalletMPCEvent {
-                                    event,
-                                    session_info: session_info.clone(),
-                                    override_epoch_check: true,
-                                };
-
-                                info!(
-                                    session_identifier=?session_info.session_identifier,
-                                    session_type=?session_info.session_type,
-                                    mpc_round=?session_info.mpc_round,
-                                    current_epoch=?self.epoch_store.epoch(),
-                                    "Successfully processed a missed event from Sui"
-                                );
-
-                                Some(event)
-                            }
-                            Ok(None) => {
-                                warn!("Received an event that does not trigger the start of an MPC flow");
-
-                                None
-                            }
-                            Err(e) => {
-                                error!(
-                                    error=?e,
-                                    "error while processing a missed event"
-                                );
-
-                                None
-                            }
-                        }
-                    })
-                    .collect();
-
-                    return events;
-                }
-                Err(err) => {
-                    error!(
-                        ?err,
-                        current_epoch=?self.epoch_store.epoch(),
-                         "Failed to load missed events from Sui"
-                    );
-                    if let IkaError::EpochEnded(_) = err {
-                        return vec![];
-                    };
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-                }
-            }
-        }
-    }
-
     /// Starts the DWallet MPC service.
     ///
     /// This service periodically reads DWallet MPC messages from the local database
@@ -233,7 +165,8 @@ impl DWalletMPCService {
                 }
             };
 
-            self.dwallet_mpc_manager.handle_dwallet_db_events(events);
+            self.dwallet_mpc_manager
+                .handle_sui_db_event_batch(events, &self.epoch_store);
 
             let mpc_msgs_iter = tables
                 .dwallet_mpc_messages
@@ -330,62 +263,5 @@ impl DWalletMPCService {
             session.clear_data();
             session.status = MPCSessionStatus::Finished;
         }
-    }
-
-    /// Read events from perpetual tables, remove them, and store in the current epoch tables.
-    fn receive_new_sui_events(&mut self) -> IkaResult<Vec<DWalletMPCEvent>> {
-        let pending_events = match self.new_events_receiver.try_recv() {
-            Ok(events) => events,
-            Err(TryRecvError::Empty) => {
-                debug!("No new Sui events to process");
-                return Ok(vec![]);
-            }
-            Err(e) => {
-                return Err(IkaError::ReveiverError(e.to_string()));
-            }
-        };
-
-        let events: Vec<DWalletMPCEvent> = pending_events
-            .iter()
-            .filter_map(|event| {
-                let id = event.id;
-                let event = DBSuiEvent {
-                    type_: event.type_.clone(),
-                    contents: event.bcs.clone().into_bytes(),
-                };
-
-                match session_info_from_event(event.clone(), &self.epoch_store.packages_config) {
-                    Ok(Some(session_info)) => {
-                        info!(
-                            mpc_protocol=?session_info.mpc_round,
-                            session_identifier=?session_info.session_identifier,
-                            validator=?self.epoch_store.name,
-                            id=format!("{:?}", id),
-                            "Received start event for session"
-                        );
-                        let event = DWalletMPCEvent {
-                            event,
-                            session_info,
-                            override_epoch_check: false,
-                        };
-                        Some(event)
-                    }
-                    Ok(None) => {
-                        warn!(
-                            event=?event,
-                            id=format!("{:?}", id),
-                            "Received an event that does not trigger the start of an MPC flow"
-                        );
-                        None
-                    }
-                    Err(e) => {
-                        error!("error getting session info from event: {}", e);
-                        None
-                    }
-                }
-            })
-            .collect();
-
-        Ok(events)
     }
 }

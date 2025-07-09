@@ -13,7 +13,7 @@ use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::{SessionIdentifier, SessionInfo};
+use ika_types::messages_dwallet_mpc::{MPCSessionRequest, SessionIdentifier};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -38,7 +38,7 @@ struct SessionOutputsData {
     /// The key must contain the session info, and the output to prevent
     /// malicious behavior, such as sending the correct output, but from a faulty session.
     session_output_to_voting_authorities:
-        HashMap<(SerializedWrappedMPCPublicOutput, SessionInfo), StakeAggregator<(), true>>,
+        HashMap<(SerializedWrappedMPCPublicOutput, MPCSessionRequest), StakeAggregator<(), true>>,
     /// Needed to make sure an authority does not send two outputs for the same session.
     authorities_that_sent_output: HashSet<AuthorityName>,
     current_result: OutputVerificationStatus,
@@ -91,14 +91,14 @@ impl DWalletMPCOutputsVerifier {
     pub fn try_verify_output(
         &mut self,
         output: &[u8],
-        session_info: &SessionInfo,
+        session_request: &MPCSessionRequest,
         origin_authority: AuthorityName,
         epoch_store: &AuthorityPerEpochStore,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
-            mpc_protocol=?session_info.mpc_round,
-            session_identifier=?session_info.session_identifier,
+            mpc_protocol=?session_request.request_input,
+            session_identifier=?session_request.session_identifier,
             from_authority=?origin_authority,
             receiving_authority=?epoch_store.name,
             output_size_bytes=?output.len(),
@@ -108,7 +108,7 @@ impl DWalletMPCOutputsVerifier {
 
         let session_output_data = self
             .mpc_sessions_outputs
-            .entry(session_info.session_identifier)
+            .entry(session_request.session_identifier)
             .or_insert(SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
@@ -137,7 +137,7 @@ impl DWalletMPCOutputsVerifier {
 
         if session_output_data
             .session_output_to_voting_authorities
-            .entry((output.to_owned(), session_info.clone()))
+            .entry((output.to_owned(), session_request.clone()))
             .or_insert(StakeAggregator::new(committee))
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
@@ -146,14 +146,14 @@ impl DWalletMPCOutputsVerifier {
             session_output_data.clear_data();
             if let Err(e) = self
                 .consensus_round_completed_sessions_sender
-                .send(session_info.session_identifier)
+                .send(session_request.session_identifier)
             {
                 error!(
                     error=?e,
                     "error in sending completed session ID"
                 );
             };
-            let mpc_event_data = session_info.mpc_round.clone();
+            let mpc_event_data = session_request.request_input.clone();
             self.dwallet_mpc_metrics.add_completion(&mpc_event_data);
             return Ok(OutputVerificationResult {
                 result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
@@ -172,31 +172,31 @@ impl DWalletMPCOutputsVerifier {
         info!("Bootstrapping MPC Outputs Verifier from Storage");
         for output in epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
             let party_to_authority_map = epoch_store.committee().party_to_authority_map();
-            let mpc_protocol_name = output.session_info.mpc_round.to_string();
+            let mpc_protocol_name = output.session_request.request_input.to_string();
 
             // Create a base logger with common parameters.
             let base_logger = MPCSessionLogger::new()
                 .with_protocol_name(mpc_protocol_name.clone())
                 .with_party_to_authority_map(party_to_authority_map.clone());
             let session_identifier = CommitmentSizedNumber::from_le_slice(
-                &output.session_info.session_identifier.into_bytes(),
+                &output.session_request.session_identifier.into_bytes(),
             );
             base_logger.write_output_to_disk(
                 session_identifier,
                 epoch_store.authority_name_to_party_id(&epoch_store.name)?,
                 epoch_store.authority_name_to_party_id(&output.authority)?,
                 &output.output,
-                &output.session_info,
+                &output.session_request,
             );
             if let Err(err) = self.try_verify_output(
                 &output.output,
-                &output.session_info,
+                &output.session_request,
                 output.authority,
                 epoch_store,
             ) {
                 error!(
                     "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_identifier, output.authority, err
+                    output.session_request.session_identifier, output.authority, err
                 );
             }
         }

@@ -1,7 +1,6 @@
 mod advance_and_serialize;
 mod input;
 mod logger;
-mod session_info;
 
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
@@ -38,8 +37,8 @@ use crate::stake_aggregator::StakeAggregator;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DBSuiEvent, DWalletMPCMessage, EncryptedShareVerificationRequestEvent,
-    MPCProtocolInitData, MaliciousReport, SessionIdentifier, SessionInfo, SessionType,
+    AsyncProtocol, DWalletMPCEvent, DWalletMPCMessage, EncryptedShareVerificationRequestEvent,
+    MPCRequestInput, MPCSessionRequest, MaliciousReport, SessionIdentifier, SessionType,
     ThresholdNotReachedReport, NETWORK_ENCRYPTION_KEY_DKG_STR_KEY,
     NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
 };
@@ -50,7 +49,6 @@ use dwallet_rng::RootSeed;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 pub(crate) use input::session_input_from_event;
 pub(crate) use logger::MPCSessionLogger;
-pub(crate) use session_info::session_info_from_event;
 
 /// Represents the result of checking whether the session is ready to advance.
 ///
@@ -83,18 +81,20 @@ pub enum PublicInput {
 #[derive(Clone)]
 pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
-    pub init_protocol_data: MPCProtocolInitData,
-    pub(crate) decryption_shares: HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    pub request_input: MPCRequestInput,
+    pub(crate) decryption_key_shares:
+        Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     pub(crate) session_type: SessionType,
     pub(crate) public_input: PublicInput,
+    pub(crate) requires_network_key_data: bool,
+    pub(crate) requires_next_active_committee: bool,
 }
 
 impl MPCEventData {
     pub(crate) fn try_new(
-        event: DBSuiEvent,
-        session_info: &SessionInfo,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        network_keys: &Box<DwalletMPCNetworkKeys>,
+        event: DWalletMPCEvent,
+        epoch_store: &AuthorityPerEpochStore,
+        network_keys: &DwalletMPCNetworkKeys,
         next_active_committee: Option<Committee>,
         validators_class_groups_public_keys_and_proofs: HashMap<
             PartyID,
@@ -102,29 +102,46 @@ impl MPCEventData {
         >,
     ) -> Result<Self, DwalletMPCError> {
         let (public_input, private_input) = session_input_from_event(
-            event,
+            event.clone(),
             epoch_store,
             network_keys,
             next_active_committee,
             validators_class_groups_public_keys_and_proofs,
         )?;
 
+        let needs_decryption_key_shares = matches!(
+            event.session_request.request_input.clone(),
+            MPCRequestInput::Sign(_) | MPCRequestInput::NetworkEncryptionKeyReconfiguration(_)
+        );
+
+        let decryption_key_shares = if needs_decryption_key_shares {
+            if let Some(network_encryption_key_id) = event
+                .session_request
+                .request_input
+                .get_network_encryption_key_id()
+            {
+                Some(network_keys.get_decryption_key_shares(&network_encryption_key_id)?)
+            } else {
+                error!(
+                    should_never_happen =? true,
+                    session_id=?event.session_request.session_identifier,
+                    "failed to get network encryption key ID for a session that requires decryption key shares",
+                );
+
+                None
+            }
+        } else {
+            None
+        };
+
         let mpc_event_data = Self {
-            session_type: session_info.session_type.clone(),
-            init_protocol_data: session_info.mpc_round.clone(),
+            session_type: event.session_request.session_type,
+            request_input: event.session_request.request_input,
             private_input,
-            decryption_shares: match session_info.mpc_round.clone() {
-                MPCProtocolInitData::Sign(init_event) => network_keys.get_decryption_key_shares(
-                    &init_event.event_data.dwallet_network_encryption_key_id,
-                )?,
-                MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(init_event) => {
-                    network_keys.get_decryption_key_shares(
-                        &init_event.event_data.dwallet_network_encryption_key_id,
-                    )?
-                }
-                _ => HashMap::new(),
-            },
+            decryption_key_shares,
             public_input,
+            requires_network_key_data: event.session_request.requires_network_key_data,
+            requires_next_active_committee: event.session_request.requires_next_active_committee,
         };
 
         Ok(mpc_event_data)
@@ -241,7 +258,7 @@ impl DWalletMPCSession {
         self.serialized_full_messages
             .retain(|round, _| round < &self.current_round);
         // Safe to unwrap as advance can only be called after the event is received.
-        let mpc_protocol = self.mpc_event_data.clone().unwrap().init_protocol_data;
+        let mpc_protocol = self.mpc_event_data.clone().unwrap().request_input;
         match self.advance_specific_party() {
             Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
@@ -389,11 +406,13 @@ impl DWalletMPCSession {
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store()?.name,
             output,
-            SessionInfo {
+            MPCSessionRequest {
                 session_type: mpc_event_data.session_type.clone(),
                 session_identifier: self.session_identifier,
-                mpc_round: mpc_event_data.init_protocol_data.clone(),
+                request_input: mpc_event_data.request_input.clone(),
                 epoch: self.epoch_id,
+                requires_network_key_data: mpc_event_data.requires_network_key_data,
+                requires_next_active_committee: mpc_event_data.requires_next_active_committee,
             },
         ))
     }
@@ -471,7 +490,7 @@ impl DWalletMPCSession {
             })
             .collect::<HashMap<_, _>>();
         info!(
-            mpc_protocol=?mpc_event_data.init_protocol_data,
+            mpc_protocol=?mpc_event_data.request_input,
             validator=?self.epoch_store()?.name,
             session_identifier=?self.session_identifier,
             crypto_round=?self.current_round,
@@ -482,7 +501,7 @@ impl DWalletMPCSession {
         let session_identifier =
             CommitmentSizedNumber::from_le_slice(&self.session_identifier.into_bytes());
         let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
-        let mpc_protocol_name = mpc_event_data.init_protocol_data.to_string();
+        let mpc_protocol_name = mpc_event_data.request_input.to_string();
 
         // Create a base logger with common parameters.
         let base_logger = MPCSessionLogger::new()
@@ -495,20 +514,18 @@ impl DWalletMPCSession {
         // SECURITY NOTICE: don't use for anything else other than (this particular) `advance()`, and keep private!
         let rng = self.root_seed.mpc_round_rng(
             session_identifier,
-            self.party_id as u64,
             self.current_round as u64,
             self.attempts_count as u64,
-            self.epoch_id,
         );
 
-        match &mpc_event_data.init_protocol_data {
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event_data) => {
+        match &mpc_event_data.request_input {
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(event_data) => {
                 let PublicInput::DWalletImportedKeyVerificationRequest(public_input) =
                     &mpc_event_data.public_input
                 else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -572,9 +589,9 @@ impl DWalletMPCSession {
                     _ => result,
                 }
             }
-            MPCProtocolInitData::DKGFirst(..) => {
+            MPCRequestInput::DKGFirst(..) => {
                 info!(
-                    mpc_protocol=?mpc_event_data.init_protocol_data,
+                    mpc_protocol=?mpc_event_data.request_input,
                     validator=?self.epoch_store()?.name,
                     session_identifier=?self.session_identifier,
                     crypto_round=?self.current_round,
@@ -583,7 +600,7 @@ impl DWalletMPCSession {
                 let PublicInput::DKGFirst(public_input) = &mpc_event_data.public_input else {
                     error!(
                         should_never_happen=?true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -622,11 +639,11 @@ impl DWalletMPCSession {
                     _ => result,
                 }
             }
-            MPCProtocolInitData::DKGSecond(event_data) => {
+            MPCRequestInput::DKGSecond(event_data) => {
                 let PublicInput::DKGSecond(public_input) = &mpc_event_data.public_input else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -692,11 +709,11 @@ impl DWalletMPCSession {
                     _ => Ok(result),
                 }
             }
-            MPCProtocolInitData::Presign(..) => {
+            MPCRequestInput::Presign(..) => {
                 let PublicInput::Presign(public_input) = &mpc_event_data.public_input else {
                     error!(
                         should_never_happen=?true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -734,56 +751,72 @@ impl DWalletMPCSession {
                     _ => result,
                 }
             }
-            MPCProtocolInitData::Sign(..) => {
-                let decryption_key_shares = mpc_event_data
-                    .decryption_shares
-                    .iter()
-                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
-                    .collect::<HashMap<_, _>>();
+            MPCRequestInput::Sign(..) => {
+                if let Some(decryption_key_shares) = mpc_event_data.decryption_key_shares.clone() {
+                    let raw_decryption_key_shares = decryption_key_shares
+                        .iter()
+                        .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                        .collect::<HashMap<_, _>>();
 
-                // Extend base logger with decryption key shares for Sign protocol
-                let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
-                let PublicInput::Sign(public_input) = &mpc_event_data.public_input else {
+                    // Extend base logger with decryption key shares for Sign protocol
+                    let logger =
+                        base_logger.with_decryption_key_shares(raw_decryption_key_shares.clone());
+                    let PublicInput::Sign(public_input) = &mpc_event_data.public_input else {
+                        error!(
+                            should_never_happen =? true,
+                            mpc_protocol=?mpc_event_data.request_input,
+                            validator=?self.epoch_store()?.name,
+                            session_identifier=?self.session_identifier,
+                            crypto_round=?self.current_round,
+                            weighted_parties=?self.weighted_threshold_access_structure,
+                            ?serialized_messages_skeleton,
+                            "session public input does not match the session type"
+                        );
+                        return Err(DwalletMPCError::InvalidSessionPublicInput);
+                    };
+                    let result = advance_and_serialize::<SignFirstParty>(
+                        session_identifier,
+                        self.party_id,
+                        &self.weighted_threshold_access_structure,
+                        self.serialized_full_messages.clone(),
+                        public_input,
+                        decryption_key_shares,
+                        &logger,
+                        rng,
+                    );
+                    self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
+                    match result.clone() {
+                        Ok(AsynchronousRoundResult::Finalize {
+                            public_output,
+                            malicious_parties,
+                            private_output,
+                        }) => {
+                            let public_output =
+                                bcs::to_bytes(&VersionedSignOutput::V1(public_output))?;
+                            Ok(AsynchronousRoundResult::Finalize {
+                                public_output,
+                                malicious_parties,
+                                private_output,
+                            })
+                        }
+                        _ => result,
+                    }
+                } else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
                         ?serialized_messages_skeleton,
-                        "session public input does not match the session type"
+                        "no decryption key shares for a session that requires them (sign)"
                     );
-                    return Err(DwalletMPCError::InvalidSessionPublicInput);
-                };
-                let result = advance_and_serialize::<SignFirstParty>(
-                    session_identifier,
-                    self.party_id,
-                    &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
-                    public_input,
-                    mpc_event_data.decryption_shares.clone(),
-                    &logger,
-                    rng,
-                );
-                self.update_expected_decrypters_metrics(&public_input.expected_decrypters)?;
-                match result.clone() {
-                    Ok(AsynchronousRoundResult::Finalize {
-                        public_output,
-                        malicious_parties,
-                        private_output,
-                    }) => {
-                        let public_output = bcs::to_bytes(&VersionedSignOutput::V1(public_output))?;
-                        Ok(AsynchronousRoundResult::Finalize {
-                            public_output,
-                            malicious_parties,
-                            private_output,
-                        })
-                    }
-                    _ => result,
+
+                    Err(DwalletMPCError::InvalidSessionPublicInput)
                 }
             }
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(key_scheme, _init_event) => {
+            MPCRequestInput::NetworkEncryptionKeyDkg(key_scheme, _init_event) => {
                 advance_network_dkg(
                     session_identifier,
                     &self.weighted_threshold_access_structure,
@@ -801,13 +834,13 @@ impl DWalletMPCSession {
                     rng,
                 )
             }
-            MPCProtocolInitData::EncryptedShareVerification(verification_data) => {
+            MPCRequestInput::EncryptedShareVerification(verification_data) => {
                 let PublicInput::EncryptedShareVerification(public_input) =
                     &mpc_event_data.public_input
                 else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -826,7 +859,7 @@ impl DWalletMPCSession {
                     Err(err) => Err(err),
                 }
             }
-            MPCProtocolInitData::PartialSignatureVerification(event_data) => {
+            MPCRequestInput::PartialSignatureVerification(event_data) => {
                 let hashed_message = bcs::to_bytes(
                     &message_digest(
                         &event_data.event_data.message,
@@ -839,7 +872,7 @@ impl DWalletMPCSession {
                 else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -863,13 +896,13 @@ impl DWalletMPCSession {
                     malicious_parties: vec![],
                 })
             }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) => {
                 let PublicInput::NetworkEncryptionKeyReconfiguration(public_input) =
                     &mpc_event_data.public_input
                 else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -879,50 +912,67 @@ impl DWalletMPCSession {
                     );
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
-                let decryption_key_shares = mpc_event_data
-                    .decryption_shares
-                    .iter()
-                    .map(|(party_id, share)| (*party_id, share.decryption_key_share))
-                    .collect::<HashMap<_, _>>();
 
-                // Extend base logger with decryption key shares for Reconfiguration protocol
-                let logger = base_logger.with_decryption_key_shares(decryption_key_shares.clone());
+                if let Some(decryption_key_shares) = mpc_event_data.decryption_key_shares.clone() {
+                    let decryption_key_shares = decryption_key_shares
+                        .iter()
+                        .map(|(party_id, share)| (*party_id, share.decryption_key_share))
+                        .collect::<HashMap<_, _>>();
 
-                let result = advance_and_serialize::<ReconfigurationSecp256k1Party>(
-                    session_identifier,
-                    self.party_id,
-                    &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
-                    public_input,
-                    decryption_key_shares.clone(),
-                    &logger,
-                    rng,
-                );
-                match result.clone() {
-                    Ok(AsynchronousRoundResult::Finalize {
-                        public_output,
-                        malicious_parties,
-                        private_output,
-                    }) => {
-                        let public_output = bcs::to_bytes(
-                            &VersionedDecryptionKeyReconfigurationOutput::V1(public_output),
-                        )?;
+                    // Extend base logger with decryption key shares for Reconfiguration protocol
+                    let logger =
+                        base_logger.with_decryption_key_shares(decryption_key_shares.clone());
+
+                    let result = advance_and_serialize::<ReconfigurationSecp256k1Party>(
+                        session_identifier,
+                        self.party_id,
+                        &self.weighted_threshold_access_structure,
+                        self.serialized_full_messages.clone(),
+                        public_input,
+                        decryption_key_shares,
+                        &logger,
+                        rng,
+                    );
+
+                    match result.clone() {
                         Ok(AsynchronousRoundResult::Finalize {
                             public_output,
                             malicious_parties,
                             private_output,
-                        })
+                        }) => {
+                            let public_output = bcs::to_bytes(
+                                &VersionedDecryptionKeyReconfigurationOutput::V1(public_output),
+                            )?;
+                            Ok(AsynchronousRoundResult::Finalize {
+                                public_output,
+                                malicious_parties,
+                                private_output,
+                            })
+                        }
+                        _ => result,
                     }
-                    _ => result,
+                } else {
+                    error!(
+                    should_never_happen =? true,
+                    mpc_protocol=?mpc_event_data.request_input,
+                    validator=?self.epoch_store()?.name,
+                    session_identifier=?self.session_identifier,
+                    crypto_round=?self.current_round,
+                    weighted_parties=?self.weighted_threshold_access_structure,
+                    ?serialized_messages_skeleton,
+                    "no decryption key shares for a session that requires them (reconfiguration)"
+                    );
+
+                    Err(DwalletMPCError::InvalidSessionPublicInput)
                 }
             }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
                 let PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(public_input) =
                     &mpc_event_data.public_input
                 else {
                     error!(
                         should_never_happen =? true,
-                        mpc_protocol=?mpc_event_data.init_protocol_data,
+                        mpc_protocol=?mpc_event_data.request_input,
                         validator=?self.epoch_store()?.name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
@@ -968,11 +1018,13 @@ impl DWalletMPCSession {
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
-        let session_info = SessionInfo {
+        let session_request = MPCSessionRequest {
             session_type: mpc_event_data.session_type.clone(),
-            mpc_round: mpc_event_data.init_protocol_data.clone(),
+            request_input: mpc_event_data.request_input.clone(),
             epoch: self.epoch_id,
             session_identifier: self.session_identifier,
+            requires_network_key_data: mpc_event_data.requires_network_key_data,
+            requires_next_active_committee: mpc_event_data.requires_next_active_committee,
         };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
@@ -980,7 +1032,7 @@ impl DWalletMPCSession {
             self.session_identifier,
             self.current_round,
             mpc_protocol.to_string(),
-            session_info,
+            session_request,
         ))
     }
 

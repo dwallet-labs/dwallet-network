@@ -11,14 +11,13 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCProtocolInitData,
-    SessionIdentifier, SessionInfo, SignRequestEvent,
+    AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCRequestInput, MPCSessionRequest,
+    SessionIdentifier, SignRequestEvent,
 };
 use message_digest::message_digest::{message_digest, Hash};
 use mpc::{Party, Weight};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
-use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
@@ -38,7 +37,7 @@ pub(crate) type SignPublicInput =
 ///
 /// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
 fn generate_expected_decrypters(
-    epoch_store: Arc<AuthorityPerEpochStore>,
+    epoch_store: &AuthorityPerEpochStore,
     session_identifier: SessionIdentifier,
 ) -> DwalletMPCResult<HashSet<PartyID>> {
     let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
@@ -47,7 +46,6 @@ fn generate_expected_decrypters(
         access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
 
     let mut seed_rng = rand_chacha::ChaCha20Rng::from_seed(session_identifier.into_bytes());
-    // TODO(Scaly): use direct error here
     let expected_decrypters = access_structure
         .random_subset_with_target_weight(expected_decrypters_weight, &mut seed_rng)
         .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?;
@@ -57,9 +55,9 @@ fn generate_expected_decrypters(
 
 pub(crate) fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-    epoch_store: Arc<AuthorityPerEpochStore>,
-    network_keys: &Box<DwalletMPCNetworkKeys>,
-    protocol_public_parameters: twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+    epoch_store: &AuthorityPerEpochStore,
+    network_keys: &DwalletMPCNetworkKeys,
+    protocol_public_parameters: ProtocolPublicParameters,
 ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
     let decryption_pp = network_keys.get_decryption_key_share_public_parameters(
         // The `StartSignRoundEvent` is assign with a Secp256k1 dwallet.
@@ -96,25 +94,29 @@ pub(crate) fn sign_session_public_input(
     )
 }
 
-pub(crate) fn sign_party_session_info(
+pub(crate) fn sign_party_session_request(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::Sign(deserialized_event.clone()),
+        request_input: MPCRequestInput::Sign(deserialized_event.clone()),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
     }
 }
 
-pub(crate) fn get_verify_partial_signatures_session_info(
+pub(crate) fn get_verify_partial_signatures_session_request(
     deserialized_event: &DWalletSessionEvent<FutureSignRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::PartialSignatureVerification(deserialized_event.clone()),
+        request_input: MPCRequestInput::PartialSignatureVerification(deserialized_event.clone()),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
     }
 }
 

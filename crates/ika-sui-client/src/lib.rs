@@ -23,7 +23,6 @@ use ika_types::sui::{
     DWalletCoordinator, DWalletCoordinatorInner, System, SystemInner, SystemInnerTrait, Validator,
 };
 use itertools::Itertools;
-use move_core_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -52,7 +51,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -182,7 +181,16 @@ where
                     error!("failed to get missed events: {e}");
                     IkaError::SuiClientInternalError(format!("failed to get missed events: {e}"))
                 })?;
-            info!("retrieved missed events from Sui successfully");
+
+            if !missed_events.is_empty() {
+                info!(
+                    number_of_missed_events = missed_events.len(),
+                    "retrieved missed events from Sui successfully"
+                );
+            } else {
+                debug!("retrieved zero missed events from Sui");
+            }
+
             return Ok(missed_events);
         }
     }
@@ -336,10 +344,7 @@ where
 
                 let validators = self
                     .inner
-                    .get_validators_from_object_table(
-                        ika_system_state_inner.validator_set.validators.id,
-                        validator_ids,
-                    )
+                    .get_validators(validator_ids)
                     .await
                     .map_err(|e| {
                         IkaError::SuiClientInternalError(format!(
@@ -422,15 +427,11 @@ where
     /// Get the validators' info by their IDs.
     pub async fn get_validators_info_by_ids(
         &self,
-        ika_system_state_inner: &SystemInnerV1,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<StakingPool>, IkaError> {
         let validators = self
             .inner
-            .get_validators_from_object_table(
-                ika_system_state_inner.validator_set.validators.id,
-                validator_ids,
-            )
+            .get_validators(validator_ids)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
@@ -637,16 +638,17 @@ where
             })
     }
 
-    pub async fn get_network_decryption_key_with_full_data(
+    pub async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> IkaResult<DWalletNetworkDecryptionKeyData> {
         self.inner
-            .get_network_decryption_key_with_full_data(network_decryption_key)
+            .get_network_decryption_key_with_full_data_by_epoch(network_decryption_key, epoch)
             .await
             .map_err(|e| {
                 IkaError::SuiClientInternalError(format!(
-                    "Can't get_network_decryption_key_with_full_data: {e}"
+                    "Can't get_network_decryption_key_with_full_data_by_epoch: {e}"
                 ))
             })
     }
@@ -767,9 +769,10 @@ pub trait SuiClientInner: Send + Sync {
         network_decryption_caps: &Vec<DWalletNetworkEncryptionKeyCap>,
     ) -> Result<HashMap<ObjectID, DWalletNetworkDecryptionKey>, self::Error>;
 
-    async fn get_network_decryption_key_with_full_data(
+    async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         network_decryption_key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> Result<DWalletNetworkDecryptionKeyData, self::Error>;
 
     async fn get_current_reconfiguration_public_output(
@@ -793,9 +796,8 @@ pub trait SuiClientInner: Send + Sync {
         version: u64,
     ) -> Result<Vec<u8>, Self::Error>;
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
-        validators_object_table_id: ObjectID,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error>;
 
@@ -924,6 +926,7 @@ impl SuiClientInner for SuiSdkClient {
                 let event = DBSuiEvent {
                     type_: *event_tag.clone(),
                     contents: raw_move_obj.bcs_bytes,
+                    pulled: true,
                 };
                 events.push(event);
             }
@@ -1054,9 +1057,10 @@ impl SuiClientInner for SuiSdkClient {
         Ok(network_encryption_keys)
     }
 
-    async fn get_network_decryption_key_with_full_data(
+    async fn get_network_decryption_key_with_full_data_by_epoch(
         &self,
         key: &DWalletNetworkDecryptionKey,
+        epoch: EpochId,
     ) -> Result<DWalletNetworkDecryptionKeyData, self::Error> {
         let network_dkg_public_output = self
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
@@ -1085,13 +1089,13 @@ impl SuiClientInner for SuiSdkClient {
         {
             info!(
                 key_id = ?key.id,
-                epoch = ?key.current_epoch,
+                ?epoch,
                 "Reconfiguration public output for key not is not ready for epoch",
             );
         } else {
             let current_reconfiguration_public_output_id = self
                 .get_current_reconfiguration_public_output(
-                    key.current_epoch,
+                    epoch,
                     key.reconfiguration_public_outputs.id,
                 )
                 .await?;
@@ -1103,7 +1107,7 @@ impl SuiClientInner for SuiSdkClient {
         Ok(DWalletNetworkDecryptionKeyData {
             id: key.id,
             dwallet_network_decryption_key_cap_id: key.dwallet_network_decryption_key_cap_id,
-            current_epoch: key.current_epoch,
+            current_epoch: epoch,
             current_reconfiguration_public_output,
             network_dkg_public_output,
             state: key.state.clone(),
@@ -1313,51 +1317,13 @@ impl SuiClientInner for SuiSdkClient {
         )))
     }
 
-    async fn get_validators_from_object_table(
+    async fn get_validators(
         &self,
-        validators_object_table_id: ObjectID,
         validator_ids: Vec<ObjectID>,
     ) -> Result<Vec<Vec<u8>>, Self::Error> {
-        let mut validator_dynamic_ids = Vec::new();
-        let mut cursor = None;
-        loop {
-            let dynamic_fields = self
-                .read_api()
-                .get_dynamic_fields(validators_object_table_id, cursor, None)
-                .await?;
-
-            for dynamic_field in &dynamic_fields.data {
-                let name = &dynamic_field.name.value;
-
-                let bytes = name.as_str().unwrap();
-
-                let validator_id: ObjectID =
-                    AccountAddress::from_hex_literal(bytes).unwrap().into();
-
-                if validator_ids.contains(&validator_id) {
-                    let result = self
-                        .read_api()
-                        .get_dynamic_field_object(
-                            validators_object_table_id,
-                            dynamic_field.name.clone(),
-                        )
-                        .await?;
-
-                    if let Some(dynamic_field) = result.data {
-                        validator_dynamic_ids.push(dynamic_field.object_id);
-                    }
-                }
-            }
-
-            cursor = dynamic_fields.next_cursor;
-            if !dynamic_fields.has_next_page {
-                break;
-            }
-        }
-
         let mut dynamic_fields_agg = Vec::new();
         // There is a limit in sui called "DEFAULT_RPC_QUERY_MAX_RESULT_LIMIT" which is set to 50.
-        for chunk in validator_dynamic_ids.chunks(50) {
+        for chunk in validator_ids.chunks(50) {
             let objects = self
                 .read_api()
                 .multi_get_object_with_options(chunk.to_vec(), SuiObjectDataOptions::bcs_lossless())
@@ -1367,9 +1333,7 @@ impl SuiClientInner for SuiSdkClient {
         }
 
         let mut validators = Vec::new();
-        for (dynamic_field, object_id) in
-            dynamic_fields_agg.iter().zip(validator_dynamic_ids.iter())
-        {
+        for (dynamic_field, object_id) in dynamic_fields_agg.iter().zip(validator_ids.iter()) {
             let resp = dynamic_field.object().map_err(|e| {
                 Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
             })?;

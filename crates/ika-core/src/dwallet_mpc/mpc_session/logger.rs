@@ -6,7 +6,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput};
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCError;
-use ika_types::messages_dwallet_mpc::SessionInfo;
+use ika_types::messages_dwallet_mpc::MPCSessionRequest;
 use mpc::WeightedThresholdAccessStructure;
 use serde_json::json;
 use std::collections::HashMap;
@@ -132,7 +132,7 @@ impl MPCSessionLogger {
         party_id: PartyID,
         output_sender_party_id: PartyID,
         output: &[u8],
-        session_info: &SessionInfo,
+        session_request: &MPCSessionRequest,
     ) {
         if std::env::var("IKA_WRITE_MPC_OUTPUTS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -161,7 +161,7 @@ impl MPCSessionLogger {
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
             "output": output.to_owned(),
-            "session_info": session_info.clone(),
+            "session_request": session_request.clone(),
         });
 
         let mut file = match File::create(&path) {

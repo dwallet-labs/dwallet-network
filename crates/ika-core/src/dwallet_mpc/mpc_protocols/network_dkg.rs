@@ -24,13 +24,13 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use ika_types::messages_dwallet_mpc::{
     DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletNetworkDecryptionKeyData,
-    DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCProtocolInitData, SessionInfo,
+    DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCRequestInput, MPCSessionRequest,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tracing::{debug, warn};
+use tracing::{debug, error};
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
@@ -213,7 +213,7 @@ impl DwalletMPCNetworkKeys {
         key_id: &ObjectID,
     ) -> DwalletMPCResult<twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters> {
         let Some(result) = self.network_encryption_keys.get(key_id) else {
-            debug!(
+            error!(
                 ?key_id,
                 "failed to fetch the network decryption key shares for key ID"
             );
@@ -307,45 +307,49 @@ pub(crate) fn network_dkg_public_input(
     }
 }
 
-pub(crate) fn network_dkg_session_info(
+pub(crate) fn network_dkg_session_request(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
     key_scheme: DWalletMPCNetworkKeyScheme,
-) -> DwalletMPCResult<SessionInfo> {
+) -> DwalletMPCResult<MPCSessionRequest> {
     match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            Ok(network_dkg_secp256k1_session_info(deserialized_event))
+            Ok(network_dkg_secp256k1_session_request(deserialized_event))
         }
         DWalletMPCNetworkKeyScheme::Ristretto => {
-            Ok(network_dkg_ristretto_session_info(deserialized_event))
+            Ok(network_dkg_ristretto_session_request(deserialized_event))
         }
     }
 }
 
-fn network_dkg_secp256k1_session_info(
+fn network_dkg_secp256k1_session_request(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+        request_input: MPCRequestInput::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
             deserialized_event,
         ),
+        requires_network_key_data: false,
+        requires_next_active_committee: false,
     }
 }
 
-fn network_dkg_ristretto_session_info(
+fn network_dkg_ristretto_session_request(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::NetworkEncryptionKeyDkg(
+        request_input: MPCRequestInput::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,
             deserialized_event,
         ),
+        requires_network_key_data: false,
+        requires_next_active_committee: false,
     }
 }
 
