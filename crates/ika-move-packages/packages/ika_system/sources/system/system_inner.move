@@ -8,12 +8,8 @@ use ika_common::{
   bls_committee::BlsCommittee,
   class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof
 };
-use ika_system::{
-  advance_epoch_approver::{Self, AdvanceEpochApprover},
-  protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap},
-  protocol_treasury::ProtocolTreasury,
+use ika_staking::{
   staked_ika::StakedIka,
-  system_current_status_info::{Self, SystemCurrentStatusInfo},
   token_exchange_rate::TokenExchangeRate,
   validator_cap::{
     ValidatorCap,
@@ -25,6 +21,12 @@ use ika_system::{
   },
   validator_metadata::ValidatorMetadata,
   validator_set::ValidatorSet
+};
+use ika_system::{
+  advance_epoch_approver::{Self, AdvanceEpochApprover},
+  protocol_cap::{Self, ProtocolCap, VerifiedProtocolCap},
+  protocol_treasury::ProtocolTreasury,
+  system_current_status_info::{Self, SystemCurrentStatusInfo}
 };
 use std::string::String;
 use sui::{
@@ -85,7 +87,7 @@ const EHaveNotReachedMidEpochTime: u64 = 7;
 // === Structs ===
 
 /// Uses SystemParametersV1 as the parameters.
-public struct SystemInner has store {
+public struct SystemInner<phantom Witness: drop> has store {
   /// The current epoch ID, starting from 0.
   epoch: u64,
   epoch_start_tx_digest: vector<u8>,
@@ -97,7 +99,7 @@ public struct SystemInner has store {
   /// Approved upgrade for package id to its approved digest.
   approved_upgrades: VecMap<ID, vector<u8>>,
   /// Contains all information about the validators.
-  validator_set: ValidatorSet,
+  validator_set: ValidatorSet<Witness>,
   /// The duration of an epoch, in milliseconds.
   epoch_duration_ms: u64,
   /// The starting epoch in which stake subsidies start being paid out
@@ -229,16 +231,16 @@ public struct SetOrRemoveWitnessApprovingAdvanceEpochEvent has copy, drop {
 
 /// Create a new IkaSystemState object and make it shared.
 /// This function will be called only once in init.
-public(package) fun create(
+public(package) fun create<Witness: drop>(
   upgrade_caps: vector<UpgradeCap>,
-  validator_set: ValidatorSet,
+  validator_set: ValidatorSet<Witness>,
   protocol_version: u64,
   epoch_start_timestamp_ms: u64,
   epoch_duration_ms: u64,
   stake_subsidy_start_epoch: u64,
   protocol_treasury: ProtocolTreasury,
   ctx: &mut TxContext,
-): (SystemInner, ProtocolCap) {
+): (SystemInner<Witness>, ProtocolCap) {
   let protocol_cap = protocol_cap::create(ctx);
   let protocol_cap_id = object::id(&protocol_cap);
 
@@ -273,8 +275,8 @@ public(package) fun create(
 
 // === Package Functions ===
 
-public(package) fun initialize(
-  self: &mut SystemInner,
+public(package) fun initialize<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   max_validator_change_count: u64,
   cap: &ProtocolCap,
   clock: &Clock,
@@ -304,8 +306,8 @@ public(package) fun initialize(
 /// Aborts if the caller is already a pending or active validator, or a validator candidate.
 /// Note: `proof_of_possession_bytes` MUST be a valid signature using proof_of_possession_sender and protocol_pubkey_bytes.
 /// To produce a valid PoP, run [fn test_proof_of_possession_bytes].
-public(package) fun request_add_validator_candidate(
-  self: &mut SystemInner,
+public(package) fun request_add_validator_candidate<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   name: String,
   protocol_pubkey_bytes: vector<u8>,
   network_pubkey_bytes: vector<u8>,
@@ -318,7 +320,7 @@ public(package) fun request_add_validator_candidate(
   commission_rate: u16,
   metadata: ValidatorMetadata,
   ctx: &mut TxContext,
-): (ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap) {
+): (ValidatorCap<Witness>, ValidatorOperationCap<Witness>, ValidatorCommissionCap<Witness>) {
   self
     .validator_set
     .request_add_validator_candidate(
@@ -340,7 +342,10 @@ public(package) fun request_add_validator_candidate(
 
 /// Called by a validator candidate to remove themselves from the candidacy. After this call
 /// their staking pool becomes deactivate.
-public(package) fun request_remove_validator_candidate(self: &mut SystemInner, cap: &ValidatorCap) {
+public(package) fun request_remove_validator_candidate<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
+) {
   self.validator_set.request_remove_validator_candidate(self.epoch, cap);
 }
 
@@ -348,7 +353,10 @@ public(package) fun request_remove_validator_candidate(self: &mut SystemInner, c
 /// Aborts if the validator is a duplicate with one of the pending or active validators, or if the amount of
 /// stake the validator has doesn't meet the min threshold, or if the number of new validators for the next
 /// epoch has already reached the maximum.
-public(package) fun request_add_validator(self: &mut SystemInner, cap: &ValidatorCap) {
+public(package) fun request_add_validator<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
+) {
   self.validator_set.request_add_validator(self.epoch, cap);
 }
 
@@ -357,17 +365,23 @@ public(package) fun request_add_validator(self: &mut SystemInner, cap: &Validato
 /// (i.e. sender must match the sui_address in the validator).
 /// At the end of the epoch, the `validator` object will be returned to the sui_address
 /// of the validator.
-public(package) fun request_remove_validator(self: &mut SystemInner, cap: &ValidatorCap) {
+public(package) fun request_remove_validator<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
+) {
   self.validator_set.request_remove_validator(self.epoch, cap);
 }
 
-public(package) fun validator_metadata(self: &SystemInner, validator_id: ID): ValidatorMetadata {
+public(package) fun validator_metadata<Witness: drop>(
+  self: &SystemInner<Witness>,
+  validator_id: ID,
+): ValidatorMetadata {
   self.validator_set.validator_metadata(validator_id)
 }
 
-public(package) fun set_validator_metadata(
-  self: &mut SystemInner,
-  cap: &ValidatorOperationCap,
+public(package) fun set_validator_metadata<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorOperationCap<Witness>,
   metadata: ValidatorMetadata,
 ) {
   self.validator_set.set_validator_metadata(cap, metadata);
@@ -375,10 +389,10 @@ public(package) fun set_validator_metadata(
 
 /// A validator can call this function to set a new commission rate, updated at the end of
 /// the epoch.
-public(package) fun set_next_commission(
-  self: &mut SystemInner,
+public(package) fun set_next_commission<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   new_commission_rate: u16,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self
     .validator_set
@@ -390,8 +404,8 @@ public(package) fun set_next_commission(
 }
 
 /// Add stake to a validator's staking pool.
-public(package) fun request_add_stake(
-  self: &mut SystemInner,
+public(package) fun request_add_stake<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   stake: Coin<IKA>,
   validator_id: ID,
   ctx: &mut TxContext,
@@ -407,29 +421,32 @@ public(package) fun request_add_stake(
 }
 
 /// Withdraw some portion of a stake from a validator's staking pool.
-public(package) fun request_withdraw_stake(self: &mut SystemInner, staked_ika: &mut StakedIka) {
+public(package) fun request_withdraw_stake<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  staked_ika: &mut StakedIka,
+) {
   self.validator_set.request_withdraw_stake(staked_ika, self.epoch);
 }
 
-public(package) fun withdraw_stake(
-  self: &mut SystemInner,
+public(package) fun withdraw_stake<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   staked_ika: StakedIka,
   ctx: &mut TxContext,
 ): Coin<IKA> {
   self.validator_set.withdraw_stake(staked_ika, self.epoch, ctx)
 }
 
-public(package) fun report_validator(
-  self: &mut SystemInner,
-  cap: &ValidatorOperationCap,
+public(package) fun report_validator<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorOperationCap<Witness>,
   reportee_id: ID,
 ) {
   self.validator_set.report_validator(cap, reportee_id);
 }
 
-public(package) fun undo_report_validator(
-  self: &mut SystemInner,
-  cap: &ValidatorOperationCap,
+public(package) fun undo_report_validator<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorOperationCap<Witness>,
   reportee_id: ID,
 ) {
   self.validator_set.undo_report_validator(cap, reportee_id);
@@ -439,25 +456,25 @@ public(package) fun undo_report_validator(
 
 /// Create a new `ValidatorOperationCap` and registers it.
 /// The original object is thus revoked.
-public(package) fun rotate_operation_cap(
-  self: &mut SystemInner,
-  cap: &ValidatorCap,
+public(package) fun rotate_operation_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
   ctx: &mut TxContext,
-): ValidatorOperationCap {
+): ValidatorOperationCap<Witness> {
   self.validator_set.rotate_operation_cap(cap, ctx)
 }
 
-public(package) fun rotate_commission_cap(
-  self: &mut SystemInner,
-  cap: &ValidatorCap,
+public(package) fun rotate_commission_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
   ctx: &mut TxContext,
-): ValidatorCommissionCap {
+): ValidatorCommissionCap<Witness> {
   self.validator_set.rotate_commission_cap(cap, ctx)
 }
 
-public(package) fun collect_commission(
-  self: &mut SystemInner,
-  cap: &ValidatorCommissionCap,
+public(package) fun collect_commission<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCommissionCap<Witness>,
   amount: Option<u64>,
   ctx: &mut TxContext,
 ): Coin<IKA> {
@@ -465,51 +482,51 @@ public(package) fun collect_commission(
 }
 
 /// Sets a validator's name.
-public(package) fun set_validator_name(
-  self: &mut SystemInner,
+public(package) fun set_validator_name<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   name: String,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_validator_name(name, cap);
 }
 
 /// Sets a validator's network address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_network_address(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_network_address<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   network_address: String,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_next_epoch_network_address(network_address, cap);
 }
 
 /// Sets a validator's p2p address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_p2p_address(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_p2p_address<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   p2p_address: String,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_next_epoch_p2p_address(p2p_address, cap);
 }
 
 /// Sets a validator's consensus address.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_consensus_address(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_consensus_address<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   consensus_address: String,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_next_epoch_consensus_address(consensus_address, cap);
 }
 
 /// Sets a validator's public key of protocol key and proof of possession.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_protocol_pubkey_bytes(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_protocol_pubkey_bytes<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   protocol_pubkey_bytes: vector<u8>,
   proof_of_possession_bytes: vector<u8>,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
   ctx: &TxContext,
 ) {
   self
@@ -524,58 +541,70 @@ public(package) fun set_next_epoch_protocol_pubkey_bytes(
 
 /// Sets a validator's public key of network key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_network_pubkey_bytes(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_network_pubkey_bytes<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   network_pubkey_bytes: vector<u8>,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_next_epoch_network_pubkey_bytes(network_pubkey_bytes, cap);
 }
 
 /// Sets a validator's public key of worker key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_consensus_pubkey_bytes(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_consensus_pubkey_bytes<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   consensus_pubkey_bytes: vector<u8>,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self.validator_set.set_next_epoch_consensus_pubkey_bytes(consensus_pubkey_bytes, cap);
 }
 
 /// Sets a validator's public key and its associated proof of class groups key.
 /// The change will only take effects starting from the next epoch.
-public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
-  self: &mut SystemInner,
+public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   class_groups_pubkey_and_proof_bytes: ClassGroupsPublicKeyAndProof,
-  cap: &ValidatorOperationCap,
+  cap: &ValidatorOperationCap<Witness>,
 ) {
   self
     .validator_set
     .set_next_epoch_class_groups_pubkey_and_proof_bytes(class_groups_pubkey_and_proof_bytes, cap);
 }
 
-public(package) fun is_mid_epoch_time(self: &SystemInner, clock: &Clock): bool {
+public(package) fun is_mid_epoch_time<Witness: drop>(
+  self: &SystemInner<Witness>,
+  clock: &Clock,
+): bool {
   let now = clock.timestamp_ms();
   let last_epoch_change = self.epoch_start_timestamp_ms;
   self.epoch > 0 && self.validator_set.next_epoch_active_committee().is_none() && now >= last_epoch_change + (self.epoch_duration_ms / 2)
 }
 
-public(package) fun is_end_epoch_time(self: &SystemInner, clock: &Clock): bool {
+public(package) fun is_end_epoch_time<Witness: drop>(
+  self: &SystemInner<Witness>,
+  clock: &Clock,
+): bool {
   let now = clock.timestamp_ms();
   let last_epoch_change = self.epoch_start_timestamp_ms;
   self.epoch > 0 && self.validator_set.next_epoch_active_committee().is_some() && now >= last_epoch_change + self.epoch_duration_ms
 }
 
-public(package) fun assert_mid_epoch_time(self: &SystemInner, clock: &Clock) {
+public(package) fun assert_mid_epoch_time<Witness: drop>(
+  self: &SystemInner<Witness>,
+  clock: &Clock,
+) {
   assert!(self.is_mid_epoch_time(clock), EHaveNotReachedMidEpochTime);
 }
 
-public(package) fun assert_end_epoch_time(self: &SystemInner, clock: &Clock) {
+public(package) fun assert_end_epoch_time<Witness: drop>(
+  self: &SystemInner<Witness>,
+  clock: &Clock,
+) {
   assert!(self.is_end_epoch_time(clock), EHaveNotReachedEndEpochTime);
 }
 
-public(package) fun create_system_current_status_info(
-  self: &SystemInner,
+public(package) fun create_system_current_status_info<Witness: drop>(
+  self: &SystemInner<Witness>,
   clock: &Clock,
 ): SystemCurrentStatusInfo {
   system_current_status_info::create(
@@ -587,8 +616,8 @@ public(package) fun create_system_current_status_info(
   )
 }
 
-public(package) fun initiate_advance_epoch(
-  self: &SystemInner,
+public(package) fun initiate_advance_epoch<Witness: drop>(
+  self: &SystemInner<Witness>,
   clock: &Clock,
 ): AdvanceEpochApprover {
   self.assert_end_epoch_time(clock);
@@ -606,8 +635,8 @@ public(package) fun initiate_advance_epoch(
 ///    gas coins.
 /// 3. Distribute computation charge to validator stake.
 /// 4. Update all validators.
-public(package) fun advance_epoch(
-  self: &mut SystemInner,
+public(package) fun advance_epoch<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   advance_epoch_approver: AdvanceEpochApprover,
   clock: &Clock,
   ctx: &mut TxContext,
@@ -677,7 +706,10 @@ public(package) fun advance_epoch(
   });
 }
 
-public(package) fun initiate_mid_epoch_reconfiguration(self: &mut SystemInner, clock: &Clock) {
+public(package) fun initiate_mid_epoch_reconfiguration<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  clock: &Clock,
+) {
   self.assert_mid_epoch_time(clock);
 
   self.validator_set.initiate_mid_epoch_reconfiguration();
@@ -685,77 +717,88 @@ public(package) fun initiate_mid_epoch_reconfiguration(self: &mut SystemInner, c
 
 /// Return the current epoch number. Useful for applications that need a coarse-grained concept of time,
 /// since epochs are ever-increasing and epoch changes are intended to happen every 24 hours.
-public(package) fun epoch(self: &SystemInner): u64 {
+public(package) fun epoch<Witness: drop>(self: &SystemInner<Witness>): u64 {
   self.epoch
 }
 
-public(package) fun protocol_version(self: &SystemInner): u64 {
+public(package) fun protocol_version<Witness: drop>(self: &SystemInner<Witness>): u64 {
   self.protocol_version
 }
 
 /// Returns unix timestamp of the start of current epoch
-public(package) fun epoch_start_timestamp_ms(self: &SystemInner): u64 {
+public(package) fun epoch_start_timestamp_ms<Witness: drop>(self: &SystemInner<Witness>): u64 {
   self.epoch_start_timestamp_ms
 }
 
 /// Returns the total amount staked with `validator_id`.
 /// Aborts if `validator_id` is not an active validator.
-public(package) fun validator_stake_amount(self: &mut SystemInner, validator_id: ID): u64 {
+public(package) fun validator_stake_amount<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  validator_id: ID,
+): u64 {
   self.validator_set.validator_total_stake_amount(validator_id)
 }
 
 /// Returns all the validators who are currently reporting `validator_id`
-public(package) fun get_reporters_of(self: &SystemInner, validator_id: ID): VecSet<ID> {
+public(package) fun get_reporters_of<Witness: drop>(
+  self: &SystemInner<Witness>,
+  validator_id: ID,
+): VecSet<ID> {
   self.validator_set.get_reporters_of(validator_id)
 }
 
-public(package) fun token_exchange_rates(
-  self: &SystemInner,
+public(package) fun token_exchange_rates<Witness: drop>(
+  self: &SystemInner<Witness>,
   validator_id: ID,
 ): &Table<u64, TokenExchangeRate> {
   self.validator_set.token_exchange_rates(validator_id)
 }
 
-public(package) fun active_committee(self: &SystemInner): BlsCommittee {
+public(package) fun active_committee<Witness: drop>(self: &SystemInner<Witness>): BlsCommittee {
   self.validator_set.active_committee()
 }
 
-public(package) fun next_epoch_active_committee(self: &SystemInner): Option<BlsCommittee> {
+public(package) fun next_epoch_active_committee<Witness: drop>(
+  self: &SystemInner<Witness>,
+): Option<BlsCommittee> {
   self.validator_set.next_epoch_active_committee()
 }
 
-public(package) fun verify_validator_cap(
-  self: &SystemInner,
-  cap: &ValidatorCap,
-): VerifiedValidatorCap {
+public(package) fun verify_validator_cap<Witness: drop>(
+  self: &SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
+  witness: Witness,
+): VerifiedValidatorCap<Witness> {
   self.validator_set.verify_validator_cap(cap);
-  cap.create_verified_validator_cap()
+  cap.create_verified_validator_cap(witness)
 }
 
-public(package) fun verify_operation_cap(
-  self: &SystemInner,
-  cap: &ValidatorOperationCap,
-): VerifiedValidatorOperationCap {
+public(package) fun verify_operation_cap<Witness: drop>(
+  self: &SystemInner<Witness>,
+  cap: &ValidatorOperationCap<Witness>,
+  witness: Witness,
+): VerifiedValidatorOperationCap<Witness> {
   self.validator_set.verify_operation_cap(cap);
-  cap.create_verified_validator_operation_cap()
+  cap.create_verified_validator_operation_cap(witness)
 }
 
-public(package) fun verify_commission_cap(
-  self: &SystemInner,
-  cap: &ValidatorCommissionCap,
-): VerifiedValidatorCommissionCap {
+public(package) fun verify_commission_cap<Witness: drop>(
+  self: &SystemInner<Witness>,
+  cap: &ValidatorCommissionCap<Witness>,
+  witness: Witness,
+): VerifiedValidatorCommissionCap<Witness> {
   self.validator_set.verify_commission_cap(cap);
-  cap.create_verified_validator_commission_cap()
+  cap.create_verified_validator_commission_cap(witness)
 }
 
-fun verify_protocol_cap_impl(self: &SystemInner, cap: &ProtocolCap) {
+fun verify_protocol_cap_impl<Witness: drop>(self: &SystemInner<Witness>, cap: &ProtocolCap) {
   let protocol_cap_id = object::id(cap);
 
   assert!(self.authorized_protocol_cap_ids.contains(&protocol_cap_id), EUnauthorizedProtocolCap);
 }
 
-public(package) fun add_upgrade_cap_by_cap(
-  self: &mut SystemInner,
+public(package) fun add_upgrade_cap_by_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   cap: &ProtocolCap,
   upgrade_cap: UpgradeCap,
 ) {
@@ -763,7 +806,10 @@ public(package) fun add_upgrade_cap_by_cap(
   self.upgrade_caps.push_back(upgrade_cap);
 }
 
-public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): UpgradeTicket {
+public(package) fun authorize_upgrade<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  package_id: ID,
+): UpgradeTicket {
   assert!(self.approved_upgrades.contains(&package_id), EApprovedUpgradeNotFound);
   let (_, digest) = self.approved_upgrades.remove(&package_id);
   let index = self.upgrade_caps.find_index!(|c| c.package() == package_id).extract();
@@ -771,7 +817,10 @@ public(package) fun authorize_upgrade(self: &mut SystemInner, package_id: ID): U
   self.upgrade_caps[index].authorize(policy, digest)
 }
 
-public(package) fun commit_upgrade(self: &mut SystemInner, receipt: UpgradeReceipt): ID {
+public(package) fun commit_upgrade<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  receipt: UpgradeReceipt,
+): ID {
   let receipt_cap_id = receipt.cap();
   let index = self.upgrade_caps.find_index!(|c| object::id(c) == receipt_cap_id).extract();
   let old_package_id = self.upgrade_caps[index].package();
@@ -779,8 +828,8 @@ public(package) fun commit_upgrade(self: &mut SystemInner, receipt: UpgradeRecei
   old_package_id
 }
 
-public(package) fun process_checkpoint_message_by_quorum(
-  self: &mut SystemInner,
+public(package) fun process_checkpoint_message_by_quorum<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   signature: vector<u8>,
   signers_bitmap: vector<u8>,
   message: vector<u8>,
@@ -798,8 +847,8 @@ public(package) fun process_checkpoint_message_by_quorum(
   self.process_checkpoint_message(message, ctx);
 }
 
-public(package) fun process_checkpoint_message(
-  self: &mut SystemInner,
+public(package) fun process_checkpoint_message<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   message: vector<u8>,
   _ctx: &mut TxContext,
 ) {
@@ -937,16 +986,16 @@ public(package) fun process_checkpoint_message(
 
 /// === Protocol Cap Functions ===
 
-public(package) fun verify_protocol_cap(
-  self: &SystemInner,
+public(package) fun verify_protocol_cap<Witness: drop>(
+  self: &SystemInner<Witness>,
   cap: &ProtocolCap,
 ): VerifiedProtocolCap {
   self.verify_protocol_cap_impl(cap);
   protocol_cap::create_verified()
 }
 
-public(package) fun set_approved_upgrade_by_cap(
-  self: &mut SystemInner,
+public(package) fun set_approved_upgrade_by_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   cap: &ProtocolCap,
   package_id: ID,
   digest: Option<vector<u8>>,
@@ -955,8 +1004,8 @@ public(package) fun set_approved_upgrade_by_cap(
   self.set_approved_upgrade(package_id, digest);
 }
 
-public(package) fun set_or_remove_witness_approving_advance_epoch_by_cap(
-  self: &mut SystemInner,
+public(package) fun set_or_remove_witness_approving_advance_epoch_by_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   cap: &ProtocolCap,
   witness_type: String,
   remove: bool,
@@ -965,8 +1014,8 @@ public(package) fun set_or_remove_witness_approving_advance_epoch_by_cap(
   self.set_or_remove_witness_approving_advance_epoch(witness_type, remove);
 }
 
-public(package) fun process_checkpoint_message_by_cap(
-  self: &mut SystemInner,
+public(package) fun process_checkpoint_message_by_cap<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   cap: &ProtocolCap,
   message: vector<u8>,
   ctx: &mut TxContext,
@@ -980,7 +1029,11 @@ public(package) fun process_checkpoint_message_by_cap(
 /// Set approved upgrade for a package id.
 /// If `digest` is `some`, it will be inserted into the `approved_upgrades` map.
 /// If `digest` is `none`, it will be removed from the `approved_upgrades` map.
-fun set_approved_upgrade(self: &mut SystemInner, package_id: ID, mut digest: Option<vector<u8>>) {
+fun set_approved_upgrade<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  package_id: ID,
+  mut digest: Option<vector<u8>>,
+) {
   if (digest.is_some()) {
     if (self.approved_upgrades.contains(&package_id)) {
       *self.approved_upgrades.get_mut(&package_id) = digest.extract();
@@ -1002,8 +1055,8 @@ fun set_approved_upgrade(self: &mut SystemInner, package_id: ID, mut digest: Opt
 /// Set or remove a witness approving advance epoch.
 /// If `remove` is `true`, the witness will be removed from the list of witnesses approving advance epoch.
 /// If `remove` is `false`, the witness will be added to the list of witnesses approving advance epoch.
-fun set_or_remove_witness_approving_advance_epoch(
-  self: &mut SystemInner,
+fun set_or_remove_witness_approving_advance_epoch<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   witness_type: String,
   remove: bool,
 ) {
@@ -1024,8 +1077,8 @@ fun set_or_remove_witness_approving_advance_epoch(
 
 /// Calculate the rewards for an amount with value `staked_principal`, staked in the validator with
 /// the given `validator_id` between `activation_epoch` and `withdraw_epoch`.
-public(package) fun calculate_rewards(
-  self: &SystemInner,
+public(package) fun calculate_rewards<Witness: drop>(
+  self: &SystemInner<Witness>,
   node_id: ID,
   staked_principal: u64,
   activation_epoch: u64,
@@ -1035,15 +1088,15 @@ public(package) fun calculate_rewards(
 }
 
 /// Check whether StakedIka can be withdrawn directly.
-public(package) fun can_withdraw_staked_ika_early(
-  self: &SystemInner,
+public(package) fun can_withdraw_staked_ika_early<Witness: drop>(
+  self: &SystemInner<Witness>,
   staked_ika: &StakedIka,
 ): bool {
   self.validator_set.can_withdraw_staked_ika_early(staked_ika, self.epoch)
 }
 
 /// Returns the duration of an epoch in milliseconds.
-public(package) fun epoch_duration_ms(self: &SystemInner): u64 {
+public(package) fun epoch_duration_ms<Witness: drop>(self: &SystemInner<Witness>): u64 {
   self.epoch_duration_ms
 }
 
@@ -1051,28 +1104,38 @@ public(package) fun epoch_duration_ms(self: &SystemInner): u64 {
 
 #[test_only]
 /// Return the current validator set
-public(package) fun validator_set(self: &SystemInner): &ValidatorSet {
+public(package) fun validator_set<Witness: drop>(
+  self: &SystemInner<Witness>,
+): &ValidatorSet<Witness> {
   &self.validator_set
 }
 
 #[test_only]
-public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter(self: &SystemInner): u64 {
+public(package) fun get_stake_subsidy_stake_subsidy_distribution_counter<Witness: drop>(
+  self: &SystemInner<Witness>,
+): u64 {
   self.protocol_treasury.get_stake_subsidy_distribution_counter()
 }
 
 #[test_only]
-public(package) fun set_epoch_for_testing(self: &mut SystemInner, epoch_num: u64) {
+public(package) fun set_epoch_for_testing<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  epoch_num: u64,
+) {
   self.epoch = epoch_num
 }
 
 #[test_only]
-public(package) fun request_add_validator_for_testing(self: &mut SystemInner, cap: &ValidatorCap) {
+public(package) fun request_add_validator_for_testing<Witness: drop>(
+  self: &mut SystemInner<Witness>,
+  cap: &ValidatorCap<Witness>,
+) {
   self.validator_set.request_add_validator(self.epoch, cap);
 }
 
 #[test_only]
-public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter(
-  self: &mut SystemInner,
+public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter<Witness: drop>(
+  self: &mut SystemInner<Witness>,
   counter: u64,
 ) {
   self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
