@@ -958,7 +958,7 @@ impl DWalletCheckpointAggregator {
                     received_timestamp=?received_data.checkpoint_message.timestamp_ms,
                     received_messages=?received_data.checkpoint_message.messages,
                     received_epoch=?received_data.checkpoint_message.epoch,
-                    received_from=?received_data.checkpoint_message.auth_sig().authority.concise(),
+                    received_from=?received_data.checkpoint_message.auth_sig().authority,
                     "Processing signature for dwallet checkpoint.",
                 );
                 self.metrics
@@ -969,7 +969,6 @@ impl DWalletCheckpointAggregator {
                             .checkpoint_message
                             .auth_sig()
                             .authority
-                            .concise()
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(received_data) {
@@ -1037,11 +1036,10 @@ impl DWalletCheckpointSignatureAggregator {
             InsertResult::Failed { error } => {
                 warn!(
                     checkpoint_seq = self.checkpoint_message.sequence_number,
-                    "Failed to aggregate new dwallet checkpoint signature from validator {:?}: {:?}",
-                    author.concise(),
-                    error
+                    author,
+                    error,
+                    "Failed to aggregate new dwallet checkpoint signature from validator",
                 );
-                //self.check_for_split_brain();
                 Err(())
             }
             InsertResult::QuorumReached(cert) => {
@@ -1051,7 +1049,7 @@ impl DWalletCheckpointSignatureAggregator {
                     self.metrics.remote_dwallet_checkpoint_forks.inc();
                     warn!(
                         checkpoint_seq = self.checkpoint_message.sequence_number,
-                        from=?author.concise(),
+                        from=?author,
                         ?their_digest,
                         our_digest=?self.digest,
                         "Validator has mismatching dwallet checkpoint digest than what we have.",
@@ -1176,7 +1174,7 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         info: &DWalletCheckpointSignatureMessage,
     ) -> IkaResult {
         let sequence = info.checkpoint_message.sequence_number;
-        let signer = info.checkpoint_message.auth_sig().authority.concise();
+        let signer = info.checkpoint_message.auth_sig().authority;
 
         if let Some(highest_verified_checkpoint) = self
             .tables
@@ -1185,8 +1183,9 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         {
             if sequence <= highest_verified_checkpoint {
                 debug!(
-                    checkpoint_seq = sequence,
-                    "Ignore dwallet checkpoint signature from {} - already certified", signer,
+                    checkpoint_seq=sequence,
+                    signer=signer,
+                    "Ignore dwallet checkpoint signature from a signer — already certified",
                 );
                 self.metrics
                     .last_ignored_dwallet_checkpoint_signature_received
@@ -1195,10 +1194,10 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
             }
         }
         debug!(
-            checkpoint_seq = sequence,
-            "Received dwallet checkpoint signature, digest {} from {}",
-            info.checkpoint_message.digest(),
+            checkpoint_seq=sequence,
+            checkpoint_digest=info.checkpoint_message.digest()
             signer,
+            "Received a dwallet checkpoint signature",
         );
         self.metrics
             .last_received_dwallet_checkpoint_signatures

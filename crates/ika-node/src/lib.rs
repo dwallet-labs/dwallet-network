@@ -1129,10 +1129,13 @@ impl IkaNode {
                 let transaction = ConsensusTransaction::new_capability_notification_v1(
                     AuthorityCapabilitiesV1::new(
                         self.state.name,
-                        // todo(omer): what?
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
                         vec![],
+                        // sui_client
+                        // .get_available_move_packages()
+                        //     .await
+                        //     .map_err(|e| anyhow!("Cannot get available move packages: {:?}", e))?,
                     ),
                 );
 
