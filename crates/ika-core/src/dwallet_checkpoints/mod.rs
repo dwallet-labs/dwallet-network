@@ -17,7 +17,6 @@ use crate::stake_aggregator::{InsertResult, MultiStakeAggregator};
 use mysten_metrics::{monitored_future, monitored_scope};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use sui_types::base_types::ConciseableName;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 
@@ -965,10 +964,7 @@ impl DWalletCheckpointAggregator {
                     .dwallet_checkpoint_participation
                     .with_label_values(&[&format!(
                         "{:?}",
-                        received_data
-                            .checkpoint_message
-                            .auth_sig()
-                            .authority
+                        received_data.checkpoint_message.auth_sig().authority
                     )])
                     .inc();
                 if let Ok(auth_signature) = current.try_aggregate(received_data) {
@@ -1036,8 +1032,8 @@ impl DWalletCheckpointSignatureAggregator {
             InsertResult::Failed { error } => {
                 warn!(
                     checkpoint_seq = self.checkpoint_message.sequence_number,
-                    author,
-                    error,
+                    ?author,
+                    ?error,
                     "Failed to aggregate new dwallet checkpoint signature from validator",
                 );
                 Err(())
@@ -1183,8 +1179,8 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         {
             if sequence <= highest_verified_checkpoint {
                 debug!(
-                    checkpoint_seq=sequence,
-                    signer=signer,
+                    checkpoint_seq = sequence,
+                    signer=?signer,
                     "Ignore dwallet checkpoint signature from a signer — already certified",
                 );
                 self.metrics
@@ -1195,8 +1191,8 @@ impl DWalletCheckpointServiceNotify for DWalletCheckpointService {
         }
         debug!(
             checkpoint_seq=sequence,
-            checkpoint_digest=info.checkpoint_message.digest()
-            signer,
+            checkpoint_digest=?info.checkpoint_message.digest(),
+            ?signer,
             "Received a dwallet checkpoint signature",
         );
         self.metrics
