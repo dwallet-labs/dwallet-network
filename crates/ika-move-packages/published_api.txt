@@ -736,7 +736,7 @@ set_next_epoch_consensus_pubkey_bytes
 set_next_epoch_class_groups_pubkey_and_proof_bytes
 	public(package) fun
 	0x0::validator_set
-request_reconfig_mid_epoch
+initiate_mid_epoch_reconfiguration
 	public(package) fun
 	0x0::validator_set
 advance_epoch
@@ -955,6 +955,9 @@ SetRewardSlashingRateEvent
 SetApprovedUpgradeEvent
 	public struct
 	0x0::system_inner
+EndOfPublishEvent
+	public struct
+	0x0::system_inner
 SetOrRemoveWitnessApprovingAdvanceEpochEvent
 	public struct
 	0x0::system_inner
@@ -1054,16 +1057,13 @@ initiate_advance_epoch
 advance_epoch
 	public(package) fun
 	0x0::system_inner
-request_reconfig_mid_epoch
+initiate_mid_epoch_reconfiguration
 	public(package) fun
 	0x0::system_inner
 epoch
 	public(package) fun
 	0x0::system_inner
 protocol_version
-	public(package) fun
-	0x0::system_inner
-upgrade_caps
 	public(package) fun
 	0x0::system_inner
 epoch_start_timestamp_ms
@@ -1225,13 +1225,16 @@ active_committee
 next_epoch_active_committee
 	public fun
 	0x0::system
-request_reconfig_mid_epoch
+initiate_mid_epoch_reconfiguration
+	public fun
+	0x0::system
+create_system_current_status_info
 	public fun
 	0x0::system
 initiate_advance_epoch
 	public fun
 	0x0::system
-request_advance_epoch
+advance_epoch
 	public fun
 	0x0::system
 verify_validator_cap
@@ -1250,6 +1253,9 @@ commit_upgrade
 	public fun
 	0x0::system
 process_checkpoint_message_by_quorum
+	public fun
+	0x0::system
+add_upgrade_cap_by_cap
 	public fun
 	0x0::system
 verify_protocol_cap
@@ -1525,6 +1531,9 @@ SetMaxActiveSessionsBufferEvent
 SetGasFeeReimbursementSuiSystemCallValueEvent
 	public struct
 	0x0::coordinator_inner
+EndOfEpochEvent
+	public struct
+	0x0::coordinator_inner
 DWalletNetworkEncryptionKeyState
 	public enum
 	0x0::coordinator_inner
@@ -1573,10 +1582,10 @@ respond_dwallet_network_encryption_key_dkg
 respond_dwallet_network_encryption_key_reconfiguration
 	public(package) fun
 	0x0::coordinator_inner
-request_initate_mid_epoch
+initiate_mid_epoch_reconfiguration
 	public(package) fun
 	0x0::coordinator_inner
-request_mid_epoch_reconfiguration
+network_encryption_key_mid_epoch_reconfiguration
 	public(package) fun
 	0x0::coordinator_inner
 calculate_pricing_votes
@@ -1777,6 +1786,18 @@ DWalletCoordinator
 create
 	public(package) fun
 	0x0::coordinator
+process_checkpoint_message_by_quorum
+	public fun
+	0x0::coordinator
+initiate_mid_epoch_reconfiguration
+	public fun
+	0x0::coordinator
+network_encryption_key_mid_epoch_reconfiguration
+	public fun
+	0x0::coordinator
+advance_epoch
+	public fun
+	0x0::coordinator
 request_dwallet_network_encryption_key_dkg_by_cap
 	public fun
 	0x0::coordinator
@@ -1793,9 +1814,6 @@ set_pricing_vote
 	public fun
 	0x0::coordinator
 register_session_identifier
-	public fun
-	0x0::coordinator
-process_checkpoint_message_by_quorum
 	public fun
 	0x0::coordinator
 get_active_encryption_key

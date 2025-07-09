@@ -190,7 +190,7 @@ and metadata for both current and next epoch configurations.
 <dd>
 </dd>
 <dt>
-<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_system=0x0)::extended_field::ExtendedField&lt;(ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>&gt;</code>
+<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_common=0x0)::extended_field::ExtendedField&lt;(ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>&gt;</code>
 </dt>
 <dd>
  Extended metadata field for additional validator information

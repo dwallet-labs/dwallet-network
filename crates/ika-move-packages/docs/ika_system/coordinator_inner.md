@@ -173,6 +173,7 @@ The module is organized around the <code><a href="../ika_system/coordinator_inne
 -  [Struct `DWalletCheckpointInfoEvent`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCheckpointInfoEvent)
 -  [Struct `SetMaxActiveSessionsBufferEvent`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_SetMaxActiveSessionsBufferEvent)
 -  [Struct `SetGasFeeReimbursementSuiSystemCallValueEvent`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_SetGasFeeReimbursementSuiSystemCallValueEvent)
+-  [Struct `EndOfEpochEvent`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EndOfEpochEvent)
 -  [Enum `DWalletNetworkEncryptionKeyState`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletNetworkEncryptionKeyState)
 -  [Enum `EncryptedUserSecretKeyShareState`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EncryptedUserSecretKeyShareState)
 -  [Enum `PartialUserSignatureState`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_PartialUserSignatureState)
@@ -190,8 +191,8 @@ The module is organized around the <code><a href="../ika_system/coordinator_inne
 -  [Function `handle_completed_system_session`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_handle_completed_system_session)
 -  [Function `respond_dwallet_network_encryption_key_dkg`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_respond_dwallet_network_encryption_key_dkg)
 -  [Function `respond_dwallet_network_encryption_key_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_respond_dwallet_network_encryption_key_reconfiguration)
--  [Function `request_initate_mid_epoch`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_initate_mid_epoch)
--  [Function `request_mid_epoch_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_mid_epoch_reconfiguration)
+-  [Function `initiate_mid_epoch_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_initiate_mid_epoch_reconfiguration)
+-  [Function `network_encryption_key_mid_epoch_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_network_encryption_key_mid_epoch_reconfiguration)
 -  [Function `calculate_pricing_votes`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_calculate_pricing_votes)
 -  [Function `get_active_dwallet_network_encryption_key`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_get_active_dwallet_network_encryption_key)
 -  [Function `advance_epoch`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_advance_epoch)
@@ -4171,6 +4172,33 @@ This event is used to configure the gas fee reimbursement SUI system call value.
 
 </details>
 
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EndOfEpochEvent"></a>
+
+## Struct `EndOfEpochEvent`
+
+Event emitted when the epoch ends.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EndOfEpochEvent">EndOfEpochEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>epoch: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
 <a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletNetworkEncryptionKeyState"></a>
 
 ## Enum `DWalletNetworkEncryptionKeyState`
@@ -5277,12 +5305,22 @@ Have not reached end epoch time
 
 
 
-<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpoch"></a>
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpochReconfiguration"></a>
 
-Already initiated mid epoch
+Already initiated mid epoch reconfiguration
 
 
-<pre><code><b>const</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpoch">EAlreadyInitiatedMidEpoch</a>: u64 = 42;
+<pre><code><b>const</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpochReconfiguration">EAlreadyInitiatedMidEpochReconfiguration</a>: u64 = 42;
+</code></pre>
+
+
+
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotInitiatedMidEpochReconfiguration"></a>
+
+Have not initiated mid epoch reconfiguration
+
+
+<pre><code><b>const</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotInitiatedMidEpochReconfiguration">EHaveNotInitiatedMidEpochReconfiguration</a>: u64 = 43;
 </code></pre>
 
 
@@ -5292,7 +5330,7 @@ Already initiated mid epoch
 Not all network encryption keys reconfiguration have been completed
 
 
-<pre><code><b>const</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_ENotAllNetworkEncryptionKeysReconfigurationCompleted">ENotAllNetworkEncryptionKeysReconfigurationCompleted</a>: u64 = 43;
+<pre><code><b>const</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_ENotAllNetworkEncryptionKeysReconfigurationCompleted">ENotAllNetworkEncryptionKeysReconfigurationCompleted</a>: u64 = 44;
 </code></pre>
 
 
@@ -5325,7 +5363,7 @@ Initializes all internal data structures with default values.
 A new DWalletCoordinatorInner instance ready for use
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_create">create</a>(advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_create">create</a>(advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>
 </code></pre>
 
 
@@ -5336,6 +5374,7 @@ A new DWalletCoordinatorInner instance ready for use
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_create">create</a>(
     advance_epoch_approver: &<b>mut</b> AdvanceEpochApprover,
+    system_current_status_info: &SystemCurrentStatusInfo,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     ctx: &<b>mut</b> TxContext
@@ -5371,7 +5410,7 @@ A new DWalletCoordinatorInner instance ready for use
             fee_charged_ika: balance::zero(),
         },
         active_committee: bls_committee::empty(),
-        next_epoch_active_committee: option::none(),
+        next_epoch_active_committee: system_current_status_info.next_epoch_active_committee(),
         total_messages_processed: 0,
         last_processed_checkpoint_sequence_number: 0,
         previous_epoch_last_checkpoint_sequence_number: 0,
@@ -5532,6 +5571,9 @@ Returns a capability that grants control over the created encryption key.
     _: &VerifiedProtocolCap,
     ctx: &<b>mut</b> TxContext
 ) {
+    // we limit dkg only <b>for</b> the first half of the epoch.
+    // the second half of the epoch is used <b>for</b> reconfiguration.
+    <b>assert</b>!(self.next_epoch_active_committee.is_none(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpochReconfiguration">EAlreadyInitiatedMidEpochReconfiguration</a>);
     // Create a new capability to control this encryption key.
     <b>let</b> id = object::new(ctx);
     <b>let</b> dwallet_network_encryption_key_id = id.to_inner();
@@ -5810,13 +5852,13 @@ with <code>is_last_chunk</code> set for the last call.
 
 </details>
 
-<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_initate_mid_epoch"></a>
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_initiate_mid_epoch_reconfiguration"></a>
 
-## Function `request_initate_mid_epoch`
+## Function `initiate_mid_epoch_reconfiguration`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_initate_mid_epoch">request_initate_mid_epoch</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo)
 </code></pre>
 
 
@@ -5825,13 +5867,16 @@ with <code>is_last_chunk</code> set for the last call.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_initate_mid_epoch">request_initate_mid_epoch</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(
     self: &<b>mut</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     system_current_status_info: &SystemCurrentStatusInfo,
 ) {
-    <b>assert</b>!(system_current_status_info.is_mid_epoch_time(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>);
-    <b>assert</b>!(self.next_epoch_active_committee.is_none(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpoch">EAlreadyInitiatedMidEpoch</a>);
-    self.next_epoch_active_committee = system_current_status_info.next_epoch_active_committee();
+    <b>let</b> next_epoch_active_committee = system_current_status_info.next_epoch_active_committee();
+    // Check <b>if</b> system completed the mid epoch reconfiguration.
+    <b>assert</b>!(next_epoch_active_committee.is_some(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>);
+    // Check <b>if</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator">coordinator</a> already initiated the mid epoch reconfiguration.
+    <b>assert</b>!(self.next_epoch_active_committee.is_none(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EAlreadyInitiatedMidEpochReconfiguration">EAlreadyInitiatedMidEpochReconfiguration</a>);
+    self.next_epoch_active_committee = next_epoch_active_committee;
     <b>let</b> pricing_calculation_votes = <a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_new_pricing_calculation">dwallet_pricing::new_pricing_calculation</a>(*self.next_epoch_active_committee.borrow(), self.pricing_and_fee_management.default);
     self.pricing_and_fee_management.calculation_votes = option::some(pricing_calculation_votes);
 }
@@ -5841,13 +5886,13 @@ with <code>is_last_chunk</code> set for the last call.
 
 </details>
 
-<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_mid_epoch_reconfiguration"></a>
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_network_encryption_key_mid_epoch_reconfiguration"></a>
 
-## Function `request_mid_epoch_reconfiguration`
+## Function `network_encryption_key_mid_epoch_reconfiguration`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_mid_epoch_reconfiguration">request_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_network_encryption_key_mid_epoch_reconfiguration">network_encryption_key_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">coordinator_inner::DWalletCoordinatorInner</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -5856,12 +5901,12 @@ with <code>is_last_chunk</code> set for the last call.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_request_mid_epoch_reconfiguration">request_mid_epoch_reconfiguration</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_network_encryption_key_mid_epoch_reconfiguration">network_encryption_key_mid_epoch_reconfiguration</a>(
     self: &<b>mut</b> <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_DWalletCoordinatorInner">DWalletCoordinatorInner</a>,
     dwallet_network_encryption_key_id: ID,
     ctx: &<b>mut</b> TxContext,
 ) {
-    <b>assert</b>!(self.next_epoch_active_committee.is_some(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotReachedMidEpochTime">EHaveNotReachedMidEpochTime</a>);
+    <b>assert</b>!(self.next_epoch_active_committee.is_some(), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EHaveNotInitiatedMidEpochReconfiguration">EHaveNotInitiatedMidEpochReconfiguration</a>);
     <b>assert</b>!(self.dwallet_network_encryption_keys.contains(dwallet_network_encryption_key_id), <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EDWalletNetworkEncryptionKeyNotExist">EDWalletNetworkEncryptionKeyNotExist</a>);
     <b>let</b> next_epoch = self.current_epoch + 1;
     self.epoch_dwallet_network_encryption_keys_reconfiguration_completed = self.epoch_dwallet_network_encryption_keys_reconfiguration_completed + 1;
@@ -9826,6 +9871,9 @@ SUI coin containing gas fee reimbursements from processed operations
             },
             <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_END_OF_EPOCH_MESSAGE_TYPE">END_OF_EPOCH_MESSAGE_TYPE</a> =&gt; {
                 self.received_end_of_publish = <b>true</b>;
+                event::emit(<a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_EndOfEpochEvent">EndOfEpochEvent</a> {
+                    epoch: self.current_epoch,
+                });
             },
             _ =&gt; {},
         };

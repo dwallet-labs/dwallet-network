@@ -33,7 +33,7 @@ title: Module `(ika_system=0x0)::validator_set`
 -  [Function `set_next_epoch_network_pubkey_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_network_pubkey_bytes)
 -  [Function `set_next_epoch_consensus_pubkey_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_consensus_pubkey_bytes)
 -  [Function `set_next_epoch_class_groups_pubkey_and_proof_bytes`](#(ika_system=0x0)_validator_set_set_next_epoch_class_groups_pubkey_and_proof_bytes)
--  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_validator_set_request_reconfig_mid_epoch)
+-  [Function `initiate_mid_epoch_reconfiguration`](#(ika_system=0x0)_validator_set_initiate_mid_epoch_reconfiguration)
 -  [Function `advance_epoch`](#(ika_system=0x0)_validator_set_advance_epoch)
 -  [Function `activate_added_validators`](#(ika_system=0x0)_validator_set_activate_added_validators)
 -  [Function `set_min_validator_count`](#(ika_system=0x0)_validator_set_set_min_validator_count)
@@ -178,7 +178,7 @@ title: Module `(ika_system=0x0)::validator_set`
  The current list of previous committee of validators.
 </dd>
 <dt>
-<code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>: (ika_system=0x0)::extended_field::ExtendedField&lt;(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>&gt;</code>
+<code><a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>: (ika_common=0x0)::extended_field::ExtendedField&lt;(ika_system=0x0)::<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set_PendingActiveSet">pending_active_set::PendingActiveSet</a>&gt;</code>
 </dt>
 <dd>
  The next list of pending active set of validators to be next_epoch_active_committee.
@@ -1368,14 +1368,14 @@ Request to set commission rate for the validator.
 
 </details>
 
-<a name="(ika_system=0x0)_validator_set_request_reconfig_mid_epoch"></a>
+<a name="(ika_system=0x0)_validator_set_initiate_mid_epoch_reconfiguration"></a>
 
-## Function `request_reconfig_mid_epoch`
+## Function `initiate_mid_epoch_reconfiguration`
 
 Process the pending validator changes at mid epoch
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
 </code></pre>
 
 
@@ -1384,7 +1384,7 @@ Process the pending validator changes at mid epoch
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(
     self: &<b>mut</b> <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">ValidatorSet</a>,
 ) {
     <b>assert</b>!(self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_next_epoch_active_committee">next_epoch_active_committee</a>.is_none(), <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_EProcessMidEpochOnlyAfterAdvanceEpoch">EProcessMidEpochOnlyAfterAdvanceEpoch</a>);

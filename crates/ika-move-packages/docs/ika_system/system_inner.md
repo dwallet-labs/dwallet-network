@@ -18,6 +18,7 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Struct `SetMaxValidatorChangeCountEvent`](#(ika_system=0x0)_system_inner_SetMaxValidatorChangeCountEvent)
 -  [Struct `SetRewardSlashingRateEvent`](#(ika_system=0x0)_system_inner_SetRewardSlashingRateEvent)
 -  [Struct `SetApprovedUpgradeEvent`](#(ika_system=0x0)_system_inner_SetApprovedUpgradeEvent)
+-  [Struct `EndOfPublishEvent`](#(ika_system=0x0)_system_inner_EndOfPublishEvent)
 -  [Struct `SetOrRemoveWitnessApprovingAdvanceEpochEvent`](#(ika_system=0x0)_system_inner_SetOrRemoveWitnessApprovingAdvanceEpochEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_system=0x0)_system_inner_create)
@@ -52,10 +53,9 @@ title: Module `(ika_system=0x0)::system_inner`
 -  [Function `create_system_current_status_info`](#(ika_system=0x0)_system_inner_create_system_current_status_info)
 -  [Function `initiate_advance_epoch`](#(ika_system=0x0)_system_inner_initiate_advance_epoch)
 -  [Function `advance_epoch`](#(ika_system=0x0)_system_inner_advance_epoch)
--  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_system_inner_request_reconfig_mid_epoch)
+-  [Function `initiate_mid_epoch_reconfiguration`](#(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration)
 -  [Function `epoch`](#(ika_system=0x0)_system_inner_epoch)
 -  [Function `protocol_version`](#(ika_system=0x0)_system_inner_protocol_version)
--  [Function `upgrade_caps`](#(ika_system=0x0)_system_inner_upgrade_caps)
 -  [Function `epoch_start_timestamp_ms`](#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms)
 -  [Function `validator_stake_amount`](#(ika_system=0x0)_system_inner_validator_stake_amount)
 -  [Function `get_reporters_of`](#(ika_system=0x0)_system_inner_get_reporters_of)
@@ -178,7 +178,7 @@ Uses SystemParametersV1 as the parameters.
 <dd>
 </dd>
 <dt>
-<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;</code>
+<code>upgrade_caps: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;</code>
 </dt>
 <dd>
  Upgrade caps for this package and others like ika coin of the ika protocol.
@@ -721,6 +721,33 @@ Event emitted when approved upgrade is set via checkpoint message.
 
 </details>
 
+<a name="(ika_system=0x0)_system_inner_EndOfPublishEvent"></a>
+
+## Struct `EndOfPublishEvent`
+
+Event emitted when the epoch ends.
+
+
+<pre><code><b>public</b> <b>struct</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EndOfPublishEvent">EndOfPublishEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code><a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: u64</code>
+</dt>
+<dd>
+</dd>
+</dl>
+
+
+</details>
+
 <a name="(ika_system=0x0)_system_inner_SetOrRemoveWitnessApprovingAdvanceEpochEvent"></a>
 
 ## Struct `SetOrRemoveWitnessApprovingAdvanceEpochEvent`
@@ -977,7 +1004,7 @@ Create a new IkaSystemState object and make it shared.
 This function will be called only once in init.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_create">create</a>(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>: (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>: u64, stake_subsidy_start_epoch: u64, <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">protocol_treasury::ProtocolTreasury</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">system_inner::SystemInner</a>, (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_create">create</a>(upgrade_caps: vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;, <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>: (ika_system=0x0)::<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>: u64, stake_subsidy_start_epoch: u64, <a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury">protocol_treasury</a>: (ika_system=0x0)::<a href="../ika_system/protocol_treasury.md#(ika_system=0x0)_protocol_treasury_ProtocolTreasury">protocol_treasury::ProtocolTreasury</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): ((ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">system_inner::SystemInner</a>, (ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>)
 </code></pre>
 
 
@@ -987,7 +1014,7 @@ This function will be called only once in init.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_create">create</a>(
-    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>: vector&lt;UpgradeCap&gt;,
+    upgrade_caps: vector&lt;UpgradeCap&gt;,
     <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>: ValidatorSet,
     <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>: u64,
     <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_start_timestamp_ms">epoch_start_timestamp_ms</a>: u64,
@@ -1005,7 +1032,7 @@ This function will be called only once in init.
         epoch_start_tx_digest: *ctx.digest(),
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>,
         next_protocol_version: option::none(),
-        <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>,
+        upgrade_caps,
         approved_upgrades: vec_map::empty(),
         <a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>,
         <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch_duration_ms">epoch_duration_ms</a>,
@@ -1060,13 +1087,14 @@ This function will be called only once in init.
     <b>let</b> <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a> = self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>();
     <b>assert</b>!(<a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.size() &gt;= <a href="../ika_system/pending_active_set.md#(ika_system=0x0)_pending_active_set">pending_active_set</a>.min_validator_count(), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_ECannotInitialize">ECannotInitialize</a>);
     self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.set_max_validator_change_count(max_validator_change_count);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>();
-    // <b>let</b> <b>mut</b> dwallet_2pc_mpc_coordinator = dwallet_2pc_mpc_coordinator::create_dwallet_coordinator(package_id, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>, self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_active_committee">active_committee</a>(), pricing, supported_curves_to_signature_algorithms_to_hash_schemes, ctx);
-    // <b>let</b> dwallet_2pc_mpc_coordinator_inner = dwallet_2pc_mpc_coordinator.inner_mut();
-    // self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_advance_epoch">advance_epoch</a>(dwallet_2pc_mpc_coordinator_inner, clock, ctx);
-    // self.dwallet_2pc_mpc_coordinator_id.fill(object::id(&dwallet_2pc_mpc_coordinator));
-    // dwallet_2pc_mpc_coordinator.share_dwallet_coordinator();
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initiate_advance_epoch">initiate_advance_epoch</a>(clock)
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>();
+    // Create <b>for</b> the first time the advance <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> approver <b>for</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> 0.
+    // This is done to avoid the case where the <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a> 0 is advanced before the
+    // committee is initialized.
+    <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver_create">advance_epoch_approver::create</a>(
+        self.witness_approving_advance_epoch,
+        balance::zero(),
+    )
 }
 </code></pre>
 
@@ -1973,7 +2001,6 @@ gas coins.
     clock: &Clock,
     ctx: &<b>mut</b> TxContext,
 ) {
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_assert_end_epoch_time">assert_end_epoch_time</a>(clock);
     <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>.assert_all_witnesses_approved();
     <b>assert</b>!(self.received_end_of_publish, <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EHaveNotReachedEndEpochTime">EHaveNotReachedEndEpochTime</a>);
     self.received_end_of_publish = <b>false</b>;
@@ -2029,13 +2056,13 @@ gas coins.
 
 </details>
 
-<a name="(ika_system=0x0)_system_inner_request_reconfig_mid_epoch"></a>
+<a name="(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration"></a>
 
-## Function `request_reconfig_mid_epoch`
+## Function `initiate_mid_epoch_reconfiguration`
 
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">system_inner::SystemInner</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">system_inner::SystemInner</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
 </code></pre>
 
 
@@ -2044,12 +2071,12 @@ gas coins.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(
     self: &<b>mut</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a>,
     clock: &Clock,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_assert_mid_epoch_time">assert_mid_epoch_time</a>(clock);
-    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>();
+    self.<a href="../ika_system/validator_set.md#(ika_system=0x0)_validator_set">validator_set</a>.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>();
 }
 </code></pre>
 
@@ -2100,30 +2127,6 @@ since epochs are ever-increasing and epoch changes are intended to happen every 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>(self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a>): u64 {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_protocol_version">protocol_version</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_system=0x0)_system_inner_upgrade_caps"></a>
-
-## Function `upgrade_caps`
-
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>(self: &(ika_system=0x0)::<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">system_inner::SystemInner</a>): &vector&lt;<a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>(self: &<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SystemInner">SystemInner</a>): &vector&lt;UpgradeCap&gt; {
-    &self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>
 }
 </code></pre>
 
@@ -2418,7 +2421,7 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     upgrade_cap: UpgradeCap,
 ) {
     self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_verify_protocol_cap_impl">verify_protocol_cap_impl</a>(cap);
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>.push_back(upgrade_cap);
+    self.upgrade_caps.push_back(upgrade_cap);
 }
 </code></pre>
 
@@ -2447,9 +2450,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
 ): UpgradeTicket {
     <b>assert</b>!(self.approved_upgrades.contains(&package_id), <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EApprovedUpgradeNotFound">EApprovedUpgradeNotFound</a>);
     <b>let</b> (_, digest) = self.approved_upgrades.remove(&package_id);
-    <b>let</b> index = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>.find_index!(|c| c.package() == package_id).extract();
-    <b>let</b> policy = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].policy();
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].authorize(policy, digest)
+    <b>let</b> index = self.upgrade_caps.find_index!(|c| c.package() == package_id).extract();
+    <b>let</b> policy = self.upgrade_caps[index].policy();
+    self.upgrade_caps[index].authorize(policy, digest)
 }
 </code></pre>
 
@@ -2477,9 +2480,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
     receipt: UpgradeReceipt,
 ): ID {
     <b>let</b> receipt_cap_id = receipt.cap();
-    <b>let</b> index = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>.find_index!(|c| object::id(c) == receipt_cap_id).extract();
-    <b>let</b> old_package_id = self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].package();
-    self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_upgrade_caps">upgrade_caps</a>[index].commit(receipt);
+    <b>let</b> index = self.upgrade_caps.find_index!(|c| object::id(c) == receipt_cap_id).extract();
+    <b>let</b> old_package_id = self.upgrade_caps[index].package();
+    self.upgrade_caps[index].commit(receipt);
     old_package_id
 }
 </code></pre>
@@ -2647,6 +2650,9 @@ Returns all the validators who are currently reporting <code>validator_id</code>
             },
             <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_END_OF_PUBLISH_MESSAGE_TYPE">END_OF_PUBLISH_MESSAGE_TYPE</a> =&gt; {
                 self.received_end_of_publish = <b>true</b>;
+                event::emit(<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_EndOfPublishEvent">EndOfPublishEvent</a> {
+                    <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>: self.<a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_epoch">epoch</a>,
+                });
             },
             <a href="../ika_system/system_inner.md#(ika_system=0x0)_system_inner_SetOrRemoveWitnessApprovingAdvanceEpochMessageType">SetOrRemoveWitnessApprovingAdvanceEpochMessageType</a> =&gt; {
                 <b>let</b> witness_type = bcs_body.peel_vec_u8().to_string();

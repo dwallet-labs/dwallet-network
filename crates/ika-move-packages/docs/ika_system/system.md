@@ -208,15 +208,17 @@ across related components.
 -  [Function `token_exchange_rates`](#(ika_system=0x0)_system_token_exchange_rates)
 -  [Function `active_committee`](#(ika_system=0x0)_system_active_committee)
 -  [Function `next_epoch_active_committee`](#(ika_system=0x0)_system_next_epoch_active_committee)
--  [Function `request_reconfig_mid_epoch`](#(ika_system=0x0)_system_request_reconfig_mid_epoch)
+-  [Function `initiate_mid_epoch_reconfiguration`](#(ika_system=0x0)_system_initiate_mid_epoch_reconfiguration)
+-  [Function `create_system_current_status_info`](#(ika_system=0x0)_system_create_system_current_status_info)
 -  [Function `initiate_advance_epoch`](#(ika_system=0x0)_system_initiate_advance_epoch)
--  [Function `request_advance_epoch`](#(ika_system=0x0)_system_request_advance_epoch)
+-  [Function `advance_epoch`](#(ika_system=0x0)_system_advance_epoch)
 -  [Function `verify_validator_cap`](#(ika_system=0x0)_system_verify_validator_cap)
 -  [Function `verify_operation_cap`](#(ika_system=0x0)_system_verify_operation_cap)
 -  [Function `verify_commission_cap`](#(ika_system=0x0)_system_verify_commission_cap)
 -  [Function `authorize_upgrade`](#(ika_system=0x0)_system_authorize_upgrade)
 -  [Function `commit_upgrade`](#(ika_system=0x0)_system_commit_upgrade)
 -  [Function `process_checkpoint_message_by_quorum`](#(ika_system=0x0)_system_process_checkpoint_message_by_quorum)
+-  [Function `add_upgrade_cap_by_cap`](#(ika_system=0x0)_system_add_upgrade_cap_by_cap)
 -  [Function `verify_protocol_cap`](#(ika_system=0x0)_system_verify_protocol_cap)
 -  [Function `process_checkpoint_message_by_cap`](#(ika_system=0x0)_system_process_checkpoint_message_by_cap)
 -  [Function `set_approved_upgrade_by_cap`](#(ika_system=0x0)_system_set_approved_upgrade_by_cap)
@@ -1275,14 +1277,14 @@ Get the active committee of the next epoch.
 
 </details>
 
-<a name="(ika_system=0x0)_system_request_reconfig_mid_epoch"></a>
+<a name="(ika_system=0x0)_system_initiate_mid_epoch_reconfiguration"></a>
 
-## Function `request_reconfig_mid_epoch`
+## Function `initiate_mid_epoch_reconfiguration`
 
 Locks the committee of the next epoch to allow starting the reconfiguration process.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>)
 </code></pre>
 
 
@@ -1291,11 +1293,36 @@ Locks the committee of the next epoch to allow starting the reconfiguration proc
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(
     self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
     clock: &Clock,
 ) {
-    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_request_reconfig_mid_epoch">request_reconfig_mid_epoch</a>(clock);
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(clock);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_create_system_current_status_info"></a>
+
+## Function `create_system_current_status_info`
+
+Create the system current status info.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_create_system_current_status_info">create_system_current_status_info</a>(self: &(ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>): (ika_system=0x0)::<a href="../ika_system/system_current_status_info.md#(ika_system=0x0)_system_current_status_info_SystemCurrentStatusInfo">system_current_status_info::SystemCurrentStatusInfo</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_create_system_current_status_info">create_system_current_status_info</a>(self: &<a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, clock: &Clock): SystemCurrentStatusInfo {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner">inner</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_create_system_current_status_info">create_system_current_status_info</a>(clock)
 }
 </code></pre>
 
@@ -1328,15 +1355,15 @@ Initiates the advance epoch process.
 
 </details>
 
-<a name="(ika_system=0x0)_system_request_advance_epoch"></a>
+<a name="(ika_system=0x0)_system_advance_epoch"></a>
 
-## Function `request_advance_epoch`
+## Function `advance_epoch`
 
 Advances the epoch to the next epoch.
 Can only be called after all the witnesses have approved the advance epoch.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>: (ika_system=0x0)::<a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver_AdvanceEpochApprover">advance_epoch_approver::AdvanceEpochApprover</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>: (ika_system=0x0)::<a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver_AdvanceEpochApprover">advance_epoch_approver::AdvanceEpochApprover</a>, clock: &<a href="../sui/clock.md#sui_clock_Clock">sui::clock::Clock</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1345,9 +1372,9 @@ Can only be called after all the witnesses have approved the advance epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_request_advance_epoch">request_advance_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>: AdvanceEpochApprover, clock: &Clock, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_advance_epoch">advance_epoch</a>(self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>, <a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>: AdvanceEpochApprover, clock: &Clock, ctx: &<b>mut</b> TxContext) {
     <b>let</b> inner_system = self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>();
-    inner_system.advance_epoch(<a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>, clock, ctx);
+    inner_system.<a href="../ika_system/system.md#(ika_system=0x0)_system_advance_epoch">advance_epoch</a>(<a href="../ika_system/advance_epoch_approver.md#(ika_system=0x0)_advance_epoch_approver">advance_epoch_approver</a>, clock, ctx);
 }
 </code></pre>
 
@@ -1508,6 +1535,34 @@ Can only be called after all the witnesses have approved the advance epoch.
     ctx: &<b>mut</b> TxContext,
 ) {
     self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_system=0x0)_system_add_upgrade_cap_by_cap"></a>
+
+## Function `add_upgrade_cap_by_cap`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_add_upgrade_cap_by_cap">add_upgrade_cap_by_cap</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/system.md#(ika_system=0x0)_system_System">system::System</a>, cap: &(ika_system=0x0)::<a href="../ika_system/protocol_cap.md#(ika_system=0x0)_protocol_cap_ProtocolCap">protocol_cap::ProtocolCap</a>, upgrade_cap: <a href="../sui/package.md#sui_package_UpgradeCap">sui::package::UpgradeCap</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_add_upgrade_cap_by_cap">add_upgrade_cap_by_cap</a>(
+    self: &<b>mut</b> <a href="../ika_system/system.md#(ika_system=0x0)_system_System">System</a>,
+    cap: &ProtocolCap,
+    upgrade_cap: UpgradeCap,
+) {
+    self.<a href="../ika_system/system.md#(ika_system=0x0)_system_inner_mut">inner_mut</a>().<a href="../ika_system/system.md#(ika_system=0x0)_system_add_upgrade_cap_by_cap">add_upgrade_cap_by_cap</a>(cap, upgrade_cap);
 }
 </code></pre>
 

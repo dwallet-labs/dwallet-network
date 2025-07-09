@@ -7,13 +7,16 @@ title: Module `(ika_dwallet_2pc_mpc=0x0)::coordinator`
 -  [Struct `DWalletCoordinator`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_create)
+-  [Function `process_checkpoint_message_by_quorum`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum)
+-  [Function `initiate_mid_epoch_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_initiate_mid_epoch_reconfiguration)
+-  [Function `network_encryption_key_mid_epoch_reconfiguration`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_network_encryption_key_mid_epoch_reconfiguration)
+-  [Function `advance_epoch`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_advance_epoch)
 -  [Function `request_dwallet_network_encryption_key_dkg_by_cap`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_request_dwallet_network_encryption_key_dkg_by_cap)
 -  [Function `set_supported_and_pricing`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_set_supported_and_pricing)
 -  [Function `set_paused_curves_and_signature_algorithms`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_set_paused_curves_and_signature_algorithms)
 -  [Function `request_lock_epoch_sessions`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_request_lock_epoch_sessions)
 -  [Function `set_pricing_vote`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_set_pricing_vote)
 -  [Function `register_session_identifier`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_register_session_identifier)
--  [Function `process_checkpoint_message_by_quorum`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum)
 -  [Function `get_active_encryption_key`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_get_active_encryption_key)
 -  [Function `register_encryption_key`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_register_encryption_key)
 -  [Function `approve_message`](#(ika_dwallet_2pc_mpc=0x0)_coordinator_approve_message)
@@ -179,7 +182,7 @@ Create a new System object and make it shared.
 This function will be called only once in init.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_create">create</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_create">create</a>(package_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -191,12 +194,14 @@ This function will be called only once in init.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_create">create</a>(
     package_id: ID,
     advance_epoch_approver: &<b>mut</b> AdvanceEpochApprover,
+    system_current_status_info: &SystemCurrentStatusInfo,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>let</b> dwallet_coordinator_inner = <a href="../ika_system/coordinator_inner.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_create">coordinator_inner::create</a>(
         advance_epoch_approver,
+        system_current_status_info,
         pricing,
         supported_curves_to_signature_algorithms_to_hash_schemes,
         ctx,
@@ -209,6 +214,126 @@ This function will be called only once in init.
     };
     dynamic_field::add(&<b>mut</b> self.id, <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_VERSION">VERSION</a>, dwallet_coordinator_inner);
     transfer::share_object(self);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum"></a>
+
+## Function `process_checkpoint_message_by_quorum`
+
+Being called by the Ika network to store outputs of completed MPC sessions to Sui.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(dwallet_2pc_mpc_coordinator: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">coordinator::DWalletCoordinator</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, message2: vector&lt;u8&gt;, message3: vector&lt;u8&gt;, message4: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
+    dwallet_2pc_mpc_coordinator: &<b>mut</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    signature: vector&lt;u8&gt;,
+    signers_bitmap: vector&lt;u8&gt;,
+    <b>mut</b> message: vector&lt;u8&gt;,
+    message2: vector&lt;u8&gt;,
+    message3: vector&lt;u8&gt;,
+    message4: vector&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext,
+): Coin&lt;SUI&gt; {
+    message.append(message2);
+    message.append(message3);
+    message.append(message4);
+    <b>let</b> dwallet_inner = dwallet_2pc_mpc_coordinator.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>();
+    dwallet_inner.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_initiate_mid_epoch_reconfiguration"></a>
+
+## Function `initiate_mid_epoch_reconfiguration`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">coordinator::DWalletCoordinator</a>, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(
+    self: &<b>mut</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    system_current_status_info: &SystemCurrentStatusInfo,
+) {
+    self.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_initiate_mid_epoch_reconfiguration">initiate_mid_epoch_reconfiguration</a>(system_current_status_info);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_network_encryption_key_mid_epoch_reconfiguration"></a>
+
+## Function `network_encryption_key_mid_epoch_reconfiguration`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_network_encryption_key_mid_epoch_reconfiguration">network_encryption_key_mid_epoch_reconfiguration</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">coordinator::DWalletCoordinator</a>, dwallet_network_encryption_key_id: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_network_encryption_key_mid_epoch_reconfiguration">network_encryption_key_mid_epoch_reconfiguration</a>(
+    self: &<b>mut</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    dwallet_network_encryption_key_id: ID,
+    ctx: &<b>mut</b> TxContext,
+) {
+    self.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_network_encryption_key_mid_epoch_reconfiguration">network_encryption_key_mid_epoch_reconfiguration</a>(dwallet_network_encryption_key_id, ctx);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_advance_epoch"></a>
+
+## Function `advance_epoch`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_advance_epoch">advance_epoch</a>(self: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">coordinator::DWalletCoordinator</a>, advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_advance_epoch">advance_epoch</a>(
+    self: &<b>mut</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
+    advance_epoch_approver: &<b>mut</b> AdvanceEpochApprover,
+) {
+    self.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_advance_epoch">advance_epoch</a>(advance_epoch_approver);
 }
 </code></pre>
 
@@ -380,44 +505,6 @@ This function will be called only once in init.
     ctx: &<b>mut</b> TxContext,
 ): SessionIdentifier {
     self.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>().<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_register_session_identifier">register_session_identifier</a>(identifier, ctx)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum"></a>
-
-## Function `process_checkpoint_message_by_quorum`
-
-Being called by the Ika network to store outputs of completed MPC sessions to Sui.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(dwallet_2pc_mpc_coordinator: &<b>mut</b> (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">coordinator::DWalletCoordinator</a>, signature: vector&lt;u8&gt;, signers_bitmap: vector&lt;u8&gt;, message: vector&lt;u8&gt;, message2: vector&lt;u8&gt;, message3: vector&lt;u8&gt;, message4: vector&lt;u8&gt;, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): <a href="../sui/coin.md#sui_coin_Coin">sui::coin::Coin</a>&lt;<a href="../sui/sui.md#sui_sui_SUI">sui::sui::SUI</a>&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(
-    dwallet_2pc_mpc_coordinator: &<b>mut</b> <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_DWalletCoordinator">DWalletCoordinator</a>,
-    signature: vector&lt;u8&gt;,
-    signers_bitmap: vector&lt;u8&gt;,
-    <b>mut</b> message: vector&lt;u8&gt;,
-    message2: vector&lt;u8&gt;,
-    message3: vector&lt;u8&gt;,
-    message4: vector&lt;u8&gt;,
-    ctx: &<b>mut</b> TxContext,
-): Coin&lt;SUI&gt; {
-    message.append(message2);
-    message.append(message3);
-    message.append(message4);
-    <b>let</b> dwallet_inner = dwallet_2pc_mpc_coordinator.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_inner_mut">inner_mut</a>();
-    dwallet_inner.<a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_process_checkpoint_message_by_quorum">process_checkpoint_message_by_quorum</a>(signature, signers_bitmap, message, ctx)
 }
 </code></pre>
 

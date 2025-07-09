@@ -156,7 +156,7 @@ Function to initialize ika and share the system object.
 This can only be called once, after which the <code><a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_InitCap">InitCap</a></code> is destroyed.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_initialize">initialize</a>(init_cap: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_InitCap">ika_dwallet_2pc_mpc_init::InitCap</a>, advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, imported_key_dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_initialize">initialize</a>(init_cap: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_InitCap">ika_dwallet_2pc_mpc_init::InitCap</a>, advance_epoch_approver: &<b>mut</b> (ika_system=0x0)::advance_epoch_approver::AdvanceEpochApprover, system_current_status_info: &(ika_system=0x0)::system_current_status_info::SystemCurrentStatusInfo, pricing: (ika_dwallet_2pc_mpc=0x0)::<a href="../ika_system/dwallet_pricing.md#(ika_dwallet_2pc_mpc=0x0)_dwallet_pricing_DWalletPricing">dwallet_pricing::DWalletPricing</a>, supported_curves_to_signature_algorithms_to_hash_schemes: <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, <a href="../sui/vec_map.md#sui_vec_map_VecMap">sui::vec_map::VecMap</a>&lt;u32, vector&lt;u32&gt;&gt;&gt;, dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, imported_key_dwallet_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_presign_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, unverified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, verified_partial_user_signature_cap_image_url: <a href="../std/string.md#std_string_String">std::string::String</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -168,6 +168,7 @@ This can only be called once, after which the <code><a href="../ika_system/ika_d
 <pre><code><b>public</b> <b>fun</b> <a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_initialize">initialize</a>(
     init_cap: <a href="../ika_system/ika_dwallet_2pc_mpc_init.md#(ika_dwallet_2pc_mpc=0x0)_ika_dwallet_2pc_mpc_init_InitCap">InitCap</a>,
     advance_epoch_approver: &<b>mut</b> AdvanceEpochApprover,
+    system_current_status_info: &SystemCurrentStatusInfo,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap&lt;u32, VecMap&lt;u32, vector&lt;u32&gt;&gt;&gt;,
     dwallet_cap_image_url: String,
@@ -185,6 +186,7 @@ This can only be called once, after which the <code><a href="../ika_system/ika_d
     <a href="../ika_system/coordinator.md#(ika_dwallet_2pc_mpc=0x0)_coordinator_create">coordinator::create</a>(
         package_id,
         advance_epoch_approver,
+        system_current_status_info,
         pricing,
         supported_curves_to_signature_algorithms_to_hash_schemes,
         ctx,
