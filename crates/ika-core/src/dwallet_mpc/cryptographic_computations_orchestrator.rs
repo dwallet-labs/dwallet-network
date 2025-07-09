@@ -126,7 +126,7 @@ impl CryptographicComputationsOrchestrator {
         if !self.has_available_cores_to_perform_computation() {
             warn!(
                 session_id=?session.session_identifier,
-                mpc_protocol=?session.mpc_event_data.as_ref().unwrap().init_protocol_data,
+                mpc_protocol=?session.mpc_event_data.as_ref().unwrap().request_input,
                 "No available CPU cores to perform cryptographic computation"
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
@@ -135,10 +135,9 @@ impl CryptographicComputationsOrchestrator {
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
-        let init_protocol_data = session.mpc_event_data.clone().unwrap().init_protocol_data;
+        let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
-        dwallet_mpc_metrics
-            .add_advance_call(&init_protocol_data, &session.current_round.to_string());
+        dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_round.to_string());
 
         let computation_channel_sender = self.completed_computation_sender.clone();
         rayon::spawn_fifo(move || {
@@ -146,14 +145,14 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=%init_protocol_data,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
             } else {
                 let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
-                    mpc_protocol=%init_protocol_data,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
@@ -164,9 +163,9 @@ impl CryptographicComputationsOrchestrator {
             }
             let elapsed = start_advance.elapsed();
             dwallet_mpc_metrics
-                .add_advance_completion(&init_protocol_data, &session.current_round.to_string());
+                .add_advance_completion(&request_input, &session.current_round.to_string());
             dwallet_mpc_metrics.set_last_completion_duration(
-                &init_protocol_data,
+                &request_input,
                 &session.current_round.to_string(),
                 elapsed.as_millis() as i64,
             );
@@ -189,7 +188,7 @@ impl CryptographicComputationsOrchestrator {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
                         duration_ms = elapsed_ms,
-                        mpc_protocol=?init_protocol_data,
+                        mpc_protocol=?request_input,
                         duration_seconds = elapsed_ms / 1000,
                         "Computation update message sent"
                     );

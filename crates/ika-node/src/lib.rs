@@ -905,8 +905,7 @@ impl IkaNode {
             next_epoch_committee_receiver,
             consensus_round_completed_sessions_receiver,
             dwallet_mpc_metrics.clone(),
-        )
-        .await;
+        );
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter

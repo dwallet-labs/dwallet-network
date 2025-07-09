@@ -49,7 +49,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -189,7 +189,16 @@ where
                     error!("failed to get missed events: {e}");
                     IkaError::SuiClientInternalError(format!("failed to get missed events: {e}"))
                 })?;
-            info!("retrieved missed events from Sui successfully");
+
+            if !missed_events.is_empty() {
+                info!(
+                    number_of_missed_events = missed_events.len(),
+                    "retrieved missed events from Sui successfully"
+                );
+            } else {
+                debug!("retrieved zero missed events from Sui");
+            }
+
             return Ok(missed_events);
         }
     }
@@ -908,6 +917,7 @@ impl SuiClientInner for SuiSdkClient {
                 let event = DBSuiEvent {
                     type_: *event_tag.clone(),
                     contents: raw_move_obj.bcs_bytes,
+                    pulled: true,
                 };
                 events.push(event);
             }

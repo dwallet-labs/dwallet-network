@@ -3,17 +3,13 @@ use group::PartyID;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletSessionEvent, DWalletSessionEventTrait};
 use message_digest::message_digest::message_digest;
 use mpc::{Weight, WeightedThresholdAccessStructure};
-use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::vec::Vec;
-use sui_types::base_types::{EpochId, ObjectID};
-use sui_types::dynamic_field::Field;
-use sui_types::id::ID;
+use sui_types::base_types::EpochId;
 
 mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;
@@ -23,6 +19,7 @@ pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 
 pub mod dwallet_mpc_metrics;
+mod mpc_event;
 mod mpc_protocols;
 mod native_computations;
 
@@ -112,23 +109,4 @@ pub(crate) fn party_ids_to_authority_names(
         .iter()
         .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
         .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
-}
-
-/// The type of the event is different when we receive an emitted event and when we
-/// fetch the event's the dynamic field directly from Sui.
-/// This function first tried to deserialize the event as a [`DWalletSessionEvent`], and if it fails,
-/// it tries to deserialize it as a [`Field<ID, DWalletSessionEvent<T>>`].
-fn deserialize_event_or_dynamic_field<T: DeserializeOwned + DWalletSessionEventTrait>(
-    event_contents: &[u8],
-) -> Result<DWalletSessionEvent<T>, bcs::Error> {
-    bcs::from_bytes::<DWalletSessionEvent<T>>(event_contents).or_else(|_| {
-        bcs::from_bytes::<Field<ID, DWalletSessionEvent<T>>>(event_contents)
-            .map(|field| field.value)
-    })
-}
-
-// TODO (#683): Parse the network key version from the network key object ID
-#[allow(unused)]
-pub(crate) fn network_key_version_from_key_id(_key_id: &ObjectID) -> u8 {
-    0
 }

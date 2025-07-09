@@ -8,8 +8,8 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletImportedKeyVerificationRequestEvent, DWalletSessionEvent, MPCProtocolInitData,
-    SessionInfo,
+    DWalletImportedKeyVerificationRequestEvent, DWalletSessionEvent, MPCRequestInput,
+    MPCSessionRequest,
 };
 use mpc::Party;
 use twopc_mpc::dkg::Protocol;
@@ -41,36 +41,41 @@ pub(crate) fn dwallet_dkg_second_public_input(
     )
 }
 
-pub(crate) fn dwallet_imported_key_verification_request_event_session_info(
+pub(crate) fn dwallet_imported_key_verification_request_event_session_request(
     deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DWalletImportedKeyVerificationRequest(deserialized_event),
+        request_input: MPCRequestInput::DWalletImportedKeyVerificationRequest(deserialized_event),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
     }
 }
 
-pub(crate) fn dwallet_dkg_first_party_session_info(
+pub(crate) fn dwallet_dkg_first_party_session_request(
     deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent>,
-) -> anyhow::Result<SessionInfo> {
-    Ok(SessionInfo {
+) -> anyhow::Result<MPCSessionRequest> {
+    Ok(MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::DKGFirst(deserialized_event),
+        request_input: MPCRequestInput::DKGFirst(deserialized_event),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
     })
 }
 
-pub(crate) fn dwallet_dkg_second_party_session_info(
+pub(crate) fn dwallet_dkg_second_party_session_request(
     deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
-        mpc_round: MPCProtocolInitData::DKGSecond(deserialized_event.clone()),
-
+        request_input: MPCRequestInput::DKGSecond(deserialized_event.clone()),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
         epoch: deserialized_event.epoch,
     }
 }
