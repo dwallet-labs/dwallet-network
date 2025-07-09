@@ -108,7 +108,7 @@ impl DWalletMPCManager {
         }
 
         let event = match self.parse_sui_event(event.clone(), epoch_store) {
-            Ok(event) => {
+            Ok(Some(event)) => {
                 debug!(
                     session_identifier=?event.session_request.session_identifier,
                     session_type=?event.session_request.session_type,
@@ -120,11 +120,19 @@ impl DWalletMPCManager {
 
                 event
             }
+            Ok(None) => {
+                debug!(
+                    event=?event,
+                    "Received an event that does not trigger the start of an MPC flow"
+                );
+
+                return;
+            }
             Err(e) => {
                 error!(
                     event=?event,
                     error=?e,
-                    "error while parsing SUI event"
+                    "Error while parsing Sui event"
                 );
 
                 return;
@@ -282,7 +290,7 @@ impl DWalletMPCManager {
         &self,
         event: DBSuiEvent,
         epoch_store: &AuthorityPerEpochStore,
-    ) -> anyhow::Result<DWalletMPCEvent> {
+    ) -> anyhow::Result<Option<DWalletMPCEvent>> {
         let packages_config = &epoch_store.packages_config;
 
         let session_request = if event.type_
@@ -364,7 +372,7 @@ impl DWalletMPCManager {
 
             start_encrypted_share_verification_session_request(deserialized_event)
         } else {
-            return Err(anyhow::anyhow!("unsupported event"));
+            return Ok(None);
         };
 
         let event = DWalletMPCEvent {
@@ -372,7 +380,7 @@ impl DWalletMPCManager {
             pulled: event.pulled,
         };
 
-        Ok(event)
+        Ok(Some(event))
     }
 }
 
