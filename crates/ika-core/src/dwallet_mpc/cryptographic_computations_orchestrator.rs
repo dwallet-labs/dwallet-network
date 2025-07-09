@@ -12,19 +12,16 @@
 //! — Implements special handling for aggregated sign operations
 //! — Ensures computations don't become redundant based on received messages
 //!
-//! The orchestrator uses a channel-based notification system to track computation status:
-//! — Sends `Started` notifications when computations begin
-//! — Sends `Completed` notifications when computations finish
-//! — Updates the running sessions count accordingly
+//! The orchestrator uses a channel-based notification system to track completed computation.
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::SessionIdentifier;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
-use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 /// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.
@@ -32,17 +29,14 @@ use tracing::{error, info};
 /// we are using a big buffer (this size of the data is small).
 const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 
-/// Represents the state transitions of cryptographic computations in the orchestrator.
-///
-/// This enum is used for communication between Tokio and Rayon tasks via a channel.
+/// This struct is used for reporting completed cryptographic computation,
+/// the report is sent via a channel for communication between Tokio and Rayon tasks.
 /// In the aggregated sign flow, Rayon tasks are spawned from within Tokio tasks,
 /// requiring explicit lifecycle tracking.
-pub(crate) enum ComputationUpdate {
-    /// A new computation has started.
-    Started,
-
-    /// A computation has been completed.
-    Completed,
+pub(crate) struct CompletedComputationReport {
+    session_identifier: SessionIdentifier,
+    round: usize,
+    attempts_count: usize,
 }
 
 /// The orchestrator for DWallet MPC cryptographic computations.
@@ -62,10 +56,10 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// machine. Used to limit parallel task execution.
     available_cores_for_cryptographic_computations: usize,
 
-    /// A channel sender to notify the manager about computation lifecycle events.
-    /// Used to track when computations start and complete, allowing proper resource management.
-    computation_update_channel_sender: Sender<ComputationUpdate>,
-    computation_update_channel_receiver: Receiver<ComputationUpdate>,
+    /// A channel sender to notify the manager about completed computations,
+    /// allowing proper resource management.
+    completed_computation_sender: Sender<CompletedComputationReport>,
+    completed_computation_receiver: Receiver<CompletedComputationReport>,
 
     /// The number of currently running cryptographic computations.
     /// Tracks tasks that have been spawned with [`rayon::spawn_fifo`] but haven't completed yet.
@@ -76,7 +70,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
     pub(crate) fn try_new() -> DwalletMPCResult<Self> {
-        let (computation_update_channel_sender, computation_update_channel_receiver) =
+        let (report_computation_completed_sender, report_computation_completed_receiver) =
             tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
             .map_err(|e| DwalletMPCError::FailedToGetAvailableParallelism(e.to_string()))?
@@ -87,90 +81,67 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
+        // Note: Enable the feature to enforce a minimum of CPU cores.
+        #[cfg(feature = "enforce-minimum-cpu")]
+        {
+            assert!(
+                available_cores_for_computations >= 16,
+                "Validator must have more at least 16 CPU cores for cryptographic computations"
+            );
+        }
         info!(
             available_cores_for_computations =? available_cores_for_computations,
             "Available CPU cores for Rayon cryptographic computations"
         );
 
         Ok(CryptographicComputationsOrchestrator {
-            // TODO (@scaly): don't we want it to be lower?
             available_cores_for_cryptographic_computations: available_cores_for_computations,
-            computation_update_channel_sender,
-            computation_update_channel_receiver,
+            completed_computation_sender: report_computation_completed_sender,
+            completed_computation_receiver: report_computation_completed_receiver,
             currently_running_sessions_count: 0,
         })
     }
 
-    pub(crate) fn check_for_completed_computations(&mut self) {
-        loop {
-            match self.computation_update_channel_receiver.try_recv() {
-                Ok(computation_update) => match computation_update {
-                    ComputationUpdate::Started => {
-                        self.currently_running_sessions_count += 1;
-                        info!(
-                            currently_running_sessions_count =? self.currently_running_sessions_count,
-                            "Started cryptographic computation"
-                        );
-                    }
-                    ComputationUpdate::Completed => {
-                        // todo(#1081): metadata.
-                        self.currently_running_sessions_count -= 1;
-                        info!(
-                            currently_running_sessions_count =? self.currently_running_sessions_count,
-                            "Completed cryptographic computation"
-                        );
-                    }
-                },
-                Err(err) => match err {
-                    TryRecvError::Empty => {
-                        return;
-                    }
-                    TryRecvError::Disconnected => {
-                        error!("cryptographic computations channel got disconnected");
-                        return;
-                    }
-                },
-            }
+    /// Check for completed computations, and sufficient CPU cores.
+    pub(crate) fn has_available_cores_to_perform_computation(&mut self) -> bool {
+        while let Ok(completed_session) = self.completed_computation_receiver.try_recv() {
+            self.currently_running_sessions_count -= 1;
+            info!(
+                session_identifier=?completed_session.session_identifier,
+                round=?completed_session.round,
+                attempts_count=?completed_session.attempts_count,
+                currently_running_sessions_count =? self.currently_running_sessions_count,
+                "Completed cryptographic computation"
+            );
         }
-    }
 
-    /// Checks if a new session can be spawned based on available CPU cores.
-    pub(crate) fn can_spawn_session(&self) -> bool {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
-    pub(super) async fn spawn_session(
+    pub(super) async fn try_spawn_session(
         &mut self,
         session: &DWalletMPCSession,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<()> {
+        if !self.has_available_cores_to_perform_computation() {
+            warn!(
+                session_id=?session.session_identifier,
+                mpc_protocol=?session.mpc_event_data.as_ref().unwrap().request_input,
+                "No available CPU cores to perform cryptographic computation"
+            );
+            return Err(DwalletMPCError::InsufficientCPUCores);
+        }
+
         let handle = Handle::current();
         let mut session = session.clone();
         // Safe to unwrap here (event must exist before this).
         let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
         dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_round.to_string());
-        let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
-        // TODO(Scaly) I think this is a bug.
-        // Updating the `Started` outside the `spawn` call, since we want to guarantee
-        if let Err(err) = self
-            .computation_update_channel_sender
-            .send(ComputationUpdate::Started)
-            .await
-        {
-            error!(
-                should_never_happen =? true,
-                session_id=?session.session_identifier,
-                mpc_protocol=?request_input,
-                error=?err,
-                "failed to send a `started` computation message",
-            );
-        }
-        let computation_channel_sender = self.computation_update_channel_sender.clone();
+        let computation_channel_sender = self.completed_computation_sender.clone();
         rayon::spawn_fifo(move || {
-            let advance_start_time = Instant::now();
-            // TODO(@scaly): what is this handle?
+            let start_advance = Instant::now();
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
@@ -179,9 +150,7 @@ impl CryptographicComputationsOrchestrator {
                     "failed to advance an MPC session"
                 );
             } else {
-                let elapsed = advance_start_time.elapsed();
-                let elapsed_ms = elapsed.as_millis();
-
+                let elapsed_ms = start_advance.elapsed().as_millis();
                 info!(
                     mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
@@ -191,22 +160,24 @@ impl CryptographicComputationsOrchestrator {
                     current_round = session.current_round,
                     "MPC session advanced successfully"
                 );
-
-                dwallet_mpc_metrics
-                    .add_advance_completion(&request_input, &session.current_round.to_string());
-                dwallet_mpc_metrics.set_last_completion_duration(
-                    &request_input,
-                    &session.current_round.to_string(),
-                    elapsed.as_millis() as i64,
-                );
             }
+            let elapsed = start_advance.elapsed();
+            dwallet_mpc_metrics
+                .add_advance_completion(&request_input, &session.current_round.to_string());
+            dwallet_mpc_metrics.set_last_completion_duration(
+                &request_input,
+                &session.current_round.to_string(),
+                elapsed.as_millis() as i64,
+            );
 
-            // TODO(Scaly): why from handle?
             handle.spawn(async move {
                 let start_send = Instant::now();
-                // TODO(scaly): why not from outside this rayon fifo?
                 if let Err(err) = computation_channel_sender
-                    .send(ComputationUpdate::Completed)
+                    .send(CompletedComputationReport {
+                        session_identifier: session.session_identifier,
+                        round: session.current_round,
+                        attempts_count: session.attempts_count,
+                    })
                     .await
                 {
                     error!(
@@ -224,6 +195,8 @@ impl CryptographicComputationsOrchestrator {
                 }
             });
         });
+
+        self.currently_running_sessions_count += 1;
 
         Ok(())
     }

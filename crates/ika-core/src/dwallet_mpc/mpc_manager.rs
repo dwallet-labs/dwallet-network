@@ -438,13 +438,6 @@ impl DWalletMPCManager {
     pub(crate) async fn perform_cryptographic_computation(&mut self) {
         let pending_for_computation = self.ordered_sessions_pending_for_computation.len();
         for _ in 0..pending_for_computation {
-            if !self
-                .cryptographic_computations_orchestrator
-                .can_spawn_session()
-            {
-                warn!("No available CPUs for cryptographic computations, waiting for a free CPU");
-                return;
-            }
             // Safe to unwrap, as we just checked that the queue is not empty.
             let oldest_pending_session = self
                 .ordered_sessions_pending_for_computation
@@ -479,9 +472,12 @@ impl DWalletMPCManager {
             }
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
-                .spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
+                .try_spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
                 .await
             {
+                self.ordered_sessions_pending_for_computation
+                    .push_front(oldest_pending_session.clone());
+
                 error!(
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
@@ -490,6 +486,8 @@ impl DWalletMPCManager {
                     error=?err,
                     "failed to spawn a cryptographic session"
                 );
+
+                return;
             }
         }
     }
