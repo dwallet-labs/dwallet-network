@@ -3,15 +3,13 @@
 
 module ika_common::address;
 
-// === Imports ===
-
 use sui::{address, hash};
+
+// === Imports ===
 
 // === Public Functions ===
 
 public fun ed25519_address(public_key: vector<u8>): address {
-    let mut hasher = vector[0u8];
-    hasher.append(public_key);
-    let address_bytes = hash::blake2b256(&hasher);
+    let address_bytes = hash::blake2b256(&public_key);
     address::from_bytes(address_bytes)
 }
