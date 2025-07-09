@@ -1724,42 +1724,41 @@ impl AuthorityPerEpochStore {
                 );
                 Ok(ConsensusCertificateResult::IkaTransaction(tx))
             }
-            MPCRequestInput::NetworkEncryptionKeyDkg(key_scheme, request_input) => match key_scheme {
-                    DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                        let slices = if is_rejected {
-                            vec![MPCNetworkDKGOutput {
+            MPCRequestInput::NetworkEncryptionKeyDkg(key_scheme, request_input) => match key_scheme
+            {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = if is_rejected {
+                        vec![MPCNetworkDKGOutput {
+                            dwallet_network_encryption_key_id: request_input
+                                .event_data
+                                .dwallet_network_encryption_key_id
+                                .clone()
+                                .to_vec(),
+                            public_output: vec![],
+                            supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
+                            is_last: true,
+                            rejected: true,
+                            session_sequence_number: request_input.session_sequence_number,
+                        }]
+                    } else {
+                        Self::slice_public_output_into_messages(
+                            output,
+                            |public_output_chunk, is_last| MPCNetworkDKGOutput {
                                 dwallet_network_encryption_key_id: request_input
                                     .event_data
                                     .dwallet_network_encryption_key_id
                                     .clone()
                                     .to_vec(),
-                                public_output: vec![],
+                                public_output: public_output_chunk,
                                 supported_curves: vec![
                                     DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
                                 ],
-                                is_last: true,
-                                rejected: true,
+                                is_last,
+                                rejected: false,
                                 session_sequence_number: request_input.session_sequence_number,
-                            }]
-                        } else {
-                            Self::slice_public_output_into_messages(
-                                output,
-                                |public_output_chunk, is_last| MPCNetworkDKGOutput {
-                                    dwallet_network_encryption_key_id: request_input
-                                        .event_data
-                                        .dwallet_network_encryption_key_id
-                                        .clone()
-                                        .to_vec(),
-                                    public_output: public_output_chunk,
-                                    supported_curves: vec![
-                                        DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
-                                    ],
-                                    is_last,
-                                    rejected: false,
-                                    session_sequence_number: request_input.session_sequence_number,
-                                },
-                            )
-                        };
+                            },
+                        )
+                    };
 
                     let messages: Vec<_> = slices
                         .into_iter()

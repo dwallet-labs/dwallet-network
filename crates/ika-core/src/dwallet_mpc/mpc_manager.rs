@@ -714,16 +714,17 @@ impl DWalletMPCManager {
             .ordered_sessions_pending_for_computation
             .iter()
             .position(|session_pending_for_computation| {
-                let session_pending_for_computation_event_data =
-                    session_pending_for_computation.mpc_event_data.as_ref().unwrap();
-                match session_pending_for_computation_event_data
-                    .session_type
-                {
+                let session_pending_for_computation_event_data = session_pending_for_computation
+                    .mpc_event_data
+                    .as_ref()
+                    .unwrap();
+                match session_pending_for_computation_event_data.session_type {
                     SessionType::User => {
                         if session_event_data.session_type == SessionType::User {
                             // Find the first pending session with a sequence number greater than the new session,
                             // so we can insert the new session right before it.
-                            session_pending_for_computation_event_data.session_sequence_number > session_event_data.session_sequence_number
+                            session_pending_for_computation_event_data.session_sequence_number
+                                > session_event_data.session_sequence_number
                         } else {
                             // System session takes precedence over user sessions.
                             true
