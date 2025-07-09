@@ -413,9 +413,28 @@ function encodeToASCII(input: string): Uint8Array {
 	return Uint8Array.from(asciiValues);
 }
 
+function u64ToBytesBigEndian(value: number | bigint): Uint8Array {
+	// Ensure the input is a BigInt for accurate 64-bit operations
+	const bigIntValue = BigInt(value);
+
+	// Create an 8-byte (64-bit) ArrayBuffer
+	const buffer = new ArrayBuffer(8);
+	// Create a DataView to manipulate the buffer with specific endianness
+	const view = new DataView(buffer);
+
+	// Write the BigInt value as a BigInt64 (signed 64-bit integer)
+	// or BigUint64 (unsigned 64-bit integer) depending on the context.
+	// For u64, use setBigUint64.
+	view.setBigUint64(0, bigIntValue, false); // false for big-endian
+
+	// Return the Uint8Array representation of the buffer
+	return new Uint8Array(buffer);
+}
+
 export function sessionIdentifierDigest(sessionIdentifier: Uint8Array): Uint8Array {
+	const version = 0; // Version of the session identifier
 	// Calculate the user session identifier for digest
-	const data = [...encodeToASCII('USER'), ...sessionIdentifier];
+	const data = [...u64ToBytesBigEndian(version), ...encodeToASCII('USER'), ...sessionIdentifier];
 	// Compute the SHA3-256 digest of the serialized data
 	const digest = sha3.keccak256.digest(data);
 	return Uint8Array.from(digest);
