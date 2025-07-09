@@ -12,7 +12,7 @@ use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
 use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, SessionIdentifier};
-use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
+use ika_types::sui::DWalletCoordinatorInner;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
