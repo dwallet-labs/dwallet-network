@@ -146,14 +146,11 @@ impl CryptographicComputationsOrchestrator {
     ) -> DwalletMPCResult<()> {
         let handle = Handle::current();
         let mut session = session.clone();
-        let init_mpc_protocol_data = session
-            .mpc_event_data
-            .clone()
-            .ok_or(DwalletMPCError::MissingEventData)?
-            .init_protocol_data;
+        // Safe to unwrap here (event must exist before this).
+        let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
-        dwallet_mpc_metrics
-            .add_advance_call(&init_mpc_protocol_data, &session.current_round.to_string());
+        dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_round.to_string());
+        let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
         // TODO(Scaly) I think this is a bug.
         // Updating the `Started` outside the `spawn` call, since we want to guarantee
@@ -162,15 +159,13 @@ impl CryptographicComputationsOrchestrator {
             .send(ComputationUpdate::Started)
             .await
         {
-            // This should not happen, but error just in case.
             error!(
+                should_never_happen =? true,
                 session_id=?session.session_identifier,
-                mpc_protocol=?init_mpc_protocol_data,
+                mpc_protocol=?request_input,
                 error=?err,
                 "failed to send a `started` computation message",
             );
-
-            return Err(DwalletMPCError::ClosedChannel);
         }
         let computation_channel_sender = self.computation_update_channel_sender.clone();
         rayon::spawn_fifo(move || {
@@ -179,7 +174,7 @@ impl CryptographicComputationsOrchestrator {
             if let Err(err) = session.advance(&handle) {
                 error!(
                     error=?err,
-                    mpc_protocol=%init_mpc_protocol_data,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     "failed to advance an MPC session"
                 );
@@ -188,7 +183,7 @@ impl CryptographicComputationsOrchestrator {
                 let elapsed_ms = elapsed.as_millis();
 
                 info!(
-                    mpc_protocol=%init_mpc_protocol_data,
+                    mpc_protocol=?request_input,
                     session_id=?session.session_identifier,
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
@@ -197,12 +192,10 @@ impl CryptographicComputationsOrchestrator {
                     "MPC session advanced successfully"
                 );
 
-                dwallet_mpc_metrics.add_advance_completion(
-                    &init_mpc_protocol_data,
-                    &session.current_round.to_string(),
-                );
+                dwallet_mpc_metrics
+                    .add_advance_completion(&request_input, &session.current_round.to_string());
                 dwallet_mpc_metrics.set_last_completion_duration(
-                    &init_mpc_protocol_data,
+                    &request_input,
                     &session.current_round.to_string(),
                     elapsed.as_millis() as i64,
                 );
@@ -224,7 +217,7 @@ impl CryptographicComputationsOrchestrator {
                     let elapsed_ms = start_send.elapsed().as_millis();
                     info!(
                         duration_ms = elapsed_ms,
-                        mpc_protocol=?init_mpc_protocol_data,
+                        mpc_protocol=?request_input,
                         duration_seconds = elapsed_ms / 1000,
                         "Computation update message sent"
                     );

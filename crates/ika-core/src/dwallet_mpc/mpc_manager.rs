@@ -1,10 +1,8 @@
-mod event_handling;
-
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use ika_types::error::IkaResult;
 use sui_types::base_types::ObjectID;
-
+use ika_types::sui::EpochStartSystemTrait;
 use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
@@ -14,9 +12,8 @@ use crate::dwallet_mpc::mpc_protocols::network_dkg::{
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::party_ids_to_authority_names;
 use crate::stake_aggregator::StakeAggregator;
-use class_groups::Secp256k1DecryptionKeySharePublicParameters;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData, VersionedNetworkDkgOutput};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -24,20 +21,17 @@ use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletMPCEvent, DWalletMPCMessage, MaliciousReport, SessionIdentifier,
-    SessionInfo, SessionType, ThresholdNotReachedReport,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData, MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport};
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use group::helpers::DeduplicateAndSort;
-use itertools::Itertools;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
+use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -55,8 +49,8 @@ pub(crate) struct DWalletMPCManager {
     /// mapping until the epoch advances.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    epoch_store: Weak<AuthorityPerEpochStore>,
-    epoch_id: EpochId,
+    pub(crate) epoch_store: Weak<AuthorityPerEpochStore>,
+    pub(crate) epoch_id: EpochId,
     pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
@@ -77,7 +71,7 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
-    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
     /// Events that wait for the network key to update.
     /// Once we get the network key, these events will continue.
     pub(crate) events_pending_for_network_key: HashMap<ObjectID, Vec<DWalletMPCEvent>>,
@@ -117,10 +111,10 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub(crate) async fn must_create_dwallet_mpc_manager(
+    pub(crate) fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -143,7 +137,7 @@ impl DWalletMPCManager {
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,

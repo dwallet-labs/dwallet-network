@@ -7,13 +7,11 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_session::session_info_from_event;
-use dwallet_mpc_types::dwallet_mpc::{MPCSessionStatus, NetworkDecryptionKeyPublicData};
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
-use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletMPCEvent, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::{DWalletNetworkDecryptionKeyData, SessionIdentifier};
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -21,7 +19,6 @@ use std::time::Duration;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
-use tokio::sync::broadcast::error::TryRecvError;
 use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
@@ -31,8 +28,8 @@ const READ_INTERVAL_MS: u64 = 100;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Round,
-    epoch_store: Arc<AuthorityPerEpochStore>,
-    sui_client: Arc<SuiConnectorClient>,
+    pub(crate) epoch_store: Arc<AuthorityPerEpochStore>,
+    pub(crate) sui_client: Arc<SuiConnectorClient>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
     consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -40,13 +37,13 @@ pub struct DWalletMPCService {
 }
 
 impl DWalletMPCService {
-    pub async fn new(
+    pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: Receiver<()>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, NetworkDecryptionKeyPublicData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
@@ -59,8 +56,7 @@ impl DWalletMPCService {
             next_epoch_committee_receiver,
             node_config,
             dwallet_mpc_metrics,
-        )
-        .await;
+        );
 
         Self {
             last_read_consensus_round: 0,
