@@ -355,7 +355,7 @@ where
                             let signers_len = auth_sig.signers_map.len();
                             let message = bcs::to_bytes::<DWalletCheckpointMessage>(
                                 &dwallet_checkpoint_message.into_message(),
-                            ) // todo(omer): ??
+                            )
                             .expect("Serializing checkpoint message cannot fail");
 
                             info!(

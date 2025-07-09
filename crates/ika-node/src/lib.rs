@@ -1132,6 +1132,7 @@ impl IkaNode {
                         cur_epoch_store.get_chain_identifier().chain(),
                         supported_versions,
                         vec![],
+                        // Note: this is a temp fix, we will handle package upgrades later.
                         // sui_client
                         // .get_available_move_packages()
                         //     .await
