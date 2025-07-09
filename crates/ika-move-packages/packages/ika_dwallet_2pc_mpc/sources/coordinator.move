@@ -19,8 +19,8 @@ use ika_dwallet_2pc_mpc::{
         UnverifiedPresignCap,
         VerifiedPartialUserSignatureCap,
         VerifiedPresignCap,
-        SessionIdentifier,
     },
+    sessions_manager::SessionIdentifier,
     dwallet_pricing::DWalletPricing
 };
 use ika_system::{
@@ -106,12 +106,12 @@ public fun initiate_mid_epoch_reconfiguration(
     self.inner_mut().initiate_mid_epoch_reconfiguration(system_current_status_info);
 }
 
-public fun network_encryption_key_mid_epoch_reconfiguration(
+public fun request_network_encryption_key_mid_epoch_reconfiguration(
     self: &mut DWalletCoordinator,
     dwallet_network_encryption_key_id: ID,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
+    self.inner_mut().request_network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
 }
 
 public fun advance_epoch(
@@ -625,6 +625,8 @@ public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
 }
 
 // === Test Functions ===
+#[test_only]
+use ika_dwallet_2pc_mpc::sessions_manager::SessionsManager;
 
 #[test_only]
 public fun last_processed_checkpoint_sequence_number(
@@ -634,6 +636,6 @@ public fun last_processed_checkpoint_sequence_number(
 }
 
 #[test_only]
-public fun last_session_sequence_number(self: &DWalletCoordinator): u64 {
-    self.inner().last_session_sequence_number()
+public fun sessions_manager(self: &DWalletCoordinator): &SessionsManager {
+    self.inner().sessions_manager()
 }

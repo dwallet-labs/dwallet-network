@@ -30,9 +30,8 @@ use ika_types::sui::{
     DWalletCoordinatorInner, SystemInner, SystemInnerTrait, ADVANCE_EPOCH_FUNCTION_NAME,
     CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
     INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
-    NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME,
+    REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;
@@ -192,8 +191,8 @@ where
         let epoch_finish_time = ika_system_state_inner.epoch_start_timestamp_ms()
             + ika_system_state_inner.epoch_duration_ms();
         let epoch_not_locked = !coordinator
-            .session_management
-            .locked_last_session_to_complete_in_current_epoch;
+            .sessions_manager
+            .locked_last_user_initiated_session_to_complete_in_current_epoch;
         if clock.timestamp_ms > epoch_finish_time
             && epoch_not_locked
             && !epoch_switch_state.ran_lock_last_session
@@ -541,7 +540,7 @@ where
             ptb.programmable_move_call(
                 ika_dwallet_2pc_mpc_package_id,
                 DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME.into(),
-                NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
+                REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME.into(),
                 vec![],
                 vec![dwallet_coordinator_ptb_arg, network_encryption_key_id_arg],
             );

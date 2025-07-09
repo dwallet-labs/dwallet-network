@@ -63,13 +63,23 @@ pub struct PartialSignatureVerificationOutput {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-pub struct NetworkKeyPublicOutputSlice {
-    pub session_id: Vec<u8>,
+pub struct MPCNetworkDKGOutput {
     pub dwallet_network_encryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
     pub supported_curves: Vec<u32>,
     pub is_last: bool,
     pub rejected: bool,
+    pub session_sequence_number: u64,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct MPCNetworkReconfigurationOutput {
+    pub dwallet_network_encryption_key_id: Vec<u8>,
+    pub public_output: Vec<u8>,
+    pub supported_curves: Vec<u32>,
+    pub is_last: bool,
+    pub rejected: bool,
+    pub session_sequence_number: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
@@ -101,8 +111,8 @@ pub enum DWalletMessageKind {
     RespondDWalletPresign(PresignOutput),
     RespondDWalletSign(SignOutput),
     RespondDWalletPartialSignatureVerificationOutput(PartialSignatureVerificationOutput),
-    RespondDWalletMPCNetworkDKGOutput(NetworkKeyPublicOutputSlice),
-    RespondDWalletMPCNetworkReconfigurationOutput(NetworkKeyPublicOutputSlice),
+    RespondDWalletMPCNetworkDKGOutput(MPCNetworkDKGOutput),
+    RespondDWalletMPCNetworkReconfigurationOutput(MPCNetworkReconfigurationOutput),
     SetMaxActiveSessionsBuffer(u64),
     SetGasFeeReimbursementSuiSystemCallValue(u64),
     EndOfPublish,

@@ -103,16 +103,21 @@ pub struct DWalletPricingCalculationVotes {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct SessionManagement {
-    pub registered_session_identifiers: Table,
+pub struct SessionsKeeper {
     pub sessions: ObjectTable,
-    pub user_requested_sessions_events: Bag,
-    pub number_of_completed_sessions: u64,
-    pub started_system_sessions_count: u64,
-    pub completed_system_sessions_count: u64,
+    pub session_events: Bag,
+    pub started_sessions_count: u64,
+    pub completed_sessions_count: u64,
     pub next_session_sequence_number: u64,
-    pub last_session_to_complete_in_current_epoch: u64,
-    pub locked_last_session_to_complete_in_current_epoch: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct SessionsManager {
+    pub registered_user_session_identifiers: Table,
+    pub user_sessions_keeper: SessionsKeeper,
+    pub system_sessions_keeper: SessionsKeeper,
+    pub last_user_initiated_session_to_complete_in_current_epoch: u64,
+    pub locked_last_user_initiated_session_to_complete_in_current_epoch: bool,
     pub max_active_sessions_buffer: u64,
 }
 
@@ -133,7 +138,7 @@ pub struct PricingAndFeeManagement {
     pub validator_votes: Table,
     pub calculation_votes: Option<DWalletPricingCalculationVotes>,
     pub gas_fee_reimbursement_sui_system_call_value: u64,
-    pub gas_fee_reimbursement_sui: Balance,
+    pub gas_fee_reimbursement_sui_system_call_balance: Balance,
     pub fee_charged_ika: Balance,
 }
 
@@ -141,7 +146,7 @@ pub struct PricingAndFeeManagement {
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DWalletCoordinatorInnerV1 {
     pub current_epoch: u64,
-    pub session_management: SessionManagement,
+    pub sessions_manager: SessionsManager,
     pub dwallets: ObjectTable,
     pub dwallet_network_encryption_keys: ObjectTable,
     pub epoch_dwallet_network_encryption_keys_reconfiguration_completed: u64,

@@ -16,14 +16,7 @@ use crate::dwallet_mpc::sign::{
 };
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use ika_types::error::{IkaError, IkaResult};
-use ika_types::messages_dwallet_mpc::{
-    DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent,
-    DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
-    DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent,
-    DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SignRequestEvent,
-    DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME,
-};
+use ika_types::messages_dwallet_mpc::{DBSuiEvent, DWalletDKGFirstRoundRequestEvent, DWalletDKGSecondRoundRequestEvent, DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent, DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent, DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent, MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SignRequestEvent, SESSIONS_MANAGER_MODULE_NAME};
 use serde::de::DeserializeOwned;
 use std::time::Duration;
 use sui_types::dynamic_field::Field;
@@ -96,7 +89,7 @@ impl DWalletMPCManager {
 
     fn handle_sui_event(&mut self, event: DBSuiEvent, epoch_store: &AuthorityPerEpochStore) {
         if event.type_.address != *epoch_store.packages_config.ika_dwallet_2pc_mpc_package_id
-            || event.type_.module != DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.into()
+            || event.type_.module != SESSIONS_MANAGER_MODULE_NAME.into()
         {
             // TODO: Omer - should/can we check if it is not from any of our modules before reporting it as an error?
             error!(

@@ -463,8 +463,9 @@ impl DWalletMPCManager {
             };
 
             let should_advance = match mpc_event_data.session_type {
-                SessionType::User { sequence_number } => {
-                    sequence_number <= self.last_session_to_complete_in_current_epoch
+                SessionType::User => {
+                    mpc_event_data.session_sequence_number
+                        <= self.last_session_to_complete_in_current_epoch
                 }
                 SessionType::System => true,
             };
@@ -707,28 +708,22 @@ impl DWalletMPCManager {
         &mut self,
         session: DWalletMPCSession,
     ) {
-        let sequence_number = match session.mpc_event_data.as_ref().unwrap().session_type {
-            SessionType::User { sequence_number } => Some(sequence_number),
-            SessionType::System => None,
-        };
+        let session_event_data = session.mpc_event_data.as_ref().unwrap();
 
         if let Some(index) = self
             .ordered_sessions_pending_for_computation
             .iter()
             .position(|session_pending_for_computation| {
-                match session_pending_for_computation
-                    .mpc_event_data
-                    .as_ref()
-                    .unwrap()
+                let session_pending_for_computation_event_data =
+                    session_pending_for_computation.mpc_event_data.as_ref().unwrap();
+                match session_pending_for_computation_event_data
                     .session_type
                 {
-                    SessionType::User {
-                        sequence_number: pending_session_sequence_number,
-                    } => {
-                        if let Some(sequence_number) = sequence_number {
+                    SessionType::User => {
+                        if session_event_data.session_type == SessionType::User {
                             // Find the first pending session with a sequence number greater than the new session,
                             // so we can insert the new session right before it.
-                            pending_session_sequence_number > sequence_number
+                            session_pending_for_computation_event_data.session_sequence_number > session_event_data.session_sequence_number
                         } else {
                             // System session takes precedence over user sessions.
                             true
