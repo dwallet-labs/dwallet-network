@@ -181,7 +181,7 @@ impl DWalletMPCService {
 
                 if let Err(err) = self
                     .dwallet_mpc_manager
-                    .handle_consensus_round_messages(messages)
+                    .handle_consensus_round_messages(messages, &self.epoch_store)
                 {
                     error!("failed to handle the end of delivery with error: {:?}", err);
                 }

@@ -13,7 +13,6 @@ use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use dwallet_rng::RootSeed;
-use group::helpers::DeduplicateAndSort;
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -113,7 +112,6 @@ pub enum DWalletMPCDBMessage {
 struct ReadySessionsResponse {
     ready_sessions: Vec<DWalletMPCSession>,
     pending_for_event_sessions: Vec<DWalletMPCSession>,
-    malicious_actors: Vec<PartyID>,
 }
 
 impl DWalletMPCManager {
@@ -268,11 +266,7 @@ impl DWalletMPCManager {
         origin_authority: AuthorityName,
     ) -> DwalletMPCResult<()> {
         // Previously malicious actors are ignored.
-        if self
-            .malicious_handler
-            .get_malicious_actors_names()
-            .contains(&origin_authority)
-        {
+        if self.malicious_handler.is_malicious_actor(&origin_authority) {
             return Ok(());
         }
         let committee = self.epoch_store()?.committee().clone();
@@ -301,6 +295,7 @@ impl DWalletMPCManager {
         let epoch_store = self.epoch_store()?;
         if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
             session.attempts_count += 1;
+
             // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
             // So all parties that sent a regular MPC Message for the last executed
             // round are malicious—as the round aborted with the error `TWOPCMPCThresholdNotReached`.
@@ -310,7 +305,6 @@ impl DWalletMPCManager {
             // since we received the quorum for `ThresholdNotReached`
             // on the previous round,
             // but no messages were sent for the current round.
-
             if let Some(unreached_round_messages) = session
                 .serialized_full_messages
                 .remove(&(session.current_round - 1))
@@ -338,16 +332,17 @@ impl DWalletMPCManager {
     pub fn handle_consensus_round_messages(
         &mut self,
         messages: Vec<DWalletMPCDBMessage>,
+        epoch_store: &AuthorityPerEpochStore,
     ) -> IkaResult {
         for message in messages {
             self.handle_dwallet_message(message);
         }
 
         // Check for ready to advance sessions, and clone and place their copy in an ordered queue waiting for computation.
-        let ready_sessions_response = self.get_ready_to_advance_sessions()?;
-        if !ready_sessions_response.malicious_actors.is_empty() {
-            self.flag_parties_as_malicious(&ready_sessions_response.malicious_actors)?;
-        }
+        let ReadySessionsResponse {
+            pending_for_event_sessions,
+            ready_sessions,
+        } = self.get_ready_to_advance_sessions(epoch_store);
 
         // TODO(scaly): update comment after we remove session copy
         // Since the Ika and Sui consensuses are not in sync,
@@ -357,10 +352,10 @@ impl DWalletMPCManager {
         // the current messages so that when we do advance,
         // we use exactly the same inputs as peers who already have the data.
         self.sessions_pending_for_events
-            .extend(ready_sessions_response.pending_for_event_sessions);
+            .extend(pending_for_event_sessions);
 
         // Extend the pending for computation queue while keeping order.
-        for ready_to_advance_session_copy in ready_sessions_response.ready_sessions {
+        for ready_to_advance_session_copy in ready_sessions {
             self.insert_session_into_ordered_pending_for_computation_queue(
                 ready_to_advance_session_copy,
             );
@@ -398,16 +393,18 @@ impl DWalletMPCManager {
     /// Returns the sessions that can perform the next cryptographic round,
     /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
-    fn get_ready_to_advance_sessions(&mut self) -> DwalletMPCResult<ReadySessionsResponse> {
-        let (ready_to_advance_sessions, malicious_parties): (
-            Vec<DWalletMPCSession>,
-            Vec<Vec<PartyID>>,
-        ) = self
+    fn get_ready_to_advance_sessions(
+        &mut self,
+        epoch_store: &AuthorityPerEpochStore,
+    ) -> ReadySessionsResponse {
+        let ready_to_advance_sessions: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                let quorum_check_result = session.check_quorum_for_next_crypto_round().ok()?;
-                if quorum_check_result.is_ready {
+                let is_ready = session.check_quorum_for_next_crypto_round(epoch_store);
+                if is_ready {
+                    // TODO: delete this.
+
                     // We must first clone the session, as we approve to advance the current session
                     // in the current round and then start waiting for the next round's messages
                     // until it is ready to advance or finalized.
@@ -418,28 +415,22 @@ impl DWalletMPCManager {
                     session.current_round += 1;
                     session.received_more_messages_since_last_advance = false;
 
-                    Some((session_clone, quorum_check_result.malicious_parties))
+                    Some(session_clone)
                 } else {
                     None
                 }
             })
-            .unzip();
-
-        let malicious_parties: Vec<PartyID> = malicious_parties
-            .into_iter()
-            .flatten()
-            .deduplicate_and_sort();
+            .collect();
 
         let (ready_sessions, pending_for_event_sessions): (Vec<_>, Vec<_>) =
             ready_to_advance_sessions
                 .into_iter()
                 .partition(|s| s.mpc_event_data.is_some());
 
-        Ok(ReadySessionsResponse {
+        ReadySessionsResponse {
             ready_sessions,
             pending_for_event_sessions,
-            malicious_actors: malicious_parties,
-        })
+        }
     }
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
