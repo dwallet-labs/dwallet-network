@@ -2,6 +2,7 @@ mod advance_and_serialize;
 mod input;
 mod logger;
 
+use ika_types::crypto::AuthorityPublicKeyBytes;
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -151,7 +152,6 @@ pub(crate) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// HashMap{R1: Map{Validator1->Message, Validator2->Message}, R2: Map{Validator1->Message} ...}
     pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
-    epoch_store: Weak<AuthorityPerEpochStore>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     pub(super) session_identifier: SessionIdentifier,
@@ -177,6 +177,8 @@ pub(crate) struct DWalletMPCSession {
     agreed_mpc_protocol: Option<String>,
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
+    validator_name: AuthorityPublicKeyBytes,
+
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 
     /// The root seed of this validator, used for deriving the per-round seed for advancing this session.
@@ -192,7 +194,7 @@ impl DWalletMPCSession {
     const DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND: usize = 3;
 
     pub(crate) fn new(
-        epoch_store: Weak<AuthorityPerEpochStore>,
+        epoch_store: &AuthorityPerEpochStore,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch: EpochId,
         status: MPCSessionStatus,
@@ -207,7 +209,6 @@ impl DWalletMPCSession {
             status,
             serialized_full_messages: HashMap::new(),
             consensus_adapter,
-            epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_identifier,
             current_round: 1,
@@ -219,6 +220,7 @@ impl DWalletMPCSession {
             mpc_protocol_to_voting_authorities: HashMap::new(),
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
+            validator_name: epoch_store.name,
             dwallet_mpc_metrics,
             root_seed,
         }
@@ -227,14 +229,6 @@ impl DWalletMPCSession {
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
         self.serialized_full_messages = HashMap::new();
-    }
-
-    /// Returns the epoch store.
-    /// Errors if the epoch was switched in the middle.
-    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
-        self.epoch_store
-            .upgrade()
-            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
@@ -256,36 +250,37 @@ impl DWalletMPCSession {
                 message,
             }) => {
                 let session_id = self.session_identifier;
-                let validator_name = self.epoch_store()?.name;
                 let round_number = self.serialized_full_messages.len();
                 info!(
                     mpc_protocol=?mpc_protocol,
                     session_id=?session_id,
-                    validator=?validator_name,
+                    validator=?self.validator_name,
                     round=?round_number,
                     "Advanced MPC session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
-                let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
                     self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let message = self.new_dwallet_mpc_message(message, &mpc_protocol.to_string())?;
-                tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&[message], &epoch_store)
-                        .await
-                    {
-                        error!(
-                            mpc_protocol=?mpc_protocol,
-                            session_id=?session_id,
-                            validator=?validator_name,
-                            round=?round_number,
-                            err=?err,
-                            "failed to submit an MPC message to consensus"
-                        );
-                    }
-                });
+
+                // TODO: not from here! send in channel
+                // tokio_runtime_handle.spawn(async move {
+                //     if let Err(err) = consensus_adapter
+                //         .submit_to_consensus(&[message], &epoch_store)
+                //         .await
+                //     {
+                //         error!(
+                //             mpc_protocol=?mpc_protocol,
+                //             session_id=?session_id,
+                //             validator=?validator_name,
+                //             round=?round_number,
+                //             err=?err,
+                //             "failed to submit an MPC message to consensus"
+                //         );
+                //     }
+                // });
+
                 Ok(())
             }
             Ok(AsynchronousRoundResult::Finalize {
@@ -293,20 +288,19 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-                let validator_name = self.epoch_store()?.name;
+
                 info!(
                     mpc_protocol=?&mpc_protocol,
                     session_identifier=?self.session_identifier,
-                    validator=?&validator_name,
+                    validator=?&self.validator_name,
                     "Reached public output (Finalize) for session"
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
-                let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
                     warn!(
                         mpc_protocol=?&mpc_protocol,
                         session_identifier=?self.session_identifier,
-                        validator=?&validator_name,
+                        validator=?&self.validator_name,
                         ?malicious_parties,
                         "Malicious Parties detected on MPC session Finalize",
                     );
@@ -316,27 +310,30 @@ impl DWalletMPCSession {
                     MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
                 )?;
                 let session_id_clone = self.session_identifier;
-                tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&[consensus_message], &epoch_store)
-                        .await
-                    {
-                        error!(
-                            mpc_protocol=?mpc_protocol,
-                            session_id=?session_id_clone,
-                            validator=?validator_name,
-                            err=?err,
-                            "failed to submit an MPC output message to consensus",
-                        );
-                    }
-                });
+
+                // TODO: not from here!
+                // tokio_runtime_handle.spawn(async move {
+                //     if let Err(err) = consensus_adapter
+                //         .submit_to_consensus(&[consensus_message], &epoch_store)
+                //         .await
+                //     {
+                //         error!(
+                //             mpc_protocol=?mpc_protocol,
+                //             session_id=?session_id_clone,
+                //             validator=?validator_name,
+                //             err=?err,
+                //             "failed to submit an MPC output message to consensus",
+                //         );
+                //     }
+                // });
+
                 Ok(())
             }
             Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
                 error!(
                     err=?DwalletMPCError::TWOPCMPCThresholdNotReached,
                     session_identifier=?self.session_identifier,
-                    validator=?self.epoch_store()?.name,
+                    validator=?self.validator_name,
                     crypto_round=?self.current_round,
                     party_id=?self.party_id,
                     mpc_protocol=?&mpc_protocol,
@@ -345,11 +342,10 @@ impl DWalletMPCSession {
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
-                let validator_name = self.epoch_store()?.name;
 
                 error!(
                     session_identifier=?self.session_identifier,
-                    validator=?validator_name,
+                    validator=?self.validator_name,
                     crypto_round=?self.current_round,
                     party_id=?self.party_id,
                     error=?err,
@@ -359,25 +355,27 @@ impl DWalletMPCSession {
                 );
 
                 let consensus_adapter = self.consensus_adapter.clone();
-                let epoch_store = self.epoch_store()?.clone();
                 let consensus_message =
                     self.new_dwallet_mpc_output_message(MPCSessionPublicOutput::SessionFailed)?;
                 let session_id_clone = self.session_identifier;
                 let epoch_id_clone = self.epoch_id;
-                tokio_runtime_handle.spawn(async move {
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&[consensus_message], &epoch_store)
-                        .await
-                    {
-                        error!(
-                            mpc_protocol=?&mpc_protocol,
-                            session_id=?session_id_clone,
-                            validator=?validator_name,
-                            epoch=?epoch_id_clone,
-                            error=?err,
-                            "failed to submit an MPC SessionFailed message to consensus");
-                    }
-                });
+
+                // TODO(Scaly): what is this code
+                // tokio_runtime_handle.spawn(async move {
+                //     if let Err(err) = consensus_adapter
+                //         .submit_to_consensus(&[consensus_message], &epoch_store)
+                //         .await
+                //     {
+                //         error!(
+                //             mpc_protocol=?&mpc_protocol,
+                //             session_id=?session_id_clone,
+                //             validator=?validator_name,
+                //             epoch=?epoch_id_clone,
+                //             error=?err,
+                //             "failed to submit an MPC SessionFailed message to consensus");
+                //     }
+                // });
+
                 Err(err)
             }
         }
@@ -395,7 +393,7 @@ impl DWalletMPCSession {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
-            self.epoch_store()?.name,
+            self.validator_name,
             output,
             MPCSessionRequest {
                 session_type: mpc_event_data.session_type.clone(),
@@ -408,32 +406,33 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// In the Sign-Identifiable Abort protocol, each validator sends a malicious report, even
-    /// if no malicious actors are found. This is necessary to reach agreement on a malicious report
-    /// and to punish the validator who started the Sign IA report if they sent a faulty report.
     fn report_malicious_actors(
         &self,
         tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
+        epoch_store: &AuthorityPerEpochStore,
     ) -> DwalletMPCResult<()> {
         // Makes sure all the validators report on the malicious
         // actors in the same order without duplicates.
         let malicious_parties_ids = malicious_parties_ids.deduplicate_and_sort();
         let report = MaliciousReport::new(
-            party_ids_to_authority_names(&malicious_parties_ids, &*self.epoch_store()?)?,
+            // TODO: how to get these without - just take committee in Self, refactor functions.
+            party_ids_to_authority_names(&malicious_parties_ids, epoch_store)?,
             self.session_identifier,
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
-        let epoch_store = self.epoch_store()?.clone();
         let consensus_adapter = self.consensus_adapter.clone();
-        tokio_runtime_handle.spawn(async move {
-            if let Err(err) = consensus_adapter
-                .submit_to_consensus(&[report_tx], &epoch_store)
-                .await
-            {
-                error!("failed to submit an MPC message to consensus: {:?}", err);
-            }
-        });
+
+        // TODO(Scaly): why is this sent from here?
+        // tokio_runtime_handle.spawn(async move {
+        //     if let Err(err) = consensus_adapter
+        //         .submit_to_consensus(&[report_tx], &epoch_store)
+        //         .await
+        //     {
+        //         error!("failed to submit an MPC message to consensus: {:?}", err);
+        //     }
+        // });
+
         Ok(())
     }
 
@@ -1057,11 +1056,11 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    pub(crate) fn store_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
+    pub(crate) fn store_message(&mut self, sender_party_id: PartyID, message: DWalletMPCMessage, epoch_store: &AuthorityPerEpochStore) -> bool {
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
-            warn!(
+            info!(
                 session_id=?message.session_identifier,
                 from_authority=?message.authority,
                 receiving_authority=?self.epoch_store()?.name,
@@ -1069,11 +1068,14 @@ impl DWalletMPCSession {
                 mpc_protocol=%message.mpc_protocol,
                 "Received a message for a session that is not active",
             );
-            return Ok(());
+
+            return false;
         }
-        let committee = self.epoch_store()?.committee().clone();
+        let committee = epoch_store.committee().clone();
         if self.agreed_mpc_protocol.is_none() {
             let mpc_protocol = message.mpc_protocol.clone();
+
+            // TODO(Scaly): delete
             if self
                 .mpc_protocol_to_voting_authorities
                 .entry(mpc_protocol.clone())
@@ -1084,6 +1086,7 @@ impl DWalletMPCSession {
                 self.agreed_mpc_protocol = Some(mpc_protocol);
             }
         }
+
         info!(
             session_id=?message.session_identifier,
             from_authority=?message.authority,
@@ -1103,11 +1106,10 @@ impl DWalletMPCSession {
                 mpc_protocol=?message.mpc_protocol,
                 "Received a message for round zero",
             );
-            return Err(DwalletMPCError::MessageForFirstMPCStep);
+
+            return true;
         }
-        let source_party_id = self
-            .epoch_store()?
-            .authority_name_to_party_id(&message.authority)?;
+
         // We should only receive outputs of previous rounds.
         if message.round_number > self.current_round {
             warn!(
@@ -1117,18 +1119,35 @@ impl DWalletMPCSession {
                 recieved_message_round_number=?message.round_number,
                 "Received a message for a future round",
             );
-            return Err(DwalletMPCError::MaliciousParties(vec![source_party_id]));
+
+            return true;
         }
+
         let round_messages_map = self
             .serialized_full_messages
             .entry(message.round_number)
             .or_default();
-        if round_messages_map.contains_key(&source_party_id) {
-            return Ok(());
+        if let Some(existing_message) = round_messages_map.get(&sender_party_id) {
+            warn!(
+                session_id=?message.session_identifier,
+                from_authority=?message.authority,
+                receiving_authority=?self.epoch_store()?.name,
+                recieved_message_round_number=?message.round_number,
+                existing_message=?existing_message.clone(),
+                new_message=?message.message.clone(),
+                "Received duplicate messages from a validator for the same session and round",
+            );
+
+            // Although this might be caused by malicious behavior, it has no effect if we simply ignore the second message,
+            // and therefore we don't have to flag it a malicious party.
+            // It might be the case that in some edge-cases, this happens honestly, so we simply ignore.
+            return false;
         }
-        round_messages_map.insert(source_party_id, message.message.clone());
+
+        round_messages_map.insert(sender_party_id, message.message);
         self.received_more_messages_since_last_advance = true;
-        Ok(())
+
+        false
     }
 
     /// Checks if the session should wait for additional consensus rounds before advancing.

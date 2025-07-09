@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::vec::Vec;
 use sui_types::base_types::EpochId;
+use tracing::error;
 
 mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;
@@ -85,28 +86,36 @@ pub(crate) fn generate_access_structure_from_committee(
 pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,
     epoch_store: &AuthorityPerEpochStore,
-) -> DwalletMPCResult<AuthorityName> {
+) -> Option<AuthorityName> {
     // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
     // Convert it to an index to the committee authority names, which is in the range `0..number_of_tangible_parties`,
     // Decrement the index to transform it from 1-based to 0-based.
     // Safe to decrement as `PartyID` is `u16`, will never overflow.
     let index = u32::from(party_id) - 1;
 
-    let authority_name = *epoch_store
+    *epoch_store
         .committee()
         .authority_by_index(index)
-        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?;
-
-    Ok(authority_name)
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
     party_ids: &[PartyID],
     epoch_store: &AuthorityPerEpochStore,
-) -> DwalletMPCResult<Vec<AuthorityName>> {
+) -> Vec<AuthorityName> {
     party_ids
         .iter()
-        .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
-        .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
+        .flat_map(|party_id| {
+            let authority_name = party_id_to_authority_name(*party_id, epoch_store);
+
+            if authority_name.is_none() {
+                error!(
+                    party_id=?party_id,
+                    "failed to find matching authority name for party ID"
+                );
+            }
+
+            authority_name
+        })
+        .collect()
 }

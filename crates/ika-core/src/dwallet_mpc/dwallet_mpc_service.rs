@@ -179,12 +179,9 @@ impl DWalletMPCService {
                 // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
 
-                if let Err(err) = self
+                self
                     .dwallet_mpc_manager
-                    .handle_consensus_round_messages(messages, &self.epoch_store)
-                {
-                    error!("failed to handle the end of delivery with error: {:?}", err);
-                }
+                    .handle_consensus_round_messages(messages, &self.epoch_store);
             }
 
             self.dwallet_mpc_manager
@@ -244,7 +241,7 @@ impl DWalletMPCService {
                 .contains_key(&session_identifier)
             {
                 self.dwallet_mpc_manager
-                    .new_mpc_session(&session_identifier, None)
+                    .new_mpc_session(&session_identifier, None, &self.epoch_store)
             }
 
             // Now this session is guaranteed to exist, so safe to `unwrap()`.
