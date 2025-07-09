@@ -167,3 +167,4 @@ harness = false
 
 [features]
 test-utils = []
+enforce-minimum-cpu = []
