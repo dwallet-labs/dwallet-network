@@ -16,10 +16,10 @@
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::messages_dwallet_mpc::SessionIdentifier;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
-use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{error, info, warn};
 
@@ -123,10 +123,10 @@ impl CryptographicComputationsOrchestrator {
         session: &DWalletMPCSession,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<()> {
-        if !self.has_available_cores_to_preform_computation() {
+        if !self.has_available_cores_to_perform_computation() {
             warn!(
                 session_id=?session.session_identifier,
-                mpc_protocol=?session.mpc_event_data.as_ref().unwrap().init_protocol_data,
+                mpc_protocol=?session.mpc_event_data.as_ref().unwrap().request_input,
                 "No available CPU cores to perform cryptographic computation"
             );
             return Err(DwalletMPCError::InsufficientCPUCores);

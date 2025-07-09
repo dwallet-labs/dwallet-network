@@ -30,7 +30,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
-use tracing::{debug, error};
+use tracing::error;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
