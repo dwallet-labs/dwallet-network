@@ -167,7 +167,7 @@ where
             && coordinator.dwallet_network_encryption_keys.size == network_encryption_key_ids.len() as u64
             && !epoch_switch_state.calculated_protocol_pricing
         {
-            info!("Running network encryption key mid epoch reconfiguration and Calculating protocol pricing");
+            info!("Running network encryption key mid-epoch reconfiguration and Calculating protocol pricing");
             let result = retry_with_max_elapsed_time!(
                 Self::request_mid_epoch_reconfiguration_and_calculate_protocols_pricing(
                     &self.sui_client,
@@ -355,7 +355,7 @@ where
                             let signers_len = auth_sig.signers_map.len();
                             let message = bcs::to_bytes::<DWalletCheckpointMessage>(
                                 &dwallet_checkpoint_message.into_message(),
-                            )
+                            ) // todo(omer): ??
                             .expect("Serializing checkpoint message cannot fail");
 
                             info!(
@@ -424,7 +424,7 @@ where
                         let message = bcs::to_bytes::<SystemCheckpointMessage>(
                             &system_checkpoint.into_message(),
                         )
-                        .expect("Serializing system_checkpoint message cannot fail");
+                        .expect("Serializing `system_checkpoint` message cannot fail");
 
                         info!("Signers_bitmap: {:?}", signers_bitmap);
                         self.metrics.system_checkpoint_write_requests_total.inc();

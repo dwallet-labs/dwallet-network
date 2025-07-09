@@ -62,6 +62,7 @@ where
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
+        // todo(omer): why the full node needs the keys? comment.
         info!("Starting network keys sync task");
         tokio::spawn(Self::sync_dwallet_network_keys(
             sui_client_clone.clone(),

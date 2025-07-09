@@ -1704,17 +1704,6 @@ async fn publish_package_to_sui(
     context: &mut WalletContext,
     package_path: PathBuf,
 ) -> Result<Vec<ObjectChange>, anyhow::Error> {
-    // let tx_kind = client
-    //     .transaction_builder()
-    //     .publish_tx_kind(
-    //         publisher_address,
-    //         ika_move_package_bytes,
-    //         ika_move_package_dep_ids,
-    //     )
-    //     .await?;
-    //
-    // let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-
     let result = sui::client_commands::SuiClientCommands::Publish {
         package_path,
         build_config: Default::default(),
