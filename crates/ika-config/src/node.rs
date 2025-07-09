@@ -66,11 +66,11 @@ pub struct SuiConnectorConfig {
     pub sui_chain_identifier: SuiChainIdentifier,
     /// The move package id of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
-    /// The move package id of ika_common on sui.
+    /// The move package id of `ika_common` on sui.
     pub ika_common_package_id: ObjectID,
     /// The move package id of ika_dwallet_2pc_mpc on sui.
     pub ika_dwallet_2pc_mpc_package_id: ObjectID,
-    /// The move package id of ika_system on sui.
+    /// The move package id of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
     /// The object id of system on sui.
     pub ika_system_object_id: ObjectID,

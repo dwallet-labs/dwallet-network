@@ -90,7 +90,7 @@ impl DWalletMPCService {
     }
 
     /// Proactively pull uncompleted events from the Sui network.
-    /// We do that to assure we don't miss any events.
+    /// We do that to ensure we don't miss any events.
     /// These events might be from a different Epoch, not necessarily the current one.
     async fn fetch_uncompleted_events(&mut self) -> Vec<DWalletMPCEvent> {
         let epoch_store = self.epoch_store.clone();
@@ -162,7 +162,7 @@ impl DWalletMPCService {
                 let access_structure =
                     &self.dwallet_mpc_manager.weighted_threshold_access_structure;
                 if has_changed {
-                    let new_keys = { self.network_keys_receiver.borrow_and_update().clone() };
+                    let new_keys = self.network_keys_receiver.borrow_and_update().clone();
                     for (key_id, key_data) in new_keys.iter() {
                         match instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output(
                             key_data.current_epoch,
@@ -207,7 +207,8 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        // Receive all MPC session outputs we bootstrapped from storage and consensus before starting execution, in order to avoid their computation.
+        // Receive all MPC session outputs we bootstrapped from storage and
+        // consensus before starting execution, to avoid their computation.
         self.receive_completed_mpc_session_identifiers(true);
         info!(
             validator=?self.epoch_store.name,
@@ -272,7 +273,7 @@ impl DWalletMPCService {
                 }
             };
 
-            // If session is already exists with event information, it will be ignored.
+            // If session already exists with event information, it will be ignored.
             for event in events {
                 self.dwallet_mpc_manager
                     .handle_dwallet_db_event(event)
