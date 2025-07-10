@@ -279,6 +279,13 @@ impl DWalletMPCSession {
                 let consensus_adapter = self.consensus_adapter.clone();
                 let epoch_store = self.epoch_store()?.clone();
                 if !malicious_parties.is_empty() {
+                    warn!(
+                        mpc_protocol=?mpc_protocol,
+                        session_identifier=?self.session_identifier,
+                        validator=?validator_name,
+                        ?malicious_parties,
+                        "Malicious Parties detected on MPC session Advance",
+                    );
                     self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
                 }
                 let message = self.new_dwallet_mpc_message(message, &mpc_protocol.to_string())?;
