@@ -23,7 +23,7 @@ use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::AsyncProtocol;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletNetworkDecryptionKeyData,
+    DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletNetworkEncryptionKeyData,
     DWalletNetworkEncryptionKeyState, DWalletSessionEvent, MPCRequestInput, MPCSessionRequest,
 };
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
@@ -371,7 +371,7 @@ pub(crate) fn instantiate_dwallet_mpc_network_decryption_key_shares_from_public_
     epoch: u64,
     key_scheme: DWalletMPCNetworkKeyScheme,
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-    key_data: DWalletNetworkDecryptionKeyData,
+    key_data: DWalletNetworkEncryptionKeyData,
 ) -> DwalletMPCResult<NetworkDecryptionKeyPublicData> {
     if key_data.current_reconfiguration_public_output.is_empty() {
         if key_data.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG {

@@ -24,7 +24,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData, MaliciousReport,
+    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkEncryptionKeyData, MaliciousReport,
     SessionIdentifier, SessionType, ThresholdNotReachedReport,
 };
 use ika_types::sui::EpochStartSystemTrait;
@@ -80,7 +80,7 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
-    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+    network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
     /// Events that wait for the network key to update.
     /// Once we get the network key, these events will be executed.
     pub(crate) events_pending_for_network_key: HashMap<ObjectID, Vec<DWalletMPCEvent>>,
@@ -127,7 +127,7 @@ impl DWalletMPCManager {
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
         network_dkg_third_round_delay: usize,
@@ -158,7 +158,7 @@ impl DWalletMPCManager {
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
-        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
         network_dkg_third_round_delay: usize,
@@ -232,17 +232,17 @@ impl DWalletMPCManager {
         })
     }
 
-    pub(crate) fn update_last_session_to_complete_in_current_epoch(
+    pub(crate) fn sync_last_session_to_complete_in_current_epoch(
         &mut self,
-        update_last_session_to_complete_in_current_epoch: u64,
+        previous_value_for_last_session_to_complete_in_current_epoch: u64,
     ) {
-        if update_last_session_to_complete_in_current_epoch
+        if previous_value_for_last_session_to_complete_in_current_epoch
             <= self.last_session_to_complete_in_current_epoch
         {
             return;
         }
         self.last_session_to_complete_in_current_epoch =
-            update_last_session_to_complete_in_current_epoch;
+            previous_value_for_last_session_to_complete_in_current_epoch;
     }
 
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus

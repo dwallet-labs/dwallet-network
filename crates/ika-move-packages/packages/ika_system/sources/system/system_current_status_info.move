@@ -1,0 +1,55 @@
+module ika_system::system_current_status_info;
+
+// === Imports ===
+
+use ika_common::bls_committee::BlsCommittee;
+
+// === Structs ===
+
+public struct SystemCurrentStatusInfo has drop {
+    current_epoch: u64,
+    is_mid_epoch_time: bool,
+    is_end_epoch_time: bool,
+    current_epoch_active_committee: BlsCommittee,
+    next_epoch_active_committee: Option<BlsCommittee>,
+}
+
+// === Package Functions ===
+
+public(package) fun create(
+    current_epoch: u64,
+    is_mid_epoch_time: bool,
+    is_end_epoch_time: bool,
+    current_epoch_active_committee: BlsCommittee,
+    next_epoch_active_committee: Option<BlsCommittee>,
+): SystemCurrentStatusInfo {
+    SystemCurrentStatusInfo {
+        current_epoch,
+        is_mid_epoch_time,
+        is_end_epoch_time,
+        current_epoch_active_committee,
+        next_epoch_active_committee,
+    }
+}
+
+// === Public Functions ===
+
+public fun current_epoch(self: &SystemCurrentStatusInfo): u64 {
+    self.current_epoch
+}
+
+public fun is_mid_epoch_time(self: &SystemCurrentStatusInfo): bool {
+    self.is_mid_epoch_time
+}
+
+public fun is_end_epoch_time(self: &SystemCurrentStatusInfo): bool {
+    self.is_end_epoch_time
+}
+
+public fun current_epoch_active_committee(self: &SystemCurrentStatusInfo): BlsCommittee {
+    self.current_epoch_active_committee
+}
+
+public fun next_epoch_active_committee(self: &SystemCurrentStatusInfo): Option<BlsCommittee> {
+    self.next_epoch_active_committee
+}

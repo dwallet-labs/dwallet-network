@@ -38,7 +38,7 @@ fun init(otw: IKA, ctx: &mut TxContext) {
     let minted_coin = treasury_cap.mint(total_supply_to_mint, ctx);
 
     transfer::public_transfer(treasury_cap, ctx.sender());
-    transfer::public_share_object(coin_metadata);
+    transfer::public_freeze_object(coin_metadata);
 
     transfer::public_transfer(minted_coin, ctx.sender());
 }
