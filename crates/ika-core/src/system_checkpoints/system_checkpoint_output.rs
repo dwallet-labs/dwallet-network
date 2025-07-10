@@ -75,7 +75,8 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
 
         if Some(system_checkpoint_seq) > highest_verified_system_checkpoint {
             debug!(
-                "Sending system_checkpoint signature at sequence {system_checkpoint_seq} to consensus."
+                ?system_checkpoint,
+                "Sending system checkpoint signature to consensus."
             );
 
             let summary = SignedSystemCheckpointMessage::new(

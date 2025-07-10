@@ -16,6 +16,7 @@ use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
+use ika_types::crypto::keccak256_digest;
 use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, SessionIdentifier};
 use ika_types::sui::DWalletCoordinatorInner;
@@ -225,15 +226,44 @@ impl DWalletMPCService {
                         .dwallet_mpc_manager
                         .handle_dwallet_db_output(&output)
                         .await;
+                    let session_identifier = output.session_request.session_identifier;
                     match output_result {
                         Ok(output_result) => match output_result.result {
                             OutputVerificationStatus::FirstQuorumReached(m) => {
                                 messages.extend(m);
-                                completed_sessions.push(output.session_request.session_identifier);
+                                completed_sessions.push(session_identifier);
+                                let output_digest = keccak256_digest(&output.output);
+                                info!(
+                                    ?output_digest,
+                                    round,
+                                    ?session_identifier,
+                                    "MPC output is verified and reached quorum"
+                                );
                             }
-                            OutputVerificationStatus::Malicious
-                            | OutputVerificationStatus::NotEnoughVotes
-                            | OutputVerificationStatus::AlreadyCommitted => {}
+                            OutputVerificationStatus::Malicious => {
+                                debug!(
+                                    ?output,
+                                    round,
+                                    ?session_identifier,
+                                    "MPC output is marked as malicious, skipping it"
+                                );
+                            }
+                            OutputVerificationStatus::NotEnoughVotes => {
+                                debug!(
+                                    ?output,
+                                    round,
+                                    ?session_identifier,
+                                    "MPC output does not have enough votes, skipping it"
+                                );
+                            }
+                            OutputVerificationStatus::AlreadyCommitted => {
+                                debug!(
+                                    ?output,
+                                    round,
+                                    ?session_identifier,
+                                    "MPC output is already committed, skipping it"
+                                );
+                            }
                         },
                         Err(e) => {
                             error!(err=?e, ?output,"failed to load verify MPC output from the local DB");

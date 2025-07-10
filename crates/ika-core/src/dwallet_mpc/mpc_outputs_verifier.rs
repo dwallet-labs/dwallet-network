@@ -6,15 +6,12 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::stake_aggregator::StakeAggregator;
-use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput, SerializedWrappedMPCPublicOutput,
 };
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::error::IkaResult;
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletCheckpointMessageKind,
     DWalletImportedKeyVerificationOutput, EncryptedUserShareOutput, MPCNetworkDKGOutput,
@@ -28,7 +25,7 @@ use itertools::Itertools;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use tracing::{error, info};
+use tracing::info;
 
 const FIVE_KILO_BYTES: usize = 5 * 1024;
 
@@ -422,43 +419,5 @@ impl DWalletMPCOutputsVerifier {
             slices.push(func(public_chunk.to_vec(), i == public_chunks.len() - 1));
         }
         slices
-    }
-
-    /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
-    /// Fails only if the epoch switched in the middle of the state sync (in which case the process is exited and this struct would be re-initialized).
-    pub fn bootstrap_from_storage(&mut self, epoch_store: &AuthorityPerEpochStore) -> IkaResult {
-        info!("Bootstrapping MPC Outputs Verifier from Storage");
-        for output in epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
-            let party_to_authority_map = epoch_store.committee().party_to_authority_map();
-            let mpc_protocol_name = output.session_request.request_input.to_string();
-
-            // Create a base logger with common parameters.
-            let base_logger = MPCSessionLogger::new()
-                .with_protocol_name(mpc_protocol_name.clone())
-                .with_party_to_authority_map(party_to_authority_map.clone());
-            let session_identifier = CommitmentSizedNumber::from_le_slice(
-                &output.session_request.session_identifier.into_bytes(),
-            );
-            base_logger.write_output_to_disk(
-                session_identifier,
-                epoch_store.authority_name_to_party_id(&epoch_store.name)?,
-                epoch_store.authority_name_to_party_id(&output.authority)?,
-                &output.output,
-                &output.session_request,
-            );
-            if let Err(err) = self.try_verify_output(
-                &output.output,
-                &output.session_request,
-                output.authority,
-                epoch_store,
-            ) {
-                error!(
-                    "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_request.session_identifier, output.authority, err
-                );
-            }
-        }
-
-        Ok(())
     }
 }

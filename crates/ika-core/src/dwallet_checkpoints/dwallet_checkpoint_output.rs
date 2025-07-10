@@ -75,7 +75,8 @@ impl<T: SubmitToConsensus> DWalletCheckpointOutput for SubmitDWalletCheckpointTo
 
         if Some(checkpoint_seq) > highest_verified_checkpoint {
             debug!(
-                "Sending dwallet checkpoint signature at sequence {checkpoint_seq} to consensus."
+                ?checkpoint_message,
+                "Sending dwallet checkpoint signature to consensus."
             );
 
             let summary = SignedDWalletCheckpointMessage::new(
