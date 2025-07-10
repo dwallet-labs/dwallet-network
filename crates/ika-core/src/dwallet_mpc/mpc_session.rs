@@ -18,7 +18,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::runtime::Handle;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 use twopc_mpc::sign::Protocol;
 
 use crate::consensus_adapter::SubmitToConsensus;
@@ -153,11 +153,13 @@ pub(crate) struct DWalletMPCSession {
     pub(super) status: MPCSessionStatus,
     /// All the messages that have been received for this session.
     /// We need to accumulate a threshold of those before advancing the session.
+    /// TODO(Scaly): By consensus round, not mpc round
     /// HashMap{R1: Map{Validator1->Message, Validator2->Message}, R2: Map{Validator1->Message} ...}
-    pub(super) serialized_full_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
+    pub(super) messages_by_consensus_round: HashMap<u64, HashMap<PartyID, MPCMessage>>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_id: EpochId,
     pub(super) session_identifier: SessionIdentifier,
+    // TODO(Scaly): delete this too?
     /// The current MPC round number of the session.
     /// Starts at `1` and increments after each advance of the session.
     /// In round `1` We start the flow, without messages, from the event trigger.
@@ -167,17 +169,12 @@ pub(crate) struct DWalletMPCSession {
     // TODO (#539): Simplify struct to only contain session related data - remove this field.
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) mpc_event_data: Option<MPCEventData>,
-    /// Indicates whether more messages have been received since the last advance.
-    /// The reason we need it is to know when to retry and advance call that failed.
-    /// For example, quorum was not reached because some Authorities were malicious.
-    pub(crate) received_more_messages_since_last_advance: bool,
     /// The *total* number of attempts to advance that failed in the session.
     /// Used to make `ThresholdNotReachedReport` unique.
     pub(crate) attempts_count: usize,
     /// A mapping between the MPC protocol of this session to the authorities that voted for it.
     mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
-    /// The MPC protocol that was agreed upon by a quorum of the authorities.
-    agreed_mpc_protocol: Option<String>,
+
     network_dkg_third_round_delay: usize,
     decryption_key_reconfiguration_third_round_delay: usize,
 
@@ -217,7 +214,7 @@ impl DWalletMPCSession {
     ) -> Self {
         Self {
             status,
-            serialized_full_messages: HashMap::new(),
+            messages_by_consensus_round: HashMap::new(),
             consensus_adapter,
             epoch_id: epoch,
             session_identifier,
@@ -241,7 +238,7 @@ impl DWalletMPCSession {
 
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
-        self.serialized_full_messages = HashMap::new();
+        self.messages_by_consensus_round = HashMap::new();
     }
 
     /// Advances the MPC session and sends the advancement result to the other validators.
@@ -255,7 +252,7 @@ impl DWalletMPCSession {
 
         // Make sure we transfer only the messages up to the current round
         // (exclude messages that might be received from future rounds)
-        self.serialized_full_messages
+        self.messages_by_consensus_round
             .retain(|round, _| round < &self.current_round);
         // Safe to unwrap as advance can only be called after the event is received.
         let mpc_protocol = self.mpc_event_data.clone().unwrap().request_input;
@@ -265,7 +262,7 @@ impl DWalletMPCSession {
                 message,
             }) => {
                 let session_id = self.session_identifier;
-                let round_number = self.serialized_full_messages.len();
+                let round_number = self.messages_by_consensus_round.len();
                 info!(
                     mpc_protocol=?mpc_protocol,
                     session_id=?session_id,
@@ -487,7 +484,7 @@ impl DWalletMPCSession {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
         let serialized_messages_skeleton = self
-            .serialized_full_messages
+            .messages_by_consensus_round
             .iter()
             .map(|(round, messages_map)| {
                 (
@@ -547,7 +544,7 @@ impl DWalletMPCSession {
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    self.messages_by_consensus_round.clone(),
                     public_input,
                     (),
                     &base_logger,
@@ -622,7 +619,7 @@ impl DWalletMPCSession {
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    self.messages_by_consensus_round.clone(),
                     public_input,
                     (),
                     &base_logger,
@@ -665,7 +662,7 @@ impl DWalletMPCSession {
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    self.messages_by_consensus_round.clone(),
                     public_input,
                     (),
                     &base_logger,
@@ -735,7 +732,7 @@ impl DWalletMPCSession {
                     session_identifier,
                     self.party_id,
                     &self.weighted_threshold_access_structure,
-                    self.serialized_full_messages.clone(),
+                    self.messages_by_consensus_round.clone(),
                     public_input,
                     (),
                     &base_logger,
@@ -785,7 +782,7 @@ impl DWalletMPCSession {
                         session_identifier,
                         self.party_id,
                         &self.weighted_threshold_access_structure,
-                        self.serialized_full_messages.clone(),
+                        self.messages_by_consensus_round.clone(),
                         public_input,
                         decryption_key_shares,
                         &logger,
@@ -830,7 +827,7 @@ impl DWalletMPCSession {
                     &self.mpc_event_data.clone().unwrap(),
                     self.party_id,
                     key_scheme,
-                    self.serialized_full_messages.clone(),
+                    self.messages_by_consensus_round.clone(),
                     bcs::from_bytes(
                         &mpc_event_data
                             .private_input
@@ -934,7 +931,7 @@ impl DWalletMPCSession {
                         session_identifier,
                         self.party_id,
                         &self.weighted_threshold_access_structure,
-                        self.serialized_full_messages.clone(),
+                        self.messages_by_consensus_round.clone(),
                         public_input,
                         decryption_key_shares,
                         &logger,
@@ -1071,104 +1068,35 @@ impl DWalletMPCSession {
         )
     }
 
-    /// Stores a message in the serialized messages map.
-    /// Every new message received for a session is stored.
-    /// When a threshold of messages is reached, the session advances.
+    /// Stores an incoming message.
+    /// This function performs no checks, it simply stores the message in the map.
+    ///
+    /// If a party sent a message twice, it will be overridden.
+    /// Whilst that is malicious, it has no effect since the messages come in order, so all validators end up seeing the same map.
+    /// Other malicious activities like sending a message for a wrong round are also not reported since they have no practical impact for similar reasons.
     pub(crate) fn store_message(
         &mut self,
+        consensus_round: u64,
         sender_party_id: PartyID,
         message: DWalletMPCMessage,
-    ) -> bool {
-        // This happens because we clear the session when it is finished and change the status,
-        // so we might receive a message with delay, and it's irrelevant.
-        if self.status != MPCSessionStatus::Active {
-            info!(
-                session_id=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?self.validator_name,
-                crypto_round_number=?message.round_number,
-                mpc_protocol=%message.mpc_protocol,
-                "Received a message for a session that is not active",
-            );
-
-            return false;
-        }
-        if self.agreed_mpc_protocol.is_none() {
-            let mpc_protocol = message.mpc_protocol.clone();
-
-            // TODO(Scaly): delete
-            if self
-                .mpc_protocol_to_voting_authorities
-                .entry(mpc_protocol.clone())
-                .or_insert(StakeAggregator::new(self.committee.clone()))
-                .insert_generic(message.authority, ())
-                .is_quorum_reached()
-            {
-                self.agreed_mpc_protocol = Some(mpc_protocol);
-            }
-        }
-
-        info!(
+    ) {
+        debug!(
             session_id=?message.session_identifier,
             from_authority=?message.authority,
             receiving_authority=?self.validator_name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
             mpc_protocol=message.mpc_protocol,
-            messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+            messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
             "Received a dWallet MPC message",
         );
-        if message.round_number == 0 {
-            error!(
-                session_id=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?self.validator_name,
-                crypto_round_number=?message.round_number,
-                mpc_protocol=?message.mpc_protocol,
-                "Received a message for round zero",
-            );
-
-            return true;
-        }
-
-        // We should only receive outputs of previous rounds.
-        if message.round_number > self.current_round {
-            warn!(
-                session_id=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?self.validator_name,
-                recieved_message_round_number=?message.round_number,
-                "Received a message for a future round",
-            );
-
-            return true;
-        }
 
         let round_messages_map = self
-            .serialized_full_messages
-            .entry(message.round_number)
+            .messages_by_consensus_round
+            .entry(consensus_round)
             .or_default();
-        if let Some(existing_message) = round_messages_map.get(&sender_party_id) {
-            warn!(
-                session_id=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?self.validator_name,
-                recieved_message_round_number=?message.round_number,
-                existing_message=?existing_message.clone(),
-                new_message=?message.message.clone(),
-                "Received duplicate messages from a validator for the same session and round",
-            );
-
-            // Although this might be caused by malicious behavior, it has no effect if we simply ignore the second message,
-            // and therefore we don't have to flag it a malicious party.
-            // It might be the case that in some edge-cases, this happens honestly, so we simply ignore.
-            return false;
-        }
 
         round_messages_map.insert(sender_party_id, message.message);
-        self.received_more_messages_since_last_advance = true;
-
-        false
     }
 
     /// Checks if the session should wait for additional consensus rounds before advancing.
@@ -1239,7 +1167,7 @@ impl DWalletMPCSession {
                 ?self.current_round,
                 ?self.agreed_mpc_protocol,
                 ?self.session_identifier,
-                messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
                 "Quorum reached for MPC session and delay passed, advancing to next round",
             );
             self.consensus_rounds_since_quorum_reached = 0;
@@ -1250,7 +1178,7 @@ impl DWalletMPCSession {
                 ?self.consensus_rounds_since_quorum_reached,
                 ?self.current_round,
                 ?self.agreed_mpc_protocol,
-                messages_count_for_current_round=?self.serialized_full_messages.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
+                messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
                 "Quorum reached for MPC session but delay not passed yet, waiting for another round",
             );
 
@@ -1266,7 +1194,7 @@ impl DWalletMPCSession {
                 // Check if we have the threshold of messages for the previous round
                 // to advance to the next round.
                 let is_quorum_reached = if let Some(previous_round_messages) =
-                    self.serialized_full_messages.get(&(self.current_round - 1))
+                    self.messages_by_consensus_round.get(&(self.current_round - 1))
                 {
                     let previous_round_message_senders: HashSet<PartyID> =
                         previous_round_messages.keys().cloned().collect();
@@ -1306,7 +1234,7 @@ impl DWalletMPCSession {
         let participating_expected_decrypters: HashSet<PartyID> = expected_decrypters
             .iter()
             .filter(|party_id| {
-                self.serialized_full_messages
+                self.messages_by_consensus_round
                     .get(&(self.current_round - 1))
                     .is_some_and(|messages| messages.contains_key(*party_id))
             })

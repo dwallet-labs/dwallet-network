@@ -111,7 +111,7 @@ pub enum DWalletMPCDBMessage {
     /// A message that contains a [`MaliciousReport`] after an advance/finalize.
     /// AuthorityName is the name of the authority that reported the malicious parties.
     MaliciousReport(AuthorityName, MaliciousReport),
-    /// A message indicating that some of the parties were malicous,
+    /// A message indicating that some of the parties were malicious,
     /// but we can still retry once we receive more messages.
     ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
@@ -248,6 +248,7 @@ impl DWalletMPCManager {
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
     /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
     pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
+        // TODO: delete this function this
         match message {
             DWalletMPCDBMessage::Message(message) => {
                 self.handle_message(message.clone());
@@ -306,7 +307,7 @@ impl DWalletMPCManager {
             // on the previous round,
             // but no messages were sent for the current round.
             if let Some(unreached_round_messages) = session
-                .serialized_full_messages
+                .messages_by_consensus_round
                 .remove(&(session.current_round - 1))
             {
                 let malicious_parties = unreached_round_messages
