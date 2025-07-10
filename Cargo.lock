@@ -5720,6 +5720,7 @@ dependencies = [
  "fs_extra",
  "futures",
  "group 0.1.0",
+ "hex",
  "homomorphic_encryption",
  "ika-config",
  "ika-move-packages",

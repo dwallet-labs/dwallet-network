@@ -250,11 +250,24 @@ impl DWalletMPCService {
             };
 
             let mut completed_sessions_ids = Vec::new();
-            for session_id in completed_sessions {
-                if let Some(session) = self.dwallet_mpc_manager.mpc_sessions.get_mut(&session_id) {
-                    session.clear_data();
-                    session.status = MPCSessionStatus::Finished;
-                    completed_sessions_ids.push(session.session_identifier);
+            for (round, completed_sessions) in completed_sessions {
+                for session_identifier in completed_sessions {
+                    let is_first = self.last_read_consensus_round == 0;
+                    info!(
+                        is_first=is_first,
+                        round=?round,
+                        session_identifier=?session_identifier,
+                    "read completed session ID from db");
+
+                    if let Some(session) = self
+                        .dwallet_mpc_manager
+                        .mpc_sessions
+                        .get_mut(&session_identifier)
+                    {
+                        session.clear_data();
+                        session.status = MPCSessionStatus::Finished;
+                        completed_sessions_ids.push(session.session_identifier);
+                    }
                 }
             }
 

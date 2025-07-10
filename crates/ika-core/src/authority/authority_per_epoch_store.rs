@@ -575,15 +575,12 @@ impl AuthorityPerEpochStore {
     pub(crate) async fn load_dwallet_mpc_completed_sessions_from_round(
         &self,
         round: Round,
-    ) -> IkaResult<Vec<SessionIdentifier>> {
+    ) -> IkaResult<Vec<(u64, Vec<SessionIdentifier>)>> {
         Ok(self
             .tables()?
             .dwallet_mpc_completed_sessions
             .safe_iter_with_bounds(Some(round), None)
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flat_map(|(_, events)| events)
-            .collect())
+            .collect::<Result<Vec<_>, _>>()?)
     }
 
     /// A function to initiate the [`DWalletMPCOutputsVerifier`] when a new epoch starts.
