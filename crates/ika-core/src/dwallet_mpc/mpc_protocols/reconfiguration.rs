@@ -98,6 +98,7 @@ pub(crate) fn network_decryption_key_reconfiguration_session_request_from_event(
     MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
+        session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::NetworkEncryptionKeyReconfiguration(deserialized_event),
         requires_network_key_data: true,

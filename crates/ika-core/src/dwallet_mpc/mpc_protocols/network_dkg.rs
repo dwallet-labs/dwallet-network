@@ -327,6 +327,7 @@ fn network_dkg_secp256k1_session_request(
     MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
+        session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -343,6 +344,7 @@ fn network_dkg_ristretto_session_request(
     MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
+        session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
         request_input: MPCRequestInput::NetworkEncryptionKeyDkg(
             DWalletMPCNetworkKeyScheme::Ristretto,

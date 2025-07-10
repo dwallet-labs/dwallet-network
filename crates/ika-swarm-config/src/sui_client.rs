@@ -475,9 +475,9 @@ pub async fn ika_system_initialize(
         mutable: true,
     }))?;
 
-    let dwallet_pricing = ptb.programmable_move_call(
+    let pricing = ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
+        ident_str!("pricing").into(),
         ident_str!("empty").into(),
         vec![],
         vec![],
@@ -485,11 +485,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             dkg_first_round_protocol_flag,
@@ -501,11 +501,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             dkg_second_round_protocol_flag,
@@ -517,11 +517,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             re_encrypt_user_share_protocol_flag,
@@ -533,11 +533,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             make_dwallet_user_secret_key_share_public_protocol_flag,
@@ -549,11 +549,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             none_option,
             imported_key_dwallet_verification_protocol_flag,
@@ -565,11 +565,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             presign_protocol_flag,
@@ -581,11 +581,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             sign_protocol_flag,
@@ -597,11 +597,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             future_sign_protocol_flag,
@@ -613,11 +613,11 @@ pub async fn ika_system_initialize(
 
     ptb.programmable_move_call(
         ika_dwallet_2pc_mpc_package_id,
-        ident_str!("dwallet_pricing").into(),
-        ident_str!("insert_or_update_dwallet_pricing").into(),
+        ident_str!("pricing").into(),
+        ident_str!("insert_or_update_pricing").into(),
         vec![],
         vec![
-            dwallet_pricing,
+            pricing,
             zero,
             zero_option,
             sign_with_partial_user_signature_protocol_flag,
@@ -729,7 +729,7 @@ pub async fn ika_system_initialize(
             ika_dwallet_2pc_mpc_init_arg,
             advance_epoch_approver,
             system_current_status_info,
-            dwallet_pricing,
+            pricing,
             supported_curves_to_signature_algorithms_to_hash_schemes,
             dwallet_cap_image_url_arg,
             imported_key_dwallet_cap_image_url_arg,

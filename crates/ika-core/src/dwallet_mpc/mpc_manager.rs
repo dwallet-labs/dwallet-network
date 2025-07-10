@@ -444,8 +444,9 @@ impl DWalletMPCManager {
             };
 
             let should_advance = match mpc_event_data.session_type {
-                SessionType::User { sequence_number } => {
-                    sequence_number <= self.last_session_to_complete_in_current_epoch
+                SessionType::User => {
+                    mpc_event_data.session_sequence_number
+                        <= self.last_session_to_complete_in_current_epoch
                 }
                 SessionType::System => true,
             };
@@ -712,36 +713,39 @@ impl DWalletMPCManager {
         &mut self,
         session: DWalletMPCSession,
     ) {
-        let sequence_number = match session.mpc_event_data.as_ref().unwrap().session_type {
-            SessionType::User { sequence_number } => Some(sequence_number),
-            SessionType::System => None,
-        };
+        let session_to_insert_event_data = session.mpc_event_data.as_ref().unwrap();
 
         if let Some(index) = self
             .ordered_sessions_pending_for_computation
             .iter()
-            .position(|session_pending_for_computation| {
-                match session_pending_for_computation
+            .position(|current_session_pending_for_computation| {
+                let current_session_pending_for_computation_event_data = current_session_pending_for_computation
                     .mpc_event_data
                     .as_ref()
-                    .unwrap()
-                    .session_type
-                {
-                    SessionType::User {
-                        sequence_number: pending_session_sequence_number,
-                    } => {
-                        if let Some(sequence_number) = sequence_number {
-                            // Find the first pending session with a sequence number greater than the new session,
-                            // so we can insert the new session right before it.
-                            pending_session_sequence_number > sequence_number
-                        } else {
-                            // System session takes precedence over user sessions.
-                            true
-                        }
+                    .unwrap();
+
+                // Find the first pending session of the same type with a sequence number greater than the new session,
+                // so we can insert the new session right before it.
+                // System sessions are always ordered before User ones.
+                if session_to_insert_event_data.session_type == SessionType::System {
+                    if current_session_pending_for_computation_event_data.session_type == SessionType::System {
+                        // Both sessions are System sessions, so we can compare sequence numbers.
+                        current_session_pending_for_computation_event_data.session_sequence_number
+                            > session_to_insert_event_data.session_sequence_number
+                    } else {
+                        // The session we are inserting is a System session, and the current session is a User one.
+                        // System session takes precedence over user sessions, so terminate the search to insert it right before the current session.
+                        true
                     }
-                    SessionType::System => {
-                        // Existing system sessions take precedence over both new system sessions and user sessions.
+                } else {
+                    if current_session_pending_for_computation_event_data.session_type == SessionType::System {
+                        // The session we are inserting is a User session, and the current session is a System one.
+                        // System session takes precedence over user sessions, so don't terminate the search yet.
                         false
+                    } else {
+                        // Both sessions are User sessions, so we can compare sequence numbers.
+                        current_session_pending_for_computation_event_data.session_sequence_number
+                            > session_to_insert_event_data.session_sequence_number
                     }
                 }
             })
