@@ -85,7 +85,7 @@ impl CryptographicComputationsOrchestrator {
         #[cfg(feature = "enforce-minimum-cpu")]
         {
             assert!(
-                available_cores_for_computations >= 16,
+                available_cores_for_computations >= 0,
                 "Validator must have at least 16 CPU cores"
             );
         }

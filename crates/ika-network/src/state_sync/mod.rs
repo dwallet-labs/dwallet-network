@@ -71,7 +71,7 @@ use tokio::{
     sync::{broadcast, mpsc},
     task::{AbortHandle, JoinSet},
 };
-use tracing::{debug, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 mod generated {
     include!(concat!(env!("OUT_DIR"), "/ika.StateSync.rs"));
@@ -582,14 +582,6 @@ where
         let task_handle = self.tasks.spawn(task);
         self.sync_system_checkpoint_from_archive_task = Some(task_handle);
 
-
-        if !self.is_fullnode {
-            // If this is not a fullnode, we don't need to sync checkpoints.
-            // We will only sync checkpoints from archive.
-            info!("State-Sync is not running in fullnode mode, skipping checkpoint sync tasks");
-            return;
-        }
-
         // Start main loop.
         loop {
             tokio::select! {
@@ -681,16 +673,6 @@ where
         &mut self,
         checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
-        // // Always check previous_digest matches in case there is a gap between
-        // // state sync and consensus.
-        // let prev_digest = *self.store.get_dwallet_checkpoint_by_sequence_number(checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
-        //     .expect("store operation should not fail")
-        //     .unwrap_or_else(|| panic!("Got checkpoint {} from consensus but cannot find checkpoint {} in certified_checkpoints", checkpoint.sequence_number(), checkpoint.sequence_number() - 1))
-        //     .digest();
-        // if checkpoint.previous_digest != Some(prev_digest) {
-        //     panic!("Checkpoint {} from consensus has mismatched previous_digest, expected: {:?}, actual: {:?}", checkpoint.sequence_number(), Some(prev_digest), checkpoint.previous_digest);
-        // }
-
         let latest_checkpoint_sequence_number = self
             .store
             .get_highest_verified_dwallet_checkpoint()
@@ -775,7 +757,9 @@ where
 
         match peer_event {
             Ok(PeerEvent::NewPeer(peer_id)) => {
-                self.spawn_get_latest_from_peer(peer_id);
+                if self.is_fullnode {
+                    self.spawn_get_latest_from_peer(peer_id);
+                }
             }
             Ok(PeerEvent::LostPeer(peer_id, _)) => {
                 self.peer_heights.write().unwrap().peers.remove(&peer_id);
@@ -873,6 +857,7 @@ where
                 self.config.timeout(),
                 // The if condition should ensure that this is Some
                 highest_known_checkpoint.unwrap(),
+                self.is_fullnode,
             )
             .map(|result| match result {
                 Ok(()) => {}
@@ -1148,6 +1133,7 @@ async fn sync_to_checkpoint<S>(
     checkpoint_header_download_concurrency: usize,
     timeout: Duration,
     checkpoint: CertifiedDWalletCheckpointMessage,
+    is_fullnode: bool,
 ) -> Result<()>
 where
     S: WriteStore,
@@ -1258,6 +1244,7 @@ where
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
         // verified checkpoint watermark as well.
+        error!(?is_fullnode, "Inserting checkpoint into store: {:?}", checkpoint);
         store
             .insert_dwallet_checkpoint(&checkpoint)
             .expect("store operation should not fail");
