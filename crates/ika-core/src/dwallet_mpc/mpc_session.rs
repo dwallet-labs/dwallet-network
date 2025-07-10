@@ -2,7 +2,6 @@ mod advance_and_serialize;
 mod input;
 mod logger;
 
-use ika_types::crypto::AuthorityPublicKeyBytes;
 use class_groups::dkg::Secp256k1Party;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -13,6 +12,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 };
 use group::helpers::DeduplicateAndSort;
 use group::PartyID;
+use ika_types::crypto::AuthorityPublicKeyBytes;
 use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
@@ -21,7 +21,6 @@ use tokio::runtime::Handle;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dwallet_dkg::{
     DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,
@@ -85,7 +84,8 @@ pub struct MPCEventData {
 impl MPCEventData {
     pub(crate) fn try_new(
         event: DWalletMPCEvent,
-        epoch_store: &AuthorityPerEpochStore,
+        access_structure: &WeightedThresholdAccessStructure,
+        committee: &Committee,
         network_keys: &DwalletMPCNetworkKeys,
         next_active_committee: Option<Committee>,
         validators_class_groups_public_keys_and_proofs: HashMap<
@@ -95,7 +95,8 @@ impl MPCEventData {
     ) -> Result<Self, DwalletMPCError> {
         let (public_input, private_input) = session_input_from_event(
             event.clone(),
-            epoch_store,
+            access_structure,
+            committee,
             network_keys,
             next_active_committee,
             validators_class_groups_public_keys_and_proofs,
@@ -175,10 +176,13 @@ pub(crate) struct DWalletMPCSession {
     mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
     /// The MPC protocol that was agreed upon by a quorum of the authorities.
     agreed_mpc_protocol: Option<String>,
+    network_dkg_third_round_delay: usize,
+    decryption_key_reconfiguration_third_round_delay: usize,
+
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
     validator_name: AuthorityPublicKeyBytes,
-    committee: Committee,
+    committee: Arc<Committee>,
 
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 
@@ -195,7 +199,8 @@ impl DWalletMPCSession {
     const DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND: usize = 3;
 
     pub(crate) fn new(
-        epoch_store: &AuthorityPerEpochStore,
+        validator_name: AuthorityPublicKeyBytes,
+        committee: Arc<Committee>,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch: EpochId,
         status: MPCSessionStatus,
@@ -203,13 +208,11 @@ impl DWalletMPCSession {
         party_id: PartyID,
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         mpc_event_data: Option<MPCEventData>,
+        network_dkg_third_round_delay: usize,
+        decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
         root_seed: RootSeed,
     ) -> Self {
-        // TODO: stop passing `AuthorityPerEpochStore` between these files, just pass the arguments directly.
-        let committee: &Committee = &epoch_store.committee();
-        let committee = committee.clone();
-
         Self {
             status,
             serialized_full_messages: HashMap::new(),
@@ -224,8 +227,10 @@ impl DWalletMPCSession {
             attempts_count: 0,
             mpc_protocol_to_voting_authorities: HashMap::new(),
             agreed_mpc_protocol: None,
+            network_dkg_third_round_delay,
+            decryption_key_reconfiguration_third_round_delay,
             consensus_rounds_since_quorum_reached: 0,
-            validator_name: epoch_store.name,
+            validator_name,
             committee,
             dwallet_mpc_metrics,
             root_seed,
@@ -296,7 +301,6 @@ impl DWalletMPCSession {
                 private_output: _,
                 public_output,
             }) => {
-
                 info!(
                     mpc_protocol=?&mpc_protocol,
                     session_identifier=?self.session_identifier,
@@ -350,7 +354,6 @@ impl DWalletMPCSession {
                 self.report_threshold_not_reached(tokio_runtime_handle)
             }
             Err(err) => {
-
                 error!(
                     session_identifier=?self.session_identifier,
                     validator=?self.validator_name,
@@ -476,6 +479,7 @@ impl DWalletMPCSession {
     ) -> DwalletMPCResult<
         AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
     > {
+        // TODO(Scaly): move all of this logic elsewhere; this function should only call `advance()`, and write the result to the channel.
         let Some(mpc_event_data) = &self.mpc_event_data else {
             return Err(DwalletMPCError::MissingEventDrivenData);
         };
@@ -1066,7 +1070,11 @@ impl DWalletMPCSession {
     /// Stores a message in the serialized messages map.
     /// Every new message received for a session is stored.
     /// When a threshold of messages is reached, the session advances.
-    pub(crate) fn store_message(&mut self, sender_party_id: PartyID, message: DWalletMPCMessage, epoch_store: &AuthorityPerEpochStore) -> bool {
+    pub(crate) fn store_message(
+        &mut self,
+        sender_party_id: PartyID,
+        message: DWalletMPCMessage,
+    ) -> bool {
         // This happens because we clear the session when it is finished and change the status,
         // so we might receive a message with delay, and it's irrelevant.
         if self.status != MPCSessionStatus::Active {
@@ -1081,7 +1089,6 @@ impl DWalletMPCSession {
 
             return false;
         }
-        let committee = epoch_store.committee().clone();
         if self.agreed_mpc_protocol.is_none() {
             let mpc_protocol = message.mpc_protocol.clone();
 
@@ -1089,7 +1096,7 @@ impl DWalletMPCSession {
             if self
                 .mpc_protocol_to_voting_authorities
                 .entry(mpc_protocol.clone())
-                .or_insert(StakeAggregator::new(committee))
+                .or_insert(StakeAggregator::new(self.committee.clone()))
                 .insert_generic(message.authority, ())
                 .is_quorum_reached()
             {
@@ -1188,25 +1195,18 @@ impl DWalletMPCSession {
     ///   and returns `is_ready: false`
     /// - If delay is satisfied: resets the consensus round counter and returns `is_ready: true`
     /// - If no delay is required for the current protocol/round: returns `is_ready: true`
-    fn wait_consensus_rounds_delay(&mut self, epoch_store: &AuthorityPerEpochStore) -> bool {
+    fn wait_consensus_rounds_delay(&mut self) -> bool {
         match self.agreed_mpc_protocol.as_deref() {
             None => false, // TODO(@scaly): what is this? remove
             Some(protocol) => match protocol {
-                NETWORK_ENCRYPTION_KEY_DKG_STR_KEY => {
-                    let delay = epoch_store
-                        .protocol_config()
-                        .network_dkg_third_round_delay() as usize;
-
-                    self.check_round_delay(Self::NETWORK_DKG_DELAY_ROUND, delay)
-                }
-                NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY => {
-                    let delay = epoch_store
-                        .protocol_config()
-                        .decryption_key_reconfiguration_third_round_delay()
-                        as usize;
-
-                    self.check_round_delay(Self::DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND, delay)
-                }
+                NETWORK_ENCRYPTION_KEY_DKG_STR_KEY => self.check_round_delay(
+                    Self::NETWORK_DKG_DELAY_ROUND,
+                    self.network_dkg_third_round_delay,
+                ),
+                NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY => self.check_round_delay(
+                    Self::DECRYPTION_KEY_RECONFIGURATION_DELAY_ROUND,
+                    self.decryption_key_reconfiguration_third_round_delay,
+                ),
                 _ => true,
             },
         }
@@ -1256,10 +1256,7 @@ impl DWalletMPCSession {
         }
     }
 
-    pub(crate) fn check_quorum_for_next_crypto_round(
-        &mut self,
-        epoch_store: &AuthorityPerEpochStore,
-    ) -> bool {
+    pub(crate) fn check_quorum_for_next_crypto_round(&mut self) -> bool {
         match self.status {
             MPCSessionStatus::Active => {
                 // Check if we have the threshold of messages for the previous round
@@ -1286,7 +1283,7 @@ impl DWalletMPCSession {
                     && self.received_more_messages_since_last_advance
                     && self.agreed_mpc_protocol.is_some()
                 {
-                    self.wait_consensus_rounds_delay(epoch_store)
+                    self.wait_consensus_rounds_delay()
                 } else {
                     false
                 }

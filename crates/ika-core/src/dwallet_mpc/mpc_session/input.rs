@@ -17,6 +17,7 @@ use group::PartyID;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
+use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
@@ -27,7 +28,8 @@ use std::collections::HashMap;
 /// or if deserialization fails.
 pub(crate) fn session_input_from_event(
     event: DWalletMPCEvent,
-    epoch_store: &AuthorityPerEpochStore,
+    access_structure: &WeightedThresholdAccessStructure,
+    committee: &Committee,
     network_keys: &DwalletMPCNetworkKeys,
     next_active_committee: Option<Committee>,
     validators_class_groups_public_keys_and_proofs: HashMap<
@@ -80,7 +82,7 @@ pub(crate) fn session_input_from_event(
 
             Ok((
                 PublicInput::NetworkEncryptionKeyDkg(network_dkg_public_input(
-                    &epoch_store.get_weighted_threshold_access_structure()?,
+                    access_structure,
                     validators_class_groups_public_keys_and_proofs,
                     // Todo (#473): Support generic network key scheme
                     DWalletMPCNetworkKeyScheme::Secp256k1,
@@ -99,7 +101,7 @@ pub(crate) fn session_input_from_event(
 
             Ok((
                     PublicInput::NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as ReconfigurationPartyPublicInputGenerator>::generate_public_input(
-                        epoch_store.committee().as_ref(),
+                        committee,
                         next_active_committee,
                         network_keys.get_decryption_key_share_public_parameters(
                             &event
@@ -171,7 +173,7 @@ pub(crate) fn session_input_from_event(
             Ok((
                 PublicInput::Sign(sign_session_public_input(
                     &event,
-                    epoch_store,
+                    access_structure,
                     network_keys,
                     protocol_public_parameters,
                 )?),

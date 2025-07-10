@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use group::PartyID;
-use ika_types::committee::Committee;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use message_digest::message_digest::message_digest;
@@ -56,6 +56,20 @@ pub(crate) fn authority_name_to_party_id_from_committee(
     Ok(tangible_party_id)
 }
 
+pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
+    committee: &Committee,
+) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
+    let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
+    for (name, _) in committee.voting_rights.iter() {
+        let party_id = authority_name_to_party_id_from_committee(committee, name)?;
+        if let Ok(public_key) = committee.class_groups_public_key_and_proof(name) {
+            validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
+        }
+    }
+
+    Ok(validators_class_groups_public_keys_and_proofs)
+}
+
 /// Convert a `committee` to a `WeightedThresholdAccessStructure` that is used by the cryptographic library.
 pub(crate) fn generate_access_structure_from_committee(
     committee: &Committee,
@@ -93,8 +107,7 @@ pub(crate) fn party_id_to_authority_name(
     // Safe to decrement as `PartyID` is `u16`, will never overflow.
     let index = u32::from(party_id) - 1;
 
-    committee
-        .authority_by_index(index).copied()
+    committee.authority_by_index(index).copied()
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].

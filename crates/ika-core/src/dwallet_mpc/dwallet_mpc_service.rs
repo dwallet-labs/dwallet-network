@@ -49,12 +49,29 @@ impl DWalletMPCService {
         consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
+        let validator_name = epoch_store.name;
+        let committee = epoch_store.committee().clone();
+        let epoch_id = epoch_store.epoch();
+
+        let network_dkg_third_round_delay = epoch_store
+            .protocol_config()
+            .network_dkg_third_round_delay() as usize;
+
+        let decryption_key_reconfiguration_third_round_delay = epoch_store
+            .protocol_config()
+            .decryption_key_reconfiguration_third_round_delay()
+            as usize;
+
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
             consensus_adapter.clone(),
-            epoch_store.clone(),
+            validator_name,
+            committee,
+            epoch_id,
             network_keys_receiver,
             next_epoch_committee_receiver,
             node_config,
+            network_dkg_third_round_delay,
+            decryption_key_reconfiguration_third_round_delay,
             dwallet_mpc_metrics,
         );
 
@@ -179,9 +196,8 @@ impl DWalletMPCService {
                 // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
                 self.last_read_consensus_round = round;
 
-                self
-                    .dwallet_mpc_manager
-                    .handle_consensus_round_messages(messages, &self.epoch_store);
+                self.dwallet_mpc_manager
+                    .handle_consensus_round_messages(messages);
             }
 
             self.dwallet_mpc_manager
@@ -241,7 +257,7 @@ impl DWalletMPCService {
                 .contains_key(&session_identifier)
             {
                 self.dwallet_mpc_manager
-                    .new_mpc_session(&session_identifier, None, &self.epoch_store)
+                    .new_mpc_session(&session_identifier, None)
             }
 
             // Now this session is guaranteed to exist, so safe to `unwrap()`.

@@ -240,7 +240,8 @@ impl DWalletMPCManager {
 
         let mpc_event_data = match MPCEventData::try_new(
             event.clone(),
-            epoch_store,
+            &self.weighted_threshold_access_structure,
+            &self.committee,
             &self.network_keys,
             self.next_active_committee.clone(),
             self.validators_class_groups_public_keys_and_proofs.clone(),
@@ -281,7 +282,7 @@ impl DWalletMPCManager {
                 );
             }
         } else {
-            self.new_mpc_session(&session_identifier, Some(mpc_event_data), epoch_store);
+            self.new_mpc_session(&session_identifier, Some(mpc_event_data));
         }
     }
 

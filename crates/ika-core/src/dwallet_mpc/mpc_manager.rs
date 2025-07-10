@@ -8,7 +8,10 @@ use crate::dwallet_mpc::mpc_protocols::network_dkg::{
 };
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
-use crate::dwallet_mpc::party_ids_to_authority_names;
+use crate::dwallet_mpc::{
+    authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
+    get_validators_class_groups_public_keys_and_proofs, party_ids_to_authority_names,
+};
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
@@ -18,6 +21,7 @@ use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
+use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkDecryptionKeyData, MaliciousReport,
@@ -51,6 +55,8 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(crate) epoch_id: EpochId,
+    validator_name: AuthorityPublicKeyBytes,
+    pub(crate) committee: Arc<Committee>,
     pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
@@ -85,6 +91,9 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) threshold_not_reached_reports:
         HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
 
+    network_dkg_third_round_delay: usize,
+    decryption_key_reconfiguration_third_round_delay: usize,
+
     /// The root seed of this validator, used for deriving the session and round-specific seed for advancing MPC sessions.
     /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
     root_seed: RootSeed,
@@ -115,18 +124,26 @@ struct ReadySessionsResponse {
 impl DWalletMPCManager {
     pub(crate) fn must_create_dwallet_mpc_manager(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
+        validator_name: AuthorityPublicKeyBytes,
+        committee: Arc<Committee>,
+        epoch_id: EpochId,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
+        network_dkg_third_round_delay: usize,
+        decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self::try_new(
             consensus_adapter.clone(),
-            epoch_store.clone(),
+            validator_name,
+            committee,
+            epoch_id,
             network_keys_receiver,
             next_epoch_committee_receiver,
             node_config.clone(),
+            network_dkg_third_round_delay,
+            decryption_key_reconfiguration_third_round_delay,
             dwallet_mpc_metrics,
         )
         .unwrap_or_else(|err| {
@@ -138,16 +155,21 @@ impl DWalletMPCManager {
 
     pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
+        validator_name: AuthorityPublicKeyBytes,
+        committee: Arc<Committee>,
+        epoch_id: EpochId,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
+        network_dkg_third_round_delay: usize,
+        decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
         let weighted_threshold_access_structure =
-            epoch_store.get_weighted_threshold_access_structure()?;
+            generate_access_structure_from_committee(&committee)?;
+
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
-        let party_id = epoch_store.authority_name_to_party_id(&epoch_store.name)?;
+        let party_id = authority_name_to_party_id_from_committee(&committee, &validator_name)?;
         let root_seed = node_config
             .root_seed
             .clone()
@@ -158,10 +180,11 @@ impl DWalletMPCManager {
 
         // Verify that the validators local class-groups key is the
         // same as stored in the system state object onchain.
-        if epoch_store
-            .epoch_start_state()
-            .get_ika_committee()
-            .class_groups_public_key_and_proof(&epoch_store.name)?
+        // This makes sure the seed we are using is the same seed we used at setup
+        // to create the encryption key, and thus it assures we will generate the same decryption key too.
+        let onchain_class_groups_encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof =
+            committee.class_groups_public_key_and_proof(&validator_name)?;
+        if onchain_class_groups_encryption_key_and_proof
             != class_groups_key_pair.encryption_key_and_proof()
         {
             return Err(DwalletMPCError::MPCManagerError(
@@ -178,16 +201,15 @@ impl DWalletMPCManager {
 
         // Re-initialize the malicious handler every epoch. This is done intentionally:
         // We want to "forget" the malicious actors from the previous epoch and start from scratch.
-        let malicious_handler = MaliciousHandler::new(epoch_store.committee().clone());
+        let malicious_handler = MaliciousHandler::new(committee.clone());
         Ok(Self {
             mpc_sessions: HashMap::new(),
             consensus_adapter,
-            party_id: epoch_store.authority_name_to_party_id(&epoch_store.name.clone())?,
-            epoch_id: epoch_store.epoch(),
+            party_id: authority_name_to_party_id_from_committee(&committee, &validator_name)?,
+            epoch_id,
             weighted_threshold_access_structure,
-            validators_class_groups_public_keys_and_proofs: epoch_store
-                .get_validators_class_groups_public_keys_and_proofs()
-                .map_err(|e| DwalletMPCError::MPCManagerError(e.to_string()))?,
+            validators_class_groups_public_keys_and_proofs:
+                get_validators_class_groups_public_keys_and_proofs(&committee)?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler,
             ordered_sessions_pending_for_computation: VecDeque::new(),
@@ -202,6 +224,10 @@ impl DWalletMPCManager {
             dwallet_mpc_metrics,
             threshold_not_reached_reports: Default::default(),
             next_active_committee: None,
+            validator_name,
+            committee,
+            network_dkg_third_round_delay,
+            decryption_key_reconfiguration_third_round_delay,
             root_seed,
         })
     }
@@ -221,10 +247,10 @@ impl DWalletMPCManager {
 
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
     /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
-    pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage, epoch_store: &AuthorityPerEpochStore,) {
+    pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::Message(message) => {
-                self.handle_message(message.clone(), epoch_store);
+                self.handle_message(message.clone());
             }
             DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
                 error!(session_id=?session_id, "dwallet MPC session failed");
@@ -232,10 +258,10 @@ impl DWalletMPCManager {
                 // Also this doesn't get sent or handled, so what?
             }
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
-                self.handle_malicious_report(authority_name, report, epoch_store);
+                self.handle_malicious_report(authority_name, report);
             }
             DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
-                self.handle_threshold_not_reached_report(report, authority, epoch_store);
+                self.handle_threshold_not_reached_report(report, authority);
             }
         }
     }
@@ -244,17 +270,15 @@ impl DWalletMPCManager {
         &mut self,
         report: ThresholdNotReachedReport,
         origin_authority: AuthorityName,
-        epoch_store: &AuthorityPerEpochStore,
     ) {
         // Previously malicious actors are ignored.
         if self.malicious_handler.is_malicious_actor(&origin_authority) {
             return;
         }
-        let committee = epoch_store.committee().clone();
         let current_voters_for_report = self
             .threshold_not_reached_reports
             .entry(report.clone())
-            .or_insert(StakeAggregator::new(committee));
+            .or_insert(StakeAggregator::new(self.committee.clone()));
         // We already have a quorum for this report.
         if current_voters_for_report.has_quorum() {
             // Do nothing, quorum has already been reached.
@@ -264,15 +288,11 @@ impl DWalletMPCManager {
             .insert_generic(origin_authority, ())
             .is_quorum_reached()
         {
-            self.prepare_for_round_retry(report.session_identifier, epoch_store);
+            self.prepare_for_round_retry(report.session_identifier);
         }
     }
 
-    fn prepare_for_round_retry(
-        &mut self,
-        session_identifier: SessionIdentifier,
-        epoch_store: &AuthorityPerEpochStore,
-    ) {
+    fn prepare_for_round_retry(&mut self, session_identifier: SessionIdentifier) {
         if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
             session.attempts_count += 1;
 
@@ -295,7 +315,7 @@ impl DWalletMPCManager {
                     .collect::<Vec<PartyID>>();
 
                 let malicious_authorities =
-                    party_ids_to_authority_names(&malicious_parties, &epoch_store.committee());
+                    party_ids_to_authority_names(&malicious_parties, &self.committee);
 
                 self.malicious_handler
                     .report_malicious_actors(&malicious_authorities);
@@ -307,20 +327,16 @@ impl DWalletMPCManager {
     }
 
     /// Handle the messages of a given consensus round.
-    pub fn handle_consensus_round_messages(
-        &mut self,
-        messages: Vec<DWalletMPCDBMessage>,
-        epoch_store: &AuthorityPerEpochStore,
-    ) {
+    pub fn handle_consensus_round_messages(&mut self, messages: Vec<DWalletMPCDBMessage>) {
         for message in messages {
-            self.handle_dwallet_message(message, epoch_store);
+            self.handle_dwallet_message(message);
         }
 
         // Check for ready to advance sessions, and clone and place their copy in an ordered queue waiting for computation.
         let ReadySessionsResponse {
             pending_for_event_sessions,
             ready_sessions,
-        } = self.get_ready_to_advance_sessions(epoch_store);
+        } = self.get_ready_to_advance_sessions();
 
         // TODO(scaly): update comment after we remove session copy
         // Since the Ika and Sui consensuses are not in sync,
@@ -346,16 +362,18 @@ impl DWalletMPCManager {
         &mut self,
         reporting_authority: AuthorityName,
         report: MaliciousReport,
-        epoch_store: &AuthorityPerEpochStore,
     ) {
         self.malicious_handler
             .report_malicious_actor(report.clone(), reporting_authority);
 
-        if self.malicious_handler.is_malicious_actor(&epoch_store.name) {
+        if self
+            .malicious_handler
+            .is_malicious_actor(&self.validator_name)
+        {
             self.recognized_self_as_malicious = true;
 
             error!(
-                authority=?epoch_store.name,
+                authority=?self.validator_name,
                 reporting_authority=?reporting_authority,
                 malicious_actors=?report.malicious_actors,
                 session_identifier=?report.session_identifier,
@@ -367,15 +385,12 @@ impl DWalletMPCManager {
     /// Returns the sessions that can perform the next cryptographic round,
     /// and the list of malicious parties that has
     /// been detected while checking for such sessions.
-    fn get_ready_to_advance_sessions(
-        &mut self,
-        epoch_store: &AuthorityPerEpochStore,
-    ) -> ReadySessionsResponse {
+    fn get_ready_to_advance_sessions(&mut self) -> ReadySessionsResponse {
         let ready_to_advance_sessions: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                let is_ready = session.check_quorum_for_next_crypto_round(epoch_store);
+                let is_ready = session.check_quorum_for_next_crypto_round();
                 if is_ready {
                     // TODO: delete this.
 
@@ -468,21 +483,20 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
-    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage, epoch_store: &AuthorityPerEpochStore) {
-        let session_identifier= message.session_identifier;
+    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) {
+        let session_identifier = message.session_identifier;
         let sender_authority = message.authority;
-        let receiver_authority = epoch_store.name;
         let mpc_round_number = message.round_number;
         let mpc_protocol = message.mpc_protocol.clone();
 
-        let Ok(sender_party_id) = epoch_store
-            .authority_name_to_party_id(&sender_authority)
+        let Ok(sender_party_id) =
+            authority_name_to_party_id_from_committee(&self.committee, &sender_authority)
         else {
             error!(
                 session_identifier=?session_identifier,
-                from_authority=?sender_authority,
-                receiving_authority=?receiver_authority,
-                crypto_round_number=?mpc_round_number,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                mpc_round_number=?mpc_round_number,
                 mpc_protocol=?mpc_protocol,
                 "Got a message for an authority without party ID",
             );
@@ -492,32 +506,29 @@ impl DWalletMPCManager {
 
         info!(
             session_identifier=?session_identifier,
-            from_authority=?sender_authority,
-            receiving_authority=?receiver_authority,
-            crypto_round_number=?mpc_round_number,
+            sender_authority=?sender_authority,
+            receiver_authority=?self.validator_name,
+            mpc_round_number=?mpc_round_number,
             mpc_protocol=mpc_protocol,
             "Received an MPC message for session",
         );
 
         debug!(
             session_identifier=?session_identifier,
-            from_authority=?sender_authority,
-            receiving_authority=?receiver_authority,
-            crypto_round_number=?mpc_round_number,
+            sender_authority=?sender_authority,
+            receiver_authority=?self.validator_name,
+            mpc_round_number=?mpc_round_number,
             mpc_protocol=mpc_protocol,
             message=?message.message,
             "Received an MPC message for session with contents",
         );
 
-        if self
-            .malicious_handler
-            .is_malicious_actor(&sender_authority)
-        {
+        if self.malicious_handler.is_malicious_actor(&sender_authority) {
             info!(
                 session_identifier=?session_identifier,
-                from_authority=?sender_authority,
-                receiving_authority=?receiver_authority,
-                crypto_round_number=?mpc_round_number,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                mpc_round_number=?mpc_round_number,
                 mpc_protocol=?mpc_protocol,
                 "Ignoring message from malicious authority",
             );
@@ -530,9 +541,9 @@ impl DWalletMPCManager {
             Entry::Vacant(_) => {
                 info!(
                     session_identifier=?session_identifier,
-                    from_authority=?sender_authority,
-                    receiving_authority=?receiver_authority,
-                    crypto_round_number=?mpc_round_number,
+                    sender_authority=?sender_authority,
+                    receiver_authority=?self.validator_name,
+                    mpc_round_number=?mpc_round_number,
                     mpc_protocol=?mpc_protocol,
                     "received a message for an MPC session before receiving an event requesting it"
                 );
@@ -540,27 +551,25 @@ impl DWalletMPCManager {
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.new_mpc_session(&session_identifier, None, epoch_store);
+                self.new_mpc_session(&session_identifier, None);
                 // Safe to `unwrap()`: we just created the session.
-                self.mpc_sessions
-                    .get_mut(&session_identifier)
-                    .unwrap()
+                self.mpc_sessions.get_mut(&session_identifier).unwrap()
             }
         };
 
-        let is_malicious = session.store_message(sender_party_id, message, epoch_store);
+        let is_malicious = session.store_message(sender_party_id, message);
         if is_malicious {
             error!(
                 session_identifier=?session_identifier,
-                from_authority=?sender_authority,
-                receiving_authority=?receiver_authority,
-                crypto_round_number=?mpc_round_number,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                mpc_round_number=?mpc_round_number,
                 mpc_protocol=?mpc_protocol,
                 sender_party_id=sender_party_id,
                 "Validator sent a malicious message"
             );
 
-            self.flag_parties_as_malicious(&[sender_party_id], epoch_store);
+            self.flag_parties_as_malicious(&[sender_party_id]);
         }
     }
 
@@ -568,11 +577,11 @@ impl DWalletMPCManager {
     /// in the malicious actors set.
     /// New messages from these parties will be ignored.
     /// Restarted for each epoch.
-    fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID], epoch_store: &AuthorityPerEpochStore,) {
+    fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) {
         // TODO(Scaly): why is this a different flow? why here
 
         let malicious_parties_names =
-            party_ids_to_authority_names(malicious_parties, &epoch_store.committee());
+            party_ids_to_authority_names(malicious_parties, &self.committee);
         warn!(
             "dWallet MPC flagged the following parties as malicious: {:?}",
             malicious_parties_names
@@ -588,7 +597,6 @@ impl DWalletMPCManager {
         &mut self,
         session_identifier: &SessionIdentifier,
         mpc_event_data: Option<MPCEventData>,
-        epoch_store: &AuthorityPerEpochStore,
     ) {
         info!(
             "Received start MPC flow event for session identifier {:?}",
@@ -596,7 +604,8 @@ impl DWalletMPCManager {
         );
 
         let new_session = DWalletMPCSession::new(
-            epoch_store,
+            self.validator_name,
+            self.committee.clone(),
             self.consensus_adapter.clone(),
             self.epoch_id,
             MPCSessionStatus::Active,
@@ -604,6 +613,8 @@ impl DWalletMPCManager {
             self.party_id,
             self.weighted_threshold_access_structure.clone(),
             mpc_event_data,
+            self.network_dkg_third_round_delay,
+            self.decryption_key_reconfiguration_third_round_delay,
             self.dwallet_mpc_metrics.clone(),
             self.root_seed.clone(),
         );

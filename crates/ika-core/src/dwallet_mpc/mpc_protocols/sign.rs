@@ -15,7 +15,7 @@ use ika_types::messages_dwallet_mpc::{
     SessionIdentifier, SignRequestEvent,
 };
 use message_digest::message_digest::{message_digest, Hash};
-use mpc::{Party, Weight};
+use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;
@@ -37,10 +37,9 @@ pub(crate) type SignPublicInput =
 ///
 /// Note: this is only an optimization: if we don't have at least `t` online decrypters out of the `expected_decrypters` subset, the Sign protocol still completes successfully, just slower.
 fn generate_expected_decrypters(
-    epoch_store: &AuthorityPerEpochStore,
+    access_structure: &WeightedThresholdAccessStructure,
     session_identifier: SessionIdentifier,
 ) -> DwalletMPCResult<HashSet<PartyID>> {
-    let access_structure = epoch_store.get_weighted_threshold_access_structure()?;
     let total_weight = access_structure.total_weight();
     let expected_decrypters_weight =
         access_structure.threshold + (total_weight as f64 * 0.10).floor() as Weight;
@@ -55,7 +54,7 @@ fn generate_expected_decrypters(
 
 pub(crate) fn sign_session_public_input(
     deserialized_event: &DWalletSessionEvent<SignRequestEvent>,
-    epoch_store: &AuthorityPerEpochStore,
+    access_structure: &WeightedThresholdAccessStructure,
     network_keys: &DwalletMPCNetworkKeys,
     protocol_public_parameters: ProtocolPublicParameters,
 ) -> DwalletMPCResult<<SignFirstParty as mpc::Party>::PublicInput> {
@@ -67,8 +66,10 @@ pub(crate) fn sign_session_public_input(
             .dwallet_network_encryption_key_id,
     )?;
 
-    let expected_decrypters =
-        generate_expected_decrypters(epoch_store, deserialized_event.session_identifier_digest())?;
+    let expected_decrypters = generate_expected_decrypters(
+        access_structure,
+        deserialized_event.session_identifier_digest(),
+    )?;
 
     <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
         protocol_public_parameters,
