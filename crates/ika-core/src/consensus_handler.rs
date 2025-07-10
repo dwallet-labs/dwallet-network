@@ -23,8 +23,8 @@ use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
 use lru::LruCache;
 use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monitored_scope};
 use serde::{Deserialize, Serialize};
-use sha3::Digest;
 use sha3::digest::FixedOutput;
+use sha3::Digest;
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
@@ -460,7 +460,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     idx,
                 );
 
-                let output_hash = sha3::Keccak256::new_with_prefix(output.output).finalize_fixed().to_vec();
+                let output_hash = sha3::Keccak256::new_with_prefix(output.output)
+                    .finalize_fixed()
+                    .to_vec();
 
                 info!(
                         round=?round,
