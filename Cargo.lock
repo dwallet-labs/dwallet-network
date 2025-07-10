@@ -5603,6 +5603,7 @@ dependencies = [
  "expect-test",
  "fastcrypto",
  "fs_extra",
+ "hex",
  "http 1.2.0",
  "ika-config",
  "ika-move-packages",

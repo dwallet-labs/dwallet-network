@@ -50,6 +50,7 @@ sui-types.workspace = true
 ika-move-packages.workspace = true
 serde_yaml.workspace = true
 ika-sui-client.workspace = true
+hex.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true
