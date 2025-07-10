@@ -74,14 +74,14 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-k256 = { version = "0.14.0-pre.8", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166", features = ["threshold"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "3c59166"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "3c59166"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
+k256 = { version = "0.14.0-pre.9", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "43a56026"}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "43a56026"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "43a56026", features = ["threshold"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "43a56026" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "43a56026"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "43a56026"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "43a56026"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -561,9 +561,4 @@ spinners = "4.1.0"
 include_dir = "0.7.3"
 
 [patch.crates-io]
-sha2 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha2-v0.11.0-rc.0" }
-sha3 = { git = 'https://github.com/RustCrypto/hashes.git', tag = "sha3-v0.11.0-rc.0" }
-digest = { git = 'https://github.com/RustCrypto/traits.git', tag = "digest-v0.11.0-rc.0" }
-signature = { git = 'https://github.com/RustCrypto/traits.git', tag = "signature-v3.0.0-rc.1" }
-curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
 crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "d0929d4" }
