@@ -498,6 +498,7 @@ enum StateSyncMessage {
 }
 
 struct StateSyncEventLoop<S> {
+    is_fullnode: bool,
     config: StateSyncConfig,
 
     mailbox: mpsc::Receiver<StateSyncMessage>,
@@ -581,6 +582,14 @@ where
         let task_handle = self.tasks.spawn(task);
         self.sync_system_checkpoint_from_archive_task = Some(task_handle);
 
+
+        if !self.is_fullnode {
+            // If this is not a fullnode, we don't need to sync checkpoints.
+            // We will only sync checkpoints from archive.
+            info!("State-Sync is not running in fullnode mode, skipping checkpoint sync tasks");
+            return;
+        }
+
         // Start main loop.
         loop {
             tokio::select! {
@@ -632,8 +641,10 @@ where
                 },
             }
 
-            self.maybe_start_checkpoint_summary_sync_task();
-            self.maybe_start_system_checkpoint_summary_sync_task();
+            if self.is_fullnode {
+                self.maybe_start_system_checkpoint_summary_sync_task();
+                self.maybe_start_checkpoint_summary_sync_task();
+            }
         }
 
         info!("State-Synchronizer ended");
@@ -643,8 +654,10 @@ where
         debug!("Received message: {:?}", message);
         match message {
             StateSyncMessage::StartSyncJob => {
+                if self.is_fullnode {
                 self.maybe_start_checkpoint_summary_sync_task();
                 self.maybe_start_system_checkpoint_summary_sync_task();
+                }
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
                 self.handle_dwallet_checkpoint_from_consensus(checkpoint)
