@@ -10,7 +10,8 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
 };
-use sui_move_build::{BuildConfig, SuiPackageHooks};
+use sui_move_build::{implicit_deps, BuildConfig, SuiPackageHooks};
+use sui_package_management::system_package_versions::latest_system_packages;
 
 const CRATE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 const COMPILED_PACKAGES_DIR: &str = "packages_compiled";
@@ -37,9 +38,17 @@ fn build_ika_move_packages() {
     let packages_path = Path::new(CRATE_ROOT).join("packages");
 
     let ika_path = packages_path.join("ika");
+    let ika_common_path = packages_path.join("ika_common");
     let ika_system_path = packages_path.join("ika_system");
+    let ika_dwallet_2pc_mpc_path = packages_path.join("ika_dwallet_2pc_mpc");
 
-    build_packages(&ika_path, &ika_system_path, out_dir);
+    build_packages(
+        &ika_path,
+        &ika_common_path,
+        &ika_system_path,
+        &ika_dwallet_2pc_mpc_path,
+        out_dir,
+    );
 
     check_diff(Path::new(CRATE_ROOT), out_dir)
 }
@@ -68,32 +77,47 @@ fn check_diff(checked_in: &Path, built: &Path) {
     }
 }
 
-fn build_packages(ika_path: &Path, ika_system_path: &Path, out_dir: &Path) {
+fn build_packages(
+    ika_path: &Path,
+    ika_common_path: &Path,
+    ika_system_path: &Path,
+    ika_dwallet_2pc_mpc_path: &Path,
+    out_dir: &Path,
+) {
     let config = MoveBuildConfig {
         generate_docs: true,
         warnings_are_errors: true,
         install_dir: Some(PathBuf::from(".")),
         lint_flag: LintFlag::LEVEL_NONE,
-        default_edition: Some(Edition::E2024_BETA),
+        default_edition: Some(Edition::E2024),
+        implicit_dependencies: implicit_deps(latest_system_packages()),
         ..Default::default()
     };
     debug_assert!(!config.test_mode);
     build_packages_with_move_config(
         ika_path,
+        ika_common_path,
         ika_system_path,
+        ika_dwallet_2pc_mpc_path,
         out_dir,
         "ika",
+        "ika_common",
         "ika_system",
+        "ika_dwallet_2pc_mpc",
         config,
     );
 }
 
 fn build_packages_with_move_config(
     ika_path: &Path,
+    ika_common_path: &Path,
     ika_system_path: &Path,
+    ika_dwallet_2pc_mpc_path: &Path,
     out_dir: &Path,
     ika_dir: &str,
+    ika_common_dir: &str,
     ika_system_dir: &str,
+    ika_dwallet_2pc_mpc_dir: &str,
     config: MoveBuildConfig,
 ) {
     let ika_pkg = BuildConfig {
@@ -104,6 +128,14 @@ fn build_packages_with_move_config(
     }
     .build(ika_path)
     .unwrap();
+    let ika_common_pkg = BuildConfig {
+        config: config.clone(),
+        run_bytecode_verifier: true,
+        print_diags_to_stderr: false,
+        chain_id: None, // Framework pkg addr is agnostic to chain, resolves from Move.toml
+    }
+    .build(ika_common_path)
+    .unwrap();
     let ika_system_pkg = BuildConfig {
         config: config.clone(),
         run_bytecode_verifier: true,
@@ -112,17 +144,37 @@ fn build_packages_with_move_config(
     }
     .build(ika_system_path)
     .unwrap();
+    let ika_dwallet_2pc_mpc_pkg = BuildConfig {
+        config: config.clone(),
+        run_bytecode_verifier: true,
+        print_diags_to_stderr: false,
+        chain_id: None, // Framework pkg addr is agnostic to chain, resolves from Move.toml
+    }
+    .build(ika_dwallet_2pc_mpc_path)
+    .unwrap();
 
     let ika = ika_pkg.get_dependency_sorted_modules(false);
+    let ika_common = ika_common_pkg.get_dependency_sorted_modules(false);
     let ika_system = ika_system_pkg.get_dependency_sorted_modules(false);
+    let ika_dwallet_2pc_mpc = ika_dwallet_2pc_mpc_pkg.get_dependency_sorted_modules(false);
 
     let compiled_packages_dir = out_dir.join(COMPILED_PACKAGES_DIR);
 
     let ika_members =
         serialize_modules_to_file(ika.iter(), &compiled_packages_dir.join(ika_dir)).unwrap();
+    let ika_common_members = serialize_modules_to_file(
+        ika_common.iter(),
+        &compiled_packages_dir.join(ika_common_dir),
+    )
+    .unwrap();
     let ika_system_members = serialize_modules_to_file(
         ika_system.iter(),
         &compiled_packages_dir.join(ika_system_dir),
+    )
+    .unwrap();
+    let ika_dwallet_2pc_mpc_members = serialize_modules_to_file(
+        ika_dwallet_2pc_mpc.iter(),
+        &compiled_packages_dir.join(ika_dwallet_2pc_mpc_dir),
     )
     .unwrap();
 
@@ -131,7 +183,15 @@ fn build_packages_with_move_config(
     let mut files_to_write = BTreeMap::new();
     relocate_docs(&ika_pkg.package.compiled_docs.unwrap(), &mut files_to_write);
     relocate_docs(
+        &ika_common_pkg.package.compiled_docs.unwrap(),
+        &mut files_to_write,
+    );
+    relocate_docs(
         &ika_system_pkg.package.compiled_docs.unwrap(),
+        &mut files_to_write,
+    );
+    relocate_docs(
+        &ika_dwallet_2pc_mpc_pkg.package.compiled_docs.unwrap(),
         &mut files_to_write,
     );
     for (fname, doc) in files_to_write {
@@ -140,7 +200,13 @@ fn build_packages_with_move_config(
         fs::write(dst_path, doc).unwrap();
     }
 
-    let published_api = [ika_members.join("\n"), ika_system_members.join("\n")].join("\n");
+    let published_api = [
+        ika_members.join("\n"),
+        ika_common_members.join("\n"),
+        ika_system_members.join("\n"),
+        ika_dwallet_2pc_mpc_members.join("\n"),
+    ]
+    .join("\n");
 
     fs::write(out_dir.join(PUBLISHED_API_FILE), published_api).unwrap();
 }

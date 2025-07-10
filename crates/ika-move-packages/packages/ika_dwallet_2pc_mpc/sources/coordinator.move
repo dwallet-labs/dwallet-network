@@ -1,21 +1,20 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module ika_system::dwallet_2pc_mpc_coordinator;
+module ika_dwallet_2pc_mpc::coordinator;
 
 // === Imports ===
 
 use ika::ika::IKA;
 use sui::{coin::Coin, dynamic_field, sui::SUI, vec_map::VecMap};
-use ika_system::{
-    bls_committee::BlsCommittee,
-    dwallet_2pc_mpc_coordinator_inner::{
+use ika_dwallet_2pc_mpc::{
+    coordinator_inner::{
+        Self,
         DWalletCap,
         DWalletCoordinatorInner,
         ImportedKeyDWalletCap,
         ImportedKeyMessageApproval,
         MessageApproval,
-        Self,
         UnverifiedPartialUserSignatureCap,
         UnverifiedPresignCap,
         VerifiedPartialUserSignatureCap,
@@ -23,6 +22,12 @@ use ika_system::{
         SessionIdentifier,
     },
     dwallet_pricing::DWalletPricing
+};
+use ika_system::{
+    advance_epoch_approver::AdvanceEpochApprover,
+    protocol_cap::VerifiedProtocolCap,
+    system_current_status_info::SystemCurrentStatusInfo,
+    validator_cap::VerifiedValidatorOperationCap
 };
 
 // === Errors ===
@@ -49,17 +54,17 @@ public struct DWalletCoordinator has key {
 
 /// Create a new System object and make it shared.
 /// This function will be called only once in init.
-public(package) fun create_dwallet_coordinator(
+public(package) fun create(
     package_id: ID,
-    epoch: u64,
-    active_committee: BlsCommittee,
+    advance_epoch_approver: &mut AdvanceEpochApprover,
+    system_current_status_info: &SystemCurrentStatusInfo,
     pricing: DWalletPricing,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
-): DWalletCoordinator {
-    let dwallet_coordinator_inner = dwallet_2pc_mpc_coordinator_inner::create_dwallet_coordinator_inner(
-        epoch,
-        active_committee,
+) {
+    let dwallet_coordinator_inner = coordinator_inner::create(
+        advance_epoch_approver,
+        system_current_status_info,
         pricing,
         supported_curves_to_signature_algorithms_to_hash_schemes,
         ctx,
@@ -71,24 +76,10 @@ public(package) fun create_dwallet_coordinator(
         new_package_id: option::none(),
     };
     dynamic_field::add(&mut self.id, VERSION, dwallet_coordinator_inner);
-    self
-}
-
-public(package) fun share_dwallet_coordinator(
-    dwallet_coordinator: DWalletCoordinator,
-) {
-    transfer::share_object(dwallet_coordinator);
+    transfer::share_object(self);
 }
 
 // === Public Functions ===
-
-public fun register_session_identifier(
-    self: &mut DWalletCoordinator,
-    identifier: vector<u8>,
-    ctx: &mut TxContext,
-): SessionIdentifier {
-    self.inner_mut().register_session_identifier(identifier, ctx)
-}
 
 /// Being called by the Ika network to store outputs of completed MPC sessions to Sui.
 public fun process_checkpoint_message_by_quorum(
@@ -107,6 +98,80 @@ public fun process_checkpoint_message_by_quorum(
     let dwallet_inner = dwallet_2pc_mpc_coordinator.inner_mut();
     dwallet_inner.process_checkpoint_message_by_quorum(signature, signers_bitmap, message, ctx)
 }
+
+public fun initiate_mid_epoch_reconfiguration(
+    self: &mut DWalletCoordinator,
+    system_current_status_info: &SystemCurrentStatusInfo,
+) {
+    self.inner_mut().initiate_mid_epoch_reconfiguration(system_current_status_info);
+}
+
+public fun network_encryption_key_mid_epoch_reconfiguration(
+    self: &mut DWalletCoordinator,
+    dwallet_network_encryption_key_id: ID,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
+}
+
+public fun advance_epoch(
+    self: &mut DWalletCoordinator,
+    advance_epoch_approver: &mut AdvanceEpochApprover,
+) {
+    self.inner_mut().advance_epoch(advance_epoch_approver);
+}
+
+public fun request_dwallet_network_encryption_key_dkg_by_cap(
+    self: &mut DWalletCoordinator,
+    params_for_network: vector<u8>,
+    cap: &VerifiedProtocolCap,
+    ctx: &mut TxContext,
+) {
+    self.inner_mut().request_dwallet_network_encryption_key_dkg(params_for_network, cap, ctx);
+}
+
+public fun set_supported_and_pricing(
+    self: &mut DWalletCoordinator,
+    default_pricing: DWalletPricing,
+    supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
+    cap: &VerifiedProtocolCap,
+) {
+    self.inner_mut().set_supported_and_pricing(default_pricing, supported_curves_to_signature_algorithms_to_hash_schemes, cap);
+}
+
+public fun set_paused_curves_and_signature_algorithms(
+    self: &mut DWalletCoordinator,
+    paused_curves: vector<u32>,
+    paused_signature_algorithms: vector<u32>,
+    paused_hash_schemes: vector<u32>,
+    cap: &VerifiedProtocolCap,
+) {
+    self.inner_mut().set_paused_curves_and_signature_algorithms(paused_curves, paused_signature_algorithms, paused_hash_schemes, cap);
+}
+
+public fun request_lock_epoch_sessions(
+    self: &mut DWalletCoordinator,
+    system_current_status_info: &SystemCurrentStatusInfo,
+) {
+    self.inner_mut().request_lock_epoch_sessions(system_current_status_info);
+}
+
+public fun set_pricing_vote(
+    self: &mut DWalletCoordinator,
+    pricing: DWalletPricing,
+    cap: &VerifiedValidatorOperationCap,
+) {
+    self.inner_mut().set_pricing_vote(pricing, cap);
+}
+
+public fun register_session_identifier(
+    self: &mut DWalletCoordinator,
+    identifier: vector<u8>,
+    ctx: &mut TxContext,
+): SessionIdentifier {
+    self.inner_mut().register_session_identifier(identifier, ctx)
+}
+
 
 public fun get_active_encryption_key(
     self: &DWalletCoordinator,
@@ -564,7 +629,7 @@ public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
 #[test_only]
 public fun last_processed_checkpoint_sequence_number(
     self: &DWalletCoordinator,
-): Option<u64> {
+): u64 {
     self.inner().last_processed_checkpoint_sequence_number()
 }
 

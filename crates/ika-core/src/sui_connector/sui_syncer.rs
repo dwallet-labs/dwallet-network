@@ -10,7 +10,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkDecryptionKey, DWalletNetworkDecryptionKeyData, DWalletNetworkEncryptionKeyState,
+    DWalletNetworkEncryptionKey, DWalletNetworkEncryptionKeyData, DWalletNetworkEncryptionKeyState,
 };
 use ika_types::sui::{DWalletCoordinatorInner, SystemInner, SystemInnerTrait};
 use mysten_metrics::spawn_logged_monitored_task;
@@ -55,24 +55,24 @@ where
         query_interval: Duration,
         next_epoch_committee_sender: Sender<Committee>,
         is_validator: bool,
-        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_sender: tokio::sync::broadcast::Sender<Vec<SuiEvent>>,
         end_of_publish_sender: Sender<Option<u64>>,
     ) -> IkaResult<Vec<JoinHandle<()>>> {
         info!("Starting SuiSyncer");
         let mut task_handles = vec![];
         let sui_client_clone = self.sui_client.clone();
+        // The notifier needs the network keys, not only on the validator nodes.
+        info!("Starting network keys sync task");
+        tokio::spawn(Self::sync_dwallet_network_keys(
+            sui_client_clone.clone(),
+            network_keys_sender,
+        ));
         if is_validator {
             info!("Starting next epoch committee sync task");
             tokio::spawn(Self::sync_next_committee(
                 sui_client_clone.clone(),
                 next_epoch_committee_sender,
-            ));
-
-            info!("Starting network keys sync task");
-            tokio::spawn(Self::sync_dwallet_network_keys(
-                sui_client_clone.clone(),
-                network_keys_sender,
             ));
             info!("Starting end of publish sync task");
             tokio::spawn(Self::sync_dwallet_end_of_publish(
@@ -187,7 +187,7 @@ where
     /// Sync the DwalletMPC network keys from the Sui client to the local store.
     async fn sync_dwallet_network_keys(
         sui_client: Arc<SuiClient<C>>,
-        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkDecryptionKeyData>>>,
+        network_keys_sender: Sender<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
     ) {
         // Last fetched network keys (id to epoch) to avoid fetching the same keys repeatedly.
         let mut last_fetched_network_keys: HashMap<ObjectID, u64> = HashMap::new();
@@ -205,7 +205,7 @@ where
                     HashMap::new()
                 });
 
-            let keys_to_fetch: HashMap<ObjectID, DWalletNetworkDecryptionKey> =
+            let keys_to_fetch: HashMap<ObjectID, DWalletNetworkEncryptionKey> =
                 network_encryption_keys
                     .into_iter()
                     .filter(|(id, key)| {
@@ -227,7 +227,7 @@ where
             let mut all_fetched_network_keys_data = HashMap::new();
             for (key_id, network_dec_key_shares) in keys_to_fetch.into_iter() {
                 match sui_client
-                    .get_network_decryption_key_with_full_data_by_epoch(
+                    .get_network_encryption_key_with_full_data_by_epoch(
                         &network_dec_key_shares,
                         current_epoch,
                     )
@@ -263,12 +263,7 @@ where
 
             let system_inner = sui_client.must_get_system_inner_object().await;
             let SystemInner::V1(system_inner_v1) = system_inner;
-            let Some(coordinator_id) = system_inner_v1.dwallet_2pc_mpc_coordinator_id else {
-                continue;
-            };
-            let coordinator_inner = sui_client
-                .must_get_dwallet_coordinator_inner(coordinator_id)
-                .await;
+            let coordinator_inner = sui_client.must_get_dwallet_coordinator_inner().await;
             let DWalletCoordinatorInner::V1(coordinator) = coordinator_inner;
             // Check if we can advance the epoch.
             let all_epoch_sessions_finished =
@@ -283,12 +278,16 @@ where
                         .completed_system_sessions_count;
             let next_epoch_committee_exists =
                 system_inner_v1.validator_set.next_epoch_committee.is_some();
+            let all_network_encryption_keys_reconfiguration_completed =
+                coordinator.dwallet_network_encryption_keys.size
+                    == coordinator.epoch_dwallet_network_encryption_keys_reconfiguration_completed;
             if coordinator
                 .session_management
                 .locked_last_session_to_complete_in_current_epoch
                 && all_epoch_sessions_finished
                 && all_immediate_sessions_completed
                 && next_epoch_committee_exists
+                && all_network_encryption_keys_reconfiguration_completed
                 && coordinator
                     .pricing_and_fee_management
                     .calculation_votes

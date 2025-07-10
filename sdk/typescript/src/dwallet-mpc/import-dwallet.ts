@@ -16,7 +16,6 @@ import type {
 import {
 	createSessionIdentifier,
 	DWALLET_COORDINATOR_MOVE_MODULE_NAME,
-	getDwalletSecp256k1ObjID,
 	getDWalletSecpState,
 	getInitialSharedVersion,
 	getNetworkDecryptionKeyID,
@@ -93,16 +92,18 @@ export async function createSessionIdentifierMoveCall(
 	conf: Config,
 ): Promise<SessionIdentifierRegisteredEvent> {
 	const tx = new Transaction();
-	const dwalletSecp256k1ID = await getDwalletSecp256k1ObjID(conf);
 	const dwalletStateArg = tx.sharedObjectRef({
-		objectId: dwalletSecp256k1ID,
-		initialSharedVersion: await getInitialSharedVersion(conf, dwalletSecp256k1ID),
+		objectId: conf.ikaConfig.ika_dwallet_coordinator_object_id,
+		initialSharedVersion: await getInitialSharedVersion(
+			conf,
+			conf.ikaConfig.ika_dwallet_coordinator_object_id,
+		),
 		mutable: true,
 	});
 	const sessionIdentifier = await createSessionIdentifier(
 		tx,
 		dwalletStateArg,
-		conf.ikaConfig.ika_system_package_id,
+		conf.ikaConfig.ika_dwallet_2pc_mpc_package_id,
 	);
 	tx.transferObjects([sessionIdentifier], conf.suiClientKeypair.toSuiAddress());
 	const result = await conf.client.signAndExecuteTransaction({
@@ -157,7 +158,7 @@ export async function verifyImportedDWalletMoveCall(
 		typeArguments: [`${conf.ikaConfig.ika_package_id}::ika::IKA`],
 	});
 	const cap = tx.moveCall({
-		target: `${conf.ikaConfig.ika_system_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_dwallet_verification`,
+		target: `${conf.ikaConfig.ika_dwallet_2pc_mpc_package_id}::${DWALLET_COORDINATOR_MOVE_MODULE_NAME}::request_imported_key_dwallet_verification`,
 		arguments: [
 			dwalletStateArg,
 			tx.pure.id(networkDecryptionKeyID),
