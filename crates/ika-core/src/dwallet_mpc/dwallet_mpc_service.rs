@@ -76,8 +76,8 @@ impl DWalletMPCService {
         self.dwallet_mpc_manager
             .sync_last_session_to_complete_in_current_epoch(
                 inner
-                    .session_management
-                    .last_session_to_complete_in_current_epoch,
+                    .sessions_manager
+                    .last_user_initiated_session_to_complete_in_current_epoch,
             );
     }
 

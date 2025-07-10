@@ -56,8 +56,8 @@ pub const PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME: &IdentStr =
     ident_str!("process_checkpoint_message_by_quorum");
 pub const INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
     ident_str!("initiate_mid_epoch_reconfiguration");
-pub const NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
-    ident_str!("network_encryption_key_mid_epoch_reconfiguration");
+pub const REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME: &IdentStr =
+    ident_str!("request_network_encryption_key_mid_epoch_reconfiguration");
 pub const CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME: &IdentStr =
     ident_str!("create_system_current_status_info");
 pub const REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME: &IdentStr =

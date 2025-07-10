@@ -12,7 +12,7 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
-    DWalletNetworkEncryptionKeyData, DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME,
+    DWalletNetworkEncryptionKeyData, SESSIONS_MANAGER_MODULE_NAME,
 };
 use shared_crypto::intent::{Intent, IntentMessage};
 use std::collections::HashMap;
@@ -87,7 +87,7 @@ impl SuiConnectorService {
             sui_connector_metrics.clone(),
         );
 
-        let sui_modules_to_watch = vec![DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned()];
+        let sui_modules_to_watch = vec![SESSIONS_MANAGER_MODULE_NAME.to_owned()];
         let task_handles = SuiSyncer::new(
             sui_client.clone(),
             sui_modules_to_watch,

@@ -20,6 +20,7 @@ use sui_types::collection_types::{Table, TableVec};
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
 pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr = ident_str!("coordinator");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
+pub const SESSIONS_MANAGER_MODULE_NAME: &IdentStr = ident_str!("sessions_manager");
 pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
     ident_str!("coordinator_inner");
 pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
@@ -347,6 +348,7 @@ pub struct MPCSessionRequest {
     pub session_type: SessionType,
     /// Unique identifier for the MPC session.
     pub session_identifier: SessionIdentifier,
+    pub session_sequence_number: u64,
     /// The input to the request MPC session.
     pub request_input: MPCRequestInput,
     pub epoch: u64,
@@ -364,7 +366,7 @@ pub trait DWalletSessionEventTrait {
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub enum SessionType {
-    User { sequence_number: u64 },
+    User,
     System,
 }
 
@@ -647,6 +649,7 @@ pub struct DWalletSessionEvent<E: DWalletSessionEventTrait> {
     pub epoch: u64,
     pub session_object_id: ObjectID,
     pub session_type: SessionType,
+    pub session_sequence_number: u64,
     // DO NOT MAKE THIS PUBLIC! ONLY CALL `session_identifier_digest`
     session_identifier_preimage: Vec<u8>,
     pub event_data: E,
@@ -659,7 +662,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
         StructTag {
             address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
+            module: SESSIONS_MANAGER_MODULE_NAME.to_owned(),
             type_params: vec![<E as DWalletSessionEventTrait>::type_(packages_config).into()],
         }
     }
@@ -668,8 +671,8 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
 impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
     pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
         event.address == package_id
+            && event.module == SESSIONS_MANAGER_MODULE_NAME.to_owned()
             && event.name == DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned()
-            && event.module == DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned()
     }
 
     /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
@@ -681,7 +684,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
         // in the two different options will yield a different output, thus guaranteeing
         // user-initiated sessions can never block or reuse session IDs for system sessions.
         let session_type = match self.session_type {
-            SessionType::User { .. } => [
+            SessionType::User => [
                 version.to_be_bytes().as_slice(),
                 b"USER",
                 self.session_identifier_preimage.as_slice(),
@@ -1050,9 +1053,10 @@ impl DWalletSessionEventTrait for DWalletNetworkDKGEncryptionKeyRequestEvent {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DWalletNetworkEncryptionKey {
     pub id: ObjectID,
+    pub dkg_at_epoch: u64,
+    pub network_dkg_public_output: TableVec,
     /// key -> epoch, value -> reconfiguration public output (TableVec).
     pub reconfiguration_public_outputs: Table,
-    pub network_dkg_public_output: TableVec,
     pub dkg_params_for_network: Vec<u8>,
     pub supported_curves: Vec<u32>,
     pub state: DWalletNetworkEncryptionKeyState,
@@ -1071,13 +1075,8 @@ pub struct DWalletNetworkEncryptionKeyData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DWalletNetworkEncryptionKeyState {
     AwaitingNetworkDKG,
-    // Network DKG is completed, but we didn't do Reconfiguration yet.
     NetworkDKGCompleted,
-    /// Reconfiguration request was sent to the network, but didn't finish yet.
-    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
-    AwaitingNetworkReconfiguration {
-        is_first: bool,
-    },
+    AwaitingNetworkReconfiguration,
     NetworkReconfigurationCompleted,
 }
 

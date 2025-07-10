@@ -19,9 +19,9 @@ use ika_dwallet_2pc_mpc::{
         UnverifiedPresignCap,
         VerifiedPartialUserSignatureCap,
         VerifiedPresignCap,
-        SessionIdentifier,
     },
-    dwallet_pricing::DWalletPricing
+    sessions_manager::SessionIdentifier,
+    pricing::PricingInfo
 };
 use ika_system::{
     advance_epoch_approver::AdvanceEpochApprover,
@@ -58,7 +58,7 @@ public(package) fun create(
     package_id: ID,
     advance_epoch_approver: &mut AdvanceEpochApprover,
     system_current_status_info: &SystemCurrentStatusInfo,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext
 ) {
@@ -106,12 +106,12 @@ public fun initiate_mid_epoch_reconfiguration(
     self.inner_mut().initiate_mid_epoch_reconfiguration(system_current_status_info);
 }
 
-public fun network_encryption_key_mid_epoch_reconfiguration(
+public fun request_network_encryption_key_mid_epoch_reconfiguration(
     self: &mut DWalletCoordinator,
     dwallet_network_encryption_key_id: ID,
     ctx: &mut TxContext,
 ) {
-    self.inner_mut().network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
+    self.inner_mut().request_network_encryption_key_mid_epoch_reconfiguration(dwallet_network_encryption_key_id, ctx);
 }
 
 public fun advance_epoch(
@@ -132,7 +132,7 @@ public fun request_dwallet_network_encryption_key_dkg_by_cap(
 
 public fun set_supported_and_pricing(
     self: &mut DWalletCoordinator,
-    default_pricing: DWalletPricing,
+    default_pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     cap: &VerifiedProtocolCap,
 ) {
@@ -158,7 +158,7 @@ public fun request_lock_epoch_sessions(
 
 public fun set_pricing_vote(
     self: &mut DWalletCoordinator,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     cap: &VerifiedValidatorOperationCap,
 ) {
     self.inner_mut().set_pricing_vote(pricing, cap);
@@ -569,7 +569,7 @@ public fun match_partial_user_signature_with_imported_key_message_approval(
     )
 }
 
-public fun current_pricing(self: &DWalletCoordinator): DWalletPricing {
+public fun current_pricing(self: &DWalletCoordinator): PricingInfo {
     self.inner().current_pricing()
 }
 
@@ -625,6 +625,8 @@ public(package) fun inner(self: &DWalletCoordinator): &DWalletCoordinatorInner {
 }
 
 // === Test Functions ===
+#[test_only]
+use ika_dwallet_2pc_mpc::sessions_manager::SessionsManager;
 
 #[test_only]
 public fun last_processed_checkpoint_sequence_number(
@@ -634,6 +636,6 @@ public fun last_processed_checkpoint_sequence_number(
 }
 
 #[test_only]
-public fun last_session_sequence_number(self: &DWalletCoordinator): u64 {
-    self.inner().last_session_sequence_number()
+public fun sessions_manager(self: &DWalletCoordinator): &SessionsManager {
+    self.inner().sessions_manager()
 }
