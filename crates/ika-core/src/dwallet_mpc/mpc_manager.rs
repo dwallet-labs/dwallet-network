@@ -267,66 +267,6 @@ impl DWalletMPCManager {
         }
     }
 
-    fn handle_threshold_not_reached_report(
-        &mut self,
-        report: ThresholdNotReachedReport,
-        origin_authority: AuthorityName,
-    ) {
-        // Previously malicious actors are ignored.
-        if self.malicious_handler.is_malicious_actor(&origin_authority) {
-            return;
-        }
-        let current_voters_for_report = self
-            .threshold_not_reached_reports
-            .entry(report.clone())
-            .or_insert(StakeAggregator::new(self.committee.clone()));
-        // We already have a quorum for this report.
-        if current_voters_for_report.has_quorum() {
-            // Do nothing, quorum has already been reached.
-            return;
-        }
-        if current_voters_for_report
-            .insert_generic(origin_authority, ())
-            .is_quorum_reached()
-        {
-            self.prepare_for_round_retry(report.session_identifier);
-        }
-    }
-
-    fn prepare_for_round_retry(&mut self, session_identifier: SessionIdentifier) {
-        if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
-            session.attempts_count += 1;
-
-            // We got a `TWOPCMPCThresholdNotReached` error and a quorum agreement on it.
-            // So all parties that sent a regular MPC Message for the last executed
-            // round are malicious—as the round aborted with the error `TWOPCMPCThresholdNotReached`.
-            // All honest parties should report that there is a quorum for `ThresholdNotReached`.
-            // We must then remove these messages and mark the senders as malicious.
-            // Note that the current round was already incremented
-            // since we received the quorum for `ThresholdNotReached`
-            // on the previous round,
-            // but no messages were sent for the current round.
-            if let Some(unreached_round_messages) = session
-                .messages_by_consensus_round
-                .remove(&(session.current_round - 1))
-            {
-                let malicious_parties = unreached_round_messages
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<PartyID>>();
-
-                let malicious_authorities =
-                    party_ids_to_authority_names(&malicious_parties, &self.committee);
-
-                self.malicious_handler
-                    .report_malicious_actors(&malicious_authorities);
-            }
-
-            // Decrement the current round, as we are going to retry the previous round.
-            session.current_round -= 1;
-        }
-    }
-
     /// Handle the messages of a given consensus round.
     pub fn handle_consensus_round_messages(&mut self, messages: Vec<DWalletMPCDBMessage>) {
         for message in messages {
@@ -339,6 +279,7 @@ impl DWalletMPCManager {
             ready_sessions,
         } = self.get_ready_to_advance_sessions();
 
+        // TODO(scaly): why do we even need this queue?
         // TODO(scaly): update comment after we remove session copy
         // Since the Ika and Sui consensuses are not in sync,
         // a session might reach quorum before a validator has received

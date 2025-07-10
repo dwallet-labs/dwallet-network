@@ -171,6 +171,7 @@ pub(crate) struct DWalletMPCSession {
     pub(crate) mpc_event_data: Option<MPCEventData>,
     /// The *total* number of attempts to advance that failed in the session.
     /// Used to make `ThresholdNotReachedReport` unique.
+    // TODO(Scaly): delete?
     pub(crate) attempts_count: usize,
     /// A mapping between the MPC protocol of this session to the authorities that voted for it.
     mpc_protocol_to_voting_authorities: HashMap<String, StakeAggregator<(), true>>,
@@ -1087,7 +1088,6 @@ impl DWalletMPCSession {
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
             mpc_protocol=message.mpc_protocol,
-            messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_round - 1)).unwrap_or(&HashMap::new()).len(),
             "Received a dWallet MPC message",
         );
 
