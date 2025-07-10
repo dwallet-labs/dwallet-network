@@ -709,7 +709,7 @@ public(package) fun validator_stake_amount(
 
 /// Returns all the validators who are currently reporting `validator_id`
 public(package) fun get_reporters_of(self: &SystemInner, validator_id: ID): VecSet<ID> {
-    self.get_reporters_of(validator_id)
+    self.validator_set.get_reporters_of(validator_id)
 }
 
 public(package) fun token_exchange_rates(
