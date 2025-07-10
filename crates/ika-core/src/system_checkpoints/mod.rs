@@ -25,7 +25,7 @@ use ika_types::message_envelope::Message;
 use ika_types::messages_system_checkpoints::{
     CertifiedSystemCheckpointMessage, SignedSystemCheckpointMessage, SystemCheckpointMessage,
     SystemCheckpointMessageDigest, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
-    SystemCheckpointSignatureMessage, SystemCheckpointTimestamp, TrustedSystemCheckpointMessage,
+    SystemCheckpointSignatureMessage, TrustedSystemCheckpointMessage,
     VerifiedSystemCheckpointMessage,
 };
 use std::path::Path;
@@ -49,7 +49,6 @@ pub struct EpochStats {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PendingSystemCheckpointInfo {
-    pub timestamp_ms: SystemCheckpointTimestamp,
     pub checkpoint_height: SystemCheckpointHeight,
 }
 
@@ -464,14 +463,7 @@ impl SystemCheckpointBuilder {
             .last_built_system_checkpoint_message_builder()
             .expect("epoch should not have ended");
         let mut last_height = checkpoint_message.clone().and_then(|s| s.checkpoint_height);
-        let mut last_timestamp = checkpoint_message.map(|s| s.checkpoint_message.timestamp_ms);
 
-        let min_checkpoint_interval_ms = self
-            .epoch_store
-            .protocol_config()
-            .min_system_checkpoint_interval_ms_as_option()
-            .unwrap_or_default();
-        let mut grouped_pending_checkpoints = Vec::new();
         let checkpoints_iter = self
             .epoch_store
             .get_pending_system_checkpoints(last_height)
@@ -479,50 +471,23 @@ impl SystemCheckpointBuilder {
             .into_iter()
             .peekable();
         for (height, pending) in checkpoints_iter {
-            // Group PendingCheckpoints until:
-            // - minimum interval has elapsed ...
-            let current_timestamp = pending.details().timestamp_ms;
-            let can_build = match last_timestamp {
-                Some(last_timestamp) => {
-                    current_timestamp >= last_timestamp + min_checkpoint_interval_ms
-                }
-                None => true,
-            };
-            grouped_pending_checkpoints.push(pending);
-            if !can_build {
-                debug!(
-                    checkpoint_commit_height = height,
-                    ?last_timestamp,
-                    ?current_timestamp,
-                    "waiting for more PendingSystemCheckpoints: minimum interval not yet elapsed"
-                );
-                continue;
-            }
-
-            // Min interval has elapsed, we can now coalesce and build a system_checkpoint.
             last_height = Some(height);
-            last_timestamp = Some(current_timestamp);
             debug!(
                 checkpoint_commit_height = height,
                 "Making system checkpoint at commit height"
             );
-            if let Err(e) = self
-                .make_checkpoint(std::mem::take(&mut grouped_pending_checkpoints))
-                .await
-            {
+            if let Err(e) = self.make_checkpoint(vec![pending.clone()]).await {
                 error!(
-                    "Error while making system checkpoint, will retry in 1s: {:?}",
-                    e
+                    ?e,
+                    last_height,
+                    ?pending,
+                    "Error while making system checkpoint, will retry in 1s"
                 );
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 self.metrics.system_checkpoint_errors.inc();
                 return;
             }
         }
-        debug!(
-            "Waiting for more system checkpoints from consensus after processing {last_height:?}; {} pending system checkpoints left unprocessed until next interval",
-            grouped_pending_checkpoints.len(),
-        );
     }
 
     #[instrument(level = "debug", skip_all, fields(last_height = pendings.last().unwrap().details().checkpoint_height))]
@@ -659,7 +624,7 @@ impl SystemCheckpointBuilder {
         let _scope = monitored_scope("SystemCheckpointBuilder::create_checkpoints");
         let epoch = self.epoch_store.epoch();
         let total = all_messages.len();
-        let mut last_checkpoint = self.epoch_store.last_built_system_checkpoint_message()?;
+        let last_checkpoint = self.epoch_store.last_built_system_checkpoint_message()?;
         // if last_checkpoint.is_none() {
         //     let epoch = self.epoch_store.epoch();
         //     if epoch > 0 {
@@ -684,10 +649,10 @@ impl SystemCheckpointBuilder {
 
         if !all_messages.is_empty() {
             info!(
+                height = details.checkpoint_height,
                 next_sequence_number = last_checkpoint_seq + 1,
-                checkpoint_timestamp = details.timestamp_ms,
-                "Creating system checkpoint(s) for {} messages",
-                all_messages.len(),
+                number_of_messages = all_messages.len(),
+                "Creating system checkpoint(s) for messages",
             );
         }
 
@@ -697,7 +662,9 @@ impl SystemCheckpointBuilder {
         let mut checkpoints = Vec::with_capacity(chunks_count);
         debug!(
             ?last_checkpoint_seq,
-            "Creating {} system checkpoints with {} transactions", chunks_count, total,
+            chunks_count,
+            total_messages = total,
+            "Creating chunked system checkpoints with total messages",
         );
 
         for (index, messages) in chunks.into_iter().enumerate() {
@@ -711,29 +678,14 @@ impl SystemCheckpointBuilder {
             let sequence_number = last_checkpoint_seq + 1;
             last_checkpoint_seq = sequence_number;
 
-            let timestamp_ms = details.timestamp_ms;
-            if let Some((_, last_checkpoint)) = &last_checkpoint {
-                if last_checkpoint.timestamp_ms > timestamp_ms {
-                    error!(
-                        sequence_number,
-                        previous_timestamp_ms = last_checkpoint.timestamp_ms,
-                        current_timestamp_ms = timestamp_ms,
-                        "Unexpected decrease of system checkpoint timestamp.",
-                    );
-                }
-            }
-
             info!(
                 sequence_number,
                 messages_count = messages.len(),
                 "Creating a system checkpoint"
             );
 
-            let checkpoint_message =
-                SystemCheckpointMessage::new(epoch, sequence_number, messages, timestamp_ms);
-            checkpoint_message
-                .report_system_checkpoint_age(&self.metrics.last_created_system_checkpoint_age);
-            last_checkpoint = Some((sequence_number, checkpoint_message.clone()));
+            let checkpoint_message = SystemCheckpointMessage::new(epoch, sequence_number, messages);
+
             checkpoints.push(checkpoint_message);
         }
 
@@ -969,9 +921,6 @@ impl SystemCheckpointAggregator {
                     self.metrics
                         .last_certified_system_checkpoint
                         .set(current.checkpoint_message.sequence_number as i64);
-                    current.checkpoint_message.report_system_checkpoint_age(
-                        &self.metrics.last_certified_system_checkpoint_age,
-                    );
                     result.push(checkpoint_message.into_inner());
                     self.current = None;
                     continue 'outer;

@@ -144,7 +144,6 @@ public struct SystemEpochInfoEvent has copy, drop {
 public struct SystemCheckpointInfoEvent has copy, drop {
     epoch: u64,
     sequence_number: u64,
-    timestamp_ms: u64,
 }
 
 /// Event emitted when protocol version is set via checkpoint message.
@@ -821,12 +820,9 @@ public(package) fun process_checkpoint_message(self: &mut SystemInner, message: 
     assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongSystemCheckpointSequenceNumber);
     self.last_processed_checkpoint_sequence_number = sequence_number;
 
-    let timestamp_ms = bcs_body.peel_u64();
-
     event::emit(SystemCheckpointInfoEvent {
         epoch,
         sequence_number,
-        timestamp_ms,
     });
 
     let len = bcs_body.peel_vec_length();

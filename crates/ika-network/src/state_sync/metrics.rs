@@ -3,10 +3,7 @@
 
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
-use prometheus::{
-    register_histogram_with_registry, register_int_gauge_with_registry, Histogram, IntGauge,
-    Registry,
-};
+use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::sync::Arc;
 use tap::Pipe;
 
@@ -61,13 +58,6 @@ impl Metrics {
         }
     }
 
-    pub fn dwallet_checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
-        if let Some(inner) = &self.0 {
-            return Some(&inner.dwallet_checkpoint_summary_age);
-        }
-        None
-    }
-
     pub fn set_highest_known_system_checkpoint(
         &self,
         sequence_number: DWalletCheckpointSequenceNumber,
@@ -100,81 +90,58 @@ impl Metrics {
                 .set(sequence_number as i64);
         }
     }
-
-    pub fn system_checkpoint_summary_age_metrics(&self) -> Option<&Histogram> {
-        if let Some(inner) = &self.0 {
-            return Some(&inner.system_checkpoint_summary_age);
-        }
-        None
-    }
 }
 
 struct Inner {
     highest_known_dwallet_checkpoint: IntGauge,
     highest_verified_dwallet_checkpoint: IntGauge,
     highest_synced_dwallet_checkpoint: IntGauge,
-    dwallet_checkpoint_summary_age: Histogram,
 
     highest_known_system_checkpoint: IntGauge,
     highest_verified_system_checkpoint: IntGauge,
     highest_synced_system_checkpoint: IntGauge,
-    system_checkpoint_summary_age: Histogram,
 }
 
 impl Inner {
     pub fn new(registry: &Registry) -> Arc<Self> {
         Self {
             highest_known_dwallet_checkpoint: register_int_gauge_with_registry!(
-                "highest_known_checkpoint",
-                "Highest known checkpoint",
+                "highest_known_dwallet_checkpoint",
+                "Highest known dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
             highest_verified_dwallet_checkpoint: register_int_gauge_with_registry!(
-                "highest_verified_checkpoint",
-                "Highest verified checkpoint",
+                "highest_verified_dwallet_checkpoint",
+                "Highest verified dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
             highest_synced_dwallet_checkpoint: register_int_gauge_with_registry!(
-                "highest_synced_checkpoint",
-                "Highest synced checkpoint",
+                "highest_synced_dwallet_checkpoint",
+                "Highest synced dwallet checkpoint",
                 registry
             )
             .unwrap(),
 
-            dwallet_checkpoint_summary_age: register_histogram_with_registry!(
-                "checkpoint_summary_age",
-                "Age of checkpoints summaries when they arrive and are verified.",
-                mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
-                registry,
-            )
-            .unwrap(),
             highest_known_system_checkpoint: register_int_gauge_with_registry!(
                 "highest_known_system_checkpoint",
-                "Highest known params message",
+                "Highest known system message",
                 registry
             )
             .unwrap(),
             highest_verified_system_checkpoint: register_int_gauge_with_registry!(
                 "highest_verified_system_checkpoint",
-                "Highest verified params message",
+                "Highest verified system message",
                 registry
             )
             .unwrap(),
             highest_synced_system_checkpoint: register_int_gauge_with_registry!(
                 "highest_synced_system_checkpoint",
-                "Highest synced params message",
+                "Highest synced system message",
                 registry
-            )
-            .unwrap(),
-            system_checkpoint_summary_age: register_histogram_with_registry!(
-                "system_checkpoint_summary_age",
-                "Age of params messages summaries when they arrive and are verified.",
-                mysten_metrics::LATENCY_SEC_BUCKETS.to_vec(),
-                registry,
             )
             .unwrap(),
         }

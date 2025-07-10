@@ -8,24 +8,6 @@ use std::{
     sync::Arc,
 };
 
-use arc_swap::ArcSwap;
-use consensus_config::Committee as ConsensusCommittee;
-use consensus_core::CommitConsumerMonitor;
-use ika_protocol_config::ProtocolConfig;
-use ika_types::crypto::AuthorityName;
-use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
-use ika_types::message::DWalletMessageKind;
-use ika_types::messages_consensus::{
-    AuthorityIndex, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
-};
-use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use lru::LruCache;
-use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monitored_scope};
-use serde::{Deserialize, Serialize};
-use sui_macros::{fail_point_async, fail_point_if};
-use sui_types::base_types::EpochId;
-
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
@@ -40,6 +22,22 @@ use crate::{
     dwallet_checkpoints::{DWalletCheckpointService, DWalletCheckpointServiceNotify},
     scoring_decision::update_low_scoring_authorities,
 };
+use arc_swap::ArcSwap;
+use consensus_config::Committee as ConsensusCommittee;
+use consensus_core::CommitConsumerMonitor;
+use ika_protocol_config::ProtocolConfig;
+use ika_types::crypto::AuthorityName;
+use ika_types::digests::{ConsensusCommitDigest, MessageDigest};
+use ika_types::message::DWalletCheckpointMessageKind;
+use ika_types::messages_consensus::{
+    AuthorityIndex, ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
+};
+use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
+use lru::LruCache;
+use mysten_metrics::{monitored_future, monitored_mpsc::UnboundedReceiver, monitored_scope};
+use serde::{Deserialize, Serialize};
+use sui_macros::{fail_point_async, fail_point_if};
+use sui_types::base_types::EpochId;
 use tokio::task::JoinSet;
 use tracing::{debug, error, instrument, trace_span, warn};
 
@@ -50,7 +48,6 @@ pub struct ConsensusHandlerInitializer {
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
-    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 impl ConsensusHandlerInitializer {
@@ -61,7 +58,6 @@ impl ConsensusHandlerInitializer {
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
-        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         Self {
             state,
@@ -70,7 +66,6 @@ impl ConsensusHandlerInitializer {
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
-            dwallet_mpc_outputs_verifier,
         }
     }
 
@@ -103,7 +98,6 @@ impl ConsensusHandlerInitializer {
             consensus_committee,
             self.state.metrics.clone(),
             self.throughput_calculator,
-            self.dwallet_mpc_outputs_verifier,
         )
     }
 
@@ -135,10 +129,6 @@ pub struct ConsensusHandler<C> {
     processed_cache: LruCache<SequencedConsensusTransactionKey, ()>,
     /// Using the throughput calculator to record the current consensus throughput
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
-    /// State machine managing dWallet MPC outputs.
-    /// This state machine is used to store outputs and emit ones
-    /// where the quorum of votes is valid.
-    dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
 }
 
 const PROCESSED_CACHE_CAP: usize = 1024 * 1024;
@@ -152,7 +142,6 @@ impl<C> ConsensusHandler<C> {
         committee: ConsensusCommittee,
         metrics: Arc<AuthorityMetrics>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
-        dwallet_mpc_outputs_verifier: DWalletMPCOutputsVerifier,
     ) -> Self {
         // Recover last_consensus_stats so it is consistent across validators.
         let mut last_consensus_stats = epoch_store
@@ -173,7 +162,6 @@ impl<C> ConsensusHandler<C> {
             metrics,
             processed_cache: LruCache::new(NonZeroUsize::new(PROCESSED_CACHE_CAP).unwrap()),
             throughput_calculator,
-            dwallet_mpc_outputs_verifier,
         }
     }
 
@@ -361,7 +349,6 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 &self.system_checkpoint_service,
                 &ConsensusCommitInfo::new(self.epoch_store.protocol_config(), &consensus_commit),
                 &self.metrics,
-                &mut self.dwallet_mpc_outputs_verifier,
             )
             .await
             .expect("Unrecoverable error in consensus handler");
@@ -450,7 +437,7 @@ pub struct SequencedConsensusTransaction {
 #[derive(Debug, Clone)]
 pub enum SequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(DWalletMessageKind),
+    System(DWalletCheckpointMessageKind),
 }
 
 impl Serialize for SequencedConsensusTransactionKind {
@@ -474,7 +461,7 @@ impl<'de> Deserialize<'de> for SequencedConsensusTransactionKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum SerializableSequencedConsensusTransactionKind {
     External(ConsensusTransaction),
-    System(DWalletMessageKind),
+    System(DWalletCheckpointMessageKind),
 }
 
 impl From<&SequencedConsensusTransactionKind> for SerializableSequencedConsensusTransactionKind {

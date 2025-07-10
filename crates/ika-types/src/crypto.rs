@@ -783,7 +783,7 @@ mod bcs_signable {
     impl BcsSignable for crate::messages_dwallet_checkpoint::DWalletCheckpointMessage {}
     impl BcsSignable for crate::messages_system_checkpoints::SystemCheckpointMessage {}
 
-    impl BcsSignable for crate::message::DWalletMessageKind {}
+    impl BcsSignable for crate::message::DWalletCheckpointMessageKind {}
 
     impl BcsSignable for super::bcs_signable_test::Foo {}
     #[cfg(test)]

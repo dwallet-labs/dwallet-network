@@ -236,12 +236,6 @@ pub struct ProtocolConfig {
     /// 3f+1 must vote), while 0bps would indicate that 2f+1 is sufficient.
     buffer_stake_for_protocol_upgrade_bps: Option<u64>,
 
-    /// Minimum interval of commit timestamps between consecutive checkpoints.
-    min_dwallet_checkpoint_interval_ms: Option<u64>,
-
-    /// Minimum interval of commit timestamps between consecutive ika system checkpoints.
-    min_system_checkpoint_interval_ms: Option<u64>,
-
     // === Consensus ===
     /// Dictates the threshold (percentage of stake) that is used to calculate the "bad" nodes to be
     /// swapped when creating the consensus schedule. The values should be of the range [0 - 33]. Anything
@@ -473,9 +467,6 @@ impl ProtocolConfig {
             max_system_checkpoint_size_bytes: Some(50 * 1024),
 
             buffer_stake_for_protocol_upgrade_bps: Some(5000),
-
-            min_dwallet_checkpoint_interval_ms: Some(200),
-            min_system_checkpoint_interval_ms: Some(200),
 
             // Taking a baby step approach, we consider only 20% by stake as bad nodes so we
             // have an 80% by stake of nodes participating in the leader committee. That allow

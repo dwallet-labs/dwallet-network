@@ -1599,7 +1599,6 @@ public struct RejectedFutureSignEvent has copy, drop, store {
 public struct DWalletCheckpointInfoEvent has copy, drop, store {
     epoch: u64,
     sequence_number: u64,
-    timestamp_ms: u64,
 }
 
 /// Event requesting to set the maximum number of active sessions buffer.
@@ -4074,12 +4073,9 @@ fun process_checkpoint_message(
     assert!(self.last_processed_checkpoint_sequence_number + 1 == sequence_number, EWrongCheckpointSequenceNumber);
     self.last_processed_checkpoint_sequence_number = sequence_number;
 
-    let timestamp_ms = bcs_body.peel_u64();
-
     event::emit(DWalletCheckpointInfoEvent {
         epoch,
         sequence_number,
-        timestamp_ms,
     });
 
     let len = bcs_body.peel_vec_length();

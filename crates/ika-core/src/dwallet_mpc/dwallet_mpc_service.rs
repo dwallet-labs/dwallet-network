@@ -5,21 +5,26 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
+use crate::dwallet_checkpoints::{
+    DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo,
+    PendingDWalletCheckpointV1,
+};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCDBMessage, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
+use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_dwallet_mpc::{DWalletNetworkEncryptionKeyData, SessionIdentifier};
 use ika_types::sui::DWalletCoordinatorInner;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
-use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
@@ -30,10 +35,11 @@ pub struct DWalletMPCService {
     last_read_consensus_round: Round,
     pub(crate) epoch_store: Arc<AuthorityPerEpochStore>,
     pub(crate) sui_client: Arc<SuiConnectorClient>,
+    dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
     dwallet_mpc_manager: DWalletMPCManager,
     pub exit: Receiver<()>,
-    consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
     pub new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
+    end_of_publish: bool,
 }
 
 impl DWalletMPCService {
@@ -43,10 +49,10 @@ impl DWalletMPCService {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         node_config: NodeConfig,
         sui_client: Arc<SuiConnectorClient>,
+        dwallet_checkpoint_service: Arc<dyn DWalletCheckpointServiceNotify + Send + Sync>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         new_events_receiver: tokio::sync::broadcast::Receiver<Vec<SuiEvent>>,
         next_epoch_committee_receiver: Receiver<Committee>,
-        consensus_round_completed_sessions_receiver: mpsc::UnboundedReceiver<SessionIdentifier>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         let dwallet_mpc_manager = DWalletMPCManager::must_create_dwallet_mpc_manager(
@@ -62,10 +68,11 @@ impl DWalletMPCService {
             last_read_consensus_round: 0,
             epoch_store: epoch_store.clone(),
             sui_client: sui_client.clone(),
+            dwallet_checkpoint_service,
             dwallet_mpc_manager,
             new_events_receiver,
-            consensus_round_completed_sessions_receiver,
             exit,
+            end_of_publish: false,
         }
     }
 
@@ -92,7 +99,21 @@ impl DWalletMPCService {
     pub async fn spawn(&mut self) {
         // Receive all MPC session outputs we bootstrapped from storage and
         // consensus before starting execution, to avoid their computation.
-        self.receive_completed_mpc_session_identifiers(true);
+        let bootstrapping_completed_sessions =
+            self.epoch_store.get_all_dwallet_mpc_completed_sessions();
+        match bootstrapping_completed_sessions {
+            Ok(completed_sessions) => {
+                self.process_completed_mpc_session_identifiers(&completed_sessions);
+            }
+            Err(e) => {
+                error!(
+                    err=?e,
+                    "failed to load all completed MPC sessions from the local DB during bootstrapping"
+                );
+                return;
+            }
+        }
+
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
@@ -138,8 +159,6 @@ impl DWalletMPCService {
                 continue;
             };
 
-            self.receive_completed_mpc_session_identifiers(false);
-
             // Receive **new** dWallet MPC events and save them in the local DB.
             match self.receive_new_sui_events() {
                 Ok(new_events) => events.extend(new_events),
@@ -154,11 +173,11 @@ impl DWalletMPCService {
             self.dwallet_mpc_manager
                 .handle_sui_db_event_batch(events, &self.epoch_store);
 
-            let mpc_msgs_iter = tables
+            let mpc_messages_iter = tables
                 .dwallet_mpc_messages
                 .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
                 .collect::<Result<Vec<_>, _>>();
-            let mut mpc_messages = match mpc_msgs_iter {
+            let mut mpc_messages = match mpc_messages_iter {
                 Ok(iter) => iter,
                 Err(e) => {
                     error!(err=?e, "failed to load DWallet MPC messages from the local DB");
@@ -166,8 +185,23 @@ impl DWalletMPCService {
                 }
             };
 
+            let mpc_outputs_iter = tables
+                .dwallet_mpc_outputs
+                .safe_iter_with_bounds(Some(self.last_read_consensus_round + 1), None)
+                .collect::<Result<Vec<_>, _>>();
+            let mut mpc_outputs = match mpc_outputs_iter {
+                Ok(iter) => iter,
+                Err(e) => {
+                    error!(err=?e, "failed to load DWallet MPC outputs from the local DB");
+                    continue;
+                }
+            };
+
             // Sort the MPC messages by round in ascending order.
             mpc_messages.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
+
+            // Sort the MPC outputs by round in ascending order.
+            mpc_outputs.sort_by(|(round, _), (other_round, _)| round.cmp(other_round));
 
             for (round, messages) in mpc_messages {
                 // Since we sorted, this assures this variable will be the
@@ -183,51 +217,119 @@ impl DWalletMPCService {
                     .await;
             }
 
+            for (round, outputs) in mpc_outputs {
+                let mut messages = vec![];
+                let mut completed_sessions = vec![];
+                for output in outputs {
+                    let output_result = self
+                        .dwallet_mpc_manager
+                        .handle_dwallet_db_output(&output)
+                        .await;
+                    match output_result {
+                        Ok(output_result) => match output_result.result {
+                            OutputVerificationStatus::FirstQuorumReached(m) => {
+                                messages.extend(m);
+                                completed_sessions.push(output.session_request.session_identifier);
+                            }
+                            OutputVerificationStatus::Malicious
+                            | OutputVerificationStatus::NotEnoughVotes
+                            | OutputVerificationStatus::AlreadyCommitted => {}
+                        },
+                        Err(e) => {
+                            error!(err=?e, ?output,"failed to load verify MPC output from the local DB");
+                        }
+                    };
+                }
+                self.process_completed_mpc_session_identifiers(&completed_sessions);
+                // Now we have the MPC outputs for the current round, we can
+                // add messages from the consensus output such as EndOfPublish.
+                match tables.get_verified_dwallet_checkpoint_messages(round) {
+                    Ok(Some(m)) => {
+                        messages.extend(m);
+                    }
+                    Ok(None) => {
+                        error!(round, "No verified dwallet checkpoint messages found for round, this is unexpected.");
+                    }
+                    Err(e) => {
+                        error!(err=?e, round, "Failed to load verified dwallet checkpoint messages from the local DB");
+                    }
+                }
+
+                if !self.end_of_publish {
+                    let final_round = messages.iter().last().is_some_and(|msg| {
+                        matches!(msg, DWalletCheckpointMessageKind::EndOfPublish)
+                    });
+                    if final_round {
+                        self.end_of_publish = true;
+                        info!(
+                            epoch=?self.epoch_store.epoch(),
+                            round,
+                            "End of publish reached, no more dwallet checkpoints will be processed for this epoch"
+                        );
+                    }
+                    let pending_checkpoint =
+                        PendingDWalletCheckpoint::V1(PendingDWalletCheckpointV1 {
+                            messages: messages.clone(),
+                            details: PendingDWalletCheckpointInfo {
+                                checkpoint_height: round,
+                            },
+                        });
+                    if let Err(e) = self
+                        .epoch_store
+                        .insert_pending_dwallet_checkpoint(pending_checkpoint)
+                    {
+                        error!(
+                            err=?e,
+                            ?round,
+                            ?messages,
+                            "failed to insert pending checkpoint into the local DB"
+                        );
+                    };
+                    debug!(
+                        ?round,
+                        "Notifying checkpoint service about new pending checkpoint(s)",
+                    );
+                    // Only after batch is written, notify checkpoint service to start building any new
+                    // pending checkpoints.
+                    if let Err(e) = self.dwallet_checkpoint_service.notify_checkpoint() {
+                        error!(
+                            err=?e,
+                            ?round,
+                            "failed to notify checkpoint service about new pending checkpoint(s)"
+                        );
+                    }
+                }
+
+                if let Err(e) = self
+                    .epoch_store
+                    .insert_dwallet_mpc_completed_sessions(&round, &completed_sessions)
+                {
+                    error!(
+                        err=?e,
+                        ?round,
+                        ?completed_sessions,
+                        "failed to insert completed MPC sessions into the local DB"
+                    );
+                }
+            }
+
             self.dwallet_mpc_manager
                 .handle_dwallet_db_message(DWalletMPCDBMessage::PerformCryptographicComputations)
                 .await;
         }
     }
 
-    /// Receive all completed MPC sessions from the MPC Output Verifier over the
-    /// `consensus_round_completed_sessions` channel.
+    /// Process completed MPC sessions from the MPC Output Verifier or from the local DB.
     /// If the session exists, mark is as [`MPCSessionStatus::Finished`].
     /// Otherwise, create a new session with that status, to avoid re-running the computation for it.
-    fn receive_completed_mpc_session_identifiers(&mut self, bootstrap: bool) {
-        let mut completed_sessions = HashSet::new();
-        loop {
-            match self.consensus_round_completed_sessions_receiver.try_recv() {
-                Err(mpsc::error::TryRecvError::Empty) => {
-                    // No more completed sessions to report at the moment.
-                    break;
-                }
-                Err(e) => {
-                    error!(
-                        authority=?self.epoch_store.name,
-                        e=?e,
-                        "error in reading completed session IDs"
-                    );
-
-                    break;
-                }
-                Ok(completed_session_identifier) => {
-                    debug!(
-                        validator=?self.epoch_store.name,
-                        completed_session_identifier=?completed_session_identifier,
-                        bootstrap=bootstrap,
-                        "Received completed session identifier"
-                    );
-                    // There might be more completed sessions to report, so report this one and continue receiving (don't break).
-                    completed_sessions.insert(completed_session_identifier);
-                }
-            }
-        }
-
+    fn process_completed_mpc_session_identifiers(
+        &mut self,
+        completed_sessions: &Vec<SessionIdentifier>,
+    ) {
         debug!(
             validator=?self.epoch_store.name,
             completed_sessions=?completed_sessions,
-            bootstrap=bootstrap,
-            "Received completed session identifiers"
+            "Process completed session identifiers"
         );
 
         for session_identifier in completed_sessions {
@@ -235,17 +337,17 @@ impl DWalletMPCService {
             if !self
                 .dwallet_mpc_manager
                 .mpc_sessions
-                .contains_key(&session_identifier)
+                .contains_key(session_identifier)
             {
                 self.dwallet_mpc_manager
-                    .new_mpc_session(&session_identifier, None)
+                    .new_mpc_session(session_identifier, None)
             }
 
             // Now this session is guaranteed to exist, so safe to `unwrap()`.
             let session = self
                 .dwallet_mpc_manager
                 .mpc_sessions
-                .get_mut(&session_identifier)
+                .get_mut(session_identifier)
                 .unwrap();
 
             // Mark the session as completed, but *don't remove it from the map* (important!)

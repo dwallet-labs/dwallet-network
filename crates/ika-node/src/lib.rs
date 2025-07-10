@@ -27,7 +27,7 @@ use ika_types::sui::SystemInner;
 use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, mpsc, watch, Mutex};
+use tokio::sync::{broadcast, watch, Mutex};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
@@ -166,7 +166,6 @@ use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
-use ika_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
@@ -881,20 +880,6 @@ impl IkaNode {
                 previous_epoch_last_system_checkpoint_sequence_number,
             );
 
-        // We need to ensure we can send all outputs during bootstrapping
-        #[allow(clippy::disallowed_methods)]
-        let (
-            consensus_round_completed_sessions_sender,
-            consensus_round_completed_sessions_receiver,
-        ) = mpsc::unbounded_channel();
-
-        let mut dwallet_mpc_outputs_verifier = DWalletMPCOutputsVerifier::new(
-            dwallet_mpc_metrics.clone(),
-            consensus_round_completed_sessions_sender,
-        );
-
-        dwallet_mpc_outputs_verifier.bootstrap_from_storage(&epoch_store)?;
-
         let (dwallet_mpc_service_exit_sender, dwallet_mpc_service_exit_receiver) =
             watch::channel(());
         let mut dwallet_mpc_service = DWalletMPCService::new(
@@ -903,10 +888,10 @@ impl IkaNode {
             Arc::new(consensus_adapter.clone()),
             config.clone(),
             sui_client,
+            checkpoint_service.clone(),
             network_keys_receiver,
             new_events_receiver,
             next_epoch_committee_receiver,
-            consensus_round_completed_sessions_receiver,
             dwallet_mpc_metrics.clone(),
         );
 
@@ -939,7 +924,6 @@ impl IkaNode {
             epoch_store.clone(),
             low_scoring_authorities,
             throughput_calculator,
-            dwallet_mpc_outputs_verifier,
         );
 
         // Wait until all locally available commits have been processed
@@ -1498,20 +1482,20 @@ async fn health_check_handler(
             }
         };
 
-        // Calculate the threshold time based on the provided threshold_seconds
-        let latest_chain_time = summary.timestamp();
-        let threshold =
-            std::time::SystemTime::now() - Duration::from_secs(threshold_seconds as u64);
-
-        // Check if the latest checkpoint is within the threshold
-        if latest_chain_time < threshold {
-            warn!(
-                ?latest_chain_time,
-                ?threshold,
-                "failing healthcheck due to checkpoint lag"
-            );
-            return (axum::http::StatusCode::SERVICE_UNAVAILABLE, "down");
-        }
+        // // Calculate the threshold time based on the provided threshold_seconds
+        // let latest_chain_time = summary.timestamp();
+        // let threshold =
+        //     std::time::SystemTime::now() - Duration::from_secs(threshold_seconds as u64);
+        //
+        // // Check if the latest checkpoint is within the threshold
+        // if latest_chain_time < threshold {
+        //     warn!(
+        //         ?latest_chain_time,
+        //         ?threshold,
+        //         "failing healthcheck due to checkpoint lag"
+        //     );
+        //     return (axum::http::StatusCode::SERVICE_UNAVAILABLE, "down");
+        // }
     }
     // if health endpoint is responding and no threshold is given, respond success
     (axum::http::StatusCode::OK, "up")

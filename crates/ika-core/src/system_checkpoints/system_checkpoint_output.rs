@@ -67,15 +67,7 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
             .system_checkpoint_created(system_checkpoint, epoch_store, system_checkpoint_store)
             .await?;
 
-        let system_checkpoint_timestamp = system_checkpoint.timestamp_ms;
         let system_checkpoint_seq = system_checkpoint.sequence_number;
-        self.metrics.system_checkpoint_creation_latency.observe(
-            system_checkpoint
-                .timestamp()
-                .elapsed()
-                .unwrap_or_default()
-                .as_secs_f64(),
-        );
 
         let highest_verified_system_checkpoint = system_checkpoint_store
             .get_highest_verified_system_checkpoint()?
@@ -83,7 +75,7 @@ impl<T: SubmitToConsensus> SystemCheckpointOutput for SubmitSystemCheckpointToCo
 
         if Some(system_checkpoint_seq) > highest_verified_system_checkpoint {
             debug!(
-                "Sending system_checkpoint signature at sequence {system_checkpoint_seq} to consensus, timestamp {system_checkpoint_timestamp}."
+                "Sending system_checkpoint signature at sequence {system_checkpoint_seq} to consensus."
             );
 
             let summary = SignedSystemCheckpointMessage::new(
