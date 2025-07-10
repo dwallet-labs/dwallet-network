@@ -71,7 +71,7 @@ use tokio::{
     sync::{broadcast, mpsc},
     task::{AbortHandle, JoinSet},
 };
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, info, instrument, trace, warn};
 
 mod generated {
     include!(concat!(env!("OUT_DIR"), "/ika.StateSync.rs"));
@@ -498,7 +498,7 @@ enum StateSyncMessage {
 }
 
 struct StateSyncEventLoop<S> {
-    is_fullnode: bool,
+    is_notifier: bool,
     config: StateSyncConfig,
 
     mailbox: mpsc::Receiver<StateSyncMessage>,
@@ -633,7 +633,7 @@ where
                 },
             }
 
-            if self.is_fullnode {
+            if self.is_notifier {
                 self.maybe_start_system_checkpoint_summary_sync_task();
                 self.maybe_start_checkpoint_summary_sync_task();
             }
@@ -646,9 +646,9 @@ where
         debug!("Received message: {:?}", message);
         match message {
             StateSyncMessage::StartSyncJob => {
-                if self.is_fullnode {
-                self.maybe_start_checkpoint_summary_sync_task();
-                self.maybe_start_system_checkpoint_summary_sync_task();
+                if self.is_notifier {
+                    self.maybe_start_checkpoint_summary_sync_task();
+                    self.maybe_start_system_checkpoint_summary_sync_task();
                 }
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
@@ -757,7 +757,7 @@ where
 
         match peer_event {
             Ok(PeerEvent::NewPeer(peer_id)) => {
-                if self.is_fullnode {
+                if self.is_notifier {
                     self.spawn_get_latest_from_peer(peer_id);
                 }
             }
@@ -857,7 +857,6 @@ where
                 self.config.timeout(),
                 // The if condition should ensure that this is Some
                 highest_known_checkpoint.unwrap(),
-                self.is_fullnode,
             )
             .map(|result| match result {
                 Ok(()) => {}
@@ -1133,7 +1132,6 @@ async fn sync_to_checkpoint<S>(
     checkpoint_header_download_concurrency: usize,
     timeout: Duration,
     checkpoint: CertifiedDWalletCheckpointMessage,
-    is_fullnode: bool,
 ) -> Result<()>
 where
     S: WriteStore,
@@ -1244,7 +1242,6 @@ where
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
         // verified checkpoint watermark as well.
-        error!(?is_fullnode, "Inserting checkpoint into store: {:?}", checkpoint);
         store
             .insert_dwallet_checkpoint(&checkpoint)
             .expect("store operation should not fail");

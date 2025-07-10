@@ -625,7 +625,7 @@ impl IkaNode {
         trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
         archive_readers: ArchiveReaderBalancer,
         prometheus_registry: &Registry,
-        is_fullnode: bool,
+        is_notifier: bool,
     ) -> Result<P2pComponents> {
         let (state_sync, state_sync_server) = state_sync::Builder::new()
             .config(config.p2p_config.state_sync.clone().unwrap_or_default())
@@ -749,8 +749,7 @@ impl IkaNode {
 
         let discovery_handle =
             discovery.start(p2p_network.clone(), config.network_key_pair().copy());
-        let state_sync_handle = state_sync.
-            start(p2p_network.clone(), is_fullnode);
+        let state_sync_handle = state_sync.start(p2p_network.clone(), is_notifier);
 
         Ok(P2pComponents {
             p2p_network,

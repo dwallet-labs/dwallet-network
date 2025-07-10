@@ -200,7 +200,11 @@ impl<S> UnstartedStateSync<S>
 where
     S: WriteStore + Clone + Send + Sync + 'static,
 {
-    pub(super) fn build(self, network: anemo::Network, is_fullnode: bool) -> (StateSyncEventLoop<S>, Handle) {
+    pub(super) fn build(
+        self,
+        network: anemo::Network,
+        is_notifier: bool,
+    ) -> (StateSyncEventLoop<S>, Handle) {
         let Self {
             config,
             handle,
@@ -218,7 +222,7 @@ where
 
         (
             StateSyncEventLoop {
-                is_fullnode,
+                is_notifier,
                 config,
                 mailbox,
                 weak_sender: handle.sender.downgrade(),
@@ -242,8 +246,8 @@ where
         )
     }
 
-    pub fn start(self, network: anemo::Network, is_fullnode: bool) -> Handle {
-        let (event_loop, handle) = self.build(network, is_fullnode);
+    pub fn start(self, network: anemo::Network, is_notifier: bool) -> Handle {
+        let (event_loop, handle) = self.build(network, is_notifier);
         tokio::spawn(event_loop.start());
 
         handle
