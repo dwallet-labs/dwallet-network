@@ -931,9 +931,6 @@ impl DWalletCheckpointAggregator {
                     self.metrics
                         .last_certified_dwallet_checkpoint
                         .set(current.checkpoint_message.sequence_number as i64);
-                    // current.checkpoint_message.report_dwallet_checkpoint_age(
-                    //     &self.metrics.last_certified_dwallet_checkpoint_age,
-                    // );
                     result.push(checkpoint_message.into_inner());
                     self.current = None;
                     continue 'outer;
