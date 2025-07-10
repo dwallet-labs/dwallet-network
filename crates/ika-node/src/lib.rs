@@ -382,6 +382,9 @@ impl IkaNode {
         // Create network
         // TODO only configure validators as seed/preferred peers for validators and not for
         // fullnodes once we've had a chance to re-work fullnode configuration generation.
+
+        let authority_name = config.protocol_public_key();
+
         let archive_readers =
             ArchiveReaderBalancer::new(config.archive_reader_config(), &prometheus_registry)?;
         let (trusted_peer_change_tx, trusted_peer_change_rx) = watch::channel(Default::default());
@@ -397,6 +400,7 @@ impl IkaNode {
             trusted_peer_change_rx,
             archive_readers.clone(),
             &prometheus_registry,
+            !epoch_store.committee().authority_exists(&authority_name),
         )?;
 
         // We must explicitly send this instead of relying on the initial value to trigger
@@ -413,8 +417,6 @@ impl IkaNode {
         let state_archive_handle =
             Self::start_state_archival(&config, &prometheus_registry, state_sync_store.clone())
                 .await?;
-
-        let authority_name = config.protocol_public_key();
 
         info!("create authority state");
         let state = AuthorityState::new(
@@ -623,6 +625,7 @@ impl IkaNode {
         trusted_peer_change_rx: watch::Receiver<TrustedPeerChangeEvent>,
         archive_readers: ArchiveReaderBalancer,
         prometheus_registry: &Registry,
+        is_notifier: bool,
     ) -> Result<P2pComponents> {
         let (state_sync, state_sync_server) = state_sync::Builder::new()
             .config(config.p2p_config.state_sync.clone().unwrap_or_default())
@@ -746,7 +749,7 @@ impl IkaNode {
 
         let discovery_handle =
             discovery.start(p2p_network.clone(), config.network_key_pair().copy());
-        let state_sync_handle = state_sync.start(p2p_network.clone());
+        let state_sync_handle = state_sync.start(p2p_network.clone(), is_notifier);
 
         Ok(P2pComponents {
             p2p_network,
