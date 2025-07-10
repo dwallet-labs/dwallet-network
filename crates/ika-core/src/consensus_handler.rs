@@ -28,6 +28,7 @@ use sha3::Digest;
 use sui_macros::{fail_point_async, fail_point_if};
 use sui_types::base_types::EpochId;
 
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
@@ -467,20 +468,38 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                 info!(
                         round=?round,
                         session_identifier=?output.session_info.session_identifier,
-                        output_hash=?hex::encode(&output_hash),
+                        output_hash=hex::encode(&output_hash),
                         "read output from db during state-sync");
             }
         }
 
-        for output in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
-            if let Err(err) = dwallet_mpc_verifier
-                .try_verify_output(&output.output, &output.session_info, output.authority)
-                .await
-            {
-                error!(
-                    "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_info.session_identifier, output.authority, err
-                );
+        for (round, outputs) in self.epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
+            for output in outputs {
+                match dwallet_mpc_verifier
+                    .try_verify_output(&output.output, &output.session_info, output.authority)
+                    .await
+                {
+                    Ok(res) => match res.result {
+                        OutputVerificationStatus::FirstQuorumReached(_) => {
+                            let output_hash = sha3::Keccak256::new_with_prefix(output.output)
+                                .finalize_fixed()
+                                .to_vec();
+
+                            info!(
+                                round=?round,
+                                session_identifier=?output.session_info.session_identifier,
+                                output_hash=hex::encode(&output_hash),
+                                "got first quorum on output during state-sync");
+                        }
+                        _ => {}
+                    },
+                    Err(err) => {
+                        error!(
+                            "failed to verify output from session {:?} and party {:?}: {:?}",
+                            output.session_info.session_identifier, output.authority, err
+                        );
+                    }
+                }
             }
         }
         Ok(())
