@@ -85,7 +85,7 @@ pub(crate) fn generate_access_structure_from_committee(
 /// Convert a given `party_id` to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,
-    epoch_store: &AuthorityPerEpochStore,
+    committee: &Committee,
 ) -> Option<AuthorityName> {
     // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
     // Convert it to an index to the committee authority names, which is in the range `0..number_of_tangible_parties`,
@@ -93,20 +93,19 @@ pub(crate) fn party_id_to_authority_name(
     // Safe to decrement as `PartyID` is `u16`, will never overflow.
     let index = u32::from(party_id) - 1;
 
-    *epoch_store
-        .committee()
-        .authority_by_index(index)
+    committee
+        .authority_by_index(index).copied()
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
     party_ids: &[PartyID],
-    epoch_store: &AuthorityPerEpochStore,
+    committee: &Committee,
 ) -> Vec<AuthorityName> {
     party_ids
         .iter()
         .flat_map(|party_id| {
-            let authority_name = party_id_to_authority_name(*party_id, epoch_store);
+            let authority_name = party_id_to_authority_name(*party_id, committee);
 
             if authority_name.is_none() {
                 error!(

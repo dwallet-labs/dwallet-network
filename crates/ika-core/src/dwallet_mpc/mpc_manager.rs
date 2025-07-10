@@ -295,7 +295,7 @@ impl DWalletMPCManager {
                     .collect::<Vec<PartyID>>();
 
                 let malicious_authorities =
-                    party_ids_to_authority_names(&malicious_parties, &epoch_store);
+                    party_ids_to_authority_names(&malicious_parties, &epoch_store.committee());
 
                 self.malicious_handler
                     .report_malicious_actors(&malicious_authorities);
@@ -469,15 +469,21 @@ impl DWalletMPCManager {
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage, epoch_store: &AuthorityPerEpochStore) {
+        let session_identifier= message.session_identifier;
+        let sender_authority = message.authority;
+        let receiver_authority = epoch_store.name;
+        let mpc_round_number = message.round_number;
+        let mpc_protocol = message.mpc_protocol.clone();
+
         let Ok(sender_party_id) = epoch_store
-            .authority_name_to_party_id(&message.authority)
+            .authority_name_to_party_id(&sender_authority)
         else {
             error!(
-                session_identifier=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?epoch_store.name,
-                crypto_round_number=?message.round_number,
-                mpc_protocol=?message.mpc_protocol,
+                session_identifier=?session_identifier,
+                from_authority=?sender_authority,
+                receiving_authority=?receiver_authority,
+                crypto_round_number=?mpc_round_number,
+                mpc_protocol=?mpc_protocol,
                 "Got a message for an authority without party ID",
             );
 
@@ -485,59 +491,59 @@ impl DWalletMPCManager {
         };
 
         info!(
-            session_identifier=?message.session_identifier,
-            from_authority=?message.authority,
-            receiving_authority=?epoch_store.name,
-            crypto_round_number=?message.round_number,
-            mpc_protocol=message.mpc_protocol,
+            session_identifier=?session_identifier,
+            from_authority=?sender_authority,
+            receiving_authority=?receiver_authority,
+            crypto_round_number=?mpc_round_number,
+            mpc_protocol=mpc_protocol,
             "Received an MPC message for session",
         );
 
         debug!(
-            session_identifier=?message.session_identifier,
-            from_authority=?message.authority,
-            receiving_authority=?epoch_store.name,
-            crypto_round_number=?message.round_number,
-            mpc_protocol=message.mpc_protocol,
+            session_identifier=?session_identifier,
+            from_authority=?sender_authority,
+            receiving_authority=?receiver_authority,
+            crypto_round_number=?mpc_round_number,
+            mpc_protocol=mpc_protocol,
             message=?message.message,
             "Received an MPC message for session with contents",
         );
 
         if self
             .malicious_handler
-            .is_malicious_actor(&message.authority)
+            .is_malicious_actor(&sender_authority)
         {
             info!(
-                session_identifier=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?epoch_store.name,
-                crypto_round_number=?message.round_number,
-                mpc_protocol=?message.mpc_protocol,
+                session_identifier=?session_identifier,
+                from_authority=?sender_authority,
+                receiving_authority=?receiver_authority,
+                crypto_round_number=?mpc_round_number,
+                mpc_protocol=?mpc_protocol,
                 "Ignoring message from malicious authority",
             );
 
             return;
         }
 
-        let session = match self.mpc_sessions.entry(message.session_identifier) {
+        let session = match self.mpc_sessions.entry(session_identifier) {
             Entry::Occupied(session) => session.into_mut(),
             Entry::Vacant(_) => {
                 info!(
-                    session_identifier=?message.session_identifier,
-                    from_authority=?message.authority,
-                    receiving_authority=?epoch_store.name,
-                    crypto_round_number=?message.round_number,
-                    mpc_protocol=?message.mpc_protocol,
+                    session_identifier=?session_identifier,
+                    from_authority=?sender_authority,
+                    receiving_authority=?receiver_authority,
+                    crypto_round_number=?mpc_round_number,
+                    mpc_protocol=?mpc_protocol,
                     "received a message for an MPC session before receiving an event requesting it"
                 );
 
                 // This can happen if the session is not in the active sessions,
                 // but we still want to store the message.
                 // We will create a new session for it.
-                self.new_mpc_session(&message.session_identifier, None, epoch_store);
+                self.new_mpc_session(&session_identifier, None, epoch_store);
                 // Safe to `unwrap()`: we just created the session.
                 self.mpc_sessions
-                    .get_mut(&message.session_identifier)
+                    .get_mut(&session_identifier)
                     .unwrap()
             }
         };
@@ -545,11 +551,11 @@ impl DWalletMPCManager {
         let is_malicious = session.store_message(sender_party_id, message, epoch_store);
         if is_malicious {
             error!(
-                session_identifier=?message.session_identifier,
-                from_authority=?message.authority,
-                receiving_authority=?epoch_store.name,
-                crypto_round_number=?message.round_number,
-                mpc_protocol=?message.mpc_protocol,
+                session_identifier=?session_identifier,
+                from_authority=?sender_authority,
+                receiving_authority=?receiver_authority,
+                crypto_round_number=?mpc_round_number,
+                mpc_protocol=?mpc_protocol,
                 sender_party_id=sender_party_id,
                 "Validator sent a malicious message"
             );
@@ -563,8 +569,10 @@ impl DWalletMPCManager {
     /// New messages from these parties will be ignored.
     /// Restarted for each epoch.
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID], epoch_store: &AuthorityPerEpochStore,) {
+        // TODO(Scaly): why is this a different flow? why here
+
         let malicious_parties_names =
-            party_ids_to_authority_names(malicious_parties, epoch_store);
+            party_ids_to_authority_names(malicious_parties, &epoch_store.committee());
         warn!(
             "dWallet MPC flagged the following parties as malicious: {:?}",
             malicious_parties_names

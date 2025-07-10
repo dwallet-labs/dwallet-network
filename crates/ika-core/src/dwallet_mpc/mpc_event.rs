@@ -281,7 +281,7 @@ impl DWalletMPCManager {
                 );
             }
         } else {
-            self.new_mpc_session(&session_identifier, Some(mpc_event_data));
+            self.new_mpc_session(&session_identifier, Some(mpc_event_data), epoch_store);
         }
     }
 

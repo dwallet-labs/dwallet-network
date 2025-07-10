@@ -16,7 +16,7 @@ use group::PartyID;
 use itertools::Itertools;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 use tokio::runtime::Handle;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
@@ -178,6 +178,7 @@ pub(crate) struct DWalletMPCSession {
     /// The number of consensus rounds since the last time a quorum was reached for the session.
     consensus_rounds_since_quorum_reached: usize,
     validator_name: AuthorityPublicKeyBytes,
+    committee: Committee,
 
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 
@@ -205,6 +206,10 @@ impl DWalletMPCSession {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
         root_seed: RootSeed,
     ) -> Self {
+        // TODO: stop passing `AuthorityPerEpochStore` between these files, just pass the arguments directly.
+        let committee: &Committee = &epoch_store.committee();
+        let committee = committee.clone();
+
         Self {
             status,
             serialized_full_messages: HashMap::new(),
@@ -221,6 +226,7 @@ impl DWalletMPCSession {
             agreed_mpc_protocol: None,
             consensus_rounds_since_quorum_reached: 0,
             validator_name: epoch_store.name,
+            committee,
             dwallet_mpc_metrics,
             root_seed,
         }
@@ -238,6 +244,8 @@ impl DWalletMPCSession {
     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
     /// the consensus.
     pub(super) fn advance(&mut self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
+        // TODO: no handle I think.
+
         // Make sure we transfer only the messages up to the current round
         // (exclude messages that might be received from future rounds)
         self.serialized_full_messages
@@ -260,7 +268,7 @@ impl DWalletMPCSession {
                 );
                 let consensus_adapter = self.consensus_adapter.clone();
                 if !malicious_parties.is_empty() {
-                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
+                    self.report_malicious_actors(malicious_parties, &self.committee)?;
                 }
                 let message = self.new_dwallet_mpc_message(message, &mpc_protocol.to_string())?;
 
@@ -304,7 +312,7 @@ impl DWalletMPCSession {
                         ?malicious_parties,
                         "Malicious Parties detected on MPC session Finalize",
                     );
-                    self.report_malicious_actors(tokio_runtime_handle, malicious_parties)?;
+                    self.report_malicious_actors(malicious_parties, &self.committee)?;
                 }
                 let consensus_message = self.new_dwallet_mpc_output_message(
                     MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
@@ -408,20 +416,20 @@ impl DWalletMPCSession {
 
     fn report_malicious_actors(
         &self,
-        tokio_runtime_handle: &Handle,
         malicious_parties_ids: Vec<PartyID>,
-        epoch_store: &AuthorityPerEpochStore,
+        committee: &Committee,
     ) -> DwalletMPCResult<()> {
         // Makes sure all the validators report on the malicious
         // actors in the same order without duplicates.
         let malicious_parties_ids = malicious_parties_ids.deduplicate_and_sort();
         let report = MaliciousReport::new(
-            // TODO: how to get these without - just take committee in Self, refactor functions.
-            party_ids_to_authority_names(&malicious_parties_ids, epoch_store)?,
+            party_ids_to_authority_names(&malicious_parties_ids, committee),
             self.session_identifier,
         );
         let report_tx = self.new_dwallet_report_failed_session_with_malicious_actors(report)?;
         let consensus_adapter = self.consensus_adapter.clone();
+
+        // TODO: this should call the malicious handler. Its all a mess
 
         // TODO(Scaly): why is this sent from here?
         // tokio_runtime_handle.spawn(async move {
@@ -440,24 +448,26 @@ impl DWalletMPCSession {
     /// This is submitted to the consensus,
     /// in order to make sure that all the Validators agree that this session needs more messages.
     fn report_threshold_not_reached(&self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
-        let report = ThresholdNotReachedReport {
-            session_identifier: self.session_identifier,
-            attempt: self.attempts_count,
-        };
-        let report_tx = self.new_dwallet_report_threshold_not_reached(report)?;
-        let epoch_store = self.epoch_store()?.clone();
-        let consensus_adapter = self.consensus_adapter.clone();
-        tokio_runtime_handle.spawn(async move {
-            if let Err(err) = consensus_adapter
-                .submit_to_consensus(&[report_tx], &epoch_store)
-                .await
-            {
-                error!(
-                    ?err,
-                    "failed to submit `threshold not reached` report to consensus"
-                );
-            }
-        });
+        // TODO: just save the report...
+
+        // let report = ThresholdNotReachedReport {
+        //     session_identifier: self.session_identifier,
+        //     attempt: self.attempts_count,
+        // };
+        // let report_tx = self.new_dwallet_report_threshold_not_reached(report)?;
+        // let epoch_store = self.epoch_store()?.clone();
+        // let consensus_adapter = self.consensus_adapter.clone();
+        // tokio_runtime_handle.spawn(async move {
+        //     if let Err(err) = consensus_adapter
+        //         .submit_to_consensus(&[report_tx], &epoch_store)
+        //         .await
+        //     {
+        //         error!(
+        //             ?err,
+        //             "failed to submit `threshold not reached` report to consensus"
+        //         );
+        //     }
+        // });
         Ok(())
     }
 
@@ -481,7 +491,7 @@ impl DWalletMPCSession {
             .collect::<HashMap<_, _>>();
         info!(
             mpc_protocol=?mpc_event_data.request_input,
-            validator=?self.epoch_store()?.name,
+            validator=?self.validator_name,
             session_identifier=?self.session_identifier,
             crypto_round=?self.current_round,
             weighted_parties=?self.weighted_threshold_access_structure,
@@ -490,7 +500,7 @@ impl DWalletMPCSession {
         );
         let session_identifier =
             CommitmentSizedNumber::from_le_slice(&self.session_identifier.into_bytes());
-        let party_to_authority_map = self.epoch_store()?.committee().party_to_authority_map();
+        let party_to_authority_map = self.committee.party_to_authority_map();
         let mpc_protocol_name = mpc_event_data.request_input.to_string();
 
         // Create a base logger with common parameters.
@@ -516,7 +526,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -582,7 +592,7 @@ impl DWalletMPCSession {
             MPCRequestInput::DKGFirst(..) => {
                 info!(
                     mpc_protocol=?mpc_event_data.request_input,
-                    validator=?self.epoch_store()?.name,
+                    validator=?self.validator_name,
                     session_identifier=?self.session_identifier,
                     crypto_round=?self.current_round,
                     "Advancing DKG first party",
@@ -591,7 +601,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen=?true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -634,7 +644,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -704,7 +714,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen=?true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -755,7 +765,7 @@ impl DWalletMPCSession {
                         error!(
                             should_never_happen =? true,
                             mpc_protocol=?mpc_event_data.request_input,
-                            validator=?self.epoch_store()?.name,
+                            validator=?self.validator_name,
                             session_identifier=?self.session_identifier,
                             crypto_round=?self.current_round,
                             weighted_parties=?self.weighted_threshold_access_structure,
@@ -795,7 +805,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -831,7 +841,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -863,7 +873,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -893,7 +903,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -945,7 +955,7 @@ impl DWalletMPCSession {
                     error!(
                     should_never_happen =? true,
                     mpc_protocol=?mpc_event_data.request_input,
-                    validator=?self.epoch_store()?.name,
+                    validator=?self.validator_name,
                     session_identifier=?self.session_identifier,
                     crypto_round=?self.current_round,
                     weighted_parties=?self.weighted_threshold_access_structure,
@@ -963,7 +973,7 @@ impl DWalletMPCSession {
                     error!(
                         should_never_happen =? true,
                         mpc_protocol=?mpc_event_data.request_input,
-                        validator=?self.epoch_store()?.name,
+                        validator=?self.validator_name,
                         session_identifier=?self.session_identifier,
                         crypto_round=?self.current_round,
                         weighted_parties=?self.weighted_threshold_access_structure,
@@ -986,7 +996,7 @@ impl DWalletMPCSession {
                         error!(
                             ?err,
                             session_identifier=?self.session_identifier,
-                            validator=?self.epoch_store()?.name,
+                            validator=?self.validator_name,
                             crypto_round=?self.current_round,
                             "failed to verify secret share"
                         );
@@ -1017,7 +1027,7 @@ impl DWalletMPCSession {
             requires_next_active_committee: mpc_event_data.requires_next_active_committee,
         };
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
-            self.epoch_store()?.name,
+            self.validator_name,
             message,
             self.session_identifier,
             self.current_round,
@@ -1035,7 +1045,7 @@ impl DWalletMPCSession {
     ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(
             ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
-                self.epoch_store()?.name,
+                self.validator_name,
                 report,
             ),
         )
@@ -1047,7 +1057,7 @@ impl DWalletMPCSession {
     ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(
             ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
-                self.epoch_store()?.name,
+                self.validator_name,
                 report,
             ),
         )
@@ -1063,7 +1073,7 @@ impl DWalletMPCSession {
             info!(
                 session_id=?message.session_identifier,
                 from_authority=?message.authority,
-                receiving_authority=?self.epoch_store()?.name,
+                receiving_authority=?self.validator_name,
                 crypto_round_number=?message.round_number,
                 mpc_protocol=%message.mpc_protocol,
                 "Received a message for a session that is not active",
@@ -1090,7 +1100,7 @@ impl DWalletMPCSession {
         info!(
             session_id=?message.session_identifier,
             from_authority=?message.authority,
-            receiving_authority=?self.epoch_store()?.name,
+            receiving_authority=?self.validator_name,
             crypto_round_number=?message.round_number,
             message_size_bytes=?message.message.len(),
             mpc_protocol=message.mpc_protocol,
@@ -1101,7 +1111,7 @@ impl DWalletMPCSession {
             error!(
                 session_id=?message.session_identifier,
                 from_authority=?message.authority,
-                receiving_authority=?self.epoch_store()?.name,
+                receiving_authority=?self.validator_name,
                 crypto_round_number=?message.round_number,
                 mpc_protocol=?message.mpc_protocol,
                 "Received a message for round zero",
@@ -1115,7 +1125,7 @@ impl DWalletMPCSession {
             warn!(
                 session_id=?message.session_identifier,
                 from_authority=?message.authority,
-                receiving_authority=?self.epoch_store()?.name,
+                receiving_authority=?self.validator_name,
                 recieved_message_round_number=?message.round_number,
                 "Received a message for a future round",
             );
@@ -1131,7 +1141,7 @@ impl DWalletMPCSession {
             warn!(
                 session_id=?message.session_identifier,
                 from_authority=?message.authority,
-                receiving_authority=?self.epoch_store()?.name,
+                receiving_authority=?self.validator_name,
                 recieved_message_round_number=?message.round_number,
                 existing_message=?existing_message.clone(),
                 new_message=?message.message.clone(),
