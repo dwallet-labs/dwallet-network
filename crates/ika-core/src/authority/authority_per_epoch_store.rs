@@ -474,15 +474,13 @@ impl AuthorityEpochTables {
             .collect())
     }
 
-    pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
+    pub fn get_all_dwallet_mpc_outputs(
+        &self,
+    ) -> IkaResult<Vec<(u64, Vec<DWalletMPCOutputMessage>)>> {
         Ok(self
             .dwallet_mpc_outputs
             .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+            .collect::<Result<Vec<_>, _>>()?)
     }
 }
 
