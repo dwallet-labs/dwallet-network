@@ -88,8 +88,7 @@ impl MaliciousHandler {
     /// Reports a malicious actor disrupting the MPC process.
     /// Reported by the validator itself.
     pub(crate) fn report_malicious_actors(&mut self, authorities: &[AuthorityName]) {
-        // TODO(Scaly): This looks like a bug! we should only report malicious parties after getting quorum on them!
-        // why doesn't it call report_malicious_actor()
+        // TODO(Scaly): This should be the only logic, we should remove this struct, and report the malicious parties as part of the comp
 
         self.malicious_actors.extend(authorities);
     }
