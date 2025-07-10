@@ -745,7 +745,6 @@ public(package) fun get_reporters_of<Witness: drop>(
   validator_id: ID,
 ): VecSet<ID> {
   self.get_reporters_of(validator_id)
-}
 
 public(package) fun token_exchange_rates<Witness: drop>(
   self: &SystemInner<Witness>,
@@ -1138,5 +1137,5 @@ public(package) fun set_stake_subsidy_stake_subsidy_distribution_counter<Witness
   self: &mut SystemInner<Witness>,
   counter: u64,
 ) {
-  self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
+    self.protocol_treasury.set_stake_subsidy_distribution_counter(counter)
 }

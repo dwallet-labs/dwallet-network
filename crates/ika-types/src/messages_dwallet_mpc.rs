@@ -20,6 +20,7 @@ use sui_types::collection_types::{Table, TableVec};
 pub const DWALLET_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("DWalletSessionEvent");
 pub const DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME: &IdentStr = ident_str!("coordinator");
 pub const VALIDATOR_SET_MODULE_NAME: &IdentStr = ident_str!("validator_set");
+pub const SESSIONS_MANAGER_MODULE_NAME: &IdentStr = ident_str!("sessions_manager");
 pub const DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME: &IdentStr =
     ident_str!("coordinator_inner");
 pub const DWALLET_DKG_FIRST_ROUND_REQUEST_EVENT_STRUCT_NAME: &IdentStr =
@@ -56,7 +57,7 @@ pub const FUTURE_SIGN_PROTOCOL_FLAG: u32 = 7;
 pub const SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG: u32 = 8;
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum MPCProtocolInitData {
+pub enum MPCRequestInput {
     /// Make the dWallet user secret key shares public, so the network can control it.
     MakeDWalletUserSecretKeySharesPublicRequest(
         DWalletSessionEvent<MakeDWalletUserSecretKeySharesPublicRequestEvent>,
@@ -99,53 +100,51 @@ pub enum MPCProtocolInitData {
     ),
 }
 
-impl Display for MPCProtocolInitData {
+impl Display for MPCRequestInput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
-            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
-            MPCProtocolInitData::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _) => {
+            MPCRequestInput::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCRequestInput::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
+            MPCRequestInput::Presign(_) => write!(f, "Presign"),
+            MPCRequestInput::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) => {
                 write!(f, "{}", NETWORK_ENCRYPTION_KEY_DKG_STR_KEY)
             }
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
+            MPCRequestInput::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
+            MPCRequestInput::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
             }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) => {
                 write!(f, "{}", NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY)
             }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
     }
 }
 
-impl MPCProtocolInitData {
+impl MPCRequestInput {
     pub fn get_curve(&self) -> String {
         let curve = match self {
-            MPCProtocolInitData::DKGFirst(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::DKGSecond(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::Presign(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::Sign(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
-            MPCProtocolInitData::EncryptedShareVerification(event) => Some(event.event_data.curve),
-            MPCProtocolInitData::PartialSignatureVerification(event) => {
-                Some(event.event_data.curve)
-            }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
+            MPCRequestInput::DKGFirst(event) => Some(event.event_data.curve),
+            MPCRequestInput::DKGSecond(event) => Some(event.event_data.curve),
+            MPCRequestInput::Presign(event) => Some(event.event_data.curve),
+            MPCRequestInput::Sign(event) => Some(event.event_data.curve),
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _event) => None,
+            MPCRequestInput::EncryptedShareVerification(event) => Some(event.event_data.curve),
+            MPCRequestInput::PartialSignatureVerification(event) => Some(event.event_data.curve),
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_event) => None,
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
                 Some(event.event_data.curve)
             }
 
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(event) => {
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(event) => {
                 Some(event.event_data.curve)
             }
         };
@@ -163,18 +162,18 @@ impl MPCProtocolInitData {
 
     pub fn get_hash_scheme(&self) -> String {
         let hash_scheme = match self {
-            MPCProtocolInitData::DKGFirst(_) => None,
-            MPCProtocolInitData::DKGSecond(_) => None,
-            MPCProtocolInitData::Presign(_) => None,
-            MPCProtocolInitData::Sign(event) => Some(event.event_data.hash_scheme),
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
-            MPCProtocolInitData::EncryptedShareVerification(_) => None,
-            MPCProtocolInitData::PartialSignatureVerification(event) => {
+            MPCRequestInput::DKGFirst(_) => None,
+            MPCRequestInput::DKGSecond(_) => None,
+            MPCRequestInput::Presign(_) => None,
+            MPCRequestInput::Sign(event) => Some(event.event_data.hash_scheme),
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _event) => None,
+            MPCRequestInput::EncryptedShareVerification(_) => None,
+            MPCRequestInput::PartialSignatureVerification(event) => {
                 Some(event.event_data.hash_scheme)
             }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => None,
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_event) => None,
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(_) => None,
         };
         match &hash_scheme {
             None => "".to_string(),
@@ -192,18 +191,18 @@ impl MPCProtocolInitData {
 
     pub fn get_signature_algorithm(&self) -> String {
         let signature_alg = match self {
-            MPCProtocolInitData::DKGFirst(_event) => None,
-            MPCProtocolInitData::DKGSecond(_event) => None,
-            MPCProtocolInitData::Presign(event) => Some(event.event_data.signature_algorithm),
-            MPCProtocolInitData::Sign(event) => Some(event.event_data.signature_algorithm),
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _event) => None,
-            MPCProtocolInitData::EncryptedShareVerification(_) => None,
-            MPCProtocolInitData::PartialSignatureVerification(event) => {
+            MPCRequestInput::DKGFirst(_event) => None,
+            MPCRequestInput::DKGSecond(_event) => None,
+            MPCRequestInput::Presign(event) => Some(event.event_data.signature_algorithm),
+            MPCRequestInput::Sign(event) => Some(event.event_data.signature_algorithm),
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _event) => None,
+            MPCRequestInput::EncryptedShareVerification(_) => None,
+            MPCRequestInput::PartialSignatureVerification(event) => {
                 Some(event.event_data.signature_algorithm)
             }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_event) => None,
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_event) => None,
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_event) => None,
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(_) => None,
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(_event) => None,
         };
         match &signature_alg {
             None => "".to_string(),
@@ -216,29 +215,64 @@ impl MPCProtocolInitData {
             }
         }
     }
+
+    pub fn get_network_encryption_key_id(&self) -> Option<ObjectID> {
+        match self {
+            MPCRequestInput::DKGFirst(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::DKGSecond(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::Presign(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::Sign(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::EncryptedShareVerification(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::PartialSignatureVerification(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(event) => {
+                Some(event.event_data.dwallet_network_encryption_key_id)
+            }
+        }
+    }
 }
 
-impl Debug for MPCProtocolInitData {
+impl Debug for MPCRequestInput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MPCProtocolInitData::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
-            MPCProtocolInitData::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
-            MPCProtocolInitData::Presign(_) => write!(f, "Presign"),
-            MPCProtocolInitData::Sign(_) => write!(f, "Sign"),
-            MPCProtocolInitData::NetworkEncryptionKeyDkg(_, _) => write!(f, "NetworkDkg"),
-            MPCProtocolInitData::EncryptedShareVerification(_) => {
+            MPCRequestInput::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
+            MPCRequestInput::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
+            MPCRequestInput::Presign(_) => write!(f, "Presign"),
+            MPCRequestInput::Sign(_) => write!(f, "Sign"),
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) => write!(f, "NetworkDkg"),
+            MPCRequestInput::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
             }
-            MPCProtocolInitData::PartialSignatureVerification(_) => {
+            MPCRequestInput::PartialSignatureVerification(_) => {
                 write!(f, "PartialSignatureVerification")
             }
-            MPCProtocolInitData::NetworkEncryptionKeyReconfiguration(_) => {
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) => {
                 write!(f, "DecryptionKeyReconfiguration")
             }
-            MPCProtocolInitData::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
             }
-            MPCProtocolInitData::DWalletImportedKeyVerificationRequest(_) => {
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(_) => {
                 write!(f, "DWalletImportedKeyVerificationRequestEvent")
             }
         }
@@ -251,14 +285,17 @@ impl Debug for MPCProtocolInitData {
 pub struct DBSuiEvent {
     pub type_: StructTag,
     pub contents: Vec<u8>,
+    // True when the event was pulled from the state of the object,
+    // and False when it was pushed as an event.
+    pub pulled: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DWalletMPCEvent {
-    // TODO: remove event - do all parsing beforehand.
-    pub event: DBSuiEvent,
-    pub session_info: SessionInfo,
-    pub override_epoch_check: bool,
+    pub session_request: MPCSessionRequest,
+    // True when the event was pulled from the state of the object,
+    // and False when it was pushed as an event.
+    pub pulled: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -266,7 +303,7 @@ pub struct DWalletMPCOutputMessage {
     /// The authority that sent the output.
     pub authority: AuthorityName,
     /// The session information of the MPC session.
-    pub session_info: SessionInfo,
+    pub session_request: MPCSessionRequest,
     /// The final value of the MPC session.
     pub output: Vec<u8>,
 }
@@ -275,7 +312,7 @@ pub struct DWalletMPCOutputMessage {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {
     /// The session information of the MPC session.
-    pub session_info: SessionInfo,
+    pub session_request: MPCSessionRequest,
     /// The final value of the MPC session.
     pub output: Vec<u8>,
 }
@@ -307,14 +344,16 @@ pub struct DWalletMPCMessageKey {
 
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct SessionInfo {
+pub struct MPCSessionRequest {
     pub session_type: SessionType,
     /// Unique identifier for the MPC session.
     pub session_identifier: SessionIdentifier,
-    /// The current MPC round in the protocol.
-    /// Contains extra parameters if needed.
-    pub mpc_round: MPCProtocolInitData,
+    pub session_sequence_number: u64,
+    /// The input to the request MPC session.
+    pub request_input: MPCRequestInput,
     pub epoch: u64,
+    pub requires_network_key_data: bool,
+    pub requires_next_active_committee: bool,
 }
 
 pub trait DWalletSessionEventTrait {
@@ -327,7 +366,7 @@ pub trait DWalletSessionEventTrait {
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub enum SessionType {
-    User { sequence_number: u64 },
+    User,
     System,
 }
 
@@ -610,6 +649,7 @@ pub struct DWalletSessionEvent<E: DWalletSessionEventTrait> {
     pub epoch: u64,
     pub session_object_id: ObjectID,
     pub session_type: SessionType,
+    pub session_sequence_number: u64,
     // DO NOT MAKE THIS PUBLIC! ONLY CALL `session_identifier_digest`
     session_identifier_preimage: Vec<u8>,
     pub event_data: E,
@@ -622,7 +662,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
         StructTag {
             address: *packages_config.ika_dwallet_2pc_mpc_package_id,
             name: DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned(),
+            module: SESSIONS_MANAGER_MODULE_NAME.to_owned(),
             type_params: vec![<E as DWalletSessionEventTrait>::type_(packages_config).into()],
         }
     }
@@ -631,8 +671,8 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEventTrait for DWalletSessionEve
 impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
     pub fn is_dwallet_mpc_event(event: StructTag, package_id: AccountAddress) -> bool {
         event.address == package_id
+            && event.module == SESSIONS_MANAGER_MODULE_NAME.to_owned()
             && event.name == DWALLET_SESSION_EVENT_STRUCT_NAME.to_owned()
-            && event.module == DWALLET_2PC_MPC_COORDINATOR_INNER_MODULE_NAME.to_owned()
     }
 
     /// Convert the pre-image session identifier to the session ID by hashing it together with its distinguisher.
@@ -644,7 +684,7 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
         // in the two different options will yield a different output, thus guaranteeing
         // user-initiated sessions can never block or reuse session IDs for system sessions.
         let session_type = match self.session_type {
-            SessionType::User { .. } => [
+            SessionType::User => [
                 version.to_be_bytes().as_slice(),
                 b"USER",
                 self.session_identifier_preimage.as_slice(),
@@ -662,8 +702,8 @@ impl<E: DWalletSessionEventTrait> DWalletSessionEvent<E> {
 }
 
 /// The Rust representation of the `EncryptedShareVerificationRequestEvent` Move struct.
-/// Defined here so that we can use it in the [`MPCProtocolInitData`] enum,
-/// as the inner data of the [`MPCProtocolInitData::EncryptedShareVerification`].
+/// Defined here so that we can use it in the [`MPCRequestInput`] enum,
+/// as the inner data of the [`MPCRequestInput::EncryptedShareVerification`].
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct EncryptedShareVerificationRequestEvent {
     /// Encrypted centralized secret key share and the associated
@@ -680,7 +720,7 @@ pub struct EncryptedShareVerificationRequestEvent {
     pub encryption_key_id: ObjectID,
     pub encrypted_user_secret_key_share_id: ObjectID,
     pub source_encrypted_user_secret_key_share_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -707,7 +747,7 @@ pub struct FutureSignRequestEvent {
     pub signature_algorithm: u32,
     pub hash_scheme: u32,
     pub message_centralized_signature: Vec<u8>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for FutureSignRequestEvent {
@@ -743,7 +783,7 @@ pub struct DWalletDKGSecondRoundRequestEvent {
     /// The Ed25519 public key of the initiator,
     /// used to verify the signature on the centralized public output.
     pub signer_public_key: Vec<u8>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -808,7 +848,7 @@ pub struct PresignRequestEvent {
     pub presign_id: ObjectID,
     /// The DKG decentralized final output to use for the presign session.
     pub dwallet_public_output: Option<Vec<u8>>,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
     pub signature_algorithm: u32,
 }
@@ -851,7 +891,7 @@ pub struct DWalletDKGFirstRoundRequestEvent {
     pub dwallet_id: ObjectID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub curve: u32,
 }
 
@@ -916,7 +956,7 @@ pub struct MakeDWalletUserSecretKeySharesPublicRequestEvent {
     pub public_output: Vec<u8>,
     pub curve: u32,
     pub dwallet_id: ObjectID,
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for MakeDWalletUserSecretKeySharesPublicRequestEvent {
@@ -960,7 +1000,7 @@ pub struct SignRequestEvent {
     /// Hashed messages to Sign.
     pub message: Vec<u8>,
     /// The dWallet mpc network key version
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub presign_id: ObjectID,
 
     /// The presign protocol output as bytes.
@@ -991,7 +1031,7 @@ impl DWalletSessionEventTrait for SignRequestEvent {
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletNetworkDKGEncryptionKeyRequestEvent {
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
     pub params_for_network: Vec<u8>,
 }
 
@@ -1013,9 +1053,10 @@ impl DWalletSessionEventTrait for DWalletNetworkDKGEncryptionKeyRequestEvent {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DWalletNetworkEncryptionKey {
     pub id: ObjectID,
+    pub dkg_at_epoch: u64,
+    pub network_dkg_public_output: TableVec,
     /// key -> epoch, value -> reconfiguration public output (TableVec).
     pub reconfiguration_public_outputs: Table,
-    pub network_dkg_public_output: TableVec,
     pub dkg_params_for_network: Vec<u8>,
     pub supported_curves: Vec<u32>,
     pub state: DWalletNetworkEncryptionKeyState,
@@ -1034,19 +1075,14 @@ pub struct DWalletNetworkEncryptionKeyData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DWalletNetworkEncryptionKeyState {
     AwaitingNetworkDKG,
-    // Network DKG is completed, but we didn't do Reconfiguration yet.
     NetworkDKGCompleted,
-    /// Reconfiguration request was sent to the network, but didn't finish yet.
-    /// `is_first` is true if this is the first reconfiguration request, false otherwise.
-    AwaitingNetworkReconfiguration {
-        is_first: bool,
-    },
+    AwaitingNetworkReconfiguration,
     NetworkReconfigurationCompleted,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct DWalletEncryptionKeyReconfigurationRequestEvent {
-    pub dwallet_network_decryption_key_id: ObjectID,
+    pub dwallet_network_encryption_key_id: ObjectID,
 }
 
 impl DWalletSessionEventTrait for DWalletEncryptionKeyReconfigurationRequestEvent {

@@ -5,19 +5,22 @@ use dwallet_mpc_types::dwallet_mpc::{
 use group::OsCsRng;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
-    DWalletSessionEvent, EncryptedShareVerificationRequestEvent, MPCProtocolInitData, SessionInfo,
+    DWalletSessionEvent, EncryptedShareVerificationRequestEvent, MPCRequestInput, MPCSessionRequest,
 };
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
-pub(crate) fn start_encrypted_share_verification_session_info(
+pub(crate) fn start_encrypted_share_verification_session_request(
     deserialized_event: DWalletSessionEvent<EncryptedShareVerificationRequestEvent>,
-) -> SessionInfo {
-    SessionInfo {
+) -> MPCSessionRequest {
+    MPCSessionRequest {
         session_type: deserialized_event.session_type.clone(),
         session_identifier: deserialized_event.session_identifier_digest(),
+        session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
-        mpc_round: MPCProtocolInitData::EncryptedShareVerification(deserialized_event),
+        request_input: MPCRequestInput::EncryptedShareVerification(deserialized_event),
+        requires_network_key_data: true,
+        requires_next_active_committee: false,
     }
 }
 

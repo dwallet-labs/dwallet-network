@@ -12,7 +12,6 @@ use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_consensus::MovePackageDigest;
 use ika_types::messages_dwallet_mpc::{
     DBSuiEvent, DWalletNetworkEncryptionKey, DWalletNetworkEncryptionKeyData,
-    DWalletNetworkEncryptionKeyState,
 };
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartValidatorInfoV1};
 use ika_types::sui::staking::StakingPool;
@@ -49,7 +48,7 @@ use sui_types::{
     Identifier,
 };
 use tokio::sync::OnceCell;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 pub mod ika_validator_transactions;
 pub mod metrics;
@@ -174,12 +173,13 @@ where
                 continue;
             }
 
-            let missed_events = self
+            let user_missed_events = self
                 .inner
                 .get_uncompleted_events(
                     dwallet_coordinator_inner
-                        .session_management
-                        .user_requested_sessions_events
+                        .sessions_manager
+                        .user_sessions_keeper
+                        .session_events
                         .id
                         .id
                         .bytes,
@@ -189,8 +189,38 @@ where
                     error!("failed to get missed events: {e}");
                     IkaError::SuiClientInternalError(format!("failed to get missed events: {e}"))
                 })?;
-            info!("retrieved missed events from Sui successfully");
-            return Ok(missed_events);
+
+            let system_missed_events = self
+                .inner
+                .get_uncompleted_events(
+                    dwallet_coordinator_inner
+                        .sessions_manager
+                        .system_sessions_keeper
+                        .session_events
+                        .id
+                        .id
+                        .bytes,
+                )
+                .await
+                .map_err(|e| {
+                    error!("failed to get missed events: {e}");
+                    IkaError::SuiClientInternalError(format!("failed to get missed events: {e}"))
+                })?;
+
+            if !user_missed_events.is_empty() || !system_missed_events.is_empty() {
+                info!(
+                    number_of_user_missed_events = user_missed_events.len(),
+                    number_of_system_missed_events = system_missed_events.len(),
+                    "retrieved missed events from Sui successfully"
+                );
+            } else {
+                debug!("retrieved zero missed events from Sui");
+            }
+
+            return Ok(user_missed_events
+                .into_iter()
+                .chain(system_missed_events.into_iter())
+                .collect());
         }
     }
 
@@ -908,6 +938,7 @@ impl SuiClientInner for SuiSdkClient {
                 let event = DBSuiEvent {
                     type_: *event_tag.clone(),
                     contents: raw_move_obj.bcs_bytes,
+                    pulled: true,
                 };
                 events.push(event);
             }
@@ -1063,22 +1094,13 @@ impl SuiClientInner for SuiSdkClient {
             .read_table_vec_as_raw_bytes(key.network_dkg_public_output.contents.id)
             .await?;
 
+        let mut current_reconfiguration_public_output = vec![];
+
         // Note that if we try to read the reconfiguration public output during the first epoch,
         // where we only had NetworkDKG, `get_current_reconfiguration_public_output()` function will error.
         // In this case, the validator will be stuck in a loop where it can't process events
         // until the epoch is switched, since it will be endlessly waiting for the network key.
-        let awaiting_first_reconfiguration_to_complete = key.state
-            == (DWalletNetworkEncryptionKeyState::AwaitingNetworkReconfiguration {
-                is_first: true,
-            });
-        let no_reconfiguration_key_data = key.reconfiguration_public_outputs.size == 0;
-        let mut current_reconfiguration_public_output = vec![];
-
-        if no_reconfiguration_key_data
-            || key.state == DWalletNetworkEncryptionKeyState::AwaitingNetworkDKG
-            || key.state == DWalletNetworkEncryptionKeyState::NetworkDKGCompleted
-            || awaiting_first_reconfiguration_to_complete
-        {
+        if key.dkg_at_epoch == epoch {
             info!(
                 key_id = ?key.id,
                 ?epoch,

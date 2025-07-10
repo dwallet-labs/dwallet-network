@@ -8,7 +8,7 @@ module ika_dwallet_2pc_mpc::ika_dwallet_2pc_mpc_init;
 use std::{string::String, type_name};
 use ika_dwallet_2pc_mpc::{
     ika_dwallet_2pc_mpc_display,
-    dwallet_pricing::DWalletPricing,
+    pricing::PricingInfo,
     coordinator,
 };
 use sui::{
@@ -51,7 +51,7 @@ public fun initialize(
     init_cap: InitCap,
     advance_epoch_approver: &mut AdvanceEpochApprover,
     system_current_status_info: &SystemCurrentStatusInfo,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     dwallet_cap_image_url: String,
     imported_key_dwallet_cap_image_url: String,
@@ -104,7 +104,7 @@ public fun initialize_for_testing(
     init_cap: InitCap,
     advance_epoch_approver: &mut AdvanceEpochApprover,
     system_current_status_info: &SystemCurrentStatusInfo,
-    pricing: DWalletPricing,
+    pricing: PricingInfo,
     supported_curves_to_signature_algorithms_to_hash_schemes: VecMap<u32, VecMap<u32, vector<u32>>>,
     ctx: &mut TxContext,
 ) {

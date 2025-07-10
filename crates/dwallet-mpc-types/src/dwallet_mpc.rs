@@ -70,7 +70,7 @@ pub enum NetworkDecryptionKeyPublicOutputType {
     Reconfiguration,
 }
 
-/// Network decryption key shares for the MPC protocol.
+/// The public output of the DKG and/or Reconfiguration protocols, which holds the (encrypted) decryption key shares.
 /// Created for each DKG protocol and modified for each Reconfiguration Protocol.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NetworkDecryptionKeyPublicData {
