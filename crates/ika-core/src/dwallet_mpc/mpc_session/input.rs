@@ -1,11 +1,15 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::dwallet_dkg::{dwallet_dkg_first_public_input, dwallet_dkg_second_public_input, DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty};
+use crate::dwallet_mpc::dwallet_dkg::{
+    dwallet_dkg_first_public_input, dwallet_dkg_second_public_input, DWalletDKGFirstParty,
+    DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,
+};
 use crate::dwallet_mpc::network_dkg::{network_dkg_public_input, DwalletMPCNetworkKeys};
 use crate::dwallet_mpc::presign::{presign_public_input, PresignParty};
 use crate::dwallet_mpc::reconfiguration::{
     ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
 };
 use crate::dwallet_mpc::sign::{sign_session_public_input, SignFirstParty};
+use class_groups::dkg;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, VersionedImportedDWalletPublicOutput,
@@ -16,7 +20,6 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
-use class_groups::dkg;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum PublicInput {

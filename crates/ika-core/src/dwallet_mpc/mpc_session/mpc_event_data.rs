@@ -1,15 +1,18 @@
-use std::collections::HashMap;
-use group::PartyID;
-use mpc::WeightedThresholdAccessStructure;
-use tracing::error;
-use twopc_mpc::sign::Protocol;
-use dwallet_mpc_types::dwallet_mpc::MPCPrivateInput;
-use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
-use ika_types::dwallet_mpc_error::DwalletMPCError;
-use ika_types::messages_dwallet_mpc::{AsyncProtocol, DWalletMPCEvent, MPCRequestInput, SessionType};
 use crate::dwallet_mpc::mpc_session::input::PublicInput;
 use crate::dwallet_mpc::mpc_session::session_input_from_event;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
+use dwallet_mpc_types::dwallet_mpc::MPCPrivateInput;
+use group::PartyID;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
+use ika_types::dwallet_mpc_error::DwalletMPCError;
+use ika_types::messages_dwallet_mpc::{
+    AsyncProtocol, DWalletMPCEvent, MPCRequestInput, SessionType,
+};
+use mpc::WeightedThresholdAccessStructure;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use tracing::error;
+use twopc_mpc::sign::Protocol;
 
 /// The DWallet MPC session data that is based on the event that initiated the session.
 #[derive(Clone, PartialEq, Eq)]
@@ -97,10 +100,14 @@ impl Ord for MPCEventData {
         // System sessions have a higher priority than user session.
         // Both system and user sessions are sorted by their sequence number between themselves.
         match (self.session_type, other.session_type) {
-            (SessionType::User, SessionType::User) => self.session_sequence_number.cmp(&other.session_sequence_number),
+            (SessionType::User, SessionType::User) => self
+                .session_sequence_number
+                .cmp(&other.session_sequence_number),
             (SessionType::System, SessionType::User) => Ordering::Greater,
-            (SessionType::System, SessionType::System) => self.session_sequence_number.cmp(&other.session_sequence_number),
-            (SessionType::User, SessionType::System,) => Ordering::Less,
+            (SessionType::System, SessionType::System) => self
+                .session_sequence_number
+                .cmp(&other.session_sequence_number),
+            (SessionType::User, SessionType::System) => Ordering::Less,
         }
     }
 }

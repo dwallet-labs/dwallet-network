@@ -193,7 +193,8 @@ impl DWalletMPCService {
                     .handle_consensus_round_messages(consensus_round, messages);
             }
 
-            let completed_computation_results = self.dwallet_mpc_manager
+            let completed_computation_results = self
+                .dwallet_mpc_manager
                 .perform_cryptographic_computation()
                 .await;
 

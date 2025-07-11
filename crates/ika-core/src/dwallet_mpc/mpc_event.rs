@@ -260,28 +260,6 @@ impl DWalletMPCManager {
 
         if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
             session.mpc_event_data = Some(mpc_event_data.clone());
-
-            // It could be that this session was pending
-            // for computation but was missing the event.
-            // In that case, move it to the right queue.
-            // In that case, move it to the right queue.
-            if let Some(index) =
-                self.sessions_pending_for_events
-                    .iter()
-                    .position(|session_pending_for_event| {
-                        session_pending_for_event.session_identifier == session.session_identifier
-                    })
-            {
-                // Safe to `unwrap()`, we just got this index.
-                let mut ready_to_advance_session_copy =
-                    self.sessions_pending_for_events.remove(index).unwrap();
-
-                ready_to_advance_session_copy.mpc_event_data = Some(mpc_event_data);
-
-                self.insert_session_into_ordered_pending_for_computation_queue(
-                    ready_to_advance_session_copy,
-                );
-            }
         } else {
             self.new_mpc_session(&session_identifier, Some(mpc_event_data));
         }

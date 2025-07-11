@@ -12,13 +12,13 @@ use std::vec::Vec;
 use sui_types::base_types::EpochId;
 use tracing::error;
 
-mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;
 mod malicious_handler;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 
+mod crytographic_computation;
 pub mod dwallet_mpc_metrics;
 mod mpc_event;
 mod mpc_protocols;

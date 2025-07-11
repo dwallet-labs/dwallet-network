@@ -3621,6 +3621,7 @@ dependencies = [
  "mpc",
  "rand_chacha 0.9.0",
  "serde",
+ "zeroize",
 ]
 
 [[package]]

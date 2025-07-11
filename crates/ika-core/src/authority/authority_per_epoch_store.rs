@@ -582,9 +582,7 @@ impl AuthorityPerEpochStore {
         authority_name_to_party_id_from_committee(self.committee().as_ref(), authority_name)
     }
 
-    pub fn get_access_structure(
-        &self,
-    ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
+    pub fn get_access_structure(&self) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
         generate_access_structure_from_committee(self.committee().as_ref())
     }
 
@@ -946,36 +944,6 @@ impl AuthorityPerEpochStore {
         }
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, ..),
-                ..
-            }) => {
-                // When sending a `DWalletMPCSessionFailedWithMalicious`,
-                // the validator also includes its public key.
-                // Here, we verify that the public key used to sign this transaction matches
-                // the provided public key.
-                // This public key is later used to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        ?authority,
-                        certificate_author_index=?transaction.certificate_author_index,
-                        "DWalletMPCSessionFailedWithMalicious: authority does not match its author from consensus",
-                    );
-                    return None;
-                }
-            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
@@ -1364,21 +1332,6 @@ impl AuthorityPerEpochStore {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
                     }) => Some(DWalletMPCDBMessage::Message(message.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCMaliciousReport(
-                                authority_name,
-                                report,
-                            ),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::MaliciousReport(
-                        *authority_name,
-                        report.clone(),
-                    )),
                     _ => None,
                 }
             })
@@ -1452,14 +1405,6 @@ impl AuthorityPerEpochStore {
                 )
                 .await
             }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(..),
                 ..

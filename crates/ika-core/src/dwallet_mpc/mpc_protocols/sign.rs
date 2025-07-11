@@ -3,6 +3,8 @@
 //! It integrates the Sign party (representing a round in the protocol).
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
+use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
@@ -18,10 +20,10 @@ use message_digest::message_digest::{message_digest, Hash};
 use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
+use std::sync::Arc;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 
 pub(crate) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
@@ -94,6 +96,28 @@ pub(crate) fn sign_session_public_input(
         decryption_pp,
         expected_decrypters,
     )
+}
+
+pub(crate) fn update_expected_decrypters_metrics(
+    expected_decrypters: &HashSet<PartyID>,
+    decrypters: HashSet<PartyID>,
+    access_structure: &WeightedThresholdAccessStructure,
+    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
+) {
+    let participating_expected_decrypters: HashSet<PartyID> = expected_decrypters
+        .iter()
+        .filter(|party_id| decrypters.contains(*party_id))
+        .copied()
+        .collect();
+
+    if access_structure
+        .is_authorized_subset(&participating_expected_decrypters)
+        .is_ok()
+    {
+        dwallet_mpc_metrics.number_of_expected_sign_sessions.inc();
+    } else {
+        dwallet_mpc_metrics.number_of_unexpected_sign_sessions.inc();
+    }
 }
 
 pub(crate) fn sign_party_session_request(

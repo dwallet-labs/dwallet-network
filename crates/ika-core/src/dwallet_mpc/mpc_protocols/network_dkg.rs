@@ -2,7 +2,8 @@
 //! The network DKG protocol handles generating the network Decryption-Key shares.
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
-use crate::dwallet_mpc::mpc_session::{advance, MPCSessionLogger};
+use crate::dwallet_mpc::crytographic_computation::advance_and_serialize;
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
@@ -172,11 +173,7 @@ impl DwalletMPCNetworkKeys {
     ) -> DwalletMPCResult<()> {
         self.network_encryption_keys.insert(key_id, key.clone());
         self.validator_private_dec_key_data
-            .store_decryption_secret_shares(
-                key_id,
-                key.clone(),
-                access_structure,
-            )
+            .store_decryption_secret_shares(key_id, key.clone(), access_structure)
     }
 
     pub fn get_decryption_key_share_public_parameters(
@@ -239,7 +236,7 @@ impl DwalletMPCNetworkKeys {
 pub(crate) fn advance_network_dkg(
     session_id: CommitmentSizedNumber,
     access_structure: &WeightedThresholdAccessStructure,
-    mpc_event_data: &MPCEventData,
+    public_input: &PublicInput,
     party_id: PartyID,
     key_scheme: &DWalletMPCNetworkKeyScheme,
     messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
@@ -257,8 +254,7 @@ pub(crate) fn advance_network_dkg(
 
     let res = match key_scheme {
         DWalletMPCNetworkKeyScheme::Secp256k1 => {
-            let PublicInput::NetworkEncryptionKeyDkg(public_input) = &mpc_event_data.public_input
-            else {
+            let PublicInput::NetworkEncryptionKeyDkg(public_input) = public_input else {
                 unreachable!();
             };
             let result = advance_and_serialize::<Secp256k1Party>(
@@ -299,10 +295,9 @@ pub(crate) fn network_dkg_public_input(
     key_scheme: DWalletMPCNetworkKeyScheme,
 ) -> DwalletMPCResult<<Secp256k1Party as mpc::Party>::PublicInput> {
     match key_scheme {
-        DWalletMPCNetworkKeyScheme::Secp256k1 => generate_secp256k1_dkg_party_public_input(
-            access_structure,
-            encryption_keys_and_proofs,
-        ),
+        DWalletMPCNetworkKeyScheme::Secp256k1 => {
+            generate_secp256k1_dkg_party_public_input(access_structure, encryption_keys_and_proofs)
+        }
         DWalletMPCNetworkKeyScheme::Ristretto => todo!(),
     }
 }

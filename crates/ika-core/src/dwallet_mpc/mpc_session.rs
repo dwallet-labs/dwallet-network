@@ -1,4 +1,3 @@
-mod advance;
 mod input;
 mod logger;
 mod mpc_event_data;
@@ -45,13 +44,14 @@ use ika_types::messages_dwallet_mpc::{
 };
 use sui_types::base_types::{EpochId, ObjectID};
 
-pub(crate) use advance::advance_and_serialize;
+pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 use dwallet_rng::RootSeed;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
-use ika_types::messages_dwallet_mpc::MPCRequestInput::{NetworkEncryptionKeyDkg, NetworkEncryptionKeyReconfiguration};
-pub(crate) use input::session_input_from_event;
+use ika_types::messages_dwallet_mpc::MPCRequestInput::{
+    NetworkEncryptionKeyDkg, NetworkEncryptionKeyReconfiguration,
+};
+pub(crate) use input::{session_input_from_event, PublicInput};
 pub(crate) use logger::MPCSessionLogger;
-use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 
 /// A dWallet MPC session.
 #[derive(Clone)]
@@ -82,7 +82,8 @@ pub(crate) struct DWalletMPCSession {
     /// We need to accumulate a threshold of those before advancing the session.
     /// TODO(Scaly): By consensus round, not mpc round
     /// HashMap{R1: Map{Validator1->Message, Validator2->Message}, R2: Map{Validator1->Message} ...}
-    pub(super) messages_by_consensus_round: HashMap<u64, HashMap<usize, HashMap<PartyID, MPCMessage>>>,
+    pub(super) messages_by_consensus_round:
+        HashMap<u64, HashMap<usize, HashMap<PartyID, MPCMessage>>>,
 
     network_dkg_third_round_delay: usize,
     decryption_key_reconfiguration_third_round_delay: usize,
@@ -103,7 +104,6 @@ impl DWalletMPCSession {
         network_dkg_third_round_delay: usize,
         decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        root_seed: RootSeed,
     ) -> Self {
         Self {
             status,
@@ -120,7 +120,6 @@ impl DWalletMPCSession {
             validator_name,
             committee,
             dwallet_mpc_metrics,
-            root_seed,
         }
     }
 
@@ -183,33 +182,6 @@ impl DWalletMPCSession {
         ))
     }
 
-    /// Report that the session failed because of malicious actors.
-    /// Once a quorum of validators reports the same actor, it is considered malicious.
-    /// The session will be continued, and the malicious actors will be ignored.
-    fn new_dwallet_report_failed_session_with_malicious_actors(
-        &self,
-        report: MaliciousReport,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(
-            ConsensusTransaction::new_dwallet_mpc_session_failed_with_malicious(
-                self.validator_name,
-                report,
-            ),
-        )
-    }
-
-    fn new_dwallet_report_threshold_not_reached(
-        &self,
-        report: ThresholdNotReachedReport,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
-        Ok(
-            ConsensusTransaction::new_dwallet_mpc_session_threshold_not_reached(
-                self.validator_name,
-                report,
-            ),
-        )
-    }
-
     /// Stores an incoming message.
     /// This function performs no checks, it simply stores the message in the map.
     ///
@@ -231,10 +203,14 @@ impl DWalletMPCSession {
             message_size_bytes=?message.message.len(),
             "Received a dWallet MPC message",
         );
-        
+
         if sender_party_id == self.party_id && self.current_mpc_round <= message.round_number {
             // Received a message from ourselves from the consensus, so it's safe to advance the round.
-            let mpc_protocol = self.mpc_event_data.as_ref().map(|event_data| event_data.request_input.to_string()).unwrap_or_default();
+            let mpc_protocol = self
+                .mpc_event_data
+                .as_ref()
+                .map(|event_data| event_data.request_input.to_string())
+                .unwrap_or_default();
             let new_mpc_round = message.round_number + 1;
             info!(
                 session_id=?message.session_identifier,
@@ -277,8 +253,14 @@ impl DWalletMPCSession {
     ///
     fn consensus_rounds_delay_for_mpc_round(&self) -> usize {
         match self.mpc_event_data.as_ref().unwrap().request_input {
-            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) if self.current_mpc_round == 3 => self.network_dkg_third_round_delay,
-            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) if self.current_mpc_round == 3 => self.decryption_key_reconfiguration_third_round_delay,
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) if self.current_mpc_round == 3 => {
+                self.network_dkg_third_round_delay
+            }
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_)
+                if self.current_mpc_round == 3 =>
+            {
+                self.decryption_key_reconfiguration_third_round_delay
+            }
             _ => 0,
         }
     }
@@ -303,7 +285,9 @@ impl DWalletMPCSession {
 
     // TODO(Scaly): should I store it ?
     // TODO(Scaly): unit test
-    pub(crate) fn get_messages_to_advance(&self) -> Option<HashMap<usize, HashMap<PartyID, MPCMessage>>> {
+    pub(crate) fn get_messages_to_advance(
+        &self,
+    ) -> Option<HashMap<usize, HashMap<PartyID, MPCMessage>>> {
         if self.mpc_event_data.is_none() {
             // Cannot advance a session before the MPC event requesting it was received.
             return None;
@@ -313,21 +297,30 @@ impl DWalletMPCSession {
             return Some(HashMap::new());
         }
 
-        let threshold_not_reached_consensus_rounds = self.mpc_round_to_threshold_not_reached_consensus_rounds.get(&self.current_mpc_round).unwrap_or_default();
+        let threshold_not_reached_consensus_rounds = self
+            .mpc_round_to_threshold_not_reached_consensus_rounds
+            .get(&self.current_mpc_round)
+            .cloned()
+            .unwrap_or_default();
         let rounds_to_delay = self.consensus_rounds_delay_for_mpc_round();
         let mut delayed_rounds = 0;
         let mut got_new_messages_since_last_threshold_not_reached = false;
-        let mut messages_for_advance = HashMap::new();
-        let sorted_messages_by_consensus_round = self.messages_by_consensus_round.clone().into_iter().sorted_by(|(first_consensus_round, _), (second_consensus_round, _)| first_consensus_round.cmp(second_consensus_round));
+        let mut messages_for_advance: HashMap<usize, HashMap<PartyID, MPCMessage>> = HashMap::new();
+        let sorted_messages_by_consensus_round = self
+            .messages_by_consensus_round
+            .clone()
+            .into_iter()
+            .sorted_by(|(first_consensus_round, _), (second_consensus_round, _)| {
+                first_consensus_round.cmp(second_consensus_round)
+            });
         for (consensus_round, consensus_round_messages) in sorted_messages_by_consensus_round {
             // Update messages to advance the current round by joining the messages received at the current consensus round
             // with the ones we collected so far, ignoring duplicates.
             for (mpc_round, mpc_round_messages) in consensus_round_messages {
                 if mpc_round < self.current_mpc_round {
                     for (sender_party_id, message) in mpc_round_messages {
-                        let mpc_round_messages_map = messages_for_advance
-                            .entry(mpc_round)
-                            .or_default();
+                        let mpc_round_messages_map =
+                            messages_for_advance.entry(mpc_round).or_default();
 
                         if !mpc_round_messages_map.contains_key(&sender_party_id) {
                             // Always take the first message sent in consensus by a particular party for a particular round.
@@ -360,7 +353,7 @@ impl DWalletMPCSession {
                     // We set the map of messages by consensus round at each consensus round for each session,
                     // even if no messages were received, so this count is accurate as iterating the messages by consensus round goes through all consensus rounds to date.
                     delayed_rounds += 1;
-                } else if threshold_not_reached_consensus_rounds.contains(consensus_round) {
+                } else if threshold_not_reached_consensus_rounds.contains(&consensus_round) {
                     // We already tried executing this MPC round at the current consensus round, no point in trying again.
                     // Wait for new messages in later rounds before retrying.
                     got_new_messages_since_last_threshold_not_reached = false;
@@ -383,40 +376,13 @@ impl DWalletMPCSession {
 
     // Gets the current *total* attempt number, meaning the number of threshold not reached from any mpc round in this session, plus 1.
     pub(crate) fn get_attempt_number(&self) -> usize {
-        let threshold_not_reached_count = self.mpc_round_to_threshold_not_reached_consensus_rounds.values().flatten().len();
+        let threshold_not_reached_consensus_rounds = self
+            .mpc_round_to_threshold_not_reached_consensus_rounds
+            .values()
+            .flatten()
+            .collect::<Vec<_>>();
+        let threshold_not_reached_count = threshold_not_reached_consensus_rounds.len();
 
         threshold_not_reached_count + 1
-    }
-
-    fn update_expected_decrypters_metrics(
-        &self,
-        expected_decrypters: &HashSet<PartyID>,
-    ) -> DwalletMPCResult<()> {
-        if self.current_mpc_round != 2 {
-            return Ok(());
-        }
-        let participating_expected_decrypters: HashSet<PartyID> = expected_decrypters
-            .iter()
-            .filter(|party_id| {
-                self.messages_by_consensus_round
-                    .get(&(self.current_mpc_round - 1))
-                    .is_some_and(|messages| messages.contains_key(*party_id))
-            })
-            .copied()
-            .collect();
-        if self
-            .access_structure
-            .is_authorized_subset(&participating_expected_decrypters)
-            .is_ok()
-        {
-            self.dwallet_mpc_metrics
-                .number_of_expected_sign_sessions
-                .inc();
-        } else {
-            self.dwallet_mpc_metrics
-                .number_of_unexpected_sign_sessions
-                .inc();
-        }
-        Ok(())
     }
 }
