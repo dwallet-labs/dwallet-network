@@ -2,7 +2,7 @@
 //! The network DKG protocol handles generating the network Decryption-Key shares.
 //! The module provides the management of the network Decryption-Key shares and
 //! the network DKG protocol.
-use crate::dwallet_mpc::mpc_session::{advance_and_serialize, MPCSessionLogger};
+use crate::dwallet_mpc::mpc_session::{advance, MPCSessionLogger};
 use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};

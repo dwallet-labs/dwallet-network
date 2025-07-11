@@ -69,14 +69,7 @@ pub(crate) struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     pub(crate) malicious_handler: MaliciousHandler,
-    /// The ordered queue of sessions that are ready to advance.
-    /// The order is as such:
-    /// - System events first, and FIFO between the system events.
-    /// - User events are after all system events, and the order between them is by the (lowest) sequence number.
-    pub(crate) ordered_sessions_pending_for_computation: VecDeque<DWalletMPCSession>,
-    /// The queue of sessions that have received quorum for their current round, but we have not
-    /// yet received an event for from Sui.
-    pub(crate) sessions_pending_for_events: VecDeque<DWalletMPCSession>,
+
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
     pub(crate) network_keys: Box<DwalletMPCNetworkKeys>,
@@ -99,21 +92,12 @@ pub(crate) struct DWalletMPCManager {
     root_seed: RootSeed,
 }
 
+// TODO(Scaly): delete this struct
 /// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DWalletMPCDBMessage {
     /// An MPC message from another validator.
     Message(DWalletMPCMessage),
-    /// A message indicating that an MPC session has failed.
-    /// The advance failed, and the session needs to be restarted or marked as failed.
-    MPCSessionFailed(ObjectID),
-
-    /// A message that contains a [`MaliciousReport`] after an advance/finalize.
-    /// AuthorityName is the name of the authority that reported the malicious parties.
-    MaliciousReport(AuthorityName, MaliciousReport),
-    /// A message indicating that some of the parties were malicious,
-    /// but we can still retry once we receive more messages.
-    ThresholdNotReachedReport(AuthorityName, ThresholdNotReachedReport),
 }
 
 struct ReadySessionsResponse {
@@ -212,8 +196,6 @@ impl DWalletMPCManager {
                 get_validators_class_groups_public_keys_and_proofs(&committee)?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
             malicious_handler,
-            ordered_sessions_pending_for_computation: VecDeque::new(),
-            sessions_pending_for_events: Default::default(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
             network_keys: Box::new(dwallet_network_keys),
@@ -248,56 +230,29 @@ impl DWalletMPCManager {
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
     /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
     pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
-        // TODO: delete this function this
+        // TODO: delete this function this, just call handle_message
         match message {
             DWalletMPCDBMessage::Message(message) => {
                 self.handle_message(message.clone());
-            }
-            DWalletMPCDBMessage::MPCSessionFailed(session_id) => {
-                error!(session_id=?session_id, "dwallet MPC session failed");
-                // TODO(@scaly) this is the wrong issue, also create a new one.
-                // Also this doesn't get sent or handled, so what?
-            }
-            DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
-                self.handle_malicious_report(authority_name, report);
-            }
-            DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
-                self.handle_threshold_not_reached_report(report, authority);
             }
         }
     }
 
     /// Handle the messages of a given consensus round.
-    pub fn handle_consensus_round_messages(&mut self, messages: Vec<DWalletMPCDBMessage>) {
+    pub fn handle_consensus_round_messages(&mut self, consensus_round: u64, messages: Vec<DWalletMPCDBMessage>) {
+        for (_, session) in self.mpc_sessions.iter_mut() {
+            // Set the `messages_by_consensus_round` for every open MPC session for the current consensus round to an empty map.
+            // This is important, as we count on the `messages_by_consensus_round` to hold entries for all consensus rounds since the session's inception,
+            // when we check for delay.
+            session.messages_by_consensus_round.insert(consensus_round, HashMap::new());
+        }
+
         for message in messages {
             self.handle_dwallet_message(message);
         }
-
-        // Check for ready to advance sessions, and clone and place their copy in an ordered queue waiting for computation.
-        let ReadySessionsResponse {
-            pending_for_event_sessions,
-            ready_sessions,
-        } = self.get_ready_to_advance_sessions();
-
-        // TODO(scaly): why do we even need this queue?
-        // TODO(scaly): update comment after we remove session copy
-        // Since the Ika and Sui consensuses are not in sync,
-        // a session might reach quorum before a validator has received
-        // the event needed to generate its public input (and therefore cannot advance it yet).
-        // To handle this, we use two separate queues. We also snapshot
-        // the current messages so that when we do advance,
-        // we use exactly the same inputs as peers who already have the data.
-        self.sessions_pending_for_events
-            .extend(pending_for_event_sessions);
-
-        // Extend the pending for computation queue while keeping order.
-        for ready_to_advance_session_copy in ready_sessions {
-            self.insert_session_into_ordered_pending_for_computation_queue(
-                ready_to_advance_session_copy,
-            );
-        }
     }
 
+    // TODO(Scaly): delete, move recognize selves elsewhere
     /// Handle an incoming malicious `report` from `reporting_authority`,
     /// and recognize ourselves as malicious in the case of a bug.
     fn handle_malicious_report(
@@ -324,15 +279,12 @@ impl DWalletMPCManager {
         }
     }
 
-    /// Returns the sessions that can perform the next cryptographic round,
-    /// and the list of malicious parties that has
-    /// been detected while checking for such sessions.
     fn get_ready_to_advance_sessions(&mut self) -> ReadySessionsResponse {
         let ready_to_advance_sessions: Vec<DWalletMPCSession> = self
             .mpc_sessions
             .iter_mut()
             .filter_map(|(_, ref mut session)| {
-                let is_ready = session.check_quorum_for_next_crypto_round();
+                let is_ready = session.ready_to_advance();
                 if is_ready {
                     // TODO: delete this.
 
@@ -343,7 +295,7 @@ impl DWalletMPCManager {
 
                     // Mutate the session stored in `mpc_sessions` to reflect the fact we have called `advance()` on this round,
                     // and prepare for the next round.
-                    session.current_round += 1;
+                    session.current_mpc_round += 1;
                     session.received_more_messages_since_last_advance = false;
 
                     Some(session_clone)

@@ -1,14 +1,11 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::dwallet_dkg::{
-    dwallet_dkg_first_public_input, dwallet_dkg_second_public_input,
-};
-use crate::dwallet_mpc::mpc_session::PublicInput;
+use crate::dwallet_mpc::dwallet_dkg::{dwallet_dkg_first_public_input, dwallet_dkg_second_public_input, DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty};
 use crate::dwallet_mpc::network_dkg::{network_dkg_public_input, DwalletMPCNetworkKeys};
-use crate::dwallet_mpc::presign::presign_public_input;
+use crate::dwallet_mpc::presign::{presign_public_input, PresignParty};
 use crate::dwallet_mpc::reconfiguration::{
     ReconfigurationPartyPublicInputGenerator, ReconfigurationSecp256k1Party,
 };
-use crate::dwallet_mpc::sign::sign_session_public_input;
+use crate::dwallet_mpc::sign::{sign_session_public_input, SignFirstParty};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCPrivateInput, VersionedImportedDWalletPublicOutput,
@@ -19,6 +16,25 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
+use class_groups::dkg;
+
+#[derive(Clone)]
+pub enum PublicInput {
+    DWalletImportedKeyVerificationRequest(
+        <DWalletImportedKeyVerificationParty as mpc::Party>::PublicInput,
+    ),
+    DKGFirst(<DWalletDKGFirstParty as mpc::Party>::PublicInput),
+    DKGSecond(<DWalletDKGSecondParty as mpc::Party>::PublicInput),
+    Presign(<PresignParty as mpc::Party>::PublicInput),
+    Sign(<SignFirstParty as mpc::Party>::PublicInput),
+    NetworkEncryptionKeyDkg(<dkg::Secp256k1Party as mpc::Party>::PublicInput),
+    EncryptedShareVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
+    PartialSignatureVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
+    NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as mpc::Party>::PublicInput),
+    MakeDWalletUserSecretKeySharesPublicPublicInput(
+        twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
+    ),
+}
 
 // TODO (#542): move this logic to run before writing the event to the DB, maybe include within the session info
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],

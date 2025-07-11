@@ -137,7 +137,7 @@ impl CryptographicComputationsOrchestrator {
         // Safe to unwrap here (event must exist before this).
         let request_input = session.mpc_event_data.clone().unwrap().request_input;
 
-        dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_round.to_string());
+        dwallet_mpc_metrics.add_advance_call(&request_input, &session.current_mpc_round.to_string());
 
         let computation_channel_sender = self.completed_computation_sender.clone();
         rayon::spawn_fifo(move || {
@@ -158,15 +158,15 @@ impl CryptographicComputationsOrchestrator {
                     duration_ms = elapsed_ms,
                     duration_seconds = elapsed_ms / 1000,
                     party_id = session.party_id,
-                    current_round = session.current_round,
+                    current_round = session.current_mpc_round,
                     "MPC session advanced successfully"
                 );
 
                 dwallet_mpc_metrics
-                    .add_advance_completion(&request_input, &session.current_round.to_string());
+                    .add_advance_completion(&request_input, &session.current_mpc_round.to_string());
                 dwallet_mpc_metrics.set_last_completion_duration(
                     &request_input,
-                    &session.current_round.to_string(),
+                    &session.current_mpc_round.to_string(),
                     elapsed.as_millis() as i64,
                 );
             }
@@ -176,7 +176,7 @@ impl CryptographicComputationsOrchestrator {
                 if let Err(err) = computation_channel_sender
                     .send(CompletedComputationReport {
                         session_identifier: session.session_identifier,
-                        round: session.current_round,
+                        round: session.current_mpc_round,
                         attempts_count: session.attempts_count,
                     })
                     .await
