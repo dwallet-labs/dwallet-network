@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::cryptographic_computations_orchestrator::CryptographicComputationsOrchestrator;
+use crate::dwallet_mpc::cryptographic_computations_orchestrator::{ComputationId, ComputationRequest, CryptographicComputationsOrchestrator};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
 use crate::dwallet_mpc::mpc_protocols::network_dkg::{
@@ -14,7 +14,7 @@ use crate::dwallet_mpc::{
 };
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCSessionStatus, SerializedWrappedMPCPublicOutput};
 use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
@@ -33,6 +33,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
+use itertools::Itertools;
 use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
@@ -57,7 +58,7 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) epoch_id: EpochId,
     validator_name: AuthorityPublicKeyBytes,
     pub(crate) committee: Arc<Committee>,
-    pub(crate) weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    pub(crate) access_structure: WeightedThresholdAccessStructure,
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
@@ -149,7 +150,7 @@ impl DWalletMPCManager {
         decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
-        let weighted_threshold_access_structure =
+        let access_structure =
             generate_access_structure_from_committee(&committee)?;
 
         let mpc_computations_orchestrator = CryptographicComputationsOrchestrator::try_new()?;
@@ -191,7 +192,7 @@ impl DWalletMPCManager {
             consensus_adapter,
             party_id: authority_name_to_party_id_from_committee(&committee, &validator_name)?,
             epoch_id,
-            weighted_threshold_access_structure,
+            access_structure,
             validators_class_groups_public_keys_and_proofs:
                 get_validators_class_groups_public_keys_and_proofs(&committee)?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
@@ -230,7 +231,7 @@ impl DWalletMPCManager {
     /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
     /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
     pub(crate) fn handle_dwallet_message(&mut self, message: DWalletMPCDBMessage) {
-        // TODO: delete this function this, just call handle_message
+        // TODO(Scaly): delete this function this, just call handle_message
         match message {
             DWalletMPCDBMessage::Message(message) => {
                 self.handle_message(message.clone());
@@ -250,6 +251,8 @@ impl DWalletMPCManager {
         for message in messages {
             self.handle_dwallet_message(message);
         }
+
+        // TODO(Scaly): set the message to advance here or no?
     }
 
     // TODO(Scaly): delete, move recognize selves elsewhere
@@ -279,102 +282,76 @@ impl DWalletMPCManager {
         }
     }
 
-    fn get_ready_to_advance_sessions(&mut self) -> ReadySessionsResponse {
-        let ready_to_advance_sessions: Vec<DWalletMPCSession> = self
-            .mpc_sessions
-            .iter_mut()
-            .filter_map(|(_, ref mut session)| {
-                let is_ready = session.ready_to_advance();
-                if is_ready {
-                    // TODO: delete this.
-
-                    // We must first clone the session, as we approve to advance the current session
-                    // in the current round and then start waiting for the next round's messages
-                    // until it is ready to advance or finalized.
-                    let session_clone = session.clone();
-
-                    // Mutate the session stored in `mpc_sessions` to reflect the fact we have called `advance()` on this round,
-                    // and prepare for the next round.
-                    session.current_mpc_round += 1;
-                    session.received_more_messages_since_last_advance = false;
-
-                    Some(session_clone)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let (ready_sessions, pending_for_event_sessions): (Vec<_>, Vec<_>) =
-            ready_to_advance_sessions
-                .into_iter()
-                .partition(|s| s.mpc_event_data.is_some());
-
-        ReadySessionsResponse {
-            ready_sessions,
-            pending_for_event_sessions,
-        }
-    }
-
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
-    pub(crate) async fn perform_cryptographic_computation(&mut self) {
-        let pending_for_computation = self.ordered_sessions_pending_for_computation.len();
-        for _ in 0..pending_for_computation {
-            // Safe to unwrap, as we just checked that the queue is not empty.
-            let oldest_pending_session = self
-                .ordered_sessions_pending_for_computation
-                .pop_front()
-                .unwrap();
-
-            let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
-                // This should never happen.
-                error!(
-                    session_identifier=?oldest_pending_session.session_identifier,
-                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                    "session does not have event data, skipping"
-                );
-                continue;
-            };
-
-            let should_advance = match mpc_event_data.session_type {
-                SessionType::User => {
-                    mpc_event_data.session_sequence_number
-                        <= self.last_session_to_complete_in_current_epoch
+    pub(crate) async fn perform_cryptographic_computation(&mut self) -> HashMap<ComputationId, DwalletMPCResult<
+        mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
+    >> {
+        // TODO: sync last_session_to_complete_in_current_epoch?
+        let computation_requests: Vec<_> = self.mpc_sessions.iter()
+            .filter(|(_, session)| {
+                if let Some(mpc_event_data) = &session.mpc_event_data {
+                    // Always advance system sessions, and only advance user session
+                    // if they come before the last session to complete in the current epoch (at the current time).
+                    match mpc_event_data.session_type {
+                        SessionType::User => {
+                            mpc_event_data.session_sequence_number
+                                <= self.last_session_to_complete_in_current_epoch
+                        }
+                        SessionType::System => true,
+                    }
+                } else {
+                    // Cannot advance sessions without MPC event data
+                    false
                 }
-                SessionType::System => true,
-            };
-            if !should_advance {
-                info!(
-                    session_identifier=?oldest_pending_session.session_identifier,
-                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                    "Session should not be computed yet, skipping"
-                );
-                self.ordered_sessions_pending_for_computation
-                    .push_back(oldest_pending_session.clone());
-                continue;
-            }
-            if let Err(err) = self
+            })
+            .sorted_by(|(_, session), (_, other_session)| {
+                // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
+                other_session.mpc_event_data.as_ref().unwrap().cmp(session.mpc_event_data.as_ref().unwrap())
+            })
+            .flat_map(|(&session_identifier, session)| {
+            session.get_messages_to_advance().map(|messages_for_advance| {
+                let attempt_number = session.get_attempt_number();
+
+                // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
+                let mpc_event_data = session.mpc_event_data.clone().unwrap();
+
+                let computation_id = ComputationId {
+                    session_identifier,
+                    mpc_round,
+                    attempt_number
+                };
+
+                let computation_request = ComputationRequest {
+                    party_id: self.party_id,
+                    validator_name: self.validator_name.clone(),
+                    committee: self.committee.clone(),
+                    access_structure: self.access_structure.clone(),
+                    input: mpc_event_data.request_input,
+                    messages: messages_for_advance,
+                };
+
+                (computation_id, computation_request)
+            })
+        }).collect();
+
+        let completed_computation_results = self.cryptographic_computations_orchestrator.receive_completed_computations();
+        for (computation_id, computation_request) in computation_requests {
+            let computation_executing = self
                 .cryptographic_computations_orchestrator
-                .try_spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
-                .await
+                .try_spawn_cryptographic_computation(computation_id, computation_request, self.dwallet_mpc_metrics.clone())
+                .await;
+
+            if !computation_executing
             {
-                self.ordered_sessions_pending_for_computation
-                    .push_front(oldest_pending_session.clone());
-
-                error!(
-                    session_identifier=?oldest_pending_session.session_identifier,
-                    last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-                    session_type=?mpc_event_data.session_type,
-                    mpc_protocol=?mpc_event_data.request_input,
-                    error=?err,
-                    "failed to spawn a cryptographic session"
-                );
-
-                return;
+                return completed_computation_results;
             }
         }
+
+        completed_computation_results
     }
+
+
 
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
@@ -506,7 +483,7 @@ impl DWalletMPCManager {
             MPCSessionStatus::Active,
             *session_identifier,
             self.party_id,
-            self.weighted_threshold_access_structure.clone(),
+            self.access_structure.clone(),
             mpc_event_data,
             self.network_dkg_third_round_delay,
             self.decryption_key_reconfiguration_third_round_delay,
@@ -551,7 +528,7 @@ impl DWalletMPCManager {
         match self.network_keys_receiver.has_changed() {
             Ok(has_changed) => {
                 if has_changed {
-                    let access_structure = &self.weighted_threshold_access_structure;
+                    let access_structure = &self.access_structure;
                     let new_keys = self.network_keys_receiver.borrow_and_update();
 
                     let mut new_key_ids = vec![];
@@ -569,7 +546,7 @@ impl DWalletMPCManager {
                                     .update_network_key(
                                         *key_id,
                                         &key,
-                                        &self.weighted_threshold_access_structure,
+                                        &self.access_structure,
                                     ) {
                                     error!(error=?e, key_id=?key_id, "failed to update the network key");
                                 } else {
@@ -596,60 +573,6 @@ impl DWalletMPCManager {
 
                 vec![]
             }
-        }
-    }
-
-    /// Insert `session` into `self.ordered_sessions_pending_for_computation`, keeping order:
-    /// System sessions come first, and user sessions are sorted by their sequence number.
-    ///
-    /// Note: at this point, `mpc_event_data` must be set!
-    pub(crate) fn insert_session_into_ordered_pending_for_computation_queue(
-        &mut self,
-        session: DWalletMPCSession,
-    ) {
-        let session_to_insert_event_data = session.mpc_event_data.as_ref().unwrap();
-
-        if let Some(index) = self
-            .ordered_sessions_pending_for_computation
-            .iter()
-            .position(|current_session_pending_for_computation| {
-                let current_session_pending_for_computation_event_data = current_session_pending_for_computation
-                    .mpc_event_data
-                    .as_ref()
-                    .unwrap();
-
-                // Find the first pending session of the same type with a sequence number greater than the new session,
-                // so we can insert the new session right before it.
-                // System sessions are always ordered before User ones.
-                if session_to_insert_event_data.session_type == SessionType::System {
-                    if current_session_pending_for_computation_event_data.session_type == SessionType::System {
-                        // Both sessions are System sessions, so we can compare sequence numbers.
-                        current_session_pending_for_computation_event_data.session_sequence_number
-                            > session_to_insert_event_data.session_sequence_number
-                    } else {
-                        // The session we are inserting is a System session, and the current session is a User one.
-                        // System session takes precedence over user sessions, so terminate the search to insert it right before the current session.
-                        true
-                    }
-                } else {
-                    if current_session_pending_for_computation_event_data.session_type == SessionType::System {
-                        // The session we are inserting is a User session, and the current session is a System one.
-                        // System session takes precedence over user sessions, so don't terminate the search yet.
-                        false
-                    } else {
-                        // Both sessions are User sessions, so we can compare sequence numbers.
-                        current_session_pending_for_computation_event_data.session_sequence_number
-                            > session_to_insert_event_data.session_sequence_number
-                    }
-                }
-            })
-        {
-            self.ordered_sessions_pending_for_computation
-                .insert(index, session);
-        } else {
-            // All existing pending sessions take precedence over the new one, so push it back.
-            self.ordered_sessions_pending_for_computation
-                .push_back(session);
         }
     }
 }

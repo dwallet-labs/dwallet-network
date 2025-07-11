@@ -328,7 +328,6 @@ pub struct DWalletMPCMessage {
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
     pub round_number: usize,
-    pub mpc_protocol: String,
 }
 
 /// The message unique key in the consensus network.
@@ -364,7 +363,7 @@ pub trait DWalletSessionEventTrait {
 /// User initiated sessions have a sequence number, which is used to determine in which epoch the session will get
 /// completed.
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, JsonSchema, Eq, PartialEq, Hash)]
 pub enum SessionType {
     User,
     System,

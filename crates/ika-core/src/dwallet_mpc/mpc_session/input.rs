@@ -18,7 +18,7 @@ use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
 use class_groups::dkg;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum PublicInput {
     DWalletImportedKeyVerificationRequest(
         <DWalletImportedKeyVerificationParty as mpc::Party>::PublicInput,

@@ -193,9 +193,15 @@ impl DWalletMPCService {
                     .handle_consensus_round_messages(consensus_round, messages);
             }
 
-            self.dwallet_mpc_manager
+            let completed_computation_results = self.dwallet_mpc_manager
                 .perform_cryptographic_computation()
                 .await;
+
+            // TODO: handle completed_computation_results:
+            // threshold not reached -> add to session
+            // failure -> reject
+            // success -> broadcast
+            // Both current_round and finished happens when we receive our message/output from consensus.
 
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
         }

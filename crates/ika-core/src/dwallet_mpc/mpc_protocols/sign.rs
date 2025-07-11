@@ -21,6 +21,7 @@ use std::collections::HashSet;
 use twopc_mpc::dkg::Protocol;
 use twopc_mpc::secp256k1;
 use twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters;
+use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 
 pub(crate) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;

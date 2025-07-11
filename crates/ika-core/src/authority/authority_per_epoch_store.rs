@@ -582,7 +582,7 @@ impl AuthorityPerEpochStore {
         authority_name_to_party_id_from_committee(self.committee().as_ref(), authority_name)
     }
 
-    pub fn get_weighted_threshold_access_structure(
+    pub fn get_access_structure(
         &self,
     ) -> DwalletMPCResult<WeightedThresholdAccessStructure> {
         generate_access_structure_from_committee(self.committee().as_ref())

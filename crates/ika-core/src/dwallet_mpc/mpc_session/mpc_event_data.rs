@@ -12,7 +12,7 @@ use crate::dwallet_mpc::mpc_session::session_input_from_event;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 
 /// The DWallet MPC session data that is based on the event that initiated the session.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct MPCEventData {
     pub private_input: MPCPrivateInput,
     pub request_input: MPCRequestInput,
@@ -83,5 +83,24 @@ impl MPCEventData {
         };
 
         Ok(mpc_event_data)
+    }
+}
+
+impl PartialOrd<Self> for MPCEventData {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for MPCEventData {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // System sessions have a higher priority than user session.
+        // Both system and user sessions are sorted by their sequence number between themselves.
+        match (self.session_type, other.session_type) {
+            (SessionType::User, SessionType::User) => self.session_sequence_number.cmp(&other.session_sequence_number),
+            (SessionType::System, SessionType::User) => Ordering::Greater,
+            (SessionType::System, SessionType::System) => self.session_sequence_number.cmp(&other.session_sequence_number),
+            (SessionType::User, SessionType::System,) => Ordering::Less,
+        }
     }
 }

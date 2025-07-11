@@ -241,7 +241,7 @@ impl DWalletMPCManager {
 
         let mpc_event_data = match MPCEventData::try_new(
             event.clone(),
-            &self.weighted_threshold_access_structure,
+            &self.access_structure,
             &self.committee,
             &self.network_keys,
             self.next_active_committee.clone(),
