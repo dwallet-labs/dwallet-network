@@ -118,7 +118,7 @@ impl CryptographicComputationsOrchestrator {
         self.currently_running_sessions_count < self.available_cores_for_cryptographic_computations
     }
 
-    pub(super) async fn try_spawn_session(
+    pub(super) fn try_spawn_session(
         &mut self,
         session: &DWalletMPCSession,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,

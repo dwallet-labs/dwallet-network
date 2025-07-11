@@ -128,7 +128,7 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub(crate) fn must_create_dwallet_mpc_manager(
+    pub(crate) fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
@@ -231,18 +231,17 @@ impl DWalletMPCManager {
         previous_value_for_last_session_to_complete_in_current_epoch: u64,
     ) {
         if previous_value_for_last_session_to_complete_in_current_epoch
-            <= self.last_session_to_complete_in_current_epoch
+            > self.last_session_to_complete_in_current_epoch
         {
-            return;
+            self.last_session_to_complete_in_current_epoch =
+                previous_value_for_last_session_to_complete_in_current_epoch;
         }
-        self.last_session_to_complete_in_current_epoch =
-            previous_value_for_last_session_to_complete_in_current_epoch;
     }
 
-    pub(crate) async fn handle_dwallet_db_message(&mut self, message: DWalletMPCDBMessage) {
+    pub(crate) fn handle_dwallet_db_message(&mut self, message: &DWalletMPCDBMessage) {
         match message {
             DWalletMPCDBMessage::PerformCryptographicComputations => {
-                self.perform_cryptographic_computation().await;
+                self.perform_cryptographic_computation();
             }
             DWalletMPCDBMessage::Message(message) => {
                 if let Err(err) = self.handle_message(message.clone()) {
@@ -264,7 +263,7 @@ impl DWalletMPCManager {
                 // TODO (#524): Handle failed MPC sessions
             }
             DWalletMPCDBMessage::MaliciousReport(authority_name, report) => {
-                if let Err(err) = self.handle_malicious_report(authority_name, report) {
+                if let Err(err) = self.handle_malicious_report(*authority_name, report.clone()) {
                     error!(
                         ?err,
                         "dWallet MPC session failed with malicious parties with error",
@@ -272,7 +271,9 @@ impl DWalletMPCManager {
                 }
             }
             DWalletMPCDBMessage::ThresholdNotReachedReport(authority, report) => {
-                if let Err(err) = self.handle_threshold_not_reached_report(report, authority) {
+                if let Err(err) =
+                    self.handle_threshold_not_reached_report(report.clone(), *authority)
+                {
                     error!(
                         ?err,
                         "dWallet MPC session failed — threshold not reached with error",
@@ -282,7 +283,7 @@ impl DWalletMPCManager {
         }
     }
 
-    pub(crate) async fn handle_dwallet_db_output(
+    pub(crate) fn handle_dwallet_db_output(
         &mut self,
         output: &DWalletMPCOutputMessage,
     ) -> IkaResult<OutputVerificationResult> {
@@ -475,7 +476,7 @@ impl DWalletMPCManager {
 
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
-    pub(crate) async fn perform_cryptographic_computation(&mut self) {
+    pub(crate) fn perform_cryptographic_computation(&mut self) {
         let pending_for_computation = self.ordered_sessions_pending_for_computation.len();
         for _ in 0..pending_for_computation {
             // Safe to unwrap, as we just checked that the queue is not empty.
@@ -514,7 +515,6 @@ impl DWalletMPCManager {
             if let Err(err) = self
                 .cryptographic_computations_orchestrator
                 .try_spawn_session(&oldest_pending_session, self.dwallet_mpc_metrics.clone())
-                .await
             {
                 self.ordered_sessions_pending_for_computation
                     .push_front(oldest_pending_session.clone());

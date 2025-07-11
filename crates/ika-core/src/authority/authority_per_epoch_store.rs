@@ -73,11 +73,10 @@ use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use prometheus::IntCounter;
-use sui_types::executable_transaction::TrustedExecutableTransaction;
 use tap::TapOptional;
 use tokio::time::Instant;
-use typed_store::DBMapUtils;
 use typed_store::Map;
+use typed_store::{DBMapUtils, DbIterator};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -293,18 +292,6 @@ pub enum ReconfigCertStatus {
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
 #[derive(DBMapUtils)]
 pub struct AuthorityEpochTables {
-    /// Certificates that have been received from clients or received from consensus, but not yet
-    /// executed. Entries are cleared after execution.
-    /// This table is critical for crash recovery, because usually the consensus output progress
-    /// is updated after a certificate is committed into this table.
-    ///
-    /// In theory, this table may be superseded by storing consensus and checkpoint execution
-    /// progress. But it is more complex, because it would be necessary to track inflight
-    /// executions not ordered by indices. For now, tracking inflight certificates as a map
-    /// seems easier.
-    #[default_options_override_fn = "pending_execution_table_default_config"]
-    pub(crate) pending_execution: DBMap<MessageDigest, TrustedExecutableTransaction>,
-
     /// Track which transactions have been processed in handle_consensus_transaction. We must be
     /// sure to advance next_shared_object_versions exactly once for each transaction we receive from
     /// consensus. But, we may also be processing transactions from checkpoints, so we need to
@@ -379,23 +366,9 @@ pub struct AuthorityEpochTables {
     /// The key is the consensus round number,
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
-    pub(crate) dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCDBMessage>>,
-    pub(crate) dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutputMessage>>,
-    pub(crate) dwallet_mpc_completed_sessions: DBMap<Round, Vec<SessionIdentifier>>,
-}
-
-// todo(zeev): why is it not used?
-#[allow(dead_code)]
-fn signed_transactions_table_default_config() -> DBOptions {
-    default_db_options()
-        .optimize_for_write_throughput()
-        .optimize_for_large_values_no_scan(1 << 10)
-}
-
-fn pending_execution_table_default_config() -> DBOptions {
-    default_db_options()
-        .optimize_for_write_throughput()
-        .optimize_for_large_values_no_scan(1 << 10)
+    dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCDBMessage>>,
+    dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutputMessage>>,
+    dwallet_mpc_completed_sessions: DBMap<Round, Vec<SessionIdentifier>>,
 }
 
 fn pending_consensus_transactions_table_default_config() -> DBOptions {
@@ -452,33 +425,34 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_verified_dwallet_checkpoint_messages(
+    pub fn get_dwallet_mpc_completed_sessions_iter(
         &self,
-        round: Round,
-    ) -> IkaResult<Option<Vec<DWalletCheckpointMessageKind>>> {
-        Ok(self.verified_dwallet_checkpoint_messages.get(&round)?)
+    ) -> DbIterator<(Round, Vec<SessionIdentifier>)> {
+        self.dwallet_mpc_completed_sessions.safe_iter()
     }
 
-    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
-        Ok(self
-            .dwallet_mpc_messages
-            .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+    pub fn get_dwallet_mpc_messages_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletMPCDBMessage>)> {
+        self.dwallet_mpc_messages
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
 
-    pub fn get_all_dwallet_mpc_outputs(&self) -> IkaResult<Vec<DWalletMPCOutputMessage>> {
-        Ok(self
-            .dwallet_mpc_outputs
-            .safe_iter()
-            .map(|item| item.map(|(_k, v)| v))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+    pub fn get_dwallet_mpc_outputs_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletMPCOutputMessage>)> {
+        self.dwallet_mpc_outputs
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
+    }
+
+    pub fn get_verified_dwallet_checkpoint_messages_iter(
+        &self,
+        next_consensus_round: Round,
+    ) -> DbIterator<(Round, Vec<DWalletCheckpointMessageKind>)> {
+        self.verified_dwallet_checkpoint_messages
+            .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
 }
 
@@ -683,28 +657,6 @@ impl AuthorityPerEpochStore {
         }
     }
 
-    /// Called when transaction outputs are committed to disk
-    #[instrument(level = "trace", skip_all)]
-    pub fn handle_committed_transactions(&self, digests: &[MessageDigest]) -> IkaResult<()> {
-        let tables = match self.tables() {
-            Ok(tables) => tables,
-            // After Epoch ends, it is no longer necessary to remove pending transactions
-            // because the table will not be used anymore and be deleted eventually.
-            Err(IkaError::EpochEnded(_)) => return Ok(()),
-            Err(e) => return Err(e),
-        };
-        let mut batch = tables.pending_execution.batch();
-        // pending_execution stores transactions received from consensus which may not have
-        // been executed yet. At this point, they have been committed to the db durably and
-        // can be removed.
-        // After end-to-end quarantining, we will not need pending_execution since the consensus
-        // log itself will be used for recovery.
-        batch.delete_batch(&tables.pending_execution, digests)?;
-
-        batch.write()?;
-        Ok(())
-    }
-
     pub fn get_all_pending_consensus_transactions(&self) -> Vec<ConsensusTransaction> {
         // The except() here is on purpose, because the epoch can't run without it.
         self.tables()
@@ -848,18 +800,6 @@ impl AuthorityPerEpochStore {
             .dwallet_mpc_completed_sessions
             .insert(round, session_identifiers)?;
         Ok(())
-    }
-
-    pub fn get_all_dwallet_mpc_completed_sessions(&self) -> IkaResult<Vec<SessionIdentifier>> {
-        Ok(self
-            .tables()?
-            .dwallet_mpc_completed_sessions
-            .safe_iter()
-            .map(|item| item.map(|(_, v)| v))
-            .collect::<Result<Vec<Vec<_>>, _>>()?
-            .into_iter()
-            .flatten()
-            .collect())
     }
 
     pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
@@ -1815,16 +1755,6 @@ impl AuthorityPerEpochStore {
             .insert(&(system_checkpoint_seq, index), info)?)
     }
 
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    pub(crate) fn record_epoch_pending_certs_process_time_metric(&self) {
-        if let Some(epoch_close_time) = *self.epoch_close_time.read() {
-            self.metrics
-                .epoch_pending_certs_processed_time_since_epoch_close_ms
-                .set(epoch_close_time.elapsed().as_millis() as i64);
-        }
-    }
-
     pub fn record_epoch_reconfig_start_time_metric(&self) {
         if let Some(epoch_close_time) = *self.epoch_close_time.read() {
             self.metrics
@@ -1863,8 +1793,6 @@ impl AuthorityPerEpochStore {
 
 #[derive(Default)]
 pub(crate) struct ConsensusCommitOutput {
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
     // Consensus and reconfig state
     consensus_round: Round,
     consensus_messages_processed: BTreeSet<SequencedConsensusTransactionKey>,
