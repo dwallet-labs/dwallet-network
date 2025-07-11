@@ -74,7 +74,7 @@ pub(crate) struct DWalletMPCSession {
 
     /// A map between an MPC round and the list of consensus rounds at which we tried to advance and failed.
     /// The total number of attempts to advance that failed in the session can be computed by summing the number of failed attempts.
-    pub(crate) mpc_round_to_threshold_not_reached_consensus_rounds: HashMap<usize, Vec<u64>>,
+    pub(crate) mpc_round_to_threshold_not_reached_consensus_rounds: HashMap<usize, HashSet<u64>>,
 
     pub(crate) mpc_event_data: Option<MPCEventData>,
 
@@ -126,60 +126,6 @@ impl DWalletMPCSession {
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
         self.messages_by_consensus_round = HashMap::new();
-    }
-
-    /// Create a new consensus transaction with the flow result (output) to be
-    /// sent to the other MPC parties.
-    /// Errors if the epoch was switched in the middle and was not available.
-    fn new_dwallet_mpc_output_message(
-        &self,
-        output: MPCSessionPublicOutput,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
-        let output = bcs::to_bytes(&output)?;
-        let Some(mpc_event_data) = &self.mpc_event_data else {
-            return Err(DwalletMPCError::MissingEventDrivenData);
-        };
-        Ok(ConsensusTransaction::new_dwallet_mpc_output(
-            self.validator_name,
-            output,
-            MPCSessionRequest {
-                session_type: mpc_event_data.session_type.clone(),
-                session_identifier: self.session_identifier,
-                session_sequence_number: mpc_event_data.session_sequence_number,
-                request_input: mpc_event_data.request_input.clone(),
-                epoch: self.epoch_id,
-                requires_network_key_data: mpc_event_data.requires_network_key_data,
-                requires_next_active_committee: mpc_event_data.requires_next_active_committee,
-            },
-        ))
-    }
-
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    /// Returns Error only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(
-        &self,
-        message: MPCMessage,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
-        // MPC event data can not be none, when sending a message.
-        let Some(mpc_event_data) = &self.mpc_event_data else {
-            return Err(DwalletMPCError::MissingEventDrivenData);
-        };
-        let session_request = MPCSessionRequest {
-            session_type: mpc_event_data.session_type.clone(),
-            request_input: mpc_event_data.request_input.clone(),
-            epoch: self.epoch_id,
-            session_identifier: self.session_identifier,
-            session_sequence_number: mpc_event_data.session_sequence_number,
-            requires_network_key_data: mpc_event_data.requires_network_key_data,
-            requires_next_active_committee: mpc_event_data.requires_next_active_committee,
-        };
-        Ok(ConsensusTransaction::new_dwallet_mpc_message(
-            self.validator_name,
-            message,
-            self.session_identifier,
-            self.current_mpc_round,
-            session_request,
-        ))
     }
 
     /// Stores an incoming message.
@@ -287,14 +233,14 @@ impl DWalletMPCSession {
     // TODO(Scaly): unit test
     pub(crate) fn get_messages_to_advance(
         &self,
-    ) -> Option<HashMap<usize, HashMap<PartyID, MPCMessage>>> {
+    ) -> Option<(Option<u64>, HashMap<usize, HashMap<PartyID, MPCMessage>>)> {
         if self.mpc_event_data.is_none() {
             // Cannot advance a session before the MPC event requesting it was received.
             return None;
         }
         if self.current_mpc_round == 1 {
             // The first round needs no messages as input, and is always ready to advance.
-            return Some(HashMap::new());
+            return Some((None, HashMap::new()));
         }
 
         let threshold_not_reached_consensus_rounds = self
@@ -362,7 +308,7 @@ impl DWalletMPCSession {
                     // we delayed the execution as and if required,
                     // and we know we haven't tried to advance the current MPC round with this set of messages so we have a chance at advancing (and reaching threshold):
                     // Let's try advancing with this set of messages!
-                    return Some(messages_for_advance);
+                    return Some((Some(consensus_round), messages_for_advance));
                 }
             }
         }
@@ -384,5 +330,22 @@ impl DWalletMPCSession {
         let threshold_not_reached_count = threshold_not_reached_consensus_rounds.len();
 
         threshold_not_reached_count + 1
+    }
+
+    pub(crate) fn record_threshold_not_reached(&mut self, consensus_round: u64) {
+        let request_input = &self.mpc_event_data.as_ref().unwrap().request_input;
+
+        warn!(
+            mpc_protocol=?request_input,
+            validator=?self.validator_name,
+            session_identifier=?self.session_identifier,
+            mpc_round=?self.current_mpc_round,
+            "Recording threshold not reached for session"
+        );
+
+        self.mpc_round_to_threshold_not_reached_consensus_rounds
+            .entry(self.current_mpc_round)
+            .or_default()
+            .insert(consensus_round);
     }
 }

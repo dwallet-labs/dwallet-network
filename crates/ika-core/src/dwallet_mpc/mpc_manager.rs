@@ -4,12 +4,9 @@ use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::malicious_handler::MaliciousHandler;
-use crate::dwallet_mpc::mpc_protocols::network_dkg::{
-    DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData,
-};
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
+use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
     get_validators_class_groups_public_keys_and_proofs, party_ids_to_authority_names,
@@ -37,7 +34,7 @@ use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
@@ -54,12 +51,11 @@ use tracing::{debug, error, info, warn};
 /// Ensuring it is destroyed when the epoch ends and providing a clean slate for each new epoch.
 pub(crate) struct DWalletMPCManager {
     /// The party ID of the current authority. Based on the authority index in the committee.
-    party_id: PartyID,
+    pub(crate) party_id: PartyID,
     /// A map of all MPC sessions that start execution in this epoch.
     /// These include completed sessions, and they are never to be removed from this
     /// mapping until the epoch advances.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
-    consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(crate) epoch_id: EpochId,
     validator_name: AuthorityPublicKeyBytes,
     pub(crate) committee: Arc<Committee>,
@@ -67,14 +63,14 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) validators_class_groups_public_keys_and_proofs:
         HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
     pub(crate) cryptographic_computations_orchestrator: CryptographicComputationsOrchestrator,
-    /// A struct for managing malicious actors in MPC protocols.
-    /// This struct maintains a record of malicious actors reported by validators.
-    /// An actor is deemed malicious if it is reported by a quorum of validators.
+
+    /// The set of malicious actors that were agreed upon by a quorum of validators.
+    /// This agreement is done synchronically, and thus is it safe to filter malicious actors.
     /// Any message/output from these authorities will be ignored.
     /// This list is maintained during the Epoch.
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
-    pub(crate) malicious_handler: MaliciousHandler,
+    malicious_actors: HashSet<AuthorityName>,
 
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
@@ -113,7 +109,6 @@ struct ReadySessionsResponse {
 
 impl DWalletMPCManager {
     pub(crate) fn must_create_dwallet_mpc_manager(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
@@ -125,7 +120,6 @@ impl DWalletMPCManager {
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self::try_new(
-            consensus_adapter.clone(),
             validator_name,
             committee,
             epoch_id,
@@ -144,7 +138,6 @@ impl DWalletMPCManager {
     }
 
     pub fn try_new(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
@@ -193,17 +186,15 @@ impl DWalletMPCManager {
 
         // Re-initialize the malicious handler every epoch. This is done intentionally:
         // We want to "forget" the malicious actors from the previous epoch and start from scratch.
-        let malicious_handler = MaliciousHandler::new(committee.clone());
         Ok(Self {
             mpc_sessions: HashMap::new(),
-            consensus_adapter,
             party_id: authority_name_to_party_id_from_committee(&committee, &validator_name)?,
             epoch_id,
             access_structure,
             validators_class_groups_public_keys_and_proofs:
                 get_validators_class_groups_public_keys_and_proofs(&committee)?,
             cryptographic_computations_orchestrator: mpc_computations_orchestrator,
-            malicious_handler,
+            malicious_actors: HashSet::new(),
             last_session_to_complete_in_current_epoch: 0,
             recognized_self_as_malicious: false,
             network_keys: Box::new(dwallet_network_keys),
@@ -272,33 +263,6 @@ impl DWalletMPCManager {
         // TODO(Scaly): set the message to advance here or no?
     }
 
-    // TODO(Scaly): delete, move recognize selves elsewhere
-    /// Handle an incoming malicious `report` from `reporting_authority`,
-    /// and recognize ourselves as malicious in the case of a bug.
-    fn handle_malicious_report(
-        &mut self,
-        reporting_authority: AuthorityName,
-        report: MaliciousReport,
-    ) {
-        self.malicious_handler
-            .report_malicious_actor(report.clone(), reporting_authority);
-
-        if self
-            .malicious_handler
-            .is_malicious_actor(&self.validator_name)
-        {
-            self.recognized_self_as_malicious = true;
-
-            error!(
-                authority=?self.validator_name,
-                reporting_authority=?reporting_authority,
-                malicious_actors=?report.malicious_actors,
-                session_identifier=?report.session_identifier,
-                "node recognized itself as malicious"
-            );
-        }
-    }
-
     /// Spawns all ready MPC cryptographic computations using Rayon.
     /// If no local CPUs are available, computations will execute as CPUs are freed.
     pub(crate) async fn perform_cryptographic_computation(
@@ -344,7 +308,7 @@ impl DWalletMPCManager {
             .flat_map(|(&session_identifier, session)| {
                 session
                     .get_messages_to_advance()
-                    .map(|messages_for_advance| {
+                    .map(|(consensus_round, messages_for_advance)| {
                         let attempt_number = session.get_attempt_number();
 
                         // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
@@ -352,6 +316,7 @@ impl DWalletMPCManager {
 
                         let computation_id = ComputationId {
                             session_identifier,
+                            consensus_round,
                             mpc_round: session.current_mpc_round,
                             attempt_number,
                         };
@@ -432,8 +397,7 @@ impl DWalletMPCManager {
             "Received an MPC message for session with contents",
         );
 
-        // TODO(Scaly): remove `malicious_handler`
-        if self.malicious_handler.is_malicious_actor(&sender_authority) {
+        if self.is_malicious_actor(&sender_authority) {
             info!(
                 session_identifier=?session_identifier,
                 sender_authority=?sender_authority,
@@ -466,24 +430,6 @@ impl DWalletMPCManager {
         };
 
         session.store_message(consensus_round, sender_party_id, message);
-    }
-
-    /// Convert the indices of the malicious parties to their addresses and store them
-    /// in the malicious actors set.
-    /// New messages from these parties will be ignored.
-    /// Restarted for each epoch.
-    fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) {
-        // TODO(Scaly): why is this a different flow? why here
-
-        let malicious_parties_names =
-            party_ids_to_authority_names(malicious_parties, &self.committee);
-        warn!(
-            "dWallet MPC flagged the following parties as malicious: {:?}",
-            malicious_parties_names
-        );
-
-        self.malicious_handler
-            .report_malicious_actors(&malicious_parties_names);
     }
 
     /// Creates a new session with SID `session_identifier`,
@@ -594,6 +540,34 @@ impl DWalletMPCManager {
 
                 vec![]
             }
+        }
+    }
+
+    pub(crate) fn record_threshold_not_reached(
+        &mut self,
+        consensus_round: u64,
+        session_identifier: SessionIdentifier,
+    ) {
+        if let Some(session) = self.mpc_sessions.get_mut(&session_identifier) {
+            session.record_threshold_not_reached(consensus_round)
+        }
+    }
+
+    pub(crate) fn is_malicious_actor(&self, authority: &AuthorityName) -> bool {
+        self.malicious_actors.contains(authority)
+    }
+
+    /// Records malicious actors that were identified as part of the execution of an MPC session.
+    pub(crate) fn record_malicious_actors(&mut self, authorities: &[AuthorityName]) {
+        self.malicious_actors.extend(authorities);
+
+        if self.is_malicious_actor(&self.validator_name) {
+            self.recognized_self_as_malicious = true;
+
+            error!(
+                authority=?self.validator_name,
+                "node recognized itself as malicious"
+            );
         }
     }
 }

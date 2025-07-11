@@ -77,6 +77,9 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// Used to prevent exceeding available CPU cores.
     currently_running_cryptographic_computations: HashSet<ComputationId>,
 
+    /// The list of completed cryptographic computations in the current epoch. TODO(Scaly): after crash, it will be empty. Do we need bootstrap?
+    completed_cryptographic_computations: HashSet<ComputationId>,
+
     /// The root seed of this validator, used for deriving the per-round seed for advancing this session.
     /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
     root_seed: RootSeed,
@@ -114,6 +117,7 @@ impl CryptographicComputationsOrchestrator {
             completed_computation_sender: report_computation_completed_sender,
             completed_computation_receiver: report_computation_completed_receiver,
             currently_running_cryptographic_computations: HashSet::new(),
+            completed_cryptographic_computations: HashSet::new(),
             root_seed,
         })
     }
@@ -135,6 +139,9 @@ impl CryptographicComputationsOrchestrator {
         while let Ok(computation_update) = self.completed_computation_receiver.try_recv() {
             self.currently_running_cryptographic_computations
                 .remove(&computation_update.computation_id);
+            self.completed_cryptographic_computations
+                .insert(computation_update.computation_id);
+
             completed_computation_results.insert(
                 computation_update.computation_id,
                 computation_update.computation_result,
@@ -161,16 +168,14 @@ impl CryptographicComputationsOrchestrator {
     /// Try to spawn a cryptographic `computation_request` to execute in a different thread,
     /// if a CPU core is available for it.
     ///
-    /// Return `true` if the request is executing (whether it is newly executing or was already running),
-    /// and `false` if no cores were available to execute it.
+    /// Return `false` if no cores were available to execute it, and `true` otherwise
+    /// (which might mean we spawned it, or we already spawned it in the past.)
     pub(crate) async fn try_spawn_cryptographic_computation(
         &mut self,
         computation_id: ComputationId,
         computation_request: ComputationRequest,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> bool {
-        // TODO: save the outputs, add getter.
-
         if !self.has_available_cores_to_perform_computation() {
             info!(
                 session_id=?computation_id.session_identifier,
@@ -186,15 +191,16 @@ impl CryptographicComputationsOrchestrator {
         if self
             .currently_running_cryptographic_computations
             .contains(&computation_id)
+            || self
+                .completed_cryptographic_computations
+                .contains(&computation_id)
         {
-            // Don't run a task that's already running.
-            // Return `true` to signal that this task is executing, we haven't failed spawning it.
+            // Don't run a task that we already spawned.
             return true;
         }
 
         let handle = Handle::current();
 
-        // TODO(Scaly): `dwallet_mpc_metrics` is Arc, how can we write to it?
         dwallet_mpc_metrics.add_advance_call(
             &computation_request.request_input,
             &computation_id.mpc_round.to_string(),
@@ -245,7 +251,6 @@ impl CryptographicComputationsOrchestrator {
                 );
             }
 
-            // TODO(Scaly): why is this from handle?
             handle.spawn(async move {
                 if let Err(err) = computation_channel_sender
                     .send(ComputationCompletionUpdate {

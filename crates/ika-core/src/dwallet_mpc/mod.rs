@@ -13,7 +13,6 @@ use sui_types::base_types::EpochId;
 use tracing::error;
 
 pub mod dwallet_mpc_service;
-mod malicious_handler;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
@@ -21,11 +20,11 @@ pub mod mpc_session;
 mod crytographic_computation;
 pub mod dwallet_mpc_metrics;
 mod mpc_event;
-mod mpc_protocols;
-mod native_computations;
 
-pub(crate) use mpc_protocols::{dwallet_dkg, network_dkg, presign, reconfiguration, sign};
-pub(crate) use native_computations::{
+pub(crate) use crytographic_computation::mpc_computations::{
+    dwallet_dkg, network_dkg, presign, reconfiguration, sign,
+};
+pub(crate) use crytographic_computation::native_computations::{
     encrypt_user_share, make_dwallet_user_secret_key_shares_public,
 };
 

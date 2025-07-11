@@ -25,6 +25,7 @@ use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, EncryptedShareVerificationRequestEvent, MPCRequestInput, SessionIdentifier,
+    SessionType,
 };
 use itertools::Itertools;
 use message_digest::message_digest::message_digest;
@@ -37,7 +38,8 @@ use sui_types::base_types::ObjectID;
 use tracing::{error, info, warn};
 use twopc_mpc::sign::Protocol;
 
-mod mpc_computations;
+pub(super) mod mpc_computations;
+pub(super) mod native_computations;
 mod orchestrator;
 
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
@@ -48,11 +50,16 @@ pub(crate) use orchestrator::CryptographicComputationsOrchestrator;
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub(crate) struct ComputationId {
     pub(crate) session_identifier: SessionIdentifier,
+    /// The consensus round at which this computation executed, if it is synced with the consensus.
+    /// The first MPC round will be `None`, since it isn't synced - it is launched when the event is received from Sui.
+    /// All other MPC rounds will set this to `Some()` with the value being the last consensus round from which we gathered messages to advance.
+    pub(crate) consensus_round: Option<u64>,
     pub(crate) mpc_round: usize,
     pub(crate) attempt_number: usize,
 }
 
-// TODO: move to file, together with the function
+// TODO(Scaly): decouple from mpc, also create result.
+
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct ComputationRequest {
     pub(crate) party_id: PartyID,
@@ -93,7 +100,7 @@ impl ComputationRequest {
             mpc_protocol=?self.request_input,
             validator=?self.validator_name,
             session_identifier=?computation_id.session_identifier,
-            crypto_round=?computation_id.mpc_round,
+            mpc_round=?computation_id.mpc_round,
             access_structure=?self.access_structure,
             ?messages_skeleton,
             "Advancing MPC session"
@@ -128,7 +135,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -194,7 +201,7 @@ impl ComputationRequest {
                     mpc_protocol=?self.request_input,
                     validator=?self.validator_name,
                     session_identifier=?computation_id.session_identifier,
-                    crypto_round=?computation_id.mpc_round,
+                    mpc_round=?computation_id.mpc_round,
                     "Advancing DKG first party",
                 );
                 let PublicInput::DKGFirst(public_input) = &self.public_input else {
@@ -203,7 +210,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -246,7 +253,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -316,7 +323,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -367,7 +374,7 @@ impl ComputationRequest {
                             mpc_protocol=?self.request_input,
                             validator=?self.validator_name,
                             session_identifier=?computation_id.session_identifier,
-                            crypto_round=?computation_id.mpc_round,
+                            mpc_round=?computation_id.mpc_round,
                             access_structure=?self.access_structure,
                             ?messages_skeleton,
                             "session public input does not match the session type"
@@ -420,7 +427,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "no decryption key shares for a session that requires them (sign)"
@@ -455,7 +462,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -486,7 +493,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -516,7 +523,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -568,7 +575,7 @@ impl ComputationRequest {
                     mpc_protocol=?self.request_input,
                     validator=?self.validator_name,
                     session_identifier=?computation_id.session_identifier,
-                    crypto_round=?computation_id.mpc_round,
+                    mpc_round=?computation_id.mpc_round,
                     access_structure=?self.access_structure,
                     ?messages_skeleton,
                     "no decryption key shares for a session that requires them (reconfiguration)"
@@ -586,7 +593,7 @@ impl ComputationRequest {
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
-                        crypto_round=?computation_id.mpc_round,
+                        mpc_round=?computation_id.mpc_round,
                         access_structure=?self.access_structure,
                         ?messages_skeleton,
                         "session public input does not match the session type"
@@ -608,7 +615,7 @@ impl ComputationRequest {
                             ?err,
                             session_identifier=?computation_id.session_identifier,
                             validator=?self.validator_name,
-                            crypto_round=?computation_id.mpc_round,
+                            mpc_round=?computation_id.mpc_round,
                             "failed to verify secret share"
                         );
                         Err(DwalletMPCError::DWalletSecretNotMatchedDWalletOutput)

@@ -28,6 +28,12 @@ use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use tracing::{error, info, warn};
 
+pub(crate) mod dwallet_dkg;
+pub(crate) mod network_dkg;
+pub(crate) mod presign;
+pub(crate) mod reconfiguration;
+pub(crate) mod sign;
+
 /// Advances the state of an MPC party and serializes the result into bytes.
 ///
 /// This helper function wraps around a party `P`'s `advance()` method,
@@ -112,159 +118,6 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         }
     })
 }
-
-// // TODO: move this, should be done by the MPC service
-// impl DWalletMPCSession {
-//     /// Advances the MPC session and sends the advancement result to the other validators.
-//     /// The consensus submission logic is being spawned as a separate tokio task, as it's an IO
-//     /// heavy task.
-//     /// Rayon, which is good for CPU heavy tasks, is used to perform the cryptographic
-//     /// computation, and Tokio, which is good for IO heavy tasks, is used to submit the result to
-//     /// the consensus.
-//     pub(super) fn advance(&mut self, tokio_runtime_handle: &Handle) -> DwalletMPCResult<()> {
-//         // TODO: no handle I think.
-//
-//         // Make sure we transfer only the messages up to the current round
-//         // (exclude messages that might be received from future rounds)
-//         self.messages_by_consensus_round
-//             .retain(|round, _| round < &self.current_mpc_round);
-//         // Safe to unwrap as advance can only be called after the event is received.
-//         let mpc_protocol = self.mpc_event_data.clone().unwrap().request_input;
-//         match self.advance_specific_party() {
-//             Ok(AsynchronousRoundResult::Advance {
-//                    malicious_parties,
-//                    message,
-//                }) => {
-//                 let session_id = self.session_identifier;
-//                 let round_number = self.messages_by_consensus_round.len();
-//                 info!(
-//                     mpc_protocol=?mpc_protocol,
-//                     session_id=?session_id,
-//                     validator=?self.validator_name,
-//                     round=?round_number,
-//                     "Advanced MPC session"
-//                 );
-//                 let consensus_adapter = self.consensus_adapter.clone();
-//                 if !malicious_parties.is_empty() {
-//                     self.report_malicious_actors(malicious_parties, &self.committee)?;
-//                 }
-//                 let message = self.new_dwallet_mpc_message(message)?;
-//
-//                 // TODO: not from here! send in channel
-//                 // tokio_runtime_handle.spawn(async move {
-//                 //     if let Err(err) = consensus_adapter
-//                 //         .submit_to_consensus(&[message], &epoch_store)
-//                 //         .await
-//                 //     {
-//                 //         error!(
-//                 //             mpc_protocol=?mpc_protocol,
-//                 //             session_id=?session_id,
-//                 //             validator=?validator_name,
-//                 //             round=?round_number,
-//                 //             err=?err,
-//                 //             "failed to submit an MPC message to consensus"
-//                 //         );
-//                 //     }
-//                 // });
-//
-//                 Ok(())
-//             }
-//             Ok(AsynchronousRoundResult::Finalize {
-//                    malicious_parties,
-//                    private_output: _,
-//                    public_output,
-//                }) => {
-//                 info!(
-//                     mpc_protocol=?&mpc_protocol,
-//                     session_identifier=?self.session_identifier,
-//                     validator=?&self.validator_name,
-//                     "Reached public output (Finalize) for session"
-//                 );
-//                 let consensus_adapter = self.consensus_adapter.clone();
-//                 if !malicious_parties.is_empty() {
-//                     warn!(
-//                         mpc_protocol=?&mpc_protocol,
-//                         session_identifier=?self.session_identifier,
-//                         validator=?&self.validator_name,
-//                         ?malicious_parties,
-//                         "Malicious Parties detected on MPC session Finalize",
-//                     );
-//                     self.report_malicious_actors(malicious_parties, &self.committee)?;
-//                 }
-//                 let consensus_message = self.new_dwallet_mpc_output_message(
-//                     MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
-//                 )?;
-//                 let session_id_clone = self.session_identifier;
-//
-//                 // TODO: not from here!
-//                 // tokio_runtime_handle.spawn(async move {
-//                 //     if let Err(err) = consensus_adapter
-//                 //         .submit_to_consensus(&[consensus_message], &epoch_store)
-//                 //         .await
-//                 //     {
-//                 //         error!(
-//                 //             mpc_protocol=?mpc_protocol,
-//                 //             session_id=?session_id_clone,
-//                 //             validator=?validator_name,
-//                 //             err=?err,
-//                 //             "failed to submit an MPC output message to consensus",
-//                 //         );
-//                 //     }
-//                 // });
-//
-//                 Ok(())
-//             }
-//             Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
-//                 error!(
-//                     err=?DwalletMPCError::TWOPCMPCThresholdNotReached,
-//                     session_identifier=?self.session_identifier,
-//                     validator=?self.validator_name,
-//                     crypto_round=?self.current_mpc_round,
-//                     party_id=?self.party_id,
-//                     mpc_protocol=?&mpc_protocol,
-//                     "MPC session failed"
-//                 );
-//                 // self.report_threshold_not_reached(tokio_runtime_handle)
-//             }
-//             Err(err) => {
-//                 error!(
-//                     session_identifier=?self.session_identifier,
-//                     validator=?self.validator_name,
-//                     crypto_round=?self.current_mpc_round,
-//                     party_id=?self.party_id,
-//                     error=?err,
-//                     mpc_protocol=?mpc_protocol,
-//                     epoch=?self.epoch_id,
-//                     "failed to advance the MPC session"
-//                 );
-//
-//                 let consensus_adapter = self.consensus_adapter.clone();
-//                 let consensus_message =
-//                     self.new_dwallet_mpc_output_message(MPCSessionPublicOutput::SessionFailed)?;
-//                 let session_id_clone = self.session_identifier;
-//                 let epoch_id_clone = self.epoch_id;
-//
-//                 // TODO(Scaly): what is this code
-//                 // tokio_runtime_handle.spawn(async move {
-//                 //     if let Err(err) = consensus_adapter
-//                 //         .submit_to_consensus(&[consensus_message], &epoch_store)
-//                 //         .await
-//                 //     {
-//                 //         error!(
-//                 //             mpc_protocol=?&mpc_protocol,
-//                 //             session_id=?session_id_clone,
-//                 //             validator=?validator_name,
-//                 //             epoch=?epoch_id_clone,
-//                 //             error=?err,
-//                 //             "failed to submit an MPC SessionFailed message to consensus");
-//                 //     }
-//                 // });
-//
-//                 Err(err)
-//             }
-//         }
-//     }
-// }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
     /// round -> {party -> message}
