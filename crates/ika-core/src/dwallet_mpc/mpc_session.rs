@@ -416,15 +416,6 @@ impl DWalletMPCSession {
                 false
             };
 
-            if is_quorum_reached
-                && self.received_more_messages_since_last_advance
-                && self.agreed_mpc_protocol.is_some()
-            {
-                self.wait_consensus_rounds_delay()
-            } else {
-                false
-            }
-
             if is_quorum_reached {
                 if rounds_to_delay != 0 {
                     // Wait for the delay.
