@@ -1233,11 +1233,6 @@ where
             .ok_or_else(|| anyhow::anyhow!("no peers were able to help sync checkpoint {next}"))?;
 
         debug!(checkpoint_seq = ?checkpoint.sequence_number(), "verified checkpoint summary");
-        if let Some(checkpoint_summary_age_metric) =
-            metrics.dwallet_checkpoint_summary_age_metrics()
-        {
-            checkpoint.report_dwallet_checkpoint_age(checkpoint_summary_age_metric);
-        }
 
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
@@ -1589,11 +1584,6 @@ where
             })?;
 
         debug!(system_checkpoint_seq = ?system_checkpoint.sequence_number(), "verified system_checkpoint summary");
-        if let Some(system_checkpoint_summary_age_metric) =
-            metrics.system_checkpoint_summary_age_metrics()
-        {
-            system_checkpoint.report_system_checkpoint_age(system_checkpoint_summary_age_metric);
-        }
 
         current = Some(system_checkpoint.clone());
         // Insert the newly verified system_checkpoint into our store, which will bump our highest

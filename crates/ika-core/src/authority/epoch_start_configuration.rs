@@ -5,7 +5,6 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_checkpoint::DWalletCheckpointTimestamp;
 use ika_types::sui::epoch_start_system::{EpochStartSystem, EpochStartSystemTrait};
 
 #[enum_dispatch]
@@ -35,7 +34,7 @@ impl EpochStartConfiguration {
         }
     }
 
-    pub fn epoch_start_timestamp_ms(&self) -> DWalletCheckpointTimestamp {
+    pub fn epoch_start_timestamp_ms(&self) -> u64 {
         self.epoch_start_state().epoch_start_timestamp_ms()
     }
 }
