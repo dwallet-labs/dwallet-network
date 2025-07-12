@@ -126,6 +126,7 @@ impl MPCSessionLogger {
     }
 
     /// Writes MPC session logs to disk if logging is enabled
+    #[allow(dead_code)]
     pub fn write_output_to_disk(
         &self,
         session_id: CommitmentSizedNumber,

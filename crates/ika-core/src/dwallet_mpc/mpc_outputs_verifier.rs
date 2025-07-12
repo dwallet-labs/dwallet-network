@@ -6,19 +6,28 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::stake_aggregator::StakeAggregator;
-use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::SerializedWrappedMPCPublicOutput;
+use dwallet_mpc_types::dwallet_mpc::{
+    DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput, SerializedWrappedMPCPublicOutput,
+};
 use ika_types::crypto::AuthorityName;
-use ika_types::dwallet_mpc_error::DwalletMPCResult;
-use ika_types::error::IkaResult;
-use ika_types::messages_dwallet_mpc::{MPCSessionRequest, SessionIdentifier};
+use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::message::{
+    DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletCheckpointMessageKind,
+    DWalletImportedKeyVerificationOutput, EncryptedUserShareOutput, MPCNetworkDKGOutput,
+    MPCNetworkReconfigurationOutput, MakeDWalletUserSecretKeySharesPublicOutput,
+    PartialSignatureVerificationOutput, PresignOutput, SignOutput,
+};
+use ika_types::messages_dwallet_mpc::{
+    MPCRequestInput, MPCSessionRequest, SessionIdentifier, SessionType,
+};
+use itertools::Itertools;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use tokio::sync::mpsc;
-use tracing::{error, info};
+use tracing::info;
+
+const FIVE_KILO_BYTES: usize = 5 * 1024;
 
 /// Verify the DWallet MPC outputs.
 ///
@@ -28,7 +37,6 @@ use tracing::{error, info};
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each MPC session.
     mpc_sessions_outputs: HashMap<SessionIdentifier, SessionOutputsData>,
-    consensus_round_completed_sessions_sender: mpsc::UnboundedSender<SessionIdentifier>,
     dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
@@ -54,9 +62,9 @@ impl SessionOutputsData {
 /// The result of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
-#[derive(PartialOrd, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum OutputVerificationStatus {
-    FirstQuorumReached(SerializedWrappedMPCPublicOutput),
+    FirstQuorumReached(Vec<DWalletCheckpointMessageKind>),
     Malicious,
     /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
@@ -71,14 +79,10 @@ pub struct OutputVerificationResult {
 }
 
 impl DWalletMPCOutputsVerifier {
-    pub fn new(
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        consensus_round_completed_sessions_sender: mpsc::UnboundedSender<SessionIdentifier>,
-    ) -> Self {
+    pub fn new(dwallet_mpc_metrics: Arc<DWalletMPCMetrics>) -> Self {
         DWalletMPCOutputsVerifier {
             mpc_sessions_outputs: HashMap::new(),
             dwallet_mpc_metrics,
-            consensus_round_completed_sessions_sender,
         }
     }
 
@@ -144,19 +148,12 @@ impl DWalletMPCOutputsVerifier {
         {
             session_output_data.current_result = OutputVerificationStatus::AlreadyCommitted;
             session_output_data.clear_data();
-            if let Err(e) = self
-                .consensus_round_completed_sessions_sender
-                .send(session_request.session_identifier)
-            {
-                error!(
-                    error=?e,
-                    "error in sending completed session ID"
-                );
-            };
             let mpc_event_data = session_request.request_input.clone();
             self.dwallet_mpc_metrics.add_completion(&mpc_event_data);
             return Ok(OutputVerificationResult {
-                result: OutputVerificationStatus::FirstQuorumReached(output.to_owned()),
+                result: OutputVerificationStatus::FirstQuorumReached(
+                    self.process_dwallet_transaction(output.to_owned(), session_request.clone())?,
+                ),
                 malicious_actors: vec![],
             });
         }
@@ -166,41 +163,261 @@ impl DWalletMPCOutputsVerifier {
         })
     }
 
-    /// Syncs the [`DWalletMPCOutputsVerifier`] from the epoch start.
-    /// Fails only if the epoch switched in the middle of the state sync (in which case the process is exited and this struct would be re-initialized).
-    pub fn bootstrap_from_storage(&mut self, epoch_store: &AuthorityPerEpochStore) -> IkaResult {
-        info!("Bootstrapping MPC Outputs Verifier from Storage");
-        for output in epoch_store.tables()?.get_all_dwallet_mpc_outputs()? {
-            let party_to_authority_map = epoch_store.committee().party_to_authority_map();
-            let mpc_protocol_name = output.session_request.request_input.to_string();
-
-            // Create a base logger with common parameters.
-            let base_logger = MPCSessionLogger::new()
-                .with_protocol_name(mpc_protocol_name.clone())
-                .with_party_to_authority_map(party_to_authority_map.clone());
-            let session_identifier = CommitmentSizedNumber::from_le_slice(
-                &output.session_request.session_identifier.into_bytes(),
-            );
-            base_logger.write_output_to_disk(
-                session_identifier,
-                epoch_store.authority_name_to_party_id(&epoch_store.name)?,
-                epoch_store.authority_name_to_party_id(&output.authority)?,
-                &output.output,
-                &output.session_request,
-            );
-            if let Err(err) = self.try_verify_output(
-                &output.output,
-                &output.session_request,
-                output.authority,
-                epoch_store,
-            ) {
-                error!(
-                    "failed to verify output from session {:?} and party {:?}: {:?}",
-                    output.session_request.session_identifier, output.authority, err
+    fn process_dwallet_transaction(
+        &self,
+        output: Vec<u8>,
+        session_request: MPCSessionRequest,
+    ) -> DwalletMPCResult<Vec<DWalletCheckpointMessageKind>> {
+        info!(
+            mpc_protocol=?session_request.request_input,
+            session_identifier=?session_request.session_identifier,
+            "Creating session output message for checkpoint"
+        );
+        let (is_rejected, output) = match bcs::from_bytes(&output)? {
+            MPCSessionPublicOutput::CompletedSuccessfully(output) => (false, output),
+            MPCSessionPublicOutput::SessionFailed => (true, vec![]),
+        };
+        match &session_request.request_input {
+            MPCRequestInput::DKGFirst(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("DKGFirst round should be a user session");
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletDKGFirstRoundOutput(
+                    DKGFirstRoundOutput {
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                        output,
+                        session_sequence_number: request_input.session_sequence_number,
+                        rejected: is_rejected,
+                    },
                 );
+                Ok(vec![tx])
+            }
+            MPCRequestInput::DKGSecond(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("DKGSecond round should be a user session");
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletDKGSecondRoundOutput(
+                    DKGSecondRoundOutput {
+                        output,
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                        encrypted_secret_share_id: request_input
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec(),
+                        rejected: is_rejected,
+                        session_sequence_number: request_input.session_sequence_number,
+                    },
+                );
+                Ok(vec![tx])
+            }
+            MPCRequestInput::Presign(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("Presign round should be a user session");
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletPresign(PresignOutput {
+                    presign: output,
+                    dwallet_id: request_input.event_data.dwallet_id.map(|id| id.to_vec()),
+                    presign_id: request_input.event_data.presign_id.to_vec(),
+                    rejected: is_rejected,
+                    session_sequence_number: request_input.session_sequence_number,
+                });
+                Ok(vec![tx])
+            }
+            MPCRequestInput::Sign(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("Sign round should be a user session");
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletSign(SignOutput {
+                    signature: output,
+                    dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                    is_future_sign: request_input.event_data.is_future_sign,
+                    sign_id: request_input.event_data.sign_id.to_vec(),
+                    rejected: is_rejected,
+                    session_sequence_number: request_input.session_sequence_number,
+                });
+                Ok(vec![tx])
+            }
+            MPCRequestInput::EncryptedShareVerification(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("EncryptedShareVerification round should be a user session");
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletEncryptedUserShare(
+                    EncryptedUserShareOutput {
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                        encrypted_user_secret_key_share_id: request_input
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec(),
+                        rejected: is_rejected,
+                        session_sequence_number: request_input.session_sequence_number,
+                    },
+                );
+                Ok(vec![tx])
+            }
+            MPCRequestInput::PartialSignatureVerification(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!("PartialSignatureVerification round should be a user session");
+                };
+                let tx =
+                    DWalletCheckpointMessageKind::RespondDWalletPartialSignatureVerificationOutput(
+                        PartialSignatureVerificationOutput {
+                            dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                            partial_centralized_signed_message_id: request_input
+                                .event_data
+                                .partial_centralized_signed_message_id
+                                .to_vec(),
+                            rejected: is_rejected,
+                            session_sequence_number: request_input.session_sequence_number,
+                        },
+                    );
+                Ok(vec![tx])
+            }
+            MPCRequestInput::NetworkEncryptionKeyDkg(key_scheme, request_input) => match key_scheme
+            {
+                DWalletMPCNetworkKeyScheme::Secp256k1 => {
+                    let slices = if is_rejected {
+                        vec![MPCNetworkDKGOutput {
+                            dwallet_network_encryption_key_id: request_input
+                                .event_data
+                                .dwallet_network_encryption_key_id
+                                .clone()
+                                .to_vec(),
+                            public_output: vec![],
+                            supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
+                            is_last: true,
+                            rejected: true,
+                            session_sequence_number: request_input.session_sequence_number,
+                        }]
+                    } else {
+                        Self::slice_public_output_into_messages(
+                            output,
+                            |public_output_chunk, is_last| MPCNetworkDKGOutput {
+                                dwallet_network_encryption_key_id: request_input
+                                    .event_data
+                                    .dwallet_network_encryption_key_id
+                                    .clone()
+                                    .to_vec(),
+                                public_output: public_output_chunk,
+                                supported_curves: vec![
+                                    DWalletMPCNetworkKeyScheme::Secp256k1 as u32,
+                                ],
+                                is_last,
+                                rejected: false,
+                                session_sequence_number: request_input.session_sequence_number,
+                            },
+                        )
+                    };
+
+                    let messages: Vec<_> = slices
+                        .into_iter()
+                        .map(DWalletCheckpointMessageKind::RespondDWalletMPCNetworkDKGOutput)
+                        .collect();
+                    Ok(messages)
+                }
+                DWalletMPCNetworkKeyScheme::Ristretto => {
+                    Err(DwalletMPCError::UnsupportedNetworkDKGKeyScheme)
+                }
+            },
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(request_input) => {
+                let slices = if is_rejected {
+                    vec![MPCNetworkReconfigurationOutput {
+                        dwallet_network_encryption_key_id: request_input
+                            .event_data
+                            .dwallet_network_encryption_key_id
+                            .clone()
+                            .to_vec(),
+                        public_output: vec![],
+                        supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
+                        is_last: true,
+                        rejected: true,
+                        session_sequence_number: request_input.session_sequence_number,
+                    }]
+                } else {
+                    Self::slice_public_output_into_messages(
+                        output,
+                        |public_output_chunk, is_last| MPCNetworkReconfigurationOutput {
+                            dwallet_network_encryption_key_id: request_input
+                                .event_data
+                                .dwallet_network_encryption_key_id
+                                .clone()
+                                .to_vec(),
+                            public_output: public_output_chunk,
+                            supported_curves: vec![DWalletMPCNetworkKeyScheme::Secp256k1 as u32],
+                            is_last,
+                            rejected: false,
+                            session_sequence_number: request_input.session_sequence_number,
+                        },
+                    )
+                };
+
+                let messages: Vec<_> = slices
+                    .into_iter()
+                    .map(
+                        DWalletCheckpointMessageKind::RespondDWalletMPCNetworkReconfigurationOutput,
+                    )
+                    .collect();
+                Ok(messages)
+            }
+            MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = DWalletCheckpointMessageKind::RespondMakeDWalletUserSecretKeySharesPublic(
+                    MakeDWalletUserSecretKeySharesPublicOutput {
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec(),
+                        public_user_secret_key_shares: request_input
+                            .event_data
+                            .public_user_secret_key_shares
+                            .clone(),
+                        rejected: is_rejected,
+                        session_sequence_number: request_input.session_sequence_number,
+                    },
+                );
+                Ok(vec![tx])
+            }
+            MPCRequestInput::DWalletImportedKeyVerificationRequest(request_input) => {
+                let SessionType::User = request_input.session_type else {
+                    unreachable!(
+                        "MakeDWalletUserSecretKeySharesPublic round should be a user session"
+                    );
+                };
+                let tx = DWalletCheckpointMessageKind::RespondDWalletImportedKeyVerificationOutput(
+                    DWalletImportedKeyVerificationOutput {
+                        dwallet_id: request_input.event_data.dwallet_id.to_vec().clone(),
+                        public_output: output,
+                        encrypted_user_secret_key_share_id: request_input
+                            .event_data
+                            .encrypted_user_secret_key_share_id
+                            .to_vec()
+                            .clone(),
+                        rejected: is_rejected,
+                        session_sequence_number: request_input.session_sequence_number,
+                    },
+                );
+                Ok(vec![tx])
             }
         }
+    }
 
-        Ok(())
+    /// Break down the key to slices because of chain transaction size limits.
+    /// Limit 16 KB per Tx `pure` argument.
+    fn slice_public_output_into_messages<T>(
+        public_output: Vec<u8>,
+        func: impl Fn(Vec<u8>, bool) -> T,
+    ) -> Vec<T> {
+        let mut slices = Vec::new();
+        // We set a total of 5 KB since we need 6 KB buffer for other params.
+
+        let public_chunks = public_output.chunks(FIVE_KILO_BYTES).collect_vec();
+        let empty: &[u8] = &[];
+        // Take the max of the two lengths to ensure we have enough slices.
+        for i in 0..public_chunks.len() {
+            // If the chunk is missing, use an empty slice, as the size of the slices can be different.
+            let public_chunk = public_chunks.get(i).unwrap_or(&empty);
+            slices.push(func(public_chunk.to_vec(), i == public_chunks.len() - 1));
+        }
+        slices
     }
 }

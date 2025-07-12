@@ -498,6 +498,7 @@ enum StateSyncMessage {
 }
 
 struct StateSyncEventLoop<S> {
+    is_notifier: bool,
     config: StateSyncConfig,
 
     mailbox: mpsc::Receiver<StateSyncMessage>,
@@ -632,8 +633,10 @@ where
                 },
             }
 
-            self.maybe_start_checkpoint_summary_sync_task();
-            self.maybe_start_system_checkpoint_summary_sync_task();
+            if self.is_notifier {
+                self.maybe_start_system_checkpoint_summary_sync_task();
+                self.maybe_start_checkpoint_summary_sync_task();
+            }
         }
 
         info!("State-Synchronizer ended");
@@ -643,8 +646,10 @@ where
         debug!("Received message: {:?}", message);
         match message {
             StateSyncMessage::StartSyncJob => {
-                self.maybe_start_checkpoint_summary_sync_task();
-                self.maybe_start_system_checkpoint_summary_sync_task();
+                if self.is_notifier {
+                    self.maybe_start_checkpoint_summary_sync_task();
+                    self.maybe_start_system_checkpoint_summary_sync_task();
+                }
             }
             StateSyncMessage::VerifiedDWalletCheckpointMessage(checkpoint) => {
                 self.handle_dwallet_checkpoint_from_consensus(checkpoint)
@@ -668,16 +673,6 @@ where
         &mut self,
         checkpoint: Box<VerifiedDWalletCheckpointMessage>,
     ) {
-        // // Always check previous_digest matches in case there is a gap between
-        // // state sync and consensus.
-        // let prev_digest = *self.store.get_dwallet_checkpoint_by_sequence_number(checkpoint.sequence_number().checked_sub(1).expect("exhausted u64"))
-        //     .expect("store operation should not fail")
-        //     .unwrap_or_else(|| panic!("Got checkpoint {} from consensus but cannot find checkpoint {} in certified_checkpoints", checkpoint.sequence_number(), checkpoint.sequence_number() - 1))
-        //     .digest();
-        // if checkpoint.previous_digest != Some(prev_digest) {
-        //     panic!("Checkpoint {} from consensus has mismatched previous_digest, expected: {:?}, actual: {:?}", checkpoint.sequence_number(), Some(prev_digest), checkpoint.previous_digest);
-        // }
-
         let latest_checkpoint_sequence_number = self
             .store
             .get_highest_verified_dwallet_checkpoint()
@@ -762,7 +757,9 @@ where
 
         match peer_event {
             Ok(PeerEvent::NewPeer(peer_id)) => {
-                self.spawn_get_latest_from_peer(peer_id);
+                if self.is_notifier {
+                    self.spawn_get_latest_from_peer(peer_id);
+                }
             }
             Ok(PeerEvent::LostPeer(peer_id, _)) => {
                 self.peer_heights.write().unwrap().peers.remove(&peer_id);
@@ -1236,11 +1233,6 @@ where
             .ok_or_else(|| anyhow::anyhow!("no peers were able to help sync checkpoint {next}"))?;
 
         debug!(checkpoint_seq = ?checkpoint.sequence_number(), "verified checkpoint summary");
-        if let Some(checkpoint_summary_age_metric) =
-            metrics.dwallet_checkpoint_summary_age_metrics()
-        {
-            checkpoint.report_dwallet_checkpoint_age(checkpoint_summary_age_metric);
-        }
 
         current = Some(checkpoint.clone());
         // Insert the newly verified checkpoint into our store, which will bump our highest
@@ -1592,11 +1584,6 @@ where
             })?;
 
         debug!(system_checkpoint_seq = ?system_checkpoint.sequence_number(), "verified system_checkpoint summary");
-        if let Some(system_checkpoint_summary_age_metric) =
-            metrics.system_checkpoint_summary_age_metrics()
-        {
-            system_checkpoint.report_system_checkpoint_age(system_checkpoint_summary_age_metric);
-        }
 
         current = Some(system_checkpoint.clone());
         // Insert the newly verified system_checkpoint into our store, which will bump our highest
