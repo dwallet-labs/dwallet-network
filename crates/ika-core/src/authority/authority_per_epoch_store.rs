@@ -36,7 +36,6 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 use crate::dwallet_mpc::mpc_outputs_verifier::{
     DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
 };
@@ -70,7 +69,7 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, IkaPackagesConfig};
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCOutputMessage, MPCRequestInput, MPCSessionRequest, SessionType,
 };
@@ -402,7 +401,7 @@ pub struct AuthorityEpochTables {
     /// The key is the consensus round number,
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
-    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCDBMessage>>,
+    pub(crate) dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCMessage>>,
     pub(crate) dwallet_mpc_outputs: DBMap<u64, Vec<DWalletMPCOutputMessage>>,
     // TODO (#538): change type to the inner, basic type instead of using Sui's wrapper
     // pub struct SessionID([u8; AccountAddress::LENGTH]);
@@ -483,7 +482,7 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCDBMessage>> {
+    pub fn get_all_dwallet_mpc_dwallet_mpc_messages(&self) -> IkaResult<Vec<DWalletMPCMessage>> {
         Ok(self
             .dwallet_mpc_messages
             .safe_iter()
@@ -1319,7 +1318,7 @@ impl AuthorityPerEpochStore {
     /// them from the DB.
     fn filter_dwallet_mpc_messages(
         transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> Vec<DWalletMPCDBMessage> {
+    ) -> Vec<DWalletMPCMessage> {
         transactions
             .iter()
             .filter_map(|transaction| {
@@ -1331,7 +1330,7 @@ impl AuthorityPerEpochStore {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
-                    }) => Some(DWalletMPCDBMessage::Message(message.clone())),
+                    }) => Some(message.clone()),
                     _ => None,
                 }
             })
@@ -2141,7 +2140,7 @@ pub(crate) struct ConsensusCommitOutput {
     pending_system_checkpoints: Vec<PendingSystemCheckpoint>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
-    dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
+    dwallet_mpc_round_messages: Vec<DWalletMPCMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
 }
 
@@ -2153,7 +2152,7 @@ impl ConsensusCommitOutput {
         }
     }
 
-    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCDBMessage>) {
+    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCMessage>) {
         self.dwallet_mpc_round_messages = new_value;
     }
 

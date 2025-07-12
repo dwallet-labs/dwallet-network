@@ -94,14 +94,6 @@ pub(crate) struct DWalletMPCManager {
     root_seed: RootSeed,
 }
 
-// TODO(Scaly): delete this struct
-/// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum DWalletMPCDBMessage {
-    /// An MPC message from another validator.
-    Message(DWalletMPCMessage),
-}
-
 struct ReadySessionsResponse {
     ready_sessions: Vec<DWalletMPCSession>,
     pending_for_event_sessions: Vec<DWalletMPCSession>,
@@ -226,26 +218,11 @@ impl DWalletMPCManager {
             previous_value_for_last_session_to_complete_in_current_epoch;
     }
 
-    /// Handle an incoming dWallet MPC message, coming from storage, either during bootstrapping or indirectly originating from the consensus
-    /// (which writes the messages to the storage, from which we read them in the dWallet MPC Service and call this function.)
-    pub(crate) fn handle_dwallet_message(
-        &mut self,
-        consensus_round: u64,
-        message: DWalletMPCDBMessage,
-    ) {
-        // TODO(Scaly): delete this function this, just call handle_message
-        match message {
-            DWalletMPCDBMessage::Message(message) => {
-                self.handle_message(consensus_round, message.clone());
-            }
-        }
-    }
-
     /// Handle the messages of a given consensus round.
     pub fn handle_consensus_round_messages(
         &mut self,
         consensus_round: u64,
-        messages: Vec<DWalletMPCDBMessage>,
+        messages: Vec<DWalletMPCMessage>,
     ) {
         for (_, session) in self.mpc_sessions.iter_mut() {
             // Set the `messages_by_consensus_round` for every open MPC session for the current consensus round to an empty map.
@@ -257,10 +234,8 @@ impl DWalletMPCManager {
         }
 
         for message in messages {
-            self.handle_dwallet_message(consensus_round, message);
+            self.handle_message(consensus_round, message);
         }
-
-        // TODO(Scaly): set the message to advance here or no?
     }
 
     /// Spawns all ready MPC cryptographic computations using Rayon.

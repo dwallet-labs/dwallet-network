@@ -58,8 +58,6 @@ pub(crate) struct ComputationId {
     pub(crate) attempt_number: usize,
 }
 
-// TODO(Scaly): decouple from mpc, also create result.
-
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct ComputationRequest {
     pub(crate) party_id: PartyID,

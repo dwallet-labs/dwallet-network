@@ -99,7 +99,6 @@ impl CryptographicComputationsOrchestrator {
             );
             return Err(DwalletMPCError::InsufficientCPUCores);
         }
-        // Note: Enable the feature to enforce a minimum of CPU cores.
         #[cfg(feature = "enforce-minimum-cpu")]
         {
             assert!(

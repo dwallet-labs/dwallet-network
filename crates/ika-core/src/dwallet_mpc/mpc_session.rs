@@ -78,10 +78,8 @@ pub(crate) struct DWalletMPCSession {
 
     pub(crate) mpc_event_data: Option<MPCEventData>,
 
-    /// All the messages that have been received for this session.
-    /// We need to accumulate a threshold of those before advancing the session.
-    /// TODO(Scaly): By consensus round, not mpc round
-    /// HashMap{R1: Map{Validator1->Message, Validator2->Message}, R2: Map{Validator1->Message} ...}
+    /// All the messages that have been received for this session from each party, by consensus round and then by MPC round.
+    /// Used to build the input of messages to advance each round of the session.
     pub(super) messages_by_consensus_round:
         HashMap<u64, HashMap<usize, HashMap<PartyID, MPCMessage>>>,
 
@@ -211,25 +209,6 @@ impl DWalletMPCSession {
         }
     }
 
-    // TODO(Scaly): should I log?
-    // info!(
-    //     ?self.consensus_rounds_since_quorum_reached,
-    //     ?self.current_mpc_round,
-    //     ?self.agreed_mpc_protocol,
-    //     ?self.session_identifier,
-    //     messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_mpc_round - 1)).unwrap_or(&HashMap::new()).len(),
-    //     "Quorum reached for MPC session and delay passed, advancing to next round",
-    // );
-    //
-    // info!(
-    //     ?self.consensus_rounds_since_quorum_reached,
-    //     ?self.current_mpc_round,
-    //     ?self.agreed_mpc_protocol,
-    //     messages_count_for_current_round=?self.messages_by_consensus_round.get(&(self.current_mpc_round - 1)).unwrap_or(&HashMap::new()).len(),
-    //     "Quorum reached for MPC session but delay not passed yet, waiting for another round",
-    // );
-
-    // TODO(Scaly): should I store it ?
     // TODO(Scaly): unit test
     pub(crate) fn get_messages_to_advance(
         &self,

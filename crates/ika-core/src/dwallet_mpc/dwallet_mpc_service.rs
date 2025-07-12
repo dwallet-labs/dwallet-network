@@ -312,9 +312,6 @@ impl DWalletMPCService {
                     malicious_parties: _, // TODO(Scaly): this will no longer be
                     message,
                 }) => {
-                    // TODO(Scaly): actually, there is still some ugly link here between native and mpc computations.
-                    // I don't think we even need a Session for native computations, probably we do need the identifier tho. Maybe rename it `ComputationId`?
-
                     info!(
                         ?session_identifier,
                         validator=?validator_name,
@@ -367,22 +364,38 @@ impl DWalletMPCService {
                         self.dwallet_mpc_manager
                             .record_malicious_actors(&malicious_authorities);
                     }
-                    let consensus_message = self.new_dwallet_mpc_output_message(
-                        session_identifier,
-                        MPCSessionPublicOutput::CompletedSuccessfully(public_output.clone()),
-                        mpc_event_data,
-                    );
 
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&[consensus_message], &epoch_store)
-                        .await
-                    {
-                        error!(
-                        ?session_identifier,
-                                validator=?validator_name,
-                                err=?err,
-                                "failed to submit an MPC output message to consensus",
+                    match bcs::to_bytes(&MPCSessionPublicOutput::CompletedSuccessfully(
+                        public_output.clone(),
+                    )) {
+                        Ok(public_output) => {
+                            let consensus_message = self.new_dwallet_mpc_output_message(
+                                session_identifier,
+                                public_output,
+                                mpc_event_data,
                             );
+
+                            if let Err(err) = consensus_adapter
+                                .submit_to_consensus(&[consensus_message], &epoch_store)
+                                .await
+                            {
+                                error!(
+                                ?session_identifier,
+                                        validator=?validator_name,
+                                        err=?err,
+                                        "failed to submit an MPC output message to consensus",
+                                    );
+                            }
+                        }
+                        Err(e) => {
+                            error!(
+                                ?session_identifier,
+                                validator=?validator_name,
+                                error=?e,
+                                ?public_output,
+                                "failed to serialize an MPC output",
+                            );
+                        }
                     }
                 }
                 Err(DwalletMPCError::TWOPCMPCThresholdNotReached) => {
@@ -412,21 +425,33 @@ impl DWalletMPCService {
                     );
 
                     let consensus_adapter = self.consensus_adapter.clone();
-                    let consensus_message = self.new_dwallet_mpc_output_message(
-                        session_identifier,
-                        MPCSessionPublicOutput::SessionFailed,
-                        mpc_event_data,
-                    );
+                    match bcs::to_bytes(&MPCSessionPublicOutput::SessionFailed) {
+                        Ok(public_output) => {
+                            let consensus_message = self.new_dwallet_mpc_output_message(
+                                session_identifier,
+                                public_output,
+                                mpc_event_data,
+                            );
 
-                    if let Err(err) = consensus_adapter
-                        .submit_to_consensus(&[consensus_message], &epoch_store)
-                        .await
-                    {
-                        error!(
+                            if let Err(err) = consensus_adapter
+                                .submit_to_consensus(&[consensus_message], &epoch_store)
+                                .await
+                            {
+                                error!(
                             ?session_identifier,
                             validator=?validator_name,
                             error=?err,
                             "failed to submit an MPC SessionFailed message to consensus");
+                            }
+                        }
+                        Err(e) => {
+                            error!(
+                                ?session_identifier,
+                                validator=?validator_name,
+                                error=?e,
+                                "failed to serialize an MPCSessionPublicOutput::SessionFailed MPC output",
+                            );
+                        }
                     }
                 }
             }
@@ -469,13 +494,11 @@ impl DWalletMPCService {
     fn new_dwallet_mpc_output_message(
         &self,
         session_identifier: SessionIdentifier,
-        output: MPCSessionPublicOutput,
+        output: Vec<u8>,
         mpc_event_data: MPCEventData,
     ) -> ConsensusTransaction {
         let epoch = self.epoch_store.epoch();
 
-        // TODO(Scaly): what to do with serialization error?
-        let output = bcs::to_bytes(&output).expect("serialization error");
         ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store.name.clone(),
             output,
