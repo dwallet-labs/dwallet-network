@@ -4,7 +4,10 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use crate::committee::{ClassGroupsEncryptionKeyAndProof, Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
+use crate::committee::{
+    ClassGroupsEncryptionKeyAndProof, Committee, CommitteeWithNetworkMetadata, NetworkMetadata,
+    StakeUnit,
+};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
@@ -133,7 +136,6 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         self.epoch_duration_ms
     }
 
-
     fn get_ika_committee_with_network_metadata(&self) -> CommitteeWithNetworkMetadata {
         let validators = self
             .active_validators
@@ -147,7 +149,9 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                             network_address: validator.network_address.clone(),
                             consensus_address: validator.consensus_address.clone(),
                             network_public_key: Some(validator.network_pubkey.clone()),
-                            class_groups_public_key_and_proof: validator.class_groups_public_key_and_proof.clone(),
+                            class_groups_public_key_and_proof: validator
+                                .class_groups_public_key_and_proof
+                                .clone(),
                         },
                     ),
                 )

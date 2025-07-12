@@ -8,12 +8,12 @@ use ika_types::crypto::{
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::intent::Intent;
 use ika_types::message_envelope::{Envelope, Message};
+use itertools::Itertools;
 use serde::Serialize;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
-use itertools::Itertools;
 use sui_types::base_types::ConciseableName;
 use tracing::warn;
 use typed_store::TypedStoreError;

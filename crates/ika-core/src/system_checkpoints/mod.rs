@@ -31,10 +31,10 @@ use ika_types::messages_system_checkpoints::{
     SystemCheckpointSignatureMessage, TrustedSystemCheckpointMessage,
     VerifiedSystemCheckpointMessage,
 };
+use itertools::Itertools;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use itertools::Itertools;
 use tokio::{sync::Notify, task::JoinSet, time::timeout};
 use tracing::{debug, error, info, instrument, warn};
 use typed_store::DBMapUtils;
@@ -1011,9 +1011,7 @@ impl SystemCheckpointSignatureAggregator {
             checkpoint_seq = self.checkpoint_message.sequence_number,
             "Checking for split brain condition for system checkpoint"
         );
-        let all_unique_values = self
-            .signatures_by_digest
-            .get_all_unique_values();
+        let all_unique_values = self.signatures_by_digest.get_all_unique_values();
         if all_unique_values.keys().len() > 1 {
             let quorum_unreachable = self.signatures_by_digest.quorum_unreachable();
             let local_checkpoint_message = self.checkpoint_message.clone();
@@ -1022,9 +1020,7 @@ impl SystemCheckpointSignatureAggregator {
                 .epoch_start_state()
                 .get_ika_committee_with_network_metadata();
 
-            let all_unique_values = self
-                .signatures_by_digest
-                .get_all_unique_values();
+            let all_unique_values = self.signatures_by_digest.get_all_unique_values();
             let digests_by_stake_messages = all_unique_values
                 .iter()
                 .map(|(digest, (_, authorities))| {
@@ -1037,9 +1033,7 @@ impl SystemCheckpointSignatureAggregator {
             let time = SystemTime::now();
             let digest_to_validators = all_unique_values
                 .iter()
-                .filter(|(digest, _)| {
-                    *digest != &local_checkpoint_message.digest()
-                })
+                .filter(|(digest, _)| *digest != &local_checkpoint_message.digest())
                 .collect::<HashMap<_, _>>();
 
             error!(
