@@ -4,7 +4,6 @@
 //! by checking if an authorized validator set voted for it.
 //! Any validator that voted for a different output is considered malicious.
 
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -26,6 +25,8 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tracing::info;
+use ika_types::committee::Committee;
+use ika_types::crypto::AuthorityPublicKeyBytes;
 
 const FIVE_KILO_BYTES: usize = 5 * 1024;
 
@@ -97,18 +98,18 @@ impl DWalletMPCOutputsVerifier {
         output: &[u8],
         session_request: &MPCSessionRequest,
         origin_authority: AuthorityName,
-        epoch_store: &AuthorityPerEpochStore,
+        validator_name: AuthorityPublicKeyBytes,
+        committee: Arc<Committee>,
     ) -> DwalletMPCResult<OutputVerificationResult> {
         // TODO (#876): Set the maximum message size to the smallest size possible.
         info!(
             mpc_protocol=?session_request.request_input,
             session_identifier=?session_request.session_identifier,
             from_authority=?origin_authority,
-            receiving_authority=?epoch_store.name,
+            receiving_authority=?validator_name,
             output_size_bytes=?output.len(),
             "Received DWallet MPC output",
         );
-        let committee = epoch_store.committee().clone();
 
         let session_output_data = self
             .mpc_sessions_outputs

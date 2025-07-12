@@ -25,10 +25,7 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCMessage, DWalletNetworkEncryptionKeyData, MaliciousReport,
-    SessionIdentifier, SessionType, ThresholdNotReachedReport,
-};
+use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData, MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport};
 use ika_types::sui::EpochStartSystemTrait;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -40,6 +37,8 @@ use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
+use ika_types::error::IkaResult;
+use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -71,6 +70,7 @@ pub(crate) struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     malicious_actors: HashSet<AuthorityName>,
+    pub(crate) outputs_verifier: DWalletMPCOutputsVerifier,
 
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
@@ -100,7 +100,7 @@ struct ReadySessionsResponse {
 }
 
 impl DWalletMPCManager {
-    pub(crate) fn must_create_dwallet_mpc_manager(
+    pub(crate) fn new(
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
@@ -140,6 +140,8 @@ impl DWalletMPCManager {
         decryption_key_reconfiguration_third_round_delay: usize,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
+        let outputs_verifier = DWalletMPCOutputsVerifier::new(dwallet_mpc_metrics.clone());
+
         let root_seed = node_config
             .root_seed
             .clone()
@@ -201,6 +203,7 @@ impl DWalletMPCManager {
             committee,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
+            outputs_verifier,
             root_seed,
         })
     }
@@ -210,12 +213,11 @@ impl DWalletMPCManager {
         previous_value_for_last_session_to_complete_in_current_epoch: u64,
     ) {
         if previous_value_for_last_session_to_complete_in_current_epoch
-            <= self.last_session_to_complete_in_current_epoch
+            > self.last_session_to_complete_in_current_epoch
         {
-            return;
+            self.last_session_to_complete_in_current_epoch =
+                previous_value_for_last_session_to_complete_in_current_epoch;
         }
-        self.last_session_to_complete_in_current_epoch =
-            previous_value_for_last_session_to_complete_in_current_epoch;
     }
 
     /// Handle the messages of a given consensus round.
@@ -516,6 +518,30 @@ impl DWalletMPCManager {
                 vec![]
             }
         }
+    }
+
+    pub(crate) fn handle_dwallet_db_output(
+        &mut self,
+        output: &DWalletMPCOutputMessage,
+    ) -> IkaResult<OutputVerificationResult> {
+        let DWalletMPCOutputMessage {
+            authority,
+            session_request,
+            output,
+        } = output;
+        let authority_index = authority_name_to_party_id_from_committee(&self.committee, authority)?;
+
+        // TODO(scaly): think if we want to keep this malicious reporting.
+        let output_verification_result = self.outputs_verifier
+            .try_verify_output(output, session_request, *authority, self.validator_name.clone(), self.committee.clone())
+            .unwrap_or_else(|e| {
+                error!(session_id=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
+                OutputVerificationResult {
+                    result: OutputVerificationStatus::Malicious,
+                    malicious_actors: vec![*authority],
+                }
+            });
+        Ok(output_verification_result)
     }
 
     pub(crate) fn record_threshold_not_reached(

@@ -27,6 +27,7 @@ use mpc::AsynchronousRoundResult;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
+use itertools::izip;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
@@ -35,6 +36,10 @@ use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
+use ika_types::crypto::keccak256_digest;
+use ika_types::message::DWalletCheckpointMessageKind;
+use crate::dwallet_checkpoints::{DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1};
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 
 const READ_INTERVAL_MS: u64 = 100;
 
@@ -295,15 +300,9 @@ impl DWalletMPCService {
 
             // Let's start processing the MPC messages for the current round.
 
-            // TODO(scaly): did we sort? Since we sorted, this assures this variable will be the
-            // last read in this batch when we are done iterating.
-            for (consensus_round, messages) in mpc_messages {
-                // Since we sorted, this assures this variable will be the last read in this batch when we are done iterating.
-                self.last_read_consensus_round = consensus_round;
-
-                self.dwallet_mpc_manager
-                    .handle_consensus_round_messages(consensus_round, messages);
-            }
+            // TODO(scaly): was this what I should have done?
+            self.dwallet_mpc_manager
+                .handle_consensus_round_messages(consensus_round, mpc_messages);
 
             // Not let's move to process MPC outputs for the current round.
 

@@ -35,7 +35,6 @@ use crate::consensus_handler::{
     ConsensusCommitInfo, SequencedConsensusTransaction, SequencedConsensusTransactionKey,
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
-use crate::dwallet_mpc::mpc_manager::DWalletMPCDBMessage;
 
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
@@ -61,7 +60,7 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::DWalletMPCOutputMessage;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutputMessage};
 use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpointMessage, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
@@ -366,7 +365,7 @@ pub struct AuthorityEpochTables {
     /// The key is the consensus round number,
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
-    dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCDBMessage>>,
+    dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCMessage>>,
     dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutputMessage>>,
     dwallet_mpc_completed_sessions: DBMap<Round, Vec<SessionIdentifier>>,
 }
@@ -434,7 +433,7 @@ impl AuthorityEpochTables {
     pub fn get_dwallet_mpc_messages_iter(
         &self,
         next_consensus_round: Round,
-    ) -> DbIterator<(Round, Vec<DWalletMPCDBMessage>)> {
+    ) -> DbIterator<(Round, Vec<DWalletMPCMessage>)> {
         self.dwallet_mpc_messages
             .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
@@ -898,36 +897,6 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, ..),
-                ..
-            }) => {
-                // When sending a `DWalletMPCSessionFailedWithMalicious`,
-                // the validator also includes its public key.
-                // Here, we verify that the public key used to sign this transaction matches
-                // the provided public key.
-                // This public key is later used to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "DWalletMPCSessionFailedWithMalicious: authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, ..),
-                ..
-            }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        ?authority,
-                        certificate_author_index=?transaction.certificate_author_index,
-                        "DWalletMPCSessionFailedWithMalicious: authority does not match its author from consensus",
-                    );
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
                 ..
             }) => {
@@ -1291,7 +1260,7 @@ impl AuthorityPerEpochStore {
     /// them from the DB.
     fn filter_dwallet_mpc_messages(
         transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> Vec<DWalletMPCDBMessage> {
+    ) -> Vec<DWalletMPCMessage> {
         transactions
             .iter()
             .filter_map(|transaction| {
@@ -1303,22 +1272,7 @@ impl AuthorityPerEpochStore {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
                         kind: ConsensusTransactionKind::DWalletMPCMessage(message),
                         ..
-                    }) => Some(DWalletMPCDBMessage::Message(message.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::ThresholdNotReachedReport(*authority, report.clone())),
-                    SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCMaliciousReport(
-                                authority_name,
-                                report,
-                            ),
-                        ..
-                    }) => Some(DWalletMPCDBMessage::MaliciousReport(
-                        *authority_name,
-                        report.clone(),
-                    )),
+                    }) => Some(message.clone()),
                     _ => None,
                 }
             })
@@ -1381,14 +1335,6 @@ impl AuthorityPerEpochStore {
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(..),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -1801,7 +1747,7 @@ pub(crate) struct ConsensusCommitOutput {
     pending_system_checkpoints: Vec<PendingSystemCheckpoint>,
 
     /// All the dWallet-MPC related TXs that have been received in this round.
-    dwallet_mpc_round_messages: Vec<DWalletMPCDBMessage>,
+    dwallet_mpc_round_messages: Vec<DWalletMPCMessage>,
     dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
 
     verified_dwallet_checkpoint_messages: Vec<DWalletCheckpointMessageKind>,
@@ -1815,7 +1761,7 @@ impl ConsensusCommitOutput {
         }
     }
 
-    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCDBMessage>) {
+    pub(crate) fn set_dwallet_mpc_round_messages(&mut self, new_value: Vec<DWalletMPCMessage>) {
         self.dwallet_mpc_round_messages = new_value;
     }
 
