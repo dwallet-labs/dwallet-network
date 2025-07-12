@@ -1,4 +1,3 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_dkg::{
     dwallet_dkg_first_public_input, dwallet_dkg_second_public_input, DWalletDKGFirstParty,
     DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,

@@ -6,8 +6,7 @@ use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, MaliciousReport, SessionIdentifier,
-    ThresholdNotReachedReport,
+    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, SessionIdentifier,
 };
 use crate::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
@@ -44,8 +43,6 @@ pub enum ConsensusTransactionKey {
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessageKey),
     DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
-    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
     SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
@@ -74,22 +71,6 @@ impl Debug for ConsensusTransactionKey {
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?})",
                     authority, session_identifier, value
-                )
-            }
-            Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
-                write!(
-                    f,
-                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
-                    authority.concise(),
-                    report,
-                )
-            }
-            ConsensusTransactionKey::DWalletMPCThresholdNotReached(authority, report) => {
-                write!(
-                    f,
-                    "DWalletMPCThresholdNotReached({:?}, {:?})",
-                    authority.concise(),
-                    report,
                 )
             }
             ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {

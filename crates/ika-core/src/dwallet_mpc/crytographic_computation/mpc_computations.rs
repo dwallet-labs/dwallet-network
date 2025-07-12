@@ -1,32 +1,14 @@
-use crate::dwallet_mpc::dwallet_dkg::{
-    DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,
-};
-use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
-use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
-use crate::dwallet_mpc::mpc_session::PublicInput;
-use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCSessionLogger};
-use crate::dwallet_mpc::network_dkg::advance_network_dkg;
-use crate::dwallet_mpc::presign::PresignParty;
-use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
-use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateOutput, MPCSessionPublicOutput, SerializedWrappedMPCPublicOutput,
-    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReconfigurationOutput,
-    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedPresignOutput, VersionedSignOutput,
+    MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
 };
-use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{EncryptedShareVerificationRequestEvent, MPCRequestInput};
-use itertools::Itertools;
-use message_digest::message_digest::message_digest;
-use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use tracing::{error, info, warn};
 
 pub(crate) mod dwallet_dkg;
 pub(crate) mod network_dkg;
@@ -47,7 +29,7 @@ pub(crate) mod sign;
 pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
-    access_threshold: &WeightedThresholdAccessStructure,
+    access_structure: &WeightedThresholdAccessStructure,
     serialized_messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
@@ -59,19 +41,18 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     let DeserializeMPCMessagesResponse {
         messages,
         malicious_parties,
-    } = deserialize_mpc_messages(&serialized_messages);
+    } = deserialize_mpc_messages_and_check_quorum(&serialized_messages, access_structure)?;
 
     // Update logger with malicious parties detected during deserialization.
     let logger = logger.clone().with_malicious_parties(malicious_parties);
-
-    logger.write_logs_to_disk(session_id, party_id, access_threshold, &serialized_messages);
+    logger.write_logs_to_disk(session_id, party_id, access_structure, &serialized_messages);
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.
     let res = match P::advance_with_guaranteed_output(
         session_id,
         party_id,
-        access_threshold,
+        access_structure,
         messages.clone(),
         Some(private_input),
         public_input,
@@ -131,11 +112,11 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 ///
 /// Note that deserialization of a message depends on the type of the message which is only known once the event data comes,
-/// and so we can only handle this here. Malicious messages are ignored, and if this makes it so that a quorum is not reached,
-/// the `advance_with_guaranteed_output()` method will return a `ThresholdNotReached` error, which will make us wait for more messages before advancing, as desired.
-fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
+/// and so we can only handle this here. Malicious messages are ignored, and we assure that we still have quorum, otherwise returning a `ThresholdNotReached` error.
+fn deserialize_mpc_messages_and_check_quorum<M: DeserializeOwned + Clone>(
     messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
-) -> DeserializeMPCMessagesResponse<M> {
+    access_structure: &WeightedThresholdAccessStructure,
+) -> DwalletMPCResult<DeserializeMPCMessagesResponse<M>> {
     let mut deserialized_results = HashMap::new();
     let mut malicious_parties = Vec::new();
 
@@ -158,12 +139,21 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
             }
         }
 
+        let valid_message_senders = valid_messages.keys().copied().collect();
+        if access_structure
+            .is_authorized_subset(&valid_message_senders)
+            .is_err()
+        {
+            return Err(DwalletMPCError::TWOPCMPCThresholdNotReached);
+        }
+
         if !valid_messages.is_empty() {
             deserialized_results.insert(*index, valid_messages);
         }
     }
-    DeserializeMPCMessagesResponse {
+
+    Ok(DeserializeMPCMessagesResponse {
         messages: deserialized_results,
         malicious_parties,
-    }
+    })
 }

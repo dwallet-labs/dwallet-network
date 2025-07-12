@@ -3,8 +3,8 @@ use crate::dwallet_mpc::dwallet_dkg::{
 };
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
+use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::PublicInput;
-use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCSessionLogger};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
@@ -13,10 +13,10 @@ use crate::dwallet_mpc::sign::{
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCSessionPublicOutput,
-    SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput,
-    VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
-    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
+    MPCMessage, MPCPrivateInput, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
+    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReconfigurationOutput,
+    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
+    VersionedPresignOutput, VersionedSignOutput,
 };
 use dwallet_rng::RootSeed;
 use group::PartyID;
@@ -25,17 +25,14 @@ use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, EncryptedShareVerificationRequestEvent, MPCRequestInput, SessionIdentifier,
-    SessionType,
 };
 use itertools::Itertools;
 use message_digest::message_digest::message_digest;
-use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
-use rand_chacha::ChaCha20Rng;
-use serde::de::DeserializeOwned;
+use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 use twopc_mpc::sign::Protocol;
 
 pub(super) mod mpc_computations;

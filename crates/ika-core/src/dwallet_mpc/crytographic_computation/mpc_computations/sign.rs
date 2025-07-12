@@ -2,9 +2,7 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;
 use dwallet_mpc_types::dwallet_mpc::{
     SerializedWrappedMPCPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,

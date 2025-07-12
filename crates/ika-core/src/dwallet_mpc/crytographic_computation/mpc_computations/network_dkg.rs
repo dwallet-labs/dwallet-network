@@ -4,7 +4,7 @@
 //! the network DKG protocol.
 use crate::dwallet_mpc::crytographic_computation::advance_and_serialize;
 use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
-use crate::dwallet_mpc::mpc_session::{MPCEventData, PublicInput};
+use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 use class_groups::{

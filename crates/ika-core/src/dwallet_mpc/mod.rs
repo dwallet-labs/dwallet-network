@@ -1,9 +1,7 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use group::PartyID;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use message_digest::message_digest::message_digest;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::path::PathBuf;

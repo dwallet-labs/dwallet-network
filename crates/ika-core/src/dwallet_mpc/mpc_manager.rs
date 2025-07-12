@@ -1,5 +1,3 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
@@ -12,15 +10,13 @@ use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
-    get_validators_class_groups_public_keys_and_proofs, party_ids_to_authority_names,
+    get_validators_class_groups_public_keys_and_proofs,
 };
-use crate::stake_aggregator::StakeAggregator;
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCSessionStatus,
     SerializedWrappedMPCPublicOutput,
 };
-use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -31,19 +27,17 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData,
-    MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport,
+    IkaPackagesConfig, SessionIdentifier, SessionType,
 };
-use ika_types::sui::EpochStartSystemTrait;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
-use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -61,6 +55,7 @@ pub(crate) struct DWalletMPCManager {
     /// mapping until the epoch advances.
     pub(crate) mpc_sessions: HashMap<SessionIdentifier, DWalletMPCSession>,
     pub(crate) epoch_id: EpochId,
+    pub(crate) packages_config: IkaPackagesConfig,
     validator_name: AuthorityPublicKeyBytes,
     pub(crate) committee: Arc<Committee>,
     pub(crate) access_structure: WeightedThresholdAccessStructure,
@@ -88,20 +83,9 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) next_epoch_committee_receiver: watch::Receiver<Committee>,
     pub(crate) next_active_committee: Option<Committee>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-    pub(crate) threshold_not_reached_reports:
-        HashMap<ThresholdNotReachedReport, StakeAggregator<(), true>>,
 
     network_dkg_third_round_delay: usize,
     decryption_key_reconfiguration_third_round_delay: usize,
-
-    /// The root seed of this validator, used for deriving the session and round-specific seed for advancing MPC sessions.
-    /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
-    root_seed: RootSeed,
-}
-
-struct ReadySessionsResponse {
-    ready_sessions: Vec<DWalletMPCSession>,
-    pending_for_event_sessions: Vec<DWalletMPCSession>,
 }
 
 impl DWalletMPCManager {
@@ -109,6 +93,7 @@ impl DWalletMPCManager {
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
+        packages_config: IkaPackagesConfig,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
@@ -120,6 +105,7 @@ impl DWalletMPCManager {
             validator_name,
             committee,
             epoch_id,
+            packages_config,
             network_keys_receiver,
             next_epoch_committee_receiver,
             node_config.clone(),
@@ -138,6 +124,7 @@ impl DWalletMPCManager {
         validator_name: AuthorityPublicKeyBytes,
         committee: Arc<Committee>,
         epoch_id: EpochId,
+        packages_config: IkaPackagesConfig,
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
@@ -189,6 +176,7 @@ impl DWalletMPCManager {
             mpc_sessions: HashMap::new(),
             party_id: authority_name_to_party_id_from_committee(&committee, &validator_name)?,
             epoch_id,
+            packages_config,
             access_structure,
             validators_class_groups_public_keys_and_proofs:
                 get_validators_class_groups_public_keys_and_proofs(&committee)?,
@@ -202,14 +190,12 @@ impl DWalletMPCManager {
             events_pending_for_next_active_committee: Vec::new(),
             events_pending_for_network_key: HashMap::new(),
             dwallet_mpc_metrics,
-            threshold_not_reached_reports: Default::default(),
             next_active_committee: None,
             validator_name,
             committee,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
             outputs_verifier,
-            root_seed,
         })
     }
 
@@ -339,8 +325,6 @@ impl DWalletMPCManager {
 
         let new_session = DWalletMPCSession::new(
             self.validator_name,
-            self.committee.clone(),
-            self.epoch_id,
             MPCSessionStatus::Active,
             *session_identifier,
             self.party_id,
@@ -348,7 +332,6 @@ impl DWalletMPCManager {
             mpc_event_data,
             self.network_dkg_third_round_delay,
             self.decryption_key_reconfiguration_third_round_delay,
-            self.dwallet_mpc_metrics.clone(),
         );
 
         info!(

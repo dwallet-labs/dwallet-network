@@ -807,38 +807,6 @@ pub enum AdvanceResult {
     Failure,
 }
 
-/// Represents a report of malicious behavior in the dWallet MPC process.
-///
-/// This struct is used to record instances where validators identify malicious actors
-/// attempting to disrupt the protocol.
-/// It links the malicious actors to a specific MPC session.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct MaliciousReport {
-    /// A list of authority names that have been identified as malicious actors.
-    pub malicious_actors: Vec<AuthorityName>,
-    /// The unique identifier of the MPC session in which the malicious activity occurred.
-    pub session_identifier: SessionIdentifier,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct ThresholdNotReachedReport {
-    pub session_identifier: SessionIdentifier,
-    pub attempt: usize,
-}
-
-impl MaliciousReport {
-    /// Creates a new instance of a malicious report.
-    pub fn new(
-        malicious_actors: Vec<AuthorityName>,
-        session_identifier: SessionIdentifier,
-    ) -> Self {
-        Self {
-            malicious_actors,
-            session_identifier,
-        }
-    }
-}
-
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::PresignRequestEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
 pub struct PresignRequestEvent {

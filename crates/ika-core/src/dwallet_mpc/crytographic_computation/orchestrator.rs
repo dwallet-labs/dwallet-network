@@ -16,22 +16,17 @@
 
 use crate::dwallet_mpc::crytographic_computation::{ComputationId, ComputationRequest};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use dwallet_mpc_types::dwallet_mpc::{
     MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
 };
 use dwallet_rng::RootSeed;
-use group::PartyID;
-use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{MPCRequestInput, SessionIdentifier};
-use mpc::WeightedThresholdAccessStructure;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 /// Channel size for cryptographic computations state updates.
 /// This channel should not reach a size even close to this.
@@ -77,7 +72,7 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// Used to prevent exceeding available CPU cores.
     currently_running_cryptographic_computations: HashSet<ComputationId>,
 
-    /// The list of completed cryptographic computations in the current epoch. TODO(Scaly): after crash, it will be empty. Do we need bootstrap?
+    /// The list of completed cryptographic computations in the current epoch.
     completed_cryptographic_computations: HashSet<ComputationId>,
 
     /// The root seed of this validator, used for deriving the per-round seed for advancing this session.
@@ -102,8 +97,7 @@ impl CryptographicComputationsOrchestrator {
         #[cfg(feature = "enforce-minimum-cpu")]
         {
             assert!(
-                // TODO(Scaly): revert
-                available_cores_for_computations >= 8,
+                available_cores_for_computations >= 16,
                 "Validator must have at least 16 CPU cores"
             );
         }

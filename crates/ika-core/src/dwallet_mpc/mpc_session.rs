@@ -2,51 +2,17 @@ mod input;
 mod logger;
 mod mpc_event_data;
 
-use class_groups::dkg::Secp256k1Party;
-use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput, MPCSessionPublicOutput, MPCSessionStatus,
-    SerializedWrappedMPCPublicOutput, VersionedDWalletImportedKeyVerificationOutput,
-    VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
-    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
-};
-use group::helpers::DeduplicateAndSort;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCSessionStatus};
 use group::PartyID;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use itertools::Itertools;
-use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use mpc::WeightedThresholdAccessStructure;
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-use tokio::runtime::Handle;
-use tracing::{debug, error, info, warn};
-use twopc_mpc::sign::Protocol;
+use tracing::{debug, error, info};
 
-use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::dwallet_dkg::{
-    DWalletDKGFirstParty, DWalletDKGSecondParty, DWalletImportedKeyVerificationParty,
-};
-use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
-use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
-use crate::dwallet_mpc::network_dkg::{advance_network_dkg, DwalletMPCNetworkKeys};
-use crate::dwallet_mpc::presign::PresignParty;
-use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
-use crate::dwallet_mpc::sign::{verify_partial_signature, SignFirstParty};
-use crate::dwallet_mpc::{message_digest, party_ids_to_authority_names};
-use crate::stake_aggregator::StakeAggregator;
-use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_consensus::ConsensusTransaction;
-use ika_types::messages_dwallet_mpc::{
-    AsyncProtocol, DWalletMPCEvent, DWalletMPCMessage, EncryptedShareVerificationRequestEvent,
-    MPCRequestInput, MPCSessionRequest, MaliciousReport, SessionIdentifier, SessionType,
-    ThresholdNotReachedReport, NETWORK_ENCRYPTION_KEY_DKG_STR_KEY,
-    NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY,
-};
-use sui_types::base_types::{EpochId, ObjectID};
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, MPCRequestInput, SessionIdentifier};
 
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
-use dwallet_rng::RootSeed;
-use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 pub(crate) use input::{session_input_from_event, PublicInput};
 pub(crate) use logger::MPCSessionLogger;
 
@@ -54,14 +20,12 @@ pub(crate) use logger::MPCSessionLogger;
 #[derive(Clone)]
 pub(crate) struct DWalletMPCSession {
     pub(super) session_identifier: SessionIdentifier,
-    epoch_id: EpochId,
     validator_name: AuthorityPublicKeyBytes,
     pub(crate) party_id: PartyID,
 
     /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
 
-    committee: Arc<Committee>,
     access_structure: WeightedThresholdAccessStructure,
 
     /// The current MPC round number of the session.
@@ -82,15 +46,11 @@ pub(crate) struct DWalletMPCSession {
 
     network_dkg_third_round_delay: usize,
     decryption_key_reconfiguration_third_round_delay: usize,
-
-    dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 }
 
 impl DWalletMPCSession {
     pub(crate) fn new(
         validator_name: AuthorityPublicKeyBytes,
-        committee: Arc<Committee>,
-        epoch: EpochId,
         status: MPCSessionStatus,
         session_identifier: SessionIdentifier,
         party_id: PartyID,
@@ -98,12 +58,10 @@ impl DWalletMPCSession {
         mpc_event_data: Option<MPCEventData>,
         network_dkg_third_round_delay: usize,
         decryption_key_reconfiguration_third_round_delay: usize,
-        dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self {
             status,
             messages_by_consensus_round: HashMap::new(),
-            epoch_id: epoch,
             session_identifier,
             current_mpc_round: 1,
             mpc_round_to_threshold_not_reached_consensus_rounds: HashMap::new(),
@@ -113,8 +71,6 @@ impl DWalletMPCSession {
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
             validator_name,
-            committee,
-            dwallet_mpc_metrics,
         }
     }
 
