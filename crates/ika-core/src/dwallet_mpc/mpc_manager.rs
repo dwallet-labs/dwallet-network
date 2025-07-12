@@ -4,6 +4,9 @@ use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
+use crate::dwallet_mpc::mpc_outputs_verifier::{
+    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
+};
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
@@ -25,7 +28,11 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData, MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport};
+use ika_types::error::IkaResult;
+use ika_types::messages_dwallet_mpc::{
+    DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData,
+    MaliciousReport, SessionIdentifier, SessionType, ThresholdNotReachedReport,
+};
 use ika_types::sui::EpochStartSystemTrait;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
@@ -37,8 +44,6 @@ use sui_types::base_types::ObjectID;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
-use ika_types::error::IkaResult;
-use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus};
 
 /// The [`DWalletMPCManager`] manages MPC sessions:
 /// — Keeping track of all MPC sessions,
@@ -240,102 +245,6 @@ impl DWalletMPCManager {
         }
     }
 
-    /// Spawns all ready MPC cryptographic computations using Rayon.
-    /// If no local CPUs are available, computations will execute as CPUs are freed.
-    pub(crate) async fn perform_cryptographic_computation(
-        &mut self,
-    ) -> HashMap<
-        ComputationId,
-        DwalletMPCResult<
-            mpc::AsynchronousRoundResult<
-                MPCMessage,
-                MPCPrivateOutput,
-                SerializedWrappedMPCPublicOutput,
-            >,
-        >,
-    > {
-        // TODO: sync last_session_to_complete_in_current_epoch?
-        let computation_requests: Vec<_> = self
-            .mpc_sessions
-            .iter()
-            .filter(|(_, session)| {
-                if let Some(mpc_event_data) = &session.mpc_event_data {
-                    // Always advance system sessions, and only advance user session
-                    // if they come before the last session to complete in the current epoch (at the current time).
-                    match mpc_event_data.session_type {
-                        SessionType::User => {
-                            mpc_event_data.session_sequence_number
-                                <= self.last_session_to_complete_in_current_epoch
-                        }
-                        SessionType::System => true,
-                    }
-                } else {
-                    // Cannot advance sessions without MPC event data
-                    false
-                }
-            })
-            .sorted_by(|(_, session), (_, other_session)| {
-                // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
-                other_session
-                    .mpc_event_data
-                    .as_ref()
-                    .unwrap()
-                    .cmp(session.mpc_event_data.as_ref().unwrap())
-            })
-            .flat_map(|(&session_identifier, session)| {
-                session
-                    .get_messages_to_advance()
-                    .map(|(consensus_round, messages_for_advance)| {
-                        let attempt_number = session.get_attempt_number();
-
-                        // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
-                        let mpc_event_data = session.mpc_event_data.clone().unwrap();
-
-                        let computation_id = ComputationId {
-                            session_identifier,
-                            consensus_round,
-                            mpc_round: session.current_mpc_round,
-                            attempt_number,
-                        };
-
-                        let computation_request = ComputationRequest {
-                            party_id: self.party_id,
-                            validator_name: self.validator_name.clone(),
-                            committee: self.committee.clone(),
-                            access_structure: self.access_structure.clone(),
-                            request_input: mpc_event_data.request_input,
-                            private_input: mpc_event_data.private_input,
-                            public_input: mpc_event_data.public_input,
-                            decryption_key_shares: mpc_event_data.decryption_key_shares,
-                            messages: messages_for_advance,
-                        };
-
-                        (computation_id, computation_request)
-                    })
-            })
-            .collect();
-
-        let completed_computation_results = self
-            .cryptographic_computations_orchestrator
-            .receive_completed_computations();
-        for (computation_id, computation_request) in computation_requests {
-            let computation_executing = self
-                .cryptographic_computations_orchestrator
-                .try_spawn_cryptographic_computation(
-                    computation_id,
-                    computation_request,
-                    self.dwallet_mpc_metrics.clone(),
-                )
-                .await;
-
-            if !computation_executing {
-                return completed_computation_results;
-            }
-        }
-
-        completed_computation_results
-    }
-
     /// Handles a message by forwarding it to the relevant MPC session.
     /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, consensus_round: u64, message: DWalletMPCMessage) {
@@ -390,7 +299,7 @@ impl DWalletMPCManager {
             Entry::Occupied(session) => session.into_mut(),
             Entry::Vacant(_) => {
                 info!(
-                    session_identifier=?session_identifier,
+                    ?session_identifier,
                     sender_authority=?sender_authority,
                     receiver_authority=?self.validator_name,
                     mpc_round_number=?mpc_round_number,
@@ -406,7 +315,9 @@ impl DWalletMPCManager {
             }
         };
 
-        session.store_message(consensus_round, sender_party_id, message);
+        if session.status == MPCSessionStatus::Active {
+            session.store_message(consensus_round, sender_party_id, message);
+        }
     }
 
     /// Creates a new session with SID `session_identifier`,
@@ -420,6 +331,11 @@ impl DWalletMPCManager {
             "Received start MPC flow event for session identifier {:?}",
             session_identifier
         );
+        let with_mpc_event_data = if mpc_event_data.is_some() {
+            true
+        } else {
+            false
+        };
 
         let new_session = DWalletMPCSession::new(
             self.validator_name,
@@ -436,12 +352,122 @@ impl DWalletMPCManager {
         );
 
         info!(
-            // todo(zeev): add metadata.
+            party_id=self.party_id,
+            authority=?self.validator_name,
+            with_mpc_event_data,
+            ?session_identifier,
             last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
-            "Adding MPC session to active sessions",
+            "Adding a new MPC session to the active sessions map",
         );
 
         self.mpc_sessions.insert(*session_identifier, new_session);
+    }
+
+    /// Spawns all ready MPC cryptographic computations on separate threads using Rayon.
+    /// If no local CPUs are available, computations will execute as CPUs are freed.
+    ///
+    /// A session must have its `mpc_event_data` set in order to be advanced.
+    ///
+    /// System sessions are always advanced if a CPU is free, user sessions are only advanced
+    /// if they come before the last session to complete in the current epoch (at the current time).
+    ///
+    /// System sessions are always advanced before any user session,
+    /// and both system and user sessions are ordered internally by their sequence numbers.
+    ///
+    /// The messages to advance with are built on the spot, assuming they satisfy required conditions.
+    /// They are put on a `ComputationRequest` and forwarded to the `orchestrator` for execution.
+    pub(crate) async fn perform_cryptographic_computation(
+        &mut self,
+    ) -> HashMap<
+        ComputationId,
+        DwalletMPCResult<
+            mpc::AsynchronousRoundResult<
+                MPCMessage,
+                MPCPrivateOutput,
+                SerializedWrappedMPCPublicOutput,
+            >,
+        >,
+    > {
+        let computation_requests: Vec<_> = self
+            .mpc_sessions
+            .iter()
+            .filter(|(_, session)| {
+                if let Some(mpc_event_data) = &session.mpc_event_data {
+                    // Always advance system sessions, and only advance user session
+                    // if they come before the last session to complete in the current epoch (at the current time).
+                    match mpc_event_data.session_type {
+                        SessionType::User => {
+                            mpc_event_data.session_sequence_number
+                                <= self.last_session_to_complete_in_current_epoch
+                        }
+                        SessionType::System => true,
+                    }
+                } else {
+                    // Cannot advance sessions without MPC event data
+                    false
+                }
+            })
+            .sorted_by(|(_, session), (_, other_session)| {
+                // Safe to `unwrap`, we filtered sessions without `mpc_event_data`.
+                let session_mpc_event_data = session.mpc_event_data.as_ref().unwrap();
+
+                let other_session_mpc_event_data = other_session.mpc_event_data.as_ref().unwrap();
+
+                // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
+                other_session_mpc_event_data.cmp(session_mpc_event_data)
+            })
+            .flat_map(|(&session_identifier, session)| {
+                session.build_messages_to_advance().map(
+                    |(consensus_round, messages_for_advance)| {
+                        let attempt_number = session.get_attempt_number();
+
+                        // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
+                        let mpc_event_data = session.mpc_event_data.clone().unwrap();
+
+                        let computation_id = ComputationId {
+                            session_identifier,
+                            consensus_round,
+                            mpc_round: session.current_mpc_round,
+                            attempt_number,
+                        };
+
+                        let computation_request = ComputationRequest {
+                            party_id: self.party_id,
+                            validator_name: self.validator_name.clone(),
+                            committee: self.committee.clone(),
+                            access_structure: self.access_structure.clone(),
+                            request_input: mpc_event_data.request_input,
+                            private_input: mpc_event_data.private_input,
+                            public_input: mpc_event_data.public_input,
+                            decryption_key_shares: mpc_event_data.decryption_key_shares,
+                            messages: messages_for_advance,
+                        };
+
+                        (computation_id, computation_request)
+                    },
+                )
+            })
+            .collect();
+
+        let completed_computation_results = self
+            .cryptographic_computations_orchestrator
+            .receive_completed_computations();
+        for (computation_id, computation_request) in computation_requests {
+            let computation_executing = self
+                .cryptographic_computations_orchestrator
+                .try_spawn_cryptographic_computation(
+                    computation_id,
+                    computation_request,
+                    self.dwallet_mpc_metrics.clone(),
+                )
+                .await;
+
+            if !computation_executing {
+                return completed_computation_results;
+            }
+        }
+
+        completed_computation_results
     }
 
     pub(crate) fn try_receiving_next_active_committee(&mut self) -> bool {
@@ -529,13 +555,14 @@ impl DWalletMPCManager {
             session_request,
             output,
         } = output;
-        let authority_index = authority_name_to_party_id_from_committee(&self.committee, authority)?;
+        let authority_index =
+            authority_name_to_party_id_from_committee(&self.committee, authority)?;
 
         // TODO(scaly): think if we want to keep this malicious reporting.
         let output_verification_result = self.outputs_verifier
             .try_verify_output(output, session_request, *authority, self.validator_name.clone(), self.committee.clone())
             .unwrap_or_else(|e| {
-                error!(session_id=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
+                error!(session_identifier=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
                 OutputVerificationResult {
                     result: OutputVerificationStatus::Malicious,
                     malicious_actors: vec![*authority],

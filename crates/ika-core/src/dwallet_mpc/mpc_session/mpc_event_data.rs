@@ -64,7 +64,7 @@ impl MPCEventData {
             } else {
                 error!(
                     should_never_happen =? true,
-                    session_id=?event.session_request.session_identifier,
+                    session_identifier=?event.session_request.session_identifier,
                     "failed to get network encryption key ID for a session that requires decryption key shares",
                 );
 

@@ -47,9 +47,6 @@ use sui_types::base_types::{EpochId, ObjectID};
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 use dwallet_rng::RootSeed;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
-use ika_types::messages_dwallet_mpc::MPCRequestInput::{
-    NetworkEncryptionKeyDkg, NetworkEncryptionKeyReconfiguration,
-};
 pub(crate) use input::{session_input_from_event, PublicInput};
 pub(crate) use logger::MPCSessionLogger;
 
@@ -126,10 +123,12 @@ impl DWalletMPCSession {
         self.messages_by_consensus_round = HashMap::new();
     }
 
-    /// Stores an incoming message.
+    /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message sent from us for the current round.
+    /// This guarantees we are in sync, as our state mutates in sync with the view of the consensus which is shared with the other validators.
+    ///
     /// This function performs no checks, it simply stores the message in the map.
     ///
-    /// If a party sent a message twice, it will be overridden.
+    /// If a party sent a message twice, the second message will be ignored.
     /// Whilst that is malicious, it has no effect since the messages come in order, so all validators end up seeing the same map.
     /// Other malicious activities like sending a message for a wrong round are also not reported since they have no practical impact for similar reasons.
     pub(crate) fn store_message(
@@ -138,9 +137,8 @@ impl DWalletMPCSession {
         sender_party_id: PartyID,
         message: DWalletMPCMessage,
     ) {
-        // TODO: filter malicious, or in caller.
         debug!(
-            session_id=?message.session_identifier,
+            session_identifier=?message.session_identifier,
             from_authority=?message.authority,
             receiving_authority=?self.validator_name,
             mpc_round=?message.round_number,
@@ -157,7 +155,7 @@ impl DWalletMPCSession {
                 .unwrap_or_default();
             let new_mpc_round = message.round_number + 1;
             info!(
-                session_id=?message.session_identifier,
+                session_identifier=?message.session_identifier,
                 authority=?self.validator_name,
                 message_mpc_round=?message.round_number,
                 current_mpc_round=self.current_mpc_round,
@@ -178,51 +176,33 @@ impl DWalletMPCSession {
             .entry(message.round_number)
             .or_default();
 
-        // TODO: only insert if doesn't exist - update comment
         if !mpc_round_messages_map.contains_key(&sender_party_id) {
             mpc_round_messages_map.insert(sender_party_id, message.message);
         }
     }
 
-    /// Returns the number of additional (delay) consensus rounds the session should wait for before advancing.
+    /// This function iterates over the messages from different parties sent for different MPC rounds, ordered by the consensus round they were received.
     ///
-    /// This method returns the protocol-specific delay for certain MPC rounds in specific protocols
-    /// (NetworkDkg, DecryptionKeyReconfiguration).
+    /// It builds a list of messages in order to advance the current round `current_mpc_round`,
+    /// using all the messages from the first consensus round to the first that satisfies the following conditions:
+    /// - a quorum of messages from the previous round `current_mpc_round - 1` must exist (except for the first round, which is always ready to advance requiring no messages as input.)
+    /// - a minimum number of consensus rounds that was required to delay the execution (in order to allow more messages to come in before advancing)
+    ///   has passed since the first consensus round where we got a quorum for this round.
+    /// - this quorum must be "fresh", in the sense we never tried to advance with it before.
+    ///   There is only one case in which we attempt to advance the same round twice: when we get a threshold not reached error.
+    ///   Therefore, if such an error occurred for a consensus round, we don't stop the search,
+    ///   and wait for at least one new message to come in a subsequent consensus round before returning the messages to advance with.
     ///
-    /// - **NetworkDkg protocol**: requires delay for the third round
-    ///   using `network_dkg_third_round_delay` config.
-    /// - **DecryptionKeyReconfiguration protocol**: requires delay for the third round
-    ///   using `decryption_key_reconfiguration_third_round_delay` config.
-    /// - **Other protocols**: No delay required, always ready to advance
-    ///
-    fn consensus_rounds_delay_for_mpc_round(&self) -> usize {
-        match self.mpc_event_data.as_ref().unwrap().request_input {
-            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) if self.current_mpc_round == 3 => {
-                self.network_dkg_third_round_delay
-            }
-            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_)
-                if self.current_mpc_round == 3 =>
-            {
-                self.decryption_key_reconfiguration_third_round_delay
-            }
-            _ => 0,
-        }
-    }
-
-    // TODO(Scaly): unit test
-    pub(crate) fn get_messages_to_advance(
+    /// Duplicate messages are ignored - the first message a party has sent for an MPC round is always used.
+    pub(crate) fn build_messages_to_advance(
         &self,
     ) -> Option<(Option<u64>, HashMap<usize, HashMap<PartyID, MPCMessage>>)> {
-        if self.mpc_event_data.is_none() {
-            // Cannot advance a session before the MPC event requesting it was received.
-            return None;
-        }
+        // The first round needs no messages as input, and is always ready to advance.
         if self.current_mpc_round == 1 {
-            // The first round needs no messages as input, and is always ready to advance.
             return Some((None, HashMap::new()));
         }
 
-        let threshold_not_reached_consensus_rounds = self
+        let threshold_not_reached_consensus_rounds_for_current_mpc_round = self
             .mpc_round_to_threshold_not_reached_consensus_rounds
             .get(&self.current_mpc_round)
             .cloned()
@@ -231,6 +211,7 @@ impl DWalletMPCSession {
         let mut delayed_rounds = 0;
         let mut got_new_messages_since_last_threshold_not_reached = false;
         let mut messages_for_advance: HashMap<usize, HashMap<PartyID, MPCMessage>> = HashMap::new();
+
         let sorted_messages_by_consensus_round = self
             .messages_by_consensus_round
             .clone()
@@ -278,7 +259,9 @@ impl DWalletMPCSession {
                     // We set the map of messages by consensus round at each consensus round for each session,
                     // even if no messages were received, so this count is accurate as iterating the messages by consensus round goes through all consensus rounds to date.
                     delayed_rounds += 1;
-                } else if threshold_not_reached_consensus_rounds.contains(&consensus_round) {
+                } else if threshold_not_reached_consensus_rounds_for_current_mpc_round
+                    .contains(&consensus_round)
+                {
                     // We already tried executing this MPC round at the current consensus round, no point in trying again.
                     // Wait for new messages in later rounds before retrying.
                     got_new_messages_since_last_threshold_not_reached = false;
@@ -299,7 +282,7 @@ impl DWalletMPCSession {
         None
     }
 
-    // Gets the current *total* attempt number, meaning the number of threshold not reached from any mpc round in this session, plus 1.
+    /// Computes the current *total* attempt number, meaning the number of threshold not reached from any mpc round in this session, plus 1.
     pub(crate) fn get_attempt_number(&self) -> usize {
         let threshold_not_reached_consensus_rounds = self
             .mpc_round_to_threshold_not_reached_consensus_rounds
@@ -311,10 +294,11 @@ impl DWalletMPCSession {
         threshold_not_reached_count + 1
     }
 
+    /// Records a threshold not reached error that we got when advancing this session with messages up to `consensus_round`.
     pub(crate) fn record_threshold_not_reached(&mut self, consensus_round: u64) {
         let request_input = &self.mpc_event_data.as_ref().unwrap().request_input;
 
-        warn!(
+        error!(
             mpc_protocol=?request_input,
             validator=?self.validator_name,
             session_identifier=?self.session_identifier,
@@ -326,5 +310,29 @@ impl DWalletMPCSession {
             .entry(self.current_mpc_round)
             .or_default()
             .insert(consensus_round);
+    }
+
+    /// Returns the number of additional (delay) consensus rounds the session should wait for before advancing.
+    ///
+    /// This method returns the protocol-specific delay for certain MPC rounds in specific protocols
+    /// (NetworkDkg, DecryptionKeyReconfiguration).
+    ///
+    /// - **NetworkDkg protocol**: requires delay for the third round
+    ///   using `network_dkg_third_round_delay` config.
+    /// - **DecryptionKeyReconfiguration protocol**: requires delay for the third round
+    ///   using `decryption_key_reconfiguration_third_round_delay` config.
+    /// - **Other protocols**: No delay required, always ready to advance
+    fn consensus_rounds_delay_for_mpc_round(&self) -> usize {
+        match self.mpc_event_data.as_ref().unwrap().request_input {
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) if self.current_mpc_round == 3 => {
+                self.network_dkg_third_round_delay
+            }
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_)
+                if self.current_mpc_round == 3 =>
+            {
+                self.decryption_key_reconfiguration_third_round_delay
+            }
+            _ => 0,
+        }
     }
 }

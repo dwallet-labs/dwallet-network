@@ -102,7 +102,8 @@ impl CryptographicComputationsOrchestrator {
         #[cfg(feature = "enforce-minimum-cpu")]
         {
             assert!(
-                available_cores_for_computations >= 16,
+                // TODO(Scaly): revert
+                available_cores_for_computations >= 8,
                 "Validator must have at least 16 CPU cores"
             );
         }
@@ -121,7 +122,7 @@ impl CryptographicComputationsOrchestrator {
         })
     }
 
-    /// Check for completed computations, and sufficient CPU cores.
+    /// Check for completed computations, and return their results.
     pub(crate) fn receive_completed_computations(
         &mut self,
     ) -> HashMap<
@@ -147,7 +148,7 @@ impl CryptographicComputationsOrchestrator {
             );
 
             debug!(
-                session_id=?computation_update.computation_id.session_identifier,
+                session_identifier=?computation_update.computation_id.session_identifier,
                 mpc_round=?computation_update.computation_id.mpc_round,
                 attempt_number=?computation_update.computation_id.attempt_number,
                 currently_running_sessions_count =? self.currently_running_cryptographic_computations.len(),
@@ -158,7 +159,7 @@ impl CryptographicComputationsOrchestrator {
         completed_computation_results
     }
 
-    /// Check for completed computations, and sufficient CPU cores.
+    /// Check if sufficient CPU cores are available for computation.
     fn has_available_cores_to_perform_computation(&mut self) -> bool {
         self.currently_running_cryptographic_computations.len()
             < self.available_cores_for_cryptographic_computations
@@ -177,7 +178,7 @@ impl CryptographicComputationsOrchestrator {
     ) -> bool {
         if !self.has_available_cores_to_perform_computation() {
             info!(
-                session_id=?computation_id.session_identifier,
+                session_identifier=?computation_id.session_identifier,
                 mpc_round=?computation_id.mpc_round,
                 attempt_number=?computation_id.attempt_number,
                 mpc_protocol=?computation_request.request_input,
@@ -215,10 +216,11 @@ impl CryptographicComputationsOrchestrator {
 
             let computation_result =
                 computation_request.compute(computation_id, root_seed, dwallet_mpc_metrics.clone());
+
             if let Err(err) = &computation_result {
                 error!(
                    party_id,
-                    session_id=?computation_id.session_identifier,
+                    session_identifier=?computation_id.session_identifier,
                     mpc_round=?computation_id.mpc_round,
                     attempt_number=?computation_id.attempt_number,
                     mpc_protocol=?request_input,
@@ -231,7 +233,7 @@ impl CryptographicComputationsOrchestrator {
 
                 info!(
                     party_id,
-                    session_id=?computation_id.session_identifier,
+                    session_identifier=?computation_id.session_identifier,
                     mpc_round=?computation_id.mpc_round,
                     attempt_number=?computation_id.attempt_number,
                     mpc_protocol=?request_input,

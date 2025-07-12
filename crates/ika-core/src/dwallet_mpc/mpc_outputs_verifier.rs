@@ -9,7 +9,9 @@ use crate::stake_aggregator::StakeAggregator;
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, MPCSessionPublicOutput, SerializedWrappedMPCPublicOutput,
 };
+use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
+use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletCheckpointMessageKind,
@@ -25,8 +27,6 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tracing::info;
-use ika_types::committee::Committee;
-use ika_types::crypto::AuthorityPublicKeyBytes;
 
 const FIVE_KILO_BYTES: usize = 5 * 1024;
 

@@ -5,9 +5,14 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
+use crate::dwallet_checkpoints::{
+    DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo,
+    PendingDWalletCheckpointV1,
+};
 use crate::dwallet_mpc::crytographic_computation::ComputationId;
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 use crate::dwallet_mpc::mpc_session::MPCEventData;
 use crate::dwallet_mpc::party_ids_to_authority_names;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -17,17 +22,19 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
+use ika_types::crypto::keccak256_digest;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyData, MPCSessionRequest, SessionIdentifier,
 };
 use ika_types::sui::DWalletCoordinatorInner;
+use itertools::izip;
 use mpc::AsynchronousRoundResult;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
-use itertools::izip;
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
 use sui_types::messages_consensus::Round;
@@ -36,12 +43,8 @@ use tokio::sync::mpsc;
 use tokio::sync::watch::Receiver;
 use tracing::{debug, error, info, warn};
 use typed_store::Map;
-use ika_types::crypto::keccak256_digest;
-use ika_types::message::DWalletCheckpointMessageKind;
-use crate::dwallet_checkpoints::{DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo, PendingDWalletCheckpointV1};
-use crate::dwallet_mpc::mpc_outputs_verifier::OutputVerificationStatus;
 
-const READ_INTERVAL_MS: u64 = 100;
+const READ_INTERVAL_MS: u64 = 5;
 
 pub struct DWalletMPCService {
     last_read_consensus_round: Option<Round>,
@@ -142,9 +145,9 @@ impl DWalletMPCService {
         loop {
             let mut events = vec![];
 
-            // Load events from Sui every 30 seconds (300 * READ_INTERVAL_MS=100ms = 30,000ms = 30s).
+            // Load events from Sui every 30 seconds (300 * READ_INTERVAL_MS=5ms = 30,000ms = 30s).
             // Note: when we spawn, `loop_index == 0`, so we fetch uncompleted events on spawn.
-            if loop_index % 300 == 0 {
+            if loop_index % 6000 == 0 {
                 events = self.fetch_uncompleted_events().await;
             }
             loop_index += 1;
@@ -163,7 +166,7 @@ impl DWalletMPCService {
             if self.dwallet_mpc_manager.recognized_self_as_malicious {
                 error!(
                     authority=?self.epoch_store.name,
-                    "the node has identified itself as malicious and is no longer participating in MPC protocols"
+                    "the node has identified itself as malicious, breaking from MPC service loop"
                 );
 
                 // This signifies a bug, we can't proceed before we fix it.
@@ -208,6 +211,7 @@ impl DWalletMPCService {
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
         }
     }
+
     /// Bootstrap all completed MPC sessions from the local DB for current epoch.
     /// Return `true` if bootstrapping was successful, `false` otherwise.
     fn bootstrap_completed_sessions(&mut self) -> bool {
@@ -216,6 +220,7 @@ impl DWalletMPCService {
             return false;
         };
         let bootstrapping_completed_sessions = tables.get_dwallet_mpc_completed_sessions_iter();
+
         let mut last_bootstrapped_consensus_round = None;
         for bootstrapping_completed_session in bootstrapping_completed_sessions {
             match bootstrapping_completed_session {
@@ -233,6 +238,7 @@ impl DWalletMPCService {
                 }
             }
         }
+
         true
     }
 
@@ -241,6 +247,7 @@ impl DWalletMPCService {
             warn!("failed to load DB tables from the epoch store");
             return false;
         };
+
         let next_consensus_round = self
             .last_read_consensus_round
             .map(|round| round + 1)
@@ -256,38 +263,48 @@ impl DWalletMPCService {
             verified_dwallet_checkpoint_messages_iter
         );
 
-        for (mpc_messages, mpc_outputs, verified_dwallet_checkpoint_messages) in
-            zipped_consensus_rounds_iter
+        for (
+            mpc_messages_iteration_result,
+            mpc_outputs_iteration_result,
+            verified_dwallet_checkpoint_messages_iteration_result,
+        ) in zipped_consensus_rounds_iter
         {
-            let Ok((mpc_messages_round, mpc_messages)) = mpc_messages else {
+            let Ok((mpc_messages_consensus_round, mpc_messages)) = mpc_messages_iteration_result
+            else {
                 error!("Failed to load DWallet MPC messages from the local DB");
+
                 return false;
             };
-            let Ok((mpc_outputs_round, mpc_outputs)) = mpc_outputs else {
+            let Ok((mpc_outputs_consensus_round, mpc_outputs)) = mpc_outputs_iteration_result
+            else {
                 error!("Failed to load DWallet MPC outputs from the local DB");
+
                 return false;
             };
             let Ok((
-                       verified_dwallet_checkpoint_messages_round,
-                       verified_dwallet_checkpoint_messages,
-                   )) = verified_dwallet_checkpoint_messages
+                verified_dwallet_checkpoint_messages_consensus_round,
+                verified_dwallet_checkpoint_messages,
+            )) = verified_dwallet_checkpoint_messages_iteration_result
             else {
                 error!("Failed to load verified DWallet checkpoint messages from the local DB");
+
                 return false;
             };
-            if mpc_messages_round != mpc_outputs_round
-                || mpc_messages_round != verified_dwallet_checkpoint_messages_round
+            if mpc_messages_consensus_round != mpc_outputs_consensus_round
+                || mpc_messages_consensus_round
+                    != verified_dwallet_checkpoint_messages_consensus_round
             {
                 error!(
-                        ?mpc_messages_round,
-                        ?mpc_outputs_round,
-                        ?verified_dwallet_checkpoint_messages_round,
+                        ?mpc_messages_consensus_round,
+                        ?mpc_outputs_consensus_round,
+                        ?verified_dwallet_checkpoint_messages_consensus_round,
                         "The consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
                     );
+
                 return false;
             }
 
-            let consensus_round = mpc_messages_round;
+            let consensus_round = mpc_messages_consensus_round;
 
             if self.last_read_consensus_round >= Some(consensus_round) {
                 error!(
@@ -299,13 +316,10 @@ impl DWalletMPCService {
             }
 
             // Let's start processing the MPC messages for the current round.
-
-            // TODO(scaly): was this what I should have done?
             self.dwallet_mpc_manager
                 .handle_consensus_round_messages(consensus_round, mpc_messages);
 
             // Not let's move to process MPC outputs for the current round.
-
             let mut checkpoint_messages = vec![];
             let mut completed_sessions = vec![];
             for output in &mpc_outputs {
@@ -317,7 +331,9 @@ impl DWalletMPCService {
                             checkpoint_messages.extend(m);
                             completed_sessions.push(session_identifier);
                             let output_digest = keccak256_digest(&output.output);
+
                             info!(
+                                authority=?self.epoch_store.name,
                                 ?output_digest,
                                 consensus_round,
                                 ?session_identifier,
@@ -325,7 +341,7 @@ impl DWalletMPCService {
                             );
                         }
                         OutputVerificationStatus::Malicious => {
-                            debug!(
+                            warn!(
                                 ?output,
                                 consensus_round,
                                 ?session_identifier,
@@ -368,7 +384,9 @@ impl DWalletMPCService {
                     .is_some_and(|msg| matches!(msg, DWalletCheckpointMessageKind::EndOfPublish));
                 if final_round {
                     self.end_of_publish = true;
+
                     info!(
+                        authority=?self.epoch_store.name,
                         epoch=?self.epoch_store.epoch(),
                         consensus_round,
                         "End of publish reached, no more dwallet checkpoints will be processed for this epoch"
@@ -421,6 +439,7 @@ impl DWalletMPCService {
             }
             self.last_read_consensus_round = Some(consensus_round);
         }
+
         true
     }
 
@@ -483,6 +502,7 @@ impl DWalletMPCService {
             let mpc_round = computation_id.mpc_round;
             let consensus_adapter = self.consensus_adapter.clone();
             let epoch_store = self.epoch_store.clone();
+            // TODO(Scaly): can there be a race here, and this to be received only after the session already completed?
             let mpc_event_data = self.dwallet_mpc_manager.mpc_sessions.get(&session_identifier).and_then(|session| session.mpc_event_data.clone()).expect("mpc_event_data must be set for a session for which we got a completed computation update");
 
             match computation_result {

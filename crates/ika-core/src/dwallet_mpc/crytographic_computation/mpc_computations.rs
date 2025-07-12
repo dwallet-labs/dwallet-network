@@ -110,6 +110,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let private_output = bcs::to_bytes(&private_output)?;
+
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output,
@@ -122,13 +123,16 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
     /// round -> {party -> message}
     messages: HashMap<usize, HashMap<PartyID, M>>,
-    #[allow(dead_code)]
     malicious_parties: Vec<PartyID>,
 }
 
 /// Deserializes the messages received from other parties for the next advancement.
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
+///
+/// Note that deserialization of a message depends on the type of the message which is only known once the event data comes,
+/// and so we can only handle this here. Malicious messages are ignored, and if this makes it so that a quorum is not reached,
+/// the `advance_with_guaranteed_output()` method will return a `ThresholdNotReached` error, which will make us wait for more messages before advancing, as desired.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
 ) -> DeserializeMPCMessagesResponse<M> {
