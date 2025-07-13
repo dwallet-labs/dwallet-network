@@ -33,7 +33,7 @@ pub enum PublicInput {
     EncryptedShareVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     PartialSignatureVerification(twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters),
     NetworkEncryptionKeyReconfiguration(<ReconfigurationSecp256k1Party as mpc::Party>::PublicInput),
-    MakeDWalletUserSecretKeySharesPublicParameters(
+    MakeDWalletUserSecretKeySharesPublic(
         twopc_mpc::secp256k1::class_groups::ProtocolPublicParameters,
     ),
 }
@@ -87,9 +87,7 @@ pub(crate) fn session_input_from_event(
             )?;
 
             Ok((
-                PublicInput::MakeDWalletUserSecretKeySharesPublicParameters(
-                    protocol_public_parameters,
-                ),
+                PublicInput::MakeDWalletUserSecretKeySharesPublic(protocol_public_parameters),
                 None,
             ))
         }

@@ -103,6 +103,9 @@ pub(crate) fn sign_session_public_input(
     )
 }
 
+/// Update metrics on whether we are in the expected or unexpected case during threshold decryption.
+/// The unexpected case is slower, but still completes successfully - we want to tune the system such that
+/// there will be as little unexpected cases with minimum  delay, which makes reporting these metrics useful.
 pub(crate) fn update_expected_decrypters_metrics(
     expected_decrypters: &HashSet<PartyID>,
     decrypters: HashSet<PartyID>,

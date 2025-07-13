@@ -327,7 +327,7 @@ pub struct DWalletMPCMessage {
     pub authority: AuthorityName,
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
-    pub round_number: usize,
+    pub round_number: u64,
 }
 
 /// The message unique key in the consensus network.
@@ -338,7 +338,7 @@ pub struct DWalletMPCMessageKey {
     pub authority: AuthorityName,
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
-    pub round_number: usize,
+    pub round_number: u64,
 }
 
 /// Holds information about the current MPC session.
