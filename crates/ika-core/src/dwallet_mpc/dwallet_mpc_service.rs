@@ -130,9 +130,7 @@ impl DWalletMPCService {
     pub async fn spawn(&mut self) {
         // Process all MPC completed session outputs we bootstrapped from storage
         // before starting execution, to avoid their computation.
-        if !self.bootstrap_completed_sessions() {
-            return;
-        }
+        self.bootstrap_completed_sessions();
 
         info!(
             validator=?self.epoch_store.name,
@@ -211,11 +209,12 @@ impl DWalletMPCService {
     }
 
     /// Bootstrap all completed MPC sessions from the local DB for current epoch.
-    /// Return `true` if bootstrapping was successful, `false` otherwise.
-    fn bootstrap_completed_sessions(&mut self) -> bool {
+    /// This is used to avoid re-running computations for sessions.
+    /// Panics if the DB tables cannot be loaded.
+    fn bootstrap_completed_sessions(&mut self) {
         let Ok(tables) = self.epoch_store.tables() else {
-            warn!("failed to load DB tables from the epoch store");
-            return false;
+            error!("failed to load DB tables from the epoch store");
+            panic!("failed to load DB tables from the epoch store");
         };
         let bootstrapping_completed_sessions = tables.get_dwallet_mpc_completed_sessions_iter();
 
@@ -232,12 +231,10 @@ impl DWalletMPCService {
                         last_bootstrapped_consensus_round,
                         "failed to load all completed MPC sessions from the local DB during bootstrapping"
                     );
-                    return false;
+                    panic!("failed to load all completed MPC sessions from the local DB during bootstrapping");
                 }
             }
         }
-
-        true
     }
 
     fn process_consensus_rounds_from_storage(&mut self) -> bool {
@@ -306,9 +303,10 @@ impl DWalletMPCService {
 
             if self.last_read_consensus_round >= Some(consensus_round) {
                 error!(
+                    should_never_happen=true,
                     consensus_round,
                     last_read_consensus_round=?self.last_read_consensus_round,
-                    "consensus round must be in a ascending order, should never happen"
+                    "consensus round must be in a ascending order"
                 );
 
                 return false;
