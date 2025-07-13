@@ -236,7 +236,6 @@ impl DWalletMPCManager {
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
-    /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, consensus_round: u64, message: DWalletMPCMessage) {
         let session_identifier = message.session_identifier;
         let sender_authority = message.authority;
@@ -356,6 +355,8 @@ impl DWalletMPCManager {
     ///
     /// The messages to advance with are built on the spot, assuming they satisfy required conditions.
     /// They are put on a `ComputationRequest` and forwarded to the `orchestrator` for execution.
+    ///
+    /// Returns the completed computation results.
     pub(crate) async fn perform_cryptographic_computation(
         &mut self,
     ) -> HashMap<
