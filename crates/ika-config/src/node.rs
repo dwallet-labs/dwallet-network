@@ -18,6 +18,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use sui_types::base_types::{ObjectID, SuiAddress};
 
+use dwallet_rng::RootSeed;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::crypto::KeypairTraits;
 use ika_types::crypto::NetworkKeyPair;
@@ -26,9 +27,6 @@ use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 
-use dwallet_classgroups_types::{
-    class_groups_as_base64, read_class_groups_from_file, ClassGroupsKeyPairAndProof,
-};
 use ika_types::crypto::{
     get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
 };
@@ -68,10 +66,16 @@ pub struct SuiConnectorConfig {
     pub sui_chain_identifier: SuiChainIdentifier,
     /// The move package ID of ika (IKA) on sui.
     pub ika_package_id: ObjectID,
+    /// The move package id of `ika_common` on sui.
+    pub ika_common_package_id: ObjectID,
+    /// The move package id of ika_dwallet_2pc_mpc on sui.
+    pub ika_dwallet_2pc_mpc_package_id: ObjectID,
     /// The move package ID of `ika_system` on sui.
     pub ika_system_package_id: ObjectID,
-    /// The object ID of ika_system_state on sui.
+    /// The object ID of the Ika system on sui.
     pub ika_system_object_id: ObjectID,
+    /// The object id of ika_dwallet_coordinator on sui.
+    pub ika_dwallet_coordinator_object_id: ObjectID,
 
     /// Only for sui connector notifiers, don't set `notifier_client_key_pair` otherwise.
     /// Path of the file where sui client key (any SuiKeyPair) is stored.
@@ -94,7 +98,7 @@ pub struct SuiConnectorConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairWithPath>,
+    pub root_seed: Option<RootSeedWithPath>,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
@@ -547,62 +551,53 @@ pub fn read_authority_keypair_from_file(path: &PathBuf) -> AuthorityKeyPair {
         .unwrap_or_else(|_| panic!("Invalid authority keypair file at path {:?}", &path))
 }
 
-/// Wrapper struct for ClassGroupsKeyPair that can be deserialized from a file path.
+/// Wrapper struct for RootSeed that can be deserialized from a file path.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct ClassGroupsKeyPairWithPath {
+pub struct RootSeedWithPath {
     #[serde(flatten)]
-    location: ClassGroupsKeyPairLocation,
+    location: RootSeedLocation,
 
     #[serde(skip)]
-    keypair: OnceCell<Arc<ClassGroupsKeyPairAndProof>>,
+    seed: OnceCell<RootSeed>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
 #[serde(untagged)]
-enum ClassGroupsKeyPairLocation {
-    InPlace {
-        #[serde(with = "class_groups_as_base64")]
-        value: Arc<ClassGroupsKeyPairAndProof>,
-    },
-    File {
-        path: PathBuf,
-    },
+enum RootSeedLocation {
+    InPlace { value: RootSeed },
+    File { path: PathBuf },
 }
 
-impl ClassGroupsKeyPairWithPath {
-    pub fn new(kp: Box<ClassGroupsKeyPairAndProof>) -> Self {
-        let cell: OnceCell<Arc<ClassGroupsKeyPairAndProof>> = OnceCell::new();
-        let arc_kp = Arc::new(*kp);
-        // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-        cell.set(arc_kp.clone())
-            .expect("Failed to set class_groups keypair");
+impl RootSeedWithPath {
+    pub fn new(seed: RootSeed) -> Self {
+        let cell: OnceCell<RootSeed> = OnceCell::new();
+        // OK to unwrap panic because validator should not start without root seed loaded.
+        cell.set(seed.clone()).expect("Failed to set root seed");
         Self {
-            location: ClassGroupsKeyPairLocation::InPlace { value: arc_kp },
-            keypair: cell,
+            location: RootSeedLocation::InPlace { value: seed },
+            seed: cell,
         }
     }
 
     pub fn new_from_path(path: PathBuf) -> Self {
-        let cell: OnceCell<Arc<ClassGroupsKeyPairAndProof>> = OnceCell::new();
+        let cell: OnceCell<RootSeed> = OnceCell::new();
         // OK to unwrap panic because class_groups should not start without all keypairs loaded.
-        cell.set(Arc::new(*read_class_groups_from_file(&path).unwrap()))
-            .expect("Failed to set class_groups keypair");
+        cell.set(RootSeed::from_file(path.clone()).unwrap())
+            .expect("Failed to set root seed");
         Self {
-            location: ClassGroupsKeyPairLocation::File { path },
-            keypair: cell,
+            location: RootSeedLocation::File { path },
+            seed: cell,
         }
     }
 
-    pub fn class_groups_keypair(&self) -> &ClassGroupsKeyPairAndProof {
-        self.keypair
-            .get_or_init(|| match &self.location {
-                ClassGroupsKeyPairLocation::InPlace { value } => value.clone(),
-                ClassGroupsKeyPairLocation::File { path } => {
-                    // OK to unwrap panic because `class_groups`
-                    // should not start without all keypairs loaded.
-                    Arc::new(*read_class_groups_from_file(path).unwrap())
-                }
-            })
-            .as_ref()
+    pub fn root_seed(&self) -> &RootSeed {
+        self.seed.get_or_init(|| match &self.location {
+            RootSeedLocation::InPlace { value } => value.clone(),
+            RootSeedLocation::File { path } => {
+                // OK to unwrap panic because validator
+                // should not start without seed loaded.
+                RootSeed::from_file(path.clone()).unwrap()
+            }
+        })
     }
 }

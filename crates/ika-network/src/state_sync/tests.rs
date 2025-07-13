@@ -54,7 +54,7 @@ async fn server_push_checkpoint() {
         PeerStateSyncInfo {
             chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
-            height: 0,
+            dwallet_checkpoint_height: 0,
             lowest: 0,
         },
     );
@@ -71,7 +71,7 @@ async fn server_push_checkpoint() {
         Some(&PeerStateSyncInfo {
             chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
-            height: 1,
+            dwallet_checkpoint_height: 1,
             lowest: 0,
         })
     );
@@ -225,7 +225,7 @@ async fn isolated_sync_job() {
         PeerStateSyncInfo {
             chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
-            height: *ordered_checkpoints.last().unwrap().sequence_number(),
+            dwallet_checkpoint_height: *ordered_checkpoints.last().unwrap().sequence_number(),
             lowest: 0,
         },
     );
@@ -400,7 +400,7 @@ async fn test_state_sync_using_archive() -> anyhow::Result<()> {
         PeerStateSyncInfo {
             chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
-            height: *ordered_checkpoints.last().unwrap().sequence_number(),
+            dwallet_checkpoint_height: *ordered_checkpoints.last().unwrap().sequence_number(),
             lowest: oldest_checkpoint_to_keep,
         },
     );
@@ -487,7 +487,7 @@ async fn sync_with_checkpoints_being_inserted() {
         PeerStateSyncInfo {
             chain_identifier: *ordered_checkpoints[0].digest(),
             on_same_chain_as_us: true,
-            height: 0,
+            dwallet_checkpoint_height: 0,
             lowest: 0,
         },
     );

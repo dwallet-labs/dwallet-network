@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-rng.workspace = true
 dwallet-classgroups-types.workspace = true
 anemo.workspace = true
 anyhow.workspace = true
@@ -59,6 +60,3 @@ insta.workspace = true
 tempfile.workspace = true
 
 sui-execution.workspace = true
-
-[features]
-mock-class-groups = []

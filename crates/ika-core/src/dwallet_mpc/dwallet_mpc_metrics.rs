@@ -16,7 +16,7 @@
 //! - **signature_algorithm**: The signature algorithm (e.g., "ECDSA")
 //! - **mpc_round**: The specific round number within a protocol session
 
-use ika_types::messages_dwallet_mpc::MPCProtocolInitData;
+use ika_types::messages_dwallet_mpc::MPCRequestInput;
 use prometheus::{
     register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
     Registry,
@@ -167,7 +167,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context.
-    pub fn add_completion(&self, mpc_event_data: &MPCProtocolInitData) {
+    pub fn add_completion(&self, mpc_event_data: &MPCRequestInput) {
         self.completions_count
             .with_label_values(&[
                 &mpc_event_data.to_string(),
@@ -185,7 +185,7 @@ impl DWalletMPCMetrics {
     ///
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context.
-    pub fn add_received_event_start(&self, mpc_event_data: &MPCProtocolInitData) {
+    pub fn add_received_event_start(&self, mpc_event_data: &MPCRequestInput) {
         self.received_events_start_count
             .with_label_values(&[
                 &mpc_event_data.to_string(),
@@ -204,14 +204,14 @@ impl DWalletMPCMetrics {
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
-    pub fn add_advance_call(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
+    pub fn add_advance_call(&self, request_input: &MPCRequestInput, mpc_round: &str) {
         self.advance_calls
             .with_label_values(&[
-                &mpc_event_data.to_string(),
-                &mpc_event_data.get_curve(),
+                &request_input.to_string(),
+                &request_input.get_curve(),
                 mpc_round,
-                &mpc_event_data.get_hash_scheme(),
-                &mpc_event_data.get_signature_algorithm(),
+                &request_input.get_hash_scheme(),
+                &request_input.get_signature_algorithm(),
             ])
             .inc();
     }
@@ -224,7 +224,7 @@ impl DWalletMPCMetrics {
     /// # Arguments
     /// * `mpc_event_data` - The MPC protocol initialization data containing context
     /// * `mpc_round` — String identifier for the specific MPC round.
-    pub fn add_advance_completion(&self, mpc_event_data: &MPCProtocolInitData, mpc_round: &str) {
+    pub fn add_advance_completion(&self, mpc_event_data: &MPCRequestInput, mpc_round: &str) {
         self.advance_completions
             .with_label_values(&[
                 &mpc_event_data.to_string(),
@@ -247,7 +247,7 @@ impl DWalletMPCMetrics {
     /// * `duration_ms` — Duration of the completion in milliseconds.
     pub fn set_last_completion_duration(
         &self,
-        mpc_event_data: &MPCProtocolInitData,
+        mpc_event_data: &MPCRequestInput,
         mpc_round: &str,
         duration_ms: i64,
     ) {

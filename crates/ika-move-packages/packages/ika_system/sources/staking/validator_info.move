@@ -9,12 +9,12 @@ use std::string::String;
 use sui::{bls12381::{UncompressedG1, g1_from_bytes, g1_to_uncompressed_g1, bls12381_min_pk_verify}, group_ops::Element};
 use sui::table_vec::{TableVec};
 use sui::bcs;
-use ika_system::{
+use ika_system::validator_metadata::{ValidatorMetadata};
+use ika_common::{
     extended_field::{Self, ExtendedField},
-    validator_metadata::{ValidatorMetadata}
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
+    multiaddr
 };
-use ika_system::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
-use ika_system::multiaddr;
 
 // === Constants ===
 

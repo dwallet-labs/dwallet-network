@@ -13,7 +13,6 @@ use sui::{
 };
 use ika::ika::IKA;
 use ika_system::{
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
     pending_values::{Self, PendingValues},
     staked_ika::{Self, StakedIka},
     token_exchange_rate::{Self, TokenExchangeRate},
@@ -21,6 +20,7 @@ use ika_system::{
     validator_info::{Self, ValidatorInfo},
     validator_metadata::ValidatorMetadata,
 };
+use ika_common::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof;
 
 // === Constants ===
 

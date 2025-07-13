@@ -10,6 +10,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+dwallet-rng.workspace = true
 dwallet-mpc-types.workspace = true
 dwallet-classgroups-types.workspace = true
 anemo.workspace = true
@@ -22,6 +23,7 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_with.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
+bcs.workspace = true
 
 consensus-config.workspace = true
 sui-keys.workspace = true

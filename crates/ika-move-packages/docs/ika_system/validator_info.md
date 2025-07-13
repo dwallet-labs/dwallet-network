@@ -45,9 +45,9 @@ title: Module `(ika_system=0x0)::validator_info`
 -  [Function `update_class_groups_key_and_proof`](#(ika_system=0x0)_validator_info_update_class_groups_key_and_proof)
 
 
-<pre><code><b>use</b> (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof">class_groups_public_key_and_proof</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field">extended_field</a>;
-<b>use</b> (ika_system=0x0)::<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr">multiaddr</a>;
+<pre><code><b>use</b> (ika_common=0x0)::class_groups_public_key_and_proof;
+<b>use</b> (ika_common=0x0)::extended_field;
+<b>use</b> (ika_common=0x0)::multiaddr;
 <b>use</b> (ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata">validator_metadata</a>;
 <b>use</b> <a href="../std/ascii.md#std_ascii">std::ascii</a>;
 <b>use</b> <a href="../std/bcs.md#std_bcs">std::bcs</a>;
@@ -170,7 +170,7 @@ and metadata for both current and next epoch configurations.
 <dd>
 </dd>
 <dt>
-<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>&gt;</code>
+<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>: <a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_common=0x0)::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof&gt;</code>
 </dt>
 <dd>
 </dd>
@@ -190,7 +190,7 @@ and metadata for both current and next epoch configurations.
 <dd>
 </dd>
 <dt>
-<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_system=0x0)::<a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_ExtendedField">extended_field::ExtendedField</a>&lt;(ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>&gt;</code>
+<code><a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_common=0x0)::extended_field::ExtendedField&lt;(ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>&gt;</code>
 </dt>
 <dd>
  Extended metadata field for additional validator information
@@ -363,7 +363,7 @@ Creates a new ValidatorInfo instance with the provided parameters.
 Validates all inputs and verifies proof of possession for the protocol key.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_new">new</a>(name: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_validator_id">validator_id</a>: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>, proof_of_possession_bytes: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_address">network_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_p2p_address">p2p_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_new">new</a>(name: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_validator_id">validator_id</a>: <a href="../sui/object.md#sui_object_ID">sui::object::ID</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_protocol_pubkey_bytes">protocol_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_pubkey_bytes">consensus_pubkey_bytes</a>: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_class_groups_pubkey_and_proof_bytes">class_groups_pubkey_and_proof_bytes</a>: (ika_common=0x0)::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof, proof_of_possession_bytes: vector&lt;u8&gt;, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_address">network_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_p2p_address">p2p_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a>: <a href="../std/string.md#std_string_String">std::string::String</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: (ika_system=0x0)::<a href="../ika_system/validator_metadata.md#(ika_system=0x0)_validator_metadata_ValidatorMetadata">validator_metadata::ValidatorMetadata</a>, ctx: &<b>mut</b> <a href="../sui/tx_context.md#sui_tx_context_TxContext">sui::tx_context::TxContext</a>): (ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>
 </code></pre>
 
 
@@ -416,7 +416,7 @@ Validates all inputs and verifies proof of possession for the protocol key.
         <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_address">next_epoch_network_address</a>: option::none(),
         <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_p2p_address">next_epoch_p2p_address</a>: option::none(),
         <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_consensus_address">next_epoch_consensus_address</a>: option::none(),
-        <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: <a href="../ika_system/extended_field.md#(ika_system=0x0)_extended_field_new">extended_field::new</a>(<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>, ctx),
+        <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>: extended_field::new(<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_metadata">metadata</a>, ctx),
     };
     <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_validate">validate</a>();
     <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info">validator_info</a>
@@ -693,7 +693,7 @@ Sets consensus public key for next epoch.
 Sets class groups public key and proof for next epoch.
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_set_next_epoch_class_groups_pubkey_and_proof_bytes">set_next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>, class_groups_pubkey_and_proof: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>)
+<pre><code><b>public</b>(package) <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_set_next_epoch_class_groups_pubkey_and_proof_bytes">set_next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &<b>mut</b> (ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>, class_groups_pubkey_and_proof: (ika_common=0x0)::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof)
 </code></pre>
 
 
@@ -870,20 +870,20 @@ Aborts if validator info is invalid
                 && self.name.length() &lt;= <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>,
         <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>,
     );
-    <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">multiaddr::validate_tcp</a>(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_address">network_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>);
+    <b>assert</b>!(multiaddr::validate_tcp(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_address">network_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>);
     <b>if</b> (self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_address">next_epoch_network_address</a>.is_some()) {
         <b>assert</b>!(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_address">next_epoch_network_address</a>.borrow().length() &lt;= <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>);
-        <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_tcp">multiaddr::validate_tcp</a>(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_address">next_epoch_network_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>);
+        <b>assert</b>!(multiaddr::validate_tcp(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_address">next_epoch_network_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkAddress">EMetadataInvalidNetworkAddress</a>);
     };
-    <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">multiaddr::validate_udp</a>(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_p2p_address">p2p_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>);
+    <b>assert</b>!(multiaddr::validate_udp(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_p2p_address">p2p_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>);
     <b>if</b> (self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_p2p_address">next_epoch_p2p_address</a>.is_some()) {
         <b>assert</b>!(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_p2p_address">next_epoch_p2p_address</a>.borrow().length() &lt;= <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>);
-        <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">multiaddr::validate_udp</a>(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_p2p_address">next_epoch_p2p_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>);
+        <b>assert</b>!(multiaddr::validate_udp(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_p2p_address">next_epoch_p2p_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidP2pAddress">EMetadataInvalidP2pAddress</a>);
     };
-    <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">multiaddr::validate_udp</a>(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>);
+    <b>assert</b>!(multiaddr::validate_udp(&self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_consensus_address">consensus_address</a>), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>);
     <b>if</b> (self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_consensus_address">next_epoch_consensus_address</a>.is_some()) {
         <b>assert</b>!(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_consensus_address">next_epoch_consensus_address</a>.borrow().length() &lt;= <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_MAX_VALIDATOR_TEXT_FIELD_LENGTH">MAX_VALIDATOR_TEXT_FIELD_LENGTH</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EValidatorMetadataExceedingLengthLimit">EValidatorMetadataExceedingLengthLimit</a>);
-        <b>assert</b>!(<a href="../ika_system/multiaddr.md#(ika_system=0x0)_multiaddr_validate_udp">multiaddr::validate_udp</a>(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_consensus_address">next_epoch_consensus_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>);
+        <b>assert</b>!(multiaddr::validate_udp(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_consensus_address">next_epoch_consensus_address</a>.borrow()), <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidConsensusAddress">EMetadataInvalidConsensusAddress</a>);
     };
     <b>assert</b>!(self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_network_pubkey_bytes">network_pubkey_bytes</a>.length() == <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ED25519_KEY_LEN">ED25519_KEY_LEN</a>, <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_EMetadataInvalidNetworkPubkey">EMetadataInvalidNetworkPubkey</a>);
     <b>if</b> (self.<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_network_pubkey_bytes">next_epoch_network_pubkey_bytes</a>.is_some()) {
@@ -1398,7 +1398,7 @@ Returns the next epoch consensus public key bytes
 Returns the next epoch class groups public key and proof
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>): &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_next_epoch_class_groups_pubkey_and_proof_bytes">next_epoch_class_groups_pubkey_and_proof_bytes</a>(self: &(ika_system=0x0)::<a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_ValidatorInfo">validator_info::ValidatorInfo</a>): &<a href="../std/option.md#std_option_Option">std::option::Option</a>&lt;(ika_common=0x0)::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof&gt;
 </code></pre>
 
 
@@ -1481,7 +1481,7 @@ Checks if two Options both contain values and those values are equal.
 Updates the class groups public key and proof with new values.
 
 
-<pre><code><b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_update_class_groups_key_and_proof">update_class_groups_key_and_proof</a>(class_groups_pubkey_and_proof: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;, new_class_groups_key_and_proof: (ika_system=0x0)::<a href="../ika_system/class_groups_public_key_and_proof.md#(ika_system=0x0)_class_groups_public_key_and_proof_ClassGroupsPublicKeyAndProof">class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof</a>)
+<pre><code><b>fun</b> <a href="../ika_system/validator_info.md#(ika_system=0x0)_validator_info_update_class_groups_key_and_proof">update_class_groups_key_and_proof</a>(class_groups_pubkey_and_proof: &<b>mut</b> <a href="../sui/table_vec.md#sui_table_vec_TableVec">sui::table_vec::TableVec</a>&lt;vector&lt;u8&gt;&gt;, new_class_groups_key_and_proof: (ika_common=0x0)::class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof)
 </code></pre>
 
 

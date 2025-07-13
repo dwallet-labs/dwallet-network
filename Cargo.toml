@@ -74,13 +74,14 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-k256 = { version = "0.14.0-pre.7", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76"}
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76", features = ["threshold"] }
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "7dd2b76"}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "7dd2b76"}
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "7dd2b76"}
+k256 = { version = "0.14.0-pre.8", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166", features = ["threshold"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["secp256k1", "class_groups"], rev = "3c59166"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", features = ["os_rng"], rev = "3c59166"}
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "3c59166"}
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
@@ -211,6 +212,7 @@ json_to_table = { git = "https://github.com/zhiburt/tabled/", rev = "e449317a1c0
 leb128 = "0.2.5"
 lru = "0.10"
 match_opt = "0.1.2"
+merlin = { version = "3", default-features = false }
 miette = { version = "7", features = ["fancy"] }
 mime = "0.3"
 mockall = "0.11.4"
@@ -324,7 +326,7 @@ tempfile = "3.3.0"
 test-fuzz = "3.0.4"
 thiserror = "1.0.40"
 tiny-bip39 = "1.0.0"
-tokio = "1.44.2"
+tokio = "1.46.1"
 tokio-retry = "0.3"
 tokio-rustls = { version = "0.26", default-features = false, features = [
     "tls12",
@@ -523,9 +525,10 @@ sui-execution = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f
 consensus-config = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 consensus-core = { git = "https://github.com/MystenLabs/sui", rev = "3b1d6b3bd63f175b774da557f89af3619b74d783" }
 
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "d0929d4" }
 
 ### Workspace Members ###
+dwallet-rng = { path = "crates/dwallet-rng" }
 dwallet-mpc-centralized-party = { path = "crates/dwallet-mpc-centralized-party" }
 dwallet-mpc-types = { path = "crates/dwallet-mpc-types"}
 dwallet-classgroups-types = { path = "crates/dwallet-classgroups-types"}
@@ -539,7 +542,7 @@ ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
 #ika-sdk = { path = "crates/ika-sdk" }
 ika-swarm = { path = "crates/ika-swarm" }
-ika-swarm-config = { path = "crates/ika-swarm-config", features = ["mock-class-groups"] }
+ika-swarm-config = { path = "crates/ika-swarm-config" }
 ika-telemetry = { path = "crates/ika-telemetry" }
 ika-types = { path = "crates/ika-types" }
 ika-move-packages = { path = "crates/ika-move-packages" }
@@ -559,4 +562,4 @@ include_dir = "0.7.3"
 
 [patch.crates-io]
 curve25519-dalek = { git = 'https://github.com/dalek-cryptography/curve25519-dalek', rev = "b7e4fc0" }
-crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "640aacb" }
+crypto-bigint = { git = 'https://github.com/erik-3milabs/crypto-bigint.git', rev = "d0929d4" }

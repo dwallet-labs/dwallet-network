@@ -7,17 +7,17 @@ module ika_system::validator_set;
 
 use ika::ika::IKA;
 use ika_system::{
-    bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member},
-    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
-    dwallet_2pc_mpc_coordinator_inner::DWalletCoordinatorInner,
-    dwallet_pricing::DWalletPricing,
-    extended_field::{Self, ExtendedField},
     pending_active_set::{Self, PendingActiveSet},
     staked_ika::StakedIka,
     token_exchange_rate::TokenExchangeRate,
     validator::{Self, Validator},
     validator_cap::{ValidatorCap, ValidatorOperationCap, ValidatorCommissionCap},
     validator_metadata::ValidatorMetadata
+};
+use ika_common::{
+    extended_field::{Self, ExtendedField},
+    bls_committee::{Self, BlsCommittee, new_bls_committee, new_bls_committee_member},
+    class_groups_public_key_and_proof::ClassGroupsPublicKeyAndProof,
 };
 use std::string::String;
 use sui::{
@@ -536,22 +536,10 @@ public(package) fun set_next_epoch_class_groups_pubkey_and_proof_bytes(
     self.assert_no_pending_or_active_duplicates(validator_id);
 }
 
-public(package) fun set_pricing_vote(
-    self: &mut ValidatorSet,
-    dwallet_coordinator_inner: &mut DWalletCoordinatorInner,
-    pricing: DWalletPricing,
-    cap: &ValidatorOperationCap,
-) {
-    let validator_id = cap.validator_id();
-    let validator = self.get_validator_mut(validator_id);
-    validator.verify_operation_cap(cap);
-    dwallet_coordinator_inner.set_pricing_vote(validator_id, pricing);
-}
-
 // ==== epoch change functions ====
 
 /// Process the pending validator changes at mid epoch
-public(package) fun process_mid_epoch(
+public(package) fun initiate_mid_epoch_reconfiguration(
     self: &mut ValidatorSet,
 ) {
     assert!(self.next_epoch_active_committee.is_none(), EProcessMidEpochOnlyAfterAdvanceEpoch);
@@ -774,6 +762,16 @@ fun get_validator_indices(
     res
 }
 
+/// Verify the validator capability is valid for a Validator.
+public(package) fun verify_validator_cap(
+    self: &ValidatorSet,
+    cap: &ValidatorCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator(validator_id);
+    assert!(validator.validator_cap_id() == &object::id(cap), EInvalidCap);
+}
+
 /// Verify the operation capability is valid for a Validator.
 public(package) fun verify_operation_cap(
     self: &ValidatorSet,
@@ -782,6 +780,16 @@ public(package) fun verify_operation_cap(
     let validator_id = cap.validator_id();
     let validator = self.get_validator(validator_id);
     assert!(validator.operation_cap_id() == &object::id(cap), EInvalidCap);
+}
+
+/// Verify the commission capability is valid for a Validator.
+public(package) fun verify_commission_cap(
+    self: &ValidatorSet,
+    cap: &ValidatorCommissionCap,
+) {
+    let validator_id = cap.validator_id();
+    let validator = self.get_validator(validator_id);
+    assert!(validator.commission_cap_id() == &object::id(cap), EInvalidCap);
 }
 
 /// Process the pending new validators. They will be `next_epoch_active_committee` and activated during `advance_epoch`.

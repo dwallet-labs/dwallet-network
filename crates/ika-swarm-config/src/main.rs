@@ -141,9 +141,7 @@ async fn main() -> Result<()> {
             // Publish the "ika" package.
             let (ika_package_id, treasury_cap_id, ika_package_upgrade_cap_id) =
                 publish_ika_package_to_sui(
-                    publisher_address,
                     &mut context,
-                    client.clone(),
                     ika_package,
                 )
                 .await?;

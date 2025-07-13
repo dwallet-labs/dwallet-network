@@ -108,7 +108,7 @@ impl ConfigBuilder {
         let sui_fullnode_rpc_url = LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL.to_string();
         let sui_faucet_url = LOCAL_DEFAULT_SUI_FAUCET_URL.to_string();
         Self::new(
-            nondeterministic!(tempfile::tempdir().unwrap()).into_path(),
+            nondeterministic!(tempfile::tempdir().unwrap()).keep(),
             sui_fullnode_rpc_url,
             sui_faucet_url,
         )
@@ -265,12 +265,6 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                         if let Some(rgp) = self.computation_price_per_unit_size {
                             builder = builder.with_computation_price(rgp);
                         }
-                        #[cfg(feature = "mock-class-groups")]
-                        {
-                            builder = builder.with_class_groups_key_pair_and_proof(
-                                crate::class_groups_mock_builder::create_full_class_groups_mock(),
-                            );
-                        }
 
                         builder.build(&mut rng)
                     })
@@ -330,14 +324,21 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
         if let Some(protocol_version) = self.protocol_version {
             initiation_parameters.protocol_version = protocol_version.as_u64();
         }
-        let (ika_package_id, ika_system_package_id, ika_system_object_id, publisher_keypair) =
-            crate::sui_client::init_ika_on_sui(
-                &validator_initialization_configs,
-                self.sui_fullnode_rpc_url.to_string(),
-                self.sui_faucet_url.to_string(),
-                initiation_parameters,
-            )
-            .await?;
+        let (
+            ika_package_id,
+            ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id,
+            ika_system_package_id,
+            ika_system_object_id,
+            ika_dwallet_coordinator_object_id,
+            publisher_keypair,
+        ) = crate::sui_client::init_ika_on_sui(
+            &validator_initialization_configs,
+            self.sui_fullnode_rpc_url.to_string(),
+            self.sui_faucet_url.to_string(),
+            initiation_parameters,
+        )
+        .await?;
 
         let validator_configs = validator_initialization_configs
             .iter()
@@ -379,8 +380,11 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     validator,
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
+                    ika_common_package_id,
+                    ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    ika_dwallet_coordinator_object_id,
                 )
             })
             .collect();
@@ -412,8 +416,11 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     &validator_initialization_configs,
                     self.sui_fullnode_rpc_url.clone(),
                     ika_package_id,
+                    ika_common_package_id,
+                    ika_dwallet_2pc_mpc_package_id,
                     ika_system_package_id,
                     ika_system_object_id,
+                    ika_dwallet_coordinator_object_id,
                     notifier_client_key_pair,
                 );
                 fullnode_configs.push(config);
@@ -424,8 +431,11 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
             fullnode_configs,
             validator_initialization_configs,
             ika_package_id,
+            ika_common_package_id,
+            ika_dwallet_2pc_mpc_package_id,
             ika_system_package_id,
             ika_system_object_id,
+            ika_dwallet_coordinator_object_id,
         })
     }
 }

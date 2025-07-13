@@ -6,7 +6,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput};
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCError;
-use ika_types::messages_dwallet_mpc::SessionInfo;
+use ika_types::messages_dwallet_mpc::MPCSessionRequest;
 use mpc::WeightedThresholdAccessStructure;
 use serde_json::json;
 use std::collections::HashMap;
@@ -76,7 +76,7 @@ impl MPCSessionLogger {
         &self,
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
-        access_threshold: &WeightedThresholdAccessStructure,
+        access_structure: &WeightedThresholdAccessStructure,
         messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
@@ -110,7 +110,7 @@ impl MPCSessionLogger {
             "session_id": session_id,
             "round": round,
             "party_id": party_id,
-            "access_threshold": access_threshold,
+            "access_structure": access_structure,
             "messages": messages,
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
@@ -132,13 +132,14 @@ impl MPCSessionLogger {
     }
 
     /// Writes MPC session logs to disk if logging is enabled
+    #[allow(dead_code)]
     pub fn write_output_to_disk(
         &self,
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
         output_sender_party_id: PartyID,
         output: &[u8],
-        session_info: &SessionInfo,
+        session_request: &MPCSessionRequest,
         round: u64,
         idx: usize,
     ) {
@@ -171,7 +172,7 @@ impl MPCSessionLogger {
             "mpc_protocol": self.mpc_protocol_name,
             "party_to_authority_map": self.party_to_authority_map,
             "output": output,
-            "session_info": session_info.clone(),
+            "session_request": session_request.clone(),
         });
 
         let mut file = match File::create(&path) {
