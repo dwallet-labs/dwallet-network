@@ -5,14 +5,6 @@ use thiserror::Error;
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// MPC session public output sent through the consensus.
-/// Used to indicate the session status.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MPCSessionPublicOutput {
-    CompletedSuccessfully(SerializedWrappedMPCPublicOutput),
-    SessionFailed,
-}
-
 /// Alias for an MPC public output wrapped with version.
 pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 
@@ -50,7 +42,8 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Active,
-    Finished,
+    ComputationCompleted,
+    Completed,
     Failed,
 }
 
@@ -58,7 +51,8 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::Finished => write!(f, "Finished"),
+            MPCSessionStatus::ComputationCompleted => write!(f, "CompletedComputation"),
+            MPCSessionStatus::Completed => write!(f, "Completed"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }

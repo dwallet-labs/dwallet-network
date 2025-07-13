@@ -8,9 +8,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use strum::IntoStaticStr;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DKGFirstRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub output: Vec<u8>,
@@ -18,7 +17,7 @@ pub struct DKGFirstRoundOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DKGSecondRoundOutput {
     pub dwallet_id: Vec<u8>,
     pub encrypted_secret_share_id: Vec<u8>,
@@ -27,7 +26,7 @@ pub struct DKGSecondRoundOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PresignOutput {
     pub dwallet_id: Option<Vec<u8>>,
     pub presign_id: Vec<u8>,
@@ -36,7 +35,7 @@ pub struct PresignOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct SignOutput {
     pub dwallet_id: Vec<u8>,
     pub sign_id: Vec<u8>,
@@ -46,7 +45,7 @@ pub struct SignOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct EncryptedUserShareOutput {
     pub dwallet_id: Vec<u8>,
     pub encrypted_user_secret_key_share_id: Vec<u8>,
@@ -54,7 +53,7 @@ pub struct EncryptedUserShareOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct PartialSignatureVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub partial_centralized_signed_message_id: Vec<u8>,
@@ -62,7 +61,7 @@ pub struct PartialSignatureVerificationOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct MPCNetworkDKGOutput {
     pub dwallet_network_encryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
@@ -72,7 +71,7 @@ pub struct MPCNetworkDKGOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct MPCNetworkReconfigurationOutput {
     pub dwallet_network_encryption_key_id: Vec<u8>,
     pub public_output: Vec<u8>,
@@ -82,7 +81,7 @@ pub struct MPCNetworkReconfigurationOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct MakeDWalletUserSecretKeySharesPublicOutput {
     pub dwallet_id: Vec<u8>,
     pub public_user_secret_key_shares: Vec<u8>,
@@ -90,7 +89,7 @@ pub struct MakeDWalletUserSecretKeySharesPublicOutput {
     pub session_sequence_number: u64,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DWalletImportedKeyVerificationOutput {
     pub dwallet_id: Vec<u8>,
     pub public_output: Vec<u8>,
@@ -101,7 +100,7 @@ pub struct DWalletImportedKeyVerificationOutput {
 
 // Note: the order of these fields, and the number must correspond to the Move code in
 // `dwallet_2pc_mpc_coordinator_inner.move`.
-#[derive(PartialEq, Eq, Hash, Clone, Serialize, Deserialize, IntoStaticStr)]
+#[derive(PartialEq, Eq, Hash, Clone, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum DWalletCheckpointMessageKind {
     RespondDWalletDKGFirstRoundOutput(DKGFirstRoundOutput),
     RespondDWalletDKGSecondRoundOutput(DKGSecondRoundOutput),

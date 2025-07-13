@@ -5,11 +5,11 @@ mod mpc_event_data;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCSessionStatus};
 use group::PartyID;
 use ika_types::crypto::AuthorityPublicKeyBytes;
+use ika_types::message::DWalletCheckpointMessageKind;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput, SessionIdentifier};
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, error, info};
-
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionIdentifier};
 
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 pub(crate) use input::{session_input_from_event, PublicInput};
@@ -42,6 +42,8 @@ pub(crate) struct DWalletMPCSession {
     /// Used to build the input of messages to advance each round of the session.
     pub(super) messages_by_consensus_round:
         HashMap<u64, HashMap<u64, HashMap<PartyID, MPCMessage>>>,
+
+    outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>>,
 }
 
 impl DWalletMPCSession {
@@ -55,6 +57,7 @@ impl DWalletMPCSession {
         Self {
             status,
             messages_by_consensus_round: HashMap::new(),
+            outputs_by_consensus_round: HashMap::new(),
             session_identifier,
             current_mpc_round: 1,
             mpc_round_to_threshold_not_reached_consensus_rounds: HashMap::new(),
@@ -67,6 +70,7 @@ impl DWalletMPCSession {
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
         self.messages_by_consensus_round = HashMap::new();
+        self.outputs_by_consensus_round = HashMap::new();
     }
 
     /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message
@@ -162,5 +166,50 @@ impl DWalletMPCSession {
             .entry(self.current_mpc_round)
             .or_default()
             .insert(consensus_round);
+    }
+
+    /// Add an output received from a party for the current consensus round.
+    /// If the party already sent an output for this consensus round, it is ignored.
+    /// This is used to collect outputs from different parties for the same consensus round,
+    pub(crate) fn add_output(
+        &mut self,
+        consensus_round: u64,
+        sender_party_id: PartyID,
+        output: DWalletMPCOutput,
+    ) {
+        debug!(
+            session_identifier=?output.session_identifier,
+            from_authority=?output.authority,
+            receiving_authority=?self.validator_name,
+            output_messages=?output.output,
+            "Received a dWallet MPC output",
+        );
+
+        let consensus_round_output_map = self
+            .outputs_by_consensus_round
+            .entry(consensus_round)
+            .or_default();
+
+        if !consensus_round_output_map.contains_key(&sender_party_id) {
+            consensus_round_output_map.insert(sender_party_id, output.output);
+        }
+    }
+
+    pub(crate) fn outputs_by_consensus_round(
+        &self,
+    ) -> &HashMap<u64, HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>> {
+        &self.outputs_by_consensus_round
+    }
+
+    pub(crate) fn complete_mpc_session_status(&mut self) {
+        self.status = MPCSessionStatus::Completed;
+    }
+
+    pub(crate) fn complete_computation_mpc_session_status(&mut self) {
+        self.status = MPCSessionStatus::ComputationCompleted;
+    }
+
+    pub(crate) fn mpc_event_data(&self) -> Option<&MPCEventData> {
+        self.mpc_event_data.as_ref()
     }
 }

@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::AuthorityName;
+use crate::message::DWalletCheckpointMessageKind;
 use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, SessionIdentifier,
+    DWalletMPCMessage, DWalletMPCMessageKey, DWalletMPCOutput, SessionIdentifier,
 };
 use crate::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
@@ -22,11 +23,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
-pub use sui_types::messages_consensus::{AuthorityIndex, TimestampMs, TransactionIndex};
-
-// todo(omersadika): remove that and import from sui_types::messages_consensus once it u64
-/// Consensus round number.
-pub type Round = u64;
+pub use sui_types::messages_consensus::{AuthorityIndex, Round, TimestampMs, TransactionIndex};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusTransaction {
@@ -42,7 +39,11 @@ pub enum ConsensusTransactionKey {
     CapabilityNotification(AuthorityName, u64 /* generation */),
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessageKey),
-    DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
+    DWalletMPCOutput(
+        AuthorityName,
+        SessionIdentifier,
+        Vec<DWalletCheckpointMessageKind>,
+    ),
     SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
@@ -156,7 +157,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotificationV1(AuthorityCapabilitiesV1),
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessage),
-    DWalletMPCOutput(AuthorityName, Box<MPCSessionRequest>, Vec<u8>),
+    DWalletMPCOutput(DWalletMPCOutput),
 }
 
 impl ConsensusTransaction {
@@ -173,13 +174,11 @@ impl ConsensusTransaction {
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     pub fn new_dwallet_mpc_message(
         authority: AuthorityName,
-        message: Vec<u8>,
         session_identifier: SessionIdentifier,
+        message: Vec<u8>,
         round_number: u64,
-        session_request: MPCSessionRequest,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        session_request.hash(&mut hasher);
         authority.hash(&mut hasher);
         round_number.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
@@ -197,21 +196,21 @@ impl ConsensusTransaction {
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
-        output: Vec<u8>,
-        session_request: MPCSessionRequest,
+        session_identifier: SessionIdentifier,
+        output: Vec<DWalletCheckpointMessageKind>,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
-        session_request.hash(&mut hasher);
+        session_identifier.hash(&mut hasher);
         authority.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(
+            kind: ConsensusTransactionKind::DWalletMPCOutput(DWalletMPCOutput {
                 authority,
-                Box::new(session_request),
+                session_identifier,
                 output,
-            ),
+            }),
         }
     }
 
@@ -277,11 +276,11 @@ impl ConsensusTransaction {
                     round_number: message.round_number,
                 })
             }
-            ConsensusTransactionKind::DWalletMPCOutput(authority, session_request, output) => {
+            ConsensusTransactionKind::DWalletMPCOutput(output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
-                    *authority,
-                    session_request.session_identifier,
-                    output.clone(),
+                    output.authority,
+                    output.session_identifier,
+                    output.output.clone(),
                 )
             }
             ConsensusTransactionKind::SystemCheckpointSignature(data) => {

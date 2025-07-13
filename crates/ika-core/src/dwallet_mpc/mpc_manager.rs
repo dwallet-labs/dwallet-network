@@ -3,15 +3,12 @@ use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
-};
 use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
-    get_validators_class_groups_public_keys_and_proofs,
+    get_validators_class_groups_public_keys_and_proofs, party_id_to_authority_name,
 };
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use dwallet_mpc_types::dwallet_mpc::{
@@ -25,12 +22,13 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::error::IkaResult;
+use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData,
+    DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutput, DWalletNetworkEncryptionKeyData,
     IkaPackagesConfig, MPCRequestInput, SessionIdentifier, SessionType,
 };
-use mpc::WeightedThresholdAccessStructure;
+use itertools::Itertools;
+use mpc::{MajorityVote, WeightedThresholdAccessStructure};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -70,7 +68,6 @@ pub(crate) struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     malicious_actors: HashSet<AuthorityName>,
-    pub(crate) outputs_verifier: DWalletMPCOutputsVerifier,
 
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
@@ -132,8 +129,6 @@ impl DWalletMPCManager {
         decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
-        let outputs_verifier = DWalletMPCOutputsVerifier::new(dwallet_mpc_metrics.clone());
-
         let root_seed = node_config
             .root_seed
             .clone()
@@ -195,7 +190,6 @@ impl DWalletMPCManager {
             committee,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
-            outputs_verifier,
         })
     }
 
@@ -545,26 +539,64 @@ impl DWalletMPCManager {
 
     pub(crate) fn handle_dwallet_db_output(
         &mut self,
-        output: &DWalletMPCOutputMessage,
-    ) -> IkaResult<OutputVerificationResult> {
-        let DWalletMPCOutputMessage {
-            authority,
-            session_request,
-            output,
-        } = output;
-        let authority_index =
-            authority_name_to_party_id_from_committee(&self.committee, authority)?;
+        consensus_round: u64,
+        output: DWalletMPCOutput,
+    ) -> Option<Vec<DWalletCheckpointMessageKind>> {
+        let session_identifier = output.session_identifier;
+        let sender_authority = output.authority;
 
-        let output_verification_result = self.outputs_verifier
-            .try_verify_output(output, session_request, *authority, self.validator_name, self.committee.clone())
-            .unwrap_or_else(|e| {
-                error!(session_identifier=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
-                OutputVerificationResult {
-                    result: OutputVerificationStatus::Malicious,
-                    malicious_actors: vec![*authority],
-                }
-            });
-        Ok(output_verification_result)
+        let Ok(sender_party_id) =
+            authority_name_to_party_id_from_committee(&self.committee, &sender_authority)
+        else {
+            error!(
+                session_identifier=?session_identifier,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                "Got a output for an authority without party ID",
+            );
+
+            return None;
+        };
+
+        let session = match self.mpc_sessions.entry(session_identifier) {
+            Entry::Occupied(session) => session.into_mut(),
+            Entry::Vacant(_) => {
+                info!(
+                    ?session_identifier,
+                    sender_authority=?sender_authority,
+                    receiver_authority=?self.validator_name,
+                    "received a output for an MPC session before receiving an event requesting it"
+                );
+
+                // This can happen if the session is not in the active sessions,
+                // but we still want to store the message.
+                // We will create a new session for it.
+                self.new_mpc_session(&session_identifier, None);
+                // Safe to `unwrap()`: we just created the session.
+                self.mpc_sessions.get_mut(&session_identifier).unwrap()
+            }
+        };
+
+        session.add_output(consensus_round, sender_party_id, output);
+
+        let outputs_by_consensus_round = session.outputs_by_consensus_round().clone();
+
+        let built_outputs_to_finalize =
+            self.build_outputs_to_finalize(&session_identifier, outputs_by_consensus_round);
+
+        match built_outputs_to_finalize {
+            Some((malicious_voters, majority_vote)) => {
+                let malicious_voters = malicious_voters
+                    .into_iter()
+                    .filter_map(|party_id| party_id_to_authority_name(party_id, &self.committee))
+                    .collect_vec();
+
+                self.malicious_actors.extend(malicious_voters);
+
+                Some(majority_vote)
+            }
+            None => None,
+        }
     }
 
     pub(crate) fn record_threshold_not_reached(
@@ -618,6 +650,69 @@ impl DWalletMPCManager {
                 self.decryption_key_reconfiguration_third_round_delay
             }
             _ => 0,
+        }
+    }
+
+    /// Builds the outputs to finalize based on the outputs received in the consensus rounds.
+    /// If a majority vote is reached, it returns the malicious voters (didn't vote with majority) and the majority vote.
+    /// If the threshold is not reached, it returns `None`.
+    pub(crate) fn build_outputs_to_finalize(
+        &self,
+        session_identifier: &SessionIdentifier,
+        outputs_by_consensus_round: HashMap<
+            u64,
+            HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>,
+        >,
+    ) -> Option<(Vec<PartyID>, Vec<DWalletCheckpointMessageKind>)> {
+        let mut outputs_to_finalize: HashMap<PartyID, Vec<DWalletCheckpointMessageKind>> =
+            HashMap::new();
+
+        for (_, outputs) in outputs_by_consensus_round {
+            for (sender_party_id, output) in outputs {
+                // take the last output from each sender party ID
+                outputs_to_finalize.insert(sender_party_id, output);
+            }
+        }
+
+        match outputs_to_finalize.weighted_majority_vote(&self.access_structure) {
+            Ok((malicious_voters, majority_vote)) => Some((malicious_voters, majority_vote)),
+            Err(mpc::Error::ThresholdNotReached) => None,
+            Err(e) => {
+                error!(
+                    ?session_identifier,
+                    "Failed to build outputs to finalize: {e}"
+                );
+                None
+            }
+        }
+    }
+
+    pub(crate) fn complete_computation_mpc_session_and_create_if_not_exists(
+        &mut self,
+        session_identifier: &SessionIdentifier,
+    ) {
+        let session = match self.mpc_sessions.entry(*session_identifier) {
+            Entry::Occupied(session) => session.into_mut(),
+            Entry::Vacant(_) => {
+                // This can happen if the session is not in the active sessions,
+                // but we still want to store the message.
+                // We will create a new session for it.
+                self.new_mpc_session(session_identifier, None);
+                // Safe to `unwrap()`: we just created the session.
+                self.mpc_sessions.get_mut(session_identifier).unwrap()
+            }
+        };
+        session.complete_computation_mpc_session_status();
+    }
+
+    pub(crate) fn complete_mpc_session(&mut self, session_identifier: &SessionIdentifier) {
+        if let Some(session) = self.mpc_sessions.get_mut(session_identifier) {
+            session.complete_mpc_session_status();
+            if let Some(mpc_event_data) = session.mpc_event_data() {
+                self.dwallet_mpc_metrics
+                    .add_completion(&mpc_event_data.request_input);
+            }
+            session.clear_data();
         }
     }
 }
