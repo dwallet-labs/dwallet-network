@@ -1,3 +1,4 @@
+use crate::dwallet_mpc::crytographic_computation::mpc_computations::build_messages_to_advance;
 use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
@@ -27,9 +28,8 @@ use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::error::IkaResult;
 use ika_types::messages_dwallet_mpc::{
     DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData,
-    IkaPackagesConfig, SessionIdentifier, SessionType,
+    IkaPackagesConfig, MPCRequestInput, SessionIdentifier, SessionType,
 };
-use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
@@ -84,8 +84,8 @@ pub(crate) struct DWalletMPCManager {
     pub(crate) next_active_committee: Option<Committee>,
     pub(crate) dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
 
-    network_dkg_third_round_delay: usize,
-    decryption_key_reconfiguration_third_round_delay: usize,
+    network_dkg_third_round_delay: u64,
+    decryption_key_reconfiguration_third_round_delay: u64,
 }
 
 impl DWalletMPCManager {
@@ -97,8 +97,8 @@ impl DWalletMPCManager {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: Receiver<Committee>,
         node_config: NodeConfig,
-        network_dkg_third_round_delay: usize,
-        decryption_key_reconfiguration_third_round_delay: usize,
+        network_dkg_third_round_delay: u64,
+        decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> Self {
         Self::try_new(
@@ -128,8 +128,8 @@ impl DWalletMPCManager {
         network_keys_receiver: Receiver<Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>>,
         next_epoch_committee_receiver: watch::Receiver<Committee>,
         node_config: NodeConfig,
-        network_dkg_third_round_delay: usize,
-        decryption_key_reconfiguration_third_round_delay: usize,
+        network_dkg_third_round_delay: u64,
+        decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
         let outputs_verifier = DWalletMPCOutputsVerifier::new(dwallet_mpc_metrics.clone());
@@ -218,12 +218,16 @@ impl DWalletMPCManager {
         messages: Vec<DWalletMPCMessage>,
     ) {
         for (_, session) in self.mpc_sessions.iter_mut() {
-            // Set the `messages_by_consensus_round` for every open MPC session for the current consensus round to an empty map.
-            // This is important, as we count on the `messages_by_consensus_round` to hold entries for all consensus rounds since the session's inception,
-            // when we check for delay.
-            session
-                .messages_by_consensus_round
-                .insert(consensus_round, HashMap::new());
+            if !session.messages_by_consensus_round.is_empty() {
+                // Set the `messages_by_consensus_round` for every open MPC session for the current consensus round to an empty map.
+                // This is important, as we count on the `messages_by_consensus_round` to hold entries for all consensus rounds since the session's inception,
+                // when we check for delay.
+                //
+                // Do this only from the first received message, for synchronicity between validators.
+                session
+                    .messages_by_consensus_round
+                    .insert(consensus_round, HashMap::new());
+            }
         }
 
         for message in messages {
@@ -232,7 +236,6 @@ impl DWalletMPCManager {
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
-    /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(&mut self, consensus_round: u64, message: DWalletMPCMessage) {
         let session_identifier = message.session_identifier;
         let sender_authority = message.authority;
@@ -246,7 +249,7 @@ impl DWalletMPCManager {
                 sender_authority=?sender_authority,
                 receiver_authority=?self.validator_name,
                 mpc_round_number=?mpc_round_number,
-                "Got a message for an authority without party ID",
+                "got a message for an authority without party ID",
             );
 
             return;
@@ -324,10 +327,7 @@ impl DWalletMPCManager {
             MPCSessionStatus::Active,
             *session_identifier,
             self.party_id,
-            self.access_structure.clone(),
             mpc_event_data,
-            self.network_dkg_third_round_delay,
-            self.decryption_key_reconfiguration_third_round_delay,
         );
 
         info!(
@@ -355,6 +355,8 @@ impl DWalletMPCManager {
     ///
     /// The messages to advance with are built on the spot, assuming they satisfy required conditions.
     /// They are put on a `ComputationRequest` and forwarded to the `orchestrator` for execution.
+    ///
+    /// Returns the completed computation results.
     pub(crate) async fn perform_cryptographic_computation(
         &mut self,
     ) -> HashMap<
@@ -367,64 +369,80 @@ impl DWalletMPCManager {
             >,
         >,
     > {
-        let computation_requests: Vec<_> = self
+        let mut ready_to_advance_sessions: Vec<_> = self
             .mpc_sessions
             .iter()
-            .filter(|(_, session)| {
-                if let Some(mpc_event_data) = &session.mpc_event_data {
+            .filter_map(|(_, session)| {
+                // Only sessions with MPC event data should be advanced
+                session.mpc_event_data.clone().and_then(|mpc_event_data| {
                     // Always advance system sessions, and only advance user session
                     // if they come before the last session to complete in the current epoch (at the current time).
-                    match mpc_event_data.session_type {
+                    let should_advance = match mpc_event_data.session_type {
                         SessionType::User => {
                             mpc_event_data.session_sequence_number
                                 <= self.last_session_to_complete_in_current_epoch
                         }
                         SessionType::System => true,
+                    };
+
+                    if should_advance {
+                        Some((session, mpc_event_data))
+                    } else {
+                        None
                     }
-                } else {
-                    // Cannot advance sessions without MPC event data
-                    false
-                }
+                })
             })
-            .sorted_by(|(_, session), (_, other_session)| {
-                // Safe to `unwrap`, we filtered sessions without `mpc_event_data`.
-                let session_mpc_event_data = session.mpc_event_data.as_ref().unwrap();
+            .collect();
 
-                let other_session_mpc_event_data = other_session.mpc_event_data.as_ref().unwrap();
+        ready_to_advance_sessions.sort_by(|(_, mpc_event_data), (_, other_mpc_event_data)| {
+            // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
+            other_mpc_event_data.cmp(mpc_event_data)
+        });
 
-                // Sort by descending order, placing system sessions before user ones and sorting session of the same type by sequence number.
-                other_session_mpc_event_data.cmp(session_mpc_event_data)
-            })
-            .flat_map(|(&session_identifier, session)| {
-                session.build_messages_to_advance().map(
-                    |(consensus_round, messages_for_advance)| {
-                        let attempt_number = session.get_attempt_number();
+        let computation_requests: Vec<_> = ready_to_advance_sessions
+            .into_iter()
+            .flat_map(|(session, mpc_event_data)| {
+                let rounds_to_delay = self.consensus_rounds_delay_for_mpc_round(
+                    session.current_mpc_round,
+                    &mpc_event_data,
+                );
 
-                        // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
-                        let mpc_event_data = session.mpc_event_data.clone().unwrap();
-
-                        let computation_id = ComputationId {
-                            session_identifier,
-                            consensus_round,
-                            mpc_round: session.current_mpc_round,
-                            attempt_number,
-                        };
-
-                        let computation_request = ComputationRequest {
-                            party_id: self.party_id,
-                            validator_name: self.validator_name,
-                            committee: self.committee.clone(),
-                            access_structure: self.access_structure.clone(),
-                            request_input: mpc_event_data.request_input,
-                            private_input: mpc_event_data.private_input,
-                            public_input: mpc_event_data.public_input,
-                            decryption_key_shares: mpc_event_data.decryption_key_shares,
-                            messages: messages_for_advance,
-                        };
-
-                        (computation_id, computation_request)
-                    },
+                build_messages_to_advance(
+                    session.current_mpc_round,
+                    rounds_to_delay,
+                    session
+                        .mpc_round_to_threshold_not_reached_consensus_rounds
+                        .clone(),
+                    session.messages_by_consensus_round.clone(),
+                    &self.access_structure,
                 )
+                .map(|(consensus_round, messages_for_advance)| {
+                    let attempt_number = session.get_attempt_number();
+
+                    // Safe to `unwrap()`, as the session is ready to advance so `mpc_event_data` must be `Some()`.
+                    let mpc_event_data = session.mpc_event_data.clone().unwrap();
+
+                    let computation_id = ComputationId {
+                        session_identifier: session.session_identifier,
+                        consensus_round,
+                        mpc_round: session.current_mpc_round,
+                        attempt_number,
+                    };
+
+                    let computation_request = ComputationRequest {
+                        party_id: self.party_id,
+                        validator_name: self.validator_name,
+                        committee: self.committee.clone(),
+                        access_structure: self.access_structure.clone(),
+                        request_input: mpc_event_data.request_input,
+                        private_input: mpc_event_data.private_input,
+                        public_input: mpc_event_data.public_input,
+                        decryption_key_shares: mpc_event_data.decryption_key_shares,
+                        messages: messages_for_advance,
+                    };
+
+                    (computation_id, computation_request)
+                })
             })
             .collect();
 
@@ -537,7 +555,6 @@ impl DWalletMPCManager {
         let authority_index =
             authority_name_to_party_id_from_committee(&self.committee, authority)?;
 
-        // TODO(scaly): think if we want to keep this malicious reporting.
         let output_verification_result = self.outputs_verifier
             .try_verify_output(output, session_request, *authority, self.validator_name, self.committee.clone())
             .unwrap_or_else(|e| {
@@ -575,6 +592,32 @@ impl DWalletMPCManager {
                 authority=?self.validator_name,
                 "node recognized itself as malicious"
             );
+        }
+    }
+
+    /// Returns the number of additional (delay) consensus rounds the session should wait for before advancing.
+    ///
+    /// This method returns the protocol-specific delay for certain MPC rounds in specific protocols
+    /// (NetworkDkg, DecryptionKeyReconfiguration).
+    ///
+    /// - **NetworkDkg protocol**: requires delay for the third round
+    ///   using `network_dkg_third_round_delay` config.
+    /// - **DecryptionKeyReconfiguration protocol**: requires delay for the third round
+    ///   using `decryption_key_reconfiguration_third_round_delay` config.
+    /// - **Other protocols**: No delay required, always ready to advance
+    pub(crate) fn consensus_rounds_delay_for_mpc_round(
+        &self,
+        current_mpc_round: u64,
+        mpc_event_data: &MPCEventData,
+    ) -> u64 {
+        match mpc_event_data.request_input {
+            MPCRequestInput::NetworkEncryptionKeyDkg(_, _) if current_mpc_round == 3 => {
+                self.network_dkg_third_round_delay
+            }
+            MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) if current_mpc_round == 3 => {
+                self.decryption_key_reconfiguration_third_round_delay
+            }
+            _ => 0,
         }
     }
 }

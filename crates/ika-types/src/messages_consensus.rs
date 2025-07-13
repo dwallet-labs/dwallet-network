@@ -175,7 +175,7 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         message: Vec<u8>,
         session_identifier: SessionIdentifier,
-        round_number: usize,
+        round_number: u64,
         session_request: MPCSessionRequest,
     ) -> Self {
         let mut hasher = DefaultHasher::new();

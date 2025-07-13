@@ -75,12 +75,11 @@ impl DWalletMPCService {
 
         let network_dkg_third_round_delay = epoch_store
             .protocol_config()
-            .network_dkg_third_round_delay() as usize;
+            .network_dkg_third_round_delay();
 
         let decryption_key_reconfiguration_third_round_delay = epoch_store
             .protocol_config()
-            .decryption_key_reconfiguration_third_round_delay()
-            as usize;
+            .decryption_key_reconfiguration_third_round_delay();
 
         let dwallet_mpc_manager = DWalletMPCManager::new(
             validator_name,
@@ -213,7 +212,7 @@ impl DWalletMPCService {
                 .perform_cryptographic_computation()
                 .await;
 
-            self.handle_and_broadcast_computation_results(completed_computation_results)
+            self.handle_computation_results_and_submit_to_consensus(completed_computation_results)
                 .await;
 
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
@@ -489,7 +488,7 @@ impl DWalletMPCService {
         }
     }
 
-    async fn handle_and_broadcast_computation_results(
+    async fn handle_computation_results_and_submit_to_consensus(
         &mut self,
         completed_computation_results: HashMap<
             ComputationId,
@@ -705,7 +704,7 @@ impl DWalletMPCService {
     fn new_dwallet_mpc_message(
         &self,
         session_identifier: SessionIdentifier,
-        mpc_round: usize,
+        mpc_round: u64,
         message: MPCMessage,
         mpc_event_data: MPCEventData,
     ) -> ConsensusTransaction {

@@ -77,7 +77,7 @@ impl MPCSessionLogger {
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
         access_structure: &WeightedThresholdAccessStructure,
-        messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
+        messages: &HashMap<u64, HashMap<PartyID, MPCMessage>>,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;

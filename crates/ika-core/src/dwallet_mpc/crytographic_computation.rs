@@ -55,8 +55,8 @@ pub(crate) struct ComputationId {
     /// All other MPC rounds will set this to `Some()` with the value being the last consensus
     /// round from which we gathered messages to advance.
     pub(crate) consensus_round: Option<u64>,
-    pub(crate) mpc_round: usize,
-    pub(crate) attempt_number: usize,
+    pub(crate) mpc_round: u64,
+    pub(crate) attempt_number: u64,
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -71,7 +71,7 @@ pub(crate) struct ComputationRequest {
     pub(crate) decryption_key_shares:
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     /// Round -> Messages map.
-    pub(crate) messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
+    pub(crate) messages: HashMap<u64, HashMap<PartyID, MPCMessage>>,
 }
 
 impl ComputationRequest {
@@ -123,8 +123,8 @@ impl ComputationRequest {
         // and keep private!
         let rng = root_seed.mpc_round_rng(
             session_id,
-            computation_id.mpc_round as u64,
-            computation_id.attempt_number as u64,
+            computation_id.mpc_round,
+            computation_id.attempt_number,
         );
 
         match &self.request_input {
@@ -644,7 +644,7 @@ impl ComputationRequest {
                 }
             }
             MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
-                let PublicInput::MakeDWalletUserSecretKeySharesPublicParameters(public_input) =
+                let PublicInput::MakeDWalletUserSecretKeySharesPublic(public_input) =
                     &self.public_input
                 else {
                     error!(

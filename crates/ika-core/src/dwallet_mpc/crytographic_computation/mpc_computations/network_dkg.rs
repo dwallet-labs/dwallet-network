@@ -239,7 +239,7 @@ pub(crate) fn advance_network_dkg(
     public_input: &PublicInput,
     party_id: PartyID,
     key_scheme: &DWalletMPCNetworkKeyScheme,
-    messages: HashMap<usize, HashMap<PartyID, Vec<u8>>>,
+    messages: HashMap<u64, HashMap<PartyID, Vec<u8>>>,
     class_groups_decryption_key: ClassGroupsDecryptionKey,
     logger: &MPCSessionLogger,
     rng: ChaCha20Rng,
