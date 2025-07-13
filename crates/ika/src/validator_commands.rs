@@ -431,20 +431,15 @@ fn make_key_files(
 fn read_or_generate_seed_and_class_groups_key(
     seed_path: PathBuf,
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
-    println!("Generating class groups key pair file",);
     let seed = match RootSeed::from_file(seed_path.clone()) {
         Ok(seed) => {
             println!("Use existing seed: {:?}.", seed_path,);
             seed
         }
-        Err(err) => {
-            println!("error reading class groups key from file: {err:?}, generating...");
+        Err(_) => {
             let seed = RootSeed::random_seed();
             seed.save_to_file(seed_path.clone())?;
-            println!(
-                "Generated class groups key pair info file: {:?}.",
-                seed_path,
-            );
+            println!("Generated class groups seed info file: {:?}.", seed_path,);
             seed
         }
     };
