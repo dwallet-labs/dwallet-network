@@ -249,7 +249,7 @@ impl DWalletMPCManager {
                 sender_authority=?sender_authority,
                 receiver_authority=?self.validator_name,
                 mpc_round_number=?mpc_round_number,
-                "Got a message for an authority without party ID",
+                "got a message for an authority without party ID",
             );
 
             return;
