@@ -400,7 +400,7 @@ pub trait CommitteeTrait<K: Ord> {
     fn weight(&self, author: &K) -> StakeUnit;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NetworkMetadata {
     pub network_address: Multiaddr,
     pub consensus_address: Multiaddr,
@@ -408,10 +408,29 @@ pub struct NetworkMetadata {
     pub class_groups_public_key_and_proof: Option<ClassGroupsEncryptionKeyAndProof>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CommitteeWithNetworkMetadata {
     epoch_id: EpochId,
-    validators: Vec<(AuthorityName, (StakeUnit, NetworkMetadata))>,
+    validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
+}
+
+impl CommitteeWithNetworkMetadata {
+    pub fn new(
+        epoch_id: EpochId,
+        validators: BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)>,
+    ) -> Self {
+        Self {
+            epoch_id,
+            validators,
+        }
+    }
+    pub fn epoch(&self) -> EpochId {
+        self.epoch_id
+    }
+
+    pub fn validators(&self) -> &BTreeMap<AuthorityName, (StakeUnit, NetworkMetadata)> {
+        &self.validators
+    }
 }
 
 impl Display for CommitteeWithNetworkMetadata {
