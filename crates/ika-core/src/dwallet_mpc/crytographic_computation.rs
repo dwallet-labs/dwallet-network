@@ -43,7 +43,7 @@ use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 pub(crate) use mpc_computations::advance_and_serialize;
 pub(crate) use orchestrator::CryptographicComputationsOrchestrator;
 
-const MPC_SIGN_SECOND_ROUND: usize = 2;
+const MPC_SIGN_SECOND_ROUND: u64 = 2;
 
 /// A unique key for a computation request.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
