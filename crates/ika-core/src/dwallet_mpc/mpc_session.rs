@@ -4,7 +4,7 @@ mod mpc_event_data;
 
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCSessionStatus};
 use group::PartyID;
-use ika_types::crypto::AuthorityPublicKeyBytes;
+use ika_types::crypto::{AuthorityName, AuthorityPublicKeyBytes};
 use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput, SessionIdentifier};
 use std::collections::hash_map::Entry::Vacant;
@@ -14,6 +14,12 @@ use tracing::{debug, error, info};
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 pub(crate) use input::{session_input_from_event, PublicInput};
 pub(crate) use logger::MPCSessionLogger;
+
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub(crate) struct DWalletMPCSessionOutput {
+    pub(crate) output: Vec<DWalletCheckpointMessageKind>,
+    pub(crate) malicious_authorities: Vec<AuthorityName>,
+}
 
 /// A dWallet MPC session.
 #[derive(Clone)]
@@ -43,7 +49,7 @@ pub(crate) struct DWalletMPCSession {
     pub(super) messages_by_consensus_round:
         HashMap<u64, HashMap<u64, HashMap<PartyID, MPCMessage>>>,
 
-    outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>>,
+    outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>>,
 }
 
 impl DWalletMPCSession {
@@ -73,7 +79,7 @@ impl DWalletMPCSession {
         self.outputs_by_consensus_round = HashMap::new();
     }
 
-    /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message
+    /// Adds an incoming message, and increases the `current_mpc_round` upon seeing a message
     /// sent from us for the current round.
     /// This guarantees we are in sync, as our state mutates in sync with the view of the
     /// consensus, which is shared with the other validators.
@@ -85,7 +91,7 @@ impl DWalletMPCSession {
     /// so all validators end up seeing the same map.
     /// Other malicious activities like sending a message for a wrong round are also not
     /// reported since they have no practical impact for similar reasons.
-    pub(crate) fn store_message(
+    pub(crate) fn add_message(
         &mut self,
         consensus_round: u64,
         sender_party_id: PartyID,
@@ -190,14 +196,17 @@ impl DWalletMPCSession {
             .entry(consensus_round)
             .or_default();
 
-        if !consensus_round_output_map.contains_key(&sender_party_id) {
-            consensus_round_output_map.insert(sender_party_id, output.output);
+        if let Vacant(e) = consensus_round_output_map.entry(sender_party_id) {
+            e.insert(DWalletMPCSessionOutput {
+                output: output.output,
+                malicious_authorities: output.malicious_authorities,
+            });
         }
     }
 
     pub(crate) fn outputs_by_consensus_round(
         &self,
-    ) -> &HashMap<u64, HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>> {
+    ) -> &HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>> {
         &self.outputs_by_consensus_round
     }
 

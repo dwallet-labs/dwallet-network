@@ -21,6 +21,7 @@ use dwallet_mpc_types::dwallet_mpc::{
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
+use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use ika_types::message::{
     DKGFirstRoundOutput, DKGSecondRoundOutput, DWalletCheckpointMessageKind,
@@ -328,41 +329,11 @@ impl DWalletMPCService {
             self.dwallet_mpc_manager
                 .handle_consensus_round_messages(consensus_round, mpc_messages);
 
-            // Not let's move to process MPC outputs for the current round.
-            let mut checkpoint_messages = vec![];
-            let mut completed_sessions = vec![];
-            for output in &mpc_outputs {
-                let session_identifier = output.session_identifier;
-
-                let output_result = self
-                    .dwallet_mpc_manager
-                    .handle_dwallet_db_output(consensus_round, output.clone());
-                match output_result {
-                    Some(output_result) => {
-                        self.dwallet_mpc_manager
-                            .complete_mpc_session(&session_identifier);
-                        let output_digest = output_result.iter().map(|m| m.digest()).collect_vec();
-                        checkpoint_messages.extend(output_result);
-                        completed_sessions.push(session_identifier);
-                        info!(
-                            authority=?self.epoch_store.name,
-                            ?output_digest,
-                            consensus_round,
-                            ?session_identifier,
-                            "MPC output reached quorum"
-                        );
-                    }
-                    None => {
-                        debug!(
-                            authority=?self.epoch_store.name,
-                            consensus_round,
-                            ?session_identifier,
-                            ?output,
-                            "MPC output did not reach quorum"
-                        );
-                    }
-                };
-            }
+            // Now we have the MPC messages for the current round, we can
+            // process the MPC outputs for the current round.
+            let (mut checkpoint_messages, completed_sessions) = self
+                .dwallet_mpc_manager
+                .handle_consensus_round_outputs(consensus_round, mpc_outputs);
 
             // Now we have the MPC outputs for the current round, we can
             // add messages from the consensus output such as EndOfPublish.
@@ -508,7 +479,7 @@ impl DWalletMPCService {
                                     "Reached output for session"
                                 );
                                 let consensus_adapter = self.consensus_adapter.clone();
-                                if !malicious_parties.is_empty() {
+                                let malicious_authorities = if !malicious_parties.is_empty() {
                                     let malicious_authorities = party_ids_to_authority_names(
                                         &malicious_parties,
                                         &committee,
@@ -521,15 +492,19 @@ impl DWalletMPCService {
                                             ?malicious_authorities,
                                         "malicious parties detected upon MPC session finalize",
                                     );
+                                    malicious_authorities
+                                } else {
+                                    vec![]
+                                };
 
-                                    self.dwallet_mpc_manager
-                                        .record_malicious_actors(&malicious_authorities);
-                                }
+                                self.dwallet_mpc_manager
+                                    .record_malicious_actors(&malicious_authorities);
 
                                 let consensus_message = self.new_dwallet_mpc_output_message(
                                     session_identifier,
                                     &mpc_event_data,
                                     public_output,
+                                    malicious_authorities,
                                     false,
                                 );
 
@@ -563,11 +538,11 @@ impl DWalletMPCService {
                             }
                             Err(err) => {
                                 error!(
-                                        ?session_identifier,
+                                    ?session_identifier,
                                     validator=?validator_name,
                                     ?mpc_round,
                                     party_id,
-                                        error=?err,
+                                    error=?err,
                                     "failed to advance the MPC session, rejecting."
                                 );
 
@@ -575,6 +550,7 @@ impl DWalletMPCService {
                                 let consensus_message = self.new_dwallet_mpc_output_message(
                                     session_identifier,
                                     &mpc_event_data,
+                                    vec![],
                                     vec![],
                                     true,
                                 );
@@ -645,6 +621,7 @@ impl DWalletMPCService {
         session_identifier: SessionIdentifier,
         mpc_event_data: &MPCEventData,
         output: Vec<u8>,
+        malicious_authorities: Vec<AuthorityName>,
         rejected: bool,
     ) -> ConsensusTransaction {
         let output = Self::build_dwallet_checkpoint_message_kinds_from_output(
@@ -657,6 +634,7 @@ impl DWalletMPCService {
             self.epoch_store.name,
             session_identifier,
             output,
+            malicious_authorities,
         )
     }
 

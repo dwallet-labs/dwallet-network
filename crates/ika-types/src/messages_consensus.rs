@@ -180,6 +180,8 @@ impl ConsensusTransaction {
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         authority.hash(&mut hasher);
+        session_identifier.hash(&mut hasher);
+        message.hash(&mut hasher);
         round_number.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
@@ -198,11 +200,13 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         session_identifier: SessionIdentifier,
         output: Vec<DWalletCheckpointMessageKind>,
+        malicious_authorities: Vec<AuthorityName>,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        output.hash(&mut hasher);
-        session_identifier.hash(&mut hasher);
         authority.hash(&mut hasher);
+        session_identifier.hash(&mut hasher);
+        output.hash(&mut hasher);
+        malicious_authorities.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -210,6 +214,7 @@ impl ConsensusTransaction {
                 authority,
                 session_identifier,
                 output,
+                malicious_authorities,
             }),
         }
     }

@@ -306,6 +306,7 @@ pub struct DWalletMPCOutput {
     pub session_identifier: SessionIdentifier,
     /// The final value of the MPC session.
     pub output: Vec<DWalletCheckpointMessageKind>,
+    pub malicious_authorities: Vec<AuthorityName>,
 }
 
 /// The message a Validator can send to the other parties while

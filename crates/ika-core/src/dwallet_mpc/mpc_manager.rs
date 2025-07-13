@@ -3,7 +3,7 @@ use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
+use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, DWalletMPCSessionOutput, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
@@ -229,6 +229,46 @@ impl DWalletMPCManager {
         }
     }
 
+    /// Handle the outputs of a given consensus round.
+    pub fn handle_consensus_round_outputs(
+        &mut self,
+        consensus_round: u64,
+        outputs: Vec<DWalletMPCOutput>,
+    ) -> (Vec<DWalletCheckpointMessageKind>, Vec<SessionIdentifier>) {
+        // Not let's move to process MPC outputs for the current round.
+        let mut checkpoint_messages = vec![];
+        let mut completed_sessions = vec![];
+        for output in &outputs {
+            let session_identifier = output.session_identifier;
+
+            let output_result = self.handle_output(consensus_round, output.clone());
+            match output_result {
+                Some((malicious_authorities, output_result)) => {
+                    self.complete_mpc_session(&session_identifier);
+                    let output_digest = output_result.iter().map(|m| m.digest()).collect_vec();
+                    checkpoint_messages.extend(output_result);
+                    completed_sessions.push(session_identifier);
+                    info!(
+                        ?output_digest,
+                        consensus_round,
+                        ?session_identifier,
+                        ?malicious_authorities,
+                        "MPC output reached quorum"
+                    );
+                }
+                None => {
+                    debug!(
+                        consensus_round,
+                        ?session_identifier,
+                        ?output,
+                        "MPC output did not reach quorum"
+                    );
+                }
+            };
+        }
+        (checkpoint_messages, completed_sessions)
+    }
+
     /// Handles a message by forwarding it to the relevant MPC session.
     pub(crate) fn handle_message(&mut self, consensus_round: u64, message: DWalletMPCMessage) {
         let session_identifier = message.session_identifier;
@@ -299,7 +339,7 @@ impl DWalletMPCManager {
         };
 
         if session.status == MPCSessionStatus::Active {
-            session.store_message(consensus_round, sender_party_id, message);
+            session.add_message(consensus_round, sender_party_id, message);
         }
     }
 
@@ -537,11 +577,11 @@ impl DWalletMPCManager {
         }
     }
 
-    pub(crate) fn handle_dwallet_db_output(
+    pub(crate) fn handle_output(
         &mut self,
         consensus_round: u64,
         output: DWalletMPCOutput,
-    ) -> Option<Vec<DWalletCheckpointMessageKind>> {
+    ) -> Option<(HashSet<AuthorityName>, Vec<DWalletCheckpointMessageKind>)> {
         let session_identifier = output.session_identifier;
         let sender_authority = output.authority;
 
@@ -585,15 +625,10 @@ impl DWalletMPCManager {
             self.build_outputs_to_finalize(&session_identifier, outputs_by_consensus_round);
 
         match built_outputs_to_finalize {
-            Some((malicious_voters, majority_vote)) => {
-                let malicious_voters = malicious_voters
-                    .into_iter()
-                    .filter_map(|party_id| party_id_to_authority_name(party_id, &self.committee))
-                    .collect_vec();
+            Some((malicious_authorities, majority_vote)) => {
+                self.malicious_actors.extend(malicious_authorities.clone());
 
-                self.malicious_actors.extend(malicious_voters);
-
-                Some(majority_vote)
+                Some((malicious_authorities, majority_vote))
             }
             None => None,
         }
@@ -659,13 +694,9 @@ impl DWalletMPCManager {
     pub(crate) fn build_outputs_to_finalize(
         &self,
         session_identifier: &SessionIdentifier,
-        outputs_by_consensus_round: HashMap<
-            u64,
-            HashMap<PartyID, Vec<DWalletCheckpointMessageKind>>,
-        >,
-    ) -> Option<(Vec<PartyID>, Vec<DWalletCheckpointMessageKind>)> {
-        let mut outputs_to_finalize: HashMap<PartyID, Vec<DWalletCheckpointMessageKind>> =
-            HashMap::new();
+        outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>>,
+    ) -> Option<(HashSet<AuthorityName>, Vec<DWalletCheckpointMessageKind>)> {
+        let mut outputs_to_finalize: HashMap<PartyID, DWalletMPCSessionOutput> = HashMap::new();
 
         for (_, outputs) in outputs_by_consensus_round {
             for (sender_party_id, output) in outputs {
@@ -675,7 +706,28 @@ impl DWalletMPCManager {
         }
 
         match outputs_to_finalize.weighted_majority_vote(&self.access_structure) {
-            Ok((malicious_voters, majority_vote)) => Some((malicious_voters, majority_vote)),
+            Ok((malicious_voters, majority_vote)) => {
+                let output = majority_vote.output;
+                let malicious_authorities_options = malicious_voters
+                    .iter()
+                    .map(|party_id| party_id_to_authority_name(*party_id, &self.committee))
+                    .collect_vec();
+                if malicious_authorities_options.iter().any(|ma| ma.is_none()) {
+                    error!(
+                        ?session_identifier,
+                        ?malicious_voters,
+                        ?malicious_authorities_options,
+                        committee=?self.committee,
+                        "Failed to convert some malicious party IDs to authority names"
+                    );
+                }
+                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
+                    .into_iter()
+                    .filter_map(|ma| ma)
+                    .chain(majority_vote.malicious_authorities.into_iter())
+                    .collect();
+                Some((malicious_authorities, output))
+            }
             Err(mpc::Error::ThresholdNotReached) => None,
             Err(e) => {
                 error!(
