@@ -6,8 +6,7 @@ use crate::messages_dwallet_checkpoint::{
     DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
 use crate::messages_dwallet_mpc::{
-    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, MaliciousReport, SessionIdentifier,
-    ThresholdNotReachedReport,
+    DWalletMPCMessage, DWalletMPCMessageKey, MPCSessionRequest, SessionIdentifier,
 };
 use crate::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, SystemCheckpointSignatureMessage,
@@ -44,8 +43,6 @@ pub enum ConsensusTransactionKey {
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessageKey),
     DWalletMPCOutput(AuthorityName, SessionIdentifier, Vec<u8>),
-    DWalletMPCSessionFailedWithMalicious(AuthorityName, MaliciousReport),
-    DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
     SystemCheckpointSignature(AuthorityName, SystemCheckpointSequenceNumber),
 }
 
@@ -74,22 +71,6 @@ impl Debug for ConsensusTransactionKey {
                     f,
                     "DWalletMPCOutput({:?}, {:?}, {:?})",
                     authority, session_identifier, value
-                )
-            }
-            Self::DWalletMPCSessionFailedWithMalicious(authority, report) => {
-                write!(
-                    f,
-                    "DWalletMPCSessionFailedWithMalicious({:?}, {:?})",
-                    authority.concise(),
-                    report,
-                )
-            }
-            ConsensusTransactionKey::DWalletMPCThresholdNotReached(authority, report) => {
-                write!(
-                    f,
-                    "DWalletMPCThresholdNotReached({:?}, {:?})",
-                    authority.concise(),
-                    report,
                 )
             }
             ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {
@@ -176,9 +157,6 @@ pub enum ConsensusTransactionKind {
     EndOfPublish(AuthorityName),
     DWalletMPCMessage(DWalletMPCMessage),
     DWalletMPCOutput(AuthorityName, Box<MPCSessionRequest>, Vec<u8>),
-    /// Sending Authority and its MaliciousReport.
-    DWalletMPCMaliciousReport(AuthorityName, MaliciousReport),
-    DWalletMPCThresholdNotReached(AuthorityName, ThresholdNotReachedReport),
 }
 
 impl ConsensusTransaction {
@@ -197,8 +175,7 @@ impl ConsensusTransaction {
         authority: AuthorityName,
         message: Vec<u8>,
         session_identifier: SessionIdentifier,
-        round_number: usize,
-        mpc_protocol: String,
+        round_number: u64,
         session_request: MPCSessionRequest,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
@@ -213,7 +190,6 @@ impl ConsensusTransaction {
                 authority,
                 round_number,
                 session_identifier,
-                mpc_protocol,
             }),
         }
     }
@@ -236,33 +212,6 @@ impl ConsensusTransaction {
                 Box::new(session_request),
                 output,
             ),
-        }
-    }
-
-    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_session_failed_with_malicious(
-        authority: AuthorityName,
-        report: MaliciousReport,
-    ) -> Self {
-        let mut hasher = DefaultHasher::new();
-        report.session_identifier.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, report),
-        }
-    }
-
-    pub fn new_dwallet_mpc_session_threshold_not_reached(
-        authority: AuthorityName,
-        report: ThresholdNotReachedReport,
-    ) -> Self {
-        let mut hasher = DefaultHasher::new();
-        report.session_identifier.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report),
         }
     }
 
@@ -334,15 +283,6 @@ impl ConsensusTransaction {
                     session_request.session_identifier,
                     output.clone(),
                 )
-            }
-            ConsensusTransactionKind::DWalletMPCMaliciousReport(authority, report) => {
-                ConsensusTransactionKey::DWalletMPCSessionFailedWithMalicious(
-                    *authority,
-                    report.clone(),
-                )
-            }
-            ConsensusTransactionKind::DWalletMPCThresholdNotReached(authority, report) => {
-                ConsensusTransactionKey::DWalletMPCThresholdNotReached(*authority, report.clone())
             }
             ConsensusTransactionKind::SystemCheckpointSignature(data) => {
                 ConsensusTransactionKey::SystemCheckpointSignature(

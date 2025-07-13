@@ -6,12 +6,13 @@ use merlin::Transcript;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
+use zeroize::ZeroizeOnDrop;
 
 /// The Root Seed for this validator, used to deterministically derive purpose-specific child seeds
 /// for all cryptographically-secure random generation operations.
 ///
 /// SECURITY NOTICE: *MUST BE KEPT PRIVATE*.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ZeroizeOnDrop)]
 pub struct RootSeed([u8; RootSeed::SEED_LENGTH]);
 
 impl RootSeed {

@@ -45,7 +45,7 @@ pub(crate) fn dwallet_imported_key_verification_request_event_session_request(
     deserialized_event: DWalletSessionEvent<DWalletImportedKeyVerificationRequestEvent>,
 ) -> MPCSessionRequest {
     MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
@@ -59,7 +59,7 @@ pub(crate) fn dwallet_dkg_first_party_session_request(
     deserialized_event: DWalletSessionEvent<DWalletDKGFirstRoundRequestEvent>,
 ) -> anyhow::Result<MPCSessionRequest> {
     Ok(MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
@@ -73,7 +73,7 @@ pub(crate) fn dwallet_dkg_second_party_session_request(
     deserialized_event: DWalletSessionEvent<DWalletDKGSecondRoundRequestEvent>,
 ) -> MPCSessionRequest {
     MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         request_input: MPCRequestInput::DKGSecond(deserialized_event.clone()),
