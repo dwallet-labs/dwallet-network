@@ -75,7 +75,8 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// The list of completed cryptographic computations in the current epoch.
     completed_cryptographic_computations: HashSet<ComputationId>,
 
-    /// The root seed of this validator, used for deriving the per-round seed for advancing this session.
+    /// The root seed of this validator, used for deriving the per-round seed for
+    /// advancing this session.
     /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
     root_seed: RootSeed,
 }
@@ -159,7 +160,7 @@ impl CryptographicComputationsOrchestrator {
             < self.available_cores_for_cryptographic_computations
     }
 
-    /// Try to spawn a cryptographic `computation_request` to execute in a different thread,
+    /// Try to spawn a cryptographic `computation_request` to execute in a different thread
     /// if a CPU core is available for it.
     ///
     /// Return `false` if no cores were available to execute it, and `true` otherwise

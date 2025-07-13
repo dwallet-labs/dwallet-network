@@ -7,6 +7,7 @@ use group::PartyID;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use itertools::Itertools;
 use mpc::WeightedThresholdAccessStructure;
+use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, error, info};
 
@@ -33,8 +34,10 @@ pub(crate) struct DWalletMPCSession {
     /// In round `1` We start the flow, without messages, from the event trigger.
     pub(super) current_mpc_round: usize,
 
-    /// A map between an MPC round and the list of consensus rounds at which we tried to advance and failed.
-    /// The total number of attempts to advance that failed in the session can be computed by summing the number of failed attempts.
+    /// A map between an MPC round, and the list of consensus rounds at which we tried to
+    /// advance and failed.
+    /// The total number of attempts to advance that failed in the session can be
+    /// computed by summing the number of failed attempts.
     pub(crate) mpc_round_to_threshold_not_reached_consensus_rounds: HashMap<usize, HashSet<u64>>,
 
     pub(crate) mpc_event_data: Option<MPCEventData>,
@@ -79,14 +82,18 @@ impl DWalletMPCSession {
         self.messages_by_consensus_round = HashMap::new();
     }
 
-    /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message sent from us for the current round.
-    /// This guarantees we are in sync, as our state mutates in sync with the view of the consensus which is shared with the other validators.
+    /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message
+    /// sent from us for the current round.
+    /// This guarantees we are in sync, as our state mutates in sync with the view of the
+    /// consensus, which is shared with the other validators.
     ///
     /// This function performs no checks, it simply stores the message in the map.
     ///
     /// If a party sent a message twice, the second message will be ignored.
-    /// Whilst that is malicious, it has no effect since the messages come in order, so all validators end up seeing the same map.
-    /// Other malicious activities like sending a message for a wrong round are also not reported since they have no practical impact for similar reasons.
+    /// Whilst that is malicious, it has no effect since the messages come in order,
+    /// so all validators end up seeing the same map.
+    /// Other malicious activities like sending a message for a wrong round are also not
+    /// reported since they have no practical impact for similar reasons.
     pub(crate) fn store_message(
         &mut self,
         consensus_round: u64,
@@ -132,24 +139,31 @@ impl DWalletMPCSession {
             .entry(message.round_number)
             .or_default();
 
-        if !mpc_round_messages_map.contains_key(&sender_party_id) {
-            mpc_round_messages_map.insert(sender_party_id, message.message);
+        if let Vacant(e) = mpc_round_messages_map.entry(sender_party_id) {
+            e.insert(message.message);
         }
     }
 
-    /// This function iterates over the messages from different parties sent for different MPC rounds, ordered by the consensus round they were received.
+    /// This function iterates over the messages from different parties sent for
+    /// different MPC rounds, ordered by the consensus round they were received.
     ///
-    /// It builds a list of messages in order to advance the current round `current_mpc_round`,
-    /// using all the messages from the first consensus round to the first that satisfies the following conditions:
-    /// - a quorum of messages from the previous round `current_mpc_round - 1` must exist (except for the first round, which is always ready to advance requiring no messages as input.)
-    /// - a minimum number of consensus rounds that was required to delay the execution (in order to allow more messages to come in before advancing)
+    /// It builds a list of messages to advance the current round `current_mpc_round`,
+    /// using all the messages from the first consensus round to the first that satisfies the
+    /// following conditions:
+    /// - a quorum of messages from the previous round `current_mpc_round — 1` must exist
+    ///   (except for the first round, which is always ready to advance requiring no messages as input.)
+    /// - a minimum number of consensus rounds that was required to delay the execution
+    ///   (to allow more messages to come in before advancing)
     ///   has passed since the first consensus round where we got a quorum for this round.
-    /// - this quorum must be "fresh", in the sense we never tried to advance with it before.
-    ///   There is only one case in which we attempt to advance the same round twice: when we get a threshold not reached error.
+    /// - This quorum must be "fresh", in the sense we never tried to advance with it before.
+    ///   There is only one case in which we attempt to advance the same round twice:
+    ///   when we get a threshold not reached error.
     ///   Therefore, if such an error occurred for a consensus round, we don't stop the search,
-    ///   and wait for at least one new message to come in a subsequent consensus round before returning the messages to advance with.
+    ///   and wait for at least one new message to come in a later consensus round before returning
+    ///   the messages to advance with.
     ///
-    /// Duplicate messages are ignored - the first message a party has sent for an MPC round is always used.
+    /// Duplicate messages are ignored — the first message a party has sent for an MPC round
+    /// is always used.
     pub(crate) fn build_messages_to_advance(
         &self,
     ) -> Option<(Option<u64>, HashMap<usize, HashMap<PartyID, MPCMessage>>)> {
@@ -176,7 +190,8 @@ impl DWalletMPCSession {
                 first_consensus_round.cmp(second_consensus_round)
             });
         for (consensus_round, consensus_round_messages) in sorted_messages_by_consensus_round {
-            // Update messages to advance the current round by joining the messages received at the current consensus round
+            // Update messages to advance the current round by joining the messages
+            // received at the current consensus round
             // with the ones we collected so far, ignoring duplicates.
             for (mpc_round, mpc_round_messages) in consensus_round_messages {
                 if mpc_round < self.current_mpc_round {
@@ -184,10 +199,10 @@ impl DWalletMPCSession {
                         let mpc_round_messages_map =
                             messages_for_advance.entry(mpc_round).or_default();
 
-                        if !mpc_round_messages_map.contains_key(&sender_party_id) {
-                            // Always take the first message sent in consensus by a particular party for a particular round.
-                            mpc_round_messages_map.insert(sender_party_id, message);
-
+                        if let Vacant(e) = mpc_round_messages_map.entry(sender_party_id) {
+                            // Always take the first message sent in consensus by a
+                            // particular party for a particular round.
+                            e.insert(message);
                             got_new_messages_since_last_threshold_not_reached = true;
                         }
                     }
@@ -212,8 +227,10 @@ impl DWalletMPCSession {
             if is_quorum_reached {
                 if delayed_rounds != rounds_to_delay {
                     // Wait for the delay.
-                    // We set the map of messages by consensus round at each consensus round for each session,
-                    // even if no messages were received, so this count is accurate as iterating the messages by consensus round goes through all consensus rounds to date.
+                    // We set the map of messages by consensus round at each consensus round for
+                    // each session, even if no messages were received, so this count is
+                    // accurate as iterating the messages by consensus round goes through all
+                    // consensus rounds to date.
                     delayed_rounds += 1;
                 } else if threshold_not_reached_consensus_rounds_for_current_mpc_round
                     .contains(&consensus_round)
@@ -224,7 +241,8 @@ impl DWalletMPCSession {
                 } else if got_new_messages_since_last_threshold_not_reached {
                     // We have a quorum of previous round messages,
                     // we delayed the execution as and if required,
-                    // and we know we haven't tried to advance the current MPC round with this set of messages so we have a chance at advancing (and reaching threshold):
+                    // and we know we haven't tried to advance the current MPC round with this
+                    // set of messages, so we have a chance at advancing (and reaching threshold):
                     // Let's try advancing with this set of messages!
                     return Some((Some(consensus_round), messages_for_advance));
                 }
@@ -238,7 +256,8 @@ impl DWalletMPCSession {
         None
     }
 
-    /// Computes the current *total* attempt number, meaning the number of threshold not reached from any mpc round in this session, plus 1.
+    /// Computes the current *total* attempt number, meaning the number of thresholds
+    /// not reached from any mpc round in this session, plus 1.
     pub(crate) fn get_attempt_number(&self) -> usize {
         let threshold_not_reached_consensus_rounds = self
             .mpc_round_to_threshold_not_reached_consensus_rounds
@@ -250,7 +269,8 @@ impl DWalletMPCSession {
         threshold_not_reached_count + 1
     }
 
-    /// Records a threshold not reached error that we got when advancing this session with messages up to `consensus_round`.
+    /// Records a threshold not reached error that we got when advancing
+    /// this session with messages up to `consensus_round`.
     pub(crate) fn record_threshold_not_reached(&mut self, consensus_round: u64) {
         let request_input = &self.mpc_event_data.as_ref().unwrap().request_input;
 
@@ -259,7 +279,7 @@ impl DWalletMPCSession {
             validator=?self.validator_name,
             session_identifier=?self.session_identifier,
             mpc_round=?self.current_mpc_round,
-            "Recording threshold not reached for session"
+            "threshold was not reached for session"
         );
 
         self.mpc_round_to_threshold_not_reached_consensus_rounds

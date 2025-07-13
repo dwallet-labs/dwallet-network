@@ -317,11 +317,7 @@ impl DWalletMPCManager {
             "Received start MPC flow event for session identifier {:?}",
             session_identifier
         );
-        let with_mpc_event_data = if mpc_event_data.is_some() {
-            true
-        } else {
-            false
-        };
+        let with_mpc_event_data = mpc_event_data.is_some();
 
         let new_session = DWalletMPCSession::new(
             self.validator_name,
@@ -416,7 +412,7 @@ impl DWalletMPCManager {
 
                         let computation_request = ComputationRequest {
                             party_id: self.party_id,
-                            validator_name: self.validator_name.clone(),
+                            validator_name: self.validator_name,
                             committee: self.committee.clone(),
                             access_structure: self.access_structure.clone(),
                             request_input: mpc_event_data.request_input,
@@ -543,7 +539,7 @@ impl DWalletMPCManager {
 
         // TODO(scaly): think if we want to keep this malicious reporting.
         let output_verification_result = self.outputs_verifier
-            .try_verify_output(output, session_request, *authority, self.validator_name.clone(), self.committee.clone())
+            .try_verify_output(output, session_request, *authority, self.validator_name, self.committee.clone())
             .unwrap_or_else(|e| {
                 error!(session_identifier=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
                 OutputVerificationResult {

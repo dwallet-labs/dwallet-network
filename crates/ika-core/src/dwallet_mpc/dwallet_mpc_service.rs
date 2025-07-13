@@ -703,7 +703,7 @@ impl DWalletMPCService {
         let epoch = self.epoch_store.epoch();
 
         let session_request = MPCSessionRequest {
-            session_type: mpc_event_data.session_type.clone(),
+            session_type: mpc_event_data.session_type,
             request_input: mpc_event_data.request_input.clone(),
             epoch,
             session_identifier,
@@ -713,7 +713,7 @@ impl DWalletMPCService {
         };
 
         ConsensusTransaction::new_dwallet_mpc_message(
-            self.epoch_store.name.clone(),
+            self.epoch_store.name,
             message,
             session_identifier,
             mpc_round,
@@ -733,10 +733,10 @@ impl DWalletMPCService {
         let epoch = self.epoch_store.epoch();
 
         ConsensusTransaction::new_dwallet_mpc_output(
-            self.epoch_store.name.clone(),
+            self.epoch_store.name,
             output,
             MPCSessionRequest {
-                session_type: mpc_event_data.session_type.clone(),
+                session_type: mpc_event_data.session_type,
                 session_identifier,
                 session_sequence_number: mpc_event_data.session_sequence_number,
                 request_input: mpc_event_data.request_input.clone(),

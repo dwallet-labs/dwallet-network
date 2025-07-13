@@ -9,6 +9,7 @@ use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use rand_chacha::ChaCha20Rng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use tracing::error;
 
 pub(crate) mod dwallet_dkg;
 pub(crate) mod network_dkg;
@@ -102,7 +103,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
 }
 
 struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
-    /// round -> {party -> message}
+    /// Round -> {party -> message}
     messages: HashMap<usize, HashMap<PartyID, M>>,
     malicious_parties: Vec<PartyID>,
 }
@@ -111,8 +112,10 @@ struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 ///
-/// Note that deserialization of a message depends on the type of the message which is only known once the event data comes,
-/// and so we can only handle this here. Malicious messages are ignored, and we assure that we still have quorum, otherwise returning a `ThresholdNotReached` error.
+/// Note that deserialization of a message depends on the type of the message,
+/// which is only known once the event data comes,
+/// and so we can only handle this here. Malicious messages are ignored, and we ensure
+/// that we still have quorum, otherwise returning a `ThresholdNotReached` error.
 fn deserialize_mpc_messages_and_check_quorum<M: DeserializeOwned + Clone>(
     messages: &HashMap<usize, HashMap<PartyID, MPCMessage>>,
     access_structure: &WeightedThresholdAccessStructure,
@@ -140,10 +143,8 @@ fn deserialize_mpc_messages_and_check_quorum<M: DeserializeOwned + Clone>(
         }
 
         let valid_message_senders = valid_messages.keys().copied().collect();
-        if access_structure
-            .is_authorized_subset(&valid_message_senders)
-            .is_err()
-        {
+        if let Err(e) = access_structure.is_authorized_subset(&valid_message_senders) {
+            error!(error=?e, "MPC threshold not reached");
             return Err(DwalletMPCError::TWOPCMPCThresholdNotReached);
         }
 

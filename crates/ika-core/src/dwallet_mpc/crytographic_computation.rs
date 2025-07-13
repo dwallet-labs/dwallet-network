@@ -43,13 +43,17 @@ use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 pub(crate) use mpc_computations::advance_and_serialize;
 pub(crate) use orchestrator::CryptographicComputationsOrchestrator;
 
+const MPC_SIGN_SECOND_ROUND: usize = 2;
+
 /// A unique key for a computation request.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub(crate) struct ComputationId {
     pub(crate) session_identifier: SessionIdentifier,
-    /// The consensus round at which this computation executed, if it is synced with the consensus.
-    /// The first MPC round will be `None`, since it isn't synced - it is launched when the event is received from Sui.
-    /// All other MPC rounds will set this to `Some()` with the value being the last consensus round from which we gathered messages to advance.
+    /// The consensus round at which this computation executed (if it is synced with the consensus).
+    /// The first MPC round will be `None`, since it isn't synced — it is launched when the
+    /// event is received from Sui.
+    /// All other MPC rounds will set this to `Some()` with the value being the last consensus
+    /// round from which we gathered messages to advance.
     pub(crate) consensus_round: Option<u64>,
     pub(crate) mpc_round: usize,
     pub(crate) attempt_number: usize,
@@ -66,6 +70,7 @@ pub(crate) struct ComputationRequest {
     pub(crate) request_input: MPCRequestInput,
     pub(crate) decryption_key_shares:
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
+    /// Round -> Messages map.
     pub(crate) messages: HashMap<usize, HashMap<PartyID, MPCMessage>>,
 }
 
@@ -98,7 +103,7 @@ impl ComputationRequest {
             mpc_round=?computation_id.mpc_round,
             access_structure=?self.access_structure,
             ?messages_skeleton,
-            "Advancing MPC session"
+            "Advancing an MPC session"
         );
         let session_id =
             CommitmentSizedNumber::from_le_slice(&computation_id.session_identifier.into_bytes());
@@ -111,9 +116,11 @@ impl ComputationRequest {
             .with_party_to_authority_map(party_to_authority_map.clone());
 
         // Derive a one-time use, MPC protocol and round specific, deterministic random generator
-        // from the private seed. This should only be used to `advance()` this specific round,
-        // and is guaranteed to be deterministic - if we attempt to run the round twice, the same message will be generated.
-        // SECURITY NOTICE: don't use for anything else other than (this particular) `advance()`, and keep private!
+        // from the private seed.
+        // This should only be used to `advance()` this specific round, and is guaranteed to be
+        // deterministic — if we attempt to run the round twice, the same message will be generated.
+        // SECURITY NOTICE: don't use for anything else other than (this particular) `advance()`,
+        // and keep private!
         let rng = root_seed.mpc_round_rng(
             session_id,
             computation_id.mpc_round as u64,
@@ -126,7 +133,7 @@ impl ComputationRequest {
                     &self.public_input
                 else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -154,7 +161,9 @@ impl ComputationRequest {
                         malicious_parties,
                         private_output,
                     } => {
-                        // Verify the encrypted share before finalizing, guaranteeing a two-for-one computation of both that the key import was successful and the encrypted user share is valid.
+                        // Verify the encrypted share before finalizing, guaranteeing a two-for-one
+                        // computation of both that the key import was successful, and
+                        // the encrypted user share is valid.
                         verify_encrypted_share(
                             &EncryptedShareVerificationRequestEvent {
                                 decentralized_public_output: bcs::to_bytes(
@@ -263,7 +272,7 @@ impl ComputationRequest {
             MPCRequestInput::DKGSecond(event_data) => {
                 let PublicInput::DKGSecond(public_input) = &self.public_input else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -288,7 +297,8 @@ impl ComputationRequest {
                 )?;
 
                 if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
-                    // Verify the encrypted share before finalizing, guaranteeing a two-for-one computation of both that the dkg was successful and the encrypted user share is valid.
+                    // Verify the encrypted share before finalizing, guaranteeing a two-for-one
+                    // computation of both that the dkg was successful, and the encrypted user share is valid.
                     verify_encrypted_share(
                         &EncryptedShareVerificationRequestEvent {
                             decentralized_public_output: bcs::to_bytes(
@@ -403,7 +413,7 @@ impl ComputationRequest {
                         base_logger.with_decryption_key_shares(raw_decryption_key_shares.clone());
                     let PublicInput::Sign(public_input) = &self.public_input else {
                         error!(
-                            should_never_happen =? true,
+                            should_never_happen=?true,
                             mpc_protocol=?self.request_input,
                             validator=?self.validator_name,
                             session_identifier=?computation_id.session_identifier,
@@ -415,7 +425,7 @@ impl ComputationRequest {
                         return Err(DwalletMPCError::InvalidSessionPublicInput);
                     };
 
-                    if computation_id.mpc_round == 2 {
+                    if computation_id.mpc_round == MPC_SIGN_SECOND_ROUND {
                         if let Some(sign_first_round_messages) = self.messages.get(&1) {
                             let decrypters = sign_first_round_messages.keys().copied().collect();
                             update_expected_decrypters_metrics(
@@ -464,7 +474,7 @@ impl ComputationRequest {
                     }
                 } else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -499,7 +509,7 @@ impl ComputationRequest {
                 let PublicInput::EncryptedShareVerification(public_input) = &self.public_input
                 else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -530,7 +540,7 @@ impl ComputationRequest {
                 let PublicInput::PartialSignatureVerification(public_input) = &self.public_input
                 else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -560,7 +570,7 @@ impl ComputationRequest {
                     &self.public_input
                 else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,
@@ -620,7 +630,7 @@ impl ComputationRequest {
                     }
                 } else {
                     error!(
-                    should_never_happen =? true,
+                    should_never_happen=?true,
                     mpc_protocol=?self.request_input,
                     validator=?self.validator_name,
                     session_identifier=?computation_id.session_identifier,
@@ -634,11 +644,11 @@ impl ComputationRequest {
                 }
             }
             MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(init_event) => {
-                let PublicInput::MakeDWalletUserSecretKeySharesPublicPublicInput(public_input) =
+                let PublicInput::MakeDWalletUserSecretKeySharesPublicParameters(public_input) =
                     &self.public_input
                 else {
                     error!(
-                        should_never_happen =? true,
+                        should_never_happen=?true,
                         mpc_protocol=?self.request_input,
                         validator=?self.validator_name,
                         session_identifier=?computation_id.session_identifier,

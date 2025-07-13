@@ -320,7 +320,7 @@ fn network_dkg_secp256k1_session_request(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
 ) -> MPCSessionRequest {
     MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
@@ -337,7 +337,7 @@ fn network_dkg_ristretto_session_request(
     deserialized_event: DWalletSessionEvent<DWalletNetworkDKGEncryptionKeyRequestEvent>,
 ) -> MPCSessionRequest {
     MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,
