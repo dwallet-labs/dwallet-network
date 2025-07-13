@@ -486,8 +486,8 @@ impl DWalletMPCManager {
                 .unwrap();
 
             let Some(mpc_event_data) = oldest_pending_session.mpc_event_data.clone() else {
-                // This should never happen.
                 error!(
+                    should_never_happen=true,
                     session_identifier=?oldest_pending_session.session_identifier,
                     last_session_to_complete_in_current_epoch=?self.last_session_to_complete_in_current_epoch,
                     "session does not have event data, skipping"
