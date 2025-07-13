@@ -1046,7 +1046,7 @@ impl SystemCheckpointSignatureAggregator {
                 ?committee,
                 system_time=?time,
                 quorum_unreachable,
-                "Split brain detected in system checkpoint signature aggregation",
+                "split brain detected in system checkpoint signature aggregation",
             );
             self.metrics.split_brain_system_checkpoint_forks.inc();
         }

@@ -1055,7 +1055,7 @@ impl DWalletCheckpointSignatureAggregator {
                 ?committee,
                 system_time=?time,
                 quorum_unreachable,
-                "Split brain detected in dwallet checkpoint signature aggregation",
+                "split brain detected in dwallet checkpoint signature aggregation",
             );
             self.metrics.split_brain_dwallet_checkpoint_forks.inc();
         }

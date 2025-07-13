@@ -173,7 +173,8 @@ impl DWalletMPCService {
     }
 
     /// Bootstrap all completed MPC sessions from the local DB for current epoch.
-    /// Return `true` if bootstrapping was successful, `false` otherwise.
+    /// This is used to avoid re-running computations for sessions.
+    /// Panics if the DB tables cannot be loaded.
     fn bootstrap_completed_sessions(&mut self) {
         let Ok(tables) = self.epoch_store.tables() else {
             error!("failed to load DB tables from the epoch store");
@@ -257,7 +258,7 @@ impl DWalletMPCService {
                     should_never_happen=true,
                     consensus_round,
                     last_read_consensus_round=?self.last_read_consensus_round,
-                    "Consensus round must be in a ascending order"
+                    "consensus round must be in a ascending order"
                 );
                 return false;
             }
