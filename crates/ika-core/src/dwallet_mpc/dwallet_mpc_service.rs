@@ -270,13 +270,13 @@ impl DWalletMPCService {
         {
             let Ok((mpc_messages_consensus_round, mpc_messages)) = mpc_messages_iteration_result
             else {
-                error!("Failed to load DWallet MPC messages from the local DB");
+                error!("failed to load DWallet MPC messages from the local DB");
 
                 return false;
             };
             let Ok((mpc_outputs_consensus_round, mpc_outputs)) = mpc_outputs_iteration_result
             else {
-                error!("Failed to load DWallet MPC outputs from the local DB");
+                error!("failed to load DWallet MPC outputs from the local DB");
 
                 return false;
             };
@@ -297,7 +297,7 @@ impl DWalletMPCService {
                         ?mpc_messages_consensus_round,
                         ?mpc_outputs_consensus_round,
                         ?verified_dwallet_checkpoint_messages_consensus_round,
-                        "The consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
+                        "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
                     );
 
                 return false;
@@ -309,7 +309,7 @@ impl DWalletMPCService {
                 error!(
                     consensus_round,
                     last_read_consensus_round=?self.last_read_consensus_round,
-                    "Consensus round must be in a ascending order, should never happen"
+                    "consensus round must be in a ascending order, should never happen"
                 );
 
                 return false;
@@ -563,7 +563,7 @@ impl DWalletMPCService {
                                             validator=?validator_name,
                                             ?malicious_parties,
                                             ?malicious_authorities,
-                                        "Malicious parties detected upon MPC session finalize",
+                                        "malicious parties detected upon MPC session finalize",
                                     );
 
                                     self.dwallet_mpc_manager
