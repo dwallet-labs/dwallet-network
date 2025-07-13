@@ -96,7 +96,7 @@ pub(crate) fn network_decryption_key_reconfiguration_session_request_from_event(
     deserialized_event: DWalletSessionEvent<DWalletEncryptionKeyReconfigurationRequestEvent>,
 ) -> MPCSessionRequest {
     MPCSessionRequest {
-        session_type: deserialized_event.session_type.clone(),
+        session_type: deserialized_event.session_type,
         session_identifier: deserialized_event.session_identifier_digest(),
         session_sequence_number: deserialized_event.session_sequence_number,
         epoch: deserialized_event.epoch,

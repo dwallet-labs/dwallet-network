@@ -256,8 +256,8 @@ pub struct ProtocolConfig {
     /// Configures the garbage collection depth for consensus. When is unset or `0` then the garbage collection
     /// is disabled.
     consensus_gc_depth: Option<u32>,
-    decryption_key_reconfiguration_third_round_delay: Option<u32>,
-    network_dkg_third_round_delay: Option<u32>,
+    decryption_key_reconfiguration_third_round_delay: Option<u64>,
+    network_dkg_third_round_delay: Option<u64>,
 }
 
 // feature flags

@@ -327,8 +327,7 @@ pub struct DWalletMPCMessage {
     pub authority: AuthorityName,
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
-    pub round_number: usize,
-    pub mpc_protocol: String,
+    pub round_number: u64,
 }
 
 /// The message unique key in the consensus network.
@@ -339,7 +338,7 @@ pub struct DWalletMPCMessageKey {
     pub authority: AuthorityName,
     pub session_identifier: SessionIdentifier,
     /// The MPC round number starts from 0.
-    pub round_number: usize,
+    pub round_number: u64,
 }
 
 /// Holds information about the current MPC session.
@@ -364,7 +363,7 @@ pub trait DWalletSessionEventTrait {
 /// User initiated sessions have a sequence number, which is used to determine in which epoch the session will get
 /// completed.
 /// System sessions are guaranteed to always get completed in the epoch they were created in.
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, JsonSchema, Eq, PartialEq, Hash)]
 pub enum SessionType {
     User,
     System,
@@ -806,38 +805,6 @@ impl DWalletSessionEventTrait for DWalletDKGSecondRoundRequestEvent {
 pub enum AdvanceResult {
     Success,
     Failure,
-}
-
-/// Represents a report of malicious behavior in the dWallet MPC process.
-///
-/// This struct is used to record instances where validators identify malicious actors
-/// attempting to disrupt the protocol.
-/// It links the malicious actors to a specific MPC session.
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct MaliciousReport {
-    /// A list of authority names that have been identified as malicious actors.
-    pub malicious_actors: Vec<AuthorityName>,
-    /// The unique identifier of the MPC session in which the malicious activity occurred.
-    pub session_identifier: SessionIdentifier,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct ThresholdNotReachedReport {
-    pub session_identifier: SessionIdentifier,
-    pub attempt: usize,
-}
-
-impl MaliciousReport {
-    /// Creates a new instance of a malicious report.
-    pub fn new(
-        malicious_actors: Vec<AuthorityName>,
-        session_identifier: SessionIdentifier,
-    ) -> Self {
-        Self {
-            malicious_actors,
-            session_identifier,
-        }
-    }
 }
 
 /// Represents the Rust version of the Move struct `ika_system::dwallet_2pc_mpc_coordinator_inner::PresignRequestEvent`.

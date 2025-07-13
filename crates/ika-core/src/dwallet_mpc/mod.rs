@@ -1,30 +1,28 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use group::PartyID;
-use ika_types::committee::Committee;
+use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use message_digest::message_digest::message_digest;
 use mpc::{Weight, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::vec::Vec;
 use sui_types::base_types::EpochId;
+use tracing::error;
 
-mod cryptographic_computations_orchestrator;
 pub mod dwallet_mpc_service;
-mod malicious_handler;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 
+mod crytographic_computation;
 pub mod dwallet_mpc_metrics;
 mod mpc_event;
-mod mpc_protocols;
-mod native_computations;
 
-pub(crate) use mpc_protocols::{dwallet_dkg, network_dkg, presign, reconfiguration, sign};
-pub(crate) use native_computations::{
+pub(crate) use crytographic_computation::mpc_computations::{
+    dwallet_dkg, network_dkg, presign, reconfiguration, sign,
+};
+pub(crate) use crytographic_computation::native_computations::{
     encrypt_user_share, make_dwallet_user_secret_key_shares_public,
 };
 
@@ -53,6 +51,20 @@ pub(crate) fn authority_name_to_party_id_from_committee(
         .expect("should never have more than 2^16 parties");
 
     Ok(tangible_party_id)
+}
+
+pub(crate) fn get_validators_class_groups_public_keys_and_proofs(
+    committee: &Committee,
+) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>> {
+    let mut validators_class_groups_public_keys_and_proofs = HashMap::new();
+    for (name, _) in committee.voting_rights.iter() {
+        let party_id = authority_name_to_party_id_from_committee(committee, name)?;
+        if let Ok(public_key) = committee.class_groups_public_key_and_proof(name) {
+            validators_class_groups_public_keys_and_proofs.insert(party_id, public_key);
+        }
+    }
+
+    Ok(validators_class_groups_public_keys_and_proofs)
 }
 
 /// Convert a `committee` to a `WeightedThresholdAccessStructure` that is used by the cryptographic library.
@@ -84,29 +96,35 @@ pub(crate) fn generate_access_structure_from_committee(
 /// Convert a given `party_id` to it's corresponding authority name (address).
 pub(crate) fn party_id_to_authority_name(
     party_id: PartyID,
-    epoch_store: &AuthorityPerEpochStore,
-) -> DwalletMPCResult<AuthorityName> {
+    committee: &Committee,
+) -> Option<AuthorityName> {
     // A tangible party ID is of type `PartyID` and in the range `1..=number_of_tangible_parties`.
     // Convert it to an index to the committee authority names, which is in the range `0..number_of_tangible_parties`,
     // Decrement the index to transform it from 1-based to 0-based.
     // Safe to decrement as `PartyID` is `u16`, will never overflow.
     let index = u32::from(party_id) - 1;
 
-    let authority_name = *epoch_store
-        .committee()
-        .authority_by_index(index)
-        .ok_or(DwalletMPCError::AuthorityIndexNotFound(party_id - 1))?;
-
-    Ok(authority_name)
+    committee.authority_by_index(index).copied()
 }
 
 /// Convert a given [`Vec<PartyID>`] to the corresponding [`Vec<AuthorityName>`].
 pub(crate) fn party_ids_to_authority_names(
     party_ids: &[PartyID],
-    epoch_store: &AuthorityPerEpochStore,
-) -> DwalletMPCResult<Vec<AuthorityName>> {
+    committee: &Committee,
+) -> Vec<AuthorityName> {
     party_ids
         .iter()
-        .map(|party_id| party_id_to_authority_name(*party_id, epoch_store))
-        .collect::<DwalletMPCResult<Vec<AuthorityName>>>()
+        .flat_map(|party_id| {
+            let authority_name = party_id_to_authority_name(*party_id, committee);
+
+            if authority_name.is_none() {
+                error!(
+                    party_id=?party_id,
+                    "failed to find matching authority name for party ID"
+                );
+            }
+
+            authority_name
+        })
+        .collect()
 }
