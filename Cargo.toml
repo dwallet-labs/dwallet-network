@@ -18,7 +18,7 @@ members = [
     "crates/ika-sui-client",
     "crates/ika-protocol-config",
     "crates/ika-protocol-config-macros",
-    "crates/ika-proxy",
+#    "crates/ika-proxy",
     "crates/ika-swarm",
     "crates/ika-swarm-config",
     "crates/ika-telemetry",
@@ -537,7 +537,7 @@ ika-config = { path = "crates/ika-config" }
 ika-core = { path = "crates/ika-core" }
 ika-node = { path = "crates/ika-node" }
 ika-sui-client = { path = "crates/ika-sui-client" }
-ika-porxy = { path = "crates/ika-proxy" }
+#ika-porxy = { path = "crates/ika-proxy" }
 ika-protocol-config = { path = "crates/ika-protocol-config" }
 ika-protocol-config-macros = { path = "crates/ika-protocol-config-macros" }
 #ika-sdk = { path = "crates/ika-sdk" }

@@ -153,7 +153,7 @@ impl DWalletMPCService {
             match self.exit.has_changed() {
                 Ok(true) => {
                     warn!(
-                        our_epoch_id=self.epoch_id,
+                        our_epoch_id=self.dwallet_mpc_manager.epoch_id,
                         authority=?self.epoch_store.name,
                         "DWalletMPCService exit signal received"
                     );
@@ -163,7 +163,7 @@ impl DWalletMPCService {
                     warn!(
                         err=?err,
                         authority=?self.epoch_store.name,
-                        our_epoch_id=self.epoch_id,
+                        our_epoch_id=self.dwallet_mpc_manager.epoch_id,
                         "DWalletMPCService exit channel was shutdown incorrectly"
                     );
                     break;
