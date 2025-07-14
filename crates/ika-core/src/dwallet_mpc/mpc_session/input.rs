@@ -23,6 +23,7 @@ use ika_types::messages_dwallet_mpc::{DWalletMPCEvent, MPCRequestInput};
 use mpc::WeightedThresholdAccessStructure;
 use std::collections::HashMap;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, PartialEq, Eq)]
 pub enum PublicInput {
     DWalletImportedKeyVerificationRequest(
