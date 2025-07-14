@@ -30,12 +30,13 @@ use ika_types::sui::{
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
+use move_package::BuildConfig;
 use shared_crypto::intent::Intent;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::{
-    Opts, OptsWithGas, SuiClientCommandResult, estimate_gas_budget_from_gas_cost, execute_dry_run,
+    SuiClientCommandResult, SuiClientCommands, estimate_gas_budget_from_gas_cost, execute_dry_run,
     request_tokens_from_faucet,
 };
 use sui_config::SUI_CLIENT_CONFIG;
@@ -54,8 +55,8 @@ use sui_types::move_package::UpgradeCap;
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{
-    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionDataAPI,
-    TransactionKind,
+    Argument, CallArg, Command, ObjectArg, SenderSignedData, Transaction, TransactionData,
+    TransactionDataAPI, TransactionKind,
 };
 use sui_types::{
     MOVE_STDLIB_PACKAGE_ID, SUI_CLOCK_OBJECT_ID, SUI_CLOCK_OBJECT_SHARED_VERSION,
@@ -1714,19 +1715,33 @@ async fn publish_package_to_sui(
     context: &mut WalletContext,
     package_path: PathBuf,
 ) -> Result<Vec<ObjectChange>, anyhow::Error> {
-    let result = sui::client_commands::SuiClientCommands::Publish {
+    let result = SuiClientCommands::Publish {
         package_path,
-        build_config: Default::default(),
-        opts: OptsWithGas {
-            gas: None,
-            rest: Opts {
-                gas_budget: None,
-                dry_run: false,
-                dev_inspect: false,
-                serialize_unsigned_transaction: false,
-                serialize_signed_transaction: false,
-            },
+        build_config: BuildConfig {
+            dev_mode: false,
+            test_mode: false,
+            generate_docs: false,
+            save_disassembly: false,
+            install_dir: None,
+            force_recompilation: false,
+            lock_file: None,
+            fetch_deps_only: false,
+            skip_fetch_latest_git_deps: false,
+            default_flavor: None,
+            default_edition: None,
+            deps_as_root: false,
+            silence_warnings: false,
+            warnings_are_errors: true,
+            json_errors: false,
+            additional_named_addresses: Default::default(),
+            lint_flag: Default::default(),
+            modes: vec![],
+            implicit_dependencies: Default::default(),
+            force_lock_file: false,
         },
+        payment: Default::default(),
+        gas_data: Default::default(),
+        processing: Default::default(),
         skip_dependency_verification: false,
         verify_deps: false,
         with_unpublished_dependencies: false,
@@ -1741,24 +1756,27 @@ async fn publish_package_to_sui(
     Ok(object_changes)
 }
 
+const DEFAULT_GAS_BUDGET: u64 = 5_000_000_000; // 5 SUI
+
 pub(crate) async fn create_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<Transaction, anyhow::Error> {
     let gas_price = context.get_reference_gas_price().await?;
 
-    let client = context.get_client().await?;
-
     //let gas_budget = max_gas_budget(&client).await?;
-    let gas_budget =
-        estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, None, None).await?;
+    // let gas_budget =
+    //     estimate_gas_budget(context, signer, tx_kind.clone(), gas_price, gas_payment.clone(), None).await?;
 
-    let tx_data = client
-        .transaction_builder()
-        .tx_data(signer, tx_kind, gas_budget, gas_price, gas_payment, None)
-        .await?;
+    let tx_data = TransactionData::new_with_gas_coins(
+        tx_kind,
+        signer,
+        gas_payment,
+        DEFAULT_GAS_BUDGET,
+        gas_price,
+    );
 
     let signature = context.config.keystore.sign_secure(
         &tx_data.sender(),
@@ -1776,8 +1794,17 @@ pub(crate) async fn execute_sui_transaction(
     signer: SuiAddress,
     tx_kind: TransactionKind,
     context: &mut WalletContext,
-    gas_payment: Vec<ObjectID>,
+    gas_payment: Vec<ObjectRef>,
 ) -> Result<SuiTransactionBlockResponse, anyhow::Error> {
+    let gas_payment = if gas_payment.is_empty() {
+        let Some(gas_ref) = context.get_one_gas_object_owned_by_address(signer).await? else {
+            panic!("No gas object found in the wallet context.");
+        };
+
+        vec![gas_ref]
+    } else {
+        gas_payment
+    };
     let transaction = create_sui_transaction(signer, tx_kind, context, gas_payment).await?;
 
     let response = context
@@ -1786,12 +1813,13 @@ pub(crate) async fn execute_sui_transaction(
     Ok(response)
 }
 
+#[allow(dead_code)]
 pub async fn estimate_gas_budget(
     context: &mut WalletContext,
     signer: SuiAddress,
     kind: TransactionKind,
     gas_price: u64,
-    gas_payment: Option<Vec<ObjectID>>,
+    gas_payment: Vec<ObjectRef>,
     sponsor: Option<SuiAddress>,
 ) -> Result<u64, anyhow::Error> {
     let client = context.get_client().await?;
@@ -1800,7 +1828,6 @@ pub async fn estimate_gas_budget(
     else {
         bail!("Wrong SuiClientCommandResult. Should be SuiClientCommandResult::DryRun.")
     };
-
     let rgp = client.read_api().get_reference_gas_price().await?;
 
     Ok(estimate_gas_budget_from_gas_cost(

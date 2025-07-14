@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use group::PartyID;
 use ika_types::committee::{ClassGroupsEncryptionKeyAndProof, Committee};
 use ika_types::crypto::AuthorityName;

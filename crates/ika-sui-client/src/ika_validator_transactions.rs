@@ -553,10 +553,16 @@ async fn construct_unsigned_txn(
 
     let tx = ptb.finish();
     let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
-    let gas_budget =
-        sui::client_commands::estimate_gas_budget(context, sender, tx_kind, gas_price, None, None)
-            .await
-            .unwrap_or(gas_budget);
+    let gas_budget = sui::client_commands::estimate_gas_budget(
+        context,
+        sender,
+        tx_kind,
+        gas_price,
+        vec![],
+        None,
+    )
+    .await
+    .unwrap_or(gas_budget);
 
     let rgp = sui_client
         .governance_api()
