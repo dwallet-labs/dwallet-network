@@ -629,7 +629,7 @@ where
                     warn!(
                         ?err,
                         system_object_id=%self.ika_system_object_id,
-                        "failed to get system inner object",
+                        "failed to get ika system inner object",
                     );
                 }
             }
