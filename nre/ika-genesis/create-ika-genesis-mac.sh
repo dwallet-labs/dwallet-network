@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 set -e
 
@@ -30,8 +30,8 @@ export VALIDATOR_NUM=4
 # The number of staked tokens for each validator.
 export VALIDATOR_STAKED_TOKENS_NUM=40000000000000000
 # The subdomain for Ika the network.
-export SUBDOMAIN="localhost"
-#export SUBDOMAIN="beta.devnet.ika-network.net"
+#export SUBDOMAIN="localhost"
+export SUBDOMAIN="beta.devnet.ika-network.net"
 # The binary name to use.
 export BINARY_NAME="ika"
 # The directory to store the key pairs.
@@ -44,15 +44,15 @@ export VALIDATORS_FILE=""
 # Validator Docker image name.
 export IMAGE_NAME="us-docker.pkg.dev/common-449616/ika-common-containers/ika-node:devnet-v0.0.7-arm64"
 # SUI fullnode URL.
-#export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
-export SUI_FULLNODE_RPC_URL="http://localhost:9000"
+export SUI_FULLNODE_RPC_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_FULLNODE_RPC_URL="http://localhost:9000"
 # Sui Docker URL (only needed if you run Ika on Docker against localhost on non-linux).
 # If it's not against localhost, set it to the remote sui RPC.
-export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
-#export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
+#export SUI_DOCKER_URL="http://docker.for.mac.localhost:9000"
+export SUI_DOCKER_URL="https://fullnode.sui.beta.devnet.ika-network.net"
 # SUI Faucet URL.
-#export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
-export SUI_FAUCET_URL="http://localhost:9123/gas"
+export SUI_FAUCET_URL="https://faucet.sui.beta.devnet.ika-network.net/gas"
+#export SUI_FAUCET_URL="http://localhost:9123/gas"
 # Default Ika epoch duration time.
 # Day
 #export EPOCH_DURATION_TIME_MS=86400000
@@ -235,7 +235,7 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
     fi
 
     mkdir -p "$KEY_PAIRS_DIR"
-    mv ./*.key "$KEY_PAIRS_DIR"/
+    mv ./*.key ./*.seed "$KEY_PAIRS_DIR"/
 
     popd > /dev/null
 
@@ -277,19 +277,23 @@ IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_2pc_mpc_package_id' "$PUBLI
 
 
 # Print the values for verification.
-echo "IKA Package ID: $IKA_PACKAGE_ID"
-echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
-echo "System ID: $IKA_SYSTEM_OBJECT_ID"
-echo "IKA Common Package ID: $IKA_COMMON_PACKAGE_ID"
-echo "IKA DWallet 2PC MPC Package ID: $IKA_DWALLET_2PC_MPC_PACKAGE_ID"
+echo "Ika Package ID: $IKA_PACKAGE_ID"
+echo "Ika System Package ID: $IKA_SYSTEM_PACKAGE_ID"
+echo "Ika System Object ID: $IKA_SYSTEM_OBJECT_ID"
+echo "Ika Common Package ID: $IKA_COMMON_PACKAGE_ID"
+echo "Ika dWallet 2PC MPC Package ID: $IKA_DWALLET_2PC_MPC_PACKAGE_ID"
+echo "Ika dWallet Coordinator Object ID: placeholder"
 
 cat > locals.tf <<EOF
 locals {
   ika_chain_config = {
-    sui_chain_identifier  = "${SUI_CHAIN_IDENTIFIER}"
-    ika_package_id        = "${IKA_PACKAGE_ID}"
-    ika_system_package_id = "${IKA_SYSTEM_PACKAGE_ID}"
-    ika_system_object_id  = "${IKA_SYSTEM_OBJECT_ID}"
+    sui_chain_identifier              = "${SUI_CHAIN_IDENTIFIER}"
+    ika_common_package_id             = "${IKA_COMMON_PACKAGE_ID}"
+    ika_dwallet_2pc_mpc_package_id    = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
+    ika_package_id                    = "${IKA_PACKAGE_ID}"
+    ika_system_package_id             = "${IKA_SYSTEM_PACKAGE_ID}"
+    ika_system_object_id              = "${IKA_SYSTEM_OBJECT_ID}"
+    ika_dwallet_coordinator_object_id = "placeholder"
   }
 }
 EOF

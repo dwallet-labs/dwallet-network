@@ -448,7 +448,7 @@ async fn main() -> Result<()> {
             let initiation_parameters = InitiationParameters::new();
 
             // Call ika_system_initialize.
-            let (dwallet_id, dwallet_initial_shared_version) = ika_system_initialize(
+            let (dwallet_coordinator_object_id, dwallet_initial_shared_version) = ika_system_initialize(
                 publisher_address,
                 &mut context,
                 client.clone(),
@@ -463,7 +463,7 @@ async fn main() -> Result<()> {
             .await?;
             println!(
                 "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
-                dwallet_id, dwallet_initial_shared_version
+                dwallet_coordinator_object_id, dwallet_initial_shared_version
             );
 
             // object_id = 0xacdb9188b62bea2201a836361f5f20374d8402cd5f200d6f92e06a604d4fb2a8
@@ -478,7 +478,7 @@ async fn main() -> Result<()> {
                 ika_dwallet_2pc_mpc_package_id,
                 ika_system_object_id,
                 SequenceNumber::from(init_system_shared_version),
-                dwallet_id,
+                dwallet_coordinator_object_id,
                 dwallet_initial_shared_version,
                 protocol_cap_id,
             )
