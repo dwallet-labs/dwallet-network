@@ -407,7 +407,7 @@ impl SessionIdentifier {
         Self(buf)
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
+    pub fn to_vec(self) -> Vec<u8> {
         self.0.to_vec()
     }
 
@@ -441,7 +441,7 @@ impl SessionIdentifier {
             .map(Self)
     }
 
-    pub fn to_hex(&self) -> String {
+    pub fn to_hex(self) -> String {
         format!("{self:x}")
     }
 

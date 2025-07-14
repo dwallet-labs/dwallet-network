@@ -38,7 +38,6 @@ public struct VerifiedValidatorCommissionCap has drop {
     validator_id: ID,
 }
 
-
 // === Package Functions ===
 
 public(package) fun new_validator_cap(validator_id: ID, ctx: &mut TxContext): ValidatorCap {
@@ -78,18 +77,21 @@ public(package) fun create_verified_validator_cap(cap: &ValidatorCap): VerifiedV
     }
 }
 
-public(package) fun create_verified_validator_operation_cap(cap: &ValidatorOperationCap): VerifiedValidatorOperationCap {
+public(package) fun create_verified_validator_operation_cap(
+    cap: &ValidatorOperationCap,
+): VerifiedValidatorOperationCap {
     VerifiedValidatorOperationCap {
         validator_id: cap.validator_id,
     }
 }
 
-public(package) fun create_verified_validator_commission_cap(cap: &ValidatorCommissionCap): VerifiedValidatorCommissionCap {
+public(package) fun create_verified_validator_commission_cap(
+    cap: &ValidatorCommissionCap,
+): VerifiedValidatorCommissionCap {
     VerifiedValidatorCommissionCap {
         validator_id: cap.validator_id,
     }
 }
-
 
 public(package) fun validator_id(cap: &ValidatorCap): ID {
     cap.validator_id
@@ -119,14 +121,17 @@ public fun verified_validator_operation_cap_validator_id(cap: &VerifiedValidator
     cap.validator_id
 }
 
-public use fun verified_validator_operation_cap_validator_id as VerifiedValidatorOperationCap.validator_id;
+public use fun verified_validator_operation_cap_validator_id as
+    VerifiedValidatorOperationCap.validator_id;
 
-public fun verified_validator_commission_cap_validator_id(cap: &VerifiedValidatorCommissionCap): ID {
+public fun verified_validator_commission_cap_validator_id(
+    cap: &VerifiedValidatorCommissionCap,
+): ID {
     cap.validator_id
 }
 
-public use fun verified_validator_commission_cap_validator_id as VerifiedValidatorCommissionCap.validator_id;
-
+public use fun verified_validator_commission_cap_validator_id as
+    VerifiedValidatorCommissionCap.validator_id;
 
 // === Test Functions ===
 

@@ -15,24 +15,19 @@
 /// - creator
 module ika_dwallet_2pc_mpc::ika_dwallet_2pc_mpc_display;
 
-// === Imports ===
-
-use std::{string::String, type_name};
-use ika_dwallet_2pc_mpc::{
-    coordinator_inner::{
-        DWalletCap,
-        ImportedKeyDWalletCap,
-        UnverifiedPartialUserSignatureCap,
-        UnverifiedPresignCap,
-        VerifiedPartialUserSignatureCap,
-        VerifiedPresignCap
-    }
+use ika_dwallet_2pc_mpc::coordinator_inner::{
+    DWalletCap,
+    ImportedKeyDWalletCap,
+    UnverifiedPartialUserSignatureCap,
+    UnverifiedPresignCap,
+    VerifiedPartialUserSignatureCap,
+    VerifiedPresignCap
 };
-use sui::{
-    display::{Self, Display},
-    object_bag::{Self, ObjectBag},
-    package::Publisher
-};
+use std::string::String;
+use std::type_name;
+use sui::display::{Self, Display};
+use sui::object_bag::{Self, ObjectBag};
+use sui::package::Publisher;
 
 // === Structs ===
 
