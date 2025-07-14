@@ -789,7 +789,6 @@ pub async fn ika_system_initialize(
 
     let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
 
-
     let object_changes = response.object_changes.unwrap();
 
     if response.errors.is_empty() {

@@ -3,11 +3,11 @@ use clap::{Parser, Subcommand};
 use fastcrypto::traits::EncodeDecodeBase64;
 use ika_config::initiation::InitiationParameters;
 use ika_swarm_config::sui_client::{
-    ika_system_initialize, ika_system_request_dwallet_network_encryption_key_dkg_by_cap,
-    init_initialize, minted_ika, publish_ika_common_package_to_sui,
-    publish_ika_dwallet_2pc_mpc_package_to_sui, publish_ika_package_to_sui,
-    publish_ika_system_package_to_sui, setup_contract_paths,
-    ika_system_set_witness_approving_advance_epoch, ika_system_add_upgrade_cap_by_cap,
+    ika_system_add_upgrade_cap_by_cap, ika_system_initialize,
+    ika_system_request_dwallet_network_encryption_key_dkg_by_cap,
+    ika_system_set_witness_approving_advance_epoch, init_initialize, minted_ika,
+    publish_ika_common_package_to_sui, publish_ika_dwallet_2pc_mpc_package_to_sui,
+    publish_ika_package_to_sui, publish_ika_system_package_to_sui, setup_contract_paths,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -16,14 +16,14 @@ use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::request_tokens_from_faucet;
 use sui_config::SUI_KEYSTORE_FILENAME;
-use sui_config::{sui_config_dir, Config, SUI_CLIENT_CONFIG};
+use sui_config::{Config, SUI_CLIENT_CONFIG, sui_config_dir};
 use sui_keys::keystore::Keystore;
 use sui_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, SequenceNumber, SuiAddress};
 use sui_types::crypto::SignatureScheme;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 /// CLI for IKA operations on Sui.
 #[derive(Parser)]
@@ -142,38 +142,63 @@ impl PublishIkaConfig {
         let mut tf_content = String::new();
         tf_content.push_str("locals {\n");
         tf_content.push_str("  ika_chain_config = {\n");
-        
+
         // Add sui_chain_identifier
-        tf_content.push_str(&format!("    sui_chain_identifier              = \"{}\"\n", sui_chain_identifier));
-        
+        tf_content.push_str(&format!(
+            "    sui_chain_identifier              = \"{}\"\n",
+            sui_chain_identifier
+        ));
+
         // Add required package IDs
-        tf_content.push_str(&format!("    ika_package_id                    = \"{}\"\n", self.ika_package_id));
-        
-        let ika_common_package_id = self.ika_common_package_id
+        tf_content.push_str(&format!(
+            "    ika_package_id                    = \"{}\"\n",
+            self.ika_package_id
+        ));
+
+        let ika_common_package_id = self
+            .ika_common_package_id
             .map(|id| id.to_string())
             .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!("    ika_common_package_id             = \"{}\"\n", ika_common_package_id));
-        
-        let ika_dwallet_2pc_mpc_package_id = self.ika_dwallet_2pc_mpc_package_id
+        tf_content.push_str(&format!(
+            "    ika_common_package_id             = \"{}\"\n",
+            ika_common_package_id
+        ));
+
+        let ika_dwallet_2pc_mpc_package_id = self
+            .ika_dwallet_2pc_mpc_package_id
             .map(|id| id.to_string())
             .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!("    ika_dwallet_2pc_mpc_package_id    = \"{}\"\n", ika_dwallet_2pc_mpc_package_id));
-        
-        tf_content.push_str(&format!("    ika_system_package_id             = \"{}\"\n", self.ika_system_package_id));
-        
-        let ika_system_object_id = self.ika_system_object_id
+        tf_content.push_str(&format!(
+            "    ika_dwallet_2pc_mpc_package_id    = \"{}\"\n",
+            ika_dwallet_2pc_mpc_package_id
+        ));
+
+        tf_content.push_str(&format!(
+            "    ika_system_package_id             = \"{}\"\n",
+            self.ika_system_package_id
+        ));
+
+        let ika_system_object_id = self
+            .ika_system_object_id
             .map(|id| id.to_string())
             .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!("    ika_system_object_id              = \"{}\"\n", ika_system_object_id));
-        
-        let ika_dwallet_coordinator_object_id = self.ika_dwallet_coordinator_object_id
+        tf_content.push_str(&format!(
+            "    ika_system_object_id              = \"{}\"\n",
+            ika_system_object_id
+        ));
+
+        let ika_dwallet_coordinator_object_id = self
+            .ika_dwallet_coordinator_object_id
             .map(|id| id.to_string())
             .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!("    ika_dwallet_coordinator_object_id = \"{}\"\n", ika_dwallet_coordinator_object_id));
-        
+        tf_content.push_str(&format!(
+            "    ika_dwallet_coordinator_object_id = \"{}\"\n",
+            ika_dwallet_coordinator_object_id
+        ));
+
         tf_content.push_str("  }\n");
         tf_content.push_str("}\n");
-        
+
         tf_content
     }
 }
@@ -250,7 +275,9 @@ async fn main() -> Result<()> {
             println!("Published IKA dwallet 2pc mpc package:");
             println!("  ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id}");
             println!("  ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}");
-            println!("  ika_dwallet_2pc_mpc_package_upgrade_cap_id: {ika_dwallet_2pc_mpc_package_upgrade_cap_id}");
+            println!(
+                "  ika_dwallet_2pc_mpc_package_upgrade_cap_id: {ika_dwallet_2pc_mpc_package_upgrade_cap_id}"
+            );
 
             // Save the published package IDs into a configuration file.
             let publish_config = PublishIkaConfig {
@@ -283,8 +310,7 @@ async fn main() -> Result<()> {
             file.write_all(json.as_bytes())?;
             println!(
                 "Published IKA modules configuration saved to {:?}:\n {:?}",
-                config_file_path,
-                json
+                config_file_path, json
             );
         }
 
@@ -505,19 +531,20 @@ async fn main() -> Result<()> {
             let initiation_parameters = InitiationParameters::new();
 
             // Call ika_system_initialize.
-            let (dwallet_coordinator_object_id, dwallet_initial_shared_version) = ika_system_initialize(
-                publisher_address,
-                &mut context,
-                client.clone(),
-                ika_system_package_id,
-                ika_system_object_id,
-                SequenceNumber::from(init_system_shared_version),
-                protocol_cap_id,
-                ika_dwallet_2pc_mpc_package_id,
-                ika_dwallet_2pc_mpc_init_id,
-                initiation_parameters.max_validator_change_count,
-            )
-            .await?;
+            let (dwallet_coordinator_object_id, dwallet_initial_shared_version) =
+                ika_system_initialize(
+                    publisher_address,
+                    &mut context,
+                    client.clone(),
+                    ika_system_package_id,
+                    ika_system_object_id,
+                    SequenceNumber::from(init_system_shared_version),
+                    protocol_cap_id,
+                    ika_dwallet_2pc_mpc_package_id,
+                    ika_dwallet_2pc_mpc_init_id,
+                    initiation_parameters.max_validator_change_count,
+                )
+                .await?;
             println!(
                 "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
                 dwallet_coordinator_object_id, dwallet_initial_shared_version
@@ -570,20 +597,18 @@ async fn main() -> Result<()> {
                 ika_config_path, sui_chain_identifier
             );
 
-                         let config_content = fs::read_to_string(&ika_config_path)?;
-             let publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
+            let config_content = fs::read_to_string(&ika_config_path)?;
+            let publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
 
-             let terraform_content = publish_config.to_terraform(&sui_chain_identifier);
+            let terraform_content = publish_config.to_terraform(&sui_chain_identifier);
 
-            let output_path = output_path.unwrap_or_else(|| {
-                ika_config_path.parent().unwrap().join("terraform.tf")
-            });
+            let output_path = output_path
+                .unwrap_or_else(|| ika_config_path.parent().unwrap().join("terraform.tf"));
             let mut file = File::create(&output_path)?;
             file.write_all(terraform_content.as_bytes())?;
             println!(
                 "Terraform configuration saved to {:?}:\n {}",
-                output_path,
-                terraform_content
+                output_path, terraform_content
             );
         }
     }

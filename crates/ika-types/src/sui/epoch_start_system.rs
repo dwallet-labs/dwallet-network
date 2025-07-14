@@ -147,6 +147,7 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                     (
                         validator.voting_power,
                         NetworkMetadata {
+                            name: validator.name.clone(),
                             network_address: validator.network_address.clone(),
                             consensus_address: validator.consensus_address.clone(),
                             network_public_key: Some(validator.network_pubkey.clone()),
