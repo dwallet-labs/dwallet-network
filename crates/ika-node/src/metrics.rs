@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use mysten_network::metrics::MetricsCallbackProvider;
 use prometheus::{
-    register_histogram_vec_with_registry, register_int_counter_vec_with_registry,
-    register_int_gauge_vec_with_registry, HistogramVec, IntCounterVec, IntGaugeVec, Registry,
+    HistogramVec, IntCounterVec, IntGaugeVec, Registry, register_histogram_vec_with_registry,
+    register_int_counter_vec_with_registry, register_int_gauge_vec_with_registry,
 };
 
 use ika_network::tonic::Code;
@@ -191,7 +191,7 @@ ika_counter_2 1"
     async fn get_metrics(port: u16) -> String {
         let client = reqwest::Client::new();
         let response = client
-            .get(format!("http://127.0.0.1:{}/metrics", port))
+            .get(format!("http://127.0.0.1:{port}/metrics"))
             .send()
             .await
             .unwrap();

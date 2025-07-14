@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
-use include_directory::{include_directory, Dir, DirEntry};
-use move_binary_format::file_format::AddressIdentifierIndex;
+use include_directory::{Dir, DirEntry, include_directory};
 use move_binary_format::CompiledModule;
+use move_binary_format::file_format::AddressIdentifierIndex;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::path::Path;
-use sui_types::{base_types::ObjectID, MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
+use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID, base_types::ObjectID};
 use tempfile::TempDir;
 
 /// Represents a system package in the framework, that's built from the source code inside
@@ -136,7 +136,7 @@ impl std::fmt::Debug for IkaMovePackage {
 }
 
 macro_rules! define_system_packages {
-    ([$(($name:expr, $path:expr, $deps:expr, $ika_deps:expr)),* $(,)?]) => {{
+    ([$(($name:expr_2021, $path:expr_2021, $deps:expr_2021, $ika_deps:expr_2021)),* $(,)?]) => {{
         static PACKAGES: Lazy<Vec<IkaMovePackage>> = Lazy::new(|| {
             vec![
                 $(IkaMovePackage::new(

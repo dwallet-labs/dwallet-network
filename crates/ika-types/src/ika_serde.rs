@@ -44,7 +44,7 @@ where
     E: Debug,
     D: Deserializer<'de>,
 {
-    Error::custom(format!("byte deserialization failed, cause by: {:?}", e))
+    Error::custom(format!("byte deserialization failed, cause by: {e:?}"))
 }
 
 #[inline]
@@ -53,7 +53,7 @@ where
     E: Debug,
     S: Serializer,
 {
-    S::Error::custom(format!("byte serialization failed, cause by: {:?}", e))
+    S::Error::custom(format!("byte serialization failed, cause by: {e:?}"))
 }
 
 /// Serializes and deserializes a RoaringBitmap with its own on-disk standard.

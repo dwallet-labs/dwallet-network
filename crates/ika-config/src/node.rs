@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use crate::Config;
 use crate::object_storage_config::ObjectStoreConfig;
 use crate::p2p::P2pConfig;
-use crate::Config;
 use consensus_config::Parameters as ConsensusParameters;
 use ika_types::committee::EpochId;
 use once_cell::sync::OnceCell;
@@ -28,7 +28,7 @@ pub use sui_config::node::KeyPairWithPath;
 use sui_types::crypto::SuiKeyPair;
 
 use ika_types::crypto::{
-    get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64,
+    AccountKeyPair, AuthorityKeyPair, EncodeDecodeBase64, get_key_pair_from_rng,
 };
 use sui_types::event::EventID;
 use sui_types::multiaddr::Multiaddr;
@@ -199,20 +199,18 @@ impl NodeConfig {
     pub fn consensus_key_pair(&self) -> &NetworkKeyPair {
         match self.consensus_key_pair.keypair() {
             SuiKeyPair::Ed25519(kp) => kp,
-            other => panic!(
-                "Invalid keypair type: {:?}, only Ed25519 is allowed for worker key",
-                other
-            ),
+            other => {
+                panic!("Invalid keypair type: {other:?}, only Ed25519 is allowed for worker key")
+            }
         }
     }
 
     pub fn network_key_pair(&self) -> &NetworkKeyPair {
         match self.network_key_pair.keypair() {
             SuiKeyPair::Ed25519(kp) => kp,
-            other => panic!(
-                "Invalid keypair type: {:?}, only Ed25519 is allowed for network key",
-                other
-            ),
+            other => {
+                panic!("Invalid keypair type: {other:?}, only Ed25519 is allowed for network key")
+            }
         }
     }
 

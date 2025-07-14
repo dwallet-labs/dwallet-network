@@ -1,8 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use ika_types::sui::EpochStartSystemTrait;
 mod dwallet_checkpoint_metrics;
 mod dwallet_checkpoint_output;
+
+use std::collections::HashMap;
 
 use crate::authority::AuthorityState;
 pub use crate::dwallet_checkpoints::dwallet_checkpoint_metrics::DWalletCheckpointMetrics;
@@ -31,16 +34,17 @@ use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointSignatureMessage, SignedDWalletCheckpointMessage,
     TrustedDWalletCheckpointMessage, VerifiedDWalletCheckpointMessage,
 };
+use itertools::Itertools;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tokio::{sync::Notify, task::JoinSet, time::timeout};
 use tracing::{debug, error, info, instrument, warn};
 use typed_store::DBMapUtils;
 use typed_store::Map;
 use typed_store::{
-    rocks::{DBMap, MetricConf},
     TypedStoreError,
+    rocks::{DBMap, MetricConf},
 };
 
 pub type DWalletCheckpointHeight = u64;
@@ -414,10 +418,6 @@ pub struct DWalletCheckpointSignatureAggregator {
     /// Aggregates voting stake for each signed dwallet_checkpoint proposal by authority.
     signatures_by_digest:
         MultiStakeAggregator<DWalletCheckpointMessageDigest, DWalletCheckpointMessage, true>,
-    // todo(zeev): why is it not used?
-    #[allow(dead_code)]
-    tables: Arc<DWalletCheckpointStore>,
-    #[allow(dead_code)]
     state: Arc<AuthorityState>,
     metrics: Arc<DWalletCheckpointMetrics>,
 }
@@ -600,7 +600,10 @@ impl DWalletCheckpointBuilder {
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max dwallet checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_dwallet_checkpoint_size_bytes);
+                    warn!(
+                        "Size of single transaction ({size}) exceeds max dwallet checkpoint size ({}); allowing excessively large checkpoint to go through.",
+                        self.max_dwallet_checkpoint_size_bytes
+                    );
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -874,7 +877,6 @@ impl DWalletCheckpointAggregator {
                     signatures_by_digest: MultiStakeAggregator::new(
                         self.epoch_store.committee().clone(),
                     ),
-                    tables: self.tables.clone(),
                     state: self.state.clone(),
                     metrics: self.metrics.clone(),
                 });
@@ -987,6 +989,7 @@ impl DWalletCheckpointSignatureAggregator {
                     ?error,
                     "Failed to aggregate new dwallet checkpoint signature from validator",
                 );
+                self.check_for_split_brain();
                 Err(())
             }
             InsertResult::QuorumReached(cert) => {
@@ -1009,9 +1012,58 @@ impl DWalletCheckpointSignatureAggregator {
                 bad_votes: _,
                 bad_authorities: _,
             } => {
-                //self.check_for_split_brain();
+                self.check_for_split_brain();
                 Err(())
             }
+        }
+    }
+
+    /// Check if there is a split brain condition in checkpoint signature aggregation, defined
+    /// as any state wherein it is no longer possible to achieve quorum on a checkpoint proposal,
+    /// irrespective of the outcome of any outstanding votes.
+    fn check_for_split_brain(&self) {
+        debug!(
+            checkpoint_seq = self.checkpoint_message.sequence_number,
+            "Checking for split brain condition for dwallet checkpoint"
+        );
+        let all_unique_values = self.signatures_by_digest.get_all_unique_values();
+        if all_unique_values.keys().len() > 1 {
+            let quorum_unreachable = self.signatures_by_digest.quorum_unreachable();
+            let local_checkpoint_message = self.checkpoint_message.clone();
+            let epoch_store = self.state.load_epoch_store_one_call_per_task();
+            let committee = epoch_store
+                .epoch_start_state()
+                .get_ika_committee_with_network_metadata();
+
+            let all_unique_values = self.signatures_by_digest.get_all_unique_values();
+            let digests_by_stake_messages = all_unique_values
+                .iter()
+                .map(|(digest, (_, authorities))| {
+                    let stake = authorities.len();
+                    (digest, stake as u64)
+                })
+                .sorted_by_key(|(_, stake)| -(*stake as i64))
+                .collect::<Vec<_>>();
+
+            let time = SystemTime::now();
+            let digest_to_validators = all_unique_values
+                .iter()
+                .filter(|(digest, _)| *digest != &local_checkpoint_message.digest())
+                .collect::<HashMap<_, _>>();
+
+            error!(
+                sequence_number=local_checkpoint_message.sequence_number,
+                ?digests_by_stake_messages,
+                remaining_stake=self.signatures_by_digest.uncommitted_stake(),
+                local_validator=?self.state.name,
+                ?digest_to_validators,
+                ?local_checkpoint_message,
+                ?committee,
+                system_time=?time,
+                quorum_unreachable,
+                "split brain detected in dwallet checkpoint signature aggregation",
+            );
+            self.metrics.split_brain_dwallet_checkpoint_forks.inc();
         }
     }
 }
@@ -1094,23 +1146,6 @@ impl DWalletCheckpointService {
         });
 
         (service, tasks)
-    }
-
-    #[cfg(test)]
-    fn write_and_notify_checkpoint_for_testing(
-        &self,
-        epoch_store: &AuthorityPerEpochStore,
-        checkpoint: PendingDWalletCheckpoint,
-    ) -> IkaResult {
-        use crate::authority::authority_per_epoch_store::ConsensusCommitOutput;
-
-        let mut output = ConsensusCommitOutput::new(0);
-        epoch_store.write_pending_checkpoint(&mut output, &checkpoint)?;
-        let mut batch = epoch_store.db_batch_for_test();
-        output.write_to_batch(epoch_store, &mut batch)?;
-        batch.write()?;
-        self.notify_checkpoint()?;
-        Ok(())
     }
 }
 

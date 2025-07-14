@@ -3,10 +3,10 @@ use crate::dwallet_mpc::{
 };
 use class_groups::reconfiguration::{PublicInput, Secp256k1Party};
 use class_groups::{
-    Secp256k1DecryptionKeySharePublicParameters, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, Secp256k1DecryptionKeySharePublicParameters,
 };
 use dwallet_mpc_types::dwallet_mpc::VersionedNetworkDkgOutput;
-use group::{secp256k1, PartyID};
+use group::{PartyID, secp256k1};
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::committee::Committee;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -85,7 +85,7 @@ impl ReconfigurationPartyPublicInputGenerator for ReconfigurationSecp256k1Party 
                 bcs::from_bytes(&network_dkg_public_output)?,
             )
             .map_err(|e| {
-                DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {:?}", e))
+                DwalletMPCError::TwoPCMPCError(format!("failed to generate public input: {e:?}"))
             })?;
 
         Ok(public_input)

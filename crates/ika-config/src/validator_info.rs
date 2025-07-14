@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::crypto::{AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use serde::{Deserialize, Serialize};

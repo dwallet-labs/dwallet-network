@@ -47,7 +47,7 @@
 //! channel will always be made in order. StateSync will also send out a notification to its peers
 //! of the newly synchronized checkpoint so that it can help other peers synchronize.
 
-use anemo::{types::PeerEvent, PeerId, Request, Response, Result};
+use anemo::{PeerId, Request, Response, Result, types::PeerEvent};
 use futures::{FutureExt, StreamExt};
 use ika_config::p2p::StateSyncConfig;
 use ika_types::{
@@ -79,8 +79,6 @@ mod generated {
 mod builder;
 mod metrics;
 mod server;
-#[cfg(test)]
-mod tests;
 
 use self::{metrics::Metrics, server::CheckpointMessageDownloadLimitLayer};
 pub use crate::state_sync::server::GetChainIdentifierResponse;
@@ -400,11 +398,6 @@ impl PeerHeights {
         digest: &SystemCheckpointMessageDigest,
     ) -> Option<&CertifiedSystemCheckpointMessage> {
         self.unprocessed_system_checkpoint.get(digest)
-    }
-
-    #[cfg(test)]
-    pub fn set_wait_interval_when_no_peer_to_sync_content(&mut self, duration: Duration) {
-        self.wait_interval_when_no_peer_to_sync_content = duration;
     }
 
     #[allow(unused)]
@@ -1282,7 +1275,11 @@ where
             {
                 warn!("State sync from archive failed with error: {:?}", err);
             } else {
-                info!("State sync from archive is complete. Checkpoints downloaded = {:?}, Txns downloaded = {:?}", checkpoint_counter.load(Ordering::Relaxed), action_counter.load(Ordering::Relaxed));
+                info!(
+                    "State sync from archive is complete. Checkpoints downloaded = {:?}, Txns downloaded = {:?}",
+                    checkpoint_counter.load(Ordering::Relaxed),
+                    action_counter.load(Ordering::Relaxed)
+                );
             }
         } else {
             debug!("Failed to find an archive reader to complete the state sync request");

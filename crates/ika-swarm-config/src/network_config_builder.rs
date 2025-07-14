@@ -7,13 +7,13 @@ use crate::validator_initialization_config::ValidatorInitializationConfig;
 use crate::validator_initialization_config::ValidatorInitializationConfigBuilder;
 use ika_config::initiation::InitiationParameters;
 use ika_config::node::{
-    AuthorityOverloadConfig, RunWithRange, LOCAL_DEFAULT_SUI_FAUCET_URL,
-    LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
+    AuthorityOverloadConfig, LOCAL_DEFAULT_SUI_FAUCET_URL, LOCAL_DEFAULT_SUI_FULLNODE_RPC_URL,
+    RunWithRange,
 };
 use ika_protocol_config::ProtocolVersion;
 use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
-use ika_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits};
+use ika_types::crypto::{AccountKeyPair, KeypairTraits, get_key_pair_from_rng};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use rand::rngs::OsRng;
 use std::path::PathBuf;

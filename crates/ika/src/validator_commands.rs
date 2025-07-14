@@ -14,7 +14,7 @@ use dwallet_rng::RootSeed;
 use fastcrypto::traits::KeyPair;
 use ika_config::node::read_authority_keypair_from_file;
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::{ika_config_dir, IKA_SUI_CONFIG};
+use ika_config::{IKA_SUI_CONFIG, ika_config_dir};
 use ika_sui_client::ika_validator_transactions::{
     request_add_validator, request_add_validator_candidate, request_remove_validator, stake_ika,
 };
@@ -128,7 +128,7 @@ impl IkaValidatorCommand {
         self,
         context: &mut WalletContext,
     ) -> Result<IkaValidatorCommandResponse, anyhow::Error> {
-        let ret = Ok(match self {
+        Ok(match self {
             IkaValidatorCommand::MakeValidatorInfo {
                 name,
                 description,
@@ -170,22 +170,18 @@ impl IkaValidatorCommand {
                     image_url,
                     project_url,
                     commission_rate: DEFAULT_COMMISSION_RATE,
-                    consensus_address: Multiaddr::try_from(format!("/dns/{}/udp/8081", host_name))?,
+                    consensus_address: Multiaddr::try_from(format!("/dns/{host_name}/udp/8081"))?,
                     network_address: Multiaddr::try_from(format!(
-                        "/dns/{}/tcp/8080/http",
-                        host_name
+                        "/dns/{host_name}/tcp/8080/http"
                     ))?,
-                    p2p_address: Multiaddr::try_from(format!("/dns/{}/udp/8084", host_name))?,
+                    p2p_address: Multiaddr::try_from(format!("/dns/{host_name}/udp/8084"))?,
                     proof_of_possession: pop,
                 };
 
                 let validator_info_file_name = dir.join("validator.info");
                 let validator_info_bytes = serde_yaml::to_string(&validator_info)?;
                 fs::write(validator_info_file_name.clone(), validator_info_bytes)?;
-                println!(
-                    "Generated validator info file: {:?}.",
-                    validator_info_file_name
-                );
+                println!("Generated validator info file: {validator_info_file_name:?}.");
                 IkaValidatorCommandResponse::MakeValidatorInfo
             }
             IkaValidatorCommand::ConfigEnv {
@@ -218,8 +214,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig = PersistedConfig::read(&ika_on_sui_config_path)
                     .map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            ika_on_sui_config_path
+                            "Cannot open Ika network config file at {ika_on_sui_config_path:?}"
                         ))
                     })?;
 
@@ -261,8 +256,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
 
@@ -288,8 +282,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
 
@@ -316,8 +309,7 @@ impl IkaValidatorCommand {
                 let config: IkaPackagesConfig =
                     PersistedConfig::read(&config_path).map_err(|err| {
                         err.context(format!(
-                            "Cannot open Ika network config file at {:?}",
-                            config_path
+                            "Cannot open Ika network config file at {config_path:?}"
                         ))
                     })?;
                 let response = request_remove_validator(
@@ -330,8 +322,7 @@ impl IkaValidatorCommand {
                 .await?;
                 IkaValidatorCommandResponse::LeaveCommittee(response)
             }
-        });
-        ret
+        })
     }
 }
 
@@ -348,8 +339,8 @@ impl Display for IkaValidatorCommandResponse {
                 },
             ) => {
                 write!(writer, "{}", write_transaction_response(response)?)?;
-                writeln!(writer, "Validator ID: {}", validator_id)?;
-                writeln!(writer, "Validator Cap ID: {}", validator_cap_id)?;
+                writeln!(writer, "Validator ID: {validator_id}")?;
+                writeln!(writer, "Validator Cap ID: {validator_cap_id}")?;
             }
             IkaValidatorCommandResponse::JoinCommittee(response)
             | IkaValidatorCommandResponse::StakeValidator(response)
@@ -357,7 +348,7 @@ impl Display for IkaValidatorCommandResponse {
                 write!(writer, "{}", write_transaction_response(response)?)?;
             }
             IkaValidatorCommandResponse::ConfigEnv(path) => {
-                writeln!(writer, "Ika Sui config file created at: {:?}", path)?;
+                writeln!(writer, "Ika Sui config file created at: {path:?}")?;
             }
         }
         write!(f, "{}", writer.trim_end_matches('\n'))
@@ -368,7 +359,7 @@ impl Debug for IkaValidatorCommandResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let string = serde_json::to_string_pretty(self);
         let s = string.unwrap_or_else(|err| format!("{err}").red().to_string());
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -380,7 +371,7 @@ impl IkaValidatorCommandResponse {
                 let line = if pretty {
                     format!("{other}")
                 } else {
-                    format!("{:?}", other)
+                    format!("{other:?}")
                 };
                 for line in line.lines() {
                     println!("{line}");
@@ -396,24 +387,21 @@ fn make_key_files(
     key: Option<SuiKeyPair>,
 ) -> Result<()> {
     if file_name.exists() {
-        println!("Use existing {:?} key file.", file_name);
+        println!("Use existing {file_name:?} key file.");
         return Ok(());
     } else if is_protocol_key {
         let (_, keypair) = get_authority_key_pair();
         write_authority_keypair_to_file(&keypair, file_name.clone())?;
-        println!("Generated new key file: {:?}.", file_name);
+        println!("Generated new key file: {file_name:?}.");
     } else {
         let kp = match key {
             Some(key) => {
-                println!(
-                    "Generated a new key file {:?} based on `sui.keystore` file.",
-                    file_name
-                );
+                println!("Generated a new key file {file_name:?} based on `sui.keystore` file.");
                 key
             }
             None => {
                 let (_, kp, _, _) = generate_new_key(SignatureScheme::ED25519, None, None)?;
-                println!("Generated new key file: {:?}.", file_name);
+                println!("Generated new key file: {file_name:?}.");
                 kp
             }
         };
@@ -429,13 +417,13 @@ fn read_or_generate_seed_and_class_groups_key(
 ) -> Result<Box<ClassGroupsKeyPairAndProof>> {
     let seed = match RootSeed::from_file(seed_path.clone()) {
         Ok(seed) => {
-            println!("Use existing seed: {:?}.", seed_path,);
+            println!("Use existing seed: {seed_path:?}.",);
             seed
         }
         Err(_) => {
             let seed = RootSeed::random_seed();
             seed.save_to_file(seed_path.clone())?;
-            println!("Generated class groups seed info file: {:?}.", seed_path,);
+            println!("Generated class groups seed info file: {seed_path:?}.",);
             seed
         }
     };

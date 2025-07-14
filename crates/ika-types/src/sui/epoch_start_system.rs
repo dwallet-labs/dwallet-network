@@ -4,16 +4,19 @@
 use enum_dispatch::enum_dispatch;
 use std::collections::HashMap;
 
-use crate::committee::{ClassGroupsEncryptionKeyAndProof, Committee, StakeUnit};
+use crate::committee::{
+    ClassGroupsEncryptionKeyAndProof, Committee, CommitteeWithNetworkMetadata, NetworkMetadata,
+    StakeUnit,
+};
 use crate::crypto::{AuthorityName, AuthorityPublicKey, NetworkPublicKey};
-use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
+use anemo::types::{PeerAffinity, PeerInfo};
 use consensus_config::{Authority, Committee as ConsensusCommittee};
 use fastcrypto::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use ika_protocol_config::ProtocolVersion;
-use rand::prelude::StdRng;
 use rand::SeedableRng;
+use rand::prelude::StdRng;
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{EpochId, ObjectID};
 use sui_types::multiaddr::Multiaddr;
@@ -25,6 +28,7 @@ pub trait EpochStartSystemTrait {
     fn protocol_version(&self) -> ProtocolVersion;
     fn epoch_start_timestamp_ms(&self) -> u64;
     fn epoch_duration_ms(&self) -> u64;
+    fn get_ika_committee_with_network_metadata(&self) -> CommitteeWithNetworkMetadata;
     fn get_ika_committee(&self) -> Committee;
     fn get_consensus_committee(&self) -> ConsensusCommittee;
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
@@ -133,6 +137,31 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
         self.epoch_duration_ms
     }
 
+    fn get_ika_committee_with_network_metadata(&self) -> CommitteeWithNetworkMetadata {
+        let validators = self
+            .active_validators
+            .iter()
+            .map(|validator| {
+                (
+                    validator.authority_name(),
+                    (
+                        validator.voting_power,
+                        NetworkMetadata {
+                            network_address: validator.network_address.clone(),
+                            consensus_address: validator.consensus_address.clone(),
+                            network_public_key: Some(validator.network_pubkey.clone()),
+                            class_groups_public_key_and_proof: validator
+                                .class_groups_public_key_and_proof
+                                .clone(),
+                        },
+                    ),
+                )
+            })
+            .collect();
+
+        CommitteeWithNetworkMetadata::new(self.epoch, validators)
+    }
+
     fn get_ika_committee(&self) -> Committee {
         let voting_rights = self
             .active_validators
@@ -170,7 +199,9 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             if name.0 != active_validator.protocol_pubkey.as_bytes() {
                 error!(
                     "Mismatched authority order between Ika and Mysticeti! Index {}, Mysticeti authority {:?}\nIka authority name {:?}",
-                    i, name, active_validator.protocol_pubkey.as_bytes()
+                    i,
+                    name,
+                    active_validator.protocol_pubkey.as_bytes()
                 );
             }
             authorities.push(Authority {
@@ -294,84 +325,3 @@ impl EpochStartValidatorInfoTrait for EpochStartValidatorInfoV1 {
         self.network_pubkey.clone()
     }
 }
-//
-// #[cfg(test)]
-// mod test {
-//     use super::super::epoch_start_system::{
-//         EpochStartSystemTrait, EpochStartSystemV1, EpochStartValidatorInfoV1,
-//     };
-//     use fastcrypto::traits::KeyPair;
-//     use ika_protocol_config::ProtocolVersion;
-//     use mysten_network::Multiaddr;
-//     use rand::thread_rng;
-//     use sui_types::base_types::SuiAddress;
-//     use sui_types::crypto::{get_key_pair, AuthorityKeyPair, NetworkKeyPair};
-//
-//     #[test]
-//     fn test_ika_and_mysticeti_committee_are_same() {
-//         // GIVEN
-//         let mut active_validators = vec![];
-//
-//         for i in 0..10 {
-//             let (sui_address, protocol_key): (SuiAddress, AuthorityKeyPair) = get_key_pair();
-//             let narwhal_network_key = NetworkKeyPair::generate(&mut thread_rng());
-//
-//             active_validators.push(EpochStartValidatorInfoV1 {
-//                 validator_id: ObjectID::random(),
-//                 protocol_pubkey: protocol_key.public().clone(),
-//                 network_pubkey: narwhal_network_key.public().clone(),
-//                 consensus_pubkey: narwhal_network_key.public().clone(),
-//                 class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes::default(),
-//                 network_address: Multiaddr::empty(),
-//                 p2p_address: Multiaddr::empty(),
-//                 consensus_address: Multiaddr::empty(),
-//                 voting_power: 1_000,
-//                 hostname: format!("host-{i}").to_string(),
-//                 name: "".to_string(),
-//             })
-//         }
-//
-//         let state = EpochStartSystemV1 {
-//             epoch: 10,
-//             protocol_version: ProtocolVersion::MAX.as_u64(),
-//             epoch_start_timestamp_ms: 0,
-//             epoch_duration_ms: 0,
-//             active_validators,
-//         };
-//
-//         // WHEN
-//         let ika_committee = state.get_ika_committee();
-//         let consensus_committee = state.get_consensus_committee();
-//
-//         // THEN
-//         // assert the validators details
-//         assert_eq!(ika_committee.num_members(), 10);
-//         assert_eq!(ika_committee.num_members(), consensus_committee.size());
-//         assert_eq!(
-//             ika_committee.validity_threshold(),
-//             consensus_committee.validity_threshold()
-//         );
-//         assert_eq!(
-//             ika_committee.quorum_threshold(),
-//             consensus_committee.quorum_threshold()
-//         );
-//         assert_eq!(state.epoch, consensus_committee.epoch());
-//
-//         for (authority_index, consensus_authority) in consensus_committee.authorities() {
-//             let ika_authority_name = ika_committee
-//                 .authority_by_index(authority_index.value() as u32)
-//                 .unwrap();
-//
-//             assert_eq!(
-//                 consensus_authority.authority_key.to_bytes(),
-//                 ika_authority_name.0,
-//                 "Mysten & IKA committee member of same index correspond to different public key"
-//             );
-//             assert_eq!(
-//                 consensus_authority.stake,
-//                 ika_committee.weight(ika_authority_name),
-//                 "Mysten & IKA committee member stake differs"
-//             );
-//         }
-//     }
-// }

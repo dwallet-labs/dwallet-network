@@ -16,9 +16,6 @@
 
 use crate::dwallet_mpc::crytographic_computation::{ComputationId, ComputationRequest};
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
-};
 use dwallet_rng::RootSeed;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::collections::{HashMap, HashSet};
@@ -36,13 +33,7 @@ const COMPUTATION_UPDATE_CHANNEL_SIZE: usize = 10_000;
 
 struct ComputationCompletionUpdate {
     computation_id: ComputationId,
-    computation_result: DwalletMPCResult<
-        mpc::AsynchronousRoundResult<
-            MPCMessage,
-            MPCPrivateOutput,
-            SerializedWrappedMPCPublicOutput,
-        >,
-    >,
+    computation_result: DwalletMPCResult<mpc::AsynchronousRoundGODResult>,
 }
 
 /// The orchestrator for DWallet MPC cryptographic computations.
@@ -120,16 +111,7 @@ impl CryptographicComputationsOrchestrator {
     /// Check for completed computations, and return their results.
     pub(crate) fn receive_completed_computations(
         &mut self,
-    ) -> HashMap<
-        ComputationId,
-        DwalletMPCResult<
-            mpc::AsynchronousRoundResult<
-                MPCMessage,
-                MPCPrivateOutput,
-                SerializedWrappedMPCPublicOutput,
-            >,
-        >,
-    > {
+    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::AsynchronousRoundGODResult>> {
         let mut completed_computation_results = HashMap::new();
         while let Ok(computation_update) = self.completed_computation_receiver.try_recv() {
             self.currently_running_cryptographic_computations

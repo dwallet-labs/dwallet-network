@@ -535,7 +535,7 @@ impl SingleCheckpointSharedInMemoryStore {
         system_checkpoint: VerifiedSystemCheckpointMessage,
         committee: Committee,
     ) {
-        let mut locked = self.0 .0.write().unwrap();
+        let mut locked = self.0.0.write().unwrap();
         locked.insert_genesis_state(checkpoint, system_checkpoint, committee);
     }
 }
@@ -622,7 +622,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         checkpoint: &VerifiedDWalletCheckpointMessage,
     ) -> Result<()> {
         {
-            let mut locked = self.0 .0.write().unwrap();
+            let mut locked = self.0.0.write().unwrap();
             locked.checkpoints.clear();
             locked.sequence_number_to_digest.clear();
         }
@@ -653,7 +653,7 @@ impl WriteStore for SingleCheckpointSharedInMemoryStore {
         system_checkpoint: &VerifiedSystemCheckpointMessage,
     ) -> Result<()> {
         {
-            let mut locked = self.0 .0.write().unwrap();
+            let mut locked = self.0.0.write().unwrap();
             locked.system_checkpoints.clear();
             locked.system_checkpoint_sequence_number_to_digest.clear();
         }

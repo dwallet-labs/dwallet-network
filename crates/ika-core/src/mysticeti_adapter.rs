@@ -10,7 +10,7 @@ use ika_types::{
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
 use tap::prelude::*;
-use tokio::time::{sleep, Instant};
+use tokio::time::{Instant, sleep};
 use tracing::{error, info, warn};
 
 use crate::{
@@ -96,7 +96,7 @@ impl ConsensusClient for LazyMysticetiClient {
             .await
             .tap_err(|err| {
                 // Will be logged by caller as well.
-                let msg = format!("Transaction submission failed with: {:?}", err);
+                let msg = format!("Transaction submission failed with: {err:?}");
                 match err {
                     ClientError::ConsensusShuttingDown(_) => {
                         info!("{}", msg);

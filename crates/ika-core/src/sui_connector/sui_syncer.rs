@@ -4,7 +4,7 @@
 //! The SuiSyncer module handles synchronizing Events emitted
 //! on the Sui blockchain from concerned modules of `ika_system` package.
 use crate::sui_connector::metrics::SuiConnectorMetrics;
-use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
+use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
 use ika_types::committee::{Committee, StakeUnit};
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -17,7 +17,7 @@ use mysten_metrics::spawn_logged_monitored_task;
 use std::{collections::HashMap, sync::Arc};
 use sui_json_rpc_types::SuiEvent;
 use sui_types::base_types::ObjectID;
-use sui_types::{event::EventID, Identifier};
+use sui_types::{Identifier, event::EventID};
 use tokio::sync::watch::Sender;
 use tokio::{
     sync::Notify,
@@ -332,7 +332,9 @@ where
                     sui_client_clone.get_latest_checkpoint_sequence_number(),
                     Duration::from_secs(120)
                 ) else {
-                    error!("failed to query the latest checkpoint sequence number from the sui client after retry");
+                    error!(
+                        "failed to query the latest checkpoint sequence number from the sui client after retry"
+                    );
                     continue;
                 };
                 last_synced_sui_checkpoints_metric.set(latest_checkpoint_sequence_number as i64);

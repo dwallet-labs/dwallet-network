@@ -99,8 +99,7 @@ async fn send_telemetry_event_impl(telemetry_payload: TelemetryPayload) {
     let client = reqwest::Client::new();
     let response_result = client
         .post(format!(
-            "{}?&measurement_id={}&api_secret={}",
-            GA_URL, GA_MEASUREMENT_ID, GA_API_SECRET
+            "{GA_URL}?&measurement_id={GA_MEASUREMENT_ID}&api_secret={GA_API_SECRET}"
         ))
         .json::<TelemetryPayload>(&telemetry_payload)
         .send()

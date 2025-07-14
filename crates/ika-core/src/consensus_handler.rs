@@ -11,11 +11,11 @@ use std::{
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
+        AuthorityMetrics, AuthorityState,
         authority_per_epoch_store::{
             AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
             ExecutionIndicesWithStats,
         },
-        AuthorityMetrics, AuthorityState,
     },
     consensus_throughput_calculator::ConsensusThroughputCalculator,
     consensus_types::consensus_output_api::ConsensusCommitAPI,
@@ -70,13 +70,16 @@ impl ConsensusHandlerInitializer {
     }
 
     #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<DWalletCheckpointService>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
     ) -> Self {
         Self {
             state: state.clone(),
             checkpoint_service,
+            system_checkpoint_service,
             epoch_store: state.epoch_store_for_testing().clone(),
             low_scoring_authorities: Arc::new(Default::default()),
             throughput_calculator: Arc::new(ConsensusThroughputCalculator::new(
@@ -368,9 +371,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         });
 
         fail_point_async!("crash"); // for tests that produce random crashes
-                                    //
-                                    // self.transaction_manager_sender
-                                    //     .send(executable_transactions);
+        //
+        // self.transaction_manager_sender
+        //     .send(executable_transactions);
     }
 }
 

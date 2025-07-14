@@ -3,20 +3,19 @@ use crate::dwallet_mpc::dwallet_dkg::{
 };
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::PublicInput;
+use crate::dwallet_mpc::mpc_session::{MPCRoundToMessagesHashMap, MPCSessionLogger};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use crate::dwallet_mpc::sign::{
-    update_expected_decrypters_metrics, verify_partial_signature, SignFirstParty,
+    SignFirstParty, update_expected_decrypters_metrics, verify_partial_signature,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
-    VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReconfigurationOutput,
-    VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput,
-    VersionedPresignOutput, VersionedSignOutput,
+    MPCPrivateInput, VersionedDWalletImportedKeyVerificationOutput,
+    VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
 use dwallet_rng::RootSeed;
 use group::PartyID;
@@ -28,7 +27,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use itertools::Itertools;
 use message_digest::message_digest::message_digest;
-use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
+use mpc::{AsynchronousRoundGODResult, WeightedThresholdAccessStructure};
 use std::collections::HashMap;
 use std::sync::Arc;
 use sui_types::base_types::ObjectID;
@@ -71,7 +70,7 @@ pub(crate) struct ComputationRequest {
     pub(crate) decryption_key_shares:
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     /// Round -> Messages map.
-    pub(crate) messages: HashMap<u64, HashMap<PartyID, MPCMessage>>,
+    pub(crate) messages: MPCRoundToMessagesHashMap,
 }
 
 impl ComputationRequest {
@@ -82,9 +81,7 @@ impl ComputationRequest {
         computation_id: ComputationId,
         root_seed: RootSeed,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-    ) -> DwalletMPCResult<
-        AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
-    > {
+    ) -> DwalletMPCResult<AsynchronousRoundGODResult> {
         let messages_skeleton = self
             .messages
             .iter()
@@ -156,8 +153,11 @@ impl ComputationRequest {
                     rng,
                 )?;
                 match result {
-                    AsynchronousRoundResult::Finalize {
-                        public_output,
+                    AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                        Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                    }
+                    AsynchronousRoundGODResult::Finalize {
+                        public_output_value,
                         malicious_parties,
                         private_output,
                     } => {
@@ -168,7 +168,7 @@ impl ComputationRequest {
                             &EncryptedShareVerificationRequestEvent {
                                 decentralized_public_output: bcs::to_bytes(
                                     &VersionedDwalletDKGSecondRoundPublicOutput::V1(
-                                        public_output.clone(),
+                                        public_output_value.clone(),
                                     ),
                                 )?,
                                 encrypted_centralized_secret_share_and_proof: event_data
@@ -191,23 +191,16 @@ impl ComputationRequest {
                         )?;
 
                         // Wrap the public output with its version.
-                        let public_output = bcs::to_bytes(
-                            &VersionedDWalletImportedKeyVerificationOutput::V1(public_output),
+                        let public_output_value = bcs::to_bytes(
+                            &VersionedDWalletImportedKeyVerificationOutput::V1(public_output_value),
                         )?;
 
-                        Ok(AsynchronousRoundResult::Finalize {
-                            public_output,
+                        Ok(AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         })
                     }
-                    AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    } => Ok(AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    }),
                 }
             }
             MPCRequestInput::DKGFirst(..) => {
@@ -244,29 +237,25 @@ impl ComputationRequest {
                 )?;
 
                 match result {
-                    AsynchronousRoundResult::Finalize {
-                        public_output,
+                    AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                        Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                    }
+                    AsynchronousRoundGODResult::Finalize {
+                        public_output_value,
                         malicious_parties,
                         private_output,
                     } => {
                         // Wrap the public output with its version.
-                        let public_output = bcs::to_bytes(
-                            &VersionedDwalletDKGFirstRoundPublicOutput::V1(public_output),
+                        let public_output_value = bcs::to_bytes(
+                            &VersionedDwalletDKGFirstRoundPublicOutput::V1(public_output_value),
                         )?;
 
-                        Ok(AsynchronousRoundResult::Finalize {
-                            public_output,
+                        Ok(AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         })
                     }
-                    AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    } => Ok(AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    }),
                 }
             }
             MPCRequestInput::DKGSecond(event_data) => {
@@ -296,14 +285,18 @@ impl ComputationRequest {
                     rng,
                 )?;
 
-                if let AsynchronousRoundResult::Finalize { public_output, .. } = &result {
+                if let AsynchronousRoundGODResult::Finalize {
+                    public_output_value,
+                    ..
+                } = &result
+                {
                     // Verify the encrypted share before finalizing, guaranteeing a two-for-one
                     // computation of both that the dkg was successful, and the encrypted user share is valid.
                     verify_encrypted_share(
                         &EncryptedShareVerificationRequestEvent {
                             decentralized_public_output: bcs::to_bytes(
                                 &VersionedDwalletDKGSecondRoundPublicOutput::V1(
-                                    public_output.clone(),
+                                    public_output_value.clone(),
                                 ),
                             )?,
                             encrypted_centralized_secret_share_and_proof: event_data
@@ -327,28 +320,24 @@ impl ComputationRequest {
                 }
 
                 match result {
-                    AsynchronousRoundResult::Finalize {
-                        public_output,
+                    AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                        Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                    }
+                    AsynchronousRoundGODResult::Finalize {
+                        public_output_value,
                         malicious_parties,
                         private_output,
                     } => {
                         // Wrap the public output with its version.
-                        let public_output = bcs::to_bytes(
-                            &VersionedDwalletDKGSecondRoundPublicOutput::V1(public_output),
+                        let public_output_value = bcs::to_bytes(
+                            &VersionedDwalletDKGSecondRoundPublicOutput::V1(public_output_value),
                         )?;
-                        Ok(AsynchronousRoundResult::Finalize {
-                            public_output,
+                        Ok(AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         })
                     }
-                    AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    } => Ok(AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    }),
                 }
             }
             MPCRequestInput::Presign(..) => {
@@ -378,27 +367,23 @@ impl ComputationRequest {
                 )?;
 
                 match result {
-                    AsynchronousRoundResult::Finalize {
-                        public_output,
+                    AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                        Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                    }
+                    AsynchronousRoundGODResult::Finalize {
+                        public_output_value,
                         malicious_parties,
                         private_output,
                     } => {
                         // Wrap the public output with its version.
-                        let public_output =
-                            bcs::to_bytes(&VersionedPresignOutput::V1(public_output))?;
-                        Ok(AsynchronousRoundResult::Finalize {
-                            public_output,
+                        let public_output_value =
+                            bcs::to_bytes(&VersionedPresignOutput::V1(public_output_value))?;
+                        Ok(AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         })
                     }
-                    AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    } => Ok(AsynchronousRoundResult::Advance {
-                        malicious_parties,
-                        message,
-                    }),
                 }
             }
             MPCRequestInput::Sign(..) => {
@@ -449,28 +434,24 @@ impl ComputationRequest {
                     )?;
 
                     match result {
-                        AsynchronousRoundResult::Finalize {
-                            public_output,
+                        AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                            Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                        }
+                        AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         } => {
                             // Wrap the public output with its version.
-                            let public_output =
-                                bcs::to_bytes(&VersionedSignOutput::V1(public_output))?;
+                            let public_output_value =
+                                bcs::to_bytes(&VersionedSignOutput::V1(public_output_value))?;
 
-                            Ok(AsynchronousRoundResult::Finalize {
-                                public_output,
+                            Ok(AsynchronousRoundGODResult::Finalize {
+                                public_output_value,
                                 malicious_parties,
                                 private_output,
                             })
                         }
-                        AsynchronousRoundResult::Advance {
-                            malicious_parties,
-                            message,
-                        } => Ok(AsynchronousRoundResult::Advance {
-                            malicious_parties,
-                            message,
-                        }),
                     }
                 } else {
                     error!(
@@ -521,8 +502,8 @@ impl ComputationRequest {
                     return Err(DwalletMPCError::InvalidSessionPublicInput);
                 };
                 match verify_encrypted_share(&verification_data.event_data, public_input.clone()) {
-                    Ok(_) => Ok(AsynchronousRoundResult::Finalize {
-                        public_output: vec![],
+                    Ok(_) => Ok(AsynchronousRoundGODResult::Finalize {
+                        public_output_value: vec![],
                         private_output: vec![],
                         malicious_parties: vec![],
                     }),
@@ -559,8 +540,8 @@ impl ComputationRequest {
                     public_input,
                 )?;
 
-                Ok(AsynchronousRoundResult::Finalize {
-                    public_output: vec![],
+                Ok(AsynchronousRoundGODResult::Finalize {
+                    public_output_value: vec![],
                     private_output: vec![],
                     malicious_parties: vec![],
                 })
@@ -604,29 +585,26 @@ impl ComputationRequest {
                     )?;
 
                     match result {
-                        AsynchronousRoundResult::Finalize {
-                            public_output,
+                        AsynchronousRoundGODResult::Advance { wrapped_message } => {
+                            Ok(AsynchronousRoundGODResult::Advance { wrapped_message })
+                        }
+                        AsynchronousRoundGODResult::Finalize {
+                            public_output_value,
                             malicious_parties,
                             private_output,
                         } => {
                             // Wrap the public output with its version.
-                            let public_output = bcs::to_bytes(
-                                &VersionedDecryptionKeyReconfigurationOutput::V1(public_output),
-                            )?;
+                            let public_output_value =
+                                bcs::to_bytes(&VersionedDecryptionKeyReconfigurationOutput::V1(
+                                    public_output_value,
+                                ))?;
 
-                            Ok(AsynchronousRoundResult::Finalize {
-                                public_output,
+                            Ok(AsynchronousRoundGODResult::Finalize {
+                                public_output_value,
                                 malicious_parties,
                                 private_output,
                             })
                         }
-                        AsynchronousRoundResult::Advance {
-                            malicious_parties,
-                            message,
-                        } => Ok(AsynchronousRoundResult::Advance {
-                            malicious_parties,
-                            message,
-                        }),
                     }
                 } else {
                     error!(
@@ -664,8 +642,11 @@ impl ComputationRequest {
                     init_event.event_data.public_user_secret_key_shares.clone(),
                     init_event.event_data.public_output.clone(),
                 ) {
-                    Ok(..) => Ok(AsynchronousRoundResult::Finalize {
-                        public_output: init_event.event_data.public_user_secret_key_shares.clone(),
+                    Ok(..) => Ok(AsynchronousRoundGODResult::Finalize {
+                        public_output_value: init_event
+                            .event_data
+                            .public_user_secret_key_shares
+                            .clone(),
                         private_output: vec![],
                         malicious_parties: vec![],
                     }),
