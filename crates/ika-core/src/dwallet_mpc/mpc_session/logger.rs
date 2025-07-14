@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_checkpoints::PendingDWalletCheckpointV1;
 use crate::dwallet_mpc::LOG_DIR;
 use crate::dwallet_mpc::mpc_session::MPCRoundToMessagesHashMap;
