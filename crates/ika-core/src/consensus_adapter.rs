@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use arc_swap::{ArcSwap, ArcSwapOption};
-use dashmap::try_result::TryResult;
 use dashmap::DashMap;
-use futures::future::{select, Either};
-use futures::stream::FuturesUnordered;
+use dashmap::try_result::TryResult;
 use futures::FutureExt;
-use futures::{pin_mut, StreamExt};
+use futures::future::{Either, select};
+use futures::stream::FuturesUnordered;
+use futures::{StreamExt, pin_mut};
 use ika_types::committee::Committee;
 use ika_types::error::{IkaError, IkaResult};
 use itertools::Itertools;
@@ -25,18 +25,18 @@ use prometheus::{
 use std::collections::HashMap;
 use std::future::Future;
 use std::ops::Deref;
+use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::time::Instant;
 use sui_types::base_types::TransactionDigest;
 
-use tokio::sync::{oneshot, Semaphore, SemaphorePermit};
+use tokio::sync::{Semaphore, SemaphorePermit, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::{self};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
+use crate::consensus_handler::{SequencedConsensusTransactionKey, classify};
 use crate::consensus_throughput_calculator::ConsensusThroughputProfiler;
 use crate::metrics::LatencyObserver;
 use consensus_core::{BlockStatus, ConnectionStatus};
@@ -45,7 +45,7 @@ use ika_types::crypto::AuthorityName;
 use ika_types::fp_ensure;
 use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_consensus::ConsensusTransactionKind;
-use mysten_metrics::{spawn_monitored_task, GaugeGuard, GaugeGuardFutureExt};
+use mysten_metrics::{GaugeGuard, GaugeGuardFutureExt, spawn_monitored_task};
 use sui_simulator::anemo::PeerId;
 use tokio::time::Duration;
 use tracing::{debug, trace, warn};
@@ -699,7 +699,8 @@ impl ConsensusAdapter {
                         }
                         Err(err) => {
                             warn!(
-                                "Error while waiting for status from consensus for transactions {transaction_keys:?}, with error {:?}. Will be retried.", err
+                                "Error while waiting for status from consensus for transactions {transaction_keys:?}, with error {:?}. Will be retried.",
+                                err
                             );
                             time::sleep(RETRY_DELAY_STEP).await;
                             continue;
@@ -909,15 +910,14 @@ impl CheckConnection for ConnectionMonitorStatus {
             }
         };
 
-        let res = match self.connection_statuses.try_get(peer_id) {
+        match self.connection_statuses.try_get(peer_id) {
             TryResult::Present(c) => Some(c.value().clone()),
             TryResult::Absent => None,
             TryResult::Locked => {
                 // update is in progress, assume the status is still or becoming disconnected
                 Some(ConnectionStatus::Disconnected)
             }
-        };
-        res
+        }
     }
     fn update_mapping_for_epoch(
         &self,

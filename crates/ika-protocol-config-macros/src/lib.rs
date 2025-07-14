@@ -5,7 +5,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
+use syn::{Data, DeriveInput, Fields, Type, parse_macro_input};
 
 /// This proc macro generates getters, attribute lookup, etc for protocol config fields of type `Option<T>`
 /// and for the feature flags
@@ -230,7 +230,7 @@ pub fn protocol_config_override_macro(input: TokenStream) -> TokenStream {
     // Create a new struct name by appending "Optional".
     let struct_name = &ast.ident;
     let optional_struct_name =
-        syn::Ident::new(&format!("{}Optional", struct_name), struct_name.span());
+        syn::Ident::new(&format!("{struct_name}Optional"), struct_name.span());
 
     // Extract the fields from the struct
     let fields = match &ast.data {

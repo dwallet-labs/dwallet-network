@@ -6,13 +6,13 @@ use clap::*;
 use colored::Colorize;
 use fastcrypto::traits::KeyPair;
 use ika_config::{
-    ika_config_dir, network_config_exists, Config, PersistedConfig, IKA_NETWORK_CONFIG,
+    Config, IKA_NETWORK_CONFIG, PersistedConfig, ika_config_dir, network_config_exists,
 };
 use std::net::{AddrParseError, SocketAddr};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::thread;
-use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};
+use sui_config::{SUI_CLIENT_CONFIG, sui_config_dir};
 
 use crate::validator_commands::IkaValidatorCommand;
 use ika_swarm::memory::Swarm;
@@ -129,8 +129,7 @@ impl IkaCommand {
                 let config_path = config.unwrap_or(ika_config_dir()?.join(IKA_NETWORK_CONFIG));
                 let config: NetworkConfig = PersistedConfig::read(&config_path).map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network swarm config file at {:?}",
-                        config_path
+                        "Cannot open Ika network swarm config file at {config_path:?}"
                     ))
                 })?;
 
@@ -187,7 +186,7 @@ impl IkaCommand {
                 })?;
 
                 if let Err(e) = thread_join_handle.join() {
-                    eprintln!("{}", format!("[error] {:?}", e).red().bold());
+                    eprintln!("{}", format!("[error] {e:?}").red().bold());
                 }
 
                 Ok(())
@@ -280,8 +279,7 @@ async fn start(
             let network_config: NetworkConfig = PersistedConfig::read(&network_config_path)
                 .map_err(|err| {
                     err.context(format!(
-                        "Cannot open Ika network swarm config file at {:?}",
-                        network_config_path
+                        "Cannot open Ika network swarm config file at {network_config_path:?}"
                     ))
                 })?;
 

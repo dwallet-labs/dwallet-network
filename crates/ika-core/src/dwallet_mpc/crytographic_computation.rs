@@ -3,17 +3,17 @@ use crate::dwallet_mpc::dwallet_dkg::{
 };
 use crate::dwallet_mpc::encrypt_user_share::verify_encrypted_share;
 use crate::dwallet_mpc::make_dwallet_user_secret_key_shares_public::verify_secret_share;
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use crate::dwallet_mpc::mpc_session::PublicInput;
+use crate::dwallet_mpc::mpc_session::{MPCRoundToMessagesHashMap, MPCSessionLogger};
 use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::PresignParty;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use crate::dwallet_mpc::sign::{
-    update_expected_decrypters_metrics, verify_partial_signature, SignFirstParty,
+    SignFirstParty, update_expected_decrypters_metrics, verify_partial_signature,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateInput, VersionedDWalletImportedKeyVerificationOutput,
+    MPCPrivateInput, VersionedDWalletImportedKeyVerificationOutput,
     VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
     VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
 };
@@ -68,7 +68,7 @@ pub(crate) struct ComputationRequest {
     pub(crate) decryption_key_shares:
         Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     /// Round -> Messages map.
-    pub(crate) messages: HashMap<u64, HashMap<PartyID, MPCMessage>>,
+    pub(crate) messages: MPCRoundToMessagesHashMap,
 }
 
 impl ComputationRequest {

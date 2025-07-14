@@ -150,9 +150,9 @@ impl RateTracker {
 mod tests {
     use super::*;
 
-    use rand::rngs::StdRng;
     use rand::Rng;
     use rand::SeedableRng;
+    use rand::rngs::StdRng;
     use tokio::time::advance;
 
     #[tokio::test(flavor = "current_thread", start_paused = true)]
@@ -183,7 +183,7 @@ mod tests {
     pub async fn test_rate_tracker_window() {
         let seed = [0; 32];
         let mut rng = StdRng::from_seed(seed);
-        let random_windows: Vec<u64> = (0..10).map(|_| rng.gen_range(1..=60)).collect();
+        let random_windows: Vec<u64> = (0..10).map(|_| rng.random_range(1..=60)).collect();
         for window in random_windows {
             let mut tracker = RateTracker::new(Duration::from_secs(window));
             for _ in 0..23 {

@@ -3,12 +3,13 @@
 // Allowed to improve code readability.
 #![allow(unused_qualifications)]
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use class_groups::dkg::Secp256k1Party;
 use class_groups::setup::get_setup_parameters_secp256k1;
 use class_groups::{
-    CiphertextSpaceGroupElement, DecryptionKey, EncryptionKey, Secp256k1DecryptionKey,
+    CiphertextSpaceGroupElement, DecryptionKey, EncryptionKey,
     SECP256K1_FUNDAMENTAL_DISCRIMINANT_LIMBS, SECP256K1_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    Secp256k1DecryptionKey,
 };
 use dwallet_mpc_types::dwallet_mpc::{
     DWalletMPCNetworkKeyScheme, SerializedWrappedMPCPublicOutput,
@@ -18,13 +19,13 @@ use dwallet_mpc_types::dwallet_mpc::{
     VersionedImportedDwalletOutgoingMessage, VersionedNetworkDkgOutput, VersionedPresignOutput,
     VersionedPublicKeyShareAndProof, VersionedSignOutput, VersionedUserSignedMessage,
 };
-use group::{secp256k1, CyclicGroupElement, GroupElement, OsCsRng, Samplable};
+use group::{CyclicGroupElement, GroupElement, OsCsRng, Samplable, secp256k1};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
-use mpc::two_party::Round;
 use mpc::Party;
+use mpc::two_party::Round;
 use rand_core::SeedableRng;
 use twopc_mpc::secp256k1::SCALAR_LIMBS;
 
