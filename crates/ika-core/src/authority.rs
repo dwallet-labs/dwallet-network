@@ -961,11 +961,11 @@ impl AuthorityState {
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         buffer_stake_bps: u64,
-    ) -> (ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>) {
+    ) -> Option<(ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>)> {
         let mut next_protocol_version = first_protocol_version;
-        let mut system_packages = vec![];
+        let mut next_protocol_version_and_packages = None;
 
-        while let Some((version, packages)) = Self::is_protocol_version_supported_v1(
+        while let Some(protocol_version_and_packages) = Self::is_protocol_version_supported_v1(
             first_protocol_version,
             next_protocol_version + 1,
             protocol_config,
@@ -973,11 +973,11 @@ impl AuthorityState {
             capabilities.clone(),
             buffer_stake_bps,
         ) {
-            next_protocol_version = version;
-            system_packages = packages;
+            next_protocol_version = next_protocol_version + 1;
+            next_protocol_version_and_packages = Some(protocol_version_and_packages);
         }
 
-        (next_protocol_version, system_packages)
+        next_protocol_version_and_packages
     }
 
     pub fn unixtime_now_ms() -> u64 {

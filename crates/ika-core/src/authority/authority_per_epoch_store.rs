@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, info, instrument, trace, warn};
 use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
@@ -1354,6 +1354,7 @@ impl AuthorityPerEpochStore {
                     capabilities.clone(),
                     self.get_effective_buffer_stake_bps(),
                 ) {
+                    // change this to com with self.protocol_version()
                     let last_version_sent = self.last_protocol_config_version_sent()?;
                     println!(
                         "Last protocol config version sent: {:?}, new version: {:?}",
