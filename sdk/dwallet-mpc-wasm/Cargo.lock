@@ -436,7 +436,7 @@ dependencies = [
 [[package]]
 name = "enum-compat-util"
 version = "0.1.0"
-source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
+source = "git+https://github.com/MystenLabs/sui?tag=mainnet-v1.51.5#5a37455265117934dc0b3f56ecb79bd905a4f71e"
 dependencies = [
  "serde_yaml",
 ]
@@ -841,13 +841,14 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
+source = "git+https://github.com/MystenLabs/sui?tag=mainnet-v1.51.5#5a37455265117934dc0b3f56ecb79bd905a4f71e"
 dependencies = [
  "anyhow",
  "bcs",
  "enum-compat-util",
  "ethnum",
  "hex",
+ "indexmap 2.9.0",
  "leb128",
  "move-proc-macros",
  "num",
@@ -865,7 +866,7 @@ dependencies = [
 [[package]]
 name = "move-proc-macros"
 version = "0.1.0"
-source = "git+https://github.com/MystenLabs/sui?rev=3b1d6b3bd63f175b774da557f89af3619b74d783#3b1d6b3bd63f175b774da557f89af3619b74d783"
+source = "git+https://github.com/MystenLabs/sui?tag=mainnet-v1.51.5#5a37455265117934dc0b3f56ecb79bd905a4f71e"
 dependencies = [
  "enum-compat-util",
  "quote",

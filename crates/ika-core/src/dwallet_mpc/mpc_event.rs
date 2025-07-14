@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_mpc::dwallet_dkg::{
     dwallet_dkg_first_party_session_request, dwallet_dkg_second_party_session_request,
     dwallet_imported_key_verification_request_event_session_request,
