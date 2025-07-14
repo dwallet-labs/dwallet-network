@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
-use tracing::{debug, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
 
@@ -1343,26 +1343,20 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
-                if let Some((new_version, _)) = AuthorityState::is_protocol_version_supported_v1(
+                if let Some((new_version, _)) = AuthorityState::choose_protocol_version_and_system_packages_v1(
                     self.protocol_version(),
-                    authority_capabilities
-                        .supported_protocol_versions
-                        .versions
-                        .iter()
-                        .max_by(|(protocol_version_a, _), (protocol_version_b, _)| {
-                            protocol_version_a.cmp(protocol_version_b)
-                        })
-                        .map(|(protocol_version, _)| *protocol_version)
-                        .unwrap_or_else(|| {
-                            warn!("No supported protocol versions found in capabilities");
-                            self.protocol_version()
-                        }),
                     self.protocol_config(),
                     self.committee(),
                     capabilities.clone(),
                     self.get_effective_buffer_stake_bps(),
                 ) {
                     let last_version_sent = self.last_protocol_config_version_sent()?;
+                    println!(
+                        "Last protocol config version sent: {:?}, new version: {:?}",
+                        last_version_sent, new_version
+                    );
+                    println!();
+                    println!();
                     if last_version_sent.is_none() || last_version_sent != Some(new_version) {
                         info!(
                             validator=?self.name,
@@ -1376,6 +1370,10 @@ impl AuthorityPerEpochStore {
                     }
                     Ok(ConsensusCertificateResult::ConsensusMessage)
                 } else {
+                    println!(
+                        "No version quorum found from capabilities v1 {:?}",
+                        capabilities
+                    );
                     Ok(ConsensusCertificateResult::ConsensusMessage)
                 }
             }

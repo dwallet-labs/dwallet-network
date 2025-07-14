@@ -127,8 +127,33 @@ pub enum VersionedDwalletDKGSecondRoundPublicOutput {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct MPCPublicOutputV2 {
+    pub public_output: MPCPublicOutput,
+    pub test_var: String,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum VersionedPresignOutput {
     V1(MPCPublicOutput),
+    V2(MPCPublicOutputV2),
+}
+
+impl VersionedPresignOutput {
+    pub fn public_output(&self) -> &MPCPublicOutput {
+        match self {
+            VersionedPresignOutput::V1(output) => {
+                println!("presign V1");
+                println!();
+                println!();
+                output
+            },
+            VersionedPresignOutput::V2(output) => {
+                println!("presign V2");
+                println!();
+                println!();
+                &output.public_output },
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]

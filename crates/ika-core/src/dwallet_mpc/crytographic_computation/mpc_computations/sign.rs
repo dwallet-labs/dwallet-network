@@ -183,11 +183,11 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
         expected_decrypters: HashSet<PartyID>,
     ) -> DwalletMPCResult<<SignFirstParty as Party>::PublicInput> {
         let dkg_output = bcs::from_bytes(&dkg_output)?;
-        let presign = bcs::from_bytes(&presign)?;
+        let presign: VersionedPresignOutput = bcs::from_bytes(&presign)?;
         let centralized_signed_message = bcs::from_bytes(&centralized_signed_message)?;
         match dkg_output {
             VersionedDwalletDKGSecondRoundPublicOutput::V1(output) => {
-                let VersionedPresignOutput::V1(presign) = presign;
+                let presign = presign.public_output();
                 let VersionedUserSignedMessage::V1(centralized_signed_message) =
                     centralized_signed_message;
                 let public_input = SignPublicInput::from((
@@ -231,7 +231,7 @@ pub(crate) fn verify_partial_signature(
         bcs::from_bytes(partially_signed_message)?;
     match dkg_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(dkg_output) => {
-            let VersionedPresignOutput::V1(presign) = presign;
+            let presign = presign.public_output();
             let VersionedUserSignedMessage::V1(partially_signed_message) = partially_signed_message;
             let message: secp256k1::Scalar = bcs::from_bytes(hashed_message)?;
             let dkg_output = bcs::from_bytes::<

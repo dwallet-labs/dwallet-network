@@ -70,11 +70,13 @@ pub(crate) struct CryptographicComputationsOrchestrator {
     /// advancing this session.
     /// SECURITY NOTICE: *MUST KEEP PRIVATE*.
     root_seed: RootSeed,
+
+    presign_version: u64,
 }
 
 impl CryptographicComputationsOrchestrator {
     /// Creates a new orchestrator for cryptographic computations.
-    pub(crate) fn try_new(root_seed: RootSeed) -> DwalletMPCResult<Self> {
+    pub(crate) fn try_new(root_seed: RootSeed, presign_version: u64) -> DwalletMPCResult<Self> {
         let (report_computation_completed_sender, report_computation_completed_receiver) =
             tokio::sync::mpsc::channel(COMPUTATION_UPDATE_CHANNEL_SIZE);
         let available_cores_for_computations: usize = std::thread::available_parallelism()
@@ -105,6 +107,7 @@ impl CryptographicComputationsOrchestrator {
             currently_running_cryptographic_computations: HashSet::new(),
             completed_cryptographic_computations: HashSet::new(),
             root_seed,
+            presign_version,
         })
     }
 
@@ -185,6 +188,7 @@ impl CryptographicComputationsOrchestrator {
 
         let computation_channel_sender = self.completed_computation_sender.clone();
         let root_seed = self.root_seed.clone();
+        let presign_version = self.presign_version.clone();
         rayon::spawn_fifo(move || {
             let advance_start_time = Instant::now();
 
@@ -192,7 +196,7 @@ impl CryptographicComputationsOrchestrator {
             let request_input = computation_request.request_input.clone();
 
             let computation_result =
-                computation_request.compute(computation_id, root_seed, dwallet_mpc_metrics.clone());
+                computation_request.compute(computation_id, root_seed, dwallet_mpc_metrics.clone(), presign_version);
 
             if let Err(err) = &computation_result {
                 error!(

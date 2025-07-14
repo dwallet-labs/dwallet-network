@@ -873,16 +873,13 @@ impl AuthorityState {
     }
 
     fn is_protocol_version_supported_v1(
-        current_protocol_version: ProtocolVersion,
+        _current_protocol_version: ProtocolVersion,
         proposed_protocol_version: ProtocolVersion,
         _protocol_config: &ProtocolConfig,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         mut buffer_stake_bps: u64,
     ) -> Option<(ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>)> {
-        if proposed_protocol_version > current_protocol_version + 1 {
-            return None;
-        }
 
         if buffer_stake_bps > 10000 {
             warn!("clamping buffer_stake_bps to 10000");
@@ -893,13 +890,14 @@ impl AuthorityState {
         // to upgrade to in the next epoch.
         let mut desired_upgrades: Vec<_> = capabilities
             .into_iter()
-            .filter_map(|mut cap| {
+            .filter_map(|cap| {
+                // Note: In our current implementation, all validators are available_move_packages are empty.
                 // A validator that lists no packages is voting against any change at all.
-                if cap.available_move_packages.is_empty() {
-                    return None;
-                }
+                // if cap.available_move_packages.is_empty() {
+                //     return None;
+                // }
 
-                cap.available_move_packages.sort();
+                // cap.available_move_packages.sort();
 
                 info!(
                     "validator {:?} supports {:?} with move packages: {:?}",
@@ -925,7 +923,7 @@ impl AuthorityState {
             .into_iter()
             .find_map(|((digest, packages), group)| {
                 // should have been filtered out earlier.
-                assert!(!packages.is_empty());
+                // assert!(!packages.is_empty());
 
                 let mut stake_aggregator: StakeAggregator<(), true> =
                     StakeAggregator::new(Arc::new(committee.clone()));

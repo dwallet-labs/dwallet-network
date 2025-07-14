@@ -9,7 +9,8 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
 use tracing::info;
-
+use ika_protocol_config::ProtocolVersion;
+use ika_types::supported_protocol_versions::SupportedProtocolVersions;
 use super::container::Container;
 
 #[allow(dead_code)]
@@ -66,7 +67,13 @@ impl Node {
     }
 
     /// Stop this Node
-    pub fn stop(&self) {
+    pub fn stop(&mut self) {
+        let new_config_version = SupportedProtocolVersions {
+            min: ProtocolVersion::new(1),
+            max: ProtocolVersion::new(2),
+        };
+        self.config.get_mut().unwrap().supported_protocol_versions = Some(new_config_version);
+
         info!(name =% self.name().concise(), "stopping in-memory node");
         *self.container.lock().unwrap() = None;
         info!(name =% self.name().concise(), "node stopped");
