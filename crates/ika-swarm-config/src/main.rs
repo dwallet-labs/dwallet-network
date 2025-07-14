@@ -97,19 +97,6 @@ enum Commands {
         #[clap(long, default_value = "http://127.0.0.1:9000")]
         sui_rpc_addr: String,
     },
-
-    /// Convert IKA configuration JSON to Terraform format.
-    ConvertToTerraform {
-        /// Path to the configuration file (e.g., `ika_publish_config.json`).
-        #[arg(long, value_parser = clap::value_parser!(PathBuf))]
-        ika_config_path: PathBuf,
-        /// Sui chain identifier for Terraform.
-        #[clap(long, default_value = "custom")]
-        sui_chain_identifier: String,
-        /// Output file path for the Terraform file.
-        #[clap(long, value_parser = clap::value_parser!(PathBuf))]
-        output_path: Option<PathBuf>,
-    },
 }
 
 const ALIAS_PUBLISHER: &str = "publisher";
@@ -134,73 +121,6 @@ struct PublishIkaConfig {
     pub protocol_cap_id: Option<ObjectID>,
     pub init_system_shared_version: Option<u64>,
     pub ika_dwallet_coordinator_object_id: Option<ObjectID>,
-}
-
-impl PublishIkaConfig {
-    /// Convert the configuration to Terraform format
-    pub fn to_terraform(&self, sui_chain_identifier: &str) -> String {
-        let mut tf_content = String::new();
-        tf_content.push_str("locals {\n");
-        tf_content.push_str("  ika_chain_config = {\n");
-
-        // Add sui_chain_identifier
-        tf_content.push_str(&format!(
-            "    sui_chain_identifier              = \"{}\"\n",
-            sui_chain_identifier
-        ));
-
-        // Add required package IDs
-        tf_content.push_str(&format!(
-            "    ika_package_id                    = \"{}\"\n",
-            self.ika_package_id
-        ));
-
-        let ika_common_package_id = self
-            .ika_common_package_id
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!(
-            "    ika_common_package_id             = \"{}\"\n",
-            ika_common_package_id
-        ));
-
-        let ika_dwallet_2pc_mpc_package_id = self
-            .ika_dwallet_2pc_mpc_package_id
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!(
-            "    ika_dwallet_2pc_mpc_package_id    = \"{}\"\n",
-            ika_dwallet_2pc_mpc_package_id
-        ));
-
-        tf_content.push_str(&format!(
-            "    ika_system_package_id             = \"{}\"\n",
-            self.ika_system_package_id
-        ));
-
-        let ika_system_object_id = self
-            .ika_system_object_id
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!(
-            "    ika_system_object_id              = \"{}\"\n",
-            ika_system_object_id
-        ));
-
-        let ika_dwallet_coordinator_object_id = self
-            .ika_dwallet_coordinator_object_id
-            .map(|id| id.to_string())
-            .unwrap_or_else(|| "placeholder".to_string());
-        tf_content.push_str(&format!(
-            "    ika_dwallet_coordinator_object_id = \"{}\"\n",
-            ika_dwallet_coordinator_object_id
-        ));
-
-        tf_content.push_str("  }\n");
-        tf_content.push_str("}\n");
-
-        tf_content
-    }
 }
 
 #[tokio::main]
@@ -309,8 +229,7 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             file.write_all(json.as_bytes())?;
             println!(
-                "Published IKA modules configuration saved to {:?}:\n {:?}",
-                config_file_path, json
+                "Published IKA modules configuration saved to {config_file_path:?}:\n {json:?}"
             );
         }
 
@@ -320,10 +239,7 @@ async fn main() -> Result<()> {
             sui_faucet_addr,
             sui_rpc_addr,
         } => {
-            println!(
-                "Minting IKA tokens using configuration from: {:?}",
-                ika_config_path
-            );
+            println!("Minting IKA tokens using configuration from: {ika_config_path:?}");
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             println!("Using SUI configuration from: {sui_config_path:?}");
@@ -360,10 +276,7 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
             file.write_all(json.as_bytes())?;
-            println!(
-                "Updated IKA modules configuration saved to {:?}",
-                ika_config_path
-            );
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
         }
 
         Commands::InitEnv {
@@ -373,10 +286,7 @@ async fn main() -> Result<()> {
             epoch_duration_ms,
             protocol_version,
         } => {
-            println!(
-                "Initializing environment using configuration at {:?}",
-                ika_config_path
-            );
+            println!("Initializing environment using configuration at {ika_config_path:?}");
 
             let config_content = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
@@ -472,10 +382,7 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
             file.write_all(json.as_bytes())?;
-            println!(
-                "Updated IKA modules configuration saved to {:?}",
-                ika_config_path
-            );
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
         }
 
         Commands::IkaSystemInitialize {
@@ -484,8 +391,7 @@ async fn main() -> Result<()> {
             sui_rpc_addr,
         } => {
             println!(
-                "Starting IKA system initialization using configuration at {:?}",
-                ika_config_path
+                "Starting IKA system initialization using configuration at {ika_config_path:?}"
             );
 
             // Load the published config.
@@ -546,8 +452,7 @@ async fn main() -> Result<()> {
                 )
                 .await?;
             println!(
-                "system::initialize done. `dwallet_id`: {}, `initial_shared_version`: {}",
-                dwallet_coordinator_object_id, dwallet_initial_shared_version
+                "system::initialize done. `dwallet_id`: {dwallet_coordinator_object_id}, `initial_shared_version`: {dwallet_initial_shared_version}"
             );
 
             // object_id = 0xacdb9188b62bea2201a836361f5f20374d8402cd5f200d6f92e06a604d4fb2a8
@@ -576,40 +481,12 @@ async fn main() -> Result<()> {
             let json = serde_json::to_string_pretty(&publish_config)?;
             let mut file = File::create(&ika_config_path)?;
             file.write_all(json.as_bytes())?;
-            println!(
-                "Updated IKA modules configuration saved to {:?}",
-                ika_config_path
-            );
+            println!("Updated IKA modules configuration saved to {ika_config_path:?}");
 
             // Optionally, update the configuration file if needed.
             // For example, you might want to store dwallet_id or other values.
             // Here, we simply print a success message.
             println!("IKA system initialization completed successfully.");
-        }
-
-        Commands::ConvertToTerraform {
-            ika_config_path,
-            sui_chain_identifier,
-            output_path,
-        } => {
-            println!(
-                "Converting IKA configuration from {:?} to Terraform format for chain: {}",
-                ika_config_path, sui_chain_identifier
-            );
-
-            let config_content = fs::read_to_string(&ika_config_path)?;
-            let publish_config: PublishIkaConfig = serde_json::from_str(&config_content)?;
-
-            let terraform_content = publish_config.to_terraform(&sui_chain_identifier);
-
-            let output_path = output_path
-                .unwrap_or_else(|| ika_config_path.parent().unwrap().join("terraform.tf"));
-            let mut file = File::create(&output_path)?;
-            file.write_all(terraform_content.as_bytes())?;
-            println!(
-                "Terraform configuration saved to {:?}:\n {}",
-                output_path, terraform_content
-            );
         }
     }
 
@@ -650,10 +527,7 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
 
     let mut keystore = Keystore::File(FileBasedKeystore::new(&keystore_path)?);
     let sui_client_config_path = sui_conf_dir.join(SUI_CLIENT_CONFIG);
-    println!(
-        "Using SUI client configuration at: {:?}",
-        sui_client_config_path
-    );
+    println!("Using SUI client configuration at: {sui_client_config_path:?}");
     println!("Using keystore at: {keystore_path:?}");
 
     let publisher_address = match &mut keystore {
