@@ -34,6 +34,7 @@ pub trait EpochStartSystemTrait {
     fn get_validator_as_p2p_peers(&self, excluding_self: AuthorityName) -> Vec<PeerInfo>;
     fn get_authority_names_to_peer_ids(&self) -> HashMap<AuthorityName, PeerId>;
     fn get_authority_names_to_hostnames(&self) -> HashMap<AuthorityName, String>;
+    fn get_ika_validators(&self) -> Vec<EpochStartValidatorInfo>;
 }
 
 /// This type captures the minimum amount of information from `System` needed by a validator
@@ -146,6 +147,7 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
                     (
                         validator.voting_power,
                         NetworkMetadata {
+                            name: validator.name.clone(),
                             network_address: validator.network_address.clone(),
                             consensus_address: validator.consensus_address.clone(),
                             network_public_key: Some(validator.network_pubkey.clone()),
@@ -275,6 +277,25 @@ impl EpochStartSystemTrait for EpochStartSystemV1 {
             })
             .collect()
     }
+
+    fn get_ika_validators(&self) -> Vec<EpochStartValidatorInfo> {
+        self.active_validators
+            .iter()
+            .map(|validator| EpochStartValidatorInfo::V1(validator.clone()))
+            .collect()
+    }
+}
+
+#[enum_dispatch]
+pub trait EpochStartValidatorInfoTrait {
+    fn authority_name(&self) -> AuthorityName;
+    fn get_name(&self) -> String;
+    fn get_network_pubkey(&self) -> NetworkPublicKey;
+}
+
+#[enum_dispatch(EpochStartValidatorInfoTrait)]
+pub enum EpochStartValidatorInfo {
+    V1(EpochStartValidatorInfoV1),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
@@ -289,10 +310,19 @@ pub struct EpochStartValidatorInfoV1 {
     pub consensus_address: Multiaddr,
     pub voting_power: StakeUnit,
     pub hostname: String,
+    pub name: String,
 }
 
-impl EpochStartValidatorInfoV1 {
-    pub fn authority_name(&self) -> AuthorityName {
+impl EpochStartValidatorInfoTrait for EpochStartValidatorInfoV1 {
+    fn authority_name(&self) -> AuthorityName {
         (&self.protocol_pubkey).into()
+    }
+
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn get_network_pubkey(&self) -> NetworkPublicKey {
+        self.network_pubkey.clone()
     }
 }

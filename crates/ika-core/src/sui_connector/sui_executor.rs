@@ -963,28 +963,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
@@ -1068,28 +1047,7 @@ where
         let mut ptb = ProgrammableTransactionBuilder::new();
 
         let gas_coins = sui_client.get_gas_objects(sui_notifier.sui_address).await;
-        if gas_coins.len() > 1 {
-            info!("More than one gas coin was found, merging them into one gas coin.");
-            let coins: IkaResult<Vec<_>> = gas_coins
-                .iter()
-                .skip(1)
-                .map(|c| {
-                    ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
-                        .map_err(|e| {
-                            IkaError::SuiConnectorInternalError(format!(
-                                "error merging coin ProgrammableTransactionBuilder::input: {e}"
-                            ))
-                        })
-                })
-                .collect();
-
-            let coins = coins?;
-
-            ptb.command(sui_types::transaction::Command::MergeCoins(
-                Argument::GasCoin,
-                coins,
-            ));
-        }
+        merge_gas_coins(&mut ptb, &gas_coins)?;
         let gas_coin = gas_coins
             .first()
             .ok_or_else(|| IkaError::SuiConnectorInternalError("no gas coin found".to_string()))?;
@@ -1150,4 +1108,40 @@ where
             }
         }
     }
+}
+
+/// Merge multiple gas coins into one by adding a `MergeCoins` command to the
+/// provided `ProgrammableTransactionBuilder`.
+/// If `gas_coins` has zero or one element, the function is no‑op.
+fn merge_gas_coins(
+    ptb: &mut ProgrammableTransactionBuilder,
+    gas_coins: &[sui_types::base_types::ObjectRef],
+) -> IkaResult<()> {
+    if gas_coins.len() <= 1 {
+        return Ok(());
+    }
+
+    info!("More than one gas coin was found, merging them into one gas coin.");
+
+    let coins: IkaResult<Vec<_>> = gas_coins
+        .iter()
+        .skip(1)
+        .map(|c| {
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(*c)))
+                .map_err(|e| {
+                    IkaError::SuiConnectorInternalError(format!(
+                        "error merging coin ProgrammableTransactionBuilder::input: {e}"
+                    ))
+                })
+        })
+        .collect();
+
+    let coins = coins?;
+
+    ptb.command(sui_types::transaction::Command::MergeCoins(
+        Argument::GasCoin,
+        coins,
+    ));
+
+    Ok(())
 }
