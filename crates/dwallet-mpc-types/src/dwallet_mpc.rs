@@ -39,7 +39,6 @@ pub type MPCPrivateInput = Option<Vec<u8>>;
 #[derive(Clone, PartialEq, Debug)]
 pub enum MPCSessionStatus {
     Active,
-    ComputationCompleted,
     Completed,
     Failed,
 }
@@ -48,7 +47,6 @@ impl fmt::Display for MPCSessionStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MPCSessionStatus::Active => write!(f, "Active"),
-            MPCSessionStatus::ComputationCompleted => write!(f, "CompletedComputation"),
             MPCSessionStatus::Completed => write!(f, "Completed"),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }

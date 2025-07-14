@@ -231,10 +231,9 @@ impl DWalletMPCManager {
         &mut self,
         consensus_round: u64,
         outputs: Vec<DWalletMPCOutput>,
-    ) -> (Vec<DWalletCheckpointMessageKind>, Vec<SessionIdentifier>) {
+    ) -> Vec<DWalletCheckpointMessageKind> {
         // Not let's move to process MPC outputs for the current round.
         let mut checkpoint_messages = vec![];
-        let mut completed_sessions = vec![];
         for output in &outputs {
             let session_identifier = output.session_identifier;
 
@@ -244,7 +243,6 @@ impl DWalletMPCManager {
                     self.complete_mpc_session(&session_identifier);
                     let output_digest = output_result.iter().map(|m| m.digest()).collect_vec();
                     checkpoint_messages.extend(output_result);
-                    completed_sessions.push(session_identifier);
                     info!(
                         ?output_digest,
                         consensus_round,
@@ -263,7 +261,7 @@ impl DWalletMPCManager {
                 }
             };
         }
-        (checkpoint_messages, completed_sessions)
+        checkpoint_messages
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
@@ -700,7 +698,8 @@ impl DWalletMPCManager {
                     .iter()
                     .map(|party_id| party_id_to_authority_name(*party_id, &self.committee))
                     .collect_vec();
-                let any_not_found_malicious_voters = malicious_authorities_options.iter().any(|ma| ma.is_none());
+                let any_not_found_malicious_voters =
+                    malicious_authorities_options.iter().any(|ma| ma.is_none());
                 let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
                     .into_iter()
                     .filter_map(|ma| ma)
@@ -729,24 +728,6 @@ impl DWalletMPCManager {
                 None
             }
         }
-    }
-
-    pub(crate) fn complete_computation_mpc_session_and_create_if_not_exists(
-        &mut self,
-        session_identifier: &SessionIdentifier,
-    ) {
-        let session = match self.mpc_sessions.entry(*session_identifier) {
-            Entry::Occupied(session) => session.into_mut(),
-            Entry::Vacant(_) => {
-                // This can happen if the session is not in the active sessions,
-                // but we still want to store the message.
-                // We will create a new session for it.
-                self.new_mpc_session(session_identifier, None);
-                // Safe to `unwrap()`: we just created the session.
-                self.mpc_sessions.get_mut(session_identifier).unwrap()
-            }
-        };
-        session.complete_computation_mpc_session_status();
     }
 
     pub(crate) fn complete_mpc_session(&mut self, session_identifier: &SessionIdentifier) {

@@ -59,8 +59,8 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
 use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput};
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpointMessage, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
@@ -370,9 +370,6 @@ pub struct AuthorityEpochTables {
 
     #[default_options_override_fn = "dwallet_mpc_outputs_table_default_config"]
     dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutput>>,
-
-    #[default_options_override_fn = "dwallet_mpc_computation_completed_sessions_table_default_config"]
-    dwallet_mpc_computation_completed_sessions: DBMap<Round, Vec<SessionIdentifier>>,
 }
 
 fn pending_consensus_transactions_table_default_config() -> DBOptions {
@@ -400,12 +397,6 @@ fn dwallet_mpc_messages_table_default_config() -> DBOptions {
 }
 
 fn dwallet_mpc_outputs_table_default_config() -> DBOptions {
-    default_db_options()
-        .optimize_for_write_throughput()
-        .optimize_for_large_values_no_scan(1 << 10)
-}
-
-fn dwallet_mpc_computation_completed_sessions_table_default_config() -> DBOptions {
     default_db_options()
         .optimize_for_write_throughput()
         .optimize_for_large_values_no_scan(1 << 10)
@@ -451,12 +442,6 @@ impl AuthorityEpochTables {
 
     pub fn get_last_consensus_stats(&self) -> IkaResult<Option<ExecutionIndicesWithStats>> {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
-    }
-
-    pub fn get_dwallet_mpc_computation_completed_sessions_iter(
-        &self,
-    ) -> DbIterator<(Round, Vec<SessionIdentifier>)> {
-        self.dwallet_mpc_computation_completed_sessions.safe_iter()
     }
 
     pub fn get_dwallet_mpc_messages_iter(
@@ -804,17 +789,6 @@ impl AuthorityPerEpochStore {
             .safe_iter()
             .map(|item| item.map(|(_, v)| v))
             .collect::<Result<Vec<_>, _>>()?)
-    }
-
-    pub fn insert_dwallet_mpc_computation_completed_sessions(
-        &self,
-        round: &Round,
-        session_identifiers: &Vec<SessionIdentifier>,
-    ) -> IkaResult {
-        self.tables()?
-            .dwallet_mpc_computation_completed_sessions
-            .insert(round, session_identifiers)?;
-        Ok(())
     }
 
     pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {

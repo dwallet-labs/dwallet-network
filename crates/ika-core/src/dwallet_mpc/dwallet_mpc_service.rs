@@ -130,10 +130,6 @@ impl DWalletMPCService {
     ///
     /// The service automatically terminates when an epoch switch occurs.
     pub async fn spawn(&mut self) {
-        // Process all MPC completed session outputs we bootstrapped from storage
-        // before starting execution, to avoid their computation.
-        self.bootstrap_computation_completed_sessions();
-
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
@@ -207,43 +203,6 @@ impl DWalletMPCService {
                 .await;
 
             tokio::time::sleep(Duration::from_millis(READ_INTERVAL_MS)).await;
-        }
-    }
-
-    /// Bootstrap all computation completed MPC sessions from the local DB for current epoch.
-    /// This is used to avoid re-running computations for sessions.
-    /// Panics if the DB tables cannot be loaded.
-    fn bootstrap_computation_completed_sessions(&mut self) {
-        let Ok(tables) = self.epoch_store.tables() else {
-            error!("failed to load DB tables from the epoch store");
-            panic!("failed to load DB tables from the epoch store");
-        };
-        let bootstrapping_computation_completed_sessions =
-            tables.get_dwallet_mpc_computation_completed_sessions_iter();
-
-        let mut last_bootstrapped_consensus_round = None;
-        for bootstrapping_computation_completed_session in
-            bootstrapping_computation_completed_sessions
-        {
-            match bootstrapping_computation_completed_session {
-                Ok((round, completed_sessions)) => {
-                    for session_identifier in completed_sessions {
-                        self.dwallet_mpc_manager
-                            .complete_computation_mpc_session_and_create_if_not_exists(
-                                &session_identifier,
-                            );
-                    }
-                    last_bootstrapped_consensus_round = Some(round);
-                }
-                Err(e) => {
-                    error!(
-                        err=?e,
-                        last_bootstrapped_consensus_round,
-                        "failed to load all completed MPC sessions from the local DB during bootstrapping"
-                    );
-                    panic!("failed to load all completed MPC sessions from the local DB during bootstrapping");
-                }
-            }
         }
     }
 
@@ -328,7 +287,7 @@ impl DWalletMPCService {
 
             // Now we have the MPC messages for the current round, we can
             // process the MPC outputs for the current round.
-            let (mut checkpoint_messages, completed_sessions) = self
+            let mut checkpoint_messages = self
                 .dwallet_mpc_manager
                 .handle_consensus_round_outputs(consensus_round, mpc_outputs);
 
@@ -383,21 +342,6 @@ impl DWalletMPCService {
                     );
                     return false;
                 }
-            }
-
-            if let Err(e) = self
-                .epoch_store
-                .insert_dwallet_mpc_computation_completed_sessions(
-                    &consensus_round,
-                    &completed_sessions,
-                )
-            {
-                error!(
-                    err=?e,
-                    ?consensus_round,
-                    ?completed_sessions,
-                    "failed to insert computation completed MPC sessions into the local DB"
-                );
             }
             self.last_read_consensus_round = Some(consensus_round);
         }
@@ -488,12 +432,14 @@ impl DWalletMPCService {
                                 self.dwallet_mpc_manager
                                     .record_malicious_actors(&malicious_authorities);
 
+                                let rejected = false;
+
                                 let consensus_message = self.new_dwallet_mpc_output(
                                     session_identifier,
                                     &mpc_event_data,
                                     public_output_value,
                                     malicious_authorities,
-                                    false,
+                                    rejected,
                                 );
 
                                 if let Err(err) = consensus_adapter
@@ -535,12 +481,15 @@ impl DWalletMPCService {
                                 );
 
                                 let consensus_adapter = self.consensus_adapter.clone();
+
+                                let rejected = true;
+
                                 let consensus_message = self.new_dwallet_mpc_output(
                                     session_identifier,
                                     &mpc_event_data,
                                     vec![],
                                     vec![],
-                                    true,
+                                    rejected,
                                 );
 
                                 if let Err(err) = consensus_adapter
