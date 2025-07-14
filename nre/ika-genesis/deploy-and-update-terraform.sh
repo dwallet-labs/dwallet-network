@@ -4,7 +4,7 @@ set -euo pipefail
 set -x
 
 # Default values
-VALIDATOR_NUM=115
+VALIDATOR_NUM=4
 TERRAFORM_WORKSPACES_FILE="../../../infra/tf-gcp/workspaces.tf"
 SUBDOMAIN=beta.devnet.ika-network.net
 GCP_PROJECT=devnet-449616
@@ -283,7 +283,7 @@ mkdir -p "$DEST_DIR"
 echo "📁 Created destination directory: $DEST_DIR"
 
 # Files to copy
-FILES_TO_COPY=("class-groups.key" "seed_peers.yaml")
+FILES_TO_COPY=("seed_peers.yaml")
 
 # Copy each file
 for FILE in "${FILES_TO_COPY[@]}"; do

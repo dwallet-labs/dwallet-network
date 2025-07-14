@@ -254,8 +254,6 @@ cp ../../../target/debug/ika-swarm-config .
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
-ls -ltrash
-
 # Mint IKA Tokens
 ./ika-swarm-config mint-ika-tokens --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL" --ika-config-path ./ika_publish_config.json
 
@@ -282,21 +280,6 @@ echo "Ika System Package ID: $IKA_SYSTEM_PACKAGE_ID"
 echo "Ika System Object ID: $IKA_SYSTEM_OBJECT_ID"
 echo "Ika Common Package ID: $IKA_COMMON_PACKAGE_ID"
 echo "Ika dWallet 2PC MPC Package ID: $IKA_DWALLET_2PC_MPC_PACKAGE_ID"
-echo "Ika dWallet Coordinator Object ID: placeholder"
-
-cat > locals.tf <<EOF
-locals {
-  ika_chain_config = {
-    sui_chain_identifier              = "${SUI_CHAIN_IDENTIFIER}"
-    ika_common_package_id             = "${IKA_COMMON_PACKAGE_ID}"
-    ika_dwallet_2pc_mpc_package_id    = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
-    ika_package_id                    = "${IKA_PACKAGE_ID}"
-    ika_system_package_id             = "${IKA_SYSTEM_PACKAGE_ID}"
-    ika_system_object_id              = "${IKA_SYSTEM_OBJECT_ID}"
-    ika_dwallet_coordinator_object_id = "placeholder"
-  }
-}
-EOF
 
 ############################
 # Request Tokens and Create Validator.yaml (Max 5 Parallel + Retry)
@@ -545,6 +528,32 @@ cp -r $PUBLISHER_DIR/sui_config/* "$SUI_CONFIG_PATH"
 
 # This if the file name that the SDK is looking for.
 mv $PUBLISHER_DIR/ika_publish_config.json $PUBLISHER_DIR/ika_config.json
+
+################################
+# Generate locals.tf
+################################
+
+PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_config.json"
+
+
+IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_coordinator_object_id' "$PUBLISHER_CONFIG_FILE")
+
+echo "Ika dWallet Coordinator Object ID: placeholder"
+
+cat > locals.tf <<EOF
+locals {
+  ika_chain_config = {
+    sui_chain_identifier              = "${SUI_CHAIN_IDENTIFIER}"
+    ika_common_package_id             = "${IKA_COMMON_PACKAGE_ID}"
+    ika_dwallet_2pc_mpc_package_id    = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
+    ika_package_id                    = "${IKA_PACKAGE_ID}"
+    ika_system_package_id             = "${IKA_SYSTEM_PACKAGE_ID}"
+    ika_system_object_id              = "${IKA_SYSTEM_OBJECT_ID}"
+    ika_dwallet_coordinator_object_id = "${IKA_DWALLET_2PC_MPC_PACKAGE_ID}"
+  }
+}
+EOF
+
 
 ############################
 # Generate Seed Peers
