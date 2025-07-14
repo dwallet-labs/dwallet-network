@@ -10,6 +10,7 @@ use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
+use ika_sui_client::system_receiver::SystemReceiver;
 use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
@@ -250,6 +251,7 @@ where
         mut network_keys_receiver: watch::Receiver<
             Arc<HashMap<ObjectID, DWalletNetworkEncryptionKeyData>>,
         >,
+        receiver: SystemReceiver,
     ) -> StopReason {
         info!(?epoch, "Starting sui connector SuiExecutor run_epoch");
         // Check if we want to run this epoch based on RunWithRange condition value
@@ -277,7 +279,7 @@ where
 
         loop {
             interval.tick().await;
-            let ika_system_state_inner = self.sui_client.must_get_system_inner_object().await;
+            let ika_system_state_inner = receiver.must_get_system_inner().await;
             let epoch_on_sui: u64 = ika_system_state_inner.epoch();
             if epoch_on_sui > epoch {
                 fail_point_async!("crash");
