@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-set -x
+#set -x
 
 # Default values
 VALIDATOR_NUM=4
