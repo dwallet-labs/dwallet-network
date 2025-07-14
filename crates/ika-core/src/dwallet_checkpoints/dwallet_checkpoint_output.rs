@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{DWalletCheckpointMetrics, DWalletCheckpointStore};
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
@@ -120,8 +120,7 @@ impl DWalletCheckpointOutput for LogDWalletCheckpointOutput {
     ) -> IkaResult {
         trace!(
             "Including following transactions in dwallet checkpoint {}: {:#?}",
-            checkpoint_message.sequence_number,
-            checkpoint_message.messages,
+            checkpoint_message.sequence_number, checkpoint_message.messages,
         );
         info!(
             "Creating dwallet checkpoint {:?} at epoch {}, sequence {}, messages count {}",

@@ -10,8 +10,8 @@ use ika_config::initiation::MIN_VALIDATOR_JOINING_STAKE_INKU;
 use ika_config::local_ip_utils;
 use ika_config::validator_info::ValidatorInfo;
 use ika_types::crypto::{
-    generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
+    AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey,
+    generate_proof_of_possession, get_key_pair_from_rng,
 };
 use ika_types::sui::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_COMPUTATION_PRICE};
 use serde::{Deserialize, Serialize};

@@ -43,8 +43,8 @@ use tracing::{debug, error, info, instrument, warn};
 use typed_store::DBMapUtils;
 use typed_store::Map;
 use typed_store::{
-    rocks::{DBMap, MetricConf},
     TypedStoreError,
+    rocks::{DBMap, MetricConf},
 };
 
 pub type DWalletCheckpointHeight = u64;
@@ -132,7 +132,7 @@ pub struct DWalletCheckpointStore {
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed dwallet_checkpoints
     pub(crate) watermarks: DBMap<
-        DWalletCheckpointWatermark,
+        DWalletCheckpointHighestWatermark,
         (
             DWalletCheckpointSequenceNumber,
             DWalletCheckpointMessageDigest,
@@ -230,7 +230,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestVerified)?
+            .get(&DWalletCheckpointHighestWatermark::Verified)?
         {
             highest_verified
         } else {
@@ -244,7 +244,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestSynced)?
+            .get(&DWalletCheckpointHighestWatermark::Synced)?
         {
             highest_synced
         } else {
@@ -258,7 +258,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<DWalletCheckpointSequenceNumber>, TypedStoreError> {
         if let Some(highest_executed) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestExecuted)?
+            .get(&DWalletCheckpointHighestWatermark::Executed)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -271,7 +271,7 @@ impl DWalletCheckpointStore {
     ) -> Result<Option<VerifiedDWalletCheckpointMessage>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestExecuted)?
+            .get(&DWalletCheckpointHighestWatermark::Executed)?
         {
             highest_executed
         } else {
@@ -285,7 +285,7 @@ impl DWalletCheckpointStore {
     ) -> Result<DWalletCheckpointSequenceNumber, TypedStoreError> {
         Ok(self
             .watermarks
-            .get(&DWalletCheckpointWatermark::HighestPruned)?
+            .get(&DWalletCheckpointHighestWatermark::Pruned)?
             .unwrap_or((1, Default::default()))
             .0)
     }
@@ -342,7 +342,7 @@ impl DWalletCheckpointStore {
                 "Updating highest verified dwallet checkpoint",
             );
             self.watermarks.insert(
-                &DWalletCheckpointWatermark::HighestVerified,
+                &DWalletCheckpointHighestWatermark::Verified,
                 &(*checkpoint.sequence_number(), *checkpoint.digest()),
             )?;
         }
@@ -359,7 +359,7 @@ impl DWalletCheckpointStore {
             "Updating highest synced dwallet checkpoint",
         );
         self.watermarks.insert(
-            &DWalletCheckpointWatermark::HighestSynced,
+            &DWalletCheckpointHighestWatermark::Synced,
             &(*checkpoint.sequence_number(), *checkpoint.digest()),
         )
     }
@@ -370,7 +370,7 @@ impl DWalletCheckpointStore {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
-            std::iter::once(DWalletCheckpointWatermark::HighestExecuted),
+            std::iter::once(DWalletCheckpointHighestWatermark::Executed),
         )?;
         wb.write()?;
         Ok(())
@@ -378,11 +378,11 @@ impl DWalletCheckpointStore {
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum DWalletCheckpointWatermark {
-    HighestVerified,
-    HighestSynced,
-    HighestExecuted,
-    HighestPruned,
+pub enum DWalletCheckpointHighestWatermark {
+    Verified,
+    Synced,
+    Executed,
+    Pruned,
 }
 
 pub struct DWalletCheckpointBuilder {
@@ -597,7 +597,10 @@ impl DWalletCheckpointBuilder {
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max dwallet checkpoint size ({}); allowing excessively large checkpoint to go through.", self.max_dwallet_checkpoint_size_bytes);
+                    warn!(
+                        "Size of single transaction ({size}) exceeds max dwallet checkpoint size ({}); allowing excessively large checkpoint to go through.",
+                        self.max_dwallet_checkpoint_size_bytes
+                    );
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -1140,23 +1143,6 @@ impl DWalletCheckpointService {
         });
 
         (service, tasks)
-    }
-
-    #[cfg(test)]
-    fn write_and_notify_checkpoint_for_testing(
-        &self,
-        epoch_store: &AuthorityPerEpochStore,
-        checkpoint: PendingDWalletCheckpoint,
-    ) -> IkaResult {
-        use crate::authority::authority_per_epoch_store::ConsensusCommitOutput;
-
-        let mut output = ConsensusCommitOutput::new(0);
-        epoch_store.write_pending_checkpoint(&mut output, &checkpoint)?;
-        let mut batch = epoch_store.db_batch_for_test();
-        output.write_to_batch(epoch_store, &mut batch)?;
-        batch.write()?;
-        self.notify_checkpoint()?;
-        Ok(())
     }
 }
 

@@ -122,19 +122,9 @@ struct FeatureFlags {
     #[serde(skip_serializing_if = "Option::is_none")]
     mysticeti_num_leaders_per_round: Option<usize>,
 
-    // Enables the new logic for collecting the subdag in the consensus linearizer. The new logic does not stop the recursion at the highest
-    // committed round for each authority, but allows to commit uncommitted blocks up to gc round (excluded) for that authority.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_linearize_subdag_v2: bool,
-
     // If true, enable zstd compression for consensus tonic network.
     #[serde(skip_serializing_if = "is_false")]
     consensus_zstd_compression: bool,
-
-    // If true, then it (1) will not enforce monotonicity checks for a block's ancestors and (2) calculates the commit's timestamp based on the
-    // weighted by stake median timestamp of the leader's ancestors.
-    #[serde(skip_serializing_if = "is_false")]
-    consensus_median_based_commit_timestamp: bool,
 
     // If true, enabled batched block sync in consensus.
     #[serde(skip_serializing_if = "is_false")]
@@ -300,24 +290,6 @@ impl ProtocolConfig {
         self.feature_flags.mysticeti_fastpath
     }
 
-    pub fn consensus_linearize_subdag_v2(&self) -> bool {
-        let res = self.feature_flags.consensus_linearize_subdag_v2;
-        assert!(
-            !res || self.gc_depth() > 0,
-            "The consensus linearize sub dag V2 requires GC to be enabled"
-        );
-        res
-    }
-
-    pub fn consensus_median_based_commit_timestamp(&self) -> bool {
-        let res = self.feature_flags.consensus_median_based_commit_timestamp;
-        assert!(
-            !res || self.gc_depth() > 0,
-            "The consensus median based commit timestamp requires GC to be enabled"
-        );
-        res
-    }
-
     pub fn consensus_batched_block_sync(&self) -> bool {
         self.feature_flags.consensus_batched_block_sync
     }
@@ -362,18 +334,20 @@ impl ProtocolConfig {
         ret.version = version;
 
         ret = CONFIG_OVERRIDE.with(|ovr| {
-            if let Some(override_fn) = &*ovr.borrow() {
+            match &*ovr.borrow() { Some(override_fn) => {
                 warn!(
                     "overriding ProtocolConfig settings with custom settings (you should not see this log outside of tests)"
                 );
                 override_fn(version, ret)
-            } else {
+            } _ => {
                 ret
-            }
+            }}
         });
 
         if std::env::var("IKA_PROTOCOL_CONFIG_OVERRIDE_ENABLE").is_ok() {
-            warn!("overriding ProtocolConfig settings with custom settings; this may break non-local networks");
+            warn!(
+                "overriding ProtocolConfig settings with custom settings; this may break non-local networks"
+            );
             let overrides: ProtocolConfigOptional =
                 serde_env::from_env_with_prefix("IKA_PROTOCOL_CONFIG_OVERRIDE")
                     .expect("failed to parse ProtocolConfig override env variables");
@@ -496,9 +470,7 @@ impl ProtocolConfig {
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
         cfg.feature_flags.consensus_round_prober = true;
-        cfg.feature_flags.consensus_linearize_subdag_v2 = true;
         cfg.feature_flags.consensus_zstd_compression = true;
-        cfg.feature_flags.consensus_median_based_commit_timestamp = true;
         cfg.feature_flags.consensus_batched_block_sync = true;
         cfg.feature_flags.enforce_checkpoint_timestamp_monotonicity = true;
 
@@ -523,7 +495,7 @@ impl ProtocolConfig {
                     error!("version 2 is defined");
                     cfg.dwallet_version = Some(2);
                 }
-                _ => panic!("unsupported version {:?}", version),
+                _ => panic!("unsupported version {version:?}"),
             }
         }
         cfg
@@ -556,16 +528,8 @@ impl ProtocolConfig {
         self.feature_flags.consensus_round_prober = val;
     }
 
-    pub fn set_consensus_linearize_subdag_v2_for_testing(&mut self, val: bool) {
-        self.feature_flags.consensus_linearize_subdag_v2 = val;
-    }
-
     pub fn set_mysticeti_fastpath_for_testing(&mut self, val: bool) {
         self.feature_flags.mysticeti_fastpath = val;
-    }
-
-    pub fn set_consensus_median_based_commit_timestamp_for_testing(&mut self, val: bool) {
-        self.feature_flags.consensus_median_based_commit_timestamp = val;
     }
 
     pub fn set_consensus_batched_block_sync_for_testing(&mut self, val: bool) {
@@ -629,10 +593,10 @@ pub fn check_limit_in_range<T: Into<V>, U: Into<V>, V: PartialOrd + Into<u128>>(
 
 #[macro_export]
 macro_rules! check_limit {
-    ($x:expr, $hard:expr) => {
+    ($x:expr_2021, $hard:expr_2021) => {
         check_limit!($x, $hard, $hard)
     };
-    ($x:expr, $soft:expr, $hard:expr) => {
+    ($x:expr_2021, $soft:expr_2021, $hard:expr_2021) => {
         check_limit_in_range($x as u64, $soft, $hard)
     };
 }
@@ -642,7 +606,7 @@ macro_rules! check_limit {
 /// metered_limit is always less than or equal to unmetered_hard_limit
 #[macro_export]
 macro_rules! check_limit_by_meter {
-    ($is_metered:expr, $x:expr, $metered_limit:expr, $unmetered_hard_limit:expr, $metric:expr) => {{
+    ($is_metered:expr_2021, $x:expr_2021, $metered_limit:expr_2021, $unmetered_hard_limit:expr_2021, $metric:expr_2021) => {{
         // If this is metered, we use the metered_limit limit as the upper bound
         let (h, metered_str) = if $is_metered {
             ($metered_limit, "metered")
@@ -695,7 +659,7 @@ mod test {
             // released everywhere, we can remove this and only test Mainnet and Testnet
             let chain_str = match chain_id {
                 Chain::Unknown => "".to_string(),
-                _ => format!("{:?}_", chain_id),
+                _ => format!("{chain_id:?}_"),
             };
             for i in MIN_PROTOCOL_VERSION..=MAX_PROTOCOL_VERSION {
                 let cur = ProtocolVersion::new(i);
@@ -781,14 +745,17 @@ mod test {
         let prot: ProtocolConfig =
             ProtocolConfig::get_for_version(ProtocolVersion::new(1), Chain::Unknown);
         // Does not exist
-        assert!(prot
-            .feature_flags
-            .lookup_attr("some random string".to_owned())
-            .is_none());
-        assert!(!prot
-            .feature_flags
-            .attr_map()
-            .contains_key("some random string"));
+        assert!(
+            prot.feature_flags
+                .lookup_attr("some random string".to_owned())
+                .is_none()
+        );
+        assert!(
+            !prot
+                .feature_flags
+                .attr_map()
+                .contains_key("some random string")
+        );
     }
 
     #[test]

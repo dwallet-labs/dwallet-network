@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
 use crate::sui_connector::sui_executor::{StopReason, SuiExecutor};
@@ -5,7 +8,7 @@ use crate::sui_connector::sui_syncer::SuiSyncer;
 use crate::system_checkpoints::SystemCheckpointStore;
 use anyhow::anyhow;
 use async_trait::async_trait;
-use futures::{future, StreamExt};
+use futures::{StreamExt, future};
 use ika_config::node::{RunWithRange, SuiChainIdentifier, SuiConnectorConfig};
 use ika_sui_client::{SuiClient, SuiClientInner};
 use ika_types::committee::{Committee, EpochId};
@@ -19,8 +22,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_json_rpc_types::{Coin, SuiEvent};
-use sui_sdk::apis::CoinReadApi;
 use sui_sdk::SuiClient as SuiSdkClient;
+use sui_sdk::apis::CoinReadApi;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::crypto::{Signature, SuiKeyPair};
 use sui_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
@@ -264,8 +267,10 @@ pub async fn pick_highest_balance_coin(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ika_sui_client::retry_with_max_elapsed_time;
     use std::time::Duration;
-    use tracing::debug;
+    use tracing::error;
+
     async fn example_func_ok() -> anyhow::Result<()> {
         Ok(())
     }

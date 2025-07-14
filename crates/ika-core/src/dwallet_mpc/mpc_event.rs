@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_mpc::dwallet_dkg::{
     dwallet_dkg_first_party_session_request, dwallet_dkg_second_party_session_request,
     dwallet_imported_key_verification_request_event_session_request,
@@ -20,8 +23,8 @@ use ika_types::messages_dwallet_mpc::{
     DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
     DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent,
     DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SignRequestEvent,
-    SESSIONS_MANAGER_MODULE_NAME,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent,
+    SESSIONS_MANAGER_MODULE_NAME, SignRequestEvent,
 };
 use serde::de::DeserializeOwned;
 use std::time::Duration;

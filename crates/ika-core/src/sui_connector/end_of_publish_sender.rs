@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};

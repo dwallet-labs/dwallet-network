@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_mpc::mpc_session::input::PublicInput;
 use crate::dwallet_mpc::mpc_session::session_input_from_event;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeys;

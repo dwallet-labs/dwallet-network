@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
-use move_binary_format::{file_format::Visibility, CompiledModule};
+use move_binary_format::{CompiledModule, file_format::Visibility};
 use move_compiler::editions::Edition;
 use move_package::{BuildConfig as MoveBuildConfig, LintFlag};
 use std::{
@@ -10,7 +10,7 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
 };
-use sui_move_build::{implicit_deps, BuildConfig, SuiPackageHooks};
+use sui_move_build::{BuildConfig, SuiPackageHooks, implicit_deps};
 use sui_package_management::system_package_versions::latest_system_packages;
 
 const CRATE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
@@ -63,8 +63,7 @@ fn check_diff(checked_in: &Path, built: &Path) {
             .output()
             .unwrap();
         if !output.status.success() {
-            let header =
-                "Generated and checked-in ika-move-packages packages and/or docs do not match.\n\
+            let header = "Generated and checked-in ika-move-packages packages and/or docs do not match.\n\
                  Re-run with `UPDATE=1` to update checked-in packages and docs. e.g.\n\n\
                  UPDATE=1 cargo test -p ika-move-packages --test build_ika_move_packages";
 

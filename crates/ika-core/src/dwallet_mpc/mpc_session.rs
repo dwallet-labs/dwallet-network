@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 mod input;
 mod logger;
 mod mpc_event_data;
@@ -12,8 +15,10 @@ use std::collections::{HashMap, HashSet};
 use tracing::{debug, error, info};
 
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
-pub(crate) use input::{session_input_from_event, PublicInput};
+pub(crate) use input::{PublicInput, session_input_from_event};
 pub(crate) use logger::MPCSessionLogger;
+
+pub(crate) type MPCRoundToMessagesHashMap = HashMap<u64, HashMap<PartyID, MPCMessage>>;
 
 #[derive(Clone, Eq, Hash, PartialEq)]
 pub(crate) struct DWalletMPCSessionOutput {
@@ -46,8 +51,7 @@ pub(crate) struct DWalletMPCSession {
 
     /// All the messages that have been received for this session from each party, by consensus round and then by MPC round.
     /// Used to build the input of messages to advance each round of the session.
-    pub(super) messages_by_consensus_round:
-        HashMap<u64, HashMap<u64, HashMap<PartyID, MPCMessage>>>,
+    pub(super) messages_by_consensus_round: HashMap<u64, MPCRoundToMessagesHashMap>,
 
     outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>>,
 }

@@ -4,15 +4,14 @@ use ika_config::validator_info::ValidatorInfo;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_FUNCTION_NAME, REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME,
-    SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME,
-    VALIDATOR_METADATA_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
+    ClassGroupsPublicKeyAndProofBuilder, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_REMOVE_VALIDATOR_FUNCTION_NAME, SYSTEM_MODULE_NAME, VALIDATOR_CAP_MODULE_NAME,
+    VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
@@ -21,8 +20,8 @@ use sui::fire_drill::get_gas_obj_ref;
 use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockResponse};
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions};
 use sui_keys::keystore::AccountKeystore;
-use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
+use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -554,10 +553,16 @@ async fn construct_unsigned_txn(
 
     let tx = ptb.finish();
     let tx_kind = TransactionKind::ProgrammableTransaction(tx.clone());
-    let gas_budget =
-        sui::client_commands::estimate_gas_budget(context, sender, tx_kind, gas_price, None, None)
-            .await
-            .unwrap_or(gas_budget);
+    let gas_budget = sui::client_commands::estimate_gas_budget(
+        context,
+        sender,
+        tx_kind,
+        gas_price,
+        vec![],
+        None,
+    )
+    .await
+    .unwrap_or(gas_budget);
 
     let rgp = sui_client
         .governance_api()

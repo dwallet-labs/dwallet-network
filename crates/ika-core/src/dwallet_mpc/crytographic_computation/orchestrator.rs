@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! The orchestrator for dWallet MPC cryptographic computations.
 //!
 //! The orchestrator manages a task queue for cryptographic computations and

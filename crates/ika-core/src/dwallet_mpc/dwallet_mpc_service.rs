@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! This module contains the DWalletMPCService struct.
 //! It is responsible to read DWallet MPC messages from the
 //! local DB every [`READ_INTERVAL_MS`] seconds
@@ -5,6 +8,7 @@
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
+use crate::consensus_manager::ReplayWaiter;
 use crate::dwallet_checkpoints::{
     DWalletCheckpointServiceNotify, PendingDWalletCheckpoint, PendingDWalletCheckpointInfo,
     PendingDWalletCheckpointV1,
@@ -31,7 +35,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyData, MPCRequestInput, SessionIdentifier,
 };
 use ika_types::sui::DWalletCoordinatorInner;
-use itertools::{izip, Itertools};
+use itertools::{Itertools, izip};
 use mpc::AsynchronousRoundGODResult;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -132,7 +136,11 @@ impl DWalletMPCService {
     /// [`DWalletMPCManager`] for processing.
     ///
     /// The service automatically terminates when an epoch switch occurs.
-    pub async fn spawn(&mut self) {
+    pub async fn spawn(&mut self, replay_waiter: ReplayWaiter) {
+        info!("Waiting for consensus commits to replay ...");
+        replay_waiter.wait_for_replay().await;
+        info!("Consensus commits finished replaying");
+
         info!(
             validator=?self.epoch_store.name,
             bootstrapped_sessions=?self.dwallet_mpc_manager.mpc_sessions.keys().copied().collect::<Vec<_>>(),
@@ -262,11 +270,11 @@ impl DWalletMPCService {
                     != verified_dwallet_checkpoint_messages_consensus_round
             {
                 error!(
-                        ?mpc_messages_consensus_round,
-                        ?mpc_outputs_consensus_round,
-                        ?verified_dwallet_checkpoint_messages_consensus_round,
-                        "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
-                    );
+                    ?mpc_messages_consensus_round,
+                    ?mpc_outputs_consensus_round,
+                    ?verified_dwallet_checkpoint_messages_consensus_round,
+                    "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
+                );
 
                 return false;
             }
@@ -546,7 +554,7 @@ impl DWalletMPCService {
         message: MPCMessage,
     ) -> ConsensusTransaction {
         ConsensusTransaction::new_dwallet_mpc_message(
-            self.epoch_store.name.clone(),
+            self.epoch_store.name,
             session_identifier,
             message,
             mpc_round,

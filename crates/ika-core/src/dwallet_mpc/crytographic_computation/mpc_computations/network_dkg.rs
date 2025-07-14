@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! This module contains the network DKG protocol for the dWallet MPC sessions.
 //! The network DKG protocol handles generating the network Decryption-Key shares.
 //! The module provides the management of the network Decryption-Key shares and
@@ -9,8 +12,8 @@ use crate::dwallet_mpc::mpc_session::PublicInput;
 use crate::dwallet_mpc::reconfiguration::ReconfigurationSecp256k1Party;
 use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 use class_groups::{
-    Secp256k1DecryptionKeySharePublicParameters, SecretKeyShareSizedInteger,
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, Secp256k1DecryptionKeySharePublicParameters,
+    SecretKeyShareSizedInteger,
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_classgroups_types::ClassGroupsDecryptionKey;
@@ -19,7 +22,7 @@ use dwallet_mpc_types::dwallet_mpc::{
     NetworkDecryptionKeyPublicOutputType, SerializedWrappedMPCPublicOutput,
     VersionedNetworkDkgOutput,
 };
-use group::{secp256k1, OsCsRng, PartyID};
+use group::{OsCsRng, PartyID, secp256k1};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -33,11 +36,11 @@ use rand_chacha::ChaCha20Rng;
 use std::collections::HashMap;
 use sui_types::base_types::ObjectID;
 use tracing::error;
+use twopc_mpc::ProtocolPublicParameters;
 use twopc_mpc::secp256k1::class_groups::{
     FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
 };
 use twopc_mpc::sign::Protocol;
-use twopc_mpc::ProtocolPublicParameters;
 
 /// Holds the network (decryption) keys of the network MPC protocols.
 pub struct DwalletMPCNetworkKeys {

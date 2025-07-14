@@ -210,22 +210,20 @@ impl Display for DWalletCheckpointMessageKind {
             DWalletCheckpointMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
                 writeln!(
                     writer,
-                    "MessageKind : SetMaxActiveSessionsBuffer({})",
-                    buffer_size
+                    "MessageKind : SetMaxActiveSessionsBuffer({buffer_size})"
                 )?;
             }
             DWalletCheckpointMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
                 writeln!(
                     writer,
-                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
-                    value
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({value})"
                 )?;
             }
             DWalletCheckpointMessageKind::EndOfPublish => {
                 writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
-        write!(f, "{}", writer)
+        write!(f, "{writer}")
     }
 }
 
@@ -306,22 +304,20 @@ impl Debug for DWalletCheckpointMessageKind {
             DWalletCheckpointMessageKind::SetMaxActiveSessionsBuffer(buffer_size) => {
                 writeln!(
                     writer,
-                    "MessageKind : SetMaxActiveSessionsBuffer({})",
-                    buffer_size
+                    "MessageKind : SetMaxActiveSessionsBuffer({buffer_size})"
                 )?;
             }
             DWalletCheckpointMessageKind::SetGasFeeReimbursementSuiSystemCallValue(value) => {
                 writeln!(
                     writer,
-                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({})",
-                    value
+                    "MessageKind : SetGasFeeReimbursementSuiSystemCallValue({value})"
                 )?;
             }
             DWalletCheckpointMessageKind::EndOfPublish => {
                 writeln!(writer, "MessageKind : EndOfPublish")?;
             }
         }
-        write!(f, "{}", writer)
+        write!(f, "{writer}")
     }
 }
 

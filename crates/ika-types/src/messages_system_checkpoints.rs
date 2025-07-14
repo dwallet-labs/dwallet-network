@@ -3,8 +3,8 @@
 
 use crate::committee::{EpochId, ProtocolVersion};
 use crate::crypto::{
-    default_hash, AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
-    AuthorityStrongQuorumSignInfo,
+    AggregateAuthoritySignature, AuthoritySignInfo, AuthoritySignInfoTrait,
+    AuthorityStrongQuorumSignInfo, default_hash,
 };
 use crate::error::IkaResult;
 use crate::intent::{Intent, IntentScope};

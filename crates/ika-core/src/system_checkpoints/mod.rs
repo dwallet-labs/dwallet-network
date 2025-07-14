@@ -40,8 +40,8 @@ use tracing::{debug, error, info, instrument, warn};
 use typed_store::DBMapUtils;
 use typed_store::Map;
 use typed_store::{
-    rocks::{DBMap, MetricConf},
     TypedStoreError,
+    rocks::{DBMap, MetricConf},
 };
 
 pub type SystemCheckpointHeight = u64;
@@ -128,7 +128,7 @@ pub struct SystemCheckpointStore {
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed system_checkpoints
     pub(crate) watermarks: DBMap<
-        SystemCheckpointWatermark,
+        SystemCheckpointHighestWatermark,
         (
             SystemCheckpointSequenceNumber,
             SystemCheckpointMessageDigest,
@@ -226,7 +226,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestVerified)?
+            .get(&SystemCheckpointHighestWatermark::Verified)?
         {
             highest_verified
         } else {
@@ -240,7 +240,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestSynced)?
+            .get(&SystemCheckpointHighestWatermark::Synced)?
         {
             highest_synced
         } else {
@@ -254,7 +254,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<SystemCheckpointSequenceNumber>, TypedStoreError> {
         if let Some(highest_executed) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestExecuted)?
+            .get(&SystemCheckpointHighestWatermark::Executed)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -267,7 +267,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestExecuted)?
+            .get(&SystemCheckpointHighestWatermark::Executed)?
         {
             highest_executed
         } else {
@@ -281,7 +281,7 @@ impl SystemCheckpointStore {
     ) -> Result<SystemCheckpointSequenceNumber, TypedStoreError> {
         Ok(self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestPruned)?
+            .get(&SystemCheckpointHighestWatermark::Pruned)?
             .unwrap_or((1, Default::default()))
             .0)
     }
@@ -338,7 +338,7 @@ impl SystemCheckpointStore {
                 "Updating highest verified system checkpoint",
             );
             self.watermarks.insert(
-                &SystemCheckpointWatermark::HighestVerified,
+                &SystemCheckpointHighestWatermark::Verified,
                 &(*checkpoint.sequence_number(), *checkpoint.digest()),
             )?;
         }
@@ -355,7 +355,7 @@ impl SystemCheckpointStore {
             "Updating highest synced system checkpoint",
         );
         self.watermarks.insert(
-            &SystemCheckpointWatermark::HighestSynced,
+            &SystemCheckpointHighestWatermark::Synced,
             &(*checkpoint.sequence_number(), *checkpoint.digest()),
         )
     }
@@ -366,7 +366,7 @@ impl SystemCheckpointStore {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
-            std::iter::once(SystemCheckpointWatermark::HighestExecuted),
+            std::iter::once(SystemCheckpointHighestWatermark::Executed),
         )?;
         wb.write()?;
         Ok(())
@@ -374,11 +374,11 @@ impl SystemCheckpointStore {
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum SystemCheckpointWatermark {
-    HighestVerified,
-    HighestSynced,
-    HighestExecuted,
-    HighestPruned,
+pub enum SystemCheckpointHighestWatermark {
+    Verified,
+    Synced,
+    Executed,
+    Pruned,
 }
 
 pub struct SystemCheckpointBuilder {
@@ -592,7 +592,10 @@ impl SystemCheckpointBuilder {
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.", self.max_system_checkpoint_size_bytes);
+                    warn!(
+                        "Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.",
+                        self.max_system_checkpoint_size_bytes
+                    );
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -1134,6 +1137,7 @@ impl SystemCheckpointService {
     }
 
     #[cfg(test)]
+    #[allow(dead_code)]
     fn write_and_notify_system_checkpoint_for_testing(
         &self,
         epoch_store: &AuthorityPerEpochStore,

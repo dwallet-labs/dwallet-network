@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{SystemCheckpointMetrics, SystemCheckpointStore};
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use async_trait::async_trait;
 use ika_types::crypto::AuthorityName;
@@ -120,8 +120,7 @@ impl SystemCheckpointOutput for LogSystemCheckpointOutput {
     ) -> IkaResult {
         trace!(
             "Including following transactions in system_checkpoint {}: {:#?}",
-            system_checkpoint.sequence_number,
-            system_checkpoint.messages,
+            system_checkpoint.sequence_number, system_checkpoint.messages,
         );
         info!(
             "Creating system_checkpoint {:?} at epoch {}, sequence {}, messages count {}",

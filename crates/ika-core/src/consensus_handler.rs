@@ -11,11 +11,11 @@ use std::{
 use crate::system_checkpoints::SystemCheckpointService;
 use crate::{
     authority::{
+        AuthorityMetrics, AuthorityState,
         authority_per_epoch_store::{
             AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndices,
             ExecutionIndicesWithStats,
         },
-        AuthorityMetrics, AuthorityState,
     },
     consensus_throughput_calculator::ConsensusThroughputCalculator,
     consensus_types::consensus_output_api::ConsensusCommitAPI,
@@ -70,13 +70,16 @@ impl ConsensusHandlerInitializer {
     }
 
     #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn new_for_testing(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<DWalletCheckpointService>,
+        system_checkpoint_service: Arc<SystemCheckpointService>,
     ) -> Self {
         Self {
             state: state.clone(),
             checkpoint_service,
+            system_checkpoint_service,
             epoch_store: state.epoch_store_for_testing().clone(),
             low_scoring_authorities: Arc::new(Default::default()),
             throughput_calculator: Arc::new(ConsensusThroughputCalculator::new(
@@ -250,15 +253,13 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         {
             let span = trace_span!("ConsensusHandler::HandleCommit::process_consensus_txns");
             let _guard = span.enter();
-            for (authority_index, parsed_transactions) in consensus_commit.transactions() {
+            for (block, parsed_transactions) in consensus_commit.transactions() {
+                let author = block.author.value();
                 // TODO: consider only messages within 1~3 rounds of the leader?
-                self.last_consensus_stats
-                    .stats
-                    .inc_num_messages(authority_index as usize);
+                self.last_consensus_stats.stats.inc_num_messages(author);
                 for parsed in parsed_transactions {
-                    // Skip executing rejected transactions. Unlocking is the responsibility of the
-                    // consensus transaction handler.
                     if parsed.rejected {
+                        // Skip executing rejected transactions.
                         continue;
                     }
                     let kind = classify(&parsed.transaction);
@@ -272,7 +273,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         .observe(parsed.serialized_len as f64);
                     let transaction =
                         SequencedConsensusTransactionKind::External(parsed.transaction);
-                    transactions.push((transaction, authority_index));
+                    transactions.push((transaction, author as u32));
                 }
             }
         }
@@ -368,9 +369,9 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         });
 
         fail_point_async!("crash"); // for tests that produce random crashes
-                                    //
-                                    // self.transaction_manager_sender
-                                    //     .send(executable_transactions);
+        //
+        // self.transaction_manager_sender
+        //     .send(executable_transactions);
     }
 }
 

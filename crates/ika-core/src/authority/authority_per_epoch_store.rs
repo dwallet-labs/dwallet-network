@@ -3,8 +3,8 @@
 
 use arc_swap::ArcSwapOption;
 use enum_dispatch::enum_dispatch;
-use futures::future::{join_all, select, Either};
 use futures::FutureExt;
+use futures::future::{Either, join_all, select};
 use ika_types::committee::Committee;
 use ika_types::committee::CommitteeTrait;
 use ika_types::crypto::AuthorityName;
@@ -19,7 +19,7 @@ use std::sync::Arc;
 use sui_types::base_types::ConciseableName;
 use sui_types::base_types::{EpochId, ObjectID};
 use tracing::{debug, error, info, instrument, trace, warn};
-use typed_store::rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf};
+use typed_store::rocks::{DBBatch, DBMap, DBOptions, MetricConf, default_db_options};
 use typed_store::rocksdb::Options;
 
 use super::epoch_start_configuration::EpochStartConfigTrait;
@@ -422,7 +422,7 @@ impl AuthorityEpochTables {
     }
 
     pub fn path(epoch: EpochId, parent_path: &Path) -> PathBuf {
-        parent_path.join(format!("{}{}", EPOCH_DB_PREFIX, epoch))
+        parent_path.join(format!("{EPOCH_DB_PREFIX}{epoch}"))
     }
 
     pub fn get_all_pending_consensus_transactions(&self) -> IkaResult<Vec<ConsensusTransaction>> {

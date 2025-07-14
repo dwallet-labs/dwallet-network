@@ -16,6 +16,7 @@ use crate::supported_protocol_versions::{
     SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
 use byteorder::{BigEndian, ReadBytesExt};
+use consensus_core::BlockRef;
 use ika_protocol_config::Chain;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -24,6 +25,15 @@ use std::hash::{Hash, Hasher};
 use std::time::{SystemTime, UNIX_EPOCH};
 use sui_types::base_types::{ConciseableName, ObjectID};
 pub use sui_types::messages_consensus::{AuthorityIndex, Round, TimestampMs, TransactionIndex};
+
+/// The position of a transaction in consensus.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct ConsensusPosition {
+    // Block containing a transaction.
+    pub block: BlockRef,
+    // Index of the transaction in the block.
+    pub index: TransactionIndex,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConsensusTransaction {
@@ -67,7 +77,7 @@ impl Debug for ConsensusTransactionKey {
                 generation
             ),
             Self::DWalletMPCMessage(message) => {
-                write!(f, "DWalletMPCMessage({:?})", message,)
+                write!(f, "DWalletMPCMessage({message:?})",)
             }
             Self::DWalletMPCOutput(
                 authority,
@@ -77,8 +87,7 @@ impl Debug for ConsensusTransactionKey {
             ) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
-                    authority, session_identifier, output, malicious_authorities
+                    "DWalletMPCOutput({authority:?}, {session_identifier:?}, {output:?}, {malicious_authorities:?})"
                 )
             }
             ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {

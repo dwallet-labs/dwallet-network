@@ -5,7 +5,7 @@ use crate::metrics::SuiClientMetrics;
 use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
-use dwallet_classgroups_types::{SingleEncryptionKeyAndProof, NUM_OF_CLASS_GROUPS_KEY_OBJECTS};
+use dwallet_classgroups_types::{NUM_OF_CLASS_GROUPS_KEY_OBJECTS, SingleEncryptionKeyAndProof};
 use ika_move_packages::BuiltInIkaMovePackages;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::error::{IkaError, IkaResult};
@@ -31,6 +31,7 @@ use sui_json_rpc_types::{
 use sui_json_rpc_types::{SuiData, SuiObjectDataFilter, SuiObjectResponseQuery};
 use sui_sdk::error::Error;
 use sui_sdk::{SuiClient as SuiSdkClient, SuiClientBuilder};
+use sui_types::TypeTag;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::clock::Clock;
 use sui_types::collection_types::Table;
@@ -40,12 +41,11 @@ use sui_types::move_package::MovePackage;
 use sui_types::object::Owner;
 use sui_types::transaction::ObjectArg;
 use sui_types::transaction::Transaction;
-use sui_types::TypeTag;
 use sui_types::{
+    Identifier,
     base_types::{ObjectID, SuiAddress},
     digests::TransactionDigest,
     event::EventID,
-    Identifier,
 };
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, warn};
@@ -794,7 +794,7 @@ pub trait SuiClientInner: Send + Sync {
     ) -> Result<ObjectID, Self::Error>;
 
     async fn read_table_vec_as_raw_bytes(&self, table_id: ObjectID)
-        -> Result<Vec<u8>, self::Error>;
+    -> Result<Vec<u8>, self::Error>;
 
     async fn get_system_inner(
         &self,
@@ -921,15 +921,13 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {:?} has no bcs data",
-                    object_id
+                    "object {object_id:?} has no bcs data"
                 )))?;
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "object {:?} is not a MoveObject",
-                    object_id
+                    "object {object_id:?} is not a MoveObject"
                 )))?;
 
                 let Some(TypeTag::Struct(event_tag)) = raw_move_obj.type_.type_params.get(1) else {
@@ -987,15 +985,13 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 let move_object = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {:?} has no bcs data",
-                    object_id
+                    "object {object_id:?} has no bcs data"
                 )))?;
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "object {:?} is not a MoveObject",
-                    object_id
+                    "object {object_id:?} is not a MoveObject"
                 )))?;
                 let key_slice = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
                 validator_class_groups_public_key_and_proof_bytes[key_slice.name as usize] =
@@ -1017,8 +1013,7 @@ impl SuiClientInner for SuiSdkClient {
                             .try_into()
                             .map_err(|e| {
                                 Error::DataError(format!(
-                                    "class groups key from Sui is invalid: {:?}",
-                                    e
+                                    "class groups key from Sui is invalid: {e:?}"
                                 ))
                             })?,
                     );
@@ -1065,11 +1060,10 @@ impl SuiClientInner for SuiSdkClient {
                 if let Some(data) = resp.data {
                     let object_id = data.object_id;
                     let raw_data = data.bcs.ok_or(Error::DataError(format!(
-                        "object {:?} has no bcs data",
-                        object_id
+                        "object {object_id:?} has no bcs data"
                     )))?;
                     let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(
-                        format!("object {:?} is not a MoveObject", object_id),
+                        format!("object {object_id:?} is not a MoveObject"),
                     ))?;
                     let value =
                         bcs::from_bytes::<DWalletNetworkEncryptionKey>(&raw_move_obj.bcs_bytes)?;
@@ -1140,8 +1134,7 @@ impl SuiClientInner for SuiSdkClient {
                 .await
                 .map_err(|e| {
                     Error::DataError(format!(
-                        "can't get dynamic fields of table {:?}: {:?}",
-                        table_id, e
+                        "can't get dynamic fields of table {table_id:?}: {e:?}"
                     ))
                 })?;
 
@@ -1152,15 +1145,13 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 let raw_data = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {:?} has no bcs data",
-                    object_id
+                    "object {object_id:?} has no bcs data"
                 )))?;
                 let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
-                    "object {:?} is not a MoveObject",
-                    object_id
+                    "object {object_id:?} is not a MoveObject"
                 )))?;
                 let reconfig_public_output =
                     bcs::from_bytes::<Field<u64, Table>>(&raw_move_obj.bcs_bytes)?;
@@ -1175,8 +1166,7 @@ impl SuiClientInner for SuiSdkClient {
             }
         }
         Err(Error::DataError(format!(
-            "Failed to load current reconfiguration public output for epoch {:?} from table {:?}",
-            epoch_id, table_id
+            "Failed to load current reconfiguration public output for epoch {epoch_id:?} from table {table_id:?}"
         )))
     }
 
@@ -1193,8 +1183,7 @@ impl SuiClientInner for SuiSdkClient {
                 .await
                 .map_err(|e| {
                     Error::DataError(format!(
-                        "can't get dynamic fields of table {:?}: {:?}",
-                        table_id, e
+                        "can't get dynamic fields of table {table_id:?}: {e:?}"
                     ))
                 })?;
 
@@ -1205,15 +1194,13 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 let raw_data = resp.bcs.ok_or(Error::DataError(format!(
-                    "object {:?} has no bcs data",
-                    object_id
+                    "object {object_id:?} has no bcs data"
                 )))?;
                 let raw_move_obj = raw_data.try_into_move().ok_or(Error::DataError(format!(
-                    "object {:?} is not a MoveObject",
-                    object_id
+                    "object {object_id:?} is not a MoveObject"
                 )))?;
                 let bytes_chunk = bcs::from_bytes::<Field<u64, Vec<u8>>>(&raw_move_obj.bcs_bytes)?;
                 full_output.insert(bytes_chunk.name as usize, bytes_chunk.value.clone());
@@ -1265,20 +1252,18 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("Can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "Object {:?} is not a MoveObject",
-                    object_id
+                    "Object {object_id:?} is not a MoveObject"
                 )))?;
                 return Ok(raw_move_obj.bcs_bytes);
             }
         }
         Err(Error::DataError(format!(
-            "Failed to load ika system state inner object with ID {:?} and version {:?}",
-            ika_system_object_id, version
+            "Failed to load ika system state inner object with ID {ika_system_object_id:?} and version {version:?}"
         )))
     }
 
@@ -1313,20 +1298,18 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("Can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "Object {:?} is not a MoveObject",
-                    object_id
+                    "Object {object_id:?} is not a MoveObject"
                 )))?;
                 return Ok(raw_move_obj.bcs_bytes);
             }
         }
         Err(Error::DataError(format!(
-            "Failed to load DWalletCoordinatorInner object with ID {:?} and version {:?}",
-            dwallet_coordinator_id, version
+            "Failed to load DWalletCoordinatorInner object with ID {dwallet_coordinator_id:?} and version {version:?}"
         )))
     }
 
@@ -1348,7 +1331,7 @@ impl SuiClientInner for SuiSdkClient {
         let mut validators = Vec::new();
         for (dynamic_field, object_id) in dynamic_fields_agg.iter().zip(validator_ids.iter()) {
             let resp = dynamic_field.object().map_err(|e| {
-                Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                Error::DataError(format!("Can't get bcs of object {object_id:?}: {e:?}"))
             })?;
             // unwrap: requested bcs data
             let move_object = resp.bcs.as_ref().unwrap();
@@ -1357,8 +1340,7 @@ impl SuiClientInner for SuiSdkClient {
                     .clone()
                     .try_into_move()
                     .ok_or(Error::DataError(format!(
-                        "Object {:?} is not a MoveObject",
-                        object_id
+                        "Object {object_id:?} is not a MoveObject"
                     )))?;
             validators.push(raw_move_obj.bcs_bytes);
         }
@@ -1394,13 +1376,12 @@ impl SuiClientInner for SuiSdkClient {
                     .get_object_with_options(object_id, SuiObjectDataOptions::bcs_lossless())
                     .await?;
                 let resp = dynamic_field_response.into_object().map_err(|e| {
-                    Error::DataError(format!("Can't get bcs of object {:?}: {:?}", object_id, e))
+                    Error::DataError(format!("Can't get bcs of object {object_id:?}: {e:?}"))
                 })?;
                 // unwrap: requested bcs data
                 let move_object = resp.bcs.unwrap();
                 let raw_move_obj = move_object.try_into_move().ok_or(Error::DataError(format!(
-                    "Object {:?} is not a MoveObject",
-                    object_id
+                    "Object {object_id:?} is not a MoveObject"
                 )))?;
                 validator_inners.push(raw_move_obj.bcs_bytes);
             }
@@ -1424,8 +1405,7 @@ impl SuiClientInner for SuiSdkClient {
         }) = response.owner()
         else {
             return Err(Self::Error::DataError(format!(
-                "Failed to load ika system state owner {:?}",
-                ika_system_object_id
+                "Failed to load ika system state owner {ika_system_object_id:?}"
             )));
         };
         Ok(ObjectArg::SharedObject {
@@ -1446,8 +1426,7 @@ impl SuiClientInner for SuiSdkClient {
         }) = response.owner()
         else {
             return Err(Self::Error::DataError(format!(
-                "Failed to load ika system state owner {:?}",
-                obj_id
+                "Failed to load ika system state owner {obj_id:?}"
             )));
         };
         Ok(ObjectArg::SharedObject {

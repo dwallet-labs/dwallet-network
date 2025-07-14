@@ -7,16 +7,16 @@ use anemo_tower::callback::CallbackLayer;
 use anemo_tower::trace::DefaultMakeSpan;
 use anemo_tower::trace::DefaultOnFailure;
 use anemo_tower::trace::TraceLayer;
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use arc_swap::ArcSwap;
 use prometheus::Registry;
 use std::collections::HashMap;
 use std::fmt;
 use std::path::PathBuf;
+use std::sync::Arc;
 #[cfg(msim)]
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::time::Duration;
 
 use ika_core::consensus_adapter::ConsensusClient;
@@ -27,7 +27,7 @@ use ika_types::sui::SystemInner;
 use sui_types::base_types::{ConciseableName, ObjectID};
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
-use tokio::sync::{broadcast, watch, Mutex};
+use tokio::sync::{Mutex, broadcast, watch};
 use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tracing::info;
@@ -40,9 +40,9 @@ use ika_config::node::RunWithRange;
 use ika_config::node_config_metrics::NodeConfigMetrics;
 use ika_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use ika_config::{ConsensusConfig, NodeConfig};
+use ika_core::authority::AuthorityState;
 use ika_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use ika_core::authority::epoch_start_configuration::EpochStartConfiguration;
-use ika_core::authority::AuthorityState;
 use ika_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
 };
@@ -62,7 +62,7 @@ use ika_core::storage::RocksDbStore;
 use ika_network::discovery::TrustedPeerChangeEvent;
 use ika_network::{discovery, state_sync};
 use ika_protocol_config::ProtocolConfig;
-use mysten_metrics::{spawn_monitored_task, RegistryService};
+use mysten_metrics::{RegistryService, spawn_monitored_task};
 use sui_json_rpc_types::SuiEvent;
 use sui_macros::{fail_point_async, replay_log};
 use sui_storage::{FileCompression, StorageFormat};
@@ -72,15 +72,15 @@ use ika_types::committee::Committee;
 use ika_types::crypto::AuthorityName;
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::{AuthorityCapabilitiesV1, ConsensusTransaction};
+use ika_types::sui::SystemInnerTrait;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::epoch_start_system::EpochStartSystemTrait;
-use ika_types::sui::SystemInnerTrait;
 use sui_types::crypto::KeypairTraits;
 
 use ika_core::consensus_adapter::SubmitToConsensus;
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;
-use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
+use typed_store::rocks::default_db_options;
 
 use crate::metrics::IkaNodeMetrics;
 
@@ -89,7 +89,7 @@ mod handle;
 pub mod metrics;
 
 pub struct ValidatorComponents {
-    consensus_manager: ConsensusManager,
+    consensus_manager: Arc<ConsensusManager>,
     consensus_store_pruner: ConsensusStorePruner,
     consensus_adapter: Arc<ConsensusAdapter>,
     // Keeping the handle to the checkpoint service tasks to shut them down during reconfiguration.
@@ -166,10 +166,10 @@ use ika_core::authority::authority_perpetual_tables::AuthorityPerpetualTables;
 use ika_core::consensus_handler::ConsensusHandlerInitializer;
 use ika_core::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use ika_core::dwallet_mpc::dwallet_mpc_service::DWalletMPCService;
+use ika_core::sui_connector::SuiConnectorService;
 use ika_core::sui_connector::end_of_publish_sender::EndOfPublishSender;
 use ika_core::sui_connector::metrics::SuiConnectorMetrics;
 use ika_core::sui_connector::sui_executor::StopReason;
-use ika_core::sui_connector::SuiConnectorService;
 use ika_core::system_checkpoints::{
     SendSystemCheckpointToStateSync, SubmitSystemCheckpointToConsensus, SystemCheckpointMetrics,
     SystemCheckpointService, SystemCheckpointStore,
@@ -255,7 +255,7 @@ impl IkaNode {
         );
 
         // Initialize metrics to track db usage before creating any stores
-        DBMetrics::init(&prometheus_registry);
+        DBMetrics::init(registry_service.clone());
 
         // Initialize Mysten metrics.
         mysten_metrics::init_metrics(&prometheus_registry);
@@ -730,7 +730,7 @@ impl IkaNode {
             }
             anemo_config.quic = Some(quic_config);
 
-            let server_name = format!("ika-{}", chain_identifier);
+            let server_name = format!("ika-{chain_identifier}");
             let network = Network::bind(config.p2p_config.listen_address)
                 .server_name(&server_name)
                 .private_key(config.network_key_pair().copy().private().0.to_bytes())
@@ -793,8 +793,13 @@ impl IkaNode {
             epoch_store.protocol_config().clone(),
             client.clone(),
         ));
-        let consensus_manager =
-            ConsensusManager::new(&config, consensus_config, registry_service, client);
+
+        let consensus_manager = Arc::new(ConsensusManager::new(
+            &config,
+            consensus_config,
+            registry_service,
+            client,
+        ));
 
         // This only gets started up once, not on every epoch. (Make call to remove every epoch.)
         let consensus_store_pruner = ConsensusStorePruner::new(
@@ -843,7 +848,7 @@ impl IkaNode {
         system_checkpoint_store: Arc<SystemCheckpointStore>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         state_sync_handle: state_sync::Handle,
-        consensus_manager: ConsensusManager,
+        consensus_manager: Arc<ConsensusManager>,
         consensus_store_pruner: ConsensusStorePruner,
         dwallet_checkpoint_metrics: Arc<DWalletCheckpointMetrics>,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
@@ -926,25 +931,36 @@ impl IkaNode {
             throughput_calculator,
         );
 
-        // Wait until all locally available commits have been processed
-        consensus_manager
-            .start(
-                config,
-                epoch_store.clone(),
-                consensus_handler_initializer,
-                IkaTxValidator::new(
-                    state.clone(),
-                    consensus_adapter.clone(),
-                    checkpoint_service.clone(),
-                    system_checkpoint_service.clone(),
-                    ika_tx_validator_metrics.clone(),
-                ),
-            )
-            .await;
+        info!("Starting consensus manager asynchronously");
+
+        // Spawn consensus startup asynchronously to avoid blocking other components
+        tokio::spawn({
+            let config = config.clone();
+            let epoch_store = epoch_store.clone();
+            let sui_tx_validator = IkaTxValidator::new(
+                state.clone(),
+                consensus_adapter.clone(),
+                checkpoint_service.clone(),
+                system_checkpoint_service.clone(),
+                ika_tx_validator_metrics.clone(),
+            );
+            let consensus_manager = consensus_manager.clone();
+            async move {
+                consensus_manager
+                    .start(
+                        &config,
+                        epoch_store,
+                        consensus_handler_initializer,
+                        sui_tx_validator,
+                    )
+                    .await;
+            }
+        });
+        let replay_waiter = consensus_manager.replay_waiter();
 
         // Spawn the dWallet MPC Service now that we are done with bootstrapping both
         // from storage and from the consensus.
-        spawn_monitored_task!(dwallet_mpc_service.spawn());
+        spawn_monitored_task!(dwallet_mpc_service.spawn(replay_waiter));
 
         Ok(ValidatorComponents {
             consensus_manager,

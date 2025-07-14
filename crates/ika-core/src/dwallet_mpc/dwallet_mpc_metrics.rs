@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! # DWallet MPC Metrics
 //!
 //! This module provides Prometheus metrics for monitoring DWallet Multi-Party Computation
@@ -18,8 +21,8 @@
 
 use ika_types::messages_dwallet_mpc::MPCRequestInput;
 use prometheus::{
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, IntGauge, IntGaugeVec,
-    Registry,
+    IntGauge, IntGaugeVec, Registry, register_int_gauge_vec_with_registry,
+    register_int_gauge_with_registry,
 };
 use std::sync::Arc;
 

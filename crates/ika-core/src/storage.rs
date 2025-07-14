@@ -14,10 +14,10 @@ use ika_types::messages_dwallet_checkpoint::VerifiedDWalletCheckpointMessage;
 use ika_types::messages_system_checkpoints::{
     SystemCheckpointSequenceNumber, VerifiedSystemCheckpointMessage,
 };
-use ika_types::storage::error::Error as StorageError;
-use ika_types::storage::error::Result;
 use ika_types::storage::ReadStore;
 use ika_types::storage::WriteStore;
+use ika_types::storage::error::Error as StorageError;
+use ika_types::storage::error::Result;
 use parking_lot::Mutex;
 use std::sync::Arc;
 

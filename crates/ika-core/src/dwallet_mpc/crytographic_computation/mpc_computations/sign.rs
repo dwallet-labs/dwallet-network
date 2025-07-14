@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! This module provides a wrapper around the Sign protocol from the 2PC-MPC library.
 //!
 //! It integrates the Sign party (representing a round in the protocol).
@@ -14,7 +17,7 @@ use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCRequestInput, MPCSessionRequest,
     SessionIdentifier, SignRequestEvent,
 };
-use message_digest::message_digest::{message_digest, Hash};
+use message_digest::message_digest::{Hash, message_digest};
 use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
@@ -248,7 +251,7 @@ pub(crate) fn verify_partial_signature(
                 partial,
                 message,
             ).map_err(|err| {
-                DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
+                DwalletMPCError::TwoPCMPCError(format!("{err:?}"))
             })
         }
     }

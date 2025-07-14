@@ -1,6 +1,8 @@
-use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
+use crate::dwallet_mpc::mpc_session::{MPCRoundToMessagesHashMap, MPCSessionLogger};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use itertools::Itertools;
@@ -41,9 +43,9 @@ pub(crate) fn build_messages_to_advance(
     current_mpc_round: u64,
     rounds_to_delay: u64,
     mpc_round_to_threshold_not_reached_consensus_rounds: HashMap<u64, HashSet<u64>>,
-    mut messages_by_consensus_round: HashMap<u64, HashMap<u64, HashMap<PartyID, MPCMessage>>>,
+    mut messages_by_consensus_round: HashMap<u64, MPCRoundToMessagesHashMap>,
     access_structure: &WeightedThresholdAccessStructure,
-) -> Option<(Option<u64>, HashMap<u64, HashMap<PartyID, MPCMessage>>)> {
+) -> Option<(Option<u64>, MPCRoundToMessagesHashMap)> {
     // The first round needs no messages as input, and is always ready to advance.
     if current_mpc_round == 1 {
         return Some((None, HashMap::new()));
@@ -56,7 +58,7 @@ pub(crate) fn build_messages_to_advance(
             .unwrap_or_default();
     let mut delayed_rounds = 0;
     let mut got_new_messages_since_last_threshold_not_reached = false;
-    let mut messages_for_advance: HashMap<u64, HashMap<PartyID, MPCMessage>> = HashMap::new();
+    let mut messages_for_advance: MPCRoundToMessagesHashMap = HashMap::new();
 
     // Make sure the messages are consecutive by inserting the default value (i.e. empty message map) for missing rounds.
     // This is just an extra step, as we should update sessions in every consensus round even if no new message were received.
@@ -158,7 +160,7 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_structure: &WeightedThresholdAccessStructure,
-    serialized_messages: HashMap<u64, HashMap<PartyID, MPCMessage>>,
+    serialized_messages: MPCRoundToMessagesHashMap,
     public_input: &P::PublicInput,
     private_input: P::PrivateInput,
     logger: &MPCSessionLogger,
@@ -186,13 +188,13 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                 serialized_messages.len() + 1,
                 e
             ));
-            return match e.into() {
+            match e.into() {
                 // No threshold was reached, so we can't proceed.
                 mpc::Error::ThresholdNotReached => {
-                    return Err(DwalletMPCError::TWOPCMPCThresholdNotReached)
+                    Err(DwalletMPCError::TWOPCMPCThresholdNotReached)
                 }
                 _ => Err(general_error),
-            };
+            }
         }
     }
 }

@@ -1,8 +1,12 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use crate::dwallet_checkpoints::PendingDWalletCheckpointV1;
 use crate::dwallet_mpc::LOG_DIR;
+use crate::dwallet_mpc::mpc_session::MPCRoundToMessagesHashMap;
 use class_groups::SecretKeyShareSizedInteger;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateInput};
+use dwallet_mpc_types::dwallet_mpc::MPCPrivateInput;
 use group::PartyID;
 use ika_types::crypto::AuthorityName;
 use ika_types::dwallet_mpc_error::DwalletMPCError;
@@ -71,7 +75,7 @@ impl MPCSessionLogger {
         session_id: CommitmentSizedNumber,
         party_id: PartyID,
         access_structure: &WeightedThresholdAccessStructure,
-        messages: &HashMap<u64, HashMap<PartyID, MPCMessage>>,
+        messages: &MPCRoundToMessagesHashMap,
     ) {
         if std::env::var("IKA_WRITE_MPC_SESSION_LOGS_TO_DISK").unwrap_or_default() != "1" {
             return;
@@ -90,7 +94,7 @@ impl MPCSessionLogger {
                 return;
             }
         };
-        let filename = format!("session_{}_round_{}.json", session_id, round);
+        let filename = format!("session_{session_id}_round_{round}.json");
         let path = log_dir.join(&filename);
 
         // Serialize to JSON.
@@ -143,10 +147,7 @@ impl MPCSessionLogger {
                 return;
             }
         };
-        let filename = format!(
-            "session_{}_output_from_{}.json",
-            session_id, output_sender_party_id
-        );
+        let filename = format!("session_{session_id}_output_from_{output_sender_party_id}.json");
         let path = log_dir.join(&filename);
 
         // Serialize to JSON.
@@ -225,8 +226,7 @@ impl MPCSessionLogger {
             // Primary failed → try fallback (propagate error if that fails).
             fs::create_dir_all(FALLBACK).map_err(|e| {
                 DwalletMPCError::TwoPCMPCError(format!(
-                    "Failed to create a fallback log directory {}: {}",
-                    FALLBACK, e
+                    "Failed to create a fallback log directory {FALLBACK}: {e}"
                 ))
             })?;
             FALLBACK
