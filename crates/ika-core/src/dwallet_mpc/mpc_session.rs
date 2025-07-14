@@ -4,16 +4,22 @@ mod mpc_event_data;
 
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCSessionStatus};
 use group::PartyID;
-use ika_types::crypto::AuthorityPublicKeyBytes;
+use ika_types::crypto::{AuthorityName, AuthorityPublicKeyBytes};
+use ika_types::message::DWalletCheckpointMessageKind;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput, SessionIdentifier};
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, error, info};
 
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, SessionIdentifier};
-
 pub(crate) use crate::dwallet_mpc::mpc_session::mpc_event_data::MPCEventData;
 pub(crate) use input::{session_input_from_event, PublicInput};
 pub(crate) use logger::MPCSessionLogger;
+
+#[derive(Clone, Eq, Hash, PartialEq)]
+pub(crate) struct DWalletMPCSessionOutput {
+    pub(crate) output: Vec<DWalletCheckpointMessageKind>,
+    pub(crate) malicious_authorities: Vec<AuthorityName>,
+}
 
 /// A dWallet MPC session.
 #[derive(Clone)]
@@ -42,6 +48,8 @@ pub(crate) struct DWalletMPCSession {
     /// Used to build the input of messages to advance each round of the session.
     pub(super) messages_by_consensus_round:
         HashMap<u64, HashMap<u64, HashMap<PartyID, MPCMessage>>>,
+
+    outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>>,
 }
 
 impl DWalletMPCSession {
@@ -55,6 +63,7 @@ impl DWalletMPCSession {
         Self {
             status,
             messages_by_consensus_round: HashMap::new(),
+            outputs_by_consensus_round: HashMap::new(),
             session_identifier,
             current_mpc_round: 1,
             mpc_round_to_threshold_not_reached_consensus_rounds: HashMap::new(),
@@ -67,9 +76,10 @@ impl DWalletMPCSession {
     pub(crate) fn clear_data(&mut self) {
         self.mpc_event_data = None;
         self.messages_by_consensus_round = HashMap::new();
+        self.outputs_by_consensus_round = HashMap::new();
     }
 
-    /// Stores an incoming message, and increases the `current_mpc_round` upon seeing a message
+    /// Adds an incoming message, and increases the `current_mpc_round` upon seeing a message
     /// sent from us for the current round.
     /// This guarantees we are in sync, as our state mutates in sync with the view of the
     /// consensus, which is shared with the other validators.
@@ -81,7 +91,7 @@ impl DWalletMPCSession {
     /// so all validators end up seeing the same map.
     /// Other malicious activities like sending a message for a wrong round are also not
     /// reported since they have no practical impact for similar reasons.
-    pub(crate) fn store_message(
+    pub(crate) fn add_message(
         &mut self,
         consensus_round: u64,
         sender_party_id: PartyID,
@@ -162,5 +172,50 @@ impl DWalletMPCSession {
             .entry(self.current_mpc_round)
             .or_default()
             .insert(consensus_round);
+    }
+
+    /// Add an output received from a party for the current consensus round.
+    /// If the party already sent an output for this consensus round, it is ignored.
+    /// This is used to collect outputs from different parties for the same consensus round,
+    pub(crate) fn add_output(
+        &mut self,
+        consensus_round: u64,
+        sender_party_id: PartyID,
+        output: DWalletMPCOutput,
+    ) {
+        debug!(
+            session_identifier=?output.session_identifier,
+            from_authority=?output.authority,
+            receiving_authority=?self.validator_name,
+            output_messages=?output.output,
+            consensus_round,
+            "Received a dWallet MPC output",
+        );
+
+        let consensus_round_output_map = self
+            .outputs_by_consensus_round
+            .entry(consensus_round)
+            .or_default();
+
+        if let Vacant(e) = consensus_round_output_map.entry(sender_party_id) {
+            e.insert(DWalletMPCSessionOutput {
+                output: output.output,
+                malicious_authorities: output.malicious_authorities,
+            });
+        }
+    }
+
+    pub(crate) fn outputs_by_consensus_round(
+        &self,
+    ) -> &HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>> {
+        &self.outputs_by_consensus_round
+    }
+
+    pub(crate) fn mark_mpc_session_as_completed(&mut self) {
+        self.status = MPCSessionStatus::Completed;
+    }
+
+    pub(crate) fn mpc_event_data(&self) -> Option<&MPCEventData> {
+        self.mpc_event_data.as_ref()
     }
 }

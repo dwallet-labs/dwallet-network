@@ -59,8 +59,8 @@ use ika_types::messages_consensus::{
 use ika_types::messages_dwallet_checkpoint::{
     DWalletCheckpointMessage, DWalletCheckpointSequenceNumber, DWalletCheckpointSignatureMessage,
 };
-use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutputMessage};
-use ika_types::messages_dwallet_mpc::{IkaPackagesConfig, SessionIdentifier};
+use ika_types::messages_dwallet_mpc::IkaPackagesConfig;
+use ika_types::messages_dwallet_mpc::{DWalletMPCMessage, DWalletMPCOutput};
 use ika_types::messages_system_checkpoints::{
     SystemCheckpointMessage, SystemCheckpointMessageKind, SystemCheckpointSequenceNumber,
     SystemCheckpointSignatureMessage,
@@ -321,6 +321,7 @@ pub struct AuthorityEpochTables {
     #[default_options_override_fn = "pending_checkpoints_table_default_config"]
     pending_dwallet_checkpoints: DBMap<DWalletCheckpointHeight, PendingDWalletCheckpoint>,
 
+    #[default_options_override_fn = "verified_dwallet_checkpoint_messages_table_default_config"]
     verified_dwallet_checkpoint_messages:
         DBMap<DWalletCheckpointHeight, Vec<DWalletCheckpointMessageKind>>,
 
@@ -364,9 +365,11 @@ pub struct AuthorityEpochTables {
     /// The key is the consensus round number,
     /// the value is the dWallet-mpc messages that have been received in that
     /// round.
+    #[default_options_override_fn = "dwallet_mpc_messages_table_default_config"]
     dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCMessage>>,
-    dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutputMessage>>,
-    dwallet_mpc_completed_sessions: DBMap<Round, Vec<SessionIdentifier>>,
+
+    #[default_options_override_fn = "dwallet_mpc_outputs_table_default_config"]
+    dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutput>>,
 }
 
 fn pending_consensus_transactions_table_default_config() -> DBOptions {
@@ -375,7 +378,25 @@ fn pending_consensus_transactions_table_default_config() -> DBOptions {
         .optimize_for_large_values_no_scan(1 << 10)
 }
 
+fn verified_dwallet_checkpoint_messages_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
 fn pending_checkpoints_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
+fn dwallet_mpc_messages_table_default_config() -> DBOptions {
+    default_db_options()
+        .optimize_for_write_throughput()
+        .optimize_for_large_values_no_scan(1 << 10)
+}
+
+fn dwallet_mpc_outputs_table_default_config() -> DBOptions {
     default_db_options()
         .optimize_for_write_throughput()
         .optimize_for_large_values_no_scan(1 << 10)
@@ -423,12 +444,6 @@ impl AuthorityEpochTables {
         Ok(self.last_consensus_stats.get(&LAST_CONSENSUS_STATS_ADDR)?)
     }
 
-    pub fn get_dwallet_mpc_completed_sessions_iter(
-        &self,
-    ) -> DbIterator<(Round, Vec<SessionIdentifier>)> {
-        self.dwallet_mpc_completed_sessions.safe_iter()
-    }
-
     pub fn get_dwallet_mpc_messages_iter(
         &self,
         next_consensus_round: Round,
@@ -440,7 +455,7 @@ impl AuthorityEpochTables {
     pub fn get_dwallet_mpc_outputs_iter(
         &self,
         next_consensus_round: Round,
-    ) -> DbIterator<(Round, Vec<DWalletMPCOutputMessage>)> {
+    ) -> DbIterator<(Round, Vec<DWalletMPCOutput>)> {
         self.dwallet_mpc_outputs
             .safe_iter_with_bounds(Some(next_consensus_round), None)
     }
@@ -776,17 +791,6 @@ impl AuthorityPerEpochStore {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    pub fn insert_dwallet_mpc_completed_sessions(
-        &self,
-        round: &Round,
-        session_identifiers: &Vec<SessionIdentifier>,
-    ) -> IkaResult {
-        self.tables()?
-            .dwallet_mpc_completed_sessions
-            .insert(round, session_identifiers)?;
-        Ok(())
-    }
-
     pub fn record_end_of_publish_vote(&self, origin_authority: &AuthorityName) -> IkaResult {
         self.tables()?
             .end_of_publish
@@ -883,17 +887,17 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in IkaTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(output),
                 ..
             }) => {
                 // When sending an MPC output, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
                 // This public key is later used to identify the authority that sent the MPC message.
-                if transaction.sender_authority() != *authority {
+                if transaction.sender_authority() != output.authority {
                     warn!(
                         "DWalletMPCOutput authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
+                        output.authority, transaction.certificate_author_index
                     );
                     return None;
                 }
@@ -1270,7 +1274,7 @@ impl AuthorityPerEpochStore {
     /// them from the DB.
     fn filter_dwallet_mpc_outputs(
         transactions: &[VerifiedSequencedConsensusTransaction],
-    ) -> Vec<DWalletMPCOutputMessage> {
+    ) -> Vec<DWalletMPCOutput> {
         transactions
             .iter()
             .filter_map(|transaction| {
@@ -1280,18 +1284,9 @@ impl AuthorityPerEpochStore {
                 }) = transaction;
                 match transaction {
                     SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                        kind:
-                            ConsensusTransactionKind::DWalletMPCOutput(
-                                origin_authority,
-                                session_request,
-                                output,
-                            ),
+                        kind: ConsensusTransactionKind::DWalletMPCOutput(output),
                         ..
-                    }) => Some(DWalletMPCOutputMessage {
-                        authority: *origin_authority,
-                        session_request: *session_request.clone(),
-                        output: output.clone(),
-                    }),
+                    }) => Some(output.clone()),
                     _ => None,
                 }
             })
@@ -1734,7 +1729,7 @@ pub(crate) struct ConsensusCommitOutput {
 
     /// All the dWallet-MPC related TXs that have been received in this round.
     dwallet_mpc_round_messages: Vec<DWalletMPCMessage>,
-    dwallet_mpc_round_outputs: Vec<DWalletMPCOutputMessage>,
+    dwallet_mpc_round_outputs: Vec<DWalletMPCOutput>,
 
     verified_dwallet_checkpoint_messages: Vec<DWalletCheckpointMessageKind>,
 }
@@ -1751,10 +1746,7 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_round_messages = new_value;
     }
 
-    pub(crate) fn set_dwallet_mpc_round_outputs(
-        &mut self,
-        new_value: Vec<DWalletMPCOutputMessage>,
-    ) {
+    pub(crate) fn set_dwallet_mpc_round_outputs(&mut self, new_value: Vec<DWalletMPCOutput>) {
         self.dwallet_mpc_round_outputs = new_value;
     }
 

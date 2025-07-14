@@ -1,4 +1,5 @@
 use crate::crypto::{keccak256_digest, AuthorityName};
+use crate::message::DWalletCheckpointMessageKind;
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use hex::FromHex;
 use move_core_types::account_address::AccountAddress;
@@ -299,22 +300,13 @@ pub struct DWalletMPCEvent {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DWalletMPCOutputMessage {
+pub struct DWalletMPCOutput {
     /// The authority that sent the output.
     pub authority: AuthorityName,
-    /// The session information of the MPC session.
-    pub session_request: MPCSessionRequest,
+    pub session_identifier: SessionIdentifier,
     /// The final value of the MPC session.
-    pub output: Vec<u8>,
-}
-
-/// The content of the system transaction that stores the MPC session output on the chain.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct DWalletMPCOutput {
-    /// The session information of the MPC session.
-    pub session_request: MPCSessionRequest,
-    /// The final value of the MPC session.
-    pub output: Vec<u8>,
+    pub output: Vec<DWalletCheckpointMessageKind>,
+    pub malicious_authorities: Vec<AuthorityName>,
 }
 
 /// The message a Validator can send to the other parties while

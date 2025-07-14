@@ -12,7 +12,6 @@ use tracing::error;
 
 pub mod dwallet_mpc_service;
 pub mod mpc_manager;
-pub mod mpc_outputs_verifier;
 pub mod mpc_session;
 
 mod crytographic_computation;

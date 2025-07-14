@@ -3,21 +3,15 @@ use crate::dwallet_mpc::crytographic_computation::{
     ComputationId, ComputationRequest, CryptographicComputationsOrchestrator,
 };
 use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
-use crate::dwallet_mpc::mpc_outputs_verifier::{
-    DWalletMPCOutputsVerifier, OutputVerificationResult, OutputVerificationStatus,
-};
-use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, MPCEventData};
+use crate::dwallet_mpc::mpc_session::{DWalletMPCSession, DWalletMPCSessionOutput, MPCEventData};
 use crate::dwallet_mpc::network_dkg::instantiate_dwallet_mpc_network_decryption_key_shares_from_public_output;
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeys, ValidatorPrivateDecryptionKeyData};
 use crate::dwallet_mpc::{
     authority_name_to_party_id_from_committee, generate_access_structure_from_committee,
-    get_validators_class_groups_public_keys_and_proofs,
+    get_validators_class_groups_public_keys_and_proofs, party_id_to_authority_name,
 };
 use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCSessionStatus,
-    SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCSessionStatus};
 use group::PartyID;
 use ika_config::NodeConfig;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
@@ -25,12 +19,13 @@ use ika_types::committee::{Committee, EpochId};
 use ika_types::crypto::AuthorityName;
 use ika_types::crypto::AuthorityPublicKeyBytes;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use ika_types::error::IkaResult;
+use ika_types::message::DWalletCheckpointMessageKind;
 use ika_types::messages_dwallet_mpc::{
-    DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutputMessage, DWalletNetworkEncryptionKeyData,
+    DWalletMPCEvent, DWalletMPCMessage, DWalletMPCOutput, DWalletNetworkEncryptionKeyData,
     IkaPackagesConfig, MPCRequestInput, SessionIdentifier, SessionType,
 };
-use mpc::WeightedThresholdAccessStructure;
+use itertools::Itertools;
+use mpc::{MajorityVote, WeightedThresholdAccessStructure};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -70,7 +65,6 @@ pub(crate) struct DWalletMPCManager {
     /// This happens automatically because the [`DWalletMPCManager`]
     /// is part of the [`AuthorityPerEpochStore`].
     malicious_actors: HashSet<AuthorityName>,
-    pub(crate) outputs_verifier: DWalletMPCOutputsVerifier,
 
     pub(crate) last_session_to_complete_in_current_epoch: u64,
     pub(crate) recognized_self_as_malicious: bool,
@@ -132,8 +126,6 @@ impl DWalletMPCManager {
         decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
     ) -> DwalletMPCResult<Self> {
-        let outputs_verifier = DWalletMPCOutputsVerifier::new(dwallet_mpc_metrics.clone());
-
         let root_seed = node_config
             .root_seed
             .clone()
@@ -195,7 +187,6 @@ impl DWalletMPCManager {
             committee,
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
-            outputs_verifier,
         })
     }
 
@@ -233,6 +224,44 @@ impl DWalletMPCManager {
         for message in messages {
             self.handle_message(consensus_round, message);
         }
+    }
+
+    /// Handle the outputs of a given consensus round.
+    pub fn handle_consensus_round_outputs(
+        &mut self,
+        consensus_round: u64,
+        outputs: Vec<DWalletMPCOutput>,
+    ) -> Vec<DWalletCheckpointMessageKind> {
+        // Not let's move to process MPC outputs for the current round.
+        let mut checkpoint_messages = vec![];
+        for output in &outputs {
+            let session_identifier = output.session_identifier;
+
+            let output_result = self.handle_output(consensus_round, output.clone());
+            match output_result {
+                Some((malicious_authorities, output_result)) => {
+                    self.complete_mpc_session(&session_identifier);
+                    let output_digest = output_result.iter().map(|m| m.digest()).collect_vec();
+                    checkpoint_messages.extend(output_result);
+                    info!(
+                        ?output_digest,
+                        consensus_round,
+                        ?session_identifier,
+                        ?malicious_authorities,
+                        "MPC output reached quorum"
+                    );
+                }
+                None => {
+                    debug!(
+                        consensus_round,
+                        ?session_identifier,
+                        ?output,
+                        "MPC output did not reach quorum"
+                    );
+                }
+            };
+        }
+        checkpoint_messages
     }
 
     /// Handles a message by forwarding it to the relevant MPC session.
@@ -305,7 +334,7 @@ impl DWalletMPCManager {
         };
 
         if session.status == MPCSessionStatus::Active {
-            session.store_message(consensus_round, sender_party_id, message);
+            session.add_message(consensus_round, sender_party_id, message);
         }
     }
 
@@ -359,16 +388,7 @@ impl DWalletMPCManager {
     /// Returns the completed computation results.
     pub(crate) async fn perform_cryptographic_computation(
         &mut self,
-    ) -> HashMap<
-        ComputationId,
-        DwalletMPCResult<
-            mpc::AsynchronousRoundResult<
-                MPCMessage,
-                MPCPrivateOutput,
-                SerializedWrappedMPCPublicOutput,
-            >,
-        >,
-    > {
+    ) -> HashMap<ComputationId, DwalletMPCResult<mpc::AsynchronousRoundGODResult>> {
         let mut ready_to_advance_sessions: Vec<_> = self
             .mpc_sessions
             .iter()
@@ -543,28 +563,61 @@ impl DWalletMPCManager {
         }
     }
 
-    pub(crate) fn handle_dwallet_db_output(
+    pub(crate) fn handle_output(
         &mut self,
-        output: &DWalletMPCOutputMessage,
-    ) -> IkaResult<OutputVerificationResult> {
-        let DWalletMPCOutputMessage {
-            authority,
-            session_request,
-            output,
-        } = output;
-        let authority_index =
-            authority_name_to_party_id_from_committee(&self.committee, authority)?;
+        consensus_round: u64,
+        output: DWalletMPCOutput,
+    ) -> Option<(HashSet<AuthorityName>, Vec<DWalletCheckpointMessageKind>)> {
+        let session_identifier = output.session_identifier;
+        let sender_authority = output.authority;
 
-        let output_verification_result = self.outputs_verifier
-            .try_verify_output(output, session_request, *authority, self.validator_name, self.committee.clone())
-            .unwrap_or_else(|e| {
-                error!(session_identifier=?session_request.session_identifier, authority_index=?authority_index, error=?e, "error verifying DWalletMPCOutput output");
-                OutputVerificationResult {
-                    result: OutputVerificationStatus::Malicious,
-                    malicious_actors: vec![*authority],
-                }
-            });
-        Ok(output_verification_result)
+        let Ok(sender_party_id) =
+            authority_name_to_party_id_from_committee(&self.committee, &sender_authority)
+        else {
+            error!(
+                session_identifier=?session_identifier,
+                sender_authority=?sender_authority,
+                receiver_authority=?self.validator_name,
+                "got a output for an authority without party ID",
+            );
+
+            return None;
+        };
+
+        let session = match self.mpc_sessions.entry(session_identifier) {
+            Entry::Occupied(session) => session.into_mut(),
+            Entry::Vacant(_) => {
+                info!(
+                    ?session_identifier,
+                    sender_authority=?sender_authority,
+                    receiver_authority=?self.validator_name,
+                    "received a output for an MPC session before receiving an event requesting it"
+                );
+
+                // This can happen if the session is not in the active sessions,
+                // but we still want to store the message.
+                // We will create a new session for it.
+                self.new_mpc_session(&session_identifier, None);
+                // Safe to `unwrap()`: we just created the session.
+                self.mpc_sessions.get_mut(&session_identifier).unwrap()
+            }
+        };
+
+        session.add_output(consensus_round, sender_party_id, output);
+
+        let outputs_by_consensus_round = session.outputs_by_consensus_round().clone();
+
+        let built_outputs_to_finalize =
+            self.build_outputs_to_finalize(&session_identifier, outputs_by_consensus_round);
+
+        match built_outputs_to_finalize {
+            Some((malicious_authorities, majority_vote)) => {
+                self.malicious_actors.extend(malicious_authorities.clone());
+
+                Some((malicious_authorities, majority_vote))
+            }
+            None => None,
+        }
     }
 
     pub(crate) fn record_threshold_not_reached(
@@ -618,6 +671,73 @@ impl DWalletMPCManager {
                 self.decryption_key_reconfiguration_third_round_delay
             }
             _ => 0,
+        }
+    }
+
+    /// Builds the outputs to finalize based on the outputs received in the consensus rounds.
+    /// If a majority vote is reached, it returns the malicious voters (didn't vote with majority) and the majority vote.
+    /// If the threshold is not reached, it returns `None`.
+    pub(crate) fn build_outputs_to_finalize(
+        &self,
+        session_identifier: &SessionIdentifier,
+        outputs_by_consensus_round: HashMap<u64, HashMap<PartyID, DWalletMPCSessionOutput>>,
+    ) -> Option<(HashSet<AuthorityName>, Vec<DWalletCheckpointMessageKind>)> {
+        let mut outputs_to_finalize: HashMap<PartyID, DWalletMPCSessionOutput> = HashMap::new();
+
+        for (_, outputs) in outputs_by_consensus_round {
+            for (sender_party_id, output) in outputs {
+                // take the last output from each sender party ID
+                outputs_to_finalize.insert(sender_party_id, output);
+            }
+        }
+
+        match outputs_to_finalize.weighted_majority_vote(&self.access_structure) {
+            Ok((malicious_voters, majority_vote)) => {
+                let output = majority_vote.output;
+                let malicious_authorities_options = malicious_voters
+                    .iter()
+                    .map(|party_id| party_id_to_authority_name(*party_id, &self.committee))
+                    .collect_vec();
+                let any_not_found_malicious_voters =
+                    malicious_authorities_options.iter().any(|ma| ma.is_none());
+                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
+                    .into_iter()
+                    .filter_map(|ma| ma)
+                    .collect();
+                if any_not_found_malicious_voters {
+                    error!(
+                        ?session_identifier,
+                        ?malicious_voters,
+                        ?malicious_authorities,
+                        committee=?self.committee,
+                        "Failed to convert some malicious party IDs to authority names"
+                    );
+                }
+                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities
+                    .into_iter()
+                    .chain(majority_vote.malicious_authorities.into_iter())
+                    .collect();
+                Some((malicious_authorities, output))
+            }
+            Err(mpc::Error::ThresholdNotReached) => None,
+            Err(e) => {
+                error!(
+                    ?session_identifier,
+                    "Failed to build outputs to finalize: {e}"
+                );
+                None
+            }
+        }
+    }
+
+    pub(crate) fn complete_mpc_session(&mut self, session_identifier: &SessionIdentifier) {
+        if let Some(session) = self.mpc_sessions.get_mut(session_identifier) {
+            session.mark_mpc_session_as_completed();
+            if let Some(mpc_event_data) = session.mpc_event_data() {
+                self.dwallet_mpc_metrics
+                    .add_completion(&mpc_event_data.request_input);
+            }
+            session.clear_data();
         }
     }
 }
