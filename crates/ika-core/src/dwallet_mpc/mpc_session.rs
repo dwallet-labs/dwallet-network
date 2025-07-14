@@ -188,6 +188,7 @@ impl DWalletMPCSession {
             from_authority=?output.authority,
             receiving_authority=?self.validator_name,
             output_messages=?output.output,
+            consensus_round,
             "Received a dWallet MPC output",
         );
 
@@ -210,7 +211,7 @@ impl DWalletMPCSession {
         &self.outputs_by_consensus_round
     }
 
-    pub(crate) fn complete_mpc_session_status(&mut self) {
+    pub(crate) fn mark_mpc_session_as_completed(&mut self) {
         self.status = MPCSessionStatus::Completed;
     }
 

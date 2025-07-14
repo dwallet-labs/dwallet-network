@@ -580,7 +580,7 @@ impl DWalletMPCManager {
                 session_identifier=?session_identifier,
                 sender_authority=?sender_authority,
                 receiver_authority=?self.validator_name,
-                "Got a output for an authority without party ID",
+                "got a output for an authority without party ID",
             );
 
             return None;
@@ -700,18 +700,22 @@ impl DWalletMPCManager {
                     .iter()
                     .map(|party_id| party_id_to_authority_name(*party_id, &self.committee))
                     .collect_vec();
-                if malicious_authorities_options.iter().any(|ma| ma.is_none()) {
+                let any_not_found_malicious_voters = malicious_authorities_options.iter().any(|ma| ma.is_none());
+                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
+                    .into_iter()
+                    .filter_map(|ma| ma)
+                    .collect();
+                if any_not_found_malicious_voters {
                     error!(
                         ?session_identifier,
                         ?malicious_voters,
-                        ?malicious_authorities_options,
+                        ?malicious_authorities,
                         committee=?self.committee,
                         "Failed to convert some malicious party IDs to authority names"
                     );
                 }
-                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
+                let malicious_authorities: HashSet<AuthorityName> = malicious_authorities
                     .into_iter()
-                    .filter_map(|ma| ma)
                     .chain(majority_vote.malicious_authorities.into_iter())
                     .collect();
                 Some((malicious_authorities, output))
@@ -747,7 +751,7 @@ impl DWalletMPCManager {
 
     pub(crate) fn complete_mpc_session(&mut self, session_identifier: &SessionIdentifier) {
         if let Some(session) = self.mpc_sessions.get_mut(session_identifier) {
-            session.complete_mpc_session_status();
+            session.mark_mpc_session_as_completed();
             if let Some(mpc_event_data) = session.mpc_event_data() {
                 self.dwallet_mpc_metrics
                     .add_completion(&mpc_event_data.request_input);

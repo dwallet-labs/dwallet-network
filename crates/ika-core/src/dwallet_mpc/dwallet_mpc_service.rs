@@ -488,7 +488,7 @@ impl DWalletMPCService {
                                 self.dwallet_mpc_manager
                                     .record_malicious_actors(&malicious_authorities);
 
-                                let consensus_message = self.new_dwallet_mpc_output_message(
+                                let consensus_message = self.new_dwallet_mpc_output(
                                     session_identifier,
                                     &mpc_event_data,
                                     public_output_value,
@@ -535,7 +535,7 @@ impl DWalletMPCService {
                                 );
 
                                 let consensus_adapter = self.consensus_adapter.clone();
-                                let consensus_message = self.new_dwallet_mpc_output_message(
+                                let consensus_message = self.new_dwallet_mpc_output(
                                     session_identifier,
                                     &mpc_event_data,
                                     vec![],
@@ -604,7 +604,7 @@ impl DWalletMPCService {
     /// Create a new consensus transaction with the flow result (output) to be
     /// sent to the other MPC parties.
     /// Errors if the epoch was switched in the middle and was not available.
-    fn new_dwallet_mpc_output_message(
+    fn new_dwallet_mpc_output(
         &self,
         session_identifier: SessionIdentifier,
         mpc_event_data: &MPCEventData,
