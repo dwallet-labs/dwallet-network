@@ -1,4 +1,4 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The SuiSyncer module handles synchronizing Events emitted

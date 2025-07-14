@@ -253,15 +253,13 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         {
             let span = trace_span!("ConsensusHandler::HandleCommit::process_consensus_txns");
             let _guard = span.enter();
-            for (authority_index, parsed_transactions) in consensus_commit.transactions() {
+            for (block, parsed_transactions) in consensus_commit.transactions() {
+                let author = block.author.value();
                 // TODO: consider only messages within 1~3 rounds of the leader?
-                self.last_consensus_stats
-                    .stats
-                    .inc_num_messages(authority_index as usize);
+                self.last_consensus_stats.stats.inc_num_messages(author);
                 for parsed in parsed_transactions {
-                    // Skip executing rejected transactions. Unlocking is the responsibility of the
-                    // consensus transaction handler.
                     if parsed.rejected {
+                        // Skip executing rejected transactions.
                         continue;
                     }
                     let kind = classify(&parsed.transaction);
@@ -275,7 +273,7 @@ impl<C: DWalletCheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         .observe(parsed.serialized_len as f64);
                     let transaction =
                         SequencedConsensusTransactionKind::External(parsed.transaction);
-                    transactions.push((transaction, authority_index));
+                    transactions.push((transaction, author as u32));
                 }
             }
         }

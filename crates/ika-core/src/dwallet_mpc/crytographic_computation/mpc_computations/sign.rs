@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 //! This module provides a wrapper around the Sign protocol from the 2PC-MPC library.
 //!
 //! It integrates the Sign party (representing a round in the protocol).

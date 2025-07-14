@@ -43,8 +43,8 @@ use consensus_core::{BlockStatus, ConnectionStatus};
 use ika_protocol_config::ProtocolConfig;
 use ika_types::crypto::AuthorityName;
 use ika_types::fp_ensure;
-use ika_types::messages_consensus::ConsensusTransaction;
 use ika_types::messages_consensus::ConsensusTransactionKind;
+use ika_types::messages_consensus::{ConsensusPosition, ConsensusTransaction};
 use mysten_metrics::{GaugeGuard, GaugeGuardFutureExt, spawn_monitored_task};
 use sui_simulator::anemo::PeerId;
 use tokio::time::Duration;
@@ -210,7 +210,7 @@ pub trait ConsensusClient: Sync + Send + 'static {
         &self,
         transactions: &[ConsensusTransaction],
         epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> IkaResult<BlockStatusReceiver>;
+    ) -> IkaResult<(Vec<ConsensusPosition>, BlockStatusReceiver)>;
 }
 
 #[allow(unused)]
@@ -661,7 +661,7 @@ impl ConsensusAdapter {
 
                 loop {
                     // Submit the transaction to consensus and return the submit result with a status waiter
-                    let status_waiter = self
+                    let (_consensus_positions, status_waiter) = self
                         .submit_inner(
                             &transactions,
                             epoch_store,
@@ -778,11 +778,11 @@ impl ConsensusAdapter {
         transaction_keys: &[SequencedConsensusTransactionKey],
         tx_type: &str,
         is_soft_bundle: bool,
-    ) -> BlockStatusReceiver {
+    ) -> (Vec<ConsensusPosition>, BlockStatusReceiver) {
         let ack_start = Instant::now();
         let mut retries: u32 = 0;
 
-        let status_waiter = loop {
+        let (consensus_positions, status_waiter) = loop {
             match self
                 .consensus_client
                 .submit(transactions, epoch_store)
@@ -804,8 +804,8 @@ impl ConsensusAdapter {
 
                     time::sleep(Duration::from_secs(10)).await;
                 }
-                Ok(status_waiter) => {
-                    break status_waiter;
+                Ok((consensus_positions, status_waiter)) => {
+                    break (consensus_positions, status_waiter);
                 }
             }
         };
@@ -826,7 +826,7 @@ impl ConsensusAdapter {
             .with_label_values(&[&bucket, tx_type])
             .observe(ack_start.elapsed().as_secs_f64());
 
-        status_waiter
+        (consensus_positions, status_waiter)
     }
 
     /// Waits for transactions to appear either to consensus output or been executed via a checkpoint (state sync).

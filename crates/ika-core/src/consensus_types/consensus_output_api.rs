@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::{cmp::Ordering, fmt::Display};
 
-use consensus_core::{BlockAPI, CommitDigest, TransactionIndex, VerifiedBlock};
+use consensus_core::{BlockAPI, BlockRef, CommitDigest, TransactionIndex, VerifiedBlock};
 use ika_types::{
     digests::ConsensusCommitDigest,
     messages_consensus::{AuthorityIndex, ConsensusTransaction},
@@ -28,9 +28,8 @@ pub(crate) trait ConsensusCommitAPI: Display {
     /// Returns a unique global index for each committed sub-dag.
     fn commit_sub_dag_index(&self) -> u64;
 
-    /// Returns all accepted and rejected transactions per block in the commit
-    /// in deterministic order.
-    fn transactions(&self) -> Vec<(AuthorityIndex, Vec<ParsedTransaction>)>;
+    /// Returns all accepted and rejected transactions per block in the commit in deterministic order.
+    fn transactions(&self) -> Vec<(BlockRef, Vec<ParsedTransaction>)>;
 
     /// Returns the digest of consensus output.
     fn consensus_digest(&self) -> ConsensusCommitDigest;
@@ -67,13 +66,17 @@ impl ConsensusCommitAPI for consensus_core::CommittedSubDag {
         self.commit_ref.index.into()
     }
 
-    fn transactions(&self) -> Vec<(AuthorityIndex, Vec<ParsedTransaction>)> {
+    fn transactions(&self) -> Vec<(BlockRef, Vec<ParsedTransaction>)> {
+        let no_transaction = vec![];
         self.blocks
             .iter()
-            .zip(self.rejected_transactions_by_block.iter())
-            .map(|(block, rejected_transactions)| {
+            .map(|block| {
+                let rejected_transactions = self
+                    .rejected_transactions_by_block
+                    .get(&block.reference())
+                    .unwrap_or(&no_transaction);
                 (
-                    block.author().value() as AuthorityIndex,
+                    block.reference(),
                     parse_block_transactions(block, rejected_transactions),
                 )
             })
