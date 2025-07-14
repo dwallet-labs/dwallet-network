@@ -170,8 +170,8 @@ pub fn advance_centralized_sign_party(
         bcs::from_bytes(&decentralized_party_dkg_public_output)?;
     match decentralized_party_dkg_public_output {
         VersionedDwalletDKGSecondRoundPublicOutput::V1(decentralized_party_dkg_public_output) => {
-            let presign: VersionedPresignOutput = bcs::from_bytes(&presign)?;
-            let presign = presign.public_output();
+            let presign = bcs::from_bytes(&presign)?;
+            let VersionedPresignOutput::V1(presign) = presign;
             let centralized_party_secret_key_share: VersionedDwalletUserSecretShare =
                 bcs::from_bytes(&centralized_party_secret_key_share)?;
             let VersionedDwalletUserSecretShare::V1(centralized_party_secret_key_share) =

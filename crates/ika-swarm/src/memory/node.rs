@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use super::container::Container;
 use anyhow::Result;
 use ika_config::NodeConfig;
 use ika_node::IkaNodeHandle;
@@ -9,9 +10,6 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use sui_types::base_types::ConciseableName;
 use tracing::info;
-use ika_protocol_config::ProtocolVersion;
-use ika_types::supported_protocol_versions::SupportedProtocolVersions;
-use super::container::Container;
 
 #[allow(dead_code)]
 pub const IKA_VALIDATOR_SERVER_NAME: &str = "ika";
@@ -67,13 +65,7 @@ impl Node {
     }
 
     /// Stop this Node
-    pub fn stop(&mut self) {
-        let new_config_version = SupportedProtocolVersions {
-            min: ProtocolVersion::new(1),
-            max: ProtocolVersion::new(2),
-        };
-        self.config.get_mut().unwrap().supported_protocol_versions = Some(new_config_version);
-
+    pub fn stop(&self) {
         info!(name =% self.name().concise(), "stopping in-memory node");
         *self.container.lock().unwrap() = None;
         info!(name =% self.name().concise(), "node stopped");

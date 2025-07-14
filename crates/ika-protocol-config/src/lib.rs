@@ -12,12 +12,11 @@ use std::{
 use sui_protocol_config_macros::{
     ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters, ProtocolConfigOverride,
 };
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 /// The minimum and maximum protocol versions supported by this build.
 const MIN_PROTOCOL_VERSION: u64 = 1;
-// yael
-const MAX_PROTOCOL_VERSION: u64 = 2;
+const MAX_PROTOCOL_VERSION: u64 = 1;
 
 // Record history of protocol version allocations here:
 //
@@ -249,8 +248,6 @@ pub struct ProtocolConfig {
     consensus_gc_depth: Option<u32>,
     decryption_key_reconfiguration_third_round_delay: Option<u64>,
     network_dkg_third_round_delay: Option<u64>,
-
-    dwallet_version: Option<u64>,
 }
 
 // feature flags
@@ -466,7 +463,6 @@ impl ProtocolConfig {
             // The delay is measured in consensus rounds.
             decryption_key_reconfiguration_third_round_delay: Some(10),
             network_dkg_third_round_delay: Some(10),
-            dwallet_version: Some(1),
         };
 
         cfg.feature_flags.mysticeti_num_leaders_per_round = Some(1);
@@ -478,10 +474,7 @@ impl ProtocolConfig {
         #[allow(clippy::never_loop)]
         for cur in 2..=version.0 {
             match cur {
-                1 => {
-                    error!("version 1 is defined");
-                    cfg.dwallet_version = Some(1);
-                }
+                1 => unreachable!(),
                 // Use this template when making changes:
                 //
                 //     // modify an existing constant.
@@ -492,10 +485,6 @@ impl ProtocolConfig {
                 //
                 //     // Remove a constant (ensure that it is never accessed during this version).
                 //     existing_constant: None,
-                2 => {
-                    error!("version 2 is defined");
-                    cfg.dwallet_version = Some(2);
-                }
                 _ => panic!("unsupported version {version:?}"),
             }
         }

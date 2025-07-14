@@ -87,8 +87,6 @@ impl DWalletMPCService {
             .protocol_config()
             .decryption_key_reconfiguration_third_round_delay();
 
-        let presign_version = epoch_store.protocol_config().dwallet_version();
-
         let dwallet_mpc_manager = DWalletMPCManager::new(
             validator_name,
             committee,
@@ -100,7 +98,6 @@ impl DWalletMPCService {
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
             dwallet_mpc_metrics,
-            presign_version,
         );
 
         Self {

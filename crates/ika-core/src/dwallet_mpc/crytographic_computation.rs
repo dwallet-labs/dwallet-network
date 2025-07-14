@@ -15,7 +15,11 @@ use crate::dwallet_mpc::sign::{
     SignFirstParty, update_expected_decrypters_metrics, verify_partial_signature,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{ MPCPrivateInput, MPCPublicOutputV2, VersionedDWalletImportedKeyVerificationOutput, VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput, VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput};
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCPrivateInput, VersionedDWalletImportedKeyVerificationOutput,
+    VersionedDecryptionKeyReconfigurationOutput, VersionedDwalletDKGFirstRoundPublicOutput,
+    VersionedDwalletDKGSecondRoundPublicOutput, VersionedPresignOutput, VersionedSignOutput,
+};
 use dwallet_rng::RootSeed;
 use group::PartyID;
 use ika_types::committee::Committee;
@@ -78,7 +82,6 @@ impl ComputationRequest {
         computation_id: ComputationId,
         root_seed: RootSeed,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        presign_version: u64,
     ) -> DwalletMPCResult<AsynchronousRoundGODResult> {
         let messages_skeleton = self
             .messages
@@ -374,19 +377,8 @@ impl ComputationRequest {
                         private_output,
                     } => {
                         // Wrap the public output with its version.
-                        let public_output_value = if presign_version == 1 {
-                            error!(
-                                "Using V1 presign output",
-                            );
-                            bcs::to_bytes(&VersionedPresignOutput::V1(public_output_value))?} else {
-                            error!("Using V2 presign output");
-                            bcs::to_bytes(&VersionedPresignOutput::V2(
-                                MPCPublicOutputV2 {
-                                    public_output: public_output_value,
-                                    test_var: "test".to_string(),
-                                },
-                            ))?
-                        };
+                        let public_output_value =
+                            bcs::to_bytes(&VersionedPresignOutput::V1(public_output_value))?;
                         Ok(AsynchronousRoundGODResult::Finalize {
                             public_output_value,
                             malicious_parties,

@@ -97,7 +97,6 @@ impl DWalletMPCManager {
         network_dkg_third_round_delay: u64,
         decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        presign_version: u64,
     ) -> Self {
         Self::try_new(
             validator_name,
@@ -110,7 +109,6 @@ impl DWalletMPCManager {
             network_dkg_third_round_delay,
             decryption_key_reconfiguration_third_round_delay,
             dwallet_mpc_metrics,
-            presign_version,
         )
         .unwrap_or_else(|err| {
             error!(?err, "Failed to create DWalletMPCManager.");
@@ -130,7 +128,6 @@ impl DWalletMPCManager {
         network_dkg_third_round_delay: u64,
         decryption_key_reconfiguration_third_round_delay: u64,
         dwallet_mpc_metrics: Arc<DWalletMPCMetrics>,
-        presign_version: u64,
     ) -> DwalletMPCResult<Self> {
         let root_seed = node_config
             .root_seed
@@ -142,7 +139,7 @@ impl DWalletMPCManager {
         let access_structure = generate_access_structure_from_committee(&committee)?;
 
         let mpc_computations_orchestrator =
-            CryptographicComputationsOrchestrator::try_new(root_seed.clone(), presign_version)?;
+            CryptographicComputationsOrchestrator::try_new(root_seed.clone())?;
         let party_id = authority_name_to_party_id_from_committee(&committee, &validator_name)?;
 
         let class_groups_key_pair = ClassGroupsKeyPairAndProof::from_seed(&root_seed);
