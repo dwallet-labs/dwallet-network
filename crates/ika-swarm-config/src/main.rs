@@ -7,6 +7,7 @@ use ika_swarm_config::sui_client::{
     init_initialize, minted_ika, publish_ika_common_package_to_sui,
     publish_ika_dwallet_2pc_mpc_package_to_sui, publish_ika_package_to_sui,
     publish_ika_system_package_to_sui, setup_contract_paths,
+    ika_system_set_witness_approving_advance_epoch, ika_system_add_upgrade_cap_by_cap,
 };
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -332,6 +333,52 @@ async fn main() -> Result<()> {
                  protocol_cap_id: {protocol_cap_id},\
                   init_system_shared_version: {init_system_shared_version}",
             );
+
+            // Call the witness-related functions that were missing from the CLI
+            let ika_dwallet_2pc_mpc_package_id = publish_config.ika_dwallet_2pc_mpc_package_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_package_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            ika_system_set_witness_approving_advance_epoch(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_system_package_id,
+                ika_system_object_id,
+                init_system_shared_version,
+                protocol_cap_id,
+                ika_dwallet_2pc_mpc_package_id,
+            )
+            .await?;
+            println!("Running `system::set_witness_approving_advance_epoch` done.");
+
+            let ika_common_package_upgrade_cap_id = publish_config.ika_common_package_upgrade_cap_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_common_package_upgrade_cap_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            let ika_dwallet_2pc_mpc_package_upgrade_cap_id = publish_config.ika_dwallet_2pc_mpc_package_upgrade_cap_id.ok_or_else(|| {
+                anyhow::Error::msg(
+                    "`ika_dwallet_2pc_mpc_package_upgrade_cap_id` not found in configuration. Please run publish-ika-modules first.",
+                )
+            })?;
+
+            ika_system_add_upgrade_cap_by_cap(
+                publisher_address,
+                &mut context,
+                client.clone(),
+                publish_config.ika_system_package_id,
+                ika_system_object_id,
+                init_system_shared_version,
+                protocol_cap_id,
+                ika_common_package_upgrade_cap_id,
+                ika_dwallet_2pc_mpc_package_upgrade_cap_id,
+            )
+            .await?;
+            println!("Running `system::add_upgrade_cap_by_cap` done.");
 
             // Update the configuration with the new fields
             publish_config.ika_system_object_id = Some(ika_system_object_id);

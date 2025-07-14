@@ -778,11 +778,11 @@ pub async fn ika_system_initialize(
     let tx_kind = TransactionKind::ProgrammableTransaction(ptb.finish());
 
     let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
-
-    println!(
-        "Response: {:?}",
-        response.clone()
-    );
+    //
+    // println!(
+    //     "Response: {:?}",
+    //     response.clone()
+    // );
 
     let object_changes = response.object_changes.unwrap();
 
