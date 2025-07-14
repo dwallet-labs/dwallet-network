@@ -147,11 +147,20 @@ impl DWalletMPCService {
             loop_index += 1;
             match self.exit.has_changed() {
                 Ok(true) => {
-                    warn!("DWalletMPCService exit signal received");
+                    warn!(
+                        our_epoch_id=self.dwallet_mpc_manager.epoch_id,
+                        authority=?self.epoch_store.name,
+                        "DWalletMPCService exit signal received"
+                    );
                     break;
                 }
                 Err(err) => {
-                    warn!(err=?err, "DWalletMPCService exit channel was shutdown incorrectly");
+                    warn!(
+                        err=?err,
+                        authority=?self.epoch_store.name,
+                        our_epoch_id=self.dwallet_mpc_manager.epoch_id,
+                        "DWalletMPCService exit channel was shutdown incorrectly"
+                    );
                     break;
                 }
                 Ok(false) => (),

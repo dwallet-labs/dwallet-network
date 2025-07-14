@@ -1098,7 +1098,7 @@ impl SuiClientInner for SuiSdkClient {
             info!(
                 key_id = ?key.id,
                 ?epoch,
-                "Reconfiguration public output for key not is not ready for epoch",
+                "Reconfiguration public output for key is not ready for epoch",
             );
         } else {
             let current_reconfiguration_public_output_id = self

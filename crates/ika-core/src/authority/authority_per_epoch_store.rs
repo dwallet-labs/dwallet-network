@@ -367,7 +367,7 @@ pub struct AuthorityEpochTables {
     /// round.
     #[default_options_override_fn = "dwallet_mpc_messages_table_default_config"]
     dwallet_mpc_messages: DBMap<Round, Vec<DWalletMPCMessage>>,
-
+    /// Consensus round -> Output.
     #[default_options_override_fn = "dwallet_mpc_outputs_table_default_config"]
     dwallet_mpc_outputs: DBMap<Round, Vec<DWalletMPCOutput>>,
 }
