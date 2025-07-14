@@ -1,4 +1,11 @@
+avoid-breaking-exported-api = false
+
+check-inconsistent-struct-field-initializers = true
+
+lint-commented-code = true
+
 too-many-arguments-threshold = 20
+
 disallowed-methods = [
     # unbounded channels are for expert use only
     { path = "tokio::sync::mpsc::unbounded_channel", reason = "use a bounded channel instead" },
@@ -9,6 +16,7 @@ disallowed-methods = [
     # bincode::deserialize_from is easy to shoot your foot with
     { path = "bincode::deserialize_from", reason = "use bincode::deserialize instead" },
 ]
+
 disallowed-macros = [
     # we use tracing with the log feature instead of the log crate.
     { path = "log::info", reason = "use tracing::info instead" },
