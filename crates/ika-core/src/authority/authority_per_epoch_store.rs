@@ -1343,8 +1343,12 @@ impl AuthorityPerEpochStore {
                 );
                 self.record_capabilities_v1(authority_capabilities)?;
                 let capabilities = self.get_capabilities_v1()?;
-                if let Some((new_version, _)) = AuthorityState::choose_protocol_version_and_system_packages_v1(
-                    self.protocol_version(),
+                let authority_capabilities_max_version = authority_capabilities.supported_protocol_versions.versions.iter().map(|(num, _)| *num).max();
+                // this should be the minimum protocol version between self.protocol_version() and authority_capabilities_max_version to allow version downgrades.
+                let first_protocol_version = self.protocol_version()
+                    .min(authority_capabilities_max_version.unwrap_or(self.protocol_version()));
+                if let Some((new_version, _)) = AuthorityState::choose_highest_protocol_version_and_system_packages_v1(
+                    first_protocol_version,
                     self.protocol_config(),
                     self.committee(),
                     capabilities.clone(),

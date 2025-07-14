@@ -956,18 +956,18 @@ impl AuthorityState {
             })
     }
 
-    pub fn choose_protocol_version_and_system_packages_v1(
-        current_protocol_version: ProtocolVersion,
+    pub fn choose_highest_protocol_version_and_system_packages_v1(
+        first_protocol_version: ProtocolVersion,
         protocol_config: &ProtocolConfig,
         committee: &Committee,
         capabilities: Vec<AuthorityCapabilitiesV1>,
         buffer_stake_bps: u64,
     ) -> (ProtocolVersion, Vec<(ObjectID, MovePackageDigest)>) {
-        let mut next_protocol_version = current_protocol_version;
+        let mut next_protocol_version = first_protocol_version;
         let mut system_packages = vec![];
 
         while let Some((version, packages)) = Self::is_protocol_version_supported_v1(
-            current_protocol_version,
+            first_protocol_version,
             next_protocol_version + 1,
             protocol_config,
             committee,
