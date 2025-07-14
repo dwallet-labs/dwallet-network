@@ -1,31 +1,31 @@
 use crate::validator_initialization_config::ValidatorInitializationConfig;
 use anyhow::bail;
 use fastcrypto::traits::ToFromBytes;
+use ika_config::Config;
 use ika_config::initiation::{InitiationParameters, MIN_VALIDATOR_JOINING_STAKE_INKU};
 use ika_config::validator_info::ValidatorInfo;
-use ika_config::Config;
 use ika_move_packages::save_contracts_to_temp_dir;
 use ika_types::committee::ClassGroupsEncryptionKeyAndProof;
 use ika_types::ika_coin::IKACoin;
 use ika_types::messages_dwallet_mpc::{
-    IkaPackagesConfig, DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
-    FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
+    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG, FUTURE_SIGN_PROTOCOL_FLAG,
+    IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG, IkaPackagesConfig,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
     SIGN_WITH_PARTIAL_USER_SIGNATURE_PROTOCOL_FLAG,
 };
 use ika_types::sui::system_inner_v1::ValidatorCapV1;
 use ika_types::sui::{
-    ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBuilder, System,
     ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, ADVANCE_EPOCH_FUNCTION_NAME,
     CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME,
-    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME,
-    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWALLET_COORDINATOR_STRUCT_NAME,
-    FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME, INITIALIZE_FUNCTION_NAME,
-    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, NEW_VALIDATOR_METADATA_FUNCTION_NAME,
-    PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME, REQUEST_ADD_STAKE_FUNCTION_NAME,
-    REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
-    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME,
+    CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME, ClassGroupsPublicKeyAndProof,
+    ClassGroupsPublicKeyAndProofBuilder, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
+    DWALLET_COORDINATOR_STRUCT_NAME, FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME,
+    INIT_CAP_STRUCT_NAME, INIT_MODULE_NAME, INITIALIZE_FUNCTION_NAME,
+    NEW_VALIDATOR_METADATA_FUNCTION_NAME, PROTOCOL_CAP_MODULE_NAME, PROTOCOL_CAP_STRUCT_NAME,
+    REQUEST_ADD_STAKE_FUNCTION_NAME, REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
+    REQUEST_ADD_VALIDATOR_FUNCTION_NAME,
+    REQUEST_DWALLET_NETWORK_DECRYPTION_KEY_DKG_BY_CAP_FUNCTION_NAME, SYSTEM_MODULE_NAME, System,
     VALIDATOR_CAP_MODULE_NAME, VALIDATOR_CAP_STRUCT_NAME, VALIDATOR_METADATA_MODULE_NAME,
 };
 use move_core_types::ident_str;
@@ -35,18 +35,18 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use sui::client_commands::{
-    estimate_gas_budget_from_gas_cost, execute_dry_run, request_tokens_from_faucet, Opts,
-    OptsWithGas, SuiClientCommandResult,
+    Opts, OptsWithGas, SuiClientCommandResult, estimate_gas_budget_from_gas_cost, execute_dry_run,
+    request_tokens_from_faucet,
 };
 use sui_config::SUI_CLIENT_CONFIG;
 use sui_keys::keystore::{AccountKeystore, InMemKeystore, Keystore};
+use sui_sdk::SuiClient;
 use sui_sdk::rpc_types::{ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse};
 use sui_sdk::rpc_types::{
     SuiObjectDataFilter, SuiObjectResponseQuery, SuiTransactionBlockEffectsAPI,
 };
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::SuiClient;
 use sui_types::base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress};
 use sui_types::coin::TreasuryCap;
 use sui_types::crypto::{SignatureScheme, SuiKeyPair};
@@ -177,7 +177,9 @@ pub async fn init_ika_on_sui(
         publish_ika_package_to_sui(&mut context, ika_contract_path).await?;
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    println!("Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}");
+    println!(
+        "Package `ika` published: ika_package_id: {ika_package_id} treasury_cap_id: {treasury_cap_id}"
+    );
 
     let (ika_common_package_id, ika_common_package_upgrade_cap_id) =
         publish_ika_common_package_to_sui(&mut context, ika_common_contract_path).await?;
@@ -187,7 +189,9 @@ pub async fn init_ika_on_sui(
     let (ika_system_package_id, init_cap_id, ika_system_package_upgrade_cap_id) =
         publish_ika_system_package_to_sui(&mut context, ika_system_contract_path).await?;
 
-    println!("Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}");
+    println!(
+        "Package `ika_system` published: ika_system_package_id: {ika_system_package_id} init_cap_id: {init_cap_id}"
+    );
 
     let (
         ika_dwallet_2pc_mpc_package_id,
@@ -196,7 +200,9 @@ pub async fn init_ika_on_sui(
     ) = publish_ika_dwallet_2pc_mpc_package_to_sui(&mut context, ika_dwallet_2pc_mpc_contract_path)
         .await?;
 
-    println!("Package `ika_dwallet_2pc_mpc` published: ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id} ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}");
+    println!(
+        "Package `ika_dwallet_2pc_mpc` published: ika_dwallet_2pc_mpc_package_id: {ika_dwallet_2pc_mpc_package_id} ika_dwallet_2pc_mpc_init_id: {ika_dwallet_2pc_mpc_init_id}"
+    );
 
     let ika_supply_id = minted_ika(publisher_address, client.clone(), ika_package_id).await?;
 
@@ -215,7 +221,9 @@ pub async fn init_ika_on_sui(
     )
     .await?;
 
-    println!("Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}");
+    println!(
+        "Running `init::initialize` done: ika_system_object_id: {ika_system_object_id} protocol_cap_id: {protocol_cap_id}"
+    );
 
     ika_system_set_witness_approving_advance_epoch(
         publisher_address,
@@ -266,7 +274,9 @@ pub async fn init_ika_on_sui(
         .await?;
         validator_ids.push(validator_id);
         validator_cap_ids.push(validator_cap_id);
-        println!("Running `system::request_add_validator_candidate` done for validator {validator_address}");
+        println!(
+            "Running `system::request_add_validator_candidate` done for validator {validator_address}"
+        );
     }
 
     stake_ika(

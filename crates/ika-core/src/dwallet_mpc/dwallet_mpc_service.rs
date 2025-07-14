@@ -31,7 +31,7 @@ use ika_types::messages_dwallet_mpc::{
     DWalletNetworkEncryptionKeyData, MPCRequestInput, SessionIdentifier,
 };
 use ika_types::sui::DWalletCoordinatorInner;
-use itertools::{izip, Itertools};
+use itertools::{Itertools, izip};
 use mpc::AsynchronousRoundGODResult;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -259,11 +259,11 @@ impl DWalletMPCService {
                     != verified_dwallet_checkpoint_messages_consensus_round
             {
                 error!(
-                        ?mpc_messages_consensus_round,
-                        ?mpc_outputs_consensus_round,
-                        ?verified_dwallet_checkpoint_messages_consensus_round,
-                        "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
-                    );
+                    ?mpc_messages_consensus_round,
+                    ?mpc_outputs_consensus_round,
+                    ?verified_dwallet_checkpoint_messages_consensus_round,
+                    "the consensus rounds of MPC messages, MPC outputs and checkpoint messages do not match"
+                );
 
                 return false;
             }
@@ -543,7 +543,7 @@ impl DWalletMPCService {
         message: MPCMessage,
     ) -> ConsensusTransaction {
         ConsensusTransaction::new_dwallet_mpc_message(
-            self.epoch_store.name.clone(),
+            self.epoch_store.name,
             session_identifier,
             message,
             mpc_round,

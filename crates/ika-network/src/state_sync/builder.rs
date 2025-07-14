@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::{
+    Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
     metrics::Metrics,
     server::{CheckpointMessageDownloadLimitLayer, Server},
-    Handle, PeerHeights, StateSync, StateSyncEventLoop, StateSyncMessage, StateSyncServer,
 };
 use crate::state_sync::server::SystemCheckpointDownloadLimitLayer;
 use anemo::codegen::InboundRequestLayer;

@@ -15,7 +15,7 @@ use ika_protocol_config::ProtocolVersion;
 use ika_types::error::IkaResult;
 use ika_types::messages_consensus::ConsensusTransaction;
 use mysten_metrics::RegistryService;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -194,10 +194,7 @@ impl UpdatableConsensusClient {
             return client;
         }
 
-        panic!(
-            "Timed out after {:?} waiting for Consensus to start!",
-            START_TIMEOUT,
-        );
+        panic!("Timed out after {START_TIMEOUT:?} waiting for Consensus to start!",);
     }
 
     pub fn set(&self, client: Arc<dyn ConsensusClient>) {
@@ -308,7 +305,10 @@ impl Drop for RunningLockGuard<'_> {
         match *self.state_guard {
             // consensus was running and now will have to be marked as shutdown
             Running::True(epoch, version) => {
-                tracing::info!("Consensus shutdown for epoch {epoch:?} & protocol version {version:?} is complete - took {} seconds", self.start.elapsed().as_secs_f64());
+                tracing::info!(
+                    "Consensus shutdown for epoch {epoch:?} & protocol version {version:?} is complete - took {} seconds",
+                    self.start.elapsed().as_secs_f64()
+                );
 
                 self.metrics
                     .shutdown_latency
@@ -319,10 +319,11 @@ impl Drop for RunningLockGuard<'_> {
             // consensus was not running and now will be marked as started
             Running::False => {
                 tracing::info!(
-                "Starting up consensus for epoch {} & protocol version {:?} is complete - took {} seconds",
-                self.epoch.unwrap(),
-                self.protocol_version.unwrap(),
-                self.start.elapsed().as_secs_f64());
+                    "Starting up consensus for epoch {} & protocol version {:?} is complete - took {} seconds",
+                    self.epoch.unwrap(),
+                    self.protocol_version.unwrap(),
+                    self.start.elapsed().as_secs_f64()
+                );
 
                 self.metrics
                     .start_latency

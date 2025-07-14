@@ -67,7 +67,7 @@ impl Debug for ConsensusTransactionKey {
                 generation
             ),
             Self::DWalletMPCMessage(message) => {
-                write!(f, "DWalletMPCMessage({:?})", message,)
+                write!(f, "DWalletMPCMessage({message:?})",)
             }
             Self::DWalletMPCOutput(
                 authority,
@@ -77,8 +77,7 @@ impl Debug for ConsensusTransactionKey {
             ) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
-                    authority, session_identifier, output, malicious_authorities
+                    "DWalletMPCOutput({authority:?}, {session_identifier:?}, {output:?}, {malicious_authorities:?})"
                 )
             }
             ConsensusTransactionKey::SystemCheckpointSignature(name, seq) => {

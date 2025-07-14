@@ -1,4 +1,4 @@
-use crate::crypto::{keccak256_digest, AuthorityName};
+use crate::crypto::{AuthorityName, keccak256_digest};
 use crate::message::DWalletCheckpointMessageKind;
 use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKeyScheme;
 use hex::FromHex;
@@ -107,9 +107,9 @@ impl Display for MPCRequestInput {
             MPCRequestInput::DKGFirst(_) => write!(f, "dWalletDKGFirstRound"),
             MPCRequestInput::DKGSecond(_) => write!(f, "dWalletDKGSecondRound"),
             MPCRequestInput::Presign(_) => write!(f, "Presign"),
-            MPCRequestInput::Sign(_) => write!(f, "{}", SIGN_STR_KEY),
+            MPCRequestInput::Sign(_) => write!(f, "{SIGN_STR_KEY}"),
             MPCRequestInput::NetworkEncryptionKeyDkg(_, _) => {
-                write!(f, "{}", NETWORK_ENCRYPTION_KEY_DKG_STR_KEY)
+                write!(f, "{NETWORK_ENCRYPTION_KEY_DKG_STR_KEY}")
             }
             MPCRequestInput::EncryptedShareVerification(_) => {
                 write!(f, "EncryptedShareVerification")
@@ -118,7 +118,7 @@ impl Display for MPCRequestInput {
                 write!(f, "PartialSignatureVerification")
             }
             MPCRequestInput::NetworkEncryptionKeyReconfiguration(_) => {
-                write!(f, "{}", NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY)
+                write!(f, "{NETWORK_ENCRYPTION_KEY_RECONFIGURATION_STR_KEY}")
             }
             MPCRequestInput::MakeDWalletUserSecretKeySharesPublicRequest(_) => {
                 write!(f, "MakeDWalletUserSecretKeySharesPublicRequest")
@@ -442,7 +442,7 @@ impl SessionIdentifier {
     }
 
     pub fn to_hex(&self) -> String {
-        format!("{:x}", self)
+        format!("{self:x}")
     }
 
     pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self, SessionIdentifierParseError> {
@@ -468,13 +468,13 @@ impl std::ops::Deref for SessionIdentifier {
 
 impl fmt::Display for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#x}", self)
+        write!(f, "{self:#x}")
     }
 }
 
 impl fmt::Debug for SessionIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#x}", self)
+        write!(f, "{self:#x}")
     }
 }
 
@@ -485,7 +485,7 @@ impl fmt::LowerHex for SessionIdentifier {
         }
 
         for byte in &self.0 {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
         }
 
         Ok(())
@@ -499,7 +499,7 @@ impl fmt::UpperHex for SessionIdentifier {
         }
 
         for byte in &self.0 {
-            write!(f, "{:02X}", byte)?;
+            write!(f, "{byte:02X}")?;
         }
 
         Ok(())

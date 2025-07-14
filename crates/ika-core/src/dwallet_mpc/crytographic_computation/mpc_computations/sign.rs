@@ -14,7 +14,7 @@ use ika_types::messages_dwallet_mpc::{
     AsyncProtocol, DWalletSessionEvent, FutureSignRequestEvent, MPCRequestInput, MPCSessionRequest,
     SessionIdentifier, SignRequestEvent,
 };
-use message_digest::message_digest::{message_digest, Hash};
+use message_digest::message_digest::{Hash, message_digest};
 use mpc::{Party, Weight, WeightedThresholdAccessStructure};
 use rand_core::SeedableRng;
 use std::collections::HashSet;
@@ -248,7 +248,7 @@ pub(crate) fn verify_partial_signature(
                 partial,
                 message,
             ).map_err(|err| {
-                DwalletMPCError::TwoPCMPCError(format!("{:?}", err))
+                DwalletMPCError::TwoPCMPCError(format!("{err:?}"))
             })
         }
     }

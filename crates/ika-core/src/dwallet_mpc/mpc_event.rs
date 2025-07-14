@@ -20,8 +20,8 @@ use ika_types::messages_dwallet_mpc::{
     DWalletEncryptionKeyReconfigurationRequestEvent, DWalletImportedKeyVerificationRequestEvent,
     DWalletMPCEvent, DWalletNetworkDKGEncryptionKeyRequestEvent, DWalletSessionEvent,
     DWalletSessionEventTrait, EncryptedShareVerificationRequestEvent, FutureSignRequestEvent,
-    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent, SignRequestEvent,
-    SESSIONS_MANAGER_MODULE_NAME,
+    MakeDWalletUserSecretKeySharesPublicRequestEvent, PresignRequestEvent,
+    SESSIONS_MANAGER_MODULE_NAME, SignRequestEvent,
 };
 use serde::de::DeserializeOwned;
 use std::time::Duration;

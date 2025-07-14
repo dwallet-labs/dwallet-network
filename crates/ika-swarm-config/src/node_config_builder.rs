@@ -9,9 +9,9 @@ use crate::validator_initialization_config::{
 use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use ika_config::node::{
-    default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath,
-    AuthorityOverloadConfig, KeyPairWithPath, RootSeedWithPath, RunWithRange, StateArchiveConfig,
-    SuiChainIdentifier, SuiConnectorConfig,
+    AuthorityKeyPairWithPath, AuthorityOverloadConfig, KeyPairWithPath, RootSeedWithPath,
+    RunWithRange, StateArchiveConfig, SuiChainIdentifier, SuiConnectorConfig,
+    default_end_of_epoch_broadcast_channel_capacity,
 };
 use std::path::PathBuf;
 use sui_types::base_types::ObjectID;
@@ -19,8 +19,8 @@ use sui_types::base_types::ObjectID;
 use ika_config::p2p::{P2pConfig, SeedPeer, StateSyncConfig};
 
 use ika_config::{
-    local_ip_utils, ConsensusConfig, NodeConfig, AUTHORITIES_DB_NAME, CONSENSUS_DB_NAME,
-    FULL_NODE_DB_PATH,
+    AUTHORITIES_DB_NAME, CONSENSUS_DB_NAME, ConsensusConfig, FULL_NODE_DB_PATH, NodeConfig,
+    local_ip_utils,
 };
 use ika_types::crypto::{AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair};
 use ika_types::supported_protocol_versions::SupportedProtocolVersions;

@@ -115,7 +115,7 @@ mod checked {
             let gas_coin: IKACoin = bcs::from_bytes(value.contents()).map_err(|err| {
                 ExecutionError::new_with_source(
                     ExecutionErrorKind::InvalidGasObject,
-                    format!("Unable to deserialize gas object: {:?}", err),
+                    format!("Unable to deserialize gas object: {err:?}"),
                 )
             })?;
             Ok(gas_coin)
@@ -130,7 +130,7 @@ mod checked {
                 Data::Move(obj) => obj.try_into(),
                 Data::Package(_) => Err(ExecutionError::new_with_source(
                     ExecutionErrorKind::InvalidGasObject,
-                    format!("Gas object type is not a gas coin: {:?}", value),
+                    format!("Gas object type is not a gas coin: {value:?}"),
                 )),
             }
         }

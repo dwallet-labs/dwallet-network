@@ -3,7 +3,7 @@
 
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointSequenceNumber;
 use ika_types::messages_system_checkpoints::SystemCheckpointSequenceNumber;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use prometheus::{IntGauge, Registry, register_int_gauge_with_registry};
 use std::sync::Arc;
 use tap::Pipe;
 

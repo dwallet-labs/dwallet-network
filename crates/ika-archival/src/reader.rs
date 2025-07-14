@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
-    read_manifest, FileMetadata, FileType, Manifest, DWALLET_CHECKPOINT_FILE_MAGIC,
-    SYSTEM_CHECKPOINT_FILE_MAGIC,
+    DWALLET_CHECKPOINT_FILE_MAGIC, FileMetadata, FileType, Manifest, SYSTEM_CHECKPOINT_FILE_MAGIC,
+    read_manifest,
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use bytes::buf::Reader;
 use bytes::{Buf, Bytes};
 use futures::{StreamExt, TryStreamExt};
@@ -19,20 +19,20 @@ use ika_types::messages_system_checkpoints::{
     VerifiedSystemCheckpointMessage,
 };
 use ika_types::storage::WriteStore;
-use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
+use prometheus::{IntCounterVec, Registry, register_int_counter_vec_with_registry};
 use rand::seq::SliceRandom;
 use std::borrow::Borrow;
 use std::future;
 use std::ops::Range;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use sui_storage::object_store::ObjectStoreGetExt;
 use sui_storage::object_store::http::HttpDownloaderBuilder;
 use sui_storage::object_store::util::get;
-use sui_storage::object_store::ObjectStoreGetExt;
 use sui_storage::{compute_sha3_checksum_for_bytes, make_iterator};
 use tokio::sync::oneshot::Sender;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 use tracing::info;
 
 #[derive(Debug)]
@@ -204,12 +204,16 @@ impl ArchiveReader {
 
         checkpoint_files.sort_by_key(|f| f.checkpoint_seq_range.start);
 
-        assert!(checkpoint_files
-            .windows(2)
-            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
-        assert!(checkpoint_files
-            .windows(2)
-            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
+        assert!(
+            checkpoint_files
+                .windows(2)
+                .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end)
+        );
+        assert!(
+            checkpoint_files
+                .windows(2)
+                .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end)
+        );
 
         assert_eq!(files.first().unwrap().checkpoint_seq_range.start, 0);
 
@@ -221,12 +225,16 @@ impl ArchiveReader {
 
         system_checkpoint_files.sort_by_key(|f| f.checkpoint_seq_range.start);
 
-        assert!(system_checkpoint_files
-            .windows(2)
-            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
-        assert!(system_checkpoint_files
-            .windows(2)
-            .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end));
+        assert!(
+            system_checkpoint_files
+                .windows(2)
+                .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end)
+        );
+        assert!(
+            system_checkpoint_files
+                .windows(2)
+                .all(|w| w[1].checkpoint_seq_range.start == w[0].checkpoint_seq_range.end)
+        );
 
         assert_eq!(files.first().unwrap().checkpoint_seq_range.start, 0);
 

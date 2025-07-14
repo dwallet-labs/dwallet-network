@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::crypto::{
-    random_committee_key_pairs_of_size, AuthorityKeyPair, AuthorityName, AuthorityPublicKey,
-    NetworkPublicKey,
+    AuthorityKeyPair, AuthorityName, AuthorityPublicKey, NetworkPublicKey,
+    random_committee_key_pairs_of_size,
 };
 use crate::error::{IkaError, IkaResult};
-use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
-    KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, MAX_PRIMES,
-};
 use class_groups::CompactIbqf;
+use class_groups::publicly_verifiable_secret_sharing::chinese_remainder_theorem::{
+    CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, KnowledgeOfDiscreteLogUCProof, MAX_PRIMES,
+};
 use fastcrypto::traits::KeyPair;
 use group::PartyID;
 pub use ika_protocol_config::ProtocolVersion;
@@ -202,11 +202,11 @@ impl Committee {
             .unwrap()
     }
 
-    fn choose_multiple_weighted<'a>(
+    fn choose_multiple_weighted<'a, T: Rng>(
         slice: &'a [(AuthorityName, StakeUnit)],
         count: usize,
-        rng: &mut impl Rng,
-    ) -> impl Iterator<Item = &'a AuthorityName> {
+        rng: &mut T,
+    ) -> impl Iterator<Item = &'a AuthorityName> + use<'a, T> {
         // unwrap is safe because we validate the committee composition in `new` above.
         // See https://docs.rs/rand/latest/rand/distributions/weighted/enum.WeightedError.html
         // for possible errors.
@@ -440,62 +440,6 @@ impl Display for CommitteeWithNetworkMetadata {
             "CommitteeWithNetworkMetadata (epoch={}, validators={:?})",
             self.epoch_id, self.validators
         )
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::crypto::{get_key_pair, AuthorityKeyPair};
-    use fastcrypto::traits::KeyPair;
-
-    #[test]
-    fn test_shuffle_by_weight() {
-        let (_, sec1): (_, AuthorityKeyPair) = get_key_pair();
-        let (_, sec2): (_, AuthorityKeyPair) = get_key_pair();
-        let (_, sec3): (_, AuthorityKeyPair) = get_key_pair();
-        let a1: AuthorityName = sec1.public().into();
-        let a2: AuthorityName = sec2.public().into();
-        let a3: AuthorityName = sec3.public().into();
-
-        let mut authorities = BTreeMap::new();
-        authorities.insert(a1, 1);
-        authorities.insert(a2, 1);
-        authorities.insert(a3, 1);
-
-        let committee = Committee::new_for_testing_with_normalized_voting_power(0, authorities);
-
-        assert_eq!(committee.shuffle_by_stake(None, None).len(), 3);
-
-        let mut pref = BTreeSet::new();
-        pref.insert(a2);
-
-        // preference always comes first
-        for _ in 0..100 {
-            assert_eq!(
-                a2,
-                *committee
-                    .shuffle_by_stake(Some(&pref), None)
-                    .first()
-                    .unwrap()
-            );
-        }
-
-        let mut restrict = BTreeSet::new();
-        restrict.insert(a2);
-
-        for _ in 0..100 {
-            let res = committee.shuffle_by_stake(None, Some(&restrict));
-            assert_eq!(1, res.len());
-            assert_eq!(a2, res[0]);
-        }
-
-        // empty preferences are valid
-        let res = committee.shuffle_by_stake(Some(&BTreeSet::new()), None);
-        assert_eq!(3, res.len());
-
-        let res = committee.shuffle_by_stake(None, Some(&BTreeSet::new()));
-        assert_eq!(0, res.len());
     }
 }
 

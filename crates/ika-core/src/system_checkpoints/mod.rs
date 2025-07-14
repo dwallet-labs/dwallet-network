@@ -40,8 +40,8 @@ use tracing::{debug, error, info, instrument, warn};
 use typed_store::DBMapUtils;
 use typed_store::Map;
 use typed_store::{
-    rocks::{DBMap, MetricConf},
     TypedStoreError,
+    rocks::{DBMap, MetricConf},
 };
 
 pub type SystemCheckpointHeight = u64;
@@ -592,7 +592,10 @@ impl SystemCheckpointBuilder {
             {
                 if chunk.is_empty() {
                     // Always allow at least one tx in a checkpoint.
-                    warn!("Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.", self.max_system_checkpoint_size_bytes);
+                    warn!(
+                        "Size of single transaction ({size}) exceeds max system checkpoint size ({}); allowing excessively large system_checkpoint to go through.",
+                        self.max_system_checkpoint_size_bytes
+                    );
                 } else {
                     chunks.push(chunk);
                     chunk = Vec::new();
@@ -1134,6 +1137,7 @@ impl SystemCheckpointService {
     }
 
     #[cfg(test)]
+    #[allow(dead_code)]
     fn write_and_notify_system_checkpoint_for_testing(
         &self,
         epoch_store: &AuthorityPerEpochStore,

@@ -140,7 +140,7 @@ pub enum HealthCheckError {
 
 impl std::fmt::Display for HealthCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -160,7 +160,7 @@ mod test {
     #[tokio::test]
     async fn start_and_stop() {
         telemetry_subscribers::init_for_testing();
-        let swarm = Swarm::builder().build();
+        let swarm = Swarm::builder().build().await.unwrap();
 
         let validator = swarm.validator_nodes().next().unwrap();
 

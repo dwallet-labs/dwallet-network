@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 license = "BSD-3-Clause-Clear"
 publish = false
-edition = "2021"
+edition = "2024"
 
 [lints]
 workspace = true
@@ -151,19 +151,6 @@ moka = { workspace = true, default-features = false, features = [
 ] }
 [target.'cfg(not(msim))'.dependencies]
 moka = { workspace = true, features = ["sync"] }
-
-[[example]]
-name = "generate-format"
-path = "src/generate_format.rs"
-test = false
-
-[[bench]]
-name = "verified_cert_cache_bench"
-harness = false
-
-[[bench]]
-name = "batch_verification_bench"
-harness = false
 
 [features]
 test-utils = []

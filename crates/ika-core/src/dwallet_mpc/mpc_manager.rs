@@ -110,7 +110,7 @@ impl DWalletMPCManager {
         .unwrap_or_else(|err| {
             error!(?err, "Failed to create DWalletMPCManager.");
             // We panic on purpose, this should not happen.
-            panic!("DWalletMPCManager initialization failed: {:?}", err);
+            panic!("DWalletMPCManager initialization failed: {err:?}");
         })
     }
 
@@ -702,7 +702,7 @@ impl DWalletMPCManager {
                     malicious_authorities_options.iter().any(|ma| ma.is_none());
                 let malicious_authorities: HashSet<AuthorityName> = malicious_authorities_options
                     .into_iter()
-                    .filter_map(|ma| ma)
+                    .flatten()
                     .collect();
                 if any_not_found_malicious_voters {
                     error!(
@@ -715,7 +715,7 @@ impl DWalletMPCManager {
                 }
                 let malicious_authorities: HashSet<AuthorityName> = malicious_authorities
                     .into_iter()
-                    .chain(majority_vote.malicious_authorities.into_iter())
+                    .chain(majority_vote.malicious_authorities)
                     .collect();
                 Some((malicious_authorities, output))
             }
