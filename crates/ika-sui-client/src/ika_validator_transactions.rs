@@ -34,12 +34,12 @@ async fn create_class_groups_public_key_and_proof_builder_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
     client: &SuiClient,
-    ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         CREATE_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_BUILDER_FUNCTION_NAME.into(),
         vec![],
@@ -59,7 +59,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -68,7 +68,9 @@ async fn create_class_groups_public_key_and_proof_builder_object(
         })
         .collect::<Vec<_>>()
         .first()
-        .ok_or(anyhow::Error::msg("failed to get builder object id"))?;
+        .ok_or(anyhow::Error::msg(
+            "failed to get the class groups builder object id",
+        ))?;
 
     let builder_ref = client
         .transaction_builder()
@@ -82,7 +84,7 @@ async fn create_class_groups_public_key_and_proof_builder_object(
 pub async fn create_class_groups_public_key_and_proof_object(
     publisher_address: SuiAddress,
     context: &mut WalletContext,
-    ika_system_package_id: ObjectID,
+    ika_common_package_id: ObjectID,
     class_groups_public_key_and_proof_bytes: ClassGroupsEncryptionKeyAndProof,
     gas_budget: u64,
 ) -> anyhow::Result<ObjectRef> {
@@ -91,7 +93,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         publisher_address,
         context,
         &client,
-        ika_system_package_id,
+        ika_common_package_id,
         gas_budget,
     )
     .await?;
@@ -103,7 +105,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
         let pubkey_and_proof = bcs::to_bytes(pubkey_and_proof)?;
 
         ptb.move_call(
-            ika_system_package_id,
+            ika_common_package_id,
             CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
             ADD_PAIR_TO_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
             vec![],
@@ -128,7 +130,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
                     object_id,
                     object_type,
                     ..
-                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_system_package_id.into())
+                } if ClassGroupsPublicKeyAndProofBuilder::type_(ika_common_package_id.into())
                     == *object_type =>
                 {
                     Some(*object_id)
@@ -149,7 +151,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
 
     let mut ptb = ProgrammableTransactionBuilder::new();
     ptb.move_call(
-        ika_system_package_id,
+        ika_common_package_id,
         CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_MODULE_NAME.into(),
         FINISH_CLASS_GROUPS_PUBLIC_KEY_AND_PROOF_FUNCTION_NAME.into(),
         vec![],
@@ -172,7 +174,7 @@ pub async fn create_class_groups_public_key_and_proof_object(
                 object_id,
                 object_type,
                 ..
-            } if ClassGroupsPublicKeyAndProof::type_(ika_system_package_id.into())
+            } if ClassGroupsPublicKeyAndProof::type_(ika_common_package_id.into())
                 == *object_type =>
             {
                 Some(*object_id)
@@ -320,17 +322,6 @@ pub async fn request_add_validator_candidate(
     let tx = construct_unsigned_txn(context, sender, gas_budget, ptb).await?;
 
     let response = execute_transaction(context, tx).await?;
-
-    // let response = call_ika_system(
-    //     context,
-    //     REQUEST_ADD_VALIDATOR_CANDIDATE_FUNCTION_NAME,
-    //     args,
-    //     gas_budget,
-    //     ika_system_object_id,
-    //     ika_system_package_id,
-    //     ptb,
-    // )
-    // .await?;
 
     let object_changes = response
         .object_changes
