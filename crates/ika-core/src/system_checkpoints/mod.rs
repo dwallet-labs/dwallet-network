@@ -128,7 +128,7 @@ pub struct SystemCheckpointStore {
     /// Watermarks used to determine the highest verified, fully synced, and
     /// fully executed system_checkpoints
     pub(crate) watermarks: DBMap<
-        SystemCheckpointWatermark,
+        SystemCheckpointHighestWatermark,
         (
             SystemCheckpointSequenceNumber,
             SystemCheckpointMessageDigest,
@@ -226,7 +226,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_verified = if let Some(highest_verified) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestVerified)?
+            .get(&SystemCheckpointHighestWatermark::Verified)?
         {
             highest_verified
         } else {
@@ -240,7 +240,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_synced = if let Some(highest_synced) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestSynced)?
+            .get(&SystemCheckpointHighestWatermark::Synced)?
         {
             highest_synced
         } else {
@@ -254,7 +254,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<SystemCheckpointSequenceNumber>, TypedStoreError> {
         if let Some(highest_executed) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestExecuted)?
+            .get(&SystemCheckpointHighestWatermark::Executed)?
         {
             Ok(Some(highest_executed.0))
         } else {
@@ -267,7 +267,7 @@ impl SystemCheckpointStore {
     ) -> Result<Option<VerifiedSystemCheckpointMessage>, TypedStoreError> {
         let highest_executed = if let Some(highest_executed) = self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestExecuted)?
+            .get(&SystemCheckpointHighestWatermark::Executed)?
         {
             highest_executed
         } else {
@@ -281,7 +281,7 @@ impl SystemCheckpointStore {
     ) -> Result<SystemCheckpointSequenceNumber, TypedStoreError> {
         Ok(self
             .watermarks
-            .get(&SystemCheckpointWatermark::HighestPruned)?
+            .get(&SystemCheckpointHighestWatermark::Pruned)?
             .unwrap_or((1, Default::default()))
             .0)
     }
@@ -338,7 +338,7 @@ impl SystemCheckpointStore {
                 "Updating highest verified system checkpoint",
             );
             self.watermarks.insert(
-                &SystemCheckpointWatermark::HighestVerified,
+                &SystemCheckpointHighestWatermark::Verified,
                 &(*checkpoint.sequence_number(), *checkpoint.digest()),
             )?;
         }
@@ -355,7 +355,7 @@ impl SystemCheckpointStore {
             "Updating highest synced system checkpoint",
         );
         self.watermarks.insert(
-            &SystemCheckpointWatermark::HighestSynced,
+            &SystemCheckpointHighestWatermark::Synced,
             &(*checkpoint.sequence_number(), *checkpoint.digest()),
         )
     }
@@ -366,7 +366,7 @@ impl SystemCheckpointStore {
         let mut wb = self.watermarks.batch();
         wb.delete_batch(
             &self.watermarks,
-            std::iter::once(SystemCheckpointWatermark::HighestExecuted),
+            std::iter::once(SystemCheckpointHighestWatermark::Executed),
         )?;
         wb.write()?;
         Ok(())
@@ -374,11 +374,11 @@ impl SystemCheckpointStore {
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum SystemCheckpointWatermark {
-    HighestVerified,
-    HighestSynced,
-    HighestExecuted,
-    HighestPruned,
+pub enum SystemCheckpointHighestWatermark {
+    Verified,
+    Synced,
+    Executed,
+    Pruned,
 }
 
 pub struct SystemCheckpointBuilder {

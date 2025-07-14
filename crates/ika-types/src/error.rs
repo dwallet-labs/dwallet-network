@@ -155,8 +155,8 @@ pub enum IkaError {
     #[error("Authority Error: {error:?}")]
     GenericAuthorityError { error: String },
 
-    #[error("Generic Bridge Error: {error:?}")]
-    GenericIkaError { error: String },
+    #[error("Generic Error: {error:?}")]
+    Generic { error: String },
 
     // Errors related to the authority-consensus interface.
     #[error("Failed to submit transaction to consensus: {0}")]

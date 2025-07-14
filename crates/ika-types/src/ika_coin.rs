@@ -38,6 +38,7 @@ mod checked {
     use super::*;
     use move_core_types::account_address::AccountAddress;
 
+    #[allow(clippy::upper_case_acronyms)]
     pub struct IKA {}
     impl IKA {
         pub fn type_(ika_package_address: AccountAddress) -> StructTag {
