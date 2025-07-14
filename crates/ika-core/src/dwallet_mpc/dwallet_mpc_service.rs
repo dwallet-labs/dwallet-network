@@ -14,10 +14,7 @@ use crate::dwallet_mpc::dwallet_mpc_metrics::DWalletMPCMetrics;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_session::MPCEventData;
 use crate::dwallet_mpc::party_ids_to_authority_names;
-use dwallet_mpc_types::dwallet_mpc::{
-    DWalletMPCNetworkKeyScheme, MPCMessage, MPCPrivateOutput, MPCSessionStatus,
-    SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, MPCMessage, MPCSessionStatus};
 use ika_config::NodeConfig;
 use ika_sui_client::SuiConnectorClient;
 use ika_types::committee::Committee;
@@ -35,7 +32,7 @@ use ika_types::messages_dwallet_mpc::{
 };
 use ika_types::sui::DWalletCoordinatorInner;
 use itertools::{izip, Itertools};
-use mpc::AsynchronousRoundResult;
+use mpc::AsynchronousRoundGODResult;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -412,13 +409,7 @@ impl DWalletMPCService {
         &mut self,
         completed_computation_results: HashMap<
             ComputationId,
-            DwalletMPCResult<
-                mpc::AsynchronousRoundResult<
-                    MPCMessage,
-                    MPCPrivateOutput,
-                    SerializedWrappedMPCPublicOutput,
-                >,
-            >,
+            DwalletMPCResult<AsynchronousRoundGODResult>,
         >,
     ) {
         let committee = self.epoch_store.committee().clone();
@@ -439,10 +430,7 @@ impl DWalletMPCService {
                 if session.status == MPCSessionStatus::Active {
                     if let Some(mpc_event_data) = session.mpc_event_data.clone() {
                         match computation_result {
-                            Ok(AsynchronousRoundResult::Advance {
-                                malicious_parties: _,
-                                message,
-                            }) => {
+                            Ok(AsynchronousRoundGODResult::Advance { wrapped_message }) => {
                                 info!(
                                     ?session_identifier,
                                     validator=?validator_name,
@@ -452,7 +440,7 @@ impl DWalletMPCService {
                                 let message = self.new_dwallet_mpc_message(
                                     session_identifier,
                                     mpc_round,
-                                    message,
+                                    wrapped_message,
                                 );
 
                                 if let Err(err) = consensus_adapter
@@ -468,10 +456,10 @@ impl DWalletMPCService {
                                     );
                                 }
                             }
-                            Ok(AsynchronousRoundResult::Finalize {
+                            Ok(AsynchronousRoundGODResult::Finalize {
                                 malicious_parties,
                                 private_output: _,
-                                public_output,
+                                public_output_value,
                             }) => {
                                 info!(
                                     ?session_identifier,
@@ -503,7 +491,7 @@ impl DWalletMPCService {
                                 let consensus_message = self.new_dwallet_mpc_output_message(
                                     session_identifier,
                                     &mpc_event_data,
-                                    public_output,
+                                    public_output_value,
                                     malicious_authorities,
                                     false,
                                 );

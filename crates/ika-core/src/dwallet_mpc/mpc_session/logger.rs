@@ -65,12 +65,6 @@ impl MPCSessionLogger {
         self
     }
 
-    /// Sets the malicious parties
-    pub fn with_malicious_parties(mut self, parties: Vec<PartyID>) -> Self {
-        self.malicious_parties = Some(parties);
-        self
-    }
-
     /// Writes MPC session logs to disk if logging is enabled
     pub fn write_logs_to_disk(
         &self,

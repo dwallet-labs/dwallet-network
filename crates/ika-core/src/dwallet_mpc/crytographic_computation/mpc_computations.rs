@@ -1,17 +1,15 @@
 use crate::dwallet_mpc::mpc_session::MPCSessionLogger;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput,
-};
+use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 use group::PartyID;
 use ika_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use itertools::Itertools;
-use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{
+    AsynchronousRoundGODResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure,
+};
 use rand_chacha::ChaCha20Rng;
-use serde::de::DeserializeOwned;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::{HashMap, HashSet};
-use tracing::error;
 
 pub(crate) mod dwallet_dkg;
 pub(crate) mod network_dkg;
@@ -165,35 +163,27 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
     private_input: P::PrivateInput,
     logger: &MPCSessionLogger,
     mut rng: ChaCha20Rng,
-) -> DwalletMPCResult<
-    mpc::AsynchronousRoundResult<MPCMessage, MPCPrivateOutput, SerializedWrappedMPCPublicOutput>,
-> {
-    let DeserializeMPCMessagesResponse {
-        messages,
-        malicious_parties,
-    } = deserialize_mpc_messages_and_check_quorum(&serialized_messages, access_structure)?;
-
+) -> DwalletMPCResult<AsynchronousRoundGODResult> {
     // Update logger with malicious parties detected during deserialization.
-    let logger = logger.clone().with_malicious_parties(malicious_parties);
     logger.write_logs_to_disk(session_id, party_id, access_structure, &serialized_messages);
 
     // When a `ThresholdNotReached` error is received, the system now waits for additional messages
     // (including those from previous rounds) and retries.
-    let res = match P::advance_with_guaranteed_output(
+    match P::advance_with_guaranteed_output(
         session_id,
         party_id,
         access_structure,
-        messages.clone(),
+        serialized_messages.clone(),
         Some(private_input),
         public_input,
         &mut rng,
     ) {
-        Ok(res) => res,
+        Ok(res) => Ok(res),
         Err(e) => {
             let general_error = DwalletMPCError::TwoPCMPCError(format!(
                 "MPC error in party {party_id} session {} at round #{} {:?}",
                 session_id,
-                messages.len() + 1,
+                serialized_messages.len() + 1,
                 e
             ));
             return match e.into() {
@@ -204,86 +194,5 @@ pub(crate) fn advance_and_serialize<P: AsynchronouslyAdvanceable>(
                 _ => Err(general_error),
             };
         }
-    };
-
-    Ok(match res {
-        mpc::AsynchronousRoundResult::Advance {
-            malicious_parties,
-            message,
-        } => mpc::AsynchronousRoundResult::Advance {
-            malicious_parties,
-            message: bcs::to_bytes(&message)?,
-        },
-        mpc::AsynchronousRoundResult::Finalize {
-            malicious_parties,
-            private_output,
-            public_output,
-        } => {
-            let public_output: P::PublicOutputValue = public_output.into();
-            let private_output = bcs::to_bytes(&private_output)?;
-
-            mpc::AsynchronousRoundResult::Finalize {
-                malicious_parties,
-                private_output,
-                public_output: bcs::to_bytes(&public_output)?,
-            }
-        }
-    })
-}
-
-struct DeserializeMPCMessagesResponse<M: DeserializeOwned + Clone> {
-    /// Round -> {party -> message}
-    messages: HashMap<u64, HashMap<PartyID, M>>,
-    malicious_parties: Vec<PartyID>,
-}
-
-/// Deserializes the messages received from other parties for the next advancement.
-/// Any value that fails to deserialize is considered to be sent by a malicious party.
-/// Returns the deserialized messages or an error including the IDs of the malicious parties.
-///
-/// Note that deserialization of a message depends on the type of the message,
-/// which is only known once the event data comes,
-/// and so we can only handle this here. Malicious messages are ignored, and we ensure
-/// that we still have quorum, otherwise returning a `ThresholdNotReached` error.
-fn deserialize_mpc_messages_and_check_quorum<M: DeserializeOwned + Clone>(
-    messages: &HashMap<u64, HashMap<PartyID, MPCMessage>>,
-    access_structure: &WeightedThresholdAccessStructure,
-) -> DwalletMPCResult<DeserializeMPCMessagesResponse<M>> {
-    let mut deserialized_results = HashMap::new();
-    let mut malicious_parties = Vec::new();
-
-    for (index, message_batch) in messages.iter() {
-        let mut valid_messages = HashMap::new();
-
-        for (party_id, message) in message_batch {
-            match bcs::from_bytes::<M>(message) {
-                Ok(value) => {
-                    valid_messages.insert(*party_id, value);
-                }
-                Err(e) => {
-                    tracing::error!(
-                        party_id=?party_id,
-                        error=?e,
-                        "malicious party detected — failed to deserialize a message from party"
-                    );
-                    malicious_parties.push(*party_id);
-                }
-            }
-        }
-
-        let valid_message_senders = valid_messages.keys().copied().collect();
-        if let Err(e) = access_structure.is_authorized_subset(&valid_message_senders) {
-            error!(error=?e, "MPC threshold not reached");
-            return Err(DwalletMPCError::TWOPCMPCThresholdNotReached);
-        }
-
-        if !valid_messages.is_empty() {
-            deserialized_results.insert(*index, valid_messages);
-        }
     }
-
-    Ok(DeserializeMPCMessagesResponse {
-        messages: deserialized_results,
-        malicious_parties,
-    })
 }

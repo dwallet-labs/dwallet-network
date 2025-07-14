@@ -11,9 +11,6 @@ pub type SerializedWrappedMPCPublicOutput = Vec<u8>;
 /// The MPC Public Output.
 pub type MPCPublicOutput = Vec<u8>;
 
-/// Alias for an MPC private output.
-pub type MPCPrivateOutput = Vec<u8>;
-
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
 
