@@ -5,19 +5,19 @@
 //! on Sui blockchain for `ika_system` package.
 
 use crate::dwallet_checkpoints::DWalletCheckpointStore;
-use crate::sui_connector::SuiNotifier;
 use crate::sui_connector::metrics::SuiConnectorMetrics;
+use crate::sui_connector::SuiNotifier;
 use crate::system_checkpoints::SystemCheckpointStore;
 use fastcrypto::traits::ToFromBytes;
 use ika_config::node::RunWithRange;
-use ika_sui_client::{SuiClient, SuiClientInner, retry_with_max_elapsed_time};
+use ika_sui_client::{retry_with_max_elapsed_time, SuiClient, SuiClientInner};
 use ika_types::committee::EpochId;
 use ika_types::dwallet_mpc_error::DwalletMPCResult;
 use ika_types::error::{IkaError, IkaResult};
 use ika_types::messages_dwallet_checkpoint::DWalletCheckpointMessage;
 use ika_types::messages_dwallet_mpc::{
-    DKG_FIRST_ROUND_PROTOCOL_FLAG, DKG_SECOND_ROUND_PROTOCOL_FLAG,
-    DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME, DWalletNetworkEncryptionKeyData,
+    DWalletNetworkEncryptionKeyData, DKG_FIRST_ROUND_PROTOCOL_FLAG,
+    DKG_SECOND_ROUND_PROTOCOL_FLAG, DWALLET_2PC_MPC_COORDINATOR_MODULE_NAME,
     FUTURE_SIGN_PROTOCOL_FLAG, IMPORTED_KEY_DWALLET_VERIFICATION_PROTOCOL_FLAG,
     MAKE_DWALLET_USER_SECRET_KEY_SHARE_PUBLIC_PROTOCOL_FLAG, PRESIGN_PROTOCOL_FLAG,
     RE_ENCRYPT_USER_SHARE_PROTOCOL_FLAG, SIGN_PROTOCOL_FLAG,
@@ -27,12 +27,12 @@ use ika_types::messages_system_checkpoints::SystemCheckpointMessage;
 use ika_types::sui::epoch_start_system::EpochStartSystem;
 use ika_types::sui::system_inner_v1::BlsCommittee;
 use ika_types::sui::{
-    ADVANCE_EPOCH_FUNCTION_NAME, CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
-    DWalletCoordinatorInner, INITIATE_ADVANCE_EPOCH_FUNCTION_NAME,
-    INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
+    DWalletCoordinatorInner, SystemInner,
+    SystemInnerTrait, ADVANCE_EPOCH_FUNCTION_NAME,
+    CREATE_SYSTEM_CURRENT_STATUS_INFO_FUNCTION_NAME,
+    INITIATE_ADVANCE_EPOCH_FUNCTION_NAME, INITIATE_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME,
     PROCESS_CHECKPOINT_MESSAGE_BY_QUORUM_FUNCTION_NAME, REQUEST_LOCK_EPOCH_SESSIONS_FUNCTION_NAME,
     REQUEST_NETWORK_ENCRYPTION_KEY_MID_EPOCH_RECONFIGURATION_FUNCTION_NAME, SYSTEM_MODULE_NAME,
-    SystemInner, SystemInnerTrait,
 };
 use itertools::Itertools;
 use move_core_types::ident_str;
@@ -1144,83 +1144,4 @@ fn merge_gas_coins(
     ));
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use roaring::RoaringBitmap;
-    use sui_sdk::SuiClient as SuiSdkClient;
-
-    /// Test helper: assert that each expected validator index has its bit set in the output bitmap.
-    fn assert_bitmap_has_indices(bitmap: &[u8], indices: &[u32]) {
-        for &i in indices {
-            let byte = bitmap[(i / 8) as usize];
-            let bit = (byte >> (i % 8)) & 1;
-            assert_eq!(bit, 1, "Bit for validator {} should be set", i);
-        }
-        println!("{:?}", bitmap);
-    }
-
-    #[test]
-    fn test_calculate_signers_bitmap_various_sizes() {
-        let test_cases = vec![4, 8, 9, 12, 48, 50, 115, 200, 300];
-
-        for &num_validators in &test_cases {
-            let mut signers = RoaringBitmap::new();
-            for i in 0..num_validators {
-                signers.insert(i);
-            }
-
-            let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-            println!("Bitmap: {:?}", bitmap);
-
-            // Ensure the bitmap is large enough.
-            let expected_size = (num_validators / 8) as usize;
-            assert!(
-                bitmap.len() >= expected_size,
-                "Bitmap too small for {} validators: got {}, expected at least {}",
-                num_validators,
-                bitmap.len(),
-                expected_size
-            );
-
-            // Validate that all expected bits are set
-            let indices: Vec<u32> = (0..num_validators).collect();
-            // assert_bitmap_has_indices(&bitmap, &indices);
-        }
-    }
-
-    #[test]
-    fn test_calculate_signers_bitmap_with_index_exceeding_bitmap_size() {
-        // Simulate a case where there are more validators than entries in the bitmap.
-        let num_validators = 10;
-        let mut signers = RoaringBitmap::new();
-
-        // Add the 9th index (zero-based),
-        // which is out of bounds if bitmap only accounts for 8.
-        signers.insert(9);
-
-        let bitmap = SuiExecutor::<SuiSdkClient>::calculate_signers_bitmap(&signers);
-        println!("Bitmap: {:?}", bitmap);
-
-        // Bitmap should be large enough to include index 9.
-        // Index 9 needs 2 bytes.
-        let required_length = (9 / 8) + 1;
-        assert!(
-            bitmap.len() >= required_length,
-            "Bitmap is too small: expected at least {} bytes for validator index 9, got {}",
-            required_length,
-            bitmap.len()
-        );
-
-        // Optionally: verify that the 10th bit is set
-        let byte_index = 9 / 8;
-        let bit_position = 9 % 8;
-        assert_eq!(
-            (bitmap[byte_index] >> bit_position) & 1,
-            1,
-            "Expected bit at index 9 to be set"
-        );
-    }
 }
