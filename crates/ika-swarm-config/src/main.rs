@@ -213,7 +213,7 @@ async fn main() -> Result<()> {
             sui_faucet_addr,
             sui_conf_dir,
         } => {
-            println!("Publishing IKA modules on network: {}", sui_rpc_addr);
+            println!("Publishing IKA modules on network: {sui_rpc_addr}");
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
@@ -326,22 +326,22 @@ async fn main() -> Result<()> {
             );
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
-            println!("Using SUI configuration from: {:?}", sui_config_path);
+            println!("Using SUI configuration from: {sui_config_path:?}");
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
-            println!("Using SUI faucet address: {}", sui_faucet_addr);
+            println!("Using SUI faucet address: {sui_faucet_addr}");
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             // Load the published IKA configuration from the file.
             let ika_config = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
 
-            println!("Using publisher address: {}", publisher_address);
+            println!("Using publisher address: {publisher_address}");
 
             // Create a WalletContext using the persisted SuiClientConfig.
             let context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
 
-            println!("Using SUI client configuration from: {:?}", sui_config_path);
+            println!("Using SUI client configuration from: {sui_config_path:?}");
 
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.
@@ -351,7 +351,7 @@ async fn main() -> Result<()> {
                 publish_config.ika_package_id,
             )
             .await?;
-            println!("Minting done: ika_supply_id: {}", ika_supply_id);
+            println!("Minting done: ika_supply_id: {ika_supply_id}");
 
             // Update the configuration with the new ika_supply_id
             publish_config.ika_supply_id = Some(ika_supply_id);
@@ -383,7 +383,7 @@ async fn main() -> Result<()> {
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
-            println!("Using SUI configuration from: {:?}", sui_config_path);
+            println!("Using SUI configuration from: {sui_config_path:?}");
 
             // Create a WalletContext and obtain a Sui client.
             let mut context = WalletContext::new(&sui_config_path)?;
@@ -522,7 +522,7 @@ async fn main() -> Result<()> {
             // Initialize the SUI configuration.
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
-            println!("Using SUI configuration from: {:?}", sui_config_path);
+            println!("Using SUI configuration from: {sui_config_path:?}");
 
             // Create a WalletContext and Sui client.
             let mut context = WalletContext::new(&sui_config_path)?;
@@ -654,12 +654,12 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
         "Using SUI client configuration at: {:?}",
         sui_client_config_path
     );
-    println!("Using keystore at: {:?}", keystore_path);
+    println!("Using keystore at: {keystore_path:?}");
 
     let publisher_address = match &mut keystore {
         Keystore::File(file_ks) => {
             if !file_ks.alias_exists(ALIAS_PUBLISHER) {
-                println!("Creating publisher alias: {}", ALIAS_PUBLISHER);
+                println!("Creating publisher alias: {ALIAS_PUBLISHER}");
                 file_ks.create_alias(Option::from(ALIAS_PUBLISHER.to_string()))?;
             }
 
@@ -674,21 +674,21 @@ fn init_sui_keystore(sui_conf_dir: Option<PathBuf>) -> Result<(Keystore, SuiAddr
                         Some("word24".to_string()),
                     )?;
 
-                    println!("Generated a new publisher key with address: {}", address);
-                    println!("Secret Recovery Phrase: {}", phrase);
+                    println!("Generated a new publisher key with address: {address}");
+                    println!("Secret Recovery Phrase: {phrase}");
 
                     let publisher_keypair = file_ks.get_key(&address)?.copy();
                     let encoded = publisher_keypair.encode_base64();
                     let publisher_key_path = sui_conf_dir.join("publisher.key");
                     let mut file = File::create(&publisher_key_path)?;
-                    writeln!(file, "{}", encoded)?;
-                    println!("Saved key to {:?}", publisher_key_path);
+                    writeln!(file, "{encoded}")?;
+                    println!("Saved key to {publisher_key_path:?}");
 
                     // Write the phrase to publisher.seed
                     let seed_path = sui_conf_dir.join("publisher.seed");
                     let mut file = File::create(&seed_path)?;
-                    writeln!(file, "{}", phrase)?;
-                    println!("Saved recovery phrase to {:?}", seed_path);
+                    writeln!(file, "{phrase}")?;
+                    println!("Saved recovery phrase to {seed_path:?}");
                     address
                 }
             }
