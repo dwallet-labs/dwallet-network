@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 set -e
 
@@ -220,8 +220,8 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # If we already have a class-groups.key, copy it into current dir before make-validator-info
     if [ "$CLASS_GROUPS_KEY_CREATED" -eq 1 ]; then
-        echo "Copying existing class-groups.key for validator '$VALIDATOR_NAME'"
-        cp ../class-groups.key .
+        echo "Copying existing class-groups.seed for validator '$VALIDATOR_NAME'"
+        cp ../class-groups.seed .
     fi
 
     # Now run make-validator-info
@@ -229,8 +229,8 @@ for entry in "${VALIDATORS_ARRAY[@]}"; do
 
     # After the first validator generates class-groups.key, save it globally
     if [ "$CLASS_GROUPS_KEY_CREATED" -eq 0 ]; then
-        echo "Saving initial class-groups.key after first validator"
-        cp class-groups.key ../class-groups.key
+        echo "Saving initial class-groups.seed after first validator"
+        cp class-groups.seed ../class-groups.seed
         CLASS_GROUPS_KEY_CREATED=1
     fi
 
@@ -254,6 +254,8 @@ cp ../../../target/debug/ika-swarm-config .
 # Publish IKA Modules (Creates the publisher config).
 ./ika-swarm-config publish-ika-modules --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL"
 
+ls -ltrash
+
 # Mint IKA Tokens
 ./ika-swarm-config mint-ika-tokens --sui-rpc-addr "$SUI_FULLNODE_RPC_URL" --sui-faucet-addr "$SUI_FAUCET_URL" --ika-config-path ./ika_publish_config.json
 
@@ -270,11 +272,16 @@ PUBLISHER_CONFIG_FILE="$PUBLISHER_DIR/ika_publish_config.json"
 IKA_PACKAGE_ID=$(jq -r '.ika_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_PACKAGE_ID=$(jq -r '.ika_system_package_id' "$PUBLISHER_CONFIG_FILE")
 IKA_SYSTEM_OBJECT_ID=$(jq -r '.ika_system_object_id' "$PUBLISHER_CONFIG_FILE")
+IKA_COMMON_PACKAGE_ID=$(jq -r '.ika_common_package_id' "$PUBLISHER_CONFIG_FILE")
+IKA_DWALLET_2PC_MPC_PACKAGE_ID=$(jq -r '.ika_dwallet_2pc_mpc_package_id' "$PUBLISHER_CONFIG_FILE")
+
 
 # Print the values for verification.
 echo "IKA Package ID: $IKA_PACKAGE_ID"
 echo "IKA System Package ID: $IKA_SYSTEM_PACKAGE_ID"
 echo "System ID: $IKA_SYSTEM_OBJECT_ID"
+echo "IKA Common Package ID: $IKA_COMMON_PACKAGE_ID"
+echo "IKA DWallet 2PC MPC Package ID: $IKA_DWALLET_2PC_MPC_PACKAGE_ID"
 
 cat > locals.tf <<EOF
 locals {
@@ -370,7 +377,9 @@ wait
 $BINARY_NAME validator config-env \
     --ika-package-id "$IKA_PACKAGE_ID" \
     --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-    --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+    --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID" \
+    --ika-common-package-id "$IKA_COMMON_PACKAGE_ID" \
+    --ika-dwallet-2pc-mpc-package-id "$IKA_DWALLET_2PC_MPC_PACKAGE_ID" \
 
 ############################
 # Become Validator Candidate (Max 5 Parallel Jobs)
@@ -410,11 +419,13 @@ process_validator() {
     $BINARY_NAME validator config-env \
         --ika-package-id "$IKA_PACKAGE_ID" \
         --ika-system-package-id "$IKA_SYSTEM_PACKAGE_ID" \
-        --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID"
+        --ika-system-object-id "$IKA_SYSTEM_OBJECT_ID" \
+        --ika-common-package-id "$IKA_COMMON_PACKAGE_ID" \
+        --ika-dwallet-2pc-mpc-package-id "$IKA_DWALLET_2PC_MPC_PACKAGE_ID" \
 
     SUI_CONFIG_DIR="$LOCAL_SUI_CONFIG_DIR" \
     IKA_CONFIG_DIR="$LOCAL_IKA_CONFIG_DIR" \
-    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json > "$OUTPUT_FILE"
+    $BINARY_NAME validator become-candidate "$VALIDATOR_DIR/validator.info" --json 2>&1 | tee "$OUTPUT_FILE"
 
     # Validate and extract IDs
     if jq empty "$OUTPUT_FILE" 2>/dev/null; then

@@ -364,7 +364,6 @@ pub async fn init_ika_on_sui(
         ika_dwallet_2pc_mpc_package_id,
         ika_system_package_id,
         ika_system_object_id,
-        ika_dwallet_coordinator_object_id,
     };
     std::env::set_current_dir(contract_paths.current_working_dir)?;
     let mut file = File::create("ika_config.json")?;
@@ -780,7 +779,21 @@ pub async fn ika_system_initialize(
 
     let response = execute_sui_transaction(publisher_address, tx_kind, context, vec![]).await?;
 
+    println!(
+        "Response: {:?}",
+        response.clone()
+    );
+
     let object_changes = response.object_changes.unwrap();
+
+    if response.errors.is_empty() {
+        println!("Transaction executed successfully.");
+    } else {
+        panic!(
+            "Errors occurred during transaction execution: {:?}",
+            response.errors
+        );
+    }
 
     let dwallet_2pc_mpc_coordinator_type = StructTag {
         address: ika_dwallet_2pc_mpc_package_id.into(),

@@ -139,7 +139,7 @@ async fn main() -> Result<()> {
 
             let mut context = WalletContext::new(&sui_config_path)?;
 
-            // Setup contract paths
+            // Setup contract paths.
             let contract_paths = setup_contract_paths()?;
 
             // Publish the "ika" package.
@@ -217,13 +217,16 @@ async fn main() -> Result<()> {
                 init_system_shared_version: None,
             };
 
-            let config_file_path = PathBuf::from("ika_publish_config.json");
+            let config_file_path = contract_paths
+                .current_working_dir
+                .join("ika_publish_config.json");
             let mut file = File::create(&config_file_path)?;
             let json = serde_json::to_string_pretty(&publish_config)?;
             file.write_all(json.as_bytes())?;
             println!(
-                "Published IKA modules configuration saved to {:?}",
-                config_file_path
+                "Published IKA modules configuration saved to {:?}:\n {:?}",
+                config_file_path,
+                json
             );
         }
 
@@ -239,16 +242,22 @@ async fn main() -> Result<()> {
             );
 
             let (keystore, publisher_address, sui_config_path) = init_sui_keystore(sui_conf_dir)?;
+            println!("Using SUI configuration from: {:?}", sui_config_path);
             inti_sui_client_conf(&sui_rpc_addr, keystore, publisher_address, &sui_config_path)?;
+            println!("Using SUI faucet address: {}", sui_faucet_addr);
             request_tokens_from_faucet(publisher_address, sui_faucet_addr.clone()).await?;
 
             // Load the published IKA configuration from the file.
-            let ika_config = std::fs::read_to_string(&ika_config_path)?;
+            let ika_config = fs::read_to_string(&ika_config_path)?;
             let mut publish_config: PublishIkaConfig = serde_json::from_str(&ika_config)?;
+
+            println!("Using publisher address: {}", publisher_address);
 
             // Create a WalletContext using the persisted SuiClientConfig.
             let context = WalletContext::new(&sui_config_path)?;
             let client = context.get_client().await?;
+
+            println!("Using SUI client configuration from: {:?}", sui_config_path);
 
             // Call `mint_ika` with the publisher address, context,
             // client, IKA package ID, and treasury cap ID.

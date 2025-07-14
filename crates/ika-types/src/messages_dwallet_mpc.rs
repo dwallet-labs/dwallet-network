@@ -846,8 +846,6 @@ pub struct IkaPackagesConfig {
     pub ika_system_package_id: ObjectID,
     /// The object id of system on sui.
     pub ika_system_object_id: ObjectID,
-    /// The object id of ika_dwallet_coordinator on sui.
-    pub ika_dwallet_coordinator_object_id: ObjectID,
 }
 
 impl sui_config::Config for IkaPackagesConfig {}
